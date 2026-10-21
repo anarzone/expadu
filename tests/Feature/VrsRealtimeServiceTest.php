@@ -54,7 +54,7 @@ it('caches results and does not re-fetch within 30s', function () {
 
 it('gets delay for trip at stop from cached data', function () {
     // Pre-populate cache with parsed trip updates
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-001' => [
             'trip_id' => 'trip-001',
             'route_id' => '1',
@@ -76,7 +76,7 @@ it('gets delay for trip at stop from cached data', function () {
 });
 
 it('returns null for unknown trip', function () {
-    Cache::put('vrs_gtfsrt_trip_updates', [], 30);
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [], 30);
 
     $service = app(VrsRealtimeService::class);
 
@@ -84,7 +84,7 @@ it('returns null for unknown trip', function () {
 });
 
 it('returns cancelled status for cancelled trip', function () {
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-cancelled' => [
             'trip_id' => 'trip-cancelled',
             'route_id' => '7',
@@ -107,7 +107,7 @@ it('propagates delay when stop has no update', function () {
         'departure_time' => '12:10:00',
         'stop_sequence' => 3,
     ]);
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-prop' => [
             'trip_id' => 'trip-prop',
             'route_id' => '5',
@@ -136,7 +136,7 @@ it('does not propagate a later stop delay backwards to an earlier target stop', 
         'departure_time' => '12:05:00',
         'stop_sequence' => 2,
     ]);
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-mid' => [
             'trip_id' => 'trip-mid',
             'route_id' => '5',
@@ -154,7 +154,7 @@ it('does not propagate a later stop delay backwards to an earlier target stop', 
 });
 
 it('gets general delay for a trip using max delay', function () {
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-gen' => [
             'trip_id' => 'trip-gen',
             'route_id' => '5',
@@ -175,7 +175,7 @@ it('gets general delay for a trip using max delay', function () {
 });
 
 it('returns cancelled for general trip delay when trip is cancelled', function () {
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-c' => [
             'trip_id' => 'trip-c',
             'route_id' => '9',
@@ -191,7 +191,7 @@ it('returns cancelled for general trip delay when trip is cancelled', function (
 });
 
 it('skips skipped stops when calculating max delay', function () {
-    Cache::put('vrs_gtfsrt_trip_updates', [
+    Cache::put('vrs_gtfsrt_trip_updates_v2', [
         'trip-skip' => [
             'trip_id' => 'trip-skip',
             'route_id' => '3',

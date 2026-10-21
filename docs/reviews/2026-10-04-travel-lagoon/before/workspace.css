@@ -1,0 +1,280 @@
+/* Travel review: one workspace, with colour reserved for meaningful states. */
+body.travel-palette.departures-page main {
+    max-width: 1120px;
+}
+body.travel-palette .page-navigation {
+    margin-bottom: 18px;
+}
+body.travel-palette :is(#journey-view, #departures) {
+    padding: 20px;
+    border-radius: 24px;
+    background: var(--surface);
+}
+body.travel-palette .journey-intro-grid {
+    display: block;
+}
+body.travel-palette .journey-desk {
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+}
+body.travel-palette .suggestions {
+    top: 123px;
+    left: 0;
+    right: 0;
+}
+body.travel-palette .journey-start {
+    margin-top: 24px;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--line);
+}
+body.travel-palette .journey-start .section-heading {
+    margin-bottom: 10px;
+}
+body.travel-palette .journey-start .section-heading h2 {
+    font-size: 16px;
+    letter-spacing: -0.3px;
+}
+body.travel-palette .sample-journey {
+    background: transparent;
+    padding: 12px;
+    margin-inline: -12px;
+    width: calc(100% + 24px);
+    border-radius: 14px;
+}
+body.travel-palette .sample-route-names {
+    gap: 8px;
+}
+body.travel-palette .sample-route-names > span:first-child {
+    font-size: 13px;
+}
+body.travel-palette .sample-route-names strong {
+    font-size: 19px;
+    letter-spacing: -0.5px;
+}
+body.travel-palette .sample-route-line {
+    margin: 18px 0;
+    padding: 0;
+}
+body.travel-palette .sample-node.transit {
+    padding: 8px 10px;
+}
+body.travel-palette .sample-node.transit strong {
+    font-size: 20px;
+}
+body.travel-palette .sample-node svg {
+    width: 19px;
+    height: 19px;
+}
+body.travel-palette .sample-route-bottom strong {
+    font-size: 22px;
+}
+body.travel-palette .sample-route-bottom small {
+    font-size: 12px;
+}
+body.travel-palette .sample-footnote {
+    margin: 6px 0 0;
+}
+
+/* The route summary, options and itinerary belong to the same journey. */
+body.travel-palette.has-results .journey-intro-grid {
+    margin: 0 0 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+}
+body.travel-palette .journey-summary {
+    background: transparent;
+    padding: 0;
+    min-height: 48px;
+    border-radius: 8px;
+}
+body.travel-palette .summary-edit {
+    width: 44px;
+    height: 44px;
+    background: transparent;
+}
+body.travel-palette .route-options {
+    gap: 0;
+}
+body.travel-palette .route-option {
+    padding: 16px 12px;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 12px;
+}
+body.travel-palette .route-option + .route-option {
+    border-top: 1px solid var(--line);
+}
+body.travel-palette .route-option .leg-ribbon {
+    margin: 10px 0 8px;
+}
+body.travel-palette .leg-piece:not(.transit, .bike) {
+    background: transparent;
+}
+body.travel-palette .journey-timeband {
+    padding: 16px 0;
+    border-radius: 0;
+    background: transparent;
+    border-block: 1px solid var(--line);
+}
+body.travel-palette .timeband-connection {
+    display: grid;
+    grid-template-columns: minmax(12px, 1fr) auto minmax(12px, 1fr);
+    align-items: center;
+    column-gap: 6px;
+    flex: 1;
+    max-width: 160px;
+    color: var(--teal);
+}
+body.travel-palette .timeband-connection::before,
+body.travel-palette .timeband-connection::after {
+    content: '';
+    height: 1px;
+    background: currentColor;
+    grid-row: 1;
+}
+body.travel-palette .timeband-connection::after {
+    grid-column: 3;
+}
+body.travel-palette .timeband-connection svg {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+}
+body.travel-palette .timeband-connection small {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+}
+body.travel-palette .result-empty {
+    background: transparent;
+    padding: 12px 0;
+    min-height: 0;
+}
+
+/* Keep stop context beside a comfortable-width board on desktop. */
+body.travel-palette .timetable-list,
+body.travel-palette .timetable-day {
+    background: transparent;
+}
+body.travel-palette .timetable-list {
+    border-radius: 0;
+}
+body.travel-palette .timetable-day {
+    padding-top: 18px;
+    font-weight: 500;
+}
+body.travel-palette .board-bottom {
+    margin-bottom: 0;
+}
+body.travel-palette .stop-selector {
+    min-width: 0;
+}
+body.travel-palette .stop-selector strong {
+    font-size: 21px;
+    overflow-wrap: anywhere;
+}
+
+@media (min-width: 760px) {
+    body.travel-palette:not(.has-results) .journey-intro-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(0, 1fr);
+        gap: 32px;
+        align-items: center;
+    }
+    body.travel-palette .journey-start {
+        margin: 0;
+        padding: 8px 8px 8px 32px;
+        border-top: 0;
+        border-left: 1px solid var(--line);
+    }
+}
+@media (min-width: 960px) {
+    body.travel-palette :is(#journey-view, #departures) {
+        padding: 28px;
+    }
+    body.travel-palette .route-workspace {
+        grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
+        gap: 28px;
+    }
+    body.travel-palette .route-detail {
+        background: transparent;
+        border-radius: 0;
+        border-left: 1px solid var(--line);
+    }
+    body.travel-palette .route-detail-content {
+        padding: 8px 0 12px 28px;
+    }
+    body.travel-palette .route-detail .detail-footer {
+        padding-inline: 28px 0;
+    }
+    body.travel-palette .route-option[aria-pressed='true'] {
+        background: var(--blue);
+        box-shadow: inset 3px 0 0 var(--teal);
+    }
+    body.travel-palette .route-option[aria-pressed='true'] .leg-piece {
+        background: transparent;
+    }
+    body.travel-palette .route-option[aria-pressed='true'] .leg-piece.transit {
+        background: var(--paper);
+    }
+    body.travel-palette #departures {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        align-items: start;
+        gap: 24px 28px;
+    }
+    body.travel-palette .board-return {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+    body.travel-palette .timetable-context {
+        padding-right: 28px;
+        border-right: 1px solid var(--line);
+    }
+    body.travel-palette .stop-heading {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        gap: 8px;
+        margin-bottom: 16px;
+        align-items: center;
+    }
+    body.travel-palette .board-meta {
+        flex-wrap: wrap;
+        margin: 12px 0 0;
+    }
+    body.travel-palette .timetable-row {
+        padding-block: 13px;
+    }
+}
+@media (max-width: 759px) {
+    body.travel-palette :is(#journey-view, #departures) {
+        padding: 16px;
+        border-radius: 20px;
+    }
+    body.travel-palette #departures {
+        padding-inline: 12px;
+    }
+    body.travel-palette .timetable-context {
+        padding-inline: 4px;
+    }
+    body.travel-palette .journey-timeband {
+        gap: 12px;
+    }
+    body.travel-palette .sample-route-line {
+        margin-block: 12px;
+    }
+    body.travel-palette .route-option {
+        padding: 10px 4px;
+    }
+    body.travel-palette .route-option .leg-ribbon {
+        margin: 6px 0 4px;
+    }
+}
+@media (hover: hover) {
+    body.travel-palette .sample-journey:hover,
+    body.travel-palette .route-option:not([aria-pressed='true']):hover,
+    body.travel-palette .journey-summary:hover {
+        background: var(--surface-hover);
+        box-shadow: none;
+    }
+}

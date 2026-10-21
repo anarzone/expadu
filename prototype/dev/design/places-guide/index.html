@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Places — Expadu</title>
+        <link rel="stylesheet" href="../connected/style.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <script defer src="../connected/model.js"></script>
+        <script defer src="../connected/store.js?v=2cc367c374d2"></script>
+        <script defer src="../connected/icons.js?v=d57bd11ed911"></script>
+        <script defer src="../connected/motion.js"></script>
+        <script defer src="../connected/ui.js"></script>
+        <script defer src="../connected/handoffs.js?v=33932970adf3"></script>
+        <script defer src="../connected/planning-ui.js?v=4b0a7b379d2f"></script>
+        <script defer src="./model.js?v=6b4a0f398146"></script>
+        <script defer src="./app.js"></script>
+    </head>
+    <body class="places-guide" data-page="places">
+        <a class="skip-link" href="#search">Skip to places</a>
+        <div class="preview-note">
+            Design preview <span>Recorded data, not live availability</span
+            ><a href="#about-data">About the data</a>
+        </div>
+        <header class="app-header">
+            <a class="brand" href="../today-c/" aria-label="Expadu home"
+                ><svg viewBox="13 22 74 60" aria-hidden="true">
+                    <g transform="translate(2.45 2.05)">
+                        <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                        <rect
+                            x="30"
+                            y="24"
+                            width="13"
+                            height="52"
+                            rx="6"
+                            fill="currentColor"
+                        />
+                        <rect
+                            x="46"
+                            y="24"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-7 46 30)"
+                        />
+                        <rect
+                            x="46"
+                            y="43.5"
+                            width="25"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-4 46 50)"
+                        />
+                        <rect
+                            x="46"
+                            y="63"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-2 46 69)"
+                        />
+                    </g></svg
+                >Expadu</a
+            >
+            <span class="header-city"
+                ><span data-icon="pin"></span>Cologne</span
+            >
+            <a class="header-composer" href="../composer-studio/" data-compose
+                ><span data-icon="spark"></span><span>Composer</span></a
+            >
+        </header>
+        <nav class="service-nav" aria-label="Main navigation">
+            <a href="../today-c/"
+                ><span data-icon="home"></span><span>Today</span></a
+            >
+            <a href="./" aria-current="page"
+                ><span data-icon="pin"></span><span>Places</span></a
+            >
+            <a href="../events-next/"
+                ><span data-icon="calendar"></span><span>Events</span></a
+            >
+            <a href="../bureaucracy-next/"
+                ><span data-icon="document"></span><span>Bureaucracy</span></a
+            >
+            <a href="../departures-next/"
+                ><span data-icon="train"></span><span>Departures</span></a
+            >
+            <a href="../services-next/"
+                ><span data-icon="grid"></span><span>Services</span></a
+            >
+        </nav>
+        <main class="guide-main">
+            <div class="page-top">
+                <div class="page-title">
+                    <h1>Places</h1>
+                    <p>Get to know your city, one place at a time.</p>
+                </div>
+                <form class="search-form" role="search">
+                    <label class="search-box"
+                        ><span data-icon="search"></span
+                        ><input
+                            id="search"
+                            type="search"
+                            aria-label="Search places"
+                            placeholder="Name, street or something to do"
+                            autocomplete="off" /><button
+                            type="button"
+                            id="clear-search"
+                            aria-label="Clear search"
+                            hidden
+                        >
+                            <span data-icon="close"></span></button
+                    ></label>
+                    <button
+                        type="button"
+                        id="saved-only"
+                        class="saved-button"
+                        aria-pressed="false"
+                    >
+                        <span data-icon="bookmark"></span><span>Saved</span
+                        ><b id="saved-count" hidden></b>
+                    </button>
+                </form>
+            </div>
+            <div class="browse-controls">
+                <div
+                    class="category-choices"
+                    id="categories"
+                    role="group"
+                    aria-label="Ways to explore"
+                ></div>
+                <label class="area-control"
+                    ><span data-icon="pin"></span
+                    ><span class="sr-only">Search area</span
+                    ><select id="scope" aria-label="Search area">
+                        <option value="">All of Cologne</option>
+                    </select></label
+                >
+            </div>
+            <p
+                id="storage-warning"
+                class="storage-warning"
+                role="status"
+                hidden
+            >
+                Saving is unavailable in this browser. You can still browse;
+                changes will last only while this page is open.
+            </p>
+            <div id="guide-workspace" class="guide-workspace">
+                <div id="browse-content">
+                    <div id="load-state" role="status">
+                        <p>Loading places…</p>
+                    </div>
+                    <section
+                        id="collections"
+                        aria-label="Explore Cologne"
+                        hidden
+                    ></section>
+                    <section
+                        id="results"
+                        aria-labelledby="results-title"
+                        hidden
+                    >
+                        <div id="collection-context"></div>
+                        <div class="results-heading">
+                            <div>
+                                <h2 id="results-title" tabindex="-1">
+                                    Browse all places
+                                </h2>
+                                <p id="results-count" aria-live="polite"></p>
+                            </div>
+                            <label class="sort-control"
+                                >Sort
+                                <select id="sort" aria-label="Sort places">
+                                    <option value="collection">
+                                        Collection order
+                                    </option>
+                                    <option value="az">Name A–Z</option>
+                                </select></label
+                            >
+                        </div>
+                        <div id="place-results" class="place-results"></div>
+                        <button id="load-more" class="load-more" hidden>
+                            Show more places
+                        </button>
+                    </section>
+                </div>
+                <aside
+                    id="place-detail"
+                    class="place-detail"
+                    aria-labelledby="detail-title"
+                    hidden
+                ></aside>
+            </div>
+            <footer class="guide-footer" id="about-data">
+                <details>
+                    <summary>About these places</summary>
+                    <p>
+                        This design uses a recorded OpenStreetMap snapshot from
+                        18 September 2026. Names and facts may have changed;
+                        some records may still describe parts of the same
+                        destination. Collection membership follows recorded
+                        categories and amenities. Check the venue before
+                        travelling.
+                    </p>
+                    <p id="snapshot-summary"></p>
+                    <p>
+                        Photos appear only where reuse has already been
+                        reviewed. Their credits stay with each image.
+                    </p>
+                    <label class="photo-option"
+                        ><input id="show-photos" type="checkbox" checked /> Show
+                        available photos in details</label
+                    >
+                </details>
+                <a
+                    href="https://www.openstreetmap.org/copyright"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >© OpenStreetMap contributors · ODbL</a
+                >
+            </footer>
+        </main>
+        <noscript
+            ><p class="no-script">
+                Enable JavaScript to search this design preview.
+            </p></noscript
+        >
+    </body>
+</html>

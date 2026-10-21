@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TravelEstimator;
 use App\Http\Controllers\Controller;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Journey search suggestions.
@@ -23,6 +26,9 @@ use Illuminate\Http\Request;
  */
 class JourneySuggestController extends Controller
 {
+    /** Places within this reach of you (or the city) come before same-named ones far away. */
+    private const NEARBY_KM = 50;
+
     public function __invoke(Request $request, RouteService $routes): JsonResponse
     {
         $validated = $request->validate([
@@ -38,6 +44,9 @@ class JourneySuggestController extends Controller
         }
 
         $bias = app(UserLocationService::class)->context($user, $request)->toGeoPoint();
+        $useSearchDefault = $bias === null;
+        $searchDefault = config('geocoding.search_default');
+        $bias ??= new GeoPoint((float) $searchDefault['lat'], (float) $searchDefault['lng']);
 
         // The user's own vocabulary ("Home", "Gym") outranks the city.
         $saved = $user->places()
@@ -55,7 +64,25 @@ class JourneySuggestController extends Controller
                 'emoji' => $place->emoji,
             ]);
 
-        $hits = collect($routes->geocode($query, $bias))
+        $matches = collect($routes->geocode($query, $bias));
+
+        // The geocoder ranks an exact name anywhere above a nearby one
+        // ("Wiener Platz" in München before Köln's): what's within reach
+        // comes first, the geocoder's order kept within each.
+        $distance = app(TravelEstimator::class);
+        $far = fn (Place $place) => $distance->haversineKm($bias->lat, $bias->lng, $place->point->lat, $place->point->lng) > self::NEARBY_KM ? 1 : 0;
+
+        if ($useSearchDefault) {
+            $aliases = collect([$searchDefault['city'], ...$searchDefault['aliases']])
+                ->filter(fn ($alias) => is_string($alias) && trim($alias) !== '')
+                ->map(fn (string $alias) => mb_strtolower(trim($alias)))
+                ->all();
+            $matches = $matches->sortBy(fn (Place $place) => [$far($place), Str::contains(mb_strtolower($place->name.' '.$place->area), $aliases) ? 0 : 1]);
+        } else {
+            $matches = $matches->sortBy(fn (Place $place) => $far($place));
+        }
+
+        $hits = $matches
             ->map(fn (Place $place) => [
                 'kind' => $place->kind ?? 'place',
                 'name' => $place->name,

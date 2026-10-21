@@ -1,14 +1,13 @@
 <?php
 
 use App\Composer\TodayPlanStore;
+use App\Composer\WorkspaceStore;
 use App\Enums\LocationSource;
 use App\Models\Event;
 use App\Models\Spot;
-use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
-use App\Models\UserTask;
 use App\Places\ReviewPlaceFacts;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
@@ -18,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\RecordedAppointmentFixture;
 
 beforeEach(function () {
     Cache::flush();
@@ -145,7 +145,7 @@ test('compose builds a plan from real candidates and stores it', function () {
     $response->assertOk();
     expect($response->json('plan.slots'))->not->toBeEmpty();
     expect($response->json('notices'))->toBeArray();
-    expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
+    expect(storedComposerPlan($user))->not->toBeNull();
 
     // The plan origin's coordinates ride along so "take me there" starts from
     // the same point the plan measured "same area / N min" against — not a
@@ -236,13 +236,6 @@ test('save pins the composed plan to Today, surfaces it on the home feed, and cl
     expect($saved)->not->toBeNull();
     expect($saved['prompt'])->toBe('something this afternoon');
     expect($saved['slots'])->not->toBeEmpty();
-
-    // The home feed now carries it as a prop.
-    $this->get('/dashboard')->assertInertia(fn ($page) => $page
-        ->component('dashboard')
-        ->where('savedPlan.prompt', 'something this afternoon')
-        ->has('savedPlan.slots'),
-    );
 
     $this->deleteJson('/composer/today')->assertOk();
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
@@ -480,16 +473,7 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
     $user = composerUser();
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
 
-    $task = Task::factory()->create([
-        'booking_service_key' => 'auslaenderbehoerde',
-        'documents_required' => ['Passport', 'Biometric photo', 'Application form'],
-        'title' => 'Residence permit appointment',
-    ]);
-    UserTask::factory()->create([
-        'user_id' => $user->id,
-        'task_id' => $task->id,
-        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
-    ]);
+    RecordedAppointmentFixture::for($user, now('Europe/Berlin')->addDay()->setTime(14, 0));
 
     $this->actingAs($user);
     $start = now('Europe/Berlin')->addDay()->setTime(10, 0);
@@ -506,8 +490,9 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
     expect($anchor)->not->toBeNull();
     expect($anchor['swappable'])->toBeFalse();
     expect($anchor['start_time'])->toBe('14:00');
-    expect($anchor['subtitle'])->toContain('Ausländerbehörde');
-    expect($anchor['subtitle'])->toContain('3 documents');
+    expect($anchor['subtitle'])->toBe('My recorded meeting place');
+    expect($anchor['cost_tier'])->toBe('unknown');
+    expect($anchor['end_time'])->toBe('14:25');
     expect(collect($response->json('notices'))->pluck('text')->implode(' '))
         ->toContain('appointment');
 });
@@ -518,12 +503,7 @@ test('an appointment anchor refuses to swap', function () {
     $user = composerUser();
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
 
-    $task = Task::factory()->create(['booking_service_key' => 'auslaenderbehoerde', 'title' => 'Permit appointment']);
-    UserTask::factory()->create([
-        'user_id' => $user->id,
-        'task_id' => $task->id,
-        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
-    ]);
+    RecordedAppointmentFixture::for($user, now('Europe/Berlin')->addDay()->setTime(14, 0));
 
     $this->actingAs($user);
     $start = now('Europe/Berlin')->addDay()->setTime(10, 0);
@@ -669,10 +649,10 @@ test('compose rejects windows beyond 72 hours', function () {
     $response->assertUnprocessable();
 });
 
-test('a thin filter combination preserves free requirements when price evidence is missing', function () {
+test('a thin filter combination preserves explicit budget requirements', function () {
     $user = composerUser();
 
-    // Missing prices cannot be treated as free just to fill a shaped day.
+    // Unknown prices cannot become free merely to fill a shaped itinerary.
     Spot::factory()->create(['name' => 'Bolzplatz Merkenich', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.039, 'lng' => 6.930]);
     Spot::factory()->create(['name' => 'Sportplatz Fühlingen', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.041, 'lng' => 6.932]);
 
@@ -727,6 +707,20 @@ test('a solo activity composes an anchored day plus a browse list, not six of th
     $optionCats = collect($response->json('options'))->pluck('category');
     expect($optionCats->count())->toBeGreaterThan(1);
     expect($optionCats->every(fn ($c) => $c === 'pitch'))->toBeTrue();
+
+    // The deliberate refuel/wind-down policy survives the durable-plan boundary.
+    expect($response->json('plan.constraints.categories'))->toContain('pitch', 'cafe', 'park');
+    $this->postJson('/composer/save')->assertSuccessful();
+    $saved = $this->getJson('/composer/workspace')->assertSuccessful()->json();
+    $date = $start->format('Y-m-d');
+    expect(collect($saved['plans'][$date]['slots'])->pluck('recommendation_status')->unique()->all())->toBe(['available']);
+
+    // That generation policy does not permit an unrelated manual category override.
+    $library = Spot::factory()->create(['category' => 'library', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['opening_hours' => 'Mo-Su 00:00-24:00']]);
+    $this->postJson('/composer/workspace', [
+        'revision' => $saved['revision'], 'action' => 'add', 'date' => $date,
+        'candidate' => 'spot:'.$library->id, 'start' => '18:00', 'end' => '19:00',
+    ])->assertUnprocessable();
 });
 
 test('a solo fine-category activity is the day the plan is built around', function () {
@@ -1007,7 +1001,7 @@ test('a plan cannot be saved after its free price evidence changes', function ()
     $this->postJson('/composer/save')->assertConflict();
 });
 
-test('a saved Today plan stops recommending a place after its access becomes private', function () {
+test('a saved Today plan retains a place as unavailable after its access becomes private', function () {
     $user = composerUser();
     $this->actingAs($user);
     $place = Spot::factory()->create(['name' => 'Public park', 'category' => 'park', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['access' => 'yes']]);
@@ -1019,7 +1013,8 @@ test('a saved Today plan stops recommending a place after its access becomes pri
     $this->postJson('/composer/save')->assertSuccessful();
     expect(app(TodayPlanStore::class)->get($user))->not->toBeNull();
     $place->update(['tags' => ['access' => 'private']]);
-    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+    expect(app(TodayPlanStore::class)->get($user)['slots'][0]['recommendation_status'])->toBe('unavailable')
+        ->and(app(WorkspaceStore::class)->read($user)['plans'])->not->toBeEmpty();
 });
 
 test('saved visits are revalidated against changed opening hours', function () {
@@ -1033,7 +1028,7 @@ test('saved visits are revalidated against changed opening hours', function () {
     $this->postJson('/composer/save')->assertSuccessful();
     $place->update(['tags' => ['opening_hours' => 'Mo-Su 09:00-12:00']]);
     $this->postJson('/composer/save')->assertConflict();
-    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
+    expect(app(TodayPlanStore::class)->get($user)['slots'][0]['recommendation_status'])->toBe('unavailable');
 });
 
 test('a composed visit respects split opening intervals instead of crossing a closure', function () {
@@ -1064,6 +1059,7 @@ test('a pre-release Today snapshot without constraints is not trusted as a curre
         'slots' => [['id' => 'spot:'.$place->id, 'name' => $place->name, 'cost_tier' => 'free']],
         'saved_at' => now()->subHour()->toIso8601String(),
     ], 300);
+    // Unencrypted pre-release snapshots are never served (v2 private plan cache).
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
     expect(Cache::get('composer:today:'.$user->id)['slots'][0]['id'])->toBe('spot:'.$place->id);
 });
@@ -1078,3 +1074,28 @@ test('compose accepts everyday category families and returns their native facets
     ['supermarket', 'shopping'], ['hairdresser', 'services'], ['pharmacy', 'health'],
     ['community_centre', 'community'], ['hotel', 'stay'], ['fitness_centre', 'fitness'],
 ]);
+
+test('a thin filter combination preserves free requirements when price evidence is missing', function () {
+    $user = composerUser();
+
+    // Missing prices cannot be treated as free just to fill a shaped day.
+    Spot::factory()->create(['name' => 'Bolzplatz Merkenich', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.039, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Sportplatz Fühlingen', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.041, 'lng' => 6.932]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => ['Merkenich'],
+            'categories' => ['pitch'],
+            'budget' => 'free',
+            'archetype' => 'make_a_day',
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots'))->toBe([]);
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('No verified places');
+});

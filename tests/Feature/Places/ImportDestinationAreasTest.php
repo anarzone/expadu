@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Places\DestinationGrouping;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,59 @@ test('the area importer attaches facilities to mapped parks and sports centres',
         ->and(DB::table('park_areas')->where('source_id', 'way/202')->value('kind'))
         ->toBe('sports_centre');
 });
+
+test('an unchanged destination assignment keeps a ready enrichment fresh', function () {
+    $park = Spot::factory()->create([
+        'name' => 'Stable Test Park',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/303',
+        'lat' => 50.9505,
+        'lng' => 6.9505,
+    ]);
+    $facility = Spot::factory()->create([
+        'name' => 'Stable Test Court',
+        'category' => 'tennis',
+        'lat' => 50.9504,
+        'lng' => 6.9504,
+    ]);
+    $response = ['elements' => [areaWay(303, 'Stable Test Park', 'park', 50.95, 6.95)]];
+    Http::fake(['*' => Http::response($response)]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+    expect($facility->fresh()->parent_spot_id)->toBe($park->id);
+
+    $enrichment = SpotEnrichment::factory()->create([
+        'spot_id' => $facility->id,
+        'status' => 'ready',
+        'summary' => 'A source-grounded English summary.',
+    ]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+
+    expect($enrichment->fresh())
+        ->status->toBe('ready')
+        ->stale_at->toBeNull();
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function areaWay(int $id, string $name, string $leisure, float $lat, float $lng): array
+{
+    return [
+        'type' => 'way',
+        'id' => $id,
+        'tags' => ['name' => $name, 'leisure' => $leisure, 'sport' => 'tennis'],
+        'geometry' => [
+            ['lat' => $lat, 'lon' => $lng],
+            ['lat' => $lat, 'lon' => $lng + 0.001],
+            ['lat' => $lat + 0.001, 'lon' => $lng + 0.001],
+            ['lat' => $lat + 0.001, 'lon' => $lng],
+            ['lat' => $lat, 'lon' => $lng],
+        ],
+    ];
+}
 
 test('area import refresh preserves reviewed component and independent decisions', function (string $containment) {
     $park = Spot::factory()->create([
@@ -136,18 +190,3 @@ test('area import refresh preserves reviewed component and independent decisions
 /**
  * @return array<string, mixed>
  */
-function areaWay(int $id, string $name, string $leisure, float $lat, float $lng): array
-{
-    return [
-        'type' => 'way',
-        'id' => $id,
-        'tags' => ['name' => $name, 'leisure' => $leisure, 'sport' => 'tennis'],
-        'geometry' => [
-            ['lat' => $lat, 'lon' => $lng],
-            ['lat' => $lat, 'lon' => $lng + 0.001],
-            ['lat' => $lat + 0.001, 'lon' => $lng + 0.001],
-            ['lat' => $lat + 0.001, 'lon' => $lng],
-            ['lat' => $lat, 'lon' => $lng],
-        ],
-    ];
-}

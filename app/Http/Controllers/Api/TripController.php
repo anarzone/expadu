@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TasteSignals;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StartTripRequest;
 use App\Jobs\SendTripStopReminder;
 use App\Models\ActiveTrip;
 use App\Models\User;
@@ -18,21 +20,26 @@ use Illuminate\Http\Request;
 class TripController extends Controller
 {
     /** Begin (or replace) the active trip with the chosen journey. */
-    public function start(Request $request): JsonResponse
+    public function start(StartTripRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'journey' => ['required', 'array'],
-            'journey.legs' => ['required', 'array', 'min:1'],
-            'destination' => ['required', 'array'],
-            'destination.name' => ['required', 'string', 'max:200'],
-            'destination.lat' => ['required', 'numeric', 'between:-90,90'],
-            'destination.lng' => ['required', 'numeric', 'between:-180,180'],
-            'destination.emoji' => ['nullable', 'string', 'max:16'],
-            'origin' => ['nullable', 'array'],
-            'origin.name' => ['nullable', 'string', 'max:200'],
-            'origin.lat' => ['nullable', 'numeric', 'between:-90,90'],
-            'origin.lng' => ['nullable', 'numeric', 'between:-180,180'],
-        ]);
+        $validated = $request->validated();
+        if ($request->resumableTrip() !== null) {
+            return response()->json(['trip' => $request->resumableTrip()->toShared()]);
+        }
+
+        // Never replace a running trip by surprise (another tab, a stale page):
+        // the person confirms "Replace the trip you're on?" first.
+        $running = $request->replacesTrip();
+        if ($running !== null && ! $request->boolean('replace')) {
+            return response()->json([
+                'code' => 'trip_in_progress',
+                'message' => 'You’re on a trip to '.($running->destination['name'] ?? 'somewhere').'. Replace it?',
+                'trip' => [
+                    'destination' => $running->destination['name'] ?? null,
+                    'arrive_time' => $running->journey['arrive_time'] ?? null,
+                ],
+            ], 409);
+        }
 
         // Persist the WHOLE journey — validating journey.legs makes Laravel
         // return only that sub-key, but the live timeline needs every field
@@ -43,11 +50,18 @@ class TripController extends Controller
                 'journey' => $request->input('journey'),
                 'destination' => $validated['destination'],
                 'origin' => $validated['origin'] ?? null,
+                'target' => $request->target(),
                 'started_at' => now(),
             ],
         );
 
         $this->scheduleGetOffReminders($trip, $request->user());
+        app(TasteSignals::class)->tripStarted(
+            $request->user(),
+            (string) $validated['destination']['name'],
+            (float) $validated['destination']['lat'],
+            (float) $validated['destination']['lng'],
+        );
 
         return response()->json(['trip' => $trip->toShared()]);
     }

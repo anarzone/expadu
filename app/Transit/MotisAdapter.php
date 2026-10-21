@@ -19,7 +19,7 @@ class MotisAdapter extends TransitousAdapter
 {
     protected function baseUrl(): string
     {
-        return rtrim((string) config('services.motis.url', 'http://localhost:8080'), '/');
+        return rtrim((string) config('services.motis.url'), '/');
     }
 
     protected function planPath(): string

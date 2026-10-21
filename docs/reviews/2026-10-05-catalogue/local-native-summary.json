@@ -1,0 +1,90 @@
+{
+    "status": "passed",
+    "checked_at": "2026-10-05T13:55:42+00:00",
+    "started_at": "2026-10-05T13:54:39+00:00",
+    "snapshot_sha256": "e46d38199007add85a73e4901015cad8e7ae1b1282909055194435dd4dfe947d",
+    "historical_as_of": "2026-10-01T09:18:34+00:00",
+    "evaluation_clock": "2026-10-05T15:54:39+02:00",
+    "local_spot_id_offset": 1000000,
+    "transaction_read_only": true,
+    "cache_store": "array",
+    "source_boundaries": 86,
+    "scope": "local_native_places_and_composer_place_candidates",
+    "stored_records": 11802,
+    "eligible_place_components": 4235,
+    "general_destinations": 4224,
+    "shared_contract_records_checked": 4235,
+    "fact_counts": {
+        "source": {
+            "osm": 4067,
+            "overture": 168
+        },
+        "name_kind": {
+            "source": 4235
+        },
+        "access": {
+            "unknown": 4112,
+            "public": 123
+        },
+        "fee": {
+            "unknown": 4149,
+            "free": 49,
+            "paid": 37
+        }
+    },
+    "retained_aliases_verified": 798,
+    "alias_api_samples": 12,
+    "held_source_null_canonical_exclusions": 3558,
+    "source_null_records_including_aliases": 4356,
+    "all_canonical_held_exclusions": 6769,
+    "held_detail_api_samples": 12,
+    "api_totals": {
+        "all": 4139,
+        "food_drink": 3412,
+        "culture": 242,
+        "park": 136,
+        "pitch": 15,
+        "court": 9,
+        "playground": 141
+    },
+    "football_within_3km": {
+        "central": {
+            "any_budget": 0,
+            "free": 0
+        },
+        "north": {
+            "any_budget": 0,
+            "free": 0
+        },
+        "east": {
+            "any_budget": 0,
+            "free": 0
+        }
+    },
+    "general_destinations_with_policy_publishable_hero": 119,
+    "policy_photo_coverage_percent": 2.817,
+    "media_assets_all_surfaces": 309,
+    "media_attachments_all_surfaces": 480,
+    "place_media_attachments": 341,
+    "place_media_assets_attached": 229,
+    "source_sha256": {
+        "app/Composer/CandidateRepository.php": "61498c757c3fe0f48a9bdfeac0b8152516db0a60d2f618c1a7cc7f36c272c78f",
+        "app/Composer/FeasibilityFilter.php": "cecd9b425f7f3fd08937b6aa5d352ea8fa39eed70c1505b1a9333e7c473dc7fc",
+        "app/Places/PlaceFacts.php": "5eefa2671bbda8120c6debca64815a5b16846ea765d29e0f22bcc6b691944ef2",
+        "app/Places/PlaceIdentity.php": "8563c41b2a9c495e857b1a108dcad84c110be0bed3ecffdb05eb4ca023b95a57",
+        "app/Places/DestinationGrouping.php": "b7b4f543f5d7092b608517c342f7527b81d95a58ec7b4f8038f0a0048f631f5b",
+        "app/Models/Spot.php": "5659381590a3c35be801969289c9d353d9c075956a47a83dda2c875b406eb00d",
+        "app/Http/Resources/PlaceResource.php": "a4db5769cbb72b3e0c1bf054eb360c2de9cb6cbe7d65c91c74dfef535013ca06",
+        "app/Media/PublishedMediaSelector.php": "e564fa723f2c77d6da2041cfedc545db51431e06e275ed1ed33fcfdad9ddb144",
+        "app/Media/MediaSourcePolicy.php": "9836e40d01625183ef1dbdebffd45e810fe1156d43a92ac805183944c6d74aae"
+    },
+    "php_version": "8.4.23",
+    "photo_urls_freshly_revalidated": false,
+    "full_composer_conversation_verified": false,
+    "real_user_rows_loaded": 0,
+    "synthetic_user_persisted": false,
+    "catalogue_mutated": false,
+    "remote_changed": false,
+    "new_source_qualification": false,
+    "transaction_rolled_back": true
+}

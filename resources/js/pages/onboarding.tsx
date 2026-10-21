@@ -1,11 +1,11 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { FlashToast } from '@/components/flash-toast';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { OptionalStep } from '@/components/onboarding/optional-step';
 import { SituationStep } from '@/components/onboarding/situation-step';
 import { VeedelStep } from '@/components/onboarding/veedel-step';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
+import { Toaster } from '@/components/ui/toast';
 import { useTracker } from '@/hooks/use-tracker';
 import { ARRIVAL_BOUNDS } from '@/lib/date-bounds';
 
@@ -85,9 +85,9 @@ const EMPTY_FORM: OnboardingData = {
     address_registration_status: '',
 };
 
-function readDraft(): { step: number; data: OnboardingData } {
+function readDraft(draftKey: string): { step: number; data: OnboardingData } {
     try {
-        const raw = sessionStorage.getItem(DRAFT_KEY);
+        const raw = sessionStorage.getItem(draftKey);
         const saved = raw === null ? null : JSON.parse(raw);
 
         if (saved === null || typeof saved !== 'object') {
@@ -128,26 +128,43 @@ function readDraft(): { step: number; data: OnboardingData } {
 
 export default function Onboarding() {
     const { track } = useTracker();
-    const { veedels } = usePage<{
+    const { veedels, auth } = usePage<{
+        auth: { user: { id: number } };
         veedels: Record<string, string[]>;
     }>().props;
-    const [draft] = useState(readDraft);
-    const [step, setStep] = useState(draft.step);
+    const draftKey = `${DRAFT_KEY}:${auth.user.id}`;
+    const [step, setStep] = useState(1);
+    const [draftLoaded, setDraftLoaded] = useState(false);
+    const form = useForm<OnboardingData>(EMPTY_FORM);
+    const { setData } = form;
 
-    const form = useForm<OnboardingData>(draft.data);
+    useEffect(() => {
+        // Browser storage is unavailable to SSR. Restore only after the same
+        // initial screen has hydrated, and do not overwrite the saved draft
+        // with that initial empty form while restoration is pending.
+        const draft = readDraft(draftKey);
+        setData(draft.data);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional second hydration pass for browser-only persisted answers.
+        setStep(draft.step);
+        setDraftLoaded(true);
+    }, [draftKey, setData]);
 
     // Keep the draft in step with the wizard so a reload resumes where they
     // were rather than starting over.
     useEffect(() => {
+        if (!draftLoaded) {
+            return;
+        }
+
         try {
             sessionStorage.setItem(
-                DRAFT_KEY,
+                draftKey,
                 JSON.stringify({ step, data: form.data }),
             );
         } catch {
             // A full or disabled store just means no resume; never block the form.
         }
-    }, [step, form.data]);
+    }, [step, form.data, draftKey, draftLoaded]);
 
     function clearResidenceFacts(data: OnboardingData): OnboardingData {
         return {
@@ -207,24 +224,39 @@ export default function Onboarding() {
      */
     function skipAndFinish() {
         track('onboarding_skip_optional');
-        form.setData({
+        const skipped = {
             ...clearResidenceFacts(form.data),
             interests: [],
             documented_german_level: '',
-        });
-        submit();
+            has_deutschlandticket: false,
+        };
+        form.setData(skipped);
+        submit(skipped);
     }
 
-    function submit() {
+    function submit(answers?: OnboardingData) {
         track('onboarding_complete');
-        form.transform((data) => ({
-            ...data,
-            situation: resolveSituation(data.situation, data.is_eu),
-        }));
+        form.transform((data) => {
+            const submitted = answers ?? data;
+
+            return {
+                ...submitted,
+                situation: resolveSituation(
+                    submitted.situation,
+                    submitted.is_eu,
+                ),
+            };
+        });
         form.post('/onboarding/complete', {
             // The answers are the server's now; nothing sensitive lingers in
             // the tab.
-            onSuccess: () => sessionStorage.removeItem(DRAFT_KEY),
+            onSuccess: () => {
+                try {
+                    sessionStorage.removeItem(draftKey);
+                } catch {
+                    /* Storage may be disabled. */
+                }
+            },
         });
     }
 
@@ -305,7 +337,7 @@ export default function Onboarding() {
                 form.data.address_registration_status === 'registrable' &&
                 form.data.moved_in_at === ''
             ) {
-                return 'Add your move-in date — it anchors the 14-day registration deadline.';
+                return 'Add your move-in date — your address registration is planned from it.';
             }
 
             if (form.data.arrival_planned === null) {
@@ -349,7 +381,7 @@ export default function Onboarding() {
         moved_in_at: 3,
         documented_german_level: 4,
         german_level: 4,
-        has_deutschlandticket: 3,
+        has_deutschlandticket: 4,
         interests: 4,
     };
 
@@ -365,7 +397,7 @@ export default function Onboarding() {
             case 1:
                 return "Let's get started";
             case 4:
-                return 'Open my first plan';
+                return 'Finish setup';
             default:
                 return 'Continue';
         }
@@ -374,7 +406,7 @@ export default function Onboarding() {
     return (
         <>
             <Head title="Welcome to Expadu" />
-            <FlashToast />
+            <Toaster />
             <div className="flex min-h-svh flex-col bg-background">
                 <OnboardingProgress
                     step={step}
@@ -532,9 +564,11 @@ export default function Onboarding() {
                         )}
                         <button
                             type="button"
-                            onClick={step === TOTAL_STEPS ? submit : next}
+                            onClick={() =>
+                                step === TOTAL_STEPS ? submit() : next()
+                            }
                             disabled={!canProceed() || form.processing}
-                            className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:min-w-[200px]"
+                            className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 md:w-auto md:min-w-[200px]"
                         >
                             {form.processing ? 'Saving...' : buttonLabel()}
                         </button>

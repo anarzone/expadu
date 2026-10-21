@@ -1,0 +1,290 @@
+/* One workspace, natural column flow. Existing content and actions stay intact. */
+.today-reference.today-flow .today-workspace {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+}
+.today-reference.today-flow .daily-canvas {
+    gap: 0;
+    align-items: start;
+}
+.today-reference.today-flow .day-area {
+    background: transparent;
+    border-radius: 0;
+    padding-bottom: 0;
+}
+.today-reference.today-flow .next-area::before {
+    content: '';
+    inset: 20px auto 20px 0;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(
+        transparent,
+        var(--line) 12%,
+        var(--line) 88%,
+        transparent
+    );
+}
+.today-reference.today-flow .practical-surface {
+    border-radius: 0 var(--radius-xl) 0 0;
+    background: linear-gradient(120deg, #eee8f899, #f6f3f960 65%, transparent);
+}
+.today-reference.today-flow .city-help {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    gap: 0 12px;
+}
+.today-reference.today-flow .city-help > .section-head {
+    align-self: start;
+    margin: 6px 0 0;
+}
+.today-reference.today-flow .forecast-strip {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+    gap: 4px 6px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 0 6px;
+}
+.today-reference.today-flow .forecast-strip > b {
+    font-size: var(--text-title);
+}
+.today-reference.today-flow .forecast-strip > svg {
+    width: 22px;
+    height: 22px;
+}
+.today-reference.today-flow .forecast-strip > small {
+    text-align: right;
+    flex-basis: 100%;
+    margin: 0;
+}
+.today-reference.today-flow .forecast-strip > span {
+    margin: 0;
+}
+.today-reference.today-flow .departure-board {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+}
+.today-reference.today-flow .discovery {
+    margin: 0;
+    padding: 16px;
+}
+.today-reference.today-flow .discovery::before,
+.today-reference.today-flow .coming-up::before,
+.today-reference.today-flow .column-continuation::before,
+.today-reference.today-flow #support-continuity-slot::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--line) 16%,
+        var(--line) 84%,
+        transparent
+    );
+}
+.today-reference.today-flow .event-rail {
+    gap: 12px;
+}
+.today-reference.today-flow .around-plan {
+    margin: 0 16px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(100deg, #fff1cf80, transparent);
+}
+.today-reference.today-flow .coming-up {
+    margin: 0;
+    padding: 8px 16px;
+    border-radius: 0;
+    background: linear-gradient(var(--surface-quiet), transparent);
+}
+.today-reference.today-flow .column-continuation,
+.today-reference.today-flow #support-continuity-slot {
+    position: relative;
+    margin: 0;
+    min-width: 0;
+}
+.today-reference.today-flow .continue-composer {
+    min-height: 0;
+    padding: 20px 22px;
+    gap: 12px;
+    border-radius: 0 0 0 var(--radius-xl);
+    background: linear-gradient(140deg, var(--blue), #dff3f830);
+}
+.today-reference.today-flow .continue-summary h3 {
+    font-size: var(--text-title);
+}
+.today-reference.today-flow .continue-actions {
+    margin-top: 0;
+    padding-top: 4px;
+    gap: 6px 14px;
+}
+.today-reference.today-flow .continue-actions .outline-action {
+    padding-inline: 14px;
+}
+.today-reference.today-flow .continue-support {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px 24px;
+    padding: 16px;
+    background: transparent;
+    border-radius: 0;
+}
+.today-reference.today-flow .continue-support > section {
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+.today-reference.today-flow .continue-support > section + section::before {
+    content: none;
+}
+.today-reference.today-flow .continue-support .continue-start,
+.today-reference.today-flow .city-source-section {
+    grid-column: 1 / -1;
+}
+.today-reference.today-flow .continue-start .next-starters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+}
+.today-reference.today-flow .next-starters :is(a, button) {
+    padding: 6px 8px;
+    min-height: 44px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    background: transparent;
+    gap: 8px;
+}
+.today-reference.today-flow .next-starters :is(a, button):is(:hover, :active) {
+    background: var(--cyan-hover);
+}
+.today-reference.today-flow .next-starters svg {
+    flex-shrink: 0;
+}
+.today-reference.today-flow .city-source-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0 16px;
+}
+.today-reference.today-flow .city-source-section .continue-head {
+    align-items: baseline;
+    gap: 4px 12px;
+}
+.today-reference.today-flow .city-source-section h3 {
+    font-size: var(--text-control);
+}
+.today-reference.today-flow .city-source-section .record-label {
+    font-size: var(--text-micro);
+}
+.today-reference.today-flow .city-source-links {
+    margin: 0;
+    gap: 6px 16px;
+}
+.today-reference.today-flow .personal-start {
+    padding: 16px 22px 20px;
+}
+.today-reference.today-flow .personal-start h2 {
+    font-size: var(--text-section);
+}
+.today-reference.today-flow .personal-start .text-action {
+    font-size: var(--text-caption);
+}
+.today-reference.today-flow .personal-start .next-starters {
+    grid-template-columns: 1fr;
+}
+@media (max-width: 999px) and (min-width: 701px) {
+    .today-reference.today-flow .discovery {
+        padding-inline: 18px;
+    }
+    .today-reference.today-flow .continue-support {
+        grid-template-columns: 1fr;
+        padding-inline: 18px;
+    }
+    .today-reference.today-flow .continue-start .next-starters {
+        gap: 2px;
+    }
+    .today-reference.today-flow .next-starters :is(a, button) {
+        padding-inline: 2px;
+        font-size: var(--text-caption);
+        gap: 5px;
+    }
+}
+@media (max-width: 700px) {
+    .today-reference.today-flow .today-workspace {
+        border-radius: var(--radius-xl);
+    }
+    .today-reference.today-flow .daily-canvas {
+        gap: 0;
+    }
+    .today-reference.today-flow .day-area {
+        padding-bottom: 0;
+    }
+    .today-reference.today-flow .next-area::before {
+        inset: 0 16px auto;
+        height: 1px;
+        width: auto;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--line),
+            transparent
+        );
+    }
+    .today-reference.today-flow .practical-surface {
+        border-radius: 0;
+    }
+    .today-reference.today-flow .city-help {
+        gap: 0 8px;
+    }
+    .today-reference.today-flow .forecast-strip {
+        padding-top: 0;
+    }
+    .today-reference.today-flow .around-plan {
+        margin-inline: 16px;
+    }
+    .today-reference.today-flow .coming-up[open] {
+        padding-bottom: 10px;
+    }
+    .today-reference.today-flow .column-continuation::before,
+    .today-reference.today-flow .coming-up::before,
+    .today-reference.today-flow .discovery::before,
+    .today-reference.today-flow #support-continuity-slot::before {
+        inset-inline: 16px;
+    }
+    .today-reference.today-flow .continue-composer {
+        padding: 18px 16px;
+        border-radius: 0;
+    }
+    .today-reference.today-flow .continue-summary h3 {
+        font-size: var(--text-title);
+    }
+    .today-reference.today-flow .continue-support {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+    .today-reference.today-flow .continue-start .next-starters {
+        grid-template-columns: 1fr;
+        gap: 0;
+        margin-top: 6px;
+    }
+    .today-reference.today-flow .next-starters :is(a, button) {
+        font-size: var(--text-small);
+        padding: 6px 8px;
+    }
+    .today-reference.today-flow .personal-start {
+        padding: 16px;
+    }
+    .today-reference.today-flow .city-source-section {
+        display: block;
+    }
+    .today-reference.today-flow .city-source-links {
+        margin-top: 6px;
+    }
+}

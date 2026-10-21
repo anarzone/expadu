@@ -1,0 +1,23 @@
+# Plain-English names for German document terms that appear in card document lists.
+# Names only: no figures, deadlines or legal claims. The compiler attaches every term
+# found in a document's label or note to that document, so the UI can show both.
+version: '2026-10-08.1'
+terms:
+  Wohnungsgeberbescheinigung: Landlord's confirmation of move-in
+  Meldebescheinigung: Registration certificate
+  Mietvertrag: Rental contract
+  Warmmiete: Rent including heating and service charges
+  Lohnsteuerbescheinigung: Wage tax certificate
+  Rentenversicherungsverlauf: Pension insurance record
+  Versicherungsverlauf: Pension insurance record
+  Zulassungsbescheid: University admission letter
+  Immatrikulationsbescheinigung: Certificate of enrolment
+  Studienverlaufsplan: Study plan
+  Sperrkonto: Blocked bank account
+  Personalausweis: German identity card
+  Berufsausübungserlaubnis: Licence to practise your profession
+  Vordruck Stellenbeschreibung: Job description form
+  Erklärung zum Beschäftigungsverhältnis: Declaration of employment
+  Erstantrag: First application
+  Steuer-ID: Tax identification number
+  Chancenkarte: Opportunity Card

@@ -14,54 +14,52 @@ test.describe('Dashboard (Today)', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('shows the greeting header', async ({ page }) => {
-        await page.goto('/dashboard');
-        await page.waitForLoadState('networkidle');
-
-        await expect(page.locator('h1')).toContainText(
-            /Good (morning|afternoon|evening)/,
-        );
-    });
-
-    test('discovery rails render and a card can be pinned', async ({
-        page,
-    }) => {
-        const errors: string[] = [];
-        page.on('pageerror', (e) => errors.push(e.message));
-
-        await page.goto('/dashboard');
-        await page.waitForLoadState('networkidle');
-        // Deferred rails settle after first paint.
-        await page.waitForTimeout(1500);
-
-        const pin = page.getByRole('button', { name: /plan around/i }).first();
-
-        // Skip gracefully if the test DB has no spots seeded.
-        if (await pin.count()) {
-            await pin.click();
-            await expect(page.getByText(/Plan around \d+ spot/i)).toBeVisible();
-        }
-
-        expect(errors).toHaveLength(0);
-    });
-
-    test('the brief renders (a need lane or the calm state)', async ({
+    test('keeps four labelled sections and account settings accessible', async ({
         page,
     }) => {
         await page.goto('/dashboard');
         await page.waitForLoadState('networkidle');
-        // Deferred tiles settle after first paint.
-        await page.waitForTimeout(1200);
 
-        // The brief resolves to one of two shapes: a lane label when something
-        // needs the user, or the calm state when nothing does. Either proves it
-        // rendered — the flat "Right now" list is gone.
+        await expect(page.locator('h1')).toContainText('Today');
+        // An empty day drops its heading on phones (the mock), so the
+        // section is found by the name it keeps.
         await expect(
-            page
-                .getByText(
-                    /Needs you first|Because of your day|Good to know|Nothing needs you right now/i,
-                )
-                .first(),
+            page.getByRole('region', { name: 'Your day' }),
         ).toBeVisible();
+        const nav = page.getByRole('navigation', { name: 'Main navigation' });
+        await expect(nav.getByRole('link')).toHaveText([
+            'Today',
+            'Events',
+            'Paperwork',
+            'Travel',
+        ]);
+        await expect(nav.getByRole('link', { name: 'Today' })).toHaveAttribute(
+            'aria-current',
+            'page',
+        );
+        await page.getByRole('button', { name: 'Your account' }).click();
+        await expect(
+            page.getByRole('menuitem', { name: 'Settings' }),
+        ).toBeVisible();
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+        ).toBe(true);
+    });
+
+    test('Add a plan opens its sheet and closes with Escape', async ({
+        page,
+    }) => {
+        await page.goto('/dashboard');
+        await page.getByRole('button', { name: 'Add a plan' }).click();
+        const sheet = page.getByRole('dialog', { name: 'Add a plan' });
+        await expect(sheet).toBeVisible();
+        await expect(sheet.getByLabel('What’s the plan?')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(sheet).toHaveCount(0);
+        await expect(
+            page.getByRole('button', { name: 'Add a plan' }),
+        ).toBeFocused();
     });
 });

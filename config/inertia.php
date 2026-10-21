@@ -2,6 +2,11 @@
 
 return [
 
+    // Private page props must become unreadable after logout on shared devices.
+    'history' => [
+        'encrypt' => true,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Server Side Rendering

@@ -6,6 +6,8 @@ use App\Composer\FeasibilityFilter;
 use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
+use App\Places\PlaceFacts;
 use App\Places\RecordPlaceObservation;
 use App\Places\ReviewPlaceFacts;
 use Carbon\CarbonImmutable;
@@ -76,6 +78,37 @@ test('an open venue keeps real hours and survives feasibility', function () {
         ->toContain('Open Museum');
 });
 
+test('composer prefers a ready English place enrichment over a raw source description', function () {
+    $spot = spotWithHours([
+        'name' => 'Composer Enriched Museum',
+        'category' => 'museum',
+        'description' => 'Original German source description.',
+    ]);
+    SpotEnrichment::factory()->create([
+        'spot_id' => $spot->id,
+        'status' => 'ready',
+        'summary' => 'An English summary from the current source snapshot.',
+    ]);
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate?->description)->toBe('An English summary from the current source snapshot.');
+});
+
+test('composer does not send an untranslated raw place description to the English ranker', function () {
+    $spot = spotWithHours([
+        'name' => 'Composer Unenriched Museum',
+        'category' => 'museum',
+        'description' => 'Eine deutsche Quellbeschreibung.',
+    ]);
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate?->description)->toBeNull();
+});
+
 test('a raw-string opening_hours does not break the candidate pool', function () {
     // Scraped restaurants store a raw OSM string ("Mo-Fr 09:00-18:00"), which
     // the array cast returns as a string rather than the importer's structured
@@ -117,11 +150,88 @@ test('the pool is the nearest spots to the origin, not arbitrary citywide rows',
         ->and($pitchNames)->not->toContain('Far Pitch 12'); // the farthest fell outside the cap
 });
 
-test('fee evidence determines Composer cost while missing fees remain unknown', function () {
-    spotWithHours(['name' => 'Boule', 'category' => 'boules', 'tags' => ['fee' => 'no']]);
-    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis', 'tags' => ['fee' => 'no']]);
+test('a broad composer request excludes generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => true,
+    ]);
+    $museum = spotWithHours([
+        'name' => 'Composer Test Museum',
+        'category' => 'museum',
+        'is_recommendable' => true,
+    ]);
+
+    $candidateIds = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow()))->pluck('id');
+
+    expect($candidateIds)
+        ->toContain("spot:{$museum->id}")
+        ->not->toContain("spot:{$genericPitch->id}");
+});
+
+test('an explicit activity request keeps its generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => false,
+        'source' => 'osm', 'source_id' => 'way/990501',
+        'tags' => ['sport' => 'soccer', 'access' => 'yes'],
+    ]);
+    $genericTennisCourt = spotWithHours([
+        'name' => 'Tennisplatz · Test Street',
+        'category' => 'tennis',
+        'is_recommendable' => true,
+    ]);
+    $constraints = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 18:00', 'Europe/Berlin'),
+        categories: ['pitch'],
+    );
+
+    expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints), 'id'))->not->toContain("spot:{$genericPitch->id}");
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $preview = $review->preview($genericPitch->id, $changes);
+    $review->apply($genericPitch->id, $changes, $preview['fingerprint'], 'Reviewed public soccer facility with stable source identity.', 'composer-test');
+
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $feasibleIds = collect(app(FeasibilityFilter::class)->filter($constraints, $candidates))->pluck('id');
+
+    expect($feasibleIds)
+        ->toContain("spot:{$genericPitch->id}")
+        ->not->toContain("spot:{$genericTennisCourt->id}");
+});
+
+test('a broad multi-category request excludes generic micro facilities', function () {
+    $genericPitch = spotWithHours([
+        'name' => 'Bolzplatz · Test Street',
+        'category' => 'pitch',
+        'is_recommendable' => true,
+    ]);
+    $genericPlayground = spotWithHours([
+        'name' => 'Spielplatz · Test Street',
+        'category' => 'playground',
+        'is_recommendable' => true,
+    ]);
+    $constraints = new Constraints(
+        windowStart: CarbonImmutable::parse('2026-06-15 10:00', 'Europe/Berlin'),
+        windowEnd: CarbonImmutable::parse('2026-06-15 18:00', 'Europe/Berlin'),
+        categories: ['park', 'pitch', 'playground'],
+    );
+
+    $candidateIds = collect(app(CandidateRepository::class)->candidatesFor($constraints))->pluck('id');
+
+    expect($candidateIds)
+        ->not->toContain("spot:{$genericPitch->id}")
+        ->not->toContain("spot:{$genericPlayground->id}");
+});
+
+test('outdoor facilities count as free only with explicit fee evidence', function () {
+    spotWithHours(['name' => 'Boule', 'category' => 'boules', 'tags' => ['fee' => 'no', 'access' => 'yes']]);
+    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis', 'tags' => ['fee' => 'no', 'access' => 'yes']]);
     spotWithHours(['name' => 'Tennis', 'category' => 'tennis', 'tags' => ['fee' => 'yes']]);
     spotWithHours(['name' => 'Picknick', 'category' => 'picnic']);
+    spotWithHours(['name' => 'Library', 'category' => 'library']);
     spotWithHours(['name' => 'Späti Bar', 'category' => 'bar', 'price_range' => '€€']);
 
     $c = app(CandidateRepository::class)->candidatesFor(mondayWindow());
@@ -129,58 +239,43 @@ test('fee evidence determines Composer cost while missing fees remain unknown', 
     foreach (['Boule', 'Tisch'] as $free) {
         expect(collect($c)->firstWhere('name', $free)->costTier)->toBe('free');
     }
-    expect(collect($c)->firstWhere('name', 'Tennis')->costTier)->toBe('normal')
-        ->and(collect($c)->firstWhere('name', 'Picknick')->costTier)->toBe('unknown')
-        ->and(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+    expect(collect($c)->firstWhere('name', 'Tennis')->costTier)->toBe('normal');
+    expect(collect($c)->firstWhere('name', 'Picknick')->costTier)->toBe('unknown');
+    expect(collect($c)->firstWhere('name', 'Library')->costTier)->toBe('unknown');
+    expect(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
 });
 
-test('Composer receives reviewed names routing entrances and evidence-backed facts', function () {
-    $spot = spotWithHours([
-        'name' => 'Source projection',
-        'category' => 'park',
-        'source' => 'osm',
-        'source_id' => 'way/992',
-        'description' => null,
-    ]);
-    app(RecordPlaceObservation::class)->record($spot, [
-        'provider' => 'osm',
-        'provider_record_id' => 'way/992',
-        'source_url' => 'https://www.openstreetmap.org/way/992',
-        'observed_at' => '2026-09-17T10:00:00+00:00',
-        'ingestion_key' => 'osm-composer-992',
-        'payload' => [
-            'name' => 'Source park name',
-            'location' => ['lat' => 50.94, 'lng' => 6.95, 'kind' => 'source_center', 'boundary_reference' => 'way/992'],
-            'access' => ['raw' => 'yes', 'conditional' => null],
-            'fee' => ['raw' => 'no'],
-            'hours' => ['raw' => 'Mo 09:00-18:00'],
-            'description' => 'A source-backed factual description.',
-            'negative_facts' => ['wheelchair' => 'no'],
-        ],
-    ]);
-    $review = app(ReviewPlaceFacts::class);
-    $changes = [
-        'name' => 'Friendly reviewed park',
-        'entrance_point' => ['lat' => 50.9404, 'lng' => 6.9505],
+test('free football recommendations require fee and access evidence without arrangements', function () {
+    $examples = [
+        'Public free pitch' => ['fee' => 'no', 'access' => 'yes', 'sport' => 'soccer'],
+        'Unknown pitch' => ['sport' => 'soccer'],
+        'Paid pitch' => ['fee' => 'yes', 'access' => 'yes'],
+        'Private pitch' => ['fee' => 'no', 'access' => 'private'],
+        'Conditional pitch' => ['fee' => 'no', 'access' => 'yes', 'fee:conditional' => 'yes @ (Sa-Su)'],
+        'Conditional access' => ['fee' => 'no', 'access' => 'yes', 'access:conditional' => 'private @ (Mo-Fr)'],
+        'Booking required' => ['fee' => 'no', 'access' => 'yes', 'reservation' => 'required'],
+        'Unknown access' => ['fee' => 'no'],
+        'Optional booking' => ['fee' => 'no', 'access' => 'yes', 'sport' => 'soccer', 'reservation' => 'yes'],
     ];
-    $preview = $review->preview($spot->id, $changes);
-    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park-992', 'reviewer@example.test');
+    foreach ($examples as $name => $tags) {
+        spotWithHours(['name' => $name, 'category' => 'pitch', 'tags' => $tags]);
+    }
+    $constraints = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, categories: ['pitch'], budget: 'free');
+    $candidates = app(CandidateRepository::class)->candidatesFor($constraints);
+    $feasible = app(FeasibilityFilter::class)->filter($constraints, $candidates);
 
-    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95))
-        ->firstWhere('id', "spot:{$spot->id}");
+    expect(collect($feasible)->pluck('name')->all())->toBe(['Public free pitch', 'Optional booking'])
+        ->and($feasible[0]->sourceFacts['sport'])->toBe('soccer')
+        ->and($feasible[0]->sourceFacts['availability'])->toBe('unknown');
+});
 
-    expect($candidate)->not->toBeNull()
-        ->and($candidate->name)->toBe('Friendly reviewed park')
-        ->and($candidate->lat)->toBe(50.9404)
-        ->and($candidate->lng)->toBe(6.9505)
-        ->and($candidate->costTier)->toBe('free')
-        ->and($candidate->access)->toBe('public')
-        ->and($candidate->opensAt?->format('H:i'))->toBe('09:00')
-        ->and($candidate->closesAt?->format('H:i'))->toBe('18:00')
-        ->and($candidate->hoursAssumed)->toBeFalse()
-        ->and($candidate->description)->toBe('A source-backed factual description.')
-        ->and($candidate->tags)->toContain('negative:wheelchair', 'no')
-        ->and($candidate->factRevision)->toBeGreaterThan(0);
+test('unknown costs cannot qualify for a low budget', function () {
+    spotWithHours(['name' => 'Unknown cost', 'category' => 'park']);
+    spotWithHours(['name' => 'Known low cost', 'category' => 'cafe', 'price_range' => '€']);
+    $constraints = new Constraints(mondayWindow()->windowStart, mondayWindow()->windowEnd, budget: 'low');
+    $feasible = app(FeasibilityFilter::class)->filter($constraints, app(CandidateRepository::class)->candidatesFor($constraints));
+
+    expect(collect($feasible)->pluck('name')->all())->toBe(['Known low cost']);
 });
 
 test('wikidata or wikipedia tags mark a spot as a landmark', function () {
@@ -211,6 +306,9 @@ test('a curated event survives a spot pool that overflows the candidate cap', fu
         }
     }
     Spot::query()->insert($rows);
+    // A bulk insert skips the model events that compute the stored access
+    // flag, so recompute it as bulk loaders do.
+    app(PlaceFacts::class)->refreshAllPublicAccess();
     expect(count($rows))->toBeGreaterThan(200); // the pool overflows the cap
 
     $event = Event::factory()->create([
@@ -458,3 +556,70 @@ test('composer preserves distinct numeric source tag text', function (array $num
     'formatted identifiers' => [['ref' => '01', 'level' => '1'], ['01', '1']],
     'zero values' => [['level' => '0', 'height' => '0.0'], ['0', '0.0']],
 ]);
+
+test('fee evidence determines Composer cost while missing fees remain unknown', function () {
+    spotWithHours(['name' => 'Boule', 'category' => 'boules', 'tags' => ['fee' => 'no']]);
+    spotWithHours(['name' => 'Tisch', 'category' => 'table_tennis', 'tags' => ['fee' => 'no']]);
+    spotWithHours(['name' => 'Tennis', 'category' => 'tennis', 'tags' => ['fee' => 'yes']]);
+    spotWithHours(['name' => 'Picknick', 'category' => 'picnic']);
+    spotWithHours(['name' => 'Späti Bar', 'category' => 'bar', 'price_range' => '€€']);
+
+    $c = app(CandidateRepository::class)->candidatesFor(mondayWindow());
+
+    foreach (['Boule', 'Tisch'] as $free) {
+        expect(collect($c)->firstWhere('name', $free)->costTier)->toBe('free');
+    }
+    expect(collect($c)->firstWhere('name', 'Tennis')->costTier)->toBe('normal')
+        ->and(collect($c)->firstWhere('name', 'Picknick')->costTier)->toBe('unknown')
+        ->and(collect($c)->firstWhere('name', 'Späti Bar')->costTier)->toBe('normal');
+});
+
+test('Composer receives reviewed names routing entrances and evidence-backed facts', function () {
+    $spot = spotWithHours([
+        'name' => 'Source projection',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/992',
+        'description' => null,
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/992',
+        'source_url' => 'https://www.openstreetmap.org/way/992',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-composer-992',
+        'payload' => [
+            'name' => 'Source park name',
+            'location' => ['lat' => 50.94, 'lng' => 6.95, 'kind' => 'source_center', 'boundary_reference' => 'way/992'],
+            'access' => ['raw' => 'yes', 'conditional' => null],
+            'fee' => ['raw' => 'no'],
+            'hours' => ['raw' => 'Mo 09:00-18:00'],
+            'description' => 'A source-backed factual description.',
+            'negative_facts' => ['wheelchair' => 'no'],
+        ],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = [
+        'name' => 'Friendly reviewed park',
+        'entrance_point' => ['lat' => 50.9404, 'lng' => 6.9505],
+    ];
+    $preview = $review->preview($spot->id, $changes);
+    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park-992', 'reviewer@example.test');
+
+    $candidate = collect(app(CandidateRepository::class)->candidatesFor(mondayWindow(), 50.94, 6.95))
+        ->firstWhere('id', "spot:{$spot->id}");
+
+    expect($candidate)->not->toBeNull()
+        ->and($candidate->name)->toBe('Friendly reviewed park')
+        ->and($candidate->lat)->toBe(50.9404)
+        ->and($candidate->lng)->toBe(6.9505)
+        ->and($candidate->costTier)->toBe('free')
+        ->and($candidate->access)->toBe('public')
+        ->and($candidate->opensAt?->format('H:i'))->toBe('09:00')
+        ->and($candidate->closesAt?->format('H:i'))->toBe('18:00')
+        ->and($candidate->hoursAssumed)->toBeFalse()
+        // The raw source text never reaches Composer; only a ready English enrichment does.
+        ->and($candidate->description)->toBeNull()
+        ->and($candidate->tags)->toContain('negative:wheelchair', 'no')
+        ->and($candidate->factRevision)->toBeGreaterThan(0);
+});

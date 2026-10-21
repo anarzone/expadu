@@ -27,6 +27,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Optional model classification
+    |--------------------------------------------------------------------------
+    | Deterministic enrichment and venue resolution always run. Model-backed
+    | translation, summaries, chips, and relevance stay dormant until enabled.
+    */
+
+    'classification' => [
+        'enabled' => env('EVENTS_CLASSIFICATION_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Classifier confidence floor
     |--------------------------------------------------------------------------
     | Below this confidence the event is flagged needs_review and the

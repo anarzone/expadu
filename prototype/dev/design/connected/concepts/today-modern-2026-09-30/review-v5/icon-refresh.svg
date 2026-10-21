@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640"><rect width="1280" height="640" rx="24" fill="#F5FAFB"/><style>text{font-family:Arial,sans-serif;fill:#20221D}.title{font-size:30px;font-weight:700}.label{font-size:18px;font-weight:600}.sub{font-size:15px;fill:#53656A}</style>
+<text x="44" y="56" class="title">A cleaner icon language</text><text x="44" y="88" class="sub">Phosphor Regular · exact vector references for the Today design</text>
+<rect x="44" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(94 144) scale(0.21875)" fill="#8352CF"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></g>
+<text x="122" y="239" text-anchor="middle" class="label">Events &amp; dates</text>
+<rect x="218" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(268 144) scale(0.21875)" fill="#D9340A"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-48-56a8,8,0,0,1-8,8H136v16a8,8,0,0,1-16,0V160H104a8,8,0,0,1,0-16h16V128a8,8,0,0,1,16,0v16h16A8,8,0,0,1,160,152Z"/></g>
+<text x="296" y="239" text-anchor="middle" class="label">Add to plan</text>
+<rect x="392" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(442 144) scale(0.21875)" fill="#D9340A"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></g>
+<text x="470" y="239" text-anchor="middle" class="label">Open details</text>
+<rect x="566" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(616 144) scale(0.21875)" fill="#53656A"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></g>
+<text x="644" y="239" text-anchor="middle" class="label">Choose</text>
+<rect x="740" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(790 144) scale(0.21875)" fill="#009BBB"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></g>
+<text x="818" y="239" text-anchor="middle" class="label">Travel direction</text>
+<rect x="914" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(964 144) scale(0.21875)" fill="#D9340A"><path d="M229.66,189.66l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L184,196.69V139.31l-56-56-56,56v57.38l18.34-18.35a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L56,196.69V136a8,8,0,0,1,2.34-5.66L120,68.69V24a8,8,0,0,1,16,0V68.69l61.66,61.65A8,8,0,0,1,200,136v60.69l18.34-18.35a8,8,0,0,1,11.32,11.32Z"/></g>
+<text x="992" y="239" text-anchor="middle" class="label">Alternatives</text>
+<rect x="1088" y="124" width="156" height="152" rx="16" fill="white"/>
+<g transform="translate(1138 144) scale(0.21875)" fill="#20221D"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Zm0,177.57-51.77-32.35a8,8,0,0,0-8.48,0L72,209.57V48H184Z"/></g>
+<text x="1166" y="239" text-anchor="middle" class="label">Save an idea</text>
+<text x="44" y="326" class="label">In context</text>
+<rect x="44" y="348" width="555" height="182" rx="18" fill="white"/><text x="70" y="387" class="sub">Confirmed · Mülheim</text><text x="70" y="427" class="title">14:00  Your appointment</text>
+<g transform="translate(546 396) scale(0.09375)" fill="#D9340A"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></g>
+<text x="70" y="499" class="sub">Open the whole row. One quiet chevron.</text>
+<rect x="622" y="348" width="614" height="182" rx="18" fill="#E0F5FA"/><text x="650" y="387" class="sub">Get there</text>
+<g transform="translate(650 409) scale(0.1015625)" fill="#009BBB"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></g>
+<text x="694" y="431" class="title">13:24</text>
+<g transform="translate(808 409) scale(0.109375)" fill="#009BBB"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></g>
+<text x="860" y="431" class="title">13:52</text>
+<g transform="translate(1180 409) scale(0.09375)" fill="#009BBB"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></g>
+<text x="650" y="499" class="sub">Directional arrows only where direction matters.</text>
+<text x="44" y="582" class="sub">20–24px glyphs in the app · 44px minimum targets · no thick rings or glowing arrow buttons</text>
+<text x="44" y="610" class="sub">Phosphor Icons · MIT license included · Logo and existing Composer stay separate</text>
+</svg>

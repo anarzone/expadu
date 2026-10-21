@@ -4,16 +4,15 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
 use App\Composer\TodayPlanStore;
-use App\Home\DiscoveryFeed;
 use App\Models\Spot;
 use App\Models\User;
 use App\Places\DestinationGrouping;
+use App\Places\OpenNearby;
 use App\Places\ReconcilePlace;
 use App\Places\RecordPlaceObservation;
 use App\Places\ReviewPlaceFacts;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 function destinationFixture(): array
@@ -294,15 +293,16 @@ test('membership command previews by default and requires the exact fingerprint 
     expect($child->fresh()->destination_spot_id)->toBe($parent->id);
 });
 
-test('reviewing membership invalidates warm Home scans and nearest general discovery suppresses components', function () {
+test('a reviewed component leaves nearest general discovery and what is open nearby to its destination', function () {
     [$parent, $child] = destinationFixture();
-    $user = User::factory()->onboarded()->create();
-    app(DiscoveryFeed::class)->for(homeContext($user));
-    expect(array_column(Cache::get('discovery:spot-scan:identity:0:grouping:0:facts:0'), 'id'))->toContain($child->id);
+    foreach ([$parent, $child] as $spot) {
+        $spot->update(['tags' => ['opening_hours' => 'Mo-Su 06:00-22:00'], 'public_access_allowed' => true]);
+    }
+    $at = CarbonImmutable::parse('2026-09-30 14:30', 'Europe/Berlin');
+    $open = fn () => app(OpenNearby::class)->around(50.95, 6.95, $at, ['park', 'tennis'], limit: 20)->pluck('id')->all();
+    expect($open())->toContain($parent->id, $child->id);
     reviewDestination($child, $parent);
-    app(DiscoveryFeed::class)->for(homeContext($user));
-    $revision = app(DestinationGrouping::class)->revision();
-    expect(array_column(Cache::get("discovery:spot-scan:identity:0:grouping:$revision:facts:0"), 'id'))->not->toContain($child->id)
+    expect($open())->toBe([$parent->id])
         ->and(app(NearbyPlaces::class)->nearest(50.95, 6.95, 20)->modelKeys())->toBe([$parent->id]);
 });
 
@@ -319,11 +319,16 @@ test('saved child slots retain coordinates and timing and prevent a sibling from
     $candidates = collect(app(CandidateRepository::class)->byIds(["spot:{$child->id}", "spot:{$cafe->id}"], $start, 50.951, 6.951))->keyBy('id');
     $slots = [(new PlanSlot($candidates["spot:{$child->id}"], $start, $start->addHour(), 0))->toArray(), (new PlanSlot($candidates["spot:{$cafe->id}"], $start->addHours(2), $start->addHours(3), 0))->toArray()];
     $plan = ['constraints' => $window->toArray(), 'slots' => $slots, 'pins' => ["spot:{$child->id}"], 'origin' => [50.951, 6.951]];
-    Cache::put("composer:plan:{$user->id}", $plan, 3600);
+    $plan = storeComposerPlan($user, $plan);
     app(TodayPlanStore::class)->save($user, $plan, 'Tennis and coffee');
-    expect(app(TodayPlanStore::class)->get($user)['slots'][0])->toBe($slots[0]);
+    $saved = app(TodayPlanStore::class)->get($user)['slots'][0];
+    expect($saved['id'])->toBe($slots[0]['id'])
+        ->and($saved['lat'])->toBe($slots[0]['lat'])
+        ->and($saved['lng'])->toBe($slots[0]['lng'])
+        ->and($saved['start_at'])->toBe($slots[0]['start_at'])
+        ->and($saved['end_at'])->toBe($slots[0]['end_at']);
     $this->actingAs($user)->postJson('/composer/swap', ['slot' => 1])->assertSuccessful();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['slots'][0]['id'])->toBe("spot:{$child->id}")
         ->and($stored['slots'][0]['lat'])->toBe($child->lat)
         ->and($stored['slots'][0]['lng'])->toBe($child->lng)

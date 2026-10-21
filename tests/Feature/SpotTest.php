@@ -88,9 +88,10 @@ test('card showcase renders outside production', function () {
     $this->get(route('dev.cards'))->assertInertia(fn ($page) => $page->component('dev/cards'));
 });
 
-test('places page requires onboarding', function () {
+test('places page is available before onboarding', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
-    $this->get(route('explore'))->assertRedirect(route('onboarding'));
+    // Onboarding is optional: nobody is forced through the questionnaire.
+    $this->get(route('explore'))->assertOk();
 });

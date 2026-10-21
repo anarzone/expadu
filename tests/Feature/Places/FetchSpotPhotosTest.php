@@ -8,8 +8,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
-beforeEach(fn () => Queue::fake());
-
 /** @return array<string, mixed> */
 function commonsPhotoInfo(string $artist, string $license): array
 {
@@ -296,3 +294,6 @@ test('geosearch backfills a large outdoor place with the nearest commons photo',
         ->and($attachment->mediaAsset->attribution)->toBe('Foto Fan · CC BY-SA 3.0 · Wikimedia Commons')
         ->and(app(PublishedMediaSelector::class)->select($park, 'hero'))->toBeNull();
 });
+beforeEach(fn () => Queue::fake());
+
+/** @return array<string, mixed> */

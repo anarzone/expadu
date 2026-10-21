@@ -1,0 +1,51 @@
+# Direct-opening revision
+
+Final exports include these [targeted review corrections](refinement-prompts.md).
+
+Method: built-in image editing tool. Each input is the corresponding preserved action-icons-v7 board. Change only unnecessary opening/decorative controls and the secondary-action interaction example. No application code was changed.
+
+## 01-everyday.png
+
+Use case: precise-object-edit. Make a restrained surgical edit to this existing Expadu UI concept board. Preserve its image dimensions, desktop/mobile composition, all content, colours, photos, logo, compact labelled top navigation and current Composer. The owner wants LESS ICON CLUTTER: content itself can open directly. Do not replace removed symbols with new text buttons.
+In BOTH desktop and mobile:
+1. Replace the appointment's orange circled i with a small neutral horizontal three-dot menu (three dots only, no circle or box). This is the ONLY new dots menu: a planned activity has secondary Details/Remove actions.
+2. REMOVE the folded-map icon at the right of every cyan route summary. Keep route times and labels. The whole route strip will be tappable, so no trailing symbol, arrow, dots, label or empty icon placeholder is necessary.
+3. REMOVE the trailing orange open-folder icons from both paperwork process rows. Also remove the small leading document icon on the City registration row. Leave full named rows with their data and five-segment progress: the whole row opens directly. Keep the section-level Paperwork document mark.
+4. Remove decorative bookmarks beside Saved for later headings or before the saved Language café entry, and remove its decorative speech-bubble. Preserve the saved item's calendar-plus planning action. Preserve real Save bookmarks on photos and the header.
+5. Remove the plus before the existing Add a plan label; keep its exact existing text and position as the same named action. Remove the little calendar beside the existing lower Events link; keep the link text. Main navigation icons remain unchanged.
+6. If there is an Alternatives button, keep its existing short label and prominent recovery position in desktop AND mobile, but remove its decorative signpost. Do not remove the button.
+KEEP meaningful photo Save and calendar-plus Plan, clock/location metadata, menu icons, Services/Travel/Forecast shortcuts, weather, status badges and current Composer. Save still uses frosted translucent material. No new helper prose in the page. No rearranged content. No menus displayed open in these overview boards. No dots menu on paperwork, route or photos. Preserve the practical day first and one horizontal mobile event rail showing the edge of its next card. Preserve all appointment, route, saved idea, paperwork and sample labels.
+
+## 02-important-event.png
+
+Use case: precise-object-edit. Make a restrained surgical edit to this existing Expadu UI concept board. Preserve its image dimensions, desktop/mobile composition, all content, colours, photos, logo, compact labelled top navigation and current Composer. The owner wants LESS ICON CLUTTER: content itself can open directly. Do not replace removed symbols with new text buttons.
+In BOTH desktop and mobile:
+1. Replace the appointment's orange circled i with a small neutral horizontal three-dot menu (three dots only, no circle or box). This is the ONLY new dots menu: a planned activity has secondary Details/Remove actions.
+2. REMOVE the folded-map icon at the right of every cyan route summary. Keep route times and labels. The whole route strip will be tappable, so no trailing symbol, arrow, dots, label or empty icon placeholder is necessary.
+3. REMOVE the trailing orange open-folder icons from both paperwork process rows. Also remove the small leading document icon on the City registration row. Leave full named rows with their data and five-segment progress: the whole row opens directly. Keep the section-level Paperwork document mark.
+4. Remove decorative bookmarks beside Saved for later headings or before the saved Language café entry, and remove its decorative speech-bubble. Preserve the saved item's calendar-plus planning action. Preserve real Save bookmarks on photos and the header.
+5. Remove the plus before the existing Add a plan label; keep its exact existing text and position as the same named action. Remove the little calendar beside the existing lower Events link; keep the link text. Main navigation icons remain unchanged.
+6. If there is an Alternatives button, keep its existing short label and prominent recovery position in desktop AND mobile, but remove its decorative signpost. Do not remove the button.
+KEEP meaningful photo Save and calendar-plus Plan, clock/location metadata, menu icons, Services/Travel/Forecast shortcuts, weather, status badges and current Composer. Save still uses frosted translucent material. No new helper prose in the page. No rearranged content. No menus displayed open in these overview boards. No dots menu on paperwork, route or photos. Preserve the single Street culture night spotlight, its yellow Tonight badge,18:30–21:00, and Illustrative event. Preserve the practical day and all tools below it. Do not repeat the featured photo. Preserve all sample/date labels.
+
+## 03-route-delay.png
+
+Use case: precise-object-edit. Make a restrained surgical edit to this existing Expadu UI concept board. Preserve its image dimensions, desktop/mobile composition, all content, colours, photos, logo, compact labelled top navigation and current Composer. The owner wants LESS ICON CLUTTER: content itself can open directly. Do not replace removed symbols with new text buttons.
+In BOTH desktop and mobile:
+1. Replace the appointment's orange circled i with a small neutral horizontal three-dot menu (three dots only, no circle or box). This is the ONLY new dots menu: a planned activity has secondary Details/Remove actions.
+2. REMOVE the folded-map icon at the right of every cyan route summary. Keep route times and labels. The whole route strip will be tappable, so no trailing symbol, arrow, dots, label or empty icon placeholder is necessary.
+3. REMOVE the trailing orange open-folder icons from both paperwork process rows. Also remove the small leading document icon on the City registration row. Leave full named rows with their data and five-segment progress: the whole row opens directly. Keep the section-level Paperwork document mark.
+4. Remove decorative bookmarks beside Saved for later headings or before the saved Language café entry, and remove its decorative speech-bubble. Preserve the saved item's calendar-plus planning action. Preserve real Save bookmarks on photos and the header.
+5. Remove the plus before the existing Add a plan label; keep its exact existing text and position as the same named action. Remove the little calendar beside the existing lower Events link; keep the link text. Main navigation icons remain unchanged.
+6. If there is an Alternatives button, keep its existing short label and prominent recovery position in desktop AND mobile, but remove its decorative signpost. Do not remove the button.
+KEEP meaningful photo Save and calendar-plus Plan, clock/location metadata, menu icons, Services/Travel/Forecast shortcuts, weather, status badges and current Composer. Save still uses frosted translucent material. No new helper prose in the page. No rearranged content. No menus displayed open in these overview boards. No dots menu on paperwork, route or photos. Preserve 12min delay and Simulated. Keep Line4 Neumarkt to Mülheim, scheduled13:24 and13:52 struck through, expected13:36 and14:04, affected14:00 appointment with Confirmed and4min late. The orange Alternatives button MUST remain clearly visible in both desktop and mobile, now with its existing label only. Keep all other content and the mobile event rail.
+
+## 04-interactions.png
+
+Use case: precise-object-edit. Revise this existing Expadu interaction storyboard with a few precise changes, preserving its four-section layout, photos, sample data, visual style, header and existing Composer tray.
+The new rule: no icon merely to open a row/card. Paperwork, route strips and photo bodies open directly with one tap/click. Planned appointments have a neutral horizontal three-dot menu for Details/Remove, because their body retains swipe-left/double-tap Delete reveal. Do not replace deleted symbols with text buttons.
+Section1 preserve separate frosted bookmark Save and circular calendar-plus Plan and existing proposed review. Remove the decorative arrow after Review, leaving its existing label.
+Section2 REMOVE both trailing orange folders and the redundant leading document on each process row. Keep section document symbol, names and progress. Caption 'Tap the row to open its process.' Process-detail panel stays unchanged. No dots on these rows.
+Section3 change title to 'Route and Composer'; instruction 'Tap the route. Use Composer from its details.' Remove all folded-map glyphs from cyan route strips and route detail header. Keep route information. Existing contextual sparkle inside route details stays. RIGHT existing Composer tray must be exactly unchanged: frosted surface,3 in your plan,close,current draft,+,Ask first,dropdown,send. Caption 'Tap the route summary to open its details.' Do not redesign Composer.
+Section4 title 'Menu or gesture'; instruction 'Dots for details. Swipe left or double-tap to reveal Remove.' Show the resting planned activity with ONE neutral horizontal three-dot icon at its right, no circled-information. Put a small contextual two-row popover by this resting example with 'Details' and 'Remove'; no extra glyphs in this popover, no backdrop. The Remove menu choice and swipe/double-tap reveal the same narrow red circular trash beside the recognisable item, then a separate tap removes, with Undo. Preserve red reveal and Undo examples. Remove folded-map icons from their mini route strips; retain times. Caption 'Menu: Details or Remove. Remove reveals first.' Do not add permanent trash or full-row confirmation.
+Keep workflow connectors BETWEEN examples, necessary back/close/send controls and meaningful main navigation icons. Do not add new arrows or explanatory sentences inside product cards. All schedules and progress remain sample.

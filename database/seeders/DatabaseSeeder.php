@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Artisan;
  * Production-safe, idempotent seeder.
  * Only creates essential system records.
  * All content comes through APIs, scrapers, or admin panel.
+ *
+ * Run it once on a new environment (`php artisan db:seed --force`). It no
+ * longer runs on container boot or deploy: SpotSeeder geocodes externally and
+ * could resurrect pruned places, and the deploy job runs the catalogue import
+ * on its own.
  */
 class DatabaseSeeder extends Seeder
 {
@@ -19,7 +24,10 @@ class DatabaseSeeder extends Seeder
         // truth — the importer compiles + upserts them (idempotent). The
         // legacy TaskSeeder is gone; it kept recreating keyless pre-v2 rows
         // on every container start, racing the deploy-time prune.
-        Artisan::call('bureaucracy:import-tasks', ['--prune' => true]);
+        Artisan::call('bureaucracy:import-tasks', ['--retire-missing' => true]);
+        // v2 consumers read only an activated catalogue release; without this a
+        // freshly seeded environment shows an empty plan everywhere.
+        Artisan::call('bureaucracy:compile-catalogue', ['--deploy' => true]);
 
         // System user for scraped content attribution
         User::firstOrCreate(

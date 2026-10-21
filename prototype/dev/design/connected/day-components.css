@@ -1,0 +1,465 @@
+/* Day components shared by the Today mock and the design guide: deadline strip,
+   What to bring, leave-by timing, plan-to-plan links, alternatives, the stop menu
+   and the free-day heading. Scoped to .today-reference; uses connected/tokens.css. */
+@import url('./tokens.css');
+
+/* Personal deadline from the user's own records. Compact so the next plan
+   still fits in the first phone viewport. */
+.today-reference .deadline-strip {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    margin: 0 0 16px;
+    padding: 8px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--color-attention-bg);
+    border: 1px solid var(--color-attention-border);
+    color: var(--ink);
+    transition: background 0.15s ease;
+}
+.today-reference .deadline-strip:hover {
+    background: #ffe9bf;
+}
+.today-reference .deadline-strip:active {
+    transform: scale(0.995);
+}
+.today-reference .deadline-symbol {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.today-reference .deadline-symbol svg {
+    width: 21px;
+    height: 21px;
+}
+.today-reference .deadline-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.today-reference .deadline-copy strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+}
+.today-reference .deadline-copy small {
+    font-size: var(--text-small);
+    line-height: 1.35;
+    color: var(--ink-soft);
+}
+.today-reference .deadline-strip > svg:last-child {
+    width: 18px;
+    height: 18px;
+    color: var(--color-attention-text);
+}
+
+/* What to bring, linked to the Paperwork checklist. */
+.today-reference .agenda-paperwork {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    margin: -4px 0 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-paper-bg-quiet);
+    color: var(--ink);
+    transition: background 0.15s ease;
+}
+.today-reference .agenda-paperwork:hover {
+    background: #ebe3f8;
+}
+.today-reference .agenda-paperwork > svg:first-child {
+    color: var(--violet);
+}
+.today-reference .agenda-paperwork span {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.today-reference .agenda-paperwork small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.today-reference .agenda-paperwork strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .agenda-paperwork > svg:last-child {
+    width: 16px;
+    height: 16px;
+    color: var(--muted);
+}
+
+/* When to leave, inside the journey card. */
+.today-reference .route-leave {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--teal);
+}
+.today-reference .route-leave svg {
+    align-self: center;
+    width: 18px;
+    height: 18px;
+}
+.today-reference .route-leave strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    color: var(--ink);
+}
+.today-reference .route-leave small {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .route-advice {
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention-bg);
+    color: var(--ink-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.today-reference .route-advice strong {
+    color: var(--color-attention-text);
+    font-weight: var(--weight-bold);
+}
+
+/* Inline alternatives for a delayed journey. */
+.today-reference [data-today-alternatives] svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+}
+.today-reference [data-today-alternatives][aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+.today-reference .alternative-list {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+}
+.today-reference .alternative {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 8px 12px 8px 8px;
+    border-radius: var(--radius-md);
+    background: var(--surface-quiet);
+    color: var(--ink);
+    transition: background 0.15s ease;
+}
+.today-reference .alternative:hover {
+    background: var(--surface-hover);
+}
+.today-reference .alternative-mode {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--blue);
+    color: var(--teal);
+}
+.today-reference .alternative-mode svg {
+    width: 19px;
+    height: 19px;
+}
+.today-reference .alternative-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.today-reference .alternative-copy strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .alternative-copy small,
+.today-reference .alternative-arrival small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.today-reference .alternative-arrival {
+    display: grid;
+    justify-items: end;
+    gap: 1px;
+}
+.today-reference .alternative-arrival b {
+    font-size: var(--text-section);
+    font-variant-numeric: tabular-nums;
+}
+.today-reference .alternative-arrival.is-late small {
+    color: #8a4b00;
+    font-weight: var(--weight-semibold);
+}
+.today-reference .alternative-lead {
+    margin: 0 2px 8px;
+    font-size: var(--text-small);
+    color: var(--ink-soft);
+}
+.today-reference .alternative-note {
+    margin: 8px 2px 0;
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.today-reference .inline-alternatives:not([hidden]) {
+    animation: today-reveal 0.2s ease;
+}
+
+/* Travel between consecutive plans, on the day's timeline. */
+.today-reference .plan-link {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    margin: 2px 0 14px 21px;
+    padding: 8px 12px 8px 8px;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--line);
+    color: var(--ink);
+    transition: background 0.15s ease;
+}
+.today-reference .plan-link:hover {
+    background: var(--surface-quiet);
+}
+.today-reference .plan-link-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    color: var(--teal);
+}
+.today-reference .plan-link-icon svg {
+    width: 17px;
+    height: 17px;
+}
+.today-reference .plan-link > span:nth-child(2) {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.today-reference .plan-link small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.today-reference .plan-link strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .plan-link-action {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--action-ink);
+    white-space: nowrap;
+}
+.today-reference .plan-link.is-tight,
+.today-reference .plan-link.is-unknown {
+    border-style: solid;
+    border-color: var(--color-attention-border);
+    background: #fff8e8;
+}
+.today-reference .plan-link.is-tight .plan-link-icon,
+.today-reference .plan-link.is-unknown .plan-link-icon {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.today-reference .plan-link.is-conflict {
+    border-style: solid;
+    border-color: var(--color-conflict-border);
+    background: var(--color-conflict-bg);
+}
+.today-reference .plan-link.is-conflict .plan-link-icon {
+    background: var(--color-conflict);
+    color: var(--color-conflict-text);
+}
+.today-reference .plan-link.is-conflict strong {
+    color: var(--color-conflict-text);
+}
+
+/* Free day: ideas lead, with the weather as the reason. */
+.today-reference .discovery-title-group {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.today-reference .discovery-title-group p {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: var(--text-small);
+    line-height: 1.4;
+    color: var(--ink-soft);
+}
+.today-reference .discovery-title-group p svg {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+    color: #c98a00;
+}
+.today-reference .discovery-title-group p small {
+    font-size: var(--text-micro);
+    color: var(--muted);
+    white-space: nowrap;
+}
+.today-reference .discovery-heading:has(.discovery-title-group) {
+    align-items: flex-start;
+}
+.today-reference .discovery-heading:has(.discovery-title-group) > a {
+    flex: none;
+    white-space: nowrap;
+}
+
+@keyframes today-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+@media (max-width: 700px) {
+    .today-reference .plan-link {
+        margin-left: 21px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .today-reference .deadline-strip:active {
+        transform: none;
+    }
+    .today-reference .inline-alternatives:not([hidden]) {
+        animation: none;
+    }
+    .today-reference [data-today-alternatives] svg {
+        transition: none;
+    }
+}
+
+/* Departure stop menu: matches the page instead of the operating-system menu. */
+.today-reference .stop-picker {
+    position: relative;
+}
+.today-reference .stop-trigger {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 12px 6px 11px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--ink);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+    transition: background 0.15s ease;
+}
+/* The stop as Travel names it: on the page, not a cyan block (owner, 18
+   Oct 2026: trips look like Travel everywhere). */
+.today-reference .stop-trigger:hover,
+.today-reference .stop-picker.is-open .stop-trigger {
+    background: var(--color-bg-quiet);
+}
+.today-reference .stop-trigger > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--ink);
+}
+.today-reference .stop-trigger > svg:last-child {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+}
+.today-reference .stop-picker.is-open .stop-trigger > svg:last-child {
+    transform: rotate(180deg);
+}
+.today-reference .stop-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.today-reference .stop-list {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--shadow-menu);
+    transform-origin: top center;
+    animation: stop-menu-in 0.16s ease-out;
+}
+.today-reference .stop-list[hidden] {
+    display: none;
+}
+.today-reference .stop-list [role='option'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    font-size: var(--text-control);
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.today-reference .stop-list [role='option']:hover,
+.today-reference .stop-list [role='option']:focus-visible {
+    background: var(--surface-quiet);
+    outline: none;
+}
+.today-reference .stop-list [role='option']:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--focus);
+}
+.today-reference .stop-list [role='option'] svg {
+    width: 17px;
+    height: 17px;
+    color: var(--teal);
+    visibility: hidden;
+}
+.today-reference .stop-list [aria-selected='true'] {
+    background: var(--blue);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .stop-list [aria-selected='true'] svg {
+    visibility: visible;
+}
+@keyframes stop-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .today-reference .stop-list {
+        animation: none;
+    }
+    .today-reference .stop-trigger > svg:last-child {
+        transition: none;
+    }
+}

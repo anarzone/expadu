@@ -1,6 +1,8 @@
 {
     "preset": "laravel",
     "exclude": [
-        "app/Proto"
+        "app/Proto",
+        "docs",
+        "prototype"
     ]
 }

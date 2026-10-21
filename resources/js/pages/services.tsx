@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
     IconClock,
     IconFirstAidKit,
@@ -12,7 +12,7 @@ import {
 import { useMemo, useState } from 'react';
 import { ServiceCard } from '@/components/services/service-card';
 import type { ServiceData } from '@/components/services/service-card';
-import { ServicesRightPanel } from '@/components/services/services-right-panel';
+import { ServiceRequestStart } from '@/components/services/service-request-start';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
@@ -100,33 +100,28 @@ const CATEGORIES = [
  */
 function ServicesComingSoon() {
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Services', href: '/services' }]}
-            rightPanel={null}
-        >
+        <AppLayout fullWidth rightPanel={null}>
             <Head title="Services" />
-            <div className="mx-auto flex min-h-[68vh] w-full max-w-[540px] flex-col items-center justify-center px-6 text-center">
-                <span className="mb-6 flex size-16 items-center justify-center rounded-[20px] bg-accent-soft text-primary shadow-sm">
-                    <IconFirstAidKit size={30} stroke={ICON_STROKE} />
-                </span>
-                <span className="mb-3 font-mono text-[11px] font-medium tracking-[0.16em] text-primary uppercase">
-                    Coming soon
-                </span>
-                <h1 className="font-display text-[30px] leading-[1.15] font-medium tracking-[-0.02em]">
-                    A directory you can trust
-                </h1>
-                <p className="mt-3.5 max-w-[440px] text-[15px] leading-relaxed text-text-2">
-                    English-speaking doctors, dentists, tax advisors, lawyers
-                    and more — insurance-aware and sorted by what’s nearest.
-                    We’re vetting providers now so every listing earns its
-                    place.
+            <div className="mx-auto w-full max-w-[1040px] px-4 pt-4 pb-24 md:px-8 md:pt-6">
+                <header className="mb-5 flex items-start gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                        <IconFirstAidKit size={23} stroke={ICON_STROKE} />
+                    </span>
+                    <div>
+                        <h1 className="text-[28px] font-semibold tracking-[-.8px]">
+                            Services
+                        </h1>
+                        <p className="mt-1 text-sm text-text-2">
+                            A little help with everyday life.
+                        </p>
+                    </div>
+                </header>
+                <p className="mb-4 max-w-[680px] text-sm leading-relaxed text-text-2">
+                    Provider search is not connected yet. You can prepare what
+                    you need or organise an appointment you have already
+                    arranged.
                 </p>
-                <Link
-                    href="/dashboard"
-                    className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"
-                >
-                    Back to Today
-                </Link>
+                <ServiceRequestStart />
             </div>
         </AppLayout>
     );
@@ -173,15 +168,20 @@ export default function Services() {
     }
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Services', href: '/services' }]}
-            rightPanel={<ServicesRightPanel />}
-            showBack
-        >
+        <AppLayout fullWidth rightPanel={null}>
             <Head title="Services" />
-            <div className="w-full">
+            <div className="mx-auto w-full max-w-[1040px] pb-24">
                 {/* All content in one px-6 wrapper for consistent width */}
                 <div className="px-6">
+                    <header className="pt-5">
+                        <h1 className="text-[28px] font-semibold tracking-[-.8px]">
+                            Services
+                        </h1>
+                        <p className="mt-1 text-sm text-text-2">
+                            Check details and availability directly with the
+                            provider.
+                        </p>
+                    </header>
                     {/* Search bar */}
                     <div className="mt-3.5 mb-3 flex cursor-text items-center gap-[9px] rounded-[9px] border border-[#E2DFD6] bg-[#EFEDE7] px-[13px] py-2.5 transition-all focus-within:border-[#1A4CD4] focus-within:bg-white focus-within:shadow-[0_0_0_3px_#EBF0FD]">
                         <IconSearch
@@ -191,6 +191,7 @@ export default function Services() {
                         />
                         <input
                             type="text"
+                            aria-label="Search services"
                             placeholder="Search services, doctors, banks…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -219,6 +220,8 @@ export default function Services() {
                         {CATEGORIES.map((c) => (
                             <button
                                 key={c.id}
+                                type="button"
+                                aria-pressed={activeCat === c.id}
                                 onClick={() => setActiveCat(c.id)}
                                 className="flex shrink-0 cursor-pointer flex-col items-center gap-1 bg-transparent px-4 py-3 transition-all hover:bg-[#EFEDE7]"
                                 style={{
@@ -263,11 +266,21 @@ export default function Services() {
                                         color: '#6B6860',
                                     }}
                                 >
-                                    No services found
+                                    No services match these choices
                                 </div>
                                 <div style={{ fontSize: 13, marginTop: 4 }}>
                                     Try a different search or category
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch('');
+                                        setActiveCat('all');
+                                    }}
+                                    className="mt-3 min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-white"
+                                >
+                                    Clear filters
+                                </button>
                             </div>
                         ) : (
                             filtered.map((s, i) => (
@@ -349,7 +362,7 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
                             padding: '3px 9px',
                         }}
                     >
-                        ✓ Verified by expats
+                        Listing checked
                     </span>
                 )}
                 {s.rating > 0 && (
@@ -379,7 +392,7 @@ function ServiceDetailContent({ service }: { service: ServiceData }) {
                             padding: '2px 8px',
                         }}
                     >
-                        Accepting patients
+                        Listed as accepting new clients
                     </span>
                 )}
             </div>

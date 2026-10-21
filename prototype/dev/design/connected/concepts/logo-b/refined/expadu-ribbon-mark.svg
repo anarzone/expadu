@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">Expadu ribbon E — solid orange</title>
+  <desc id="logo-description">Refined Expadu ribbon E. One continuous rounded form with three rising strokes and open transparent channels. Created as an evolution of Concept B.</desc>
+  <g id="mark" transform="translate(-11.6 -7.8)">
+    <path id="ribbon-e" fill="#ff5c33" d="M 43.8,11.4 C 46.6,10.7 49,12.5 49,15.3 C 49,17.3 47.8,18.8 45.7,19.4 L 26.3,24.7 C 24.5,25.2 23.7,26.1 23.7,27.8 L 23.7,29.2 C 23.7,29.8 24.1,30 24.7,29.8 L 36.8,26.5 C 39.5,25.8 41.9,27.7 41.9,30.3 C 41.9,32.2 40.6,33.7 38.7,34.2 L 24.8,38 C 24,38.2 23.7,38.7 23.7,39.5 L 23.7,40.2 C 23.7,42.1 24.9,43 26.7,42.5 L 43.8,37.9 C 46.5,37.2 49,39 49,41.7 C 49,43.7 47.8,45.2 45.7,45.8 L 25,51.4 C 18.5,53.2 14.2,49.8 14.2,43.2 L 14.2,28.2 C 14.2,23.7 17,20 21.5,18.8 Z"/>
+  </g>
+</svg>

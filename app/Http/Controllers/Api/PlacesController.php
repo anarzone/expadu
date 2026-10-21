@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TasteSignals;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
 use App\Enums\TransportMode;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PlaceListResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
@@ -60,7 +62,7 @@ class PlacesController extends Controller
             ? Spot::query()->recommendationEligible(true)->whereNull('destination_spot_id')
             : app(DestinationGrouping::class)->eligible(Spot::query(), true);
         $spot->recommendation_available = $eligibility->whereKey($spot->id)->exists();
-        $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+        $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset', 'englishEnrichment']);
         $origin = $this->locations->context($request->user(), $request);
 
         $spot->distance_km = $origin->hasOrigin()
@@ -92,6 +94,7 @@ class PlacesController extends Controller
         $spot->travel_min = $travelOption['minutes'] ?? null;
         $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
         app(PlaceFacts::class)->attach(collect([$spot]));
+        app(TasteSignals::class)->spotViewed($request->user(), $spot);
 
         return new PlaceResource($spot);
     }
@@ -260,7 +263,7 @@ class PlacesController extends Controller
             ->orderBy('id')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
-        $paginator->getCollection()->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+        $paginator->getCollection()->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset', 'englishEnrichment']);
 
         $activities = $this->activitiesForDestinations($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());
@@ -285,7 +288,7 @@ class PlacesController extends Controller
 
         app(PlaceFacts::class)->attach($paginator->getCollection());
 
-        return PlaceResource::collection($paginator)
+        return PlaceListResource::collection($paginator)
             ->additional([
                 'nearby_included' => $nearbyIncluded,
                 // The resolved origin so the From control reflects the truth:

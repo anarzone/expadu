@@ -1,0 +1,114 @@
+/* Your way: a line of stations, the part you're on marked (way.js). Travel's
+   trip draws it, and so does Composer's answer about a trip: one look
+   wherever a trip shows (owner, 18 Oct 2026, Composer review canvas board
+   11). Moved from trip.css, where it lived under the trip only. */
+.nav-way-title {
+    margin: 0 0 var(--space-12);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.nav-way {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.nav-way li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px 16px minmax(0, 1fr);
+    column-gap: 12px;
+    padding-bottom: 20px;
+}
+.nav-way li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    bottom: 2px;
+    left: 67px;
+    border-left: 2px dotted
+        color-mix(
+            in srgb,
+            var(--color-border-strong) 60%,
+            var(--color-bg-surface)
+        );
+}
+.nav-way li.is-ride::before {
+    left: 66px;
+    border-left: 4px solid var(--line);
+}
+.nav-way time {
+    padding-top: 1px;
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+.nav-way li > i {
+    justify-self: center;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: var(--color-text);
+}
+.nav-way li:is(.is-ride, .is-from-stop) > i {
+    border: 3px solid var(--line);
+    background: var(--color-bg-surface);
+}
+.nav-way li.is-end > i {
+    border-radius: 4px;
+}
+.nav-way strong {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    font-size: 15px;
+    font-weight: var(--weight-semibold);
+}
+.nav-way .tl-line {
+    height: 22px;
+    font-size: 12.5px;
+}
+.nav-way .tl-line svg {
+    width: 13px;
+    height: 13px;
+}
+.nav-way small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+.nav-way li.is-done :is(time, strong) {
+    color: var(--color-text-soft);
+}
+.nav-way li.is-now strong {
+    font-weight: var(--weight-bold);
+}
+.nav-way em {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: var(--weight-bold);
+}
+@media (max-width: 700px) {
+    .nav-way li {
+        grid-template-columns: 44px 16px minmax(0, 1fr);
+    }
+    .nav-way li:not(:last-child)::before {
+        left: 63px;
+    }
+    .nav-way li.is-ride::before {
+        left: 62px;
+    }
+}

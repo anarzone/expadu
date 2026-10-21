@@ -20,6 +20,10 @@ return [
 
     'resend' => [
         'key' => env('RESEND_API_KEY'),
+        // The Resend SDK builds its Guzzle client with no timeout, so
+        // AppServiceProvider rebinds it with these.
+        'connect_timeout' => 5,
+        'timeout' => 15,
     ],
 
     'ses' => [
@@ -39,6 +43,11 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Socialite passes this to Guzzle for the token and profile calls.
+        'guzzle' => [
+            'connect_timeout' => 5,
+            'timeout' => 10,
+        ],
     ],
 
     'apple' => [
@@ -55,6 +64,16 @@ return [
         'effort' => env('ANTHROPIC_EFFORT', 'low'),
     ],
 
+    // KVB notices as short English briefs (App\Transit\NoticeBriefWriter).
+    // Public data only. Off without ANTHROPIC_API_KEY or with the switch.
+    'transit_briefs' => [
+        'enabled' => env('TRANSIT_BRIEFS_ENABLED', true),
+        'model' => env('TRANSIT_BRIEFS_MODEL', 'claude-haiku-5-5'),
+        'effort' => env('TRANSIT_BRIEFS_EFFORT', 'low'),
+        'daily_limit' => (int) env('TRANSIT_BRIEFS_DAILY_LIMIT', 300),
+        'prompt_version' => '2026-10-21',
+    ],
+
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
@@ -63,6 +82,22 @@ return [
         // effort high or below; xhigh/max would 400 and fall back.
         'effort' => env('COMPOSER_LLM_EFFORT', 'low'),
         'timeout' => env('COMPOSER_LLM_TIMEOUT', 8),
+        // Share of users (stable per user) whose plans the LLM ranks; the rest
+        // get the deterministic ranker, so the two can be compared.
+        'rollout_percent' => (int) env('COMPOSER_LLM_ROLLOUT_PERCENT', 100),
+        'processor_name' => env('COMPOSER_LLM_PROCESSOR_NAME'),
+        'processor_privacy_url' => env('COMPOSER_LLM_PROCESSOR_PRIVACY_URL'),
+        'prompt_version' => '2026-09-08.ranking.1',
+    ],
+
+    /*
+     * Prices per million tokens, used only to fill llm_calls.cost_usd. Leave a
+     * model out rather than guess: unpriced calls record a null cost. Example:
+     * 'claude-haiku-5-5' => ['input_per_mtok' => 0.0, 'output_per_mtok' => 0.0],
+     */
+    'llm_pricing' => [
+        // Prompts up to 100K tokens; longer ones bill at $0.50 / $2.50.
+        'claude-haiku-5-5' => ['input_per_mtok' => 0.10, 'output_per_mtok' => 0.50],
     ],
 
     /*
@@ -76,6 +111,9 @@ return [
         'base_url' => env('LLM_BASE_URL', 'https://api.deepseek.com'),
         'model' => env('LLM_MODEL', 'deepseek-chat'),
         'key' => env('LLM_KEY'),
+        'processor_name' => env('LLM_PROCESSOR_NAME'),
+        'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL'),
+        'prompt_version' => '2026-09-08.parser.1',
     ],
 
     'bureaucracy_llm' => [
@@ -92,9 +130,9 @@ return [
 
     'motis' => [
         // Our self-hosted MOTIS (VRS GTFS+RT + NRW OSM). Primary routing
-        // provider; the public Transitous below is the dev/failover backstop.
-        // Defaults to the local benchmark instance for development.
-        'url' => env('MOTIS_URL', 'http://localhost:8080'),
+        // provider on staging/production. Leave it unset locally so the public
+        // Transitous adapter below is used without probing the Laravel app.
+        'url' => env('MOTIS_URL'),
     ],
 
     'transitous' => [

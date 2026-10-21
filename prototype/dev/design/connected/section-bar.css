@@ -1,0 +1,313 @@
+/* Phones: the sections float in one capsule above the page, where the thumb
+   rests, with Composer's round button beside it (owner chose A, canvas row
+   23, 16 Oct 2026; it was a bar docked along the bottom, row 12).
+   Scrolling down, the capsule and Composer's button step away so no row
+   ends under them; scrolling up, or the page's top or end, brings them back
+   (section-bar.js; owner chose B, Composer review canvas board 5, 18 Oct
+   2026; it shrank to the section you're in). The header keeps the logo, the city,
+   Saved and the account in one row and scrolls away. Desktops and tablets
+   keep the sections in the header, where Composer joins them
+   (composer-entry). Loaded by today-header.css, and by Today directly. */
+:root {
+    --section-bar: 0px;
+}
+@media (max-width: 700px) {
+    :root {
+        /* The menu floats above the home indicator, 62px tall. */
+        --menu-gap: max(16px, env(safe-area-inset-bottom, 0px));
+        --menu-height: 62px;
+        /* The room a page keeps at its end, so its last part clears the
+           menu. */
+        --section-bar: calc(var(--menu-height) + var(--menu-gap) + 16px);
+    }
+    html body:has(#shell .service-nav) {
+        padding-bottom: var(--section-bar);
+    }
+    html body #shell .app-header {
+        grid-template-columns: 1fr auto;
+        min-height: 52px;
+        padding: 0;
+    }
+    html body #shell .app-header .service-nav {
+        position: fixed;
+        left: 14px;
+        right: 14px;
+        bottom: var(--menu-gap);
+        z-index: 45;
+        display: flex;
+        width: auto;
+        gap: 2px;
+        margin: 0;
+        padding: 4px;
+        /* Not a scroller (the older bar scrolled sideways and snapped). */
+        overflow: clip;
+        scroll-snap-type: none;
+        border: 1px solid
+            color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
+        border-radius: 999px;
+        /* Opaque, so the page's words never show through its labels. */
+        background: var(--color-bg-header, #fffdf8);
+        box-shadow: 0 14px 34px -16px #211d156b;
+        transition:
+            right 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            translate var(--duration-base, 180ms) ease;
+        /* Stays put while a page slides between screens. */
+        view-transition-name: section-bar;
+    }
+    /* Composer's round button sits beside it (on Composer's own page too,
+       composer-studio). */
+    html
+        body:has(:is(.composer-tray, .composer-here))
+        #shell
+        .app-header
+        .service-nav {
+        right: calc(14px + var(--menu-height) + 10px);
+    }
+    html body #shell .app-header .service-nav > a {
+        flex: 1 1 0;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        min-width: 0;
+        min-height: 52px;
+        padding: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--color-text, #211d15);
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition:
+            flex-grow 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            opacity 200ms ease 140ms,
+            visibility 0s;
+    }
+    html body #shell .app-header .service-nav > a:is(:hover, :active) {
+        background: transparent;
+    }
+    html body #shell .app-header .service-nav > a > svg {
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border-radius: 0;
+        background: none;
+    }
+    /* The section you're in sits on the one "selected" pill, on every
+       page (Today's too: it has no .shell-review); a tap tints the one
+       pressed. */
+    html body #shell .app-header .service-nav > a::before {
+        display: block;
+        inset: 0;
+        border-radius: inherit;
+    }
+    html body #shell .app-header .service-nav > a::after {
+        display: none;
+    }
+    html body #shell .app-header .service-nav > a[aria-current] {
+        background: var(--color-select-bg, #def5f8);
+        font-weight: 700;
+    }
+    /* Scrolling down: the menu and Composer's round button step away;
+       moving into the menu with the keyboard keeps it. */
+    html body.menu-away #shell .app-header .service-nav:not(:focus-within),
+    :root body.menu-away #composer-tray:not(.is-active, :focus-within),
+    :root body.menu-away .composer-here:not(:focus) {
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
+    }
+    /* Out of the way while the keyboard is open, so it has the room; back
+       as it closes, even with the cursor still in a field (Composer review
+       canvas, board 4, 18 Oct 2026; section-bar.js sets .keyboard-open). */
+    :root.keyboard-open body #shell .service-nav {
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
+    }
+    /* Composer's round button: beside the menu, as tall as it. Opened,
+       Composer sits above the menu; while you type it drops to the bottom
+       (the menu has stepped aside). */
+    :root body:is(.today-c, .department-composer) #composer-tray {
+        bottom: calc(var(--menu-gap) + var(--menu-height) + 10px);
+        transition:
+            bottom var(--duration-base, 180ms) ease,
+            translate var(--duration-base, 180ms) ease;
+    }
+    :root
+        body:is(.today-c, .department-composer)
+        #composer-tray:not(.is-active) {
+        right: 14px;
+        bottom: var(--menu-gap);
+        width: var(--menu-height);
+        height: var(--menu-height);
+    }
+    :root
+        body:is(.today-c, .department-composer)
+        #composer-tray
+        .composer-launcher {
+        width: var(--menu-height);
+        height: var(--menu-height);
+        min-height: var(--menu-height);
+    }
+    :root.keyboard-open
+        body:is(.today-c, .department-composer):has(#shell .service-nav)
+        #composer-tray {
+        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+    /* Composer's own page keeps its text box 8px above the menu, its band
+       running down behind the menu so nothing shows between them (Composer
+       review canvas, board 1, 18 Oct 2026); short notes (toasts) rise above
+       the menu. Its sides are the menu's 14px, so the box sits square on
+       the menu and Composer's round button. */
+    :root body:has(#shell .service-nav) .studio-input-wrap {
+        padding-inline: 14px;
+        padding-bottom: calc(var(--menu-gap) + var(--menu-height) + 8px);
+        transition: translate var(--duration-base, 180ms) ease;
+    }
+    /* The band's height (--studio-input-height) now holds the menu's room,
+       which the body keeps already (--section-bar): the page counts it
+       once, so it ends 36px above the box, as before, and fits a phone's
+       screen without a stray scroll. */
+    :root body:has(#shell .service-nav):has(.studio-input-wrap) #main {
+        padding-bottom: calc(
+            var(--studio-input-height, 190px) - var(--section-bar) + 36px
+        );
+    }
+    :root body:has(#shell .service-nav) #shared-toast {
+        margin-bottom: var(--section-bar);
+    }
+    /* With the menu away, the box drops to where the menu was. */
+    :root body.menu-away:has(#shell .service-nav) .studio-input-wrap {
+        translate: 0 calc(var(--menu-height) + 8px);
+    }
+    :root.keyboard-open body:has(#shell .service-nav) .studio-input-wrap {
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        translate: none;
+    }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+    html body #shell .app-header .service-nav,
+    html body #shell .app-header .service-nav > a,
+    :root body #composer-tray {
+        transition: none;
+    }
+}
+/* Tablets and desktops: one header row, the sections as a capsule in its
+   middle, as iPad apps put their tabs at the top (owner chose 6B for
+   tablets, canvas row 25, and A for desktops, row 26, 16 Oct 2026; tablets
+   had a second row under the header, desktops loose tabs). */
+@media (min-width: 701px) {
+    html body #shell .app-header .service-nav {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: center;
+        display: flex;
+        gap: 2px;
+        width: auto;
+        margin: 0;
+        padding: 4px;
+        border: 1px solid var(--color-border, #e6ddcb);
+        border-radius: 999px;
+        background: var(--color-bg-surface, #fffdf8);
+    }
+    html body #shell .app-header .service-nav > a {
+        flex: none;
+        min-height: 42px;
+        border-radius: 999px;
+    }
+    html body #shell .app-header .service-nav > a::before {
+        display: block;
+        inset: 0;
+        border-radius: inherit;
+    }
+    html body #shell .app-header .service-nav > a::after {
+        display: none;
+    }
+}
+/* Tablets: compact sections; Composer shows its mark and the city its pin
+   (composer-entry.css; the city keeps its name as its label). */
+@media (min-width: 701px) and (max-width: 999px) {
+    html:root body #shell .app-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+    }
+    html body #shell .app-header .header-utilities {
+        grid-column: 3;
+        grid-row: 1;
+        gap: 4px;
+    }
+    html body #shell .app-header .service-nav > a {
+        padding: 0 11px;
+        gap: 6px;
+        font-size: 13.5px;
+    }
+    html body #shell .app-header .service-nav > a > svg {
+        width: 18px;
+        height: 18px;
+    }
+    html body #shell .header-context .city > :not(svg:first-of-type) {
+        display: none;
+    }
+    html body #shell .header-context .city {
+        justify-content: center;
+        min-width: 44px;
+        padding: 0;
+    }
+}
+/* Desktops: the header on the page's own column, so the logo starts and
+   the account ends where the content does; the capsule in its centre. */
+@media (min-width: 1000px) {
+    html:root body #shell {
+        padding-inline: max(32px, calc((100% - 1440px) / 2 + 32px));
+    }
+    html:root body #shell .app-header {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 16px;
+    }
+    html body #shell .app-header .header-utilities {
+        grid-column: 3;
+        justify-self: end;
+    }
+    html body #shell .app-header .service-nav > a {
+        padding: 0 16px;
+        gap: 8px;
+        font-size: 15px;
+    }
+}
+/* Narrow tablets: the logo's mark alone makes the room. */
+@media (min-width: 701px) and (max-width: 779px) {
+    html body #shell .app-header .brand {
+        gap: 0;
+        font-size: 0;
+    }
+}
+
+/* Loading like an app (owner, 16 Oct 2026: "I want it to load as a app
+   page"). A page paints once it is whole (page-ready.js); until then the
+   menu and Composer's button take their places without sliding there. */
+:root.is-booting :is(#shell, #composer-tray),
+:root.is-booting :is(#shell, #composer-tray) *,
+:root.is-booting :is(#shell, #composer-tray) *::before,
+:root.is-booting :is(#shell, #composer-tray) *::after {
+    transition: none !important;
+}
+/* Moving between sections, the header, the menu and Composer's button stay
+   still while the page fades across in 150ms (owner chose the quick fade,
+   16 Oct 2026). Travel's own slides set data-slide and keep their motion
+   (departures-next/slide.css). */
+@view-transition {
+    navigation: auto;
+}
+:root:not([data-slide]) #shell .app-header {
+    view-transition-name: app-header;
+}
+:root:not([data-slide]) #composer-tray {
+    view-transition-name: composer-tray;
+}
+:root:not([data-slide])::view-transition-group(*),
+:root:not([data-slide])::view-transition-old(*),
+:root:not([data-slide])::view-transition-new(*) {
+    animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-slide])::view-transition-group(*) {
+        animation: none;
+    }
+}

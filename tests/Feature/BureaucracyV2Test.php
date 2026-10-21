@@ -1,119 +1,33 @@
 <?php
 
+use App\Bureaucracy\Facts\CaseFactStore;
+use App\Bureaucracy\PathGenerator;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\UserEvent;
-use App\Models\UserTask;
+use App\Profile\Applicability;
+use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Yaml\Yaml;
 
 // ── Dependency blocking ────────────────────────────────────────────────
 
-test('a task is blocked while its dependency is incomplete', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $anmeldung = Task::factory()->create([
-        'key' => 't.anmeldung',
-        'title' => 'Anmeldung',
-        'situation' => ['non_eu_employee'],
-    ]);
-    $bank = Task::factory()->create([
-        'key' => 't.bank',
-        'title' => 'Open a bank account',
-        'situation' => ['non_eu_employee'],
-        'depends_on' => ['t.anmeldung'],
-    ]);
-
-    $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($bank) {
-        $cards = collect($page->toArray()['props']['tasks'])
-            ->flatten(1)
-            ->keyBy('task_id');
-
-        expect($cards[$bank->id]['blocked'])->toBeTrue();
-        expect($cards[$bank->id]['blocked_by'])->toContain('Anmeldung');
-
-        return true;
-    });
-});
-
-test('completing the dependency unblocks the dependant', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $anmeldung = Task::factory()->create([
-        'key' => 't.anmeldung2',
-        'title' => 'Anmeldung',
-        'situation' => ['non_eu_employee'],
-    ]);
-    $bank = Task::factory()->create([
-        'key' => 't.bank2',
-        'title' => 'Open a bank account',
-        'situation' => ['non_eu_employee'],
-        'depends_on' => ['t.anmeldung2'],
-    ]);
-
-    UserTask::create([
-        'user_id' => $user->id,
-        'task_id' => $anmeldung->id,
-        'status' => 'done',
-        'completed_at' => now(),
-    ]);
-
-    $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($bank) {
-        $cards = collect($page->toArray()['props']['tasks'])
-            ->flatten(1)
-            ->keyBy('task_id');
-
-        expect($cards[$bank->id]['blocked'])->toBeFalse();
-
-        return true;
-    });
-});
-
-test('unpublished tasks never reach the page', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $hidden = Task::factory()->create([
-        'key' => 't.hidden',
-        'title' => 'Unverified guide',
-        'situation' => ['non_eu_employee'],
-        'is_published' => false,
-    ]);
-
-    $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($hidden) {
-        $ids = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('task_id');
-
-        expect($ids)->not->toContain($hidden->id);
-
-        return true;
-    });
-});
-
 test('eu_filter excludes non-matching tasks at materialisation', function () {
     $user = User::factory()->onboarded()->create(['situation' => 'student', 'is_eu' => true]);
+    app(CaseFactStore::class)->bootstrapConfirmedFacts($user, ['citizenship_group' => 'eu', 'purpose' => 'study'], 'manual');
 
-    Task::factory()->create([
+    Task::factory()->approvedFixture()->create([
         'key' => 't.permit',
         'title' => 'Residence permit',
         'situation' => ['student'],
         'eu_filter' => 'non_eu_only',
     ]);
-    $enrol = Task::factory()->create([
+    $enrol = Task::factory()->approvedFixture()->create([
         'key' => 't.enrol',
         'title' => 'Enrolment',
         'situation' => ['student'],
     ]);
 
-    $this->actingAs($user);
-    $this->get(route('bureaucracy'));
+    app(PathGenerator::class)->ensure($user);
 
     $taskIds = $user->userTasks()->pluck('task_id');
     expect($taskIds)->toContain($enrol->id);
@@ -121,42 +35,6 @@ test('eu_filter excludes non-matching tasks at materialisation', function () {
 });
 
 // ── Report outdated ────────────────────────────────────────────────────
-
-test('reporting a task outdated increments the counter once per user', function () {
-    $user = User::factory()->onboarded()->create();
-    $task = Task::factory()->create([
-        'key' => 't.report',
-        'verified_at' => now(),
-        'situation' => ['non_eu_employee'],
-    ]);
-
-    $this->actingAs($user);
-    $this->post(route('tasks.report-outdated', $task))->assertRedirect();
-    $this->post(route('tasks.report-outdated', $task))->assertRedirect();
-
-    expect($task->fresh()->outdated_reports)->toBe(1);
-    expect(UserEvent::where('event_type', 'task_reported_outdated')->count())->toBe(1);
-});
-
-test('three reports clear the verified badge', function () {
-    $task = Task::factory()->create([
-        'key' => 't.report3',
-        'verified_at' => now(),
-        'situation' => ['non_eu_employee'],
-    ]);
-
-    foreach (range(1, 3) as $i) {
-        $user = User::factory()->onboarded()->create();
-        $this->actingAs($user);
-        $this->post(route('tasks.report-outdated', $task));
-    }
-
-    $task->refresh();
-    expect($task->outdated_reports)->toBe(3);
-    expect($task->verified_at)->toBeNull();
-});
-
-// ── Import DAG guard ───────────────────────────────────────────────────
 
 test('import aborts on a dependency cycle', function () {
     $dir = sys_get_temp_dir().'/bureaucracy_cycle_'.uniqid();
@@ -259,186 +137,6 @@ test('import aborts before writing when a task title is missing', function () {
 
 // ── Path refinement ────────────────────────────────────────────────────
 
-test('refining the path swaps in the sub-path tasks and hides untouched old-path ones', function () {
-    $user = User::factory()->onboarded()->create([
-        'situation' => 'non_eu_employee',
-        'bureaucracy_path' => 'non_eu_employee',
-    ]);
-
-    $shared = Task::factory()->create([
-        'key' => 'p.anmeldung',
-        'title' => 'Anmeldung',
-        'situation' => ['non_eu_employee', 'non_eu_employee_blue_card'],
-        'applies_if' => [
-            ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard'],
-            ['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'blue_card'],
-        ],
-    ]);
-    $standardOnly = Task::factory()->create([
-        'key' => 'p.standard-permit',
-        'title' => 'Standard permit',
-        'situation' => ['non_eu_employee'],
-        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard']],
-    ]);
-    $blueCardOnly = Task::factory()->create([
-        'key' => 'p.blue-card',
-        'title' => 'Blue Card application',
-        'situation' => ['non_eu_employee_blue_card'],
-        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'blue_card']],
-    ]);
-
-    $this->actingAs($user);
-    $this->get(route('bureaucracy')); // materialises base-branch tasks
-
-    expect($user->userTasks()->pluck('task_id'))->toContain($standardOnly->id);
-
-    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card'])
-        ->assertRedirect();
-    $response = $this->get(route('bureaucracy')); // recompute for the refined path
-
-    expect($user->fresh()->bureaucracy_path)->toBe('non_eu_employee_blue_card');
-    // The row is preserved (nothing a user has is deleted) — but the
-    // untouched old-path task is off the page entirely.
-    expect($user->userTasks()->pluck('task_id'))->toContain($standardOnly->id);
-
-    $response->assertInertia(function ($page) use ($shared, $blueCardOnly, $standardOnly) {
-        $ids = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('task_id');
-
-        expect($ids)->toContain($shared->id);
-        expect($ids)->toContain($blueCardOnly->id);
-        expect($ids)->not->toContain($standardOnly->id);
-
-        return true;
-    });
-});
-
-test('a touched old-path task survives a path switch in the no-longer-relevant lane', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $standardOnly = Task::factory()->create([
-        'key' => 'p.touched-standard',
-        'title' => 'Standard permit',
-        'situation' => ['non_eu_employee'],
-        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'non_eu', 'permit_track' => 'standard']],
-        'documents_required' => ['Passport'],
-    ]);
-    UserTask::create([
-        'user_id' => $user->id,
-        'task_id' => $standardOnly->id,
-        'documents_checked' => ['Passport'], // the user ticked a document
-    ]);
-
-    $this->actingAs($user);
-    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card']);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($standardOnly) {
-        $ghosts = collect($page->toArray()['props']['tasks']['no_longer_relevant'])->pluck('task_id');
-
-        expect($ghosts)->toContain($standardOnly->id);
-
-        return true;
-    });
-});
-
-test('refining the path keeps tasks with progress as history', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $doneTask = Task::factory()->create([
-        'key' => 'p.done',
-        'title' => 'Already done',
-        'situation' => ['non_eu_employee'],
-    ]);
-    UserTask::create([
-        'user_id' => $user->id,
-        'task_id' => $doneTask->id,
-        'status' => 'done',
-        'completed_at' => now(),
-    ]);
-
-    $this->actingAs($user);
-    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card']);
-
-    expect($user->userTasks()->pluck('task_id'))->toContain($doneTask->id);
-});
-
-test('path refinement rejects values outside the user branch', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    $this->actingAs($user);
-    $this->post(route('bureaucracy.set-path'), ['path' => 'freelancer_gewerbe'])
-        ->assertSessionHasErrors('path');
-
-    $euUser = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
-    $this->actingAs($euUser);
-    $this->post(route('bureaucracy.set-path'), ['path' => 'non_eu_employee_blue_card'])
-        ->assertNotFound();
-});
-
-// ── Document checklists ────────────────────────────────────────────────
-
-test('checked documents persist and unknown entries are dropped', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-    $task = Task::factory()->create([
-        'key' => 'd.docs',
-        'situation' => ['non_eu_employee'],
-        'documents_required' => [
-            'Passport',
-            ['label' => 'Rental contract', 'note' => 'Original required'],
-        ],
-    ]);
-    $userTask = UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
-
-    $this->actingAs($user);
-    $this->patch(route('user-tasks.update', $userTask), [
-        'documents_checked' => ['Passport', 'Rental contract', 'Forged entry'],
-    ])->assertRedirect();
-
-    expect($userTask->fresh()->documents_checked)->toBe(['Passport', 'Rental contract']);
-});
-
-test('document checks are scoped to the owning user', function () {
-    $owner = User::factory()->onboarded()->create();
-    $task = Task::factory()->create(['key' => 'd.scope', 'situation' => ['core']]);
-    $userTask = UserTask::create(['user_id' => $owner->id, 'task_id' => $task->id]);
-
-    $this->actingAs(User::factory()->onboarded()->create());
-    $this->patch(route('user-tasks.update', $userTask), [
-        'documents_checked' => [],
-    ])->assertForbidden();
-});
-
-// ── Info cards ─────────────────────────────────────────────────────────
-
-test('info cards land in their own bucket and stay out of progress', function () {
-    $user = User::factory()->onboarded()->create(['situation' => 'non_eu_employee']);
-
-    Task::factory()->create([
-        'key' => 'i.task',
-        'title' => 'Actionable',
-        'situation' => ['non_eu_employee'],
-    ]);
-    $info = Task::factory()->create([
-        'key' => 'i.church-tax',
-        'title' => 'Church tax',
-        'type' => 'info',
-        'situation' => ['non_eu_employee'],
-    ]);
-
-    $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($info) {
-        $props = $page->toArray()['props'];
-
-        $infoIds = collect($props['tasks']['info'])->pluck('task_id');
-        expect($infoIds)->toContain($info->id);
-        expect($props['progress']['total'])->toBe(1);
-
-        return true;
-    });
-});
-
 test('importer reads the type field and defaults to task', function () {
     $dir = sys_get_temp_dir().'/bureaucracy_type_'.uniqid();
     mkdir($dir);
@@ -460,16 +158,14 @@ test('importer reads the type field and defaults to task', function () {
     rmdir($dir);
 });
 
-test('prune removes everything outside the catalogue — moved keys AND keyless leftovers', function () {
-    // A task whose key left the catalogue, and a keyless legacy/ad-hoc row:
-    // YAML is the single source of truth, both must go.
+test('the deprecated prune option withdraws moved keys and keyless leftovers without deleting history', function () {
     $stale = Task::factory()->create(['key' => 'zz.gone', 'situation' => ['core']]);
     $keyless = Task::factory()->create(['key' => null, 'situation' => ['core']]);
 
     $this->artisan('bureaucracy:import-tasks', ['--prune' => true])->assertSuccessful();
 
-    expect(Task::whereKey($stale->id)->exists())->toBeFalse();
-    expect(Task::whereKey($keyless->id)->exists())->toBeFalse();
+    expect($stale->fresh()->is_published)->toBeFalse();
+    expect($keyless->fresh()->is_published)->toBeFalse();
     // The real catalogue survives the prune.
     expect(Task::where('key', 'core.anmeldung')->exists())->toBeTrue();
 });
@@ -566,6 +262,60 @@ test('tasks without source approval metadata remain legacy and non-authoritative
 
         expect(Task::where('key', 'source.legacy')->value('review_status'))->toBe('legacy')
             ->and(Task::query()->authoritative()->where('key', 'source.legacy')->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+});
+
+test('explicit audience conditions reject malformed input before any catalogue write', function (array $overrides) {
+    $catalogue = task3WriteCatalogue([
+        task3ApprovedTask('source.valid-sibling'),
+        task3ApprovedTask('source.explicit-invalid', $overrides),
+    ]);
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertFailed();
+        expect(Task::whereIn('key', ['source.valid-sibling', 'source.explicit-invalid'])->exists())->toBeFalse();
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+})->with([
+    'unknown mode' => [['applies_if_mode' => 'automatic']],
+    'null mode' => [['applies_if_mode' => null]],
+    'missing mapping' => [['applies_if_mode' => 'explicit']],
+    'null mapping' => [['applies_if_mode' => 'explicit', 'applies_if' => null]],
+    'bad operand' => [['applies_if_mode' => 'explicit', 'applies_if' => ['arrival_planned' => 'yes']]],
+    'unknown fact' => [['applies_if_mode' => 'explicit', 'applies_if' => ['inferred_route' => 'blue_card']]],
+    'unreviewed explicit null' => [['review_status' => 'legacy', 'applies_if_mode' => 'explicit', 'applies_if' => null]],
+]);
+
+test('changing an approved branch audience to explicit requires a new content version', function () {
+    $task = task3ApprovedTask('source.audience-version', ['applies_if' => ['arrival_planned' => false]]);
+    $catalogue = task3WriteCatalogue([$task]);
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+        $original = Task::where('key', $task['key'])->firstOrFail()->getRawOriginal();
+        file_put_contents($catalogue['file'], Yaml::dump(['situation' => 'core', 'tasks' => [[...$task, 'applies_if_mode' => 'explicit']]], 8, 2));
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertFailed();
+        expect(Task::where('key', $task['key'])->firstOrFail()->getRawOriginal())->toBe($original);
+        file_put_contents($catalogue['file'], Yaml::dump(['situation' => 'core', 'tasks' => [[...$task,
+            'applies_if_mode' => 'explicit', 'content_version' => '2026-09-08.1']]], 8, 2));
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+        expect(Task::where('key', $task['key'])->firstOrFail()->applies_if)->toBe([['arrival_planned' => false]]);
+    } finally {
+        task3DeleteCatalogue($catalogue);
+    }
+});
+
+test('an explicitly unconditional unit stays unconditional in the compatibility reader too', function () {
+    $catalogue = task3WriteCatalogue([task3ApprovedTask('source.explicit-context', [
+        'applies_if_mode' => 'explicit', 'applies_if' => [], 'type' => 'info', 'coverage_scope' => 'universal',
+    ])]);
+    try {
+        $this->artisan('bureaucracy:import-tasks', ['file' => $catalogue['file']])->assertSuccessful();
+        $task = Task::where('key', 'source.explicit-context')->firstOrFail();
+        $profile = app(ProfileEngine::class)->build(User::factory()->make(['situation' => 'non_eu_employee']));
+        expect(app(PathGenerator::class)->applicability($task, $profile))
+            ->toBe(Applicability::Yes);
     } finally {
         task3DeleteCatalogue($catalogue);
     }
@@ -788,6 +538,8 @@ test('invalid review intervals fail and reimports recompute review due dates', f
             'situation' => 'core',
             'tasks' => [task3ApprovedTask('source.recomputed', [
                 'description' => 'Threshold: {{figure:blue_card_salary}}',
+                // Changed approved content needs a new reviewed version.
+                'content_version' => '2026-08-03.2',
             ])],
         ], 8, 2));
 

@@ -1,0 +1,116 @@
+[
+  {
+    "label": "Paperwork phone",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/bureaucracy-next/",
+    "width": 390
+  },
+  {
+    "label": "Events phone",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/events-next/?date=2026-09-08",
+    "width": 390
+  },
+  {
+    "label": "Services phone",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/services-next/",
+    "width": 390
+  },
+  {
+    "label": "Travel phone",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/departures-next/",
+    "width": 390
+  },
+  {
+    "label": "Travel desktop",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/departures-next/",
+    "width": 1440
+  },
+  {
+    "label": "Paperwork desktop",
+    "headerActiveColor": "rgb(39, 36, 31)",
+    "overflow": false,
+    "placeholder": "rgb(100, 95, 88)",
+    "tokens": {
+      "--action": "#d9340a",
+      "--blue": "#dff3f8",
+      "--ink": "#27241f",
+      "--line": "#d7d1c8",
+      "--muted": "#645f58",
+      "--paper": "#ece9e4",
+      "--surface": "#fcfaf6",
+      "--surface-quiet": "#f4f0e9",
+      "--teal": "#00758c"
+    },
+    "url": "http://127.0.0.1:8765/dev/design/bureaucracy-next/",
+    "width": 1440
+  }
+]

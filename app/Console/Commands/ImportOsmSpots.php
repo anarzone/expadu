@@ -6,6 +6,7 @@ use App\Enums\SpotCategory;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceFacts;
 use App\Places\RecordPlaceObservation;
@@ -284,6 +285,7 @@ class ImportOsmSpots extends Command
                 'veedel' => $veedel,
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
+                'cuisine' => isset($tags['cuisine']) ? mb_substr(trim((string) $tags['cuisine']), 0, 255) : null,
                 'source_group' => in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
                 'last_seen_at' => now(),
                 'is_active' => true,
@@ -356,11 +358,19 @@ class ImportOsmSpots extends Command
         // A successful category refresh is also an authoritative deletion
         // signal. Rows absent from this run remain for audit/history but stop
         // competing in discovery and Composer immediately.
-        Spot::query()
+        $retiredSpotIds = Spot::query()
             ->where('source', 'osm')
             ->whereIn('source_group', array_unique($refreshedGroups))
             ->where(fn ($query) => $query->whereNull('last_seen_at')->orWhere('last_seen_at', '<', $refreshStartedAt))
-            ->update(['is_active' => false, 'is_recommendable' => false]);
+            ->pluck('id')
+            ->all();
+
+        if ($retiredSpotIds !== []) {
+            Spot::query()
+                ->whereKey($retiredSpotIds)
+                ->update(['is_active' => false, 'is_recommendable' => false]);
+            SpotEnrichment::markReadyAsStaleForSpots($retiredSpotIds);
+        }
 
         return self::SUCCESS;
     }

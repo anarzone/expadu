@@ -2,12 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
 
 /**
+ * Grows the viewport used to decide "in view", so a snippet just below the
+ * fold starts loading a moment early. A scrolling sheet still clips exactly:
+ * inside one, the map starts the moment its first pixel scrolls into view.
+ */
+const PRELOAD_MARGIN = '120px';
+
+/**
  * Static mini-map snippet for the place detail — answers "where exactly
  * is it?" without a full map view. Non-interactive; the whole snippet is
  * a tap target (wired by the parent, usually take-me-there).
  *
- * MapLibre is loaded lazily so the Places bundle stays slim; until (or
- * if ever) it fails, a quiet tinted placeholder keeps the layout stable.
+ * MapLibre is loaded lazily so the Places bundle stays slim, and the WebGL
+ * map is only created once the snippet is about to scroll into view: a detail
+ * sheet that opens with the map below the fold (or is closed again straight
+ * away) never pays for a context, a style fetch and tile requests. Until then
+ * (or if it ever fails) a quiet tinted placeholder of the same size keeps the
+ * layout stable.
  */
 export function MiniMap({
     lat,
@@ -24,34 +35,60 @@ export function MiniMap({
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
+        const container = containerRef.current;
+
+        if (!container) {
+            return;
+        }
+
         let map: { remove: () => void } | null = null;
         let cancelled = false;
+        let observer: IntersectionObserver | null = null;
 
-        loadBasemap()
-            .then((basemap) => {
-                if (cancelled || !containerRef.current) {
-                    return;
-                }
+        const createMap = () => {
+            loadBasemap()
+                .then((basemap) => {
+                    if (cancelled) {
+                        return;
+                    }
 
-                map = new basemap.maplibregl.Map({
-                    container: containerRef.current,
-                    style: basemap.style(
-                        document.documentElement.classList.contains('dark'),
-                    ),
-                    center: [lng, lat],
-                    zoom: 15,
-                    interactive: false,
-                    attributionControl: false,
+                    map = new basemap.maplibregl.Map({
+                        container,
+                        style: basemap.style(
+                            document.documentElement.classList.contains('dark'),
+                        ),
+                        center: [lng, lat],
+                        zoom: 15,
+                        interactive: false,
+                        attributionControl: false,
+                    });
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setFailed(true);
+                    }
                 });
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setFailed(true);
-                }
-            });
+        };
+
+        if (typeof IntersectionObserver === 'undefined') {
+            // No way to know when it is visible: behave as before.
+            createMap();
+        } else {
+            observer = new IntersectionObserver(
+                (entries) => {
+                    if (entries.some((entry) => entry.isIntersecting)) {
+                        observer?.disconnect();
+                        createMap();
+                    }
+                },
+                { rootMargin: PRELOAD_MARGIN },
+            );
+            observer.observe(container);
+        }
 
         return () => {
             cancelled = true;
+            observer?.disconnect();
             map?.remove();
         };
     }, [lat, lng]);

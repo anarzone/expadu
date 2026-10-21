@@ -3,6 +3,7 @@
 namespace App\Composer;
 
 use App\Composer\Contracts\ParsesPrompt;
+use App\Privacy\ProcessingPermit;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 
@@ -15,7 +16,7 @@ class FakePromptParser implements ParsesPrompt
 {
     public function __construct(private ParsedPrompt $result) {}
 
-    public function parse(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
+    public function parse(string $text, Profile $profile, CarbonImmutable $now, ?ProcessingPermit $permit = null): ParsedPrompt
     {
         return $this->result;
     }

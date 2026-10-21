@@ -1,0 +1,267 @@
+{
+    "name": "travel-trip-before-phone",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768],
+    "height": 1600,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": ".travel-phone-bar button",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.nav-sample { position: absolute !important; right: 0 !important; opacity: 0 !important; }'; document.head.append(s); })"
+        ],
+        "before": [
+            {
+                "click": ".travel-phone-bar button"
+            },
+            {
+                "wait": 500
+            },
+            {
+                "click": "#day-places button"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": ".find-routes"
+            },
+            {
+                "wait": 800
+            },
+            {
+                "click": ".plan-go"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/timetable?view=journey&activity=appointment%3A7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d&compare=1",
+        "wait": ".plan-option",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '[title=\"Open the QA persona switcher\"] { display: none !important; }'; document.head.append(s); })"
+        ],
+        "before": [
+            {
+                "click": ".plan-go"
+            },
+            {
+                "wait": 800
+            }
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "note": "As travel-trip-before; on phones the mock plans first (\"Plan it\") and the trip page takes the whole screen. Measuring aids, on both sides alike: a viewport tall enough that the phone's full-screen trip page never scrolls inside itself, and the mock's dashed Sample chip (its own sample tools) taken out of the row and made invisible (still there to pick a moment).",
+    "pairs": [
+        {
+            "name": "trip top bar",
+            "mock": ".nav-topbar",
+            "app": ".nav-topbar"
+        },
+        {
+            "name": "close",
+            "mock": ".nav-topbar .nav-icon-button",
+            "app": ".nav-topbar .nav-icon-button"
+        },
+        {
+            "name": "trip title",
+            "mock": "#nav-title",
+            "app": "#nav-title"
+        },
+        {
+            "name": "trip when",
+            "mock": ".nav-topbar small",
+            "app": ".nav-topbar small"
+        },
+        {
+            "name": "step card",
+            "mock": ".nav-step-card",
+            "app": ".nav-step-card",
+            "ignore": ["h"],
+            "pixels": false,
+            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). It holds the look row. The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). Below the look row, a line taller in the mock on phones (see look text)."
+        },
+        {
+            "name": "ring",
+            "mock": ".nav-ring",
+            "app": ".nav-ring",
+            "ignore": ["h", "y"],
+            "reason": "Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
+            "pixels": false
+        },
+        {
+            "name": "step title",
+            "mock": ".nav-step-lead h2",
+            "app": ".nav-step-lead h2"
+        },
+        {
+            "name": "step sub",
+            "mock": ".moment-sub",
+            "app": ".moment-sub"
+        },
+        {
+            "name": "look row",
+            "mock": ".nav-look",
+            "app": ".nav-look",
+            "ignore": ["h"],
+            "pixels": false,
+            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process yet, so it says where and when instead."
+        },
+        {
+            "name": "look tile",
+            "mock": ".nav-look-tile",
+            "app": ".nav-look-tile",
+            "ignore": ["h", "w", "y"],
+            "pixels": false,
+            "reason": "Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Below or beside the look text, a line shorter here on phones (see look text). Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset. For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process until the v2 reader lands (#132), so it says where and when instead.",
+            "contentDiffers": true
+        },
+        {
+            "name": "look title",
+            "mock": ".nav-look-text strong",
+            "app": ".nav-look-text strong",
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Below or beside the look text, a line shorter here on phones (see look text). For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process yet, so it says where and when instead."
+        },
+        {
+            "name": "look text",
+            "mock": ".nav-look-text small",
+            "app": ".nav-look-text small",
+            "contentDiffers": true,
+            "ignore": ["h", "w", "y"],
+            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset.",
+            "pixels": false
+        },
+        {
+            "name": "start (phones)",
+            "mock": ".nav-start",
+            "app": ".nav-start",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "I'm on my way (phones)",
+            "mock": ".nav-start .nav-primary",
+            "app": ".nav-start .nav-primary",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "moves on by itself (phones)",
+            "mock": ".nav-start > div > span",
+            "app": ".nav-start > div > span",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "Add to plan (phones)",
+            "mock": ".nav-start .nav-text-button",
+            "app": ".nav-start .nav-text-button",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "map card (phones)",
+            "mock": ".nav-mapcard",
+            "app": ".nav-mapcard",
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "pixels": false,
+            "reason": "Where to stand and the drawn way are deferred (plan call #9): the mock's map card shows its Neumarkt close-up or its line drawing, the app's the way on the real map. Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "map title (phones)",
+            "mock": ".nav-mapcard .nav-way-title",
+            "app": ".nav-mapcard .nav-way-title",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "map note (phones)",
+            "mock": ".nav-map-note",
+            "app": ".nav-map-note",
+            "contentDiffers": true,
+            "ignore": ["w", "y"],
+            "reason": "Its words follow the map it labels (see map card). Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "widths": [360, 390, 768],
+            "pixels": false
+        },
+        {
+            "name": "map box (phones)",
+            "mock": ".nav-mapcard-box",
+            "app": ".nav-mapcard-box",
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "pixels": false,
+            "reason": "Where to stand and the drawn way are deferred (plan call #9): the mock's map card shows its Neumarkt close-up or its line drawing, the app's the way on the real map. Below the look row, whose platform note (mock only, see look text) takes a second line on phones. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "your way title (phones)",
+            "mock": ".nav-expanded .nav-way-title",
+            "app": ".nav-expanded .nav-way-title",
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "way: walk (phones)",
+            "mock": ".nav-way li",
+            "app": ".nav-way li",
+            "index": 0,
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        },
+        {
+            "name": "way: tram (phones)",
+            "mock": ".nav-way li",
+            "app": ".nav-way li",
+            "index": 1,
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it."
+        },
+        {
+            "name": "way: walk out (phones)",
+            "mock": ".nav-way li",
+            "app": ".nav-way li",
+            "index": 2,
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it."
+        },
+        {
+            "name": "way: there (phones)",
+            "mock": ".nav-way li",
+            "app": ".nav-way li",
+            "index": 3,
+            "widths": [360, 390, 768],
+            "ignore": ["y"],
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are.",
+            "pixels": false
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 750" fill="none"><defs><radialGradient id="orange" cx=".3" cy=".25" r=".8"><stop stop-color="#ffbe83"/><stop offset=".45" stop-color="#ff6737"/><stop offset="1" stop-color="#bc2b0b"/></radialGradient></defs><rect width="600" height="750" fill="#0c3436"/>
+<circle cx="332" cy="184" r="105" fill="#b8e9dc"/>
+<path d="m282 115-193 635h250l42-609Z" fill="#79c5b4" opacity=".28"/>
+<path d="m292 160-73 590h40l70-590Z" fill="#d8f3cc" opacity=".3"/>
+<g fill="#397b6b"><path d="m93 58-91 262h62l-93 139h230L114 320h68Z"/><path d="m494 34-79 251h59l-112 176h238l-74-176h42Z"/></g>
+<path d="M0 580q202-130 600-53v223H0Z" fill="#1b635c"/>
+<path d="M288 380q-34 55 42 96t-26 83-56 191h93q-81-75 24-173t-54-126-3-71Z" fill="#c6e4c6"/>
+<g fill="#072725"><path d="M65 0h35l15 750H50Z"/><path d="m78 127-109-95v37l114 124 134-91-11-20Z"/><path d="M490 0h45l38 750h-90Z"/><path d="m507 237-98-129-23 3 113 177 142-122-7-28Z"/></g>
+</svg>

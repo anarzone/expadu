@@ -1,0 +1,130 @@
+{
+    "name": "today-quiet",
+    "seed": "php artisan mock:sample-day quiet --email=<account> && PAPERWORK_SAMPLE=quiet E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=quiet",
+        "wait": ".day-panel",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "workspace",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "workspace (phone)",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [360, 390],
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "Your day",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day (phone)",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "widths": [360, 390],
+            "ignore": ["y"]
+        },
+        {
+            "name": "date",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "date (phone)",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["w", "x", "y"],
+            "widths": [360, 390],
+            "pixels": false
+        },
+        {
+            "name": "Your day panel",
+            "mock": ".day-panel",
+            "app": ".day-panel",
+            "pixels": false,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day panel (phone)",
+            "mock": ".day-panel",
+            "app": ".day-panel",
+            "pixels": false,
+            "widths": [360, 390],
+            "ignore": ["y"]
+        },
+        {
+            "name": "nothing planned",
+            "mock": ".day-empty strong",
+            "app": ".day-empty strong",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "nothing planned (phone)",
+            "mock": ".day-empty strong",
+            "app": ".day-empty strong",
+            "widths": [360, 390],
+            "ignore": ["y"]
+        },
+        {
+            "name": "Add a plan",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add a plan (phone)",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [360, 390],
+            "ignore": ["y"]
+        },
+        {
+            "name": "Add a plan icon",
+            "mock": ".add-plan svg",
+            "app": ".add-plan svg",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add a plan icon (phone)",
+            "mock": ".add-plan svg",
+            "app": ".add-plan svg",
+            "widths": [360, 390],
+            "ignore": ["y"]
+        }
+    ],
+    "ignoreNote": "From 768 px y is compared.",
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "panelNote": "Your day panel's pixels take in the date line, whose words differ (see date), so the panel compares its box and styles only.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot.",
+    "workspaceNote": "The day's surface starts below the welcome and any deadline, which sit on the page; its height follows the sections' content, so only its place and width are compared."
+}

@@ -1,0 +1,155 @@
+/* Edit time in a sheet (owner, 18 Oct 2026, Composer review canvas board
+   10): two wheels, From and Until; phones get a sheet over the bottom,
+   laptops a dialog. time-sheet.js. */
+.time-sheet {
+    --row: 56px;
+    box-sizing: border-box;
+    width: min(420px, calc(100% - 32px));
+    max-width: none;
+    padding: 20px 20px 24px;
+    border: 0;
+    border-radius: 24px;
+    background: var(--color-bg-surface, #fffdf8);
+    color: var(--color-text, #211d15);
+    box-shadow: 0 24px 60px -20px #211d1566;
+    font-family: inherit;
+}
+.time-sheet::backdrop {
+    background: #211d1552;
+}
+.time-sheet-grab {
+    display: none;
+}
+.time-sheet-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-soft, #5f5646);
+    font: 400 26px/1 Geist, Arial, sans-serif;
+    cursor: pointer;
+}
+.time-sheet-close:hover {
+    background: var(--color-bg-quiet, #f1ebdf);
+}
+.time-sheet h2 {
+    margin: 4px 48px 4px 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.time-sheet-note {
+    margin: 0 0 16px;
+    color: var(--color-text-soft, #5f5646);
+    font-size: var(--text-body, 16px);
+}
+.time-sheet-wheels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.time-sheet-col {
+    position: relative;
+    display: grid;
+    gap: 8px;
+}
+.time-sheet-col > span {
+    color: var(--color-text-soft, #5f5646);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 20px;
+    text-align: center;
+    text-transform: uppercase;
+}
+/* The chosen time sits on a band in the middle row. */
+.time-sheet-col::before {
+    content: '';
+    position: absolute;
+    top: calc(28px + var(--row));
+    left: 0;
+    right: 0;
+    height: var(--row);
+    border-radius: var(--radius-lg, 16px);
+    background: var(--color-select-bg, #def5f8);
+}
+.time-sheet-wheel {
+    position: relative;
+    height: calc(var(--row) * 3);
+    padding-block: var(--row);
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    border-radius: var(--radius-lg, 16px);
+    outline: none;
+}
+.time-sheet-wheel::-webkit-scrollbar {
+    display: none;
+}
+.time-sheet-wheel:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-focus, #00768b);
+}
+.time-sheet-option {
+    display: grid;
+    place-items: center;
+    height: var(--row);
+    scroll-snap-align: center;
+    color: var(--color-text-soft, #5f5646);
+    font-size: 26px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+.time-sheet-option[aria-selected='true'] {
+    color: var(--color-text, #211d15);
+    font-size: 30px;
+    font-weight: 700;
+}
+.time-sheet-problem {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md, 12px);
+    background: var(--color-warning-bg, #fff0d5);
+    color: var(--color-warning-text, #7b5721);
+    font-size: var(--text-small, 14px);
+}
+@media (max-width: 700px) {
+    .time-sheet {
+        top: auto;
+        bottom: 0;
+        width: 100%;
+        margin: 0;
+        padding: 10px 16px max(24px, env(safe-area-inset-bottom));
+        border-radius: 28px 28px 0 0;
+        transition: translate 160ms ease;
+    }
+    .time-sheet-grab {
+        display: block;
+        width: 52px;
+        height: 24px;
+        margin: 0 auto 6px;
+        touch-action: none;
+        cursor: grab;
+        background: linear-gradient(
+                var(--color-border-strong, #cdbf9f),
+                var(--color-border-strong, #cdbf9f)
+            )
+            center / 44px 5px no-repeat;
+    }
+    .time-sheet-close {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .time-sheet {
+        transition: none;
+    }
+}

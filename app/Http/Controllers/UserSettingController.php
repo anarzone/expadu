@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserSetting;
+use App\Services\LocationDataRetention;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,7 @@ class UserSettingController extends Controller
         return response()->json(['settings' => $settings]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, LocationDataRetention $retention): JsonResponse
     {
         $validated = $request->validate([
             'settings' => ['required', 'array'],
@@ -27,13 +28,22 @@ class UserSettingController extends Controller
         ]);
 
         $user = $request->user();
-        $current = $user->userSetting?->settings ?? UserSetting::defaults();
-        $merged = array_merge($current, $validated['settings']);
+        $merged = $retention->withUserLock($user->id, function () use ($user, $validated, $retention): array {
+            $user->load('userSetting');
+            $current = $user->userSetting?->settings ?? UserSetting::defaults();
+            $merged = array_merge($current, $validated['settings']);
 
-        $user->userSetting()->updateOrCreate(
-            ['user_id' => $user->id],
-            ['settings' => $merged],
-        );
+            if (($validated['settings']['share_location'] ?? null) === false) {
+                $retention->purgeUser($user->id);
+            }
+
+            $user->userSetting()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['settings' => $merged],
+            );
+
+            return $merged;
+        });
 
         return response()->json(['settings' => $merged]);
     }

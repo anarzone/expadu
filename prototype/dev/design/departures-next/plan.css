@@ -1,0 +1,1106 @@
+/* Plan a trip (owner-approved design, Travel directions canvas, 10 Oct
+   2026): where and when, what matters to you, what we checked, the options
+   with the best first, and the saved plan. Colours come from tokens.css. */
+
+/* ---------- When and what matters to you ---------- */
+.plan-controls {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--space-16);
+}
+.plan-label {
+    margin: var(--space-14) 0 var(--space-8);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.plan-label:first-child {
+    margin-top: 0;
+}
+body.travel-palette .plan-when {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+body.travel-palette .plan-when button {
+    min-height: var(--touch-target);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    background-clip: padding-box;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+    box-shadow: none;
+}
+body.travel-palette .plan-when button[aria-pressed='true'] {
+    background-color: var(--color-text);
+    color: var(--color-text-on-action);
+    font-weight: var(--weight-semibold);
+}
+.plan-when-time {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin: var(--space-10) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+.plan-when-time[hidden] {
+    display: none;
+}
+.plan-time {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+.plan-time [data-icon],
+.plan-time svg {
+    width: 14px;
+    height: 14px;
+}
+.plan-prefs {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -3px;
+}
+.plan-prefs button {
+    flex: none;
+    height: var(--touch-target);
+    padding: 0 3px;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+.plan-prefs button > span {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard);
+}
+.plan-prefs button[aria-pressed='true'] > span {
+    border-color: var(--color-text);
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+    font-weight: var(--weight-semibold);
+}
+.plan-note {
+    margin: var(--space-6) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-note[hidden] {
+    display: none;
+}
+
+/* ---------- Where: today's places, saved places, the example ---------- */
+.journey-start .section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-12);
+}
+.journey-start .section-note {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.day-places {
+    margin-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+}
+.day-places button {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-12);
+    width: 100%;
+    min-height: 64px;
+    padding: var(--space-8) var(--space-8);
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.day-places button[aria-pressed='true'] {
+    background: var(--color-bg-quiet);
+}
+.day-places time {
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.day-places span:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.day-places small,
+.day-place-pick {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-subhead {
+    margin: var(--space-20) 0 var(--space-8);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.saved-places {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10);
+}
+.saved-places button {
+    flex: 1 1 200px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    min-height: 56px;
+    padding: 0 var(--space-14);
+    border: 1.5px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.saved-places button > span:last-child {
+    display: flex;
+    flex-direction: column;
+}
+.saved-places small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.saved-places [data-icon] svg,
+.plan-explainer [data-icon] svg {
+    width: 18px;
+    height: 18px;
+}
+.plan-explainer {
+    display: flex;
+    gap: var(--space-14);
+    align-items: flex-start;
+    margin-top: var(--space-24);
+    padding-top: var(--space-20);
+    border-top: 1px solid var(--color-border);
+    line-height: 1.4;
+}
+.plan-explainer [data-icon] {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.plan-explainer p {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+.plan-explainer span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-example {
+    margin-top: var(--space-16);
+    padding-top: var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+.plan-example .sample-endpoints {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-example .text-action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--touch-target);
+}
+.plan-example .text-action svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ---------- Options: what we checked, best first ---------- */
+.plan-checks {
+    margin-bottom: var(--space-12);
+    border-block: 1px solid var(--color-border);
+}
+.plan-checks-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8) var(--space-12);
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-8) 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.plan-check-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+.plan-check-chips:not(.tl-chips) span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 var(--space-8);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.plan-check-chips:not(.tl-chips) span::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+}
+.plan-check-chips .is-muted {
+    color: var(--color-text-soft);
+}
+.plan-check-chips .is-flag {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.plan-checks-more {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.plan-checks-more svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--duration-fast) var(--ease-standard);
+}
+.plan-checks-toggle[aria-expanded='true'] .plan-checks-more svg {
+    transform: rotate(180deg);
+}
+.plan-checks-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0 var(--space-24);
+    padding-bottom: var(--space-10);
+}
+.plan-checks-detail[hidden] {
+    display: none;
+}
+.plan-checks-detail p {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: var(--space-8) 0;
+    border-top: 1px solid var(--color-border);
+    line-height: var(--leading-snug);
+}
+.plan-checks-detail span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.best-tag {
+    align-self: flex-start;
+    margin-bottom: var(--space-4);
+    padding: 1px var(--space-8);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-bold);
+}
+.option-summary {
+    display: flex;
+    flex-direction: column;
+}
+.inline-route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+.other-ways-note {
+    margin-top: var(--space-12);
+}
+
+/* ---------- The saved plan ---------- */
+.plan-saved {
+    max-width: 640px;
+}
+.plan-saved-mark {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+.plan-saved-mark svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.6;
+}
+.plan-saved h2 {
+    margin: var(--space-14) 0 0;
+    font-size: var(--text-display-sm);
+    line-height: 1.05;
+    letter-spacing: -1px;
+}
+.plan-saved-summary {
+    margin: var(--space-6) 0 0;
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+}
+.plan-saved-list {
+    margin: var(--space-16) 0 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    list-style: none;
+    overflow: hidden;
+}
+.plan-saved-list li + li {
+    border-top: 1px solid var(--color-border);
+}
+.plan-saved-list :is(button, .is-note) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    width: 100%;
+    min-height: 64px;
+    padding: var(--space-8) var(--space-14);
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.plan-saved-list .is-note {
+    align-items: flex-start;
+    padding-block: var(--space-12);
+    cursor: default;
+}
+.plan-saved-list :is(button, .is-note) > span:nth-child(2) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.plan-saved-list small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-saved-list button > svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+.plan-saved-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--color-bg-quiet);
+}
+.plan-saved-icon.is-watch {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.plan-saved-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.plan-switch {
+    flex: none;
+    position: relative;
+    width: 46px;
+    height: 28px;
+    border-radius: 14px;
+    background: var(--color-border-strong);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.plan-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-flat);
+    transition: left var(--duration-fast) var(--ease-standard);
+}
+[aria-checked='true'] > .plan-switch {
+    background: var(--color-text);
+}
+[aria-checked='true'] > .plan-switch::after {
+    left: 21px;
+}
+.plan-saved-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10);
+    margin-top: var(--space-16);
+}
+.plan-saved-actions button {
+    flex: 1 1 180px;
+    min-height: 52px;
+}
+body.travel-palette .plan-saved-actions .quiet-button {
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+body.travel-palette .primary.is-ink {
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plan-prefs button > span,
+    .plan-checks-more svg,
+    .plan-switch,
+    .plan-switch::after {
+        transition: none;
+    }
+}
+
+/* ---------- The canvas layout (owner check, 10 Oct 2026) ----------
+   Phones: where first; when and what matters once there's a place. The
+   options are one choice with a single Save; desktops open the chosen one
+   with its steps and map. */
+body.travel-palette .journey-fields > .swap {
+    display: none;
+}
+body.travel-palette .journey-fields {
+    padding-right: 0;
+}
+.from-note {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+.to-field.is-picked input {
+    display: none;
+}
+.to-picked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+.to-picked[hidden] {
+    display: none;
+}
+.to-picked > span {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: var(--leading-snug);
+}
+.to-picked strong {
+    font-size: var(--text-section);
+}
+.to-picked small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.to-picked .icon-button {
+    flex: none;
+    margin: -8px -6px -8px 0;
+}
+.plan-when-note {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-hint {
+    margin: var(--space-8) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-hint:empty {
+    display: none;
+}
+body.travel-palette .find-routes[aria-disabled='true'] {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    box-shadow: none;
+}
+.day-places button > svg {
+    display: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+
+/* The options */
+.plan-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+}
+.plan-option {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard);
+}
+.plan-option.is-on {
+    border-color: var(--color-text);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 0.5px var(--color-text);
+}
+.plan-option-pick {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-12);
+    width: 100%;
+    padding: var(--space-14) var(--space-14) var(--space-4);
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.plan-option-pick:focus-visible {
+    outline: 2px solid var(--color-focus, var(--color-text));
+    outline-offset: 2px;
+}
+.plan-radio {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    transition: border-width var(--duration-fast) var(--ease-standard);
+}
+.is-on .plan-radio {
+    border: 6px solid var(--color-text);
+}
+.plan-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.plan-option-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-8);
+    margin-bottom: 2px;
+}
+.plan-option-head .best-tag {
+    margin: 2px 0 0;
+}
+.plan-option-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+}
+.plan-option-title strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+.plan-option-at {
+    margin-left: 2px;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.plan-line {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.plan-line.is-mode {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.plan-line svg {
+    width: 15px;
+    height: 15px;
+}
+.plan-option-times {
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+}
+.plan-option-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2px;
+    font-size: var(--text-small);
+}
+.plan-option-reasons > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.plan-option-reasons > span:not(:has(.plan-reason-icon))::before {
+    content: '';
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    transform: translateY(-2px);
+}
+.plan-option-reasons .is-warn {
+    color: var(--color-attention-text);
+}
+.plan-spare {
+    padding: 2px var(--space-8);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.plan-spare.is-tight {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+body.travel-palette .plan-option > .details-toggle {
+    margin-left: 48px;
+    padding-block: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.plan-option .route-disclosure-inner {
+    padding: 0 var(--space-14);
+}
+.plan-option-way {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-4) 0 var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+.plan-option-way .route-steps {
+    margin: var(--space-10) 0 0;
+}
+.plan-option-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.plan-option-side .route-note {
+    margin: 0;
+}
+.plan-save {
+    width: 100%;
+    min-height: 52px;
+    margin-top: var(--space-14);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-section);
+}
+.other-ways-note {
+    margin: var(--space-10) 0 0;
+}
+
+/* The saved plan: the line's colour, the two actions side by side */
+.plan-saved-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+}
+.plan-saved-actions button {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (max-width: 999px) {
+    /* A focused screen: the bar names the step, the shell steps aside. */
+    body.travel-palette[data-view='journey'] .plan-back-row {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        margin: 0 calc(var(--space-16) * -1) var(--space-12);
+        padding: var(--space-6) var(--space-16) var(--space-6) var(--space-8);
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-canvas);
+    }
+    .plan-bar-title {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        line-height: var(--leading-snug);
+    }
+    .plan-bar-title strong {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .plan-bar-title small {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    .plan-bar-title small[hidden] {
+        display: none;
+    }
+    body.travel-palette .planner-heading,
+    body.travel-palette .plan-explainer,
+    body.travel-palette:not(.plan-has-dest) #plan-hint,
+    body.travel-palette #journey-summary,
+    body.travel-palette:not(.plan-has-dest)
+        :is(.plan-controls, .find-routes, #form-error) {
+        display: none;
+    }
+    body.travel-palette.plan-has-dest #journey-start {
+        display: none;
+    }
+    body.travel-palette .journey-intro-grid {
+        gap: var(--space-16);
+    }
+    body.travel-palette .journey-results {
+        padding-top: 0;
+        border-top: 0;
+    }
+    /* Today and saved places: labelled lists under where */
+    body.travel-palette .journey-start .section-heading h2,
+    body.travel-palette .journey-start .plan-subhead {
+        margin: 0;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    body.travel-palette .journey-start .plan-subhead {
+        margin: var(--space-16) 0 var(--space-8);
+    }
+    body.travel-palette .journey-start .section-heading {
+        margin-bottom: var(--space-8);
+    }
+    .day-places {
+        margin-top: 0;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+    .day-places button {
+        grid-template-columns: 48px minmax(0, 1fr) auto;
+        min-height: 60px;
+        padding-inline: var(--space-14);
+    }
+    .day-places button:last-child {
+        border-bottom: 0;
+    }
+    .day-places button > svg {
+        display: block;
+    }
+    .day-place-pick {
+        display: none;
+    }
+    .saved-places button {
+        flex: 1 1 0;
+        min-width: 0;
+        border: 1px solid var(--color-border);
+        background: var(--color-bg-surface);
+    }
+    /* The results: the bar has the title; the options, then one Save */
+    body.travel-palette #results .results-top {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    /* Phones sort from the bar (.plan-bar-sort), so the hidden heading
+       keeps no second, unseen sort button. */
+    body.travel-palette #results .results-heading .icon-button {
+        display: none;
+    }
+    .plan-check-chips {
+        order: 2;
+        flex-basis: 100%;
+    }
+    .plan-checks {
+        margin-bottom: var(--space-12);
+        padding: 0 var(--space-14);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+}
+@media (max-width: 700px) {
+    /* The header row steps aside; the section bar stays below. */
+    body.travel-palette[data-view='journey'] #shell {
+        box-shadow: none;
+        background: none;
+    }
+    body.travel-palette[data-view='journey'] #shell .app-header {
+        min-height: 0;
+    }
+    body.travel-palette[data-view='journey']
+        #shell
+        .app-header
+        > :not(.service-nav) {
+        display: none;
+    }
+}
+@media (min-width: 1000px) {
+    .plan-option-side {
+        padding-top: var(--space-4);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .plan-option,
+    .plan-radio {
+        transition: none;
+    }
+}
+.plan-option-way .route-step {
+    min-height: 0;
+    padding: 6px 0 10px;
+}
+/* The tram's platform on its step; where to stand opens in place (owner
+   chose B, canvas row 21, 15 Oct 2026). */
+.route-step .step-platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-top: var(--space-6);
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.route-step .step-platform svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--duration-fast) var(--ease-standard);
+}
+.route-step .step-platform[aria-expanded='true'] svg:last-child {
+    transform: rotate(180deg);
+}
+.route-step .step-stand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin: var(--space-10) 0 var(--space-4);
+    animation: mapview-rise 320ms var(--ease-settle) both;
+}
+.route-step .step-stand[hidden] {
+    display: none;
+}
+.route-step .tmap-closeup svg {
+    width: 100%;
+    height: 100%;
+}
+.route-step .tmap-legend svg {
+    width: 13px;
+    height: 13px;
+}
+.plan-option-way .step-nearby {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+}
+.plan-option-way .step-nearby svg {
+    display: inline;
+    width: 14px;
+    height: 14px;
+}
+
+/* The way first, saving it second (owner, 10 Oct 2026). */
+.plan-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin-top: var(--space-14);
+}
+.plan-actions .plan-save {
+    margin-top: 0;
+}
+body.travel-palette .plan-actions button.plan-save {
+    min-height: 48px;
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.plan-go {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    width: 100%;
+    min-height: 52px;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-section);
+}
+.plan-go svg {
+    width: 18px;
+    height: 18px;
+}
+/* Show the way and Add to plan stay in reach, pinned at the bottom (just
+   above the floating menu on phones, at the foot of the planner panel on
+   a desktop); the options scroll under them (owner chose 1A, canvas row
+   25, 16 Oct 2026; desktop too, 16 Oct 2026). Opaque, like the menu. */
+.plan-actions {
+    position: sticky;
+    bottom: max(
+        calc(12px + env(safe-area-inset-bottom, 0px)),
+        calc(var(--section-bar, 0px) - 2px)
+    );
+    z-index: 40;
+    flex-direction: row;
+    padding: 8px;
+    border: 1px solid
+        color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
+    border-radius: 22px;
+    background: var(--color-bg-surface, #fffdf8);
+    box-shadow: 0 14px 34px -16px #211d156b;
+}
+.plan-actions .plan-go {
+    flex: 1.5 1 0;
+    min-height: 50px;
+}
+body.travel-palette .plan-actions button.plan-save {
+    flex: 1 1 0;
+    min-height: 50px;
+}
+/* On phones it lines up with the menu's edges. */
+@media (max-width: 700px) {
+    .plan-actions {
+        margin-inline: -2px;
+    }
+}
+
+/* Labels in Plan a trip (owner-approved 10 Oct 2026). */
+.plan-option-reasons {
+    gap: 4px;
+    margin-top: var(--space-6);
+}
+.plan-option-reasons .is-warn {
+    font-weight: var(--weight-semibold);
+}
+.plan-reason-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.is-warn > .plan-reason-icon {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.plan-reason-icon svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+.plan-option-title {
+    gap: 4px;
+}
+.plan-option-head + .plan-option-title {
+    margin-top: 4px;
+}
+.plan-then svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2.2;
+}
+.plan-option-times {
+    margin-top: 4px;
+}
+.other-ways-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+}

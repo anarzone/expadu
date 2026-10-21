@@ -1,0 +1,112 @@
+{
+    "name": "today-add-plan",
+    "seed": "php artisan mock:sample-day everyday --email=<account>",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".day-panel",
+        "before": [
+            {
+                "click": ".add-plan"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": ".add-plan"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "sheet",
+            "mock": "dialog[open]",
+            "app": "dialog[open]",
+            "pixels": false
+        },
+        {
+            "name": "sheet title",
+            "mock": "dialog[open] .dialog-head h2",
+            "app": "dialog[open] .ui-sheet-head h2"
+        },
+        {
+            "name": "sheet close",
+            "mock": "dialog[open] .dialog-head button",
+            "app": "dialog[open] .ui-sheet-close"
+        },
+        {
+            "name": "day line",
+            "mock": "#today-add-form .detail-intro",
+            "app": ".today-form .detail-intro",
+            "ignore": ["w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "what field",
+            "mock": "#today-add-form .form-field",
+            "app": ".today-form .form-field",
+            "index": 0,
+            "phoneNote": "16px input text on phones (iOS zoom)"
+        },
+        {
+            "name": "what input",
+            "mock": "#today-add-form input[name=title]",
+            "app": ".today-form input[type=text]",
+            "index": 0,
+            "phoneNote": "16px input text on phones (iOS zoom)"
+        },
+        {
+            "name": "where field",
+            "mock": "#today-add-form .form-field",
+            "app": ".today-form .form-field",
+            "index": 1,
+            "phoneNote": "16px input text on phones (iOS zoom)"
+        },
+        {
+            "name": "from field",
+            "mock": "#today-add-form .selection-times .form-field",
+            "app": ".today-form .selection-times .form-field",
+            "index": 0
+        },
+        {
+            "name": "from time",
+            "mock": "#today-add-form [data-time-input]",
+            "app": ".today-form .ui-time-input",
+            "index": 0
+        },
+        {
+            "name": "until time",
+            "mock": "#today-add-form [data-time-input]",
+            "app": ".today-form .ui-time-input",
+            "index": 1
+        },
+        {
+            "name": "note",
+            "mock": "#today-add-form .detail-note",
+            "app": ".today-form .detail-note"
+        },
+        {
+            "name": "Add to this day",
+            "mock": "#today-add-form .outline-action",
+            "app": ".today-form .outline-action"
+        }
+    ],
+    "ignoreNote": "day line: the mock says '30 Sept 2026 · Sample day' where the app says '30 Sept 2026 · Today', so its width and pixels are content. The sheet's own pixels take in that line, so it compares box and styles only."
+}

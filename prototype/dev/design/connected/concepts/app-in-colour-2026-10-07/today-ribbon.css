@@ -1,0 +1,249 @@
+/* "The shape of your day" — Today concept, 7 October 2026. Review only.
+   Colours by role: cyan for the trip, lavender for the paperwork appointment,
+   dusk outlines for sample ideas, ink for now; tokens from connected/tokens.css. */
+.tr-ribbon-wrap {
+    padding: 16px 22px 2px;
+}
+.tr-ribbon {
+    display: grid;
+    gap: 4px;
+}
+.tr-labels,
+.tr-track,
+.tr-axis {
+    position: relative;
+}
+.tr-labels {
+    height: 18px;
+    font-size: var(--text-caption);
+    white-space: nowrap;
+}
+.tr-label {
+    position: absolute;
+    bottom: 0;
+    padding-left: 2px;
+    color: var(--color-text);
+}
+.tr-label b {
+    font-weight: var(--weight-bold);
+}
+.tr-label--now {
+    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-semibold);
+    transform: translateX(calc(-100% - 4px));
+}
+.tr-label--ideas {
+    right: 0;
+    color: #2b1d3f;
+}
+.tr-label--ideas i {
+    color: var(--color-text-soft);
+    font-style: normal;
+}
+.tr-track {
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-canvas);
+}
+.tr-past {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent 0 5px,
+        #e6ddcb 5px 6px
+    );
+}
+.tr-block {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: grid;
+    place-items: center;
+    min-width: 6px;
+    border-radius: var(--radius-sm);
+}
+.tr-block svg,
+.tr-bar svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.tr-block--trip {
+    background: var(--color-select-bg);
+    box-shadow: inset 0 0 0 1.5px var(--color-select-text);
+    color: var(--color-select-text);
+}
+.tr-block--plan {
+    background: #e4d8fb;
+    box-shadow: inset 0 0 0 1.5px var(--color-paper-text);
+    color: var(--color-paper-text);
+}
+.tr-open {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    border: 1.5px dashed var(--color-border-strong);
+    border-left: 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    white-space: nowrap;
+    overflow: hidden;
+}
+.tr-idea {
+    position: absolute;
+    top: calc(6px + var(--tr-row) * 10px);
+    height: 8px;
+    border: 1.5px solid #2b1d3f;
+    border-radius: var(--radius-pill);
+    background: #e4d8fb80;
+}
+.tr-now {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--color-text);
+}
+.tr-axis {
+    height: 14px;
+    color: var(--color-text-soft);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.tr-axis span {
+    position: absolute;
+    transform: translateX(-50%);
+}
+.tr-axis span:first-child {
+    transform: none;
+}
+.tr-axis span:last-child {
+    transform: translateX(-100%);
+}
+.tr-caption {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The next thing, following you once its card has scrolled away. */
+.tr-bar {
+    position: fixed;
+    z-index: 35;
+    top: var(--tr-top, 80px);
+    left: 50%;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 10px;
+    width: min(620px, calc(100% - 32px));
+    min-height: 48px;
+    padding: 6px 10px 6px 8px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    box-shadow: var(--shadow-menu);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -8px);
+    transition:
+        opacity var(--duration-base) var(--ease-settle),
+        transform var(--duration-base) var(--ease-settle);
+}
+.tr-bar.is-shown {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+}
+.tr-bar:active {
+    transform: translate(-50%, 0) scale(0.98);
+}
+.tr-bar:focus-visible {
+    outline: 3px solid var(--color-select-bg);
+    outline-offset: 2px;
+}
+.tr-bar__icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-round);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.tr-bar__text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--text-control);
+}
+.tr-bar__text strong {
+    font-weight: var(--weight-bold);
+}
+.tr-bar__text small {
+    display: block;
+    color: #d9d2c4;
+    font-size: var(--text-caption);
+}
+.tr-bar__go {
+    display: grid;
+    place-items: center;
+}
+
+@media (max-width: 700px) {
+    .tr-ribbon-wrap {
+        padding: 12px 16px 0;
+    }
+    .tr-track {
+        height: 24px;
+    }
+    .tr-block svg {
+        width: 12px;
+        height: 12px;
+    }
+    .tr-open {
+        padding-left: 6px;
+    }
+    .tr-open > span {
+        display: none;
+    }
+    .tr-idea {
+        top: calc(4px + var(--tr-row) * 8px);
+        height: 7px;
+    }
+    .tr-label--now {
+        transform: translateX(-50%);
+    }
+    .tr-bar__text > span {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tr-bar {
+        transition: none;
+    }
+}

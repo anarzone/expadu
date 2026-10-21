@@ -35,3 +35,14 @@ test('a guest cannot open the settings pages', function () {
     $this->get(route('transit.edit'))->assertRedirect(route('login'));
     $this->get('/settings/privacy')->assertRedirect(route('login'));
 });
+
+test('a ticket toggle receives a JSON acknowledgement only after it persists', function () {
+    $user = User::factory()->create(['has_deutschlandticket' => false]);
+
+    $this->actingAs($user)
+        ->patchJson(route('profile.update'), ['has_deutschlandticket' => true])
+        ->assertOk()
+        ->assertJson(['saved' => true]);
+
+    expect($user->fresh()->has_deutschlandticket)->toBeTrue();
+});

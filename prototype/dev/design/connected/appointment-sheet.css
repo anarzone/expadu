@@ -1,0 +1,101 @@
+@import url('tokens.css');
+.appointment-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px 12px;
+    flex-shrink: 0;
+}
+.appointment-heading > span {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    background: var(--blue);
+    border-radius: var(--radius-lg);
+    flex: none;
+}
+.appointment-heading h3 {
+    margin: 0;
+    font-size: var(--text-section);
+    overflow-wrap: anywhere;
+}
+.detail-dialog .appointment-heading p {
+    margin: 3px 0 0;
+    font-size: var(--text-small);
+}
+.appointment-sheet [data-appointment-planning] {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+.appointment-sheet .place-sheet-scroll {
+    padding-top: 4px;
+}
+.appointment-sheet .selection-agenda {
+    border: 0;
+}
+.appointment-sheet .selection-times input {
+    font-size: var(--text-title);
+}
+.appointment-sheet .selection-hint {
+    line-height: 1.5;
+    margin-top: 12px;
+}
+.appointment-footer-note {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.appointment-sheet .visit-day-card {
+    border: 0;
+    box-shadow: none;
+}
+.detail-dialog:has(.appointment-sheet)[open] {
+    display: flex;
+    flex-direction: column;
+}
+.detail-dialog:has(.appointment-sheet) .dialog-head {
+    flex: none;
+    height: auto;
+    min-height: 64px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+.detail-dialog:has(.appointment-sheet) .dialog-head h2 {
+    font-size: var(--text-title-sm);
+}
+.appointment-sheet .actions {
+    margin-top: 0;
+    min-height: 60px;
+}
+.appointment-sheet .actions .button {
+    min-height: 44px;
+}
+.detail-dialog:has(.appointment-sheet) {
+    height: min(600px, calc(100dvh - 16px));
+}
+.appointment-sheet .selection-agenda .visit-day-card,
+.appointment-sheet .selection-agenda .is-preview .visit-day-card {
+    border: 0;
+    background: var(--paper);
+    padding: 12px;
+}
+.appointment-sheet .selection-agenda .is-preview .visit-day-time time {
+    color: var(--ink);
+}
+.appointment-sheet .selection-agenda .visit-day-meta {
+    color: var(--muted);
+    gap: 6px;
+    align-items: center;
+}
+.appointment-sheet .visit-day-meta > span + span {
+    border: 0;
+    padding-left: 0;
+}
+.appointment-sheet .visit-day-state {
+    background: var(--blue);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+}

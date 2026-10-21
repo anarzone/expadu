@@ -84,6 +84,13 @@ return [
     'timezone' => 'Europe/Berlin',
 
     /*
+    | Share of PerfLogger timings kept (0–1). Every request used to write a
+    | Redis sorted-set entry kept for 7 days; a sample keeps the percentiles
+    | that `perf:report` shows at a fraction of the memory.
+    */
+    'perf_sample_rate' => (float) env('PERF_SAMPLE_RATE', 0.25),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

@@ -16,15 +16,16 @@ test('authenticated onboarded users can visit the dashboard', function () {
     $response->assertOk();
 });
 
-test('authenticated non-onboarded users are redirected to onboarding', function () {
+test('authenticated new users enter Today without a questionnaire', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('onboarding'));
+    $response->assertOk();
+    expect($user->fresh()->onboarded_at)->toBeNull();
 });
 
-test('dashboard defers tiles and weather', function () {
+test('dashboard defers the day and weather', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -32,10 +33,10 @@ test('dashboard defers tiles and weather', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->missing('tiles')
+        ->missing('day')
         ->missing('weather')
         ->loadDeferredProps(fn ($reload) => $reload
-            ->has('tiles')
+            ->has('day.items')
             ->has('weather')
         )
     );

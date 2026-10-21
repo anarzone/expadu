@@ -1,0 +1,352 @@
+@import url('../connected/tokens.css');
+/* Services uses the compact controls and purposeful surfaces of the departments. */
+body[data-page='services'] .page-title {
+    align-items: center;
+    margin: 22px 0 18px;
+}
+body[data-page='services'] .page-title h1 {
+    font-size: var(--text-display-sm);
+    letter-spacing: -0.8px;
+}
+body[data-page='services'] .page-title p {
+    font-size: var(--text-control);
+    color: var(--muted);
+    margin-top: 5px;
+}
+.service-sample {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+body[data-page='services'] .services-layout {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+body[data-page='services'] .service-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: #e8f0f2;
+}
+body[data-page='services'] .service-choice {
+    width: auto;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    background: transparent;
+    font-size: var(--text-control);
+    color: var(--ink);
+}
+body[data-page='services'] .service-choice > span {
+    width: auto;
+    height: auto;
+    background: none;
+    white-space: nowrap;
+}
+body[data-page='services'] .service-choice svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    flex: none;
+}
+body[data-page='services'] .service-choice[aria-pressed='true'] {
+    background: white;
+    box-shadow: 0 2px 6px #213d4710;
+    font-weight: var(--weight-semibold);
+}
+body[data-page='services'] .service-workspace {
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: white;
+    overflow: hidden;
+}
+body[data-page='services'] .service-work-head {
+    padding: 16px 16px 12px;
+    gap: 12px;
+    background: transparent;
+}
+body[data-page='services'] .service-work-head h2 {
+    font-size: var(--text-title);
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+body[data-page='services'] .service-work-head p {
+    font-size: var(--text-small);
+    margin: 3px 0 0;
+}
+.service-intent-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    /* A quiet warm tile: cyan means selected or travel (colour roles). */
+    background: var(--paper);
+    border-radius: var(--radius-lg);
+}
+.service-intent-icon svg {
+    width: 22px;
+    height: 22px;
+}
+.service-availability {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 16px 16px;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    line-height: 1.45;
+}
+.service-availability svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+}
+body[data-page='services'] .service-form {
+    padding: 0 16px 16px;
+}
+body[data-page='services'] .service-form .form-grid {
+    gap: 12px;
+}
+.service-form .form-field {
+    display: block;
+    font-size: var(--text-small);
+}
+.service-form .form-field > svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    vertical-align: -3px;
+}
+.service-form .form-field :is(input, select, textarea) {
+    margin-top: 7px;
+    background: var(--paper);
+    border: 1px solid transparent;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: var(--text-section);
+    color: var(--ink);
+}
+.service-extra {
+    margin-top: 12px;
+}
+.service-extra summary {
+    list-style: none;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: var(--text-small);
+    border-radius: var(--radius-md);
+}
+.service-extra summary::-webkit-details-marker {
+    display: none;
+}
+.service-extra summary span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.service-extra summary svg {
+    width: 18px;
+    height: 18px;
+}
+.service-extra summary > svg {
+    transition: transform 180ms ease;
+}
+.service-extra[open] summary > svg {
+    transform: rotate(180deg);
+}
+.service-extra > div {
+    display: grid;
+    gap: 14px;
+    padding: 6px 0 16px;
+}
+.service-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+.service-form-actions .button {
+    flex: 1;
+    min-height: 46px;
+    font-size: var(--text-control);
+    padding: 10px;
+}
+.service-form-actions .button svg {
+    width: 18px;
+    height: 18px;
+}
+.service-keep {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    /* A secondary action, outlined in ink, not the selection colour. */
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-md);
+    flex: none;
+}
+.service-keep svg {
+    width: 20px;
+    height: 20px;
+}
+.service-footnote {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.service-appointment-entry {
+    display: flex;
+    width: calc(100% - 24px);
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 12px;
+    margin: 0 16px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+}
+.service-appointment-entry > span:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+.service-appointment-entry strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.service-appointment-entry small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.service-appointment-entry > svg {
+    width: 18px;
+    height: 18px;
+}
+body[data-page='services']
+    :is(button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid #397988;
+    outline-offset: -3px;
+}
+.appointment-details form {
+    display: grid;
+    gap: 16px;
+}
+.appointment-details footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 8px;
+}
+.appointment-details footer small {
+    color: var(--muted);
+    font-size: var(--text-caption);
+}
+.appointment-details .check-filter {
+    font-size: var(--text-small);
+    min-height: 44px;
+}
+.appointment-details input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--cyan);
+}
+@media (min-width: 1000px) {
+    body[data-page='services'] .service-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(200px, 0.55fr);
+        gap: 24px;
+    }
+    body[data-page='services'] .service-content:has(#brief-recap:empty) {
+        grid-template-columns: 1fr;
+    }
+    body[data-page='services'] .service-workspace {
+        max-width: 800px;
+    }
+}
+@media (max-width: 700px) {
+    body[data-page='services'] .page-title {
+        margin: 16px 0;
+    }
+    body[data-page='services'] .page-title h1 {
+        font-size: var(--text-title-lg);
+    }
+    body[data-page='services'] .page-title p {
+        font-size: var(--text-small);
+    }
+    body[data-page='services'] .services-layout {
+        display: block;
+    }
+    body[data-page='services'] .service-choices {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        margin: 0 0 16px;
+        scrollbar-width: none;
+    }
+    body[data-page='services'] .service-choice {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 9px 12px;
+        gap: 7px;
+    }
+    body[data-page='services'] .service-work-head h2 {
+        font-size: var(--text-title-sm);
+    }
+    body[data-page='services'] .service-form .form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 359px) {
+    .service-intent-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+    }
+    .service-form-actions .button {
+        font-size: var(--text-small);
+    }
+    .service-appointment-entry strong {
+        font-size: var(--text-small);
+    }
+    .service-appointment-entry small {
+        font-size: var(--text-micro);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .service-extra summary > svg {
+        transition: none;
+    }
+}
+body[data-page='services'] .service-choice {
+    flex-direction: row;
+}
+body[data-page='services'] .service-choice > svg {
+    opacity: 1;
+    margin: 0;
+}
+@media (min-width: 701px) {
+    .service-form-actions {
+        justify-content: flex-end;
+    }
+    .service-form-actions .button {
+        flex: 0 1 auto;
+        padding-inline: 16px;
+    }
+}

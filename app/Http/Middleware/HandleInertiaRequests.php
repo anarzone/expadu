@@ -2,13 +2,10 @@
 
 namespace App\Http\Middleware;
 
-use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\OpenTaskCount;
-use App\Home\FeaturedEvent;
+use App\Models\ActiveTrip;
 use App\Models\NotificationPreference;
 use App\Models\UserSetting;
-use App\Services\DisruptionService;
-use App\Services\RhineService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
@@ -55,17 +52,8 @@ class HandleInertiaRequests extends Middleware
             // Admin-only QA tooling: the floating "become this persona"
             // toolbar. Null for everyone else so PersonaSwitcher can gate off
             // a single prop instead of shipping a separate admin flag.
-            'qaSwitcher' => ($request->user()?->is_admin || app()->environment('local'))
-                ? [
-                    // data_get: profile_attributes is nullable (e.g. the admin
-                    // account), so a raw ['qa_persona'] offset would warn per request.
-                    'current' => data_get($request->user()?->profile_attributes, 'qa_persona'),
-                    'personas' => collect(BureaucracyPersonas::demo())
-                        ->map(fn (array $p) => ['key' => $p['key'], 'label' => $p['label']])
-                        ->values()->all(),
-                ]
-                : null,
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // The QA tools show for admins and on this machine only.
+            'qaSwitcher' => (bool) ($request->user()?->is_admin || app()->environment('local')),
             // One-shot flash messages — surfaced globally as a toast so no
             // redirect (e.g. "you're already signed in") is ever silent.
             'flash' => [
@@ -73,7 +61,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
-            'unreadAlertCount' => fn () => $request->user()?->alerts()->whereNull('read_at')->count() ?? 0,
+            'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // The sidebar's Bureaucracy badge: open action tasks that need
             // attention now (overdue or due within two weeks), never a fixed
             // placeholder. See OpenTaskCount for why it isn't "every open task".
@@ -86,7 +74,9 @@ class HandleInertiaRequests extends Middleware
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.
-            'activeTrip' => fn () => $request->user()?->activeTrip?->toShared(),
+            // A finished trip isn't shown and is deleted on the way, so where
+            // it started isn't kept past the trip (ActiveTrip::currentFor).
+            'activeTrip' => fn () => ActiveTrip::currentFor($request->user())?->toShared(),
             // User location — only a real, confirmed or recently accepted
             // origin is shared. Never invent a home or city-centre position.
             'userLocation' => function () use ($request) {
@@ -109,9 +99,8 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Right-panel city widgets. Deferred (never block first paint) and shared
-     * so every page that shows the RightPanel — Today, Composer, Places — is
-     * fed, not just the dashboard.
+     * The city's weather and forecast (all Today still reads of the old
+     * right-panel widgets). Deferred (never block first paint) and shared.
      *
      * Once-props: the client keeps them across navigations and tells the server
      * so, which then skips the widgets request until they lapse. They used to
@@ -136,32 +125,6 @@ class HandleInertiaRequests extends Middleware
         return [
             'weather' => $widget(fn () => app(WeatherService::class)->getCurrentWeather()),
             'forecast' => $widget(fn () => app(WeatherService::class)->getForecast()),
-            'rhineLevel' => $widget(fn () => app(RhineService::class)->getCurrentLevel()),
-            'featuredEvent' => $widget(fn () => app(FeaturedEvent::class)->forToday()),
-            'activeDisruptions' => $widget(fn () => $this->activeDisruptions()),
         ];
-    }
-
-    /**
-     * Today's curated events for the right-panel widget.
-     *
-     * @return list<array<string, mixed>>
-     */
-    /**
-     * Active transit/city disruptions for the right-panel widget (top 2).
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function activeDisruptions(): array
-    {
-        return collect(app(DisruptionService::class)->getLineDisruptions())
-            ->map(fn (array $d) => [
-                'title' => $d['title'],
-                'severity' => $d['severity'],
-                'lines' => $d['affected_lines'],
-            ])
-            ->take(2)
-            ->values()
-            ->all();
     }
 }

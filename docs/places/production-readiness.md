@@ -69,66 +69,42 @@ and rights qualification. EXP-72 owns the recorded release acceptance result.
    records, split between destinations and facilities. Publish evidence of the
    running release, source freshness and remaining capability gaps.
 
-## Current evidence and remaining work
+## 29 September checkpoint and remaining work
 
-The [28 September package report](production-pack/2026-09-28/REPORT.md) retains the
-original preparation measurements. The later [staging release report](staging-release/2026-09-28/REPORT.md)
-records the current result: PR #57 is deployed and verified on staging, while the
-4,643-record package has not been imported into staging or production.
+The [29 September release report](staging-release/2026-09-29/REPORT.md) records the
+historical result, verified at 2026-09-29T20:05:24+00:00: **all 4,643 prepared changes are
+saved and independently verified on staging** (1,874 additions, 2,769 refreshes,
+48 operations). The catalogue has 11,802 stored records, 6,574 general discovery
+identities and 6,585 actual Composer candidates. Of the changed package, 4,084
+identities are Composer-retrievable and 559 descriptive-name records remain held.
+Request-specific constraints can further narrow Composer candidates.
 
-The complete local rehearsal checked all 4,643 prepared records through the shared
-facts contract and retrieved 4,084 Composer identities without additional activity
-qualifications. The remaining 559 records stay outside automatic recommendations.
-Eight category endpoints, 28 detail samples, preserved references, exact no-op
-replay and exact table rollback passed. Earlier results mentioning 4,100 candidates
-included 16 provisional qualifications inside a rolled-back experiment; those
-qualifications are not approved or applied by the current package.
+PR60 recovery support is deployed and verified on staging. All four previously
+held batches passed rollback qualification and committed API/Composer readbacks.
+The final read-only check verified all saved mappings, snapshots, journal receipts
+and recommendation decisions. No package records remain unapplied on staging.
+Normal commit checks passed 1,728 tests / 7,221 assertions (one existing skip);
+required PR/deployment CI passed. The controlled same-data API comparison passed
+payload parity and the p95 regression guard. Earlier performance investigations,
+approvals and partial-rollout states remain historical in the release report.
 
-Explicit activity/radius and free-only requests, conditions, grouping and saved
-references now have application coverage. The 28 September release evidence records
-1,677 passing tests, 7,009 assertions and two existing late-day weather skips.
-These local checks do not establish useful verified-free football coverage: the
-prepared package has zero eligible places meeting that full request. No new photos
-were approved. The [29 September local performance diagnostic](staging-release/2026-09-29/REPORT.md)
-identified expensive query compilation in the expanded catalogue. Fresh statistics
-alone did not remove it. A transaction-local diagnostic setting reduced the two
-measured queries from 5–6 seconds to about 0.56 seconds with identical results;
-this has not been adopted or verified as a target-environment fix. Target
-performance validation remains open.
+Remaining acceptance work:
 
-The owner explicitly approved the staging comparison, which passed on 29 September
-at 09:35:37 UTC: 2,769 expected existing records match, 1,874 proposed new identities
-are absent, and there are zero conflicts. Raw records stayed on the server; only
-counts, checksums and conflicting public identities were permitted in the summary.
-The staging catalogue has 9,928 stored rows; this is not an eligible or photo-covered
-destination count. No catalogue data changed.
+1. Reconcile the reviewed package against production's own current records and
+   source evidence, qualify recovery and release mapping, then verify the live
+   production release. Production has not been changed by this rollout.
+2. Qualify evidence for the 559 descriptive-name records before admitting them to
+   automatic recommendations. Explicit activity retrieval must preserve usable
+   facilities without inventing a name, access, fee or entrance claim.
+3. Establish useful verified free/public football coverage. Existing claim-safety
+   tests and truthful no-match answers do not establish coverage.
+4. Continue approved-media work and report coverage against a stated eligible
+   denominator. This rollout approved no new photos; the 75% objective is unmet.
 
-The owner subsequently approved the prepared upload, private server-only snapshot
-and full rollback-only staging rehearsal. That staging rehearsal passed for all
-4,643 records and 4,084 Composer identities, with no visibility losses and exact
-replay/table rollback. The prior upload/snapshot permission blocker is resolved.
-The target performance test has reproduced a serious first-page food/drink
-regression: p95 1.485 seconds before expansion versus 18.203 seconds after it.
-Two narrow query simplifications pass the 30-test grouping suite (116 assertions);
-the grouping-only candidate preserves all eight API payloads and improves p95
-to 3.605/2.960 seconds, but still fails the 20% regression gate. It is not deployed.
-A shared access-query rewrite has passed 2,664 synthetic equivalence cases and
-59 facts/grouping tests and the full local 1,684-test suite (7,039 assertions,
-no skips). All nine V2 staging payload comparisons and the complete access-ID
-comparison passed, but p95 still failed at 6.132/6.895 seconds versus
-1.274/1.045 seconds. The single-place eligibility lookup also regressed. Exact
-rollback and cleanup passed. Investigation then isolated a retained-savepoint
-rehearsal artifact. On the same completed local public fixture the original and
-revised queries returned identical results in 6.6–7.7 seconds versus 144–149 ms.
-Corrected V3 staging p95 passed at 470/487 ms versus 1,055/1,694 ms, with all nine
-full API payloads and access IDs identical, exact rollback and cleanup. The fix
-awaits final evidence CI and application release verification.
-The replacement snapshot passed exact native-column reconstruction for all nine
-tables at 11:43 UTC after review caught a JSON-normalization limitation in the
-initial archive. This tests temporary-table reconstruction, not full-database recovery. See the [current report](staging-release/2026-09-29/REPORT.md).
-The proposed 100-record canary, its committed import and subsequent full batch
-remain pending those gates and concrete commit authorization. Production requires
-its own mapping and acceptance evidence. No production data changed.
+Every changed record passed the shared facts/API checks and exact Composer
+membership checks in its batch; private source receipts remain on the staging
+host. Raw staging rows and real user plans were not exported. Data retention,
+photo rights, unknown facts and source exclusions remain subject to this contract.
 
 This contract supplements the frozen package and its preparation plan; it does
 not rewrite its data, checksums or measured results. It applies to subsequent
@@ -144,3 +120,62 @@ does not make them eligible. Excluded data and unapproved images must not be
 published or reintroduced through source refreshes. The approved shared design reference is
 `prototype/dev/design/connected/design-decisions.md` in the primary design checkout
 (the prototype directory is not included in this release branch).
+
+
+## 30 September preparation checkpoint (before the approved hold)
+
+The [actual staging and source-hold report](production-release/2026-09-30-source-hold/REPORT.md)
+adds a fresh READ ONLY check against staging data. All 6,585 currently eligible
+rows passed the candidate Places/Composer contract checks; this does not establish
+fresh source verification of every field or deployed-version HTTP acceptance.
+Of the copied legacy pairs, 463 already resolve on staging and 21 differ from the
+current reviewed source projections. All 90 reviewed facilities match actual
+staging and native qualification previews, but remain unqualified there.
+
+The staging catalogue includes 4,356 source-null records with no owned fact
+observations/corrections. Of these, 2,350 remain eligible under the current policy.
+The prepared reversible provenance hold retains all 11,802 stored rows and 798
+canonical aliases, but projects 4,224 source-backed general destinations plus 11
+linked components as eligible. This is a provenance boundary, not a ready count.
+The new operator journal passed native regression tests, an isolated 4,680-row
+apply/recover trial and exact staging baseline preparation. Its normal hooks passed
+1,763 tests with one skip / 7,385 assertions. It has not been applied to live data.
+
+The current pre-quarantine photo-policy count is 121 of 6,574 general destinations
+(1.841%), with no fresh URL-health check in this audit. Post-quarantine photo
+coverage has not been measured; do not reuse that numerator with a new denominator.
+The 75% target and useful verified free/public football coverage remain open.
+PR61 remains draft, with explicit live-operation/deployment approval and actual
+running-version acceptance still required. No production data change or new image
+approval occurred in this continuation.
+
+
+## Current checkpoint: staging provenance hold committed
+
+The [30 September applied staging report](production-release/2026-09-30-staging-source-hold/REPORT.md)
+supersedes the pre-hold counts above. The owner-approved source-null hold was
+committed at 2026-09-30T20:03:06+00:00 and verified in a fresh process. All
+11,802 records and 798 alias relations were retained; zero unknown-origin rows
+remain eligible. There are 4,224 eligible general destination rows plus 11
+components. The running Places list's own filters return 4,139 entries.
+
+Both the candidate and an isolated copy of the actual running staging code
+passed the shared contracts for all 4,235 eligible rows. The running-code audit
+verified 791 eligible alias API/Composer references and all 3,558 unlinked held
+Composer exclusions. A staging apply/recover/retry rehearsal restored its exact
+baseline before the commit; scoped recovery metadata and the durable receipt
+remain privately on persistent server storage. No raw archive was exported.
+
+Post-hold policy-publishable photo coverage is 119 / 4,224 (2.817%), without a
+fresh URL-health check. A corrected football discovery test using Composer's
+canonical internal activity `soccer`, rerun at 20:58:18 UTC within 3 km of a labeled sample
+city-centre origin returned zero supported candidates, with or without a free
+budget. This is not a citywide absence claim.
+
+The running image differs from PR61: held detail links remain accessible, but
+its tested twelve held responses do not include the candidate's explicit
+unavailable status. Scoped staging code promotion, current facility previews
+and combined recovery acceptance, actual authenticated external HTTP checks,
+useful activity evidence, media coverage and independently qualified production
+release remain open. No 90-facility qualification, source rewrite, media approval,
+application deployment or production change was made by this operation.

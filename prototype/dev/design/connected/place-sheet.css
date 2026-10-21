@@ -1,0 +1,1350 @@
+@import url('tokens.css');
+/* One stable frame, with compact tasks inside it. Palette comes from the app. */
+.detail-dialog:has(.place-sheet) {
+    width: min(560px, calc(100vw - 32px));
+    height: min(700px, calc(100dvh - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border-radius: var(--radius-xl);
+    background: #fff;
+    color: var(--ink);
+}
+.detail-dialog:has(.place-sheet)::backdrop {
+    background: #0005;
+    backdrop-filter: none;
+}
+.detail-dialog:has(.place-sheet) .dialog-head {
+    padding: 14px 20px 10px;
+    height: 64px;
+    box-sizing: border-box;
+}
+.detail-dialog:has(.place-sheet) .dialog-head h2 {
+    font-size: var(--text-title);
+    letter-spacing: -0.7px;
+}
+.detail-dialog:has(.place-sheet) #dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+.place-sheet {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.place-sheet-hero {
+    position: relative;
+    margin: 0 20px;
+    height: 116px;
+    flex: 0 0 116px;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: var(--blue);
+}
+.place-sheet-hero > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 55%;
+}
+.place-sheet-hero > div:last-child {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 28px 14px 12px;
+    background: linear-gradient(transparent, #000a);
+    color: white;
+    display: grid;
+    gap: 2px;
+}
+.place-sheet-hero span {
+    font-size: var(--text-micro);
+}
+.place-sheet-hero strong {
+    font-size: var(--text-section);
+    letter-spacing: -0.4px;
+}
+.place-sheet-hero a {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    color: white;
+    font-size: var(--text-micro);
+}
+.place-sheet-art {
+    height: 100%;
+    display: grid;
+    place-items: center;
+}
+.place-sheet-art svg {
+    width: 48px;
+    height: 48px;
+}
+/* A listing without approved media has a compact location line, no image slot. */
+.place-sheet[data-section] .place-sheet-hero.no-media {
+    height: auto;
+    flex-basis: auto;
+    min-height: 44px;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+.place-sheet-hero.no-media > div:last-child {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 0;
+    background: none;
+    color: var(--muted);
+}
+.place-sheet-hero.no-media span,
+.place-sheet-hero.no-media strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular);
+    letter-spacing: 0;
+}
+.place-sheet-hero.no-media a {
+    position: static;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-left: auto;
+    color: var(--action);
+    font-size: var(--text-caption);
+}
+.place-source-facts {
+    margin: 16px 0;
+}
+.place-source-facts > div {
+    margin-bottom: 14px;
+}
+.place-source-facts dt {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.place-source-facts dt span {
+    color: var(--muted);
+    font-weight: var(--weight-regular);
+    margin-left: 6px;
+}
+.place-source-facts dd {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: var(--text-control);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.place-source-disclosure {
+    margin-block: 14px;
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.place-source-disclosure summary {
+    cursor: pointer;
+    min-height: 44px;
+    padding-block: 12px;
+}
+.place-source-disclosure a {
+    text-decoration: underline;
+}
+.place-source-summary {
+    overflow-wrap: anywhere;
+}
+.place-website {
+    color: var(--action);
+    min-height: 44px;
+    font-size: var(--text-small);
+}
+.place-sheet-tabs {
+    display: flex;
+    flex: 0 0 auto;
+    margin: 14px 20px 0;
+    padding: 3px;
+    gap: 3px;
+    border-radius: var(--radius-md);
+    background: var(--paper);
+}
+.place-sheet-tabs button {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 40px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: var(--text-small);
+    color: var(--ink);
+    background: none;
+    cursor: pointer;
+}
+.place-sheet-tabs svg {
+    width: 16px;
+    height: 16px;
+}
+.place-sheet-tabs button[aria-pressed='true'] {
+    background: var(--blue);
+    box-shadow: inset 0 -2px var(--cyan);
+    font-weight: var(--weight-semibold);
+}
+.place-sheet-panel {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+}
+.place-sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 12px;
+    padding: 20px 20px 12px;
+}
+.place-sheet-panel[hidden] {
+    display: none;
+}
+.place-sheet-panel h3 {
+    margin: 0;
+    font-size: var(--text-title);
+    line-height: 1.2;
+    letter-spacing: -0.7px;
+    color: var(--ink);
+}
+.detail-dialog .place-sheet-panel p {
+    font-size: var(--text-small);
+    line-height: 1.5;
+    margin: 10px 0;
+}
+.place-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 18px;
+    flex-shrink: 0;
+}
+.detail-dialog .place-section-heading p {
+    margin: 5px 0 0;
+    color: var(--muted);
+}
+.place-section-symbol {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: var(--radius-md);
+    background: var(--blue);
+    color: var(--ink);
+    transform: rotate(6deg);
+}
+.place-section-symbol svg {
+    width: 22px;
+    height: 22px;
+    transform: rotate(-6deg);
+}
+.place-sheet-caution {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    color: var(--muted);
+}
+.place-sheet-caution svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.place-sheet-caution strong {
+    display: block;
+    font-weight: var(--weight-medium);
+    color: var(--ink);
+}
+/* The About view gives its photograph the room that task forms need elsewhere. */
+.place-sheet[data-section='about'] .place-sheet-hero {
+    height: clamp(152px, 27dvh, 224px);
+    flex-basis: clamp(152px, 27dvh, 224px);
+}
+.place-about-note {
+    flex-shrink: 0;
+    margin: 14px 0 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+    border: 1px solid var(--line);
+}
+.place-about-note > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.place-about-note h4 {
+    margin: 0;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+.place-about-note > div > span {
+    font-size: var(--text-micro);
+    color: var(--action);
+}
+.detail-dialog .place-about-note p {
+    margin: 8px 0;
+    color: var(--ink);
+}
+.place-about-note small {
+    display: block;
+    font-size: var(--text-micro);
+    line-height: 1.5;
+    color: var(--muted);
+}
+.place-photo-credit {
+    align-self: flex-start;
+    margin: 0 0 14px;
+    padding: 6px 0;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.place-sheet-footer,
+.place-sheet .actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 8px 20px max(8px, env(safe-area-inset-bottom));
+    border: 0;
+    box-shadow: none;
+    background: var(--place-footer-solid, white);
+    flex-shrink: 0;
+    z-index: 2;
+}
+/* Reserved action row: no gradient or overlay may mask the last activity. */
+/* A light glass finish in its own row; content never scrolls under the action. */
+@supports (backdrop-filter: blur(16px)) or (-webkit-backdrop-filter: blur(16px)) {
+    .place-sheet-footer,
+    .place-sheet .actions {
+        background: var(--place-footer-glass, rgb(255 255 255 / 78%));
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+        backdrop-filter: blur(16px) saturate(120%);
+    }
+}
+.place-sheet .button {
+    font-size: var(--text-small);
+    min-height: 42px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    gap: 7px;
+    white-space: nowrap;
+}
+.place-sheet-footer .button,
+.place-sheet .actions .button {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: var(--text-caption);
+    border-radius: var(--radius-md);
+}
+.place-sheet .button svg {
+    width: 16px;
+    height: 16px;
+}
+.place-sheet .button.primary {
+    color: #fff;
+    background: var(--action);
+    border-color: var(--action);
+}
+.place-sheet .button.secondary {
+    color: var(--ink);
+    background: transparent;
+    border-color: transparent;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+.place-sheet .button.secondary:hover {
+    background: var(--paper);
+}
+.place-sheet [data-save-item][aria-pressed='true'] {
+    color: var(--ink);
+}
+.place-sheet [data-save-item][aria-pressed='true'] svg {
+    fill: var(--cyan);
+}
+.place-sheet [data-place-planning] {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+.place-sheet .selection-name {
+    display: none;
+}
+.place-sheet #selection-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+}
+.place-sheet .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    color: var(--ink);
+}
+.place-sheet .selection-day {
+    margin-bottom: 14px;
+}
+.place-sheet .shared-date-toggle {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+    color: var(--ink);
+    min-height: 44px;
+}
+.place-sheet .selection-times {
+    display: grid;
+    grid-template-columns: minmax(0, 144px) 18px minmax(0, 144px);
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+}
+.visit-suggestions {
+    margin: 0 0 16px;
+}
+.detail-dialog .visit-suggestions p {
+    margin: 0 0 7px;
+    font-size: var(--text-caption);
+    color: var(--ink);
+}
+.visit-suggestions p span,
+.visit-suggestions small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.visit-suggestions [role='group'] {
+    display: flex;
+    gap: 6px;
+}
+.visit-suggestions button {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px 4px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.visit-suggestions button[aria-pressed='true'] {
+    background: var(--blue);
+    border-color: var(--cyan);
+}
+.place-sheet .selection-times > span {
+    padding: 16px 0 0;
+    color: var(--ink);
+    text-align: center;
+}
+.place-sheet .selection-times input {
+    min-width: 0;
+    width: 100%;
+    height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    font: inherit;
+    font-size: var(--text-section);
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: #fff;
+    cursor: pointer;
+}
+.place-sheet .selection-times input[aria-expanded='true'],
+.place-sheet .selection-times input:focus-visible {
+    border-color: var(--cyan);
+    outline: 2px solid var(--blue);
+    outline-offset: 1px;
+}
+.place-sheet .selection-times input::placeholder {
+    color: var(--muted);
+    font-weight: var(--weight-regular);
+}
+.place-sheet .selection-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+}
+.place-sheet .selection-hint svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+.place-sheet .selection-hint span {
+    font-size: var(--text-micro);
+}
+.place-sheet .selection-error {
+    color: var(--action);
+    background: white;
+    border-left: 3px solid var(--action);
+    border-radius: var(--radius-sm) var(--radius-md) var(--radius-md)
+        var(--radius-sm);
+    padding: 10px 12px;
+    margin: 12px 0 0;
+    font-size: var(--text-small);
+    line-height: 1.45;
+    scroll-margin-block: 20px;
+}
+.place-sheet .visit-edit-context {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    margin: 8px 0 0;
+}
+.place-sheet .visit-edit-feedback {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: var(--text-caption);
+    line-height: 1.4;
+    color: var(--ink);
+}
+.visit-edit-feedback button {
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    min-height: 44px;
+    min-width: 44px;
+    padding-inline: 6px;
+    font: inherit;
+    font-size: var(--text-small);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.place-sheet .visit-edit-feedback[hidden] {
+    display: none;
+}
+.place-sheet .selection-error[hidden] {
+    display: none;
+}
+.place-sheet .selection-agenda {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: none;
+    font-size: var(--text-caption);
+}
+.place-sheet .selection-agenda summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    cursor: pointer;
+    list-style: none;
+}
+.place-sheet .selection-agenda summary::-webkit-details-marker {
+    display: none;
+}
+.place-sheet .selection-agenda summary > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: var(--weight-medium);
+}
+.place-sheet .selection-agenda summary small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+}
+.place-sheet .selection-agenda summary svg {
+    width: 16px;
+    height: 16px;
+}
+.place-sheet .selection-agenda details[open] summary > svg {
+    transform: rotate(180deg);
+}
+.place-sheet .selection-agenda ul:not(.visit-day-timeline) {
+    list-style: none;
+    margin: 0 0 10px 7px;
+    padding: 0 0 0 16px;
+    border-left: 1px dashed var(--cyan);
+}
+.place-sheet .selection-agenda ul > li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 8px;
+    padding: 7px 0;
+    align-items: baseline;
+}
+.place-sheet .selection-agenda ul > li::before {
+    content: '';
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-round);
+    background: var(--cyan);
+    left: -19px;
+    top: 13px;
+}
+.place-sheet .selection-agenda ul > li > span {
+    color: var(--muted);
+    font-size: var(--text-micro);
+    white-space: nowrap;
+}
+.place-sheet .selection-agenda strong {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+}
+.place-sheet .selection-agenda strong small {
+    display: block;
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+    color: var(--muted);
+}
+.place-sheet .actions {
+    justify-content: flex-end;
+}
+.place-sheet .place-added {
+    padding: 16px 0;
+}
+.place-added > svg {
+    display: block;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    background: var(--blue);
+    color: var(--ink);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+}
+.place-added:focus {
+    outline: none;
+}
+.place-journey {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.place-route {
+    position: relative;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+}
+.place-route::before {
+    content: '';
+    position: absolute;
+    left: 21px;
+    top: 40px;
+    bottom: 34px;
+    border-left: 2px dotted var(--cyan);
+}
+.place-route-origin {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+.route-dot {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border: 3px solid var(--cyan);
+    border-radius: var(--radius-round);
+    background: white;
+    flex: 0 0 12px;
+    margin-left: 4px;
+}
+.route-field {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.place-journey input[name='from'] {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    font: inherit;
+    font-size: var(--text-section);
+    font-weight: var(--weight-medium);
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    padding: 4px 0 8px;
+    color: var(--ink);
+    background: white;
+}
+.place-journey input[name='from']:autofill {
+    box-shadow: 0 0 0 1000px white inset;
+}
+.place-journey-destination {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+}
+.place-journey-destination > svg {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    background: white;
+    color: var(--action);
+    flex: 0 0 20px;
+}
+.place-journey-destination > span {
+    display: grid;
+    gap: 3px;
+}
+.place-journey-destination small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.place-journey-destination strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.place-journey fieldset {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 0;
+    margin: 18px 0 8px;
+}
+.place-journey legend {
+    padding: 0 0 8px;
+    font-size: var(--text-caption);
+    color: var(--ink);
+    font-weight: var(--weight-medium);
+}
+.place-journey fieldset label {
+    position: relative;
+    cursor: pointer;
+}
+.place-journey fieldset input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+.place-journey fieldset label > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: white;
+    font-size: var(--text-small);
+    color: var(--ink);
+}
+.place-journey fieldset label svg {
+    width: 20px;
+    height: 20px;
+}
+.place-journey fieldset label:has(:checked) > span {
+    background: var(--blue);
+    border-color: var(--cyan);
+    font-weight: var(--weight-semibold);
+}
+.place-journey fieldset label:has(:focus-visible) > span {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+}
+.detail-dialog .place-journey .place-sheet-caution {
+    font-size: var(--text-caption);
+    margin: 12px 0 20px;
+}
+.detail-dialog .place-journey .journey-feedback {
+    margin: 0;
+    font-size: var(--text-micro);
+}
+.place-journey .journey-feedback:empty {
+    display: none;
+}
+@media (max-width: 700px) {
+    .detail-dialog:has(.place-sheet) {
+        width: 100%;
+        max-width: 100%;
+        height: min(700px, calc(100dvh - 16px));
+        max-height: calc(100dvh - 16px);
+        margin: auto 0 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .detail-dialog:has(.place-sheet) .dialog-head {
+        height: 60px;
+        padding: 10px 16px;
+    }
+    .detail-dialog:has(.place-sheet) .dialog-head h2 {
+        font-size: var(--text-title);
+    }
+    .place-sheet-hero {
+        margin: 0 16px;
+    }
+    .place-sheet-tabs {
+        margin: 12px 16px 0;
+    }
+    .place-sheet-scroll {
+        padding: 18px 16px 12px;
+    }
+    .place-sheet-footer,
+    .place-sheet .actions {
+        padding-inline: 16px;
+    }
+    .place-sheet-panel h3 {
+        font-size: var(--text-title);
+    }
+    .place-section-heading {
+        margin-bottom: 16px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .place-sheet-hero {
+        transition:
+            flex-basis 240ms cubic-bezier(0.22, 1, 0.36, 1),
+            height 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .place-sheet-tabs button {
+        transition:
+            background 140ms ease,
+            box-shadow 140ms ease;
+    }
+}
+
+/* Compact task canvases: cyan for inputs, white for the day's/journey's details. */
+.place-sheet[data-section='plan'] .place-sheet-hero,
+.place-sheet[data-section='directions'] .place-sheet-hero {
+    height: 88px;
+    flex-basis: 88px;
+}
+.place-sheet-panel:is([data-panel='plan'], [data-panel='directions']) {
+    margin-top: 12px;
+    background: var(--paper);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.place-sheet-panel:is([data-panel='plan'], [data-panel='directions'])
+    .place-sheet-scroll {
+    padding-top: 16px;
+}
+.place-sheet-panel:is([data-panel='plan'], [data-panel='directions']) h3 {
+    font-size: var(--text-title-sm);
+}
+.place-sheet-panel:is([data-panel='plan'], [data-panel='directions'])
+    .place-section-heading {
+    margin-bottom: 14px;
+}
+.place-sheet-panel:is([data-panel='plan'], [data-panel='directions'])
+    :is(.place-sheet-footer, .actions) {
+    --place-footer-solid: var(--paper);
+    --place-footer-glass: rgb(246 250 251 / 78%);
+}
+.visit-setup {
+    flex-shrink: 0;
+    padding: 14px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-lg);
+    background: var(--blue);
+}
+.place-sheet .visit-setup .shared-date-toggle {
+    background: white;
+    border-color: transparent;
+}
+.place-sheet .visit-setup .selection-times {
+    grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+    gap: 8px;
+    margin-bottom: 0;
+}
+.visit-setup .visit-suggestions {
+    margin-bottom: 12px;
+}
+.visit-setup .visit-suggestions button {
+    border-color: transparent;
+    min-height: 36px;
+    font-size: var(--text-micro);
+}
+.visit-setup .visit-suggestions button[aria-pressed='true'] {
+    background: var(--ink);
+    color: white;
+}
+.place-sheet .selection-agenda {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 0 12px;
+    background: white;
+    flex-shrink: 0;
+}
+.place-sheet .selection-agenda summary {
+    min-height: 44px;
+}
+.place-route {
+    flex-shrink: 0;
+    padding: 12px 14px;
+    background: var(--blue);
+    border-color: transparent;
+    border-radius: var(--radius-lg);
+}
+.place-route::before {
+    left: 23px;
+}
+.place-journey input[name='from'] {
+    min-height: 40px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+}
+.place-journey-destination > svg {
+    background: var(--blue);
+}
+.place-journey fieldset {
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-md);
+    background: #e6edf0;
+    margin: 12px 0;
+    flex-shrink: 0;
+}
+.place-journey legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.place-journey fieldset label > span {
+    min-height: 36px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+}
+.place-journey fieldset label:has(:checked) > span {
+    background: var(--ink);
+    color: white;
+    box-shadow: 0 2px 5px #211d1515;
+}
+[data-mini-departures] {
+    flex-shrink: 0;
+    margin-bottom: 14px;
+}
+.mini-departures {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: white;
+}
+.mini-departures header,
+.mini-route-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.mini-departures header strong {
+    font-size: var(--text-caption);
+    color: var(--ink);
+}
+.mini-departures header > span {
+    padding: 3px 6px;
+    background: var(--blue);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-micro);
+    color: var(--ink);
+}
+.detail-dialog .mini-departures .mini-route-name {
+    margin: 8px 0 10px;
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.mini-route-name > span {
+    padding: 0 3px;
+    color: var(--action);
+}
+.mini-route-summary time,
+.mini-route-summary > strong {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+}
+.mini-time-dash {
+    padding: 0 6px;
+    color: var(--muted);
+}
+.mini-route-summary small {
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+}
+.mini-route-legs {
+    display: flex;
+    gap: 4px;
+    margin: 10px 0 6px;
+}
+.mini-leg {
+    flex-basis: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 60px;
+    padding: 7px 5px;
+    border-radius: var(--radius-sm);
+    background: #edf2f3;
+    font-size: var(--text-micro);
+    color: var(--ink);
+    white-space: nowrap;
+}
+.mini-leg small {
+    font-size: var(--text-micro);
+}
+.mini-leg-transit {
+    background: var(--cyan);
+}
+.mini-leg-bike {
+    background: var(--blue);
+}
+.mini-route-steps summary {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-micro);
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+}
+.mini-route-steps summary::-webkit-details-marker {
+    display: none;
+}
+.mini-route-steps summary::after {
+    content: '⌄';
+}
+.mini-route-steps[open] summary::after {
+    transform: rotate(180deg);
+}
+.mini-route-steps ol {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 10px;
+}
+.mini-route-steps li {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: var(--text-micro);
+}
+.mini-route-steps li time {
+    color: var(--muted);
+}
+.mini-route-steps li span {
+    border-left: 2px solid var(--cyan);
+    padding-left: 10px;
+}
+.mini-route-steps li small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.mini-route-source {
+    display: block;
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+    font-size: var(--text-micro);
+    line-height: 1.5;
+    color: var(--muted);
+}
+.mini-departures .mini-route-source {
+    border-top: 0;
+    padding: 0;
+    margin-bottom: 10px;
+}
+.place-sheet-panel[data-panel='directions'] .place-sheet-scroll {
+    padding-top: 12px;
+}
+/* Keep the mini itinerary and its disclosure above the compact footer on phones. */
+.place-sheet[data-section='directions'] .place-sheet-hero {
+    height: 64px;
+    flex-basis: 64px;
+}
+.place-route {
+    padding-block: 8px;
+}
+.place-route::before {
+    bottom: 20px;
+}
+.place-journey-destination {
+    padding-top: 10px;
+}
+.place-journey-destination > span {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.mini-departures {
+    padding-block: 10px;
+}
+.detail-dialog .mini-departures .mini-route-name {
+    margin-block: 6px;
+}
+
+/* Time is the spine; soft cyan cards hold the day and orange marks a preview. */
+.place-sheet .visit-day-timeline {
+    list-style: none;
+    padding: 0;
+    margin: 2px 0 12px;
+}
+.visit-day-entry {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+    position: relative;
+    padding-block: 3px;
+}
+.visit-day-time {
+    padding-top: 9px;
+    display: grid;
+    gap: 3px;
+    font-variant-numeric: tabular-nums;
+}
+.visit-day-time time {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    color: var(--ink);
+}
+.visit-day-time small {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.visit-day-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-left: 3px solid var(--cyan);
+    border-radius: var(--radius-sm) var(--radius-md) var(--radius-md)
+        var(--radius-sm);
+    background: var(--paper);
+    padding: 9px 11px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.visit-day-rail {
+    --day-reveal: 64px;
+    --day-delete: #e9384a;
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+}
+.visit-day-rail > .visit-day-card {
+    min-height: 60px;
+    position: relative;
+    z-index: 1;
+}
+.visit-day-rail.is-revealed > .visit-day-card {
+    transform: translateX(calc(-1 * var(--day-reveal)));
+}
+.visit-day-card[data-day-swipe] {
+    touch-action: pan-y pinch-zoom;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+}
+.visit-day-card:focus-visible,
+.visit-day-card:has(.visit-day-action:focus-visible) {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+.visit-day-description {
+    flex: 1;
+    min-width: 0;
+}
+.place-sheet .visit-day-description > strong {
+    display: block;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+.visit-day-action,
+.visit-day-notice button {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.visit-day-action {
+    margin-block: -6px;
+    margin-right: -4px;
+}
+.visit-day-action:hover,
+.visit-day-action:active {
+    color: var(--action);
+    background: color-mix(in srgb, var(--peach) 30%, transparent);
+}
+.visit-day-action:focus-visible,
+.visit-day-notice button:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+.visit-day-delete {
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    width: var(--day-reveal);
+    display: grid;
+    place-items: center;
+}
+.visit-day-delete button {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: var(--day-delete);
+    color: white;
+    font: inherit;
+    font-size: var(--text-micro);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+        transform 180ms ease,
+        background 180ms ease;
+}
+.visit-day-delete button > svg {
+    width: 21px;
+    height: 21px;
+}
+.visit-day-delete button:active {
+    transform: scale(0.94);
+    background: #d5283d;
+}
+.visit-day-delete button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: -5px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .visit-day-delete button {
+        transition: none;
+    }
+}
+.visit-day-notice {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 10px;
+    margin-bottom: 10px;
+    background: var(--blue);
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.visit-day-notice button {
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+}
+.detail-dialog .visit-day-error {
+    font-size: var(--text-micro);
+    color: var(--action);
+}
+.visit-day-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.visit-day-meta > span + span {
+    border-left: 1px solid var(--line);
+    padding-left: 8px;
+}
+.visit-day-entry.is-current .visit-day-card {
+    background: var(--blue);
+}
+.visit-day-entry.is-preview .visit-day-card {
+    border-color: var(--action);
+    background: color-mix(in srgb, var(--peach) 40%, white);
+}
+.visit-day-entry.is-preview .visit-day-time time,
+.visit-day-entry.is-preview .visit-day-meta {
+    color: var(--action);
+}
+.visit-day-overlap {
+    display: block;
+    margin-top: 5px;
+    color: var(--action);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.visit-day-gap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 56px;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: var(--muted);
+}
+.visit-day-gap::before,
+.visit-day-gap::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed var(--line);
+}
+.detail-dialog .visit-day-prompt,
+.detail-dialog .visit-day-empty {
+    font-size: var(--text-micro);
+    line-height: 1.45;
+    margin: 8px 0 12px;
+    color: var(--muted);
+}

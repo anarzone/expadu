@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\TimetableService;
+use Carbon\CarbonImmutable;
 
 /**
  * The SWR caches store minutes-until-departure AS FETCHED; serving them
@@ -32,8 +33,9 @@ test('cached board minutes are re-anchored to now by cache age', function () {
         ->and(collect($out['departures'])->pluck('line')->all())->toBe(['1', '7'])
         // cancelled rows stay visible regardless of minutes
         ->and($out['departures'][1]['cancelled'])->toBeTrue()
-        // the stamp is internal — never reaches the client
-        ->and($out)->not->toHaveKey('fetched_at');
+        // original observation and current countdown anchor are explicit
+        ->and($out['fetched_at'])->toBe(CarbonImmutable::createFromTimestamp($board['fetched_at'])->toIso8601String())
+        ->and($out['generated_at'])->not->toBeEmpty();
 });
 
 test('a fresh board passes through untouched', function () {

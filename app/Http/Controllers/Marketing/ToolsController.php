@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Marketing;
 
-use App\Bureaucracy\PermanentResidencyEligibility;
 use App\Http\Controllers\Controller;
 use Illuminate\View\View;
 
 /**
- * The free tools on expadu.com/tools — pure client-side calculators whose
- * constants come from the same engines the app uses (fare config, NE
- * eligibility tracks), so a figure can never drift between app and tool.
+ * Public tools use sourced configuration. Legacy legal calculators remain
+ * unavailable until their rules satisfy the publication/review requirements.
  */
 class ToolsController extends Controller
 {
@@ -38,18 +36,8 @@ class ToolsController extends Controller
 
     public function residency(): View
     {
-        $tracks = PermanentResidencyEligibility::tracks();
-
-        return view('marketing.tools.residency', [
-            'tracks' => $tracks,
-            'toolData' => [
-                'tracks' => collect($tracks)
-                    ->map(fn (array $track, string $key): array => [...$track, 'key' => $key])
-                    ->values()
-                    ->all(),
-                'blueCardAltMonths' => 27,
-                'skilledDegreeMonths' => 24,
-            ],
+        return view('marketing.tools.awaiting-review', [
+            'toolName' => 'Permanent-residency timeline',
         ]);
     }
 
@@ -68,15 +56,14 @@ class ToolsController extends Controller
 
     public function citizenship(): View
     {
-        return view('marketing.tools.citizenship', [
-            'rules' => $this->citizenshipRules(),
+        return view('marketing.tools.awaiting-review', [
+            'toolName' => 'Citizenship quiz',
         ]);
     }
 
     /**
-     * German citizenship (naturalisation) rules after the 2024 StAG reform.
-     * Figures cite the statute directly; the quiz never asserts eligibility —
-     * it maps answers to the likely track and lists what must still be true.
+     * Archived legacy rules, retained for human review only. These must not be
+     * used in a public response without the project's authority/source gates.
      *
      * @return array{standard_years: int, fast_years: int, spouse_residence_years: int, spouse_marriage_years: int, reform_date: string, sources: array<int, array{label: string, url: string}>}
      */

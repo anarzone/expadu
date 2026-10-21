@@ -1,0 +1,534 @@
+{
+    "name": "paperwork",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "views row",
+            "mock": ".case-top",
+            "app": ".case-top"
+        },
+        {
+            "name": "view tabs",
+            "mock": ".case-tabs",
+            "app": ".case-tabs"
+        },
+        {
+            "name": "tab Overview",
+            "mock": ".case-tabs button",
+            "app": ".case-tabs button",
+            "index": 0
+        },
+        {
+            "name": "tab Documents",
+            "mock": ".case-tabs button",
+            "app": ".case-tabs button",
+            "index": 1
+        },
+        {
+            "name": "tab icon",
+            "mock": ".case-tabs button svg",
+            "app": ".case-tabs button svg",
+            "index": 0
+        },
+        {
+            "name": "search",
+            "mock": "label.case-search",
+            "app": "label.case-search"
+        },
+        {
+            "name": "search field",
+            "mock": "#case-search",
+            "app": "#case-search"
+        },
+        {
+            "name": "search icon",
+            "mock": "label.case-search > svg",
+            "app": "label.case-search > svg"
+        },
+        {
+            "name": "plan picker",
+            "mock": "details.person-picker > summary",
+            "app": "details.person-picker > summary"
+        },
+        {
+            "name": "plan picker name",
+            "mock": ".person-picker .person-name",
+            "app": ".person-picker .person-name"
+        },
+        {
+            "name": "Your situation",
+            "mock": "button.case-details",
+            "app": "button.case-details"
+        },
+        {
+            "name": "coming up",
+            "mock": "section.coming-up-dates",
+            "app": "section.coming-up-dates"
+        },
+        {
+            "name": "coming up: today",
+            "mock": ".coming-row",
+            "app": ".coming-row",
+            "index": 0
+        },
+        {
+            "name": "coming up: today when",
+            "mock": ".coming-row .coming-when",
+            "app": ".coming-row .coming-when",
+            "index": 0
+        },
+        {
+            "name": "coming up: today what",
+            "mock": ".coming-row .coming-what",
+            "app": ".coming-row .coming-what",
+            "index": 0
+        },
+        {
+            "name": "coming up: tomorrow",
+            "mock": ".coming-row",
+            "app": ".coming-row",
+            "index": 1
+        },
+        {
+            "name": "coming up: tomorrow when",
+            "mock": ".coming-row .coming-when",
+            "app": ".coming-row .coming-when",
+            "index": 1
+        },
+        {
+            "name": "coming up: tomorrow what",
+            "mock": ".coming-row .coming-what",
+            "app": ".coming-row .coming-what",
+            "index": 1
+        },
+        {
+            "name": "question card",
+            "mock": "section.question-card",
+            "app": "section.question-card"
+        },
+        {
+            "name": "question context",
+            "mock": ".question-card .question-context",
+            "app": ".question-card .question-context"
+        },
+        {
+            "name": "question",
+            "mock": ".question-card h2",
+            "app": ".question-card h2"
+        },
+        {
+            "name": "question why",
+            "mock": ".question-card .question-why",
+            "app": ".question-card .question-why"
+        },
+        {
+            "name": "question actions",
+            "mock": ".question-card .actions",
+            "app": ".question-card .actions"
+        },
+        {
+            "name": "Enter date",
+            "mock": ".question-card .button.primary",
+            "app": ".question-card .button.primary"
+        },
+        {
+            "name": "I don't know",
+            "mock": ".question-card .button.secondary",
+            "app": ".question-card .button.secondary"
+        },
+        {
+            "name": "Skip for now",
+            "mock": ".question-card .question-skip",
+            "app": ".question-card .question-skip"
+        },
+        {
+            "name": "overview grid",
+            "mock": ".case-overview-grid",
+            "app": ".case-overview-grid"
+        },
+        {
+            "name": "tasks",
+            "mock": "section.process-overview",
+            "app": "section.process-overview"
+        },
+        {
+            "name": "tasks heading",
+            "mock": "#processes-heading",
+            "app": "#processes-heading"
+        },
+        {
+            "name": "tasks actions",
+            "mock": ".process-overview .case-icon-actions",
+            "app": ".process-overview .case-icon-actions"
+        },
+        {
+            "name": "history",
+            "mock": ".process-overview .case-icon-actions .icon-button",
+            "app": ".process-overview .case-icon-actions .icon-button"
+        },
+        {
+            "name": "task chips",
+            "mock": ".case-chips",
+            "app": ".case-chips"
+        },
+        {
+            "name": "chip All",
+            "mock": ".case-chips button",
+            "app": ".case-chips button",
+            "index": 0
+        },
+        {
+            "name": "chip To do",
+            "mock": ".case-chips button",
+            "app": ".case-chips button",
+            "index": 1
+        },
+        {
+            "name": "chip Waiting",
+            "mock": ".case-chips button",
+            "app": ".case-chips button",
+            "index": 2
+        },
+        {
+            "name": "chip Blocked",
+            "mock": ".case-chips button",
+            "app": ".case-chips button",
+            "index": 3
+        },
+        {
+            "name": "task list",
+            "mock": ".process-grid",
+            "app": ".process-grid"
+        },
+        {
+            "name": "task EU Blue Card",
+            "mock": ".process-summary",
+            "app": ".process-summary",
+            "index": 0
+        },
+        {
+            "name": "task EU Blue Card icon",
+            "mock": ".process-summary .topic-icon",
+            "app": ".process-summary .topic-icon",
+            "index": 0
+        },
+        {
+            "name": "task EU Blue Card name",
+            "mock": ".process-summary .process-card-copy strong",
+            "app": ".process-summary .process-card-copy strong",
+            "index": 0
+        },
+        {
+            "name": "task EU Blue Card status",
+            "mock": ".process-summary .state-badge",
+            "app": ".process-summary .state-badge",
+            "index": 0
+        },
+        {
+            "name": "task Address registration",
+            "mock": ".process-summary",
+            "app": ".process-summary",
+            "index": 1
+        },
+        {
+            "name": "task Address registration icon",
+            "mock": ".process-summary .topic-icon",
+            "app": ".process-summary .topic-icon",
+            "index": 1
+        },
+        {
+            "name": "task Address registration name",
+            "mock": ".process-summary .process-card-copy strong",
+            "app": ".process-summary .process-card-copy strong",
+            "index": 1
+        },
+        {
+            "name": "task Address registration status",
+            "mock": ".process-summary .state-badge",
+            "app": ".process-summary .state-badge",
+            "index": 1
+        },
+        {
+            "name": "task Health insurance",
+            "mock": ".process-summary",
+            "app": ".process-summary",
+            "index": 2
+        },
+        {
+            "name": "task Health insurance icon",
+            "mock": ".process-summary .topic-icon",
+            "app": ".process-summary .topic-icon",
+            "index": 2
+        },
+        {
+            "name": "task Health insurance name",
+            "mock": ".process-summary .process-card-copy strong",
+            "app": ".process-summary .process-card-copy strong",
+            "index": 2
+        },
+        {
+            "name": "task Health insurance status",
+            "mock": ".process-summary .state-badge",
+            "app": ".process-summary .state-badge",
+            "index": 2
+        },
+        {
+            "name": "task Bank account",
+            "mock": ".process-summary",
+            "app": ".process-summary",
+            "index": 3
+        },
+        {
+            "name": "task Bank account icon",
+            "mock": ".process-summary .topic-icon",
+            "app": ".process-summary .topic-icon",
+            "index": 3
+        },
+        {
+            "name": "task Bank account name",
+            "mock": ".process-summary .process-card-copy strong",
+            "app": ".process-summary .process-card-copy strong",
+            "index": 3
+        },
+        {
+            "name": "task Bank account status",
+            "mock": ".process-summary .state-badge",
+            "app": ".process-summary .state-badge",
+            "index": 3
+        },
+        {
+            "name": "task next step",
+            "mock": ".process-summary .process-next",
+            "app": ".process-summary .process-next",
+            "index": 0
+        },
+        {
+            "name": "task progress",
+            "mock": ".process-summary .process-progress",
+            "app": ".process-summary .process-progress",
+            "index": 0
+        },
+        {
+            "name": "task note",
+            "mock": ".process-summary .process-card-copy small",
+            "app": ".process-summary .process-card-copy small",
+            "index": 1
+        },
+        {
+            "name": "dates",
+            "mock": "section.overview-dates",
+            "app": "section.overview-dates",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "dates (below the tasks)",
+            "mock": "section.overview-dates",
+            "app": "section.overview-dates",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "dates heading",
+            "mock": "#dates-heading",
+            "app": "#dates-heading",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "dates heading (below the tasks)",
+            "mock": "#dates-heading",
+            "app": "#dates-heading",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "dates add",
+            "mock": ".overview-dates .case-section-head .icon-button",
+            "app": ".overview-dates .case-section-head .icon-button",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "dates add (below the tasks)",
+            "mock": ".overview-dates .case-section-head .icon-button",
+            "app": ".overview-dates .case-section-head .icon-button",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "date: submission",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [1280, 1440, 1512],
+            "index": 0
+        },
+        {
+            "name": "date: submission (below the tasks)",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [360, 390, 768],
+            "index": 0
+        },
+        {
+            "name": "date: appointment",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [1280, 1440, 1512],
+            "index": 1
+        },
+        {
+            "name": "date: appointment (below the tasks)",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [360, 390, 768],
+            "index": 1
+        },
+        {
+            "name": "date: appointment time",
+            "mock": ".timeline-row .timeline-date",
+            "app": ".timeline-row .timeline-date",
+            "widths": [1280, 1440, 1512],
+            "index": 1
+        },
+        {
+            "name": "date: appointment time (below the tasks)",
+            "mock": ".timeline-row .timeline-date",
+            "app": ".timeline-row .timeline-date",
+            "widths": [360, 390, 768],
+            "index": 1
+        },
+        {
+            "name": "date: document expiry",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [1280, 1440, 1512],
+            "index": 2
+        },
+        {
+            "name": "date: document expiry (below the tasks)",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [360, 390, 768],
+            "index": 2
+        },
+        {
+            "name": "date: target",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [1280, 1440, 1512],
+            "index": 3
+        },
+        {
+            "name": "date: target (below the tasks)",
+            "mock": ".timeline-row",
+            "app": ".timeline-row",
+            "widths": [360, 390, 768],
+            "index": 3
+        },
+        {
+            "name": "good to know",
+            "mock": "section.good-to-know",
+            "app": "section.good-to-know"
+        },
+        {
+            "name": "good to know heading",
+            "mock": "#good-heading",
+            "app": "#good-heading"
+        },
+        {
+            "name": "good to know topic",
+            "mock": ".context-topic h3",
+            "app": ".context-topic h3",
+            "index": 0
+        },
+        {
+            "name": "good to know card",
+            "mock": "details.context-card",
+            "app": "details.context-card",
+            "index": 0
+        },
+        {
+            "name": "good to know card title",
+            "mock": "details.context-card summary",
+            "app": "details.context-card summary",
+            "index": 0
+        },
+        {
+            "name": "coverage line",
+            "mock": ".coverage-strip",
+            "app": ".coverage-strip"
+        },
+        {
+            "name": "Which ones",
+            "mock": ".coverage-strip button",
+            "app": ".coverage-strip button"
+        },
+        {
+            "name": "footnote",
+            "mock": ".case-footnote",
+            "app": ".case-footnote",
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The mock's footnote says \"Sample progress and guidance\" and holds its review tools (the persona switcher, mock only); the app's says \"Your progress is your own record\". It also starts one task row lower (see Good to know)."
+        },
+        {
+            "name": "footnote link",
+            "mock": ".case-footnote > button",
+            "app": ".case-footnote > button",
+            "ignore": ["x", "y"],
+            "ignoreReason": "Follows the footnote's own text, which differs (see footnote)."
+        },
+        {
+            "name": "sources sheet",
+            "mock": "dialog.detail-dialog",
+            "app": "dialog.detail-dialog",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "before": [
+                {
+                    "click": ".coverage-strip button"
+                },
+                {
+                    "wait": 400
+                }
+            ],
+            "ignoreReason": "Lists the real catalogue's coverage units, not the mock's sample registry; opened from the coverage line, which starts one task row lower."
+        },
+        {
+            "name": "sheet title",
+            "mock": "dialog.detail-dialog .dialog-head h2",
+            "app": "dialog.detail-dialog .dialog-head h2"
+        },
+        {
+            "name": "sheet close",
+            "mock": "dialog.detail-dialog .dialog-head .icon-button",
+            "app": "dialog.detail-dialog .dialog-head .icon-button"
+        },
+        {
+            "name": "sheet intro",
+            "mock": "dialog.detail-dialog p",
+            "app": "dialog.detail-dialog p"
+        },
+        {
+            "name": "source record",
+            "mock": "dialog.detail-dialog .source-record",
+            "app": "dialog.detail-dialog .source-record",
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The first real coverage unit (its title and sources), not the mock's sample one."
+        }
+    ]
+}

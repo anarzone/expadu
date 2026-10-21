@@ -1,0 +1,90 @@
+/* Shared mobile interaction rhythm. No hover is required for feedback. */
+:root {
+    --motion-settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+:where(.place-sheet, #workspace-panel, .chat-feed, #studio-form, .composer-tray)
+    button,
+[data-save-item],
+[data-plan-item],
+.shared-date button {
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        scale 160ms var(--motion-settle),
+        background-color 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        box-shadow 180ms ease;
+}
+:where(.place-sheet, #workspace-panel, .chat-feed, #studio-form, .composer-tray)
+    button:active:not(:disabled),
+[data-save-item]:active,
+[data-plan-item]:active,
+.shared-date button:active {
+    scale: 0.97;
+}
+.place-sheet [data-save-item][aria-pressed='true'] {
+    background: var(--blue);
+}
+.place-journey fieldset label > span {
+    transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        scale 160ms var(--motion-settle);
+}
+.place-journey fieldset label:active > span {
+    scale: 0.97;
+}
+.shared-calendar:not([hidden]),
+.today-control-menu {
+    animation: contextual-reveal 220ms var(--motion-settle);
+    transform-origin: top center;
+}
+@keyframes contextual-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(5px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.detail-dialog.is-entering::backdrop {
+    animation: backdrop-reveal 280ms ease both;
+}
+.detail-dialog.is-leaving::backdrop {
+    animation: backdrop-reveal 180ms ease reverse both;
+}
+.detail-dialog.is-leaving {
+    pointer-events: none;
+}
+@keyframes backdrop-reveal {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(
+            .place-sheet,
+            #workspace-panel,
+            .chat-feed,
+            #studio-form,
+            .composer-tray
+        )
+        button,
+    [data-save-item],
+    [data-plan-item],
+    .shared-date button,
+    .place-journey fieldset label > span {
+        transition: none;
+        scale: 1 !important;
+    }
+    .shared-calendar,
+    .today-control-menu,
+    .detail-dialog::backdrop {
+        animation: none !important;
+    }
+}

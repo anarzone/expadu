@@ -1,0 +1,41 @@
+/* The Events page around its street (the mock's wall.css page rules). */
+
+.ev-board {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+}
+.ev-street {
+    position: relative;
+    width: 100%;
+}
+.ev-street-fit {
+    position: relative;
+    margin-inline: auto;
+}
+/* A phone's street keeps its rounded corners where the page ends it. */
+.ev-street[data-layout='phone'] > .ev-street-fit {
+    overflow: hidden;
+    border-radius: 28px;
+}
+/* On a desktop the street ends 16px above the screen's bottom, and the
+   page does too: one screen, no scroll. */
+main:has(.ev-street[data-layout='desktop']) {
+    padding-bottom: 16px;
+}
+
+/* The phone's hint on its pavement. */
+.ev-street-hint {
+    position: absolute;
+    z-index: 4;
+    bottom: 12px;
+    left: 50%;
+    translate: -50% 0;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg-surface) 88%, transparent);
+    color: var(--color-text);
+    font-size: 12px;
+    white-space: nowrap;
+}

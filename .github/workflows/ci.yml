@@ -46,6 +46,9 @@ jobs:
       - name: ESLint
         run: npm run lint:check
 
+      - name: Frontend behavior tests
+        run: node --experimental-strip-types --test tests/Frontend/*.test.mjs tests/Unit/Frontend/*.test.cjs
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -139,14 +142,19 @@ jobs:
       - name: Run Tests
         run: vendor/bin/pest --compact --parallel --exclude-group=slow
 
+      # Two worker processes meet at a database lock barrier; that only
+      # behaves deterministically outside the parallel runner, so run it alone.
+      - name: Run concurrency tests (serial)
+        run: vendor/bin/pest --compact --group=serial-concurrency
+
   browser-test:
     name: Browser Tests
     runs-on: ubuntu-latest
     # Gates deploys: deploy-staging / deploy-production list this in `needs`, so
-    # a red Playwright suite blocks the ship. Runs the auth + chromium projects
+    # a red Playwright suite blocks the ship. Runs the auth + desktop + mobile projects
     # against a freshly built app + seeded DB (+ the E2E user), serves on :8080,
     # and uploads the report so any regression is visible.
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     services:
       redis:
@@ -205,7 +213,14 @@ jobs:
           npm ci --legacy-peer-deps
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          npm run build
+          npx vite build --ssr
+
+      - name: TypeScript (after generated routes)
+        run: |
+          npm run types:check
+          npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --lib WebWorker resources/sw.ts
 
       - name: Build Postgres image (postgis + pgvector)
         run: docker build -t expadu-pgsql ./docker/pgsql
@@ -246,12 +261,22 @@ jobs:
         run: |
           php artisan migrate --force --seed
           php artisan db:seed --force --class=E2ETestUserSeeder
+          # composer-workspace.spec plans a day from these test-only places.
+          php artisan db:seed --force --class=E2EComposerCatalogueSeeder
 
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
 
       - name: Start app server
         run: |
+          node bootstrap/ssr/ssr.js > /tmp/ssr.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:13714/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:13714/health >/dev/null
           php artisan serve --port=8080 --no-interaction > /tmp/serve.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/login >/dev/null; then
@@ -262,7 +287,10 @@ jobs:
           done
 
       - name: Run browser tests
-        run: npx playwright test --project=auth --project=chromium
+        run: npx playwright test --project=auth --project=chromium --project=mobile
+
+      - name: Onboarding browser tests
+        run: npx playwright test --config=playwright.onboarding.config.ts
 
       - name: Upload Playwright report
         if: always()
@@ -411,8 +439,13 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate
             sleep 5
-            docker exec -u www-data staging-app php artisan migrate --force
-            docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --prune
+            # The entrypoint migrates before PHP-FPM starts; these are the
+            # deploy-time catalogue steps (import, source check, release, dossiers),
+            # run as www-data so the log files they create stay writable by the app.
+            docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --retire-missing
+            docker exec -u www-data staging-app php artisan bureaucracy:verify-sources
+            docker exec -u www-data staging-app php artisan bureaucracy:compile-catalogue --deploy
+            docker exec -u www-data staging-app php artisan bureaucracy:migrate-dossiers --apply --all
             docker image prune -f
 
   deploy-production:
@@ -430,9 +463,17 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
+            # Coolify names the container app-<service dir>; derived so the literal never
+            # appears here (it matches the Dify API-key pattern secret scanners look for).
+            APP_CONTAINER="app-$(basename "$PWD")"
             docker pull ghcr.io/anarzone/expadu/app:latest
             docker compose up -d app
             sleep 5
-            docker exec -u www-data app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force  # gitleaks:allow — container name, not a key
-            docker exec -u www-data app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune  # gitleaks:allow — container name, not a key
+            # The entrypoint migrates before PHP-FPM starts; these are the
+            # deploy-time catalogue steps (import, source check, release, dossiers),
+            # run as www-data so the log files they create stay writable by the app.
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:verify-sources
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all
             docker image prune -f

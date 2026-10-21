@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en" class="is-booting">
+    <head>
+        <base href="../" />
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Today preview</title>
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-400.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-500.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-600.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-700.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link rel="stylesheet" href="../connected/style.css?v=e03d05f95881" />
+        <link
+            rel="stylesheet"
+            href="../connected/discovery.css?v=92458ef9a31f"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/place-sheet.css?v=03a38f257ea6"
+        />
+        <link rel="stylesheet" href="../connected/place-card.css?v=42de315e1f56" />
+        <link
+            rel="stylesheet"
+            href="../events-next/event-sheet.css?v=f54e495af087"
+        />
+        <link
+            rel="stylesheet"
+            href="../events-next/posters.css?v=6cbf2f6a69ef"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/date-control.css?v=af988dcad8c6"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/time-control.css?v=3052c121783e"
+        />
+        <link rel="stylesheet" href="../connected/motion.css?v=2a54464bcba6" />
+        <link rel="stylesheet" href="../connected/scrollbars.css?v=a81758e0f7a2" />
+        <link
+            rel="stylesheet"
+            href="../today-c/composer-controls.css?v=e7d11fbacb82"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/composer-entry.css?v=f89168597ded"
+        />
+        <link rel="stylesheet" href="./style.css?v=b70442391570" />
+        <link rel="stylesheet" href="./brief/reference.css?v=14ec97ee4180" />
+        <link rel="stylesheet" href="./brief/enhancements.css?v=88a4ef31a518" />
+        <link rel="stylesheet" href="./brief/cohesion.css?v=720af3918f50" />
+        <link rel="stylesheet" href="./brief/priorities.css?v=6c72fb7ee06b" />
+        <link rel="stylesheet" href="../connected/poster-art.css?v=ca2524faa2bb" />
+        <link rel="stylesheet" href="../connected/day-components.css" />
+        <link rel="stylesheet" href="./brief/hierarchy.css?v=0f9a5c20b3b4" />
+        <link rel="stylesheet" href="./brief/sheets.css?v=06a5b13a5627" />
+        <link rel="stylesheet" href="../connected/journey-session.css?v=70eeb84dfc25" />
+        <link rel="stylesheet" href="../connected/section-bar.css?v=9a22eb57b721" />
+        <link rel="stylesheet" href="../connected/page-frame.css?v=ad0cad2d1ad7" />
+        <!-- Travel's icons, so its labels on Today carry the same icons. -->
+        <script defer src="../departures-next/icons.js?v=309eb7b41670"></script>
+        <script defer src="../departures-next/labels.js?v=ee2dc0df144f"></script>
+        <script defer src="../departures-next/strip.js?v=9c4729e17bd4"></script>
+        <script defer src="../departures-next/trip-card.js?v=0465e33318c0"></script>
+        <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
+        <script defer src="../connected/section-bar.js?v=f65139427bb4"></script>
+        <script defer src="../connected/model.js?v=b727e359c259"></script>
+        <script defer src="../connected/store.js?v=2cc367c374d2"></script>
+        <script defer src="../connected/icons.js?v=d57bd11ed911"></script>
+        <script defer src="../connected/ui.js?v=b8ffe4fa105e"></script>
+        <script defer src="../connected/journey-session.js?v=229c4f74e34a"></script>
+        <script defer src="../events-next/poster-art.js?v=933c64af9619"></script>
+        <script
+            defer
+            src="../events-next/event-model.js?v=83b083f61b2a"
+        ></script>
+        <script defer src="../events-next/posters.js?v=0508f3324c8a"></script>
+        <script defer src="../events-next/festival.js?v=7fd46a7a6053"></script>
+        <script defer src="../connected/handoffs.js?v=33932970adf3"></script>
+        <script defer src="../connected/day-actions.js?v=0b96c92b87af"></script>
+        <script defer src="../connected/day-swipe.js?v=93f6b73bb816"></script>
+        <script
+            defer
+            src="../connected/visit-timeline.js?v=2ab6dbc3b38d"
+        ></script>
+        <script
+            defer
+            src="../connected/date-control.js?v=992a30c37fb2"
+        ></script>
+        <script
+            defer
+            src="../composer-studio/wheel-motion.js?v=c203940ffe0e"
+        ></script>
+        <script
+            defer
+            src="../connected/time-control.js?v=eb104095ef45"
+        ></script>
+        <script defer src="../connected/sample-day.js?v=44b3ad6b3128"></script>
+        <!-- The Paperwork plan, so Today shows the records Paperwork keeps. -->
+        <script defer src="../bureaucracy-next/source-data.js?v=1c120a14bce0"></script>
+        <script defer src="../bureaucracy-next/model.js?v=7fa75a6b6cdd"></script>
+        <script defer src="../bureaucracy-next/plan.js?v=9a63b5af849e"></script>
+        <script defer src="../bureaucracy-next/contract.js?v=e700610ba2c5"></script>
+        <script
+            defer
+            src="../departures-next/journeys.js?v=5d4b5188b013"
+        ></script>
+        <script
+            defer
+            src="../departures-next/departure-data.js?v=05fcba8c8280"
+        ></script>
+        <script
+            defer
+            src="../departures-next/timetable.js?v=b806fe3877bb"
+        ></script>
+        <script
+            defer
+            src="../connected/journey-preview.js?v=3cf071bc3810"
+        ></script>
+        <script defer src="../connected/planning-ui.js?v=4b0a7b379d2f"></script>
+        <script defer src="../connected/place-sheet.js?v=d74bea244576"></script>
+        <script
+            defer
+            src="../events-next/event-sheet.js?v=c7da1d0b107e"
+        ></script>
+        <script
+            defer
+            src="../connected/composer-entry.js?v=8296403956d4"
+        ></script>
+        <script
+            defer
+            src="../today-c/composer-controls.js?v=024fd6d0c252"
+        ></script>
+        <script defer src="./icons.js?v=b1a07d3a4600"></script>
+        <script defer src="../connected/sample-places.js?v=e426f4729b9a"></script>
+        <script defer src="../connected/places.js?v=205c8a4698be"></script>
+        <script defer src="./model.js?v=connected2"></script>
+        <script defer src="./continuity.js?v=f420ecc64da5"></script>
+        <script defer src="./brief/content.js?v=14e0e385dc9f"></script>
+        <script defer src="./brief/enhancements.js?v=024130189629"></script>
+        <script defer src="./app.js?v=9f6fe4bf46f7"></script>
+        <script
+            defer
+            blocking="render"
+            src="../connected/page-ready.js?v=4bd8708cfec9"
+        ></script>
+        <link rel="stylesheet" href="../departures-next/labels.css?v=55fa39dc5c91" />
+        <link rel="stylesheet" href="../departures-next/strip.css?v=f8b312940751" />
+        <link rel="stylesheet" href="../departures-next/trip-card.css?v=164585aa6d0a" />
+    </head>
+    <body
+        class="today-next today-reference today-flow"
+        data-today-layout="flow"
+        data-page="today"
+        data-today-home="./brief/"
+        data-review-key="expadu-today-brief-review-v2"
+    >
+        <a href="#main" class="skip-link">Skip to your day</a>
+        <div id="page-scroll">
+            <div class="review-bar" hidden>
+                <span>Preview</span>
+                <label
+                    ><span class="sr-only">Sample scenario</span
+                    ><select id="scenario">
+                        <option value="everyday">Everyday</option>
+                        <option value="quiet">Quiet day</option>
+                        <option value="first-visit">First visit</option>
+                        <option value="preparing">Reminder due</option>
+                        <option value="later">Later in the day</option>
+                        <option value="busy">Busy day</option>
+                        <option value="delay">Route delay</option>
+                        <option value="event">Important event</option>
+                        <option value="competing">Delay + event</option>
+                        <option value="scheduled">Timetable times only</option>
+                        <option value="unavailable">Travel unavailable</option>
+                    </select></label
+                >
+            </div>
+            <!-- shared-header:start -->
+            <div id="shell">
+                <div class="scroll-header">
+                    <header class="app-header" data-static-header>
+                        <a
+                            href="../today-next/brief/"
+                            class="brand"
+                            aria-label="Expadu home"
+                            ><svg viewBox="13 22 74 60" aria-hidden="true">
+                                <g transform="translate(2.45 2.05)">
+                                    <circle
+                                        cx="20.5"
+                                        cy="50"
+                                        r="6"
+                                        fill="#05badd"
+                                    />
+                                    <rect
+                                        x="30"
+                                        y="24"
+                                        width="13"
+                                        height="52"
+                                        rx="6"
+                                        fill="currentColor"
+                                    />
+                                    <rect
+                                        x="46"
+                                        y="24"
+                                        width="34"
+                                        height="13"
+                                        rx="6"
+                                        fill="#ff3902"
+                                        transform="rotate(-7 46 30)"
+                                    />
+                                    <rect
+                                        x="46"
+                                        y="43.5"
+                                        width="25"
+                                        height="13"
+                                        rx="6"
+                                        fill="#ff3902"
+                                        transform="rotate(-4 46 50)"
+                                    />
+                                    <rect
+                                        x="46"
+                                        y="63"
+                                        width="34"
+                                        height="13"
+                                        rx="6"
+                                        fill="#ff3902"
+                                        transform="rotate(-2 46 69)"
+                                    />
+                                </g></svg
+                            >Expadu</a
+                        >
+                        <nav class="service-nav" aria-label="Main navigation">
+                            <a
+                                data-page="today"
+                                href="../today-next/brief/"
+                                aria-current="page"
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"
+                                    /></svg
+                                ><span>Today</span></a
+                            >
+                            <a data-page="events" href="../events-next/"
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"
+                                    /></svg
+                                ><span>Events</span></a
+                            >
+                            <a
+                                data-page="bureaucracy"
+                                href="../bureaucracy-next/"
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"
+                                    /></svg
+                                ><span>Paperwork</span></a
+                            >
+                            <a data-page="departures" href="../departures-next/"
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"
+                                    /></svg
+                                ><span>Travel</span></a
+                            >
+                        </nav>
+                        <div class="header-utilities">
+                            <div class="header-context">
+                                <button
+                                    type="button"
+                                    class="city"
+                                    data-ui="city"
+                                    aria-label="Cologne"
+                                >
+                                    <svg
+                                        class="modern-icon"
+                                        aria-hidden="true"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 256 256"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"
+                                        /></svg
+                                    ><span data-city-label>Cologne</span
+                                    ><svg
+                                        class="modern-icon"
+                                        aria-hidden="true"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 256 256"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                            <a
+                                href="../composer-studio/#saved"
+                                class="my-day"
+                                aria-label="Saved ideas"
+                                title="Saved ideas"
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Zm0,177.57-51.77-32.35a8,8,0,0,0-8.48,0L72,209.57V48H184Z"
+                                    /></svg
+                                ><span>Saved</span><b data-count hidden>0</b></a
+                            >
+                            <button
+                                type="button"
+                                class="account-button"
+                                aria-label="Your account"
+                                data-today-account
+                            >
+                                <span>A</span>
+                            </button>
+                        </div>
+                    </header>
+                </div>
+            </div>
+            <!-- shared-header:end -->
+            <main id="main" tabindex="-1"></main>
+            <footer class="preview-foot">
+                <span>Sample data · Event posters set from each listing</span>
+                <a
+                    href="../connected/concepts/today-modern-2026-09-30/comparison.html"
+                    >Compare designs</a
+                >
+            </footer>
+        </div>
+        <noscript
+            >This interactive preview needs JavaScript.
+            <a
+                href="../connected/concepts/today-modern-2026-09-30/comparison.html"
+                >View the design boards</a
+            >.</noscript
+        >
+    </body>
+</html>

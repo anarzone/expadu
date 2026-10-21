@@ -896,7 +896,7 @@ test('fact history prevents catalogue snapshot replacement', function () {
     }
 });
 
-test('catalogue access eligibility scans source observations once for a batch of places', function () {
+test('catalogue access eligibility reads the stored flag without scanning source observations', function () {
     $this->travelTo(CarbonImmutable::parse('2026-09-29T12:00:00Z'));
     $spots = Spot::factory()->count(40)->create([
         'category' => 'park', 'source' => 'osm', 'tags' => null,
@@ -935,8 +935,9 @@ test('catalogue access eligibility scans source observations once for a batch of
         }
     };
     $visit($plan);
-    expect($observationScans)->not->toBeEmpty()
-        ->and(array_sum($observationScans))->toBeLessThanOrEqual(1);
+    // spots.public_access_allowed carries the rule, kept current on every
+    // observation, correction and withdrawal, so the query never scans them.
+    expect($observationScans)->toBeEmpty();
 });
 
 test('activity qualification refuses unknown access without leaving a correction', function () {

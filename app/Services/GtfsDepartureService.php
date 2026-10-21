@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Gtfs\GtfsStop;
+use App\Transit\DepartureTime;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class GtfsDepartureService
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDeparturesNearby($lat, $lng, $limit);
         if ($trias && ! empty($trias['departures'])) {
+            $trias = $this->withObservation($trias);
             // Store as fallback for when TRIAS fails (3 min TTL — keeps departure times accurate)
             Cache::put($fallbackKey, $trias + ['_cached_at' => now()->timestamp], 180);
 
@@ -44,7 +46,7 @@ class GtfsDepartureService
             return $this->fallbackDepartures('Nearby');
         }
 
-        $cacheKey = 'gtfs_departures_nearby_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}";
+        $cacheKey = 'gtfs_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
             // Try up to 5 nearest stops until we find one with departures
@@ -77,6 +79,17 @@ class GtfsDepartureService
      *
      * @return array{stop_name: string, source: string, departures: array}
      */
+    /**
+     * Fetch live departures for several stops in one parallel round trip, so
+     * the per-stop getDepartures() calls that follow read them from cache.
+     *
+     * @param  list<string>  $stopNames
+     */
+    public function prefetchDepartures(array $stopNames, int $limit = 10): void
+    {
+        $this->triasService->prefetchDepartures($stopNames, $limit);
+    }
+
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
         $fallbackKey = "trias_last_good_v2_{$stopName}";
@@ -84,6 +97,7 @@ class GtfsDepartureService
         // Try TRIAS first for real-time data
         $trias = $this->triasService->getDepartures($stopName, $limit);
         if ($trias && ! empty($trias['departures'])) {
+            $trias = $this->withObservation($trias);
             Cache::put($fallbackKey, $trias + ['_cached_at' => now()->timestamp], 300);
 
             return $trias;
@@ -107,7 +121,20 @@ class GtfsDepartureService
      */
     private function ageFallback(array $result): array
     {
-        $cachedAt = (int) ($result['_cached_at'] ?? now()->timestamp);
+        $cachedAt = (int) ($result['countdown_at'] ?? $result['_cached_at'] ?? now()->timestamp);
+        if (! array_key_exists('observed_at', $result)) {
+            $result['observed_at'] = Carbon::createFromTimestamp($cachedAt)->toIso8601String();
+        }
+        $result['is_stale'] = true;
+        $result['time_basis'] = 'stale';
+        $result['countdown_at'] = now()->timestamp;
+        $result['departures'] = array_map(function (array $departure): array {
+            if (isset($departure['services'])) {
+                $departure['services'] = array_map(fn (array $service): array => array_replace($service, ['time_basis' => 'stale']), $departure['services']);
+            }
+
+            return $departure;
+        }, $result['departures'] ?? []);
         unset($result['_cached_at']);
         $elapsedMinutes = intdiv(max(0, now()->timestamp - $cachedAt), 60);
 
@@ -132,6 +159,20 @@ class GtfsDepartureService
         return $result;
     }
 
+    /** @param array<string, mixed> $result @return array<string, mixed> */
+    private function withObservation(array $result): array
+    {
+        $observed = array_key_exists('observed_at', $result) ? DepartureTime::parse($result['observed_at']) : now();
+        $result['observed_at'] = $observed?->toIso8601String();
+        $result['countdown_at'] ??= $observed?->timestamp ?? now()->timestamp;
+        $result['is_stale'] = ($result['is_stale'] ?? false) || $observed === null;
+        $services = collect($result['departures'] ?? [])->flatMap(fn ($departure) => $departure['services'] ?? []);
+        $result['time_basis'] = $result['is_stale'] ? 'stale'
+            : ($services->isNotEmpty() && $services->every(fn ($service) => ($service['time_basis'] ?? 'scheduled') === 'scheduled') ? 'scheduled' : 'realtime');
+
+        return $result;
+    }
+
     /**
      * Get departures from GTFS static data with optional GTFS-RT overlay.
      *
@@ -147,89 +188,70 @@ class GtfsDepartureService
         $hasRealtime = config('services.vrs.enabled');
         $cacheTtl = $hasRealtime ? 30 : 60;
 
-        return Cache::remember("gtfs_departures_{$stopName}_{$limit}", $cacheTtl, function () use ($stopName, $limit, $hasRealtime) {
+        return Cache::remember("gtfs_departures_v2_{$stopName}_{$limit}", $cacheTtl, function () use ($stopName, $limit, $hasRealtime) {
             // Find stops matching the name
             $stops = GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
                 ->where('location_type', 0) // actual stops, not stations
-                ->pluck('stop_id');
+                ->get(['stop_id', 'stop_name', 'stop_lat', 'stop_lng'])->keyBy('stop_id');
 
             if ($stops->isEmpty()) {
                 return $this->fallbackDepartures($stopName);
             }
 
             $now = Carbon::now();
-            $currentTime = $now->format('H:i:s');
-            $today = $now->format('Y-m-d');
-            $dayColumn = strtolower($now->format('l')); // monday, tuesday, etc.
-
-            // Build query — join calendar if available to filter by today's service
             $hasCalendar = DB::table('gtfs_calendar')->exists();
+            $hasExceptions = DB::table('gtfs_calendar_dates')->exists();
+            $departures = collect();
 
-            $query = DB::table('gtfs_stop_times')
-                ->join('gtfs_trips', 'gtfs_stop_times.trip_id', '=', 'gtfs_trips.trip_id')
-                ->join('gtfs_routes', 'gtfs_trips.route_id', '=', 'gtfs_routes.route_id')
-                ->whereIn('gtfs_stop_times.stop_id', $stops)
-                ->where('gtfs_stop_times.departure_time', '>', $currentTime);
+            // A GTFS service day can continue after midnight (for example 25:10).
+            // Keep each row attached to its own calendar date, including tomorrow's
+            // first services, rather than interpreting every row as today's trip.
+            foreach ([-1, 0, 1] as $offset) {
+                $serviceDay = $now->copy()->startOfDay()->addDays($offset);
+                $date = $serviceDay->format('Y-m-d');
+                $dayColumn = strtolower($serviceDay->format('l'));
+                $seconds = max(0, ((int) $now->format('H') - $offset * 24) * 3600 + (int) $now->format('i') * 60 + (int) $now->format('s'));
+                $lowerBound = sprintf('%02d:%02d:%02d', intdiv($seconds, 3600), intdiv($seconds % 3600, 60), $seconds % 60);
+                $query = DB::table('gtfs_stop_times')
+                    ->join('gtfs_trips', 'gtfs_stop_times.trip_id', '=', 'gtfs_trips.trip_id')
+                    ->join('gtfs_routes', 'gtfs_trips.route_id', '=', 'gtfs_routes.route_id')
+                    ->whereIn('gtfs_stop_times.stop_id', $stops->keys())
+                    ->where('gtfs_stop_times.departure_time', '>=', $lowerBound);
 
-            // Filter by today's active services using calendar + calendar_dates
-            if ($hasCalendar) {
-                // Services removed today via calendar_dates (exception_type=2)
-                $removedToday = DB::table('gtfs_calendar_dates')
-                    ->where('date', $today)
-                    ->where('exception_type', 2)
-                    ->pluck('service_id');
-
-                // Services added today via calendar_dates (exception_type=1)
-                $addedToday = DB::table('gtfs_calendar_dates')
-                    ->where('date', $today)
-                    ->where('exception_type', 1)
-                    ->pluck('service_id');
-
-                $query->where(function ($q) use ($dayColumn, $today, $removedToday, $addedToday) {
-                    // Normal calendar services running today, minus removed exceptions
-                    $q->where(function ($q2) use ($dayColumn, $today, $removedToday) {
-                        $q2->whereExists(function ($sub) use ($dayColumn, $today) {
-                            $sub->select(DB::raw(1))
-                                ->from('gtfs_calendar')
-                                ->whereColumn('gtfs_calendar.service_id', 'gtfs_trips.service_id')
-                                ->where("gtfs_calendar.{$dayColumn}", true)
-                                ->where('gtfs_calendar.start_date', '<=', $today)
-                                ->where('gtfs_calendar.end_date', '>=', $today);
+                if ($hasCalendar || $hasExceptions) {
+                    $removed = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id');
+                    $added = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id');
+                    $query->where(function ($q) use ($dayColumn, $date, $removed, $added) {
+                        $q->where(function ($normal) use ($dayColumn, $date, $removed) {
+                            $normal->whereExists(function ($calendar) use ($dayColumn, $date) {
+                                $calendar->select(DB::raw(1))->from('gtfs_calendar')
+                                    ->whereColumn('gtfs_calendar.service_id', 'gtfs_trips.service_id')
+                                    ->where("gtfs_calendar.{$dayColumn}", true)
+                                    ->where('gtfs_calendar.start_date', '<=', $date)
+                                    ->where('gtfs_calendar.end_date', '>=', $date);
+                            })->whereNotIn('gtfs_trips.service_id', $removed);
                         });
-                        if ($removedToday->isNotEmpty()) {
-                            $q2->whereNotIn('gtfs_trips.service_id', $removedToday);
+                        if ($added->isNotEmpty()) {
+                            $q->orWhereIn('gtfs_trips.service_id', $added);
                         }
                     });
+                }
 
-                    // OR added today via exceptions
-                    if ($addedToday->isNotEmpty()) {
-                        $q->orWhereIn('gtfs_trips.service_id', $addedToday);
+                $rows = $query->orderBy('gtfs_stop_times.departure_time')->limit($limit * 10)
+                    ->selectRaw('gtfs_trips.trip_id, gtfs_routes.route_short_name as line,
+                        gtfs_routes.route_long_name as route_name, gtfs_routes.route_color,
+                        gtfs_routes.route_type, gtfs_trips.trip_headsign as direction,
+                        gtfs_stop_times.departure_time, gtfs_stop_times.stop_id')->get();
+                foreach ($rows as $row) {
+                    $row->scheduled_at = $this->scheduledTime($serviceDay, $row->departure_time);
+                    $row->service_date = $date;
+                    if ($row->scheduled_at !== null && $row->scheduled_at->betweenIncluded($now, $now->copy()->addDay())) {
+                        $departures->push($row);
                     }
-                });
+                }
             }
-
-            $departures = $query
-                ->groupBy(
-                    'gtfs_trips.trip_id',
-                    'gtfs_routes.route_short_name',
-                    'gtfs_routes.route_long_name',
-                    'gtfs_routes.route_color',
-                    'gtfs_routes.route_type',
-                    'gtfs_trips.trip_headsign',
-                )
-                ->orderByRaw('MIN(gtfs_stop_times.departure_time)')
-                ->limit($limit * 10)
-                ->selectRaw('
-                    gtfs_trips.trip_id,
-                    gtfs_routes.route_short_name as line,
-                    gtfs_routes.route_long_name as route_name,
-                    gtfs_routes.route_color,
-                    gtfs_routes.route_type,
-                    gtfs_trips.trip_headsign as direction,
-                    MIN(gtfs_stop_times.departure_time) as departure_time,
-                    MIN(gtfs_stop_times.stop_id) as stop_id
-                ')
-                ->get();
+            $departures = $departures->sortBy(fn ($row) => $row->scheduled_at->timestamp)
+                ->unique(fn ($row) => $row->trip_id.'|'.$row->service_date);
 
             if ($departures->isEmpty()) {
                 return $this->fallbackDepartures($stopName);
@@ -261,14 +283,19 @@ class GtfsDepartureService
 
                 // Look up real-time data for this trip
                 $rtDelay = null;
+                $rtDelaySeconds = null;
                 $rtCancelled = false;
                 $rtSkipped = false;
-                if ($hasRealtimeData && $dep->trip_id) {
+                $rtObserved = null;
+                $updateDate = $realtimeUpdates[$dep->trip_id]['service_date'] ?? $now->format('Y-m-d');
+                if ($hasRealtimeData && $dep->trip_id && $updateDate === $dep->service_date) {
                     $rtInfo = $this->realtimeService->getDelayForTripAtStop($dep->trip_id, $dep->stop_id);
                     if ($rtInfo) {
-                        $rtDelay = (int) round($rtInfo['delay'] / 60); // seconds → minutes
+                        $rtDelaySeconds = (int) $rtInfo['delay'];
+                        $rtDelay = (int) round($rtDelaySeconds / 60); // display only
                         $rtCancelled = $rtInfo['cancelled'];
                         $rtSkipped = $rtInfo['skipped'];
+                        $rtObserved = DepartureTime::parse($rtInfo['observed_at'] ?? null);
                     }
                 }
 
@@ -286,6 +313,7 @@ class GtfsDepartureService
                         'color' => $dep->route_color ? "#{$dep->route_color}" : '#1A4CD4',
                         'type' => $this->routeTypeLabel($dep->route_type),
                         'departures' => [],
+                        'services' => [],
                         'delay' => 0,
                         'cancelled' => false,
                         'disrupted' => $isDisrupted,
@@ -293,34 +321,70 @@ class GtfsDepartureService
                     ];
                 }
 
-                if (count($grouped[$key]['departures']) < 5) {
-                    $depTime = Carbon::createFromFormat('H:i:s', $dep->departure_time);
-                    $scheduledMins = (int) $now->diffInMinutes($depTime, false);
-
-                    // Apply real-time delay to departure time
-                    $actualMins = $rtDelay !== null ? $scheduledMins + $rtDelay : $scheduledMins;
-
-                    if ($actualMins > 0 && ! in_array($actualMins, $grouped[$key]['departures'], true)) {
+                if (count($grouped[$key]['services']) < 5) {
+                    $depTime = $dep->scheduled_at;
+                    if ($depTime === null) {
+                        continue;
+                    }
+                    $actual = $rtDelay !== null ? $depTime->copy()->addSeconds($rtDelaySeconds) : $depTime;
+                    if ($actual->lessThan($now)) {
+                        continue;
+                    }
+                    $actualMins = max(0, (int) $now->diffInMinutes($actual, false));
+                    $stale = $rtDelay !== null && ($rtObserved === null || $now->timestamp - $rtObserved->timestamp > 90);
+                    $grouped[$key]['services'][] = [
+                        'id' => 'gtfs:'.hash('sha256', $dep->trip_id.'|'.$dep->stop_id.'|'.$depTime->toIso8601String()),
+                        'departure_at' => $actual->toIso8601String(),
+                        'scheduled_at' => $depTime->toIso8601String(),
+                        'expected_at' => $rtDelay !== null ? $actual->toIso8601String() : null,
+                        'observed_at' => $rtDelay !== null ? $rtObserved?->toIso8601String() : $now->toIso8601String(),
+                        'time_basis' => $stale ? 'stale' : ($rtDelay !== null ? 'realtime' : 'scheduled'),
+                        'cancelled' => $rtCancelled,
+                        'delay' => $rtDelay ?? 0,
+                        'boarding_point' => [
+                            'id' => $dep->stop_id,
+                            'name' => $stops->get($dep->stop_id)?->stop_name,
+                            'platform' => null,
+                        ],
+                    ];
+                    if (! $rtCancelled && ! in_array($actualMins, $grouped[$key]['departures'], true)) {
                         $grouped[$key]['departures'][] = $actualMins;
                     }
-
-                    // Use the first (nearest) departure's RT info as the group indicator
-                    if (count($grouped[$key]['departures']) === 1 && $rtDelay !== null) {
-                        $grouped[$key]['delay'] = max(0, $rtDelay);
+                    if (count($grouped[$key]['services']) === 1) {
+                        $grouped[$key]['delay'] = max(0, $rtDelay ?? 0);
                         $grouped[$key]['cancelled'] = $rtCancelled;
                     }
                 }
             }
 
             // Filter out lines with no upcoming departures
-            $results = array_values(array_filter($grouped, fn ($g) => ! empty($g['departures'])));
+            $results = array_values(array_filter($grouped, fn ($g) => ! empty($g['services'])));
+            $services = collect($results)->flatMap(fn ($group) => $group['services']);
+            $rtServices = $services->filter(fn ($service) => $service['expected_at'] !== null);
+            $stale = $rtServices->contains(fn ($service) => $service['time_basis'] === 'stale');
+            $observed = $rtServices->isEmpty() ? $now->toIso8601String()
+                : ($rtServices->contains(fn ($service) => $service['observed_at'] === null) ? null : $rtServices->sortBy(fn ($service) => DepartureTime::parse($service['observed_at'])->timestamp)->first()['observed_at']);
 
             return [
                 'stop_name' => $stopName,
-                'source' => $hasRealtimeData ? 'gtfs_rt' : 'gtfs_static',
+                'source' => $rtServices->isNotEmpty() ? 'gtfs_rt' : 'gtfs_static',
+                'observed_at' => $observed,
+                'countdown_at' => $now->timestamp,
+                'is_stale' => $stale,
+                'time_basis' => $stale ? 'stale' : ($rtServices->count() === $services->count() ? 'realtime' : 'scheduled'),
                 'departures' => array_slice($results, 0, $limit),
             ];
         });
+    }
+
+    private function scheduledTime(Carbon $day, string $time): ?Carbon
+    {
+        if (! preg_match('/^(\d{1,3}):([0-5]\d):([0-5]\d)$/D', $time, $parts)) {
+            return null;
+        }
+        $hours = (int) $parts[1];
+
+        return $day->copy()->startOfDay()->addDays(intdiv($hours, 24))->setTime($hours % 24, (int) $parts[2], (int) $parts[3]);
     }
 
     /**

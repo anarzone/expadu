@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\CologneServiceArea;
 use App\Support\EventCancellation;
+use App\Support\OfficialEventSchedule;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Carbon;
@@ -146,7 +147,9 @@ class ImportOfficialEvents extends Command
         array &$metrics,
     ): void {
         [$startsAt, $endsAt] = $this->parseSchedule($record);
-        $isMultiDay = ! $startsAt->isSameDay($endsAt);
+        $sourceEndDate = $this->parseDate($record['endedatum'] ?? null);
+        $isMultiDay = $sourceEndDate !== null && ! $startsAt->isSameDay($sourceEndDate);
+        $scheduleIsClear = OfficialEventSchedule::isUnambiguous($record);
         $recurrenceUntil = $isMultiDay ? $endsAt->copy()->endOfDay() : null;
         if ($isMultiDay && filled($record['uhrzeit'] ?? null)) {
             $endsAt = $startsAt->copy()->setTime($endsAt->hour, $endsAt->minute);
@@ -199,11 +202,19 @@ class ImportOfficialEvents extends Command
             'tags' => $this->mergedTags($event->tags ?? [], $record, $isMultiDay, filled($record['uhrzeit'] ?? null)),
             'organiser_id' => $organiserId,
             'quality_score' => $this->qualityScore($description, $locationName, $address, $startsAt, $priceText),
-            'status' => EventCancellation::said((string) $title, $description) ? 'cancelled' : 'active',
+            'status' => match (true) {
+                EventCancellation::said((string) $title, $description) => 'cancelled',
+                $scheduleIsClear => 'active',
+                default => 'hidden',
+            },
             'verified_at' => now(),
             'recurrence' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? 'FREQ=DAILY' : null,
             'recurrence_until' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? $recurrenceUntil : null,
         ]);
+
+        if (! $scheduleIsClear) {
+            $event->needs_review = true;
+        }
 
         if ($copyChanged) {
             $event->fill([
@@ -335,7 +346,8 @@ class ImportOfficialEvents extends Command
         $endDate = $this->parseDate($record['endedatum'] ?? null) ?? $startDate->copy();
         $time = preg_replace('/\s+/u', ' ', trim((string) ($record['uhrzeit'] ?? '')));
 
-        if (preg_match('/(?<sh>\d{1,2})(?::(?<sm>\d{2}))?\s*(?:bis|[-–])\s*(?<eh>\d{1,2})(?::(?<em>\d{2}))?\s*Uhr/iu', $time, $match)) {
+        if (preg_match('/(?<sh>\d{1,2})(?::(?<sm>\d{2}))?\s*(?:bis|[-–])\s*(?<eh>\d{1,2})(?::(?<em>\d{2}))?\s*Uhr/iu', $time, $match)
+            || preg_match('/(?<![\d:])(?<sh>\d{1,2}):(?<sm>\d{2})\s*(?:bis|[-–])\s*(?<eh>\d{1,2}):(?<em>\d{2})(?![\d:])/iu', $time, $match)) {
             if (! $this->validClock($match['sh'], $match['sm'] ?? null)
                 || ! $this->validClock($match['eh'], $match['em'] ?? null)) {
                 throw new \InvalidArgumentException('Invalid event time.');
@@ -415,12 +427,22 @@ class ImportOfficialEvents extends Command
             return [false, null];
         }
 
-        if (preg_match('/\b(kostenlos|eintritt\s+frei|frei|gratis)\b/iu', $priceText)) {
+        $normalized = trim((string) preg_replace('/\s+/u', ' ', $priceText));
+        if (preg_match('/^(?:(?:die (?:teilnahme(?: an der führung)?|veranstaltung|ausstellung|aktion)|das ferienprogramm|der eintritt) ist )?(?:kostenlos|kostenfrei|(?:eintritt )?frei|gratis)\.?(?: spenden sind willkommen\.?)?$/iu', $normalized)) {
             return [true, null];
         }
 
-        if (preg_match('/(\d+(?:[,.]\d{1,2})?)/', $priceText, $match)) {
-            return [false, (float) str_replace(',', '.', $match[1])];
+        if (preg_match('/\b(kostenlos|kostenfrei|frei|gratis)\b/iu', $normalized)) {
+            return [false, null];
+        }
+
+        preg_match_all('/(\d+(?:[,.]\d{1,2})?)\s*(?:Euro\b|€)/iu', $normalized, $matches);
+        $prices = array_values(array_unique(array_map(
+            fn (string $price): float => (float) str_replace(',', '.', $price),
+            $matches[1],
+        )));
+        if (count($prices) === 1) {
+            return [false, $prices[0]];
         }
 
         return [false, null];
@@ -449,6 +471,7 @@ class ImportOfficialEvents extends Command
         $preserved = array_values(array_filter($existing, fn (string $tag): bool => $tag !== 'official-city'
             && $tag !== 'multi-day'
             && $tag !== 'multi-day-uncertain'
+            && $tag !== 'schedule-uncertain'
             && ! str_starts_with($tag, 'district:')
             && ! str_starts_with($tag, 'veedel:')));
 
@@ -458,6 +481,7 @@ class ImportOfficialEvents extends Command
             filled($record['stadtteil'] ?? null) ? 'veedel:'.trim((string) $record['stadtteil']) : null,
             $multiDay ? 'multi-day' : null,
             $multiDay && ! $hasDailyHours ? 'multi-day-uncertain' : null,
+            ! OfficialEventSchedule::isUnambiguous($record) ? 'schedule-uncertain' : null,
         ])]));
     }
 

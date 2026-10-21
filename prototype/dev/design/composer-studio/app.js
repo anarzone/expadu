@@ -1,0 +1,3175 @@
+(function () {
+    'use strict';
+    const C = StudioConversation,
+        A = StudioConversationActions.create(StudioModel, C);
+    const M = StudioModel,
+        I = ExpaduIcon,
+        catalogue = ExpaduModel.places;
+    const KEY = 'expadu-composer-studio-v1';
+    const E = (x) =>
+        String(x ?? '').replace(
+            /[&<>"']/g,
+            (c) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[c],
+        );
+    let state = M.fresh(),
+        persistent = true,
+        lastStoredWorkspace = null,
+        workspaceNotice = '',
+        view = 'composer',
+        savedView = location.hash === '#saved',
+        timer,
+        undo;
+    // Saved ideas opened from another section's bookmark lead back there
+    // (Today, Events, Paperwork, Travel), not to Composer's home.
+    const savedFrom = (() => {
+        if (location.hash !== '#saved') return '';
+        try {
+            const from = new URL(document.referrer);
+            if (from.origin !== location.origin) return '';
+            return (
+                [
+                    ['/today-next/', 'Today'],
+                    ['/events-next/', 'Events'],
+                    ['/bureaucracy-next/', 'Paperwork'],
+                    ['/departures-next/', 'Travel'],
+                ].find(([path]) => from.pathname.includes(path))?.[1] || ''
+            );
+        } catch {
+            return '';
+        }
+    })();
+    try {
+        lastStoredWorkspace = localStorage.getItem(KEY);
+        const s = JSON.parse(lastStoredWorkspace);
+        if (
+            s?.version === 1 &&
+            Array.isArray(s.saved) &&
+            Array.isArray(s.plans)
+        )
+            state = s;
+    } catch {
+        persistent = false;
+    }
+    // Department selections carry their source record; keep it available after navigation.
+    const department = ExpaduStore.read();
+    const carriedPlaces = [
+        ...(department.savedIdeas || []),
+        ...(department.draft || []),
+        ...(state.proposal?.items || []),
+        ...state.plans.flatMap((plan) => plan.items || []),
+    ];
+    for (const item of carriedPlaces) {
+        if (
+            item?.type === 'place' &&
+            typeof item.id === 'string' &&
+            typeof item.title === 'string' &&
+            item.title.trim() &&
+            !catalogue.some((place) => place.id === item.id)
+        )
+            catalogue.push(ExpaduModel.clone(item));
+    }
+    C.ensure(state);
+    // A proposal saved before changes went straight in (board 3): kept if
+    // it fits, as any change is; otherwise dropped, the plan unchanged.
+    if (state.proposal)
+        try {
+            A.changed(state, 'Saved your earlier proposal');
+        } catch {
+            state.proposal = null;
+        }
+    for (const chapter of state.conversation.chapters)
+        for (const entry of chapter.entries)
+            if (entry.kind === 'pending') {
+                entry.kind = 'cancelled';
+                entry.text = 'This request was interrupted. You can try again.';
+            }
+    let pendingReply = null;
+    let replacement = null;
+    let panel = null,
+        returnScroll = 0,
+        returnDate = null,
+        returnFocus = null,
+        panelAnimation = null;
+    const initialPanel =
+        location.hash === '#history'
+            ? 'history'
+            : location.hash === '#saved'
+              ? 'saved'
+              : location.hash === '#plans' ||
+                  location.pathname.includes('/my-plans')
+                ? 'plans'
+                : null;
+    const reducedMotion = () =>
+        matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const longDate = (date) =>
+        new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+        });
+    const shortDate = (date) =>
+        new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+        });
+    // "today", "tomorrow" or "on Saturday 3 October", against the shared sample day.
+    const whenLabel = (date) =>
+        date === M.today()
+            ? 'today'
+            : date === M.addDays(M.today(), 1)
+              ? 'tomorrow'
+              : `on ${longDate(date)}`;
+    const listWords = (items) =>
+        items.length > 1
+            ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+            : items[0] || '';
+    // What Composer can do, offered wherever it cannot answer.
+    const everyday = [
+        { label: 'What’s on tonight?', prompt: 'What’s on tonight?' },
+        { label: 'Plan my Saturday', prompt: 'Help me plan Saturday' },
+        {
+            label: 'Somewhere outside',
+            prompt: 'Find something outdoors for Saturday afternoon.',
+        },
+        {
+            label: 'Paperwork to sort first',
+            prompt: 'Help me settle in: which paperwork should I sort out first?',
+        },
+    ];
+    // The person's own Paperwork records, from the plan Paperwork keeps
+    // (bureaucracy-next/contract.js), so the checklist answer and Your day's
+    // deadline follow what you mark there. The sample day's fixture if
+    // Paperwork's scripts aren't loaded.
+    const records = () =>
+        window.BureaucracyContract?.records() || window.ExpaduSampleDay?.records || [];
+    const paperworkHref = (id) =>
+        `${ExpaduStore.routes.bureaucracy}?scenario=existing&person=self&view=detail&process=${encodeURIComponent(id)}`;
+    const countWord = (n) =>
+        ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'][n] ||
+        String(n);
+    const allEvents = () => [
+        ...(window.ExpaduSampleDay?.events || []),
+        ...ExpaduModel.events,
+    ];
+    const clockMins = (time) => +time.slice(0, 2) * 60 + +time.slice(3, 5);
+    const clockText = (n) =>
+        `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    // The appointment's trip by Today's rule: official appointments want ten
+    // minutes in hand, other plans five; an earlier service of the same
+    // journey is offered when it is still reachable.
+    function appointmentTrip(appointment) {
+        const j = appointment?.journey;
+        if (!j) return null;
+        const option = (o) => ({
+            depart: o.depart,
+            arrive: o.arrive,
+            leave: clockMins(o.depart) - (j.accessWalkMinutes || 0),
+            there: clockMins(o.arrive) + (j.walkMinutes || 0),
+        });
+        const planned = option(j);
+        const earlier = j.earlier ? option(j.earlier) : null;
+        const spare = (o) => clockMins(appointment.start) - o.there;
+        const margin = appointment.kind === 'official' ? 10 : 5;
+        const now = clockMins(M.nowTime());
+        const best =
+            spare(planned) < margin && earlier && earlier.leave >= now ? earlier : planned;
+        return { journey: j, planned, earlier, best, spare, margin, leaveNow: best.leave <= now };
+    }
+    // What Composer knows about today: the shared sample day, your records
+    // and the plans made here. Starters, Your day and answers all read this.
+    function todayContext() {
+        const sample = window.ExpaduSampleDay;
+        const today = M.today(),
+            now = M.nowTime();
+        const appointment =
+            state.reviewDay?.date === today
+                ? (state.reviewDay.agenda || []).find((x) => x.start >= now && x.journey?.from)
+                : sample?.date === today && sample.appointment?.start >= now
+                  ? sample.appointment
+                  : null;
+        const trip = appointment ? appointmentTrip(appointment) : null;
+        const record = appointment && records().find((x) => x.id === appointment.process);
+        const soon = M.addDays(today, 3);
+        const deadlines = records().filter(
+            (x) => x.deadline && x.deadline >= today && x.deadline <= soon && !x.submitted,
+        );
+        const tonight = allEvents()
+            .filter((x) => x.date === today && (x.start || '') >= '17:00')
+            .sort((a, b) => a.start.localeCompare(b.start));
+        const plan = planFor(today);
+        const planned = (plan?.items || [])
+            .filter((x) => x.start)
+            .sort((a, b) => a.start.localeCompare(b.start));
+        const upcoming = [
+            ...state.plans
+                .filter((p) => p.date > today)
+                .flatMap((p) => p.items.map((x) => ({ ...x, date: p.date }))),
+            ...(sample?.upcoming || []).filter((x) => x.date > today),
+        ]
+            .filter((x) => x.start)
+            .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
+            .slice(0, 2);
+        // The appointment's area, for the Nearby starter and tile: drawn
+        // with a pin, as the app draws it (it has no map pictures).
+        const anchor = window.ExpaduPlaces?.anchors?.['wiener-platz'];
+        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor };
+    }
+    const eventById = (id) =>
+        allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
+    // Plans you already have on a date: Today's day, the sample day's coming
+    // plans and any you mention ("I already have … at 18:00").
+    function knownPlans(date, text = '') {
+        const sample = window.ExpaduSampleDay;
+        const plans = [];
+        if (state.reviewDay?.date === date)
+            plans.push(...(state.reviewDay.agenda || []));
+        else if (sample?.date === date && sample.appointment)
+            plans.push(sample.appointment);
+        plans.push(...(sample?.upcoming || []).filter((x) => x.date === date));
+        plans.push(...M.mentionedPlans(text));
+        const seen = new Set();
+        return plans
+            .map((x) => ({ ...x, date }))
+            .filter((x) => {
+                const key = x.title.toLowerCase();
+                if (seen.has(key) || !x.start) return false;
+                seen.add(key);
+                return true;
+            });
+    }
+    const place = (id) =>
+        catalogue.find((x) => x.id === id) ||
+        (window.ExpaduPlaces?.byId(id) ? ExpaduPlaces.item(ExpaduPlaces.byId(id)) : null) ||
+        // Today saves the sample day's events too, not only listed ones.
+        [...(window.ExpaduSampleDay?.events || []), ...ExpaduModel.events]
+            .map((x) => ({ ...x, id: 'event:' + x.id, label: 'Event' }))
+            .find((x) => x.id === id);
+    const planFor = (date) => state.plans.find((p) => p.date === date);
+    // The week strip marks any day with something planned: a Composer plan,
+    // Today's day or the sample's coming plans, as the app marks the
+    // person's plans.
+    const hasPlans = (date) => !!planFor(date) || knownPlans(date).length > 0;
+    const ordered = (p) =>
+        [...p.items].sort((a, b) => a.start.localeCompare(b.start));
+    function syncStorageNotice() {
+        const note = document.querySelector('#storage-note');
+        note.hidden = persistent && !workspaceNotice;
+        note.textContent = persistent
+            ? workspaceNotice
+            : 'Changes are only kept while this page stays open. Your browser could not save this preview.';
+    }
+    function refreshWorkspace() {
+        const saved = localStorage.getItem(KEY);
+        if (saved === lastStoredWorkspace) return false;
+        const latest = saved === null ? M.fresh() : JSON.parse(saved);
+        if (
+            latest?.version !== 1 ||
+            !Array.isArray(latest.saved) ||
+            !Array.isArray(latest.plans)
+        )
+            throw Error('The updated workspace could not be read.');
+        const field = document.querySelector('#studio-request');
+        const prompt = field?.value ?? state.prompt;
+        state = latest;
+        if (prompt?.trim()) state.prompt = prompt;
+        C.ensure(state);
+        lastStoredWorkspace = saved;
+        if (loadingJob) cancelLoading(true);
+        pendingReply = null;
+        undo = null;
+        replacement = null;
+        entryMarkup.clear();
+        const main = document.querySelector('#main');
+        if (main) main.dataset.chapter = '';
+        if (field) field.value = state.prompt || '';
+        workspaceNotice =
+            'Your day changed on another page. Review the latest plan before making changes. Your unfinished message is kept.';
+        render();
+        syncStorageNotice();
+        return true;
+    }
+    function writeShared(shared) {
+        try {
+            if (refreshWorkspace()) return false;
+            const saved = ExpaduStore.write(shared);
+            // This shared write synchronizes bookmarks in this same workspace.
+            // Remember our own write so it is not mistaken for another page.
+            lastStoredWorkspace = localStorage.getItem(KEY);
+            return saved;
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+            return false;
+        }
+    }
+    function store() {
+        try {
+            // A storage event can arrive after the user's next input. Compare at
+            // the write boundary as well, before either shared store is changed.
+            if (refreshWorkspace()) return false;
+            ExpaduStore.update((s) => {
+                StudioIntegration.clearCancelledHandoffs(state, s);
+                s.savedIdeas = state.saved
+                    .map(place)
+                    .filter(Boolean)
+                    .map((x) =>
+                        x.type === 'event'
+                            ? { ...x, id: x.id.replace(/^event:/, '') }
+                            : x,
+                    );
+            });
+            const saved = JSON.stringify(state);
+            localStorage.setItem(KEY, saved);
+            lastStoredWorkspace = saved;
+            workspaceNotice = '';
+            persistent = ExpaduStore.isPersistent();
+        } catch {
+            persistent = false;
+        }
+        syncStorageNotice();
+        return persistent;
+    }
+    function notify(message, action) {
+        if (workspaceNotice) {
+            message = workspaceNotice;
+            action = null;
+        }
+        const t = document.querySelector('#studio-toast');
+        clearTimeout(timer);
+        undo = action;
+        t.innerHTML = `${I('check')}<span>${E(message)}</span>${action ? '<button data-action="undo">Undo</button>' : ''}<a href="../my-plans/#saved" data-nav="saved">Saved ideas</a>`;
+        if (!/saved|bookmark/i.test(message)) t.querySelector('a').remove();
+        t.hidden = false;
+        window.ExpaduMotion?.reveal(t);
+        const hide = () => {
+            if (t.matches(':hover') || t.contains(document.activeElement))
+                timer = setTimeout(hide, 1000);
+            else t.hidden = true;
+        };
+        timer = setTimeout(hide, 5000);
+    }
+    // Composer's button is here too, marked as where you are, so the menu
+    // has the same width and place on every page: on phones the round one
+    // beside the menu, on tablets and desktops the one in the header
+    // (style.css, section-bar.css, connected/composer-entry.css). A tap,
+    // or ⌘K, goes to the text box.
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+    const shortcut = mac ? '⌘K' : 'Ctrl K';
+    document.body.insertAdjacentHTML(
+        'beforeend',
+        `<button type="button" class="composer-here" aria-current="page" aria-label="Composer, where you are. Write your request" title="Composer">${I('spark')}</button>`,
+    );
+    document
+        .querySelector('#shell .header-utilities')
+        ?.insertAdjacentHTML(
+            'afterbegin',
+            `<button type="button" class="composer-header" aria-current="page" aria-label="Composer, where you are. Write your request" aria-keyshortcuts="${mac ? 'Meta+K' : 'Control+K'}" title="Composer (${shortcut})"><span class="composer-header-mark">${I('spark')}</span><span class="composer-header-text">Ask Composer</span><kbd>${shortcut}</kbd></button>`,
+        );
+    const toTextBox = () => document.querySelector('#studio-request')?.focus();
+    for (const button of document.querySelectorAll(
+        '.composer-here, #shell .composer-header',
+    ))
+        button.addEventListener('click', toTextBox);
+    document.addEventListener('keydown', (event) => {
+        if (
+            !(event.metaKey || event.ctrlKey) ||
+            event.altKey ||
+            event.shiftKey ||
+            event.key.toLowerCase() !== 'k'
+        )
+            return;
+        event.preventDefault();
+        toTextBox();
+    });
+    // One compact row under the app header: what this is and which day, and
+    // the way back to the page Composer was opened from (minimizing: your
+    // conversation stays here). It stays in view, so leaving is one tap.
+    // The approved design (8 October) names Composer in a small cyan mark:
+    // above the conversation on phones, above Your day on desktop.
+    function backButton() {
+        const back = ExpaduStore.composerOrigin?.() || { name: 'Today' };
+        return `<button type="button" class="composer-minimize" data-minimize-composer aria-label="Back to ${E(back.name)}. Your conversation stays in Composer." title="Back to ${E(back.name)}">${I('back')}<span>Back to ${E(back.name)}</span></button>`;
+    }
+    function heading() {
+        return `<div class="composer-heading"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div>`;
+    }
+    // The top edge content can scroll to: under the Composer heading, which
+    // sits under the app header while that shows.
+    const contentTop = () =>
+        document.querySelector('.composer-heading')?.getBoundingClientRect()
+            .bottom ||
+        parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+                '--composer-header-top',
+            ),
+        ) ||
+        0;
+    let minimizing = false;
+    function minimizeComposer() {
+        if (minimizing) return;
+        if (loadingJob) {
+            loadingJob.afterComplete = minimizeComposer;
+            return;
+        }
+        state.prompt = document.querySelector('#studio-request')?.value || '';
+        if (!store()) return;
+        minimizing = true;
+        document.activeElement?.blur();
+        const leave = () => ExpaduStore.minimizeComposer();
+        if (reducedMotion()) {
+            leave();
+            return;
+        }
+        document.body.classList.add('is-minimizing');
+        const animations = ['#main', '.studio-input-wrap'].map(
+            (selector) =>
+                document.querySelector(selector).animate(
+                    [
+                        { opacity: 1, transform: 'translateY(0) scale(1)' },
+                        {
+                            opacity: 0,
+                            transform: 'translateY(18px) scale(.97)',
+                        },
+                    ],
+                    {
+                        duration: 220,
+                        easing: 'cubic-bezier(.4,0,1,1)',
+                        fill: 'forwards',
+                    },
+                ).finished,
+        );
+        Promise.allSettled(animations).then(leave);
+    }
+    function syncSaved() {
+        const badge = document.querySelector('.header-saved-count');
+        badge.textContent = state.saved.length || '';
+        badge.hidden = !state.saved.length;
+        document.querySelectorAll('[data-save]').forEach((button) => {
+            const saved = state.saved.includes(button.dataset.save);
+            button.setAttribute('aria-pressed', String(saved));
+            button.setAttribute(
+                'aria-label',
+                `${saved ? 'Unsave' : 'Save'} ${place(button.dataset.save).title}`,
+            );
+        });
+    }
+    function renderPanel() {
+        if (panel === 'replace') {
+            renderReplacement();
+            return;
+        }
+        const drawer = document.querySelector('#workspace-panel');
+        if (panel === 'history') {
+            drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}Composer</button><h2>Conversation history</h2></header><div class="panel-body"><p class="history-intro">Reopen an earlier section to read or continue it. Starting fresh keeps your plans, saved ideas and original messages.</p>${state.conversation.chapters
+                .slice()
+                .reverse()
+                .map(
+                    (ch) =>
+                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small></button>`,
+                )
+                .join(
+                    '',
+                )}<p class="history-intro">History stays in your account. Earlier conversations are not used as automatic AI memory.</p><button type="button" class="plain-button" data-action="delete-history">${I('trash')}Delete conversation history</button></div>`;
+            return;
+        }
+        const scroll = drawer?.querySelector('.panel-body')?.scrollTop || 0;
+        const active = drawer.contains(document.activeElement)
+            ? document.activeElement
+            : null;
+        const focusSelector = active?.dataset.date
+            ? `[data-date="${active.dataset.date}"]`
+            : active?.dataset.dayStep
+              ? `[data-day-step="${active.dataset.dayStep}"]`
+              : active?.id === 'plan-date'
+                ? '#plan-date'
+                : '[data-action="close-panel"]';
+        const backTo = panel === 'saved' && savedFrom ? savedFrom : 'Composer';
+        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to ${backTo}">${I('back')}<span>${backTo}</span></button><h2>${panel === 'saved' ? 'Saved ideas' : 'My Plans'}</h2></header><div class="panel-selection" data-planning-context>${savedView ? planningContext() : ''}</div><div class="panel-body">${plansPage()}</div>`;
+        drawer.querySelector('.panel-body').scrollTop = scroll;
+        if (active)
+            drawer.querySelector(focusSelector)?.focus({ preventScroll: true });
+        syncSaved();
+    }
+    function panelAccessibility() {
+        const mobile = matchMedia('(max-width: 999px)').matches;
+        const focusedPanel = mobile || panel === 'replace';
+        document.querySelector('#main').inert = !!panel && focusedPanel;
+        document.querySelector('#shell').inert = !!panel && focusedPanel;
+        document.querySelector('#input-area').inert = !!panel && focusedPanel;
+        const drawer = document.querySelector('#workspace-panel');
+        if (drawer) {
+            drawer.setAttribute(
+                'aria-label',
+                panel === 'replace'
+                    ? 'Choose a replacement place'
+                    : 'Your collection',
+            );
+            drawer.setAttribute(
+                'role',
+                focusedPanel ? 'dialog' : 'complementary',
+            );
+            if (focusedPanel && panel)
+                drawer.setAttribute('aria-modal', 'true');
+            else drawer.removeAttribute('aria-modal');
+        }
+    }
+    function openPanel(target, writeHistory = true) {
+        if (!panel) {
+            returnScroll = window.scrollY;
+            returnDate = state.date;
+            returnFocus = document.activeElement;
+        }
+        panelAnimation?.cancel();
+        panel = target;
+        document.title =
+            'Expadu — ' +
+            ({
+                saved: 'Saved ideas',
+                plans: 'My Plans',
+                replace: 'Replace a place',
+                history: 'History',
+            }[target] || 'Composer');
+        savedView = target === 'saved';
+        document.body.classList.toggle('has-replacement', target === 'replace');
+        let drawer = document.querySelector('#workspace-panel');
+        if (!drawer) {
+            drawer = document.createElement('aside');
+            drawer.id = 'workspace-panel';
+            drawer.setAttribute('aria-label', 'Your collection');
+            document.body.append(drawer);
+        }
+        drawer.hidden = false;
+        drawer.inert = false;
+        document.body.classList.add('has-panel');
+        renderPanel();
+        panelAccessibility();
+        if (writeHistory)
+            history.pushState(
+                { studioPanel: true },
+                '',
+                StudioNavigation.panelUrl(location.href, target),
+            );
+        if (!reducedMotion())
+            panelAnimation = drawer.animate(
+                [
+                    { transform: 'translateX(100%)', opacity: 0.6 },
+                    { transform: 'translateX(0)', opacity: 1 },
+                ],
+                { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' },
+            );
+        drawer
+            .querySelector('[data-action="close-panel"]')
+            .focus({ preventScroll: true });
+    }
+    function closePanel(restore = true, writeHistory = true) {
+        if (!panel) return;
+        panelAnimation?.cancel();
+        const drawer = document.querySelector('#workspace-panel');
+        panel = null;
+        document.title = 'Expadu — Composer';
+        savedView = false;
+        if (restore && returnDate) state.date = returnDate;
+        document.body.classList.remove('has-panel', 'has-replacement');
+        panelAccessibility();
+        if (writeHistory)
+            history.replaceState(
+                {},
+                '',
+                StudioNavigation.panelUrl(location.href),
+            );
+        if (!reducedMotion()) {
+            panelAnimation = drawer.animate(
+                [
+                    { transform: 'translateX(0)', opacity: 1 },
+                    { transform: 'translateX(100%)', opacity: 0 },
+                ],
+                { duration: 220, easing: 'cubic-bezier(.4,0,1,1)' },
+            );
+            panelAnimation.onfinish = () => {
+                if (!panel) drawer.hidden = true;
+            };
+        } else drawer.hidden = true;
+        drawer.inert = true;
+        if (restore) {
+            window.scrollTo({ top: returnScroll, behavior: 'instant' });
+            if (returnFocus?.isConnected)
+                returnFocus.focus({ preventScroll: true });
+        }
+        syncSaved();
+        store();
+    }
+    function planningContext() {
+        const date = state.conversation.activeDate;
+        const p =
+            (state.proposal?.date === date ? state.proposal : planFor(date)) ||
+            state.proposal;
+        if (!p) return '';
+        return `<div class="input-context">${I('calendar')}<span><strong>${E(shortDate(p.date))}</strong><small>In your plans</small></span><button type="button" data-open-plan="${E(p.date)}">${date === p.date ? 'View plan' : 'Resume plan'}</button></div>`;
+    }
+    function syncPlanning() {
+        document.querySelectorAll('[data-add]').forEach((button) => {
+            const added = !!(
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date)
+            )?.items.some((x) => x.id === button.dataset.add);
+            button.setAttribute('aria-disabled', String(added));
+            button.classList.toggle('is-added', added);
+            // Place cards have an icon-only button with its own label.
+            if (button.classList.contains('nearby-place-plan')) {
+                button.innerHTML = ExpaduPlaces.icon(added ? 'check' : 'plus');
+                button.setAttribute('aria-label', added ? 'Added to your plan' : 'Add to a plan');
+                return;
+            }
+            button.innerHTML = added
+                ? `Added ${I('check')}`
+                : `Add to plan ${I('plus')}`;
+        });
+        document
+            .querySelectorAll('[data-planning-context]')
+            .forEach((context) => {
+                context.innerHTML =
+                    context.closest('#workspace-panel') && !savedView
+                        ? ''
+                        : planningContext();
+            });
+    }
+    function input() {
+        const area = document.querySelector('#input-area');
+        if (view !== 'composer') {
+            area.innerHTML = '';
+            return;
+        }
+        if (area.querySelector('#studio-form')) {
+            const oldNotice = area.querySelector('.handoff-note');
+            if (!state.handoffs?.length) oldNotice?.remove();
+            else if (oldNotice)
+                oldNotice.querySelector('span').textContent =
+                    `${state.handoffs.length} selections waiting. ${state.handoffs[0].handoffError}`;
+            return;
+        }
+        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="Ask, discover, or plan…">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
+    }
+    function syncSend() {
+        const field = document.querySelector('#studio-request');
+        const send = document.querySelector('#studio-form .send');
+        if (field && send)
+            send.disabled = field.readOnly || !field.value.trim();
+    }
+    function closeComposerActions(restoreFocus = false) {
+        const actions = document.querySelector('.composer-actions');
+        if (!actions?.open) return;
+        actions.open = false;
+        if (restoreFocus)
+            actions.querySelector('summary').focus({ preventScroll: true });
+    }
+    document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.composer-actions')) closeComposerActions();
+    });
+    document.addEventListener('focusin', (e) => {
+        if (!e.target.closest('.composer-actions')) closeComposerActions();
+    });
+    const weekday = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' });
+    const stamp = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const relativeDay = (date, today) =>
+        date === today
+            ? 'Today'
+            : date === M.addDays(today, 1)
+              ? 'Tomorrow'
+              : new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    // The trip you're on, as Travel keeps it once you tap "I'm on my way"
+    // (connected/journey-session.js): its steps, where you are in them, the
+    // ride and where you get off. Its step is the next thing to do: "Get off
+    // at Wiener Platz" while you're on the tram.
+    function onTheWay() {
+        const s = window.JourneySession?.read();
+        if (!s) return null;
+        const steps = s.steps || [];
+        const at = Math.min(s.step, Math.max(0, steps.length - 1));
+        const board = steps.findIndex((x) => x.mode === 'transit');
+        const off = steps.findIndex((x, i) => i > board && x.mode === 'alight');
+        const vehicle = s.vehicle && s.vehicle !== 'line' ? s.vehicle : 'line';
+        const now = steps[at] || null;
+        return {
+            ...s,
+            steps,
+            at,
+            now,
+            board: board >= 0 ? steps[board] : null,
+            off: off >= 0 ? steps[off] : null,
+            // Going to the stop, on the ride, past it, or there.
+            stage: !now
+                ? 'unknown'
+                : now.mode === 'arrive'
+                  ? 'arrived'
+                  : board < 0 || at <= board
+                    ? 'before'
+                    : off < 0 || at <= off
+                      ? 'riding'
+                      : 'after',
+            vehicle,
+            ride: `${vehicle} ${s.line || steps[board]?.title.match(/\bline\s+(\S+)/i)?.[1] || ''}`.trim(),
+            href: `${ExpaduStore.routes.departures}?journey=resume`,
+        };
+    }
+    // Answers about it: what was asked first, then where you are, the steps
+    // left and the way back to the trip. Times are the trip's own,
+    // scheduled; nothing here is live.
+    function tripAnswer(w, ask) {
+        const a = window.ExpaduSampleDay?.appointment;
+        const toAppointment = !!a && w.title === a.title;
+        const Ride = w.ride.charAt(0).toUpperCase() + w.ride.slice(1);
+        const towards = w.board?.detail ? ` ${w.board.detail.replace(/^Towards\b/, 'towards')}` : '';
+        const spare =
+            toAppointment && w.arrive && clockMins(a.start) > clockMins(w.arrive)
+                ? `, ${clockMins(a.start) - clockMins(w.arrive)} minutes before ${a.start}`
+                : '';
+        const there = w.arrive && w.stage !== 'arrived' ? `You’ll be there at ${w.arrive}${spare}.` : '';
+        const offPlace = w.off ? w.off.place || w.off.title.replace(/^Get off at /, '') : '';
+        const offAt = w.off ? `Get off at ${offPlace} at ${w.off.time}.` : '';
+        const where = {
+            before:
+                w.board && w.now === w.board
+                    ? `Your ${w.ride} leaves${w.board.place ? ` ${w.board.place}` : ''} at ${w.board?.time}.`
+                    : `${w.now?.title}: your ${w.ride} leaves at ${w.board?.time}.`,
+            riding: offAt,
+            after: `${w.now?.title}.`,
+            arrived: w.now?.detail ? `${w.now.detail}.` : '',
+            unknown: `${w.instruction}.`,
+        }[w.stage];
+        const noLive = 'This preview has no live times, so I can’t tell if it’s running on time.';
+        const condition = {
+            location: ' Your location isn’t available, so the trip follows the timetable.',
+            offline: ' You’re offline, so the trip’s times won’t update.',
+            changed: ' The trip has a route change to review: it can plan again from where you are.',
+        }[w.condition] || '';
+        const join = (...parts) => parts.filter(Boolean).join(' ');
+        let title, text;
+        if (ask === 'status' && w.board) {
+            title =
+                w.stage === 'before'
+                    ? `${Ride} at ${w.board.time}${w.board.place ? ` from ${w.board.place}` : ''}.`
+                    : w.stage === 'riding'
+                      ? `You’re on ${w.ride}${towards}.`
+                      : `You’re off the ${w.vehicle}.`;
+            text = ['before', 'riding'].includes(w.stage) ? join(noLive, w.stage === 'riding' && offAt) : join(where, there);
+        } else if (ask === 'stop' && w.off) {
+            title = ['before', 'riding'].includes(w.stage) ? offAt : `You got off at ${offPlace}.`;
+            text = join(w.stage === 'before' && `Your ${w.ride} leaves at ${w.board.time}.`, w.stage === 'after' && where, there);
+        } else if (ask === 'arrive' && w.arrive) {
+            title = w.stage === 'arrived' ? `You’re there: ${w.title}.` : there;
+            text = where;
+        } else {
+            // "When should I leave?" or "What's next?": you're already going.
+            title = {
+                before: 'You’re on your way.',
+                riding: `You’re on ${w.ride}${towards}.`,
+                after: 'You’re nearly there.',
+                arrived: `You’re there: ${w.title}.`,
+                unknown: 'You’re on your way.',
+            }[w.stage];
+            text = join(where, there);
+        }
+        return {
+            text: text + condition,
+            entry: {
+                kind: 'trip',
+                title,
+                trip: {
+                    // The rest of your way, as Travel's trip shows it.
+                    way: wayLeft(w),
+                    href: w.href,
+                    label: 'Back to your trip',
+                },
+            },
+        };
+    }
+    // The trip you're on, from where you are: Travel's rows (way.js). Boarding
+    // and getting off are one row for the ride, as on Travel's trip.
+    function wayLeft(w) {
+        const left = w.steps.slice(w.at);
+        const ride = w.vehicle ? w.vehicle[0].toUpperCase() + w.vehicle.slice(1) : 'Tram';
+        let offAt = null;
+        return left.flatMap((x, index) => {
+            if (x.mode === 'transit') {
+                const off = left.slice(index).find((y) => y.mode === 'alight');
+                return [{ kind: 'ride', line: w.line, time: x.time, title: `${ride} ${w.line} to ${off?.place || x.title}`, sub: `From ${x.place || ''}${off ? ` · get off at ${off.time}` : ''}` }];
+            }
+            if (x.mode === 'alight') {
+                offAt = x;
+                return [];
+            }
+            if (x.mode === 'walk')
+                return [{ kind: offAt ? 'walk is-from-stop' : 'walk', time: x.time, title: String(x.title).replace(/Köln\s+/g, ''), sub: offAt ? `From ${offAt.place} · ${x.detail}` : x.detail }];
+            if (x.mode === 'arrive') return [{ kind: 'end', time: x.time, title: w.title, sub: x.detail || 'There' }];
+            return [];
+        });
+    }
+    // Starters from what Expadu knows about your day, each in the colour of
+    // the section it leads to. Only what the day actually has. The home's
+    // cards, and the rows of a reply Composer can't answer (board 7).
+    function starters() {
+        const x = todayContext();
+        const a = x.appointment;
+        // On your way to it, the Travel starter asks about the trip.
+        const way = onTheWay();
+        const going = way && way.title === a?.title;
+        const cards = [
+            a?.journey && {
+                kind: 'travel',
+                tag: 'Travel',
+                icon: 'route',
+                label: going ? 'How’s my trip going?' : `When should I leave for my ${a.start}?`,
+                detail: going
+                    ? `${way.arrive ? `There at ${way.arrive} · ` : ''}${way.ride}`
+                    : `${a.journey.from} → ${a.location} · line ${a.journey.line}`,
+            },
+            x.record?.total && {
+                kind: 'paperwork',
+                tag: 'Paperwork',
+                icon: 'document',
+                label: `What do I need to bring at ${a.start}?`,
+                detail: `Your ${x.record.title} checklist`,
+            },
+            x.tonight.length && {
+                kind: 'events',
+                tag: 'Events',
+                icon: 'calendar',
+                label: 'What’s on tonight?',
+                detail: `${x.tonight.length === 1 ? 'One sample event' : `${x.tonight.length} sample events`} from ${x.tonight[0].start}`,
+                stamp: stamp(x.today),
+            },
+            a && x.anchor && {
+                kind: 'nearby',
+                tag: 'Nearby',
+                icon: 'pin',
+                label: 'Is there a pharmacy near my appointment?',
+                detail: `Around ${x.anchor.name}`,
+            },
+        ].filter(Boolean);
+        return cards;
+    }
+    function welcome() {
+        const x = todayContext();
+        const cards = starters();
+        const chips = [
+            ['spark', 'Plan my Saturday', 'Help me plan Saturday'],
+            ['leaf', 'A little time outdoors', 'Find something outdoors for Saturday afternoon.'],
+            // Step-free access as the listings record it (only when tonight
+            // has the film night it asks about).
+            ...(x.tonight.some((e) => /cinema/i.test(e.title))
+                ? [['wheelchair', 'Is the cinema step-free?', 'Is the cinema step-free?']]
+                : []),
+            ...(cards.length < 2 ? [['calendar', 'What’s on this weekend', 'What’s on this weekend?']] : []),
+        ];
+        const starterCards = cards.length
+            ? `<div class="starter-cards">${cards
+                  .map(
+                      (c) =>
+                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}"><span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
+                  )
+                  .join('')}</div>`
+            : '';
+        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
+            .map(([, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}"><span>${E(label)}</span></button>`)
+            .join('')}</div></section>`;
+    }
+    // The day's facts, in the approved design's order: the trip to take now,
+    // the appointment, your record's deadline, the area after it, tonight.
+    // Each asks about itself (a deadline opens your record).
+    const dateShort = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    function dayFacts(x) {
+        const a = x.appointment;
+        const facts = [];
+        // On your way to it, "leave for" is gone: the trip shows above the
+        // page (connected/journey-session.js) and the starter asks about it.
+        const way = onTheWay();
+        if (a && x.trip && !(way && way.title === a.title))
+            facts.push({
+                prompt: `When should I leave for my ${a.start}?`,
+                // Travel's line badge, in the line's KVB colour (labels.js).
+                tile: 'is-line',
+                icon: window.TravelLabels.line(x.trip.journey.line, window.TravelLabels.look(x.trip.journey.line, 'tram')),
+                small: `${x.trip.leaveNow ? 'Now' : `By ${clockText(x.trip.best.leave)}`} · leave for ${a.start}`,
+                strong: `Tram ${x.trip.journey.line} at ${x.trip.best.depart} from ${x.trip.journey.from}`,
+            });
+        if (a)
+            facts.push({
+                prompt: x.record?.total ? `What do I need to bring at ${a.start}?` : `When should I leave for my ${a.start}?`,
+                tile: 'is-paper',
+                icon: I('document'),
+                small: `${a.start} · in your plan`,
+                strong: `${a.title}, ${a.location}`,
+            });
+        for (const item of x.planned.filter((p) => p.id !== a?.id))
+            facts.push({
+                openPlan: x.today,
+                tile: '',
+                icon: I('calendar'),
+                small: `${item.start} · in your plan`,
+                strong: item.title,
+            });
+        for (const d of x.deadlines)
+            facts.push({
+                href: paperworkHref(d.id),
+                tile: 'is-attention',
+                icon: I('clock'),
+                small: `${relativeDay(d.deadline, x.today)} · your records`,
+                strong: d.deadlineLabel,
+            });
+        if (a && x.anchor)
+            facts.push({
+                prompt: 'Is there a pharmacy near my appointment?',
+                tile: 'is-map',
+                icon: I('pin'),
+                small: `After ${a.end || a.start}`,
+                strong: `Near ${x.anchor.name.split(',')[0]}`,
+            });
+        if (x.tonight.length)
+            facts.push({
+                prompt: 'What’s on tonight?',
+                tile: 'is-events',
+                icon: I('calendar'),
+                small: 'Tonight · sample programme',
+                strong: `${x.tonight.length === 1 ? 'One event' : `${x.tonight.length} events`} from ${x.tonight[0].start}`,
+            });
+        return facts;
+    }
+    function fact(f, kind) {
+        const inner = `<span class="${kind}-tile ${f.tile}">${f.icon}</span><span><small>${E(f.small)}</small><strong>${E(f.strong)}</strong></span>`;
+        const cls = `${kind}${f.className ? ` ${f.className}` : ''}`;
+        return f.href
+            ? `<a class="${cls}" href="${E(f.href)}">${inner}</a>`
+            : f.openPlan
+              ? `<button class="${cls}" data-open-plan="${E(f.openPlan)}">${inner}</button>`
+              : `<button class="${cls}" data-prompt="${E(f.prompt)}">${inner}</button>`;
+    }
+    // Phones: the day's facts in one scrolling row under Composer's mark,
+    // above the starters and later above the conversation, as in the mock.
+    function dayRow(x) {
+        const facts = dayFacts(x);
+        return facts.length
+            ? `<div class="day-row" role="group" aria-label="Your day">${facts.map((f) => fact(f, 'day-chip')).join('')}</div>`
+            : '';
+    }
+    // Desktop: what Composer plans with, beside the conversation, under
+    // Composer's mark and the way back to the page it was opened from.
+    // Laptops: while you plan another day, Your day is that day, its latest
+    // change marked, so the plan stays beside the conversation (owner, 18
+    // Oct 2026, Composer review canvas board 9). "Show today" goes back.
+    function planningDay(x) {
+        const p = planFor(state.conversation.activeDate);
+        return p && p.date !== x.today ? p : null;
+    }
+    const dayTools = () =>
+        `<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
+    function planningPanel(p) {
+        const marks = marksFor(p);
+        const rows = ordered(p).map((item) => {
+            const m = marks.get(item.id);
+            const held = item.fixed || item.type === 'appointment' || item.type === 'event';
+            const where = item.venue || item.location || place(item.id)?.area || '';
+            return fact(
+                {
+                    openPlan: p.date,
+                    className: m ? 'is-changed' : '',
+                    tile: m ? 'is-changed' : held ? 'is-paper' : '',
+                    icon: I(held ? 'calendar' : 'pin'),
+                    small: `${item.start}–${item.end} · ${m ? (m.kind === 'moved' ? `moved from ${m.from.split('–')[0]}` : m.kind === 'added' ? 'added' : `in place of ${m.was}`) : 'in your plans'}`,
+                    strong: where ? `${item.title}, ${where}` : item.title,
+                },
+                'day-item',
+            );
+        });
+        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(p.date))}</h2><p class="composer-day-note">${E(longDate(p.date))} · the day you’re planning. <button class="day-switch" data-action="day-today">Show today</button></p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${dayTools()}`;
+    }
+    function dayPanel() {
+        const x = todayContext();
+        const planning = planningDay(x);
+        if (planning && state.dayShown !== planning.date)
+            return planningPanel(planning);
+        const rows = dayFacts(x).map((f) => fact(f, 'day-item'));
+        if (!rows.length && !x.upcoming.length) return '';
+        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this. Tap one to ask.${planning ? ` <button class="day-switch" data-action="day-planning">Show ${E(weekday(planning.date))}</button>` : ''}</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(dateShort(u.date))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}${dayTools()}`;
+    }
+    // Saved places and plan items use the shared photo-free card
+    // (connected/places.js) with Composer's own Quick look, Save and Add.
+    const composerPlace = { open: 'data-preview', save: 'data-save', plan: 'data-add' };
+    // Places near a point, as the approved design's compact cards: the map,
+    // kind and distance, the name, and what the listing says for that time.
+    // Each opens Quick look, where you can save or add it.
+    function nearbyCards(entry) {
+        const P = window.ExpaduPlaces;
+        if (!P) return '';
+        const from = P.anchors[entry.near];
+        const cards = (entry.placeIds || [])
+            .map(P.byId)
+            .filter(Boolean)
+            .map((p) => {
+                const when = entry.listedAt && p.kind !== 'nature' ? P.hours(p, entry.listedAt) : null;
+                const away = from ? P.distance(p, from) : '';
+                const facts = [
+                    when?.text.replace(/^Open until/, 'Listed until'),
+                    p.wheelchair && (P.wheelchairText[p.wheelchair] || p.wheelchair),
+                    p.kind === 'library' && ['Yes', 'Public computers'].includes(P.wifiText(p))
+                        ? P.wifiText(p) === 'Yes' ? 'Wi-Fi' : 'Public computers'
+                        : '',
+                ].filter(Boolean);
+                const kind = `${p.label}${away ? ` · ${away}` : ''}`;
+                return `<li><button type="button" class="nearby-answer-card" data-preview="${E(p.id)}" aria-label="${E(p.name)}, ${E(kind)}"><span class="nearby-answer-map" aria-hidden="true">${P.icon(p.kind)}<img src="../connected/place-maps/${E(p.id)}.png" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span><span class="nearby-answer-copy"><small>${E(kind)}</small><strong>${E(p.name)}</strong>${facts.length ? `<small>${E(facts.join(' · '))}</small>` : ''}</span></button></li>`;
+            })
+            .join('');
+        // The data is OpenStreetMap's (ODbL), which asks for credit where
+        // it's shown.
+        return `${cards ? `<ul class="nearby-answer" role="list">${cards}</ul>` : ''}${cards || entry.map ? `<div class="answer-actions place-answer-actions">${entry.map ? `<a class="answer-button" href="${E(entry.map)}">${I('pin')}Show on map</a>` : ''}${cards ? `<span>${E(P.credit)}</span>` : ''}</div>` : ''}`;
+    }
+    function card(x) {
+        const kept = state.saved.includes(x.id);
+        const added = !!state.proposal?.items.some((item) => item.id === x.id);
+        if (x.place && window.ExpaduPlaces)
+            return ExpaduPlaces.card(x.place, { attrs: composerPlace, saved: kept, added });
+        if (x.type === 'place') {
+            return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">${E(x.unknown || 'Hours and access aren’t in the listing')}</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
+        }
+        // An event says when it is, with a calendar rather than a leaf.
+        const event = x.type === 'event' || x.label === 'Event';
+        const when =
+            event && x.date
+                ? [
+                      new Date(x.date + 'T12:00:00').toLocaleDateString('en-GB', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                      }),
+                      x.start,
+                      x.area || x.venue,
+                  ]
+                      .filter(Boolean)
+                      .join(' · ')
+                : x.area;
+        return `<article class="discovery-card"><div class="discovery-photo">${x.image ? `<img src="${E(x.image)}" alt="${E(x.title)}" loading="eager">` : ''}<span class="photo-fallback" aria-hidden="true">${I(event ? 'calendar' : 'leaf')}</span><span class="place-category">${E(x.label)}</span><button class="studio-bookmark" data-save="${x.id}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button><div class="photo-copy"><span>${E(when || '')}</span><h3>${E(x.title)}</h3></div></div><div class="discovery-card-body"><p>${E(x.label)} from your city’s captured listings.</p><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Preview</button><button class="studio-button light ${added ? 'is-added' : ''}" ${x.type === 'event' ? 'data-add-event' : 'data-add'}="${x.id}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></div></article>`;
+    }
+    document.addEventListener(
+        'error',
+        (event) => {
+            if (event.target.matches?.('.place-idea-photo'))
+                event.target.remove();
+        },
+        true,
+    );
+    // Edit time opens a sheet with two wheels (board 10; time-sheet.js).
+    function timeEditor(x) {
+        return `<button class="plain-button" data-edit-time="${E(x.id)}">${I('pencil')}Edit time</button>`;
+    }
+    function replacementFilters() {
+        const categories = [...new Set(catalogue.map((x) => x.category))];
+        return `<div class="replacement-filters" aria-label="Filter replacement places"><button data-replacement-filter="saved" aria-pressed="${replacement.filter === 'saved'}">${I('bookmark')}Saved</button><button data-action="toggle-replacement-categories" aria-expanded="${!!replacement.categoryOpen}" aria-controls="replacement-categories" class="${replacement.category ? 'has-category' : ''}">Category · ${E(replacement.category || 'Any')}${I('down')}</button></div><div id="replacement-categories" class="replacement-categories" role="group" aria-label="Place category" ${replacement.categoryOpen ? '' : 'hidden'}>${['', ...categories].map((category) => `<button data-replacement-category="${E(category)}" aria-pressed="${replacement.category === category}">${E(category || 'Any')}${replacement.category === category ? I('check') : ''}</button>`).join('')}</div>`;
+    }
+    function syncReplacementFilters() {
+        document.querySelector('#replacement-filter-controls').innerHTML =
+            replacementFilters();
+    }
+    function renderReplacement() {
+        const plan = replacement && A.replacementPlan(state, replacement);
+        const item = plan?.items.find((x) => x.id === replacement.itemId);
+        if (!item) {
+            closePanel();
+            return;
+        }
+        const drawer = document.querySelector('#workspace-panel');
+        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}<span>Composer</span></button><h2>Replace a place</h2></header><div class="replacement-context"><span>Replacing</span><h3>${E(item.title)}</h3><p>${I('calendar')}${E(shortDate(plan.date))}<span>${E(item.start)}–${E(item.end)}</span></p></div><div class="replacement-tools"><label class="replacement-search">${I('search')}<input id="replacement-search" type="search" placeholder="Search places, activities or areas" aria-label="Search replacement places" value="${E(replacement.query)}"></label><div id="replacement-filter-controls">${replacementFilters()}</div></div><div class="panel-body replacement-body"><p class="replacement-guidance">Sample places. Travel and current availability still need checking.</p><div id="replacement-results"></div><p id="replacement-result-status" class="sr-only" role="status"></p></div><footer class="replacement-footer"><div id="replacement-selection">Choose a place to continue</div><button class="studio-button primary" data-action="apply-replacement" disabled>Use this place</button></footer>`;
+        renderReplacementResults();
+    }
+    function renderReplacementResults() {
+        if (panel !== 'replace') return;
+        const query = replacement.query.trim();
+        const options = M.filterReplacementPlaces(
+            catalogue,
+            A.replacementPlan(state, replacement),
+            state.saved,
+            {
+                query,
+                category: replacement.category,
+                savedOnly: replacement.filter === 'saved',
+            },
+        );
+        if (!options.some((x) => x.id === replacement.selected))
+            replacement.selected = null;
+        document.querySelector('#replacement-results').innerHTML =
+            options.length
+                ? options
+                      .map(
+                          (x) =>
+                              `<button class="replacement-card" data-select-replacement="${x.id}" aria-pressed="${replacement.selected === x.id}"><span class="replacement-media ${E(x.color)}">${x.image ? `<img src="${E(x.image)}" alt="" loading="lazy">` : ''}${I(x.icon || 'pin')}</span><span class="replacement-copy"><small>${E(x.label)} · ${E(x.area)}</small><strong>${E(x.title)}</strong><span>${E(x.facts?.[0] || (x.label === 'Park' ? 'A park from the captured city listings.' : 'From the captured city listings.'))}</span></span><span class="replacement-check" aria-hidden="true">${I('check')}</span></button>`,
+                      )
+                      .join('')
+                : `<div class="replacement-empty">${I(replacement.filter === 'saved' ? 'bookmark' : 'search')}<h3>${query || replacement.category ? 'No matching places' : 'No saved alternatives yet'}</h3><p>${query || replacement.category ? 'Try another search or category, or turn off Saved. Places already in your plan are excluded.' : 'Places already in your plan are excluded. Turn off Saved to see other options.'}</p><button class="studio-button light" data-action="reset-replacement-search">Clear filters</button></div>`;
+        document.querySelector('#replacement-result-status').textContent =
+            `${options.length} ${options.length === 1 ? 'place' : 'places'} available`;
+        document.querySelectorAll('.replacement-media img').forEach((img) =>
+            img.addEventListener('error', () => {
+                img.hidden = true;
+            }),
+        );
+        syncReplacementSelection();
+    }
+    function syncReplacementSelection() {
+        const selected = place(replacement.selected);
+        document
+            .querySelectorAll('[data-select-replacement]')
+            .forEach((button) =>
+                button.setAttribute(
+                    'aria-pressed',
+                    String(
+                        button.dataset.selectReplacement ===
+                            replacement.selected,
+                    ),
+                ),
+            );
+        document.querySelector('#replacement-selection').innerHTML = selected
+            ? `<span>Selected</span><strong>${E(selected.title)}</strong>`
+            : 'Choose a place to continue';
+        document.querySelector('[data-action="apply-replacement"]').disabled =
+            !selected;
+    }
+    function applyReplacement(button) {
+        if (!replacement?.selected) return;
+        const request = { ...replacement };
+        const source = A.replacementPlan(state, request);
+        if (!source) {
+            notify('Your plan has changed. Ask for new alternatives.');
+            return;
+        }
+        const itemId = replacement.itemId;
+        const selectedId = replacement.selected;
+        const original = M.clone(source.items.find((x) => x.id === itemId));
+        beginLoading(
+            'Preparing your replacement…',
+            'list',
+            () => {
+                const proposalRef = A.selectReplacement(
+                    state,
+                    request,
+                    selectedId,
+                );
+                const updated = proposalRef.items.find(
+                    (x) => x.id === selectedId,
+                );
+                const after = JSON.stringify(updated);
+                const scroll = panel ? returnScroll : window.scrollY;
+                changed(`Replaced ${original.title} with ${place(selectedId).title}`);
+                store();
+                closePanel(false);
+                render();
+                window.scrollTo({ top: scroll, behavior: 'instant' });
+                const trigger = document.querySelector(
+                    `[data-swap="${selectedId}"]`,
+                );
+                trigger?.focus({ preventScroll: true });
+                if (!reducedMotion())
+                    trigger
+                        ?.closest('li')
+                        .animate(
+                            [
+                                { backgroundColor: '#dff2e8' },
+                                { backgroundColor: 'transparent' },
+                            ],
+                            { duration: 900, easing: 'ease-out' },
+                        );
+                notify(
+                    `Changed to ${place(selectedId).title}. Time kept.`,
+                    () => {
+                        if (
+                            state.proposal !== proposalRef ||
+                            !proposalRef.items.includes(updated) ||
+                            JSON.stringify(updated) !== after ||
+                            proposalRef.items.some((x) => x.id === original.id)
+                        ) {
+                            notify(
+                                'The plan has changed since. Review it before replacing this place again.',
+                            );
+                            return;
+                        }
+                        Object.assign(updated, original);
+                        changed('Restored ' + original.title);
+                    },
+                );
+            },
+            button,
+        );
+    }
+    function journeyFor(p, x) {
+        if (p !== state.proposal && !state.plans.includes(p)) return '';
+        const items = ordered(p),
+            index = items.findIndex((y) => y.id === x.id),
+            previous = items[index - 1];
+        const destination = x.venue || x.location || place(x.id)?.title;
+        if (!destination) return '';
+        const params = new URLSearchParams({
+            to: destination,
+            date: p.date,
+            arrive: x.start,
+            activity: x.id,
+            planDate: p.date,
+        });
+        const from = previous
+            ? previous.venue || previous.location || place(previous.id)?.title
+            : ExpaduStore.read().brief.from;
+        if (from) params.set('from', from);
+        if (previous) {
+            params.set('previousId', previous.id);
+            params.set('previousEnd', previous.end);
+        }
+        const status = x.journey
+            ? ExpaduHandoffs.journeyStatus(
+                  x.journey,
+                  p,
+                  { ...x, location: destination },
+                  previous,
+              )
+            : '';
+        return `<div class="activity-journey">${x.journey ? `<small>${E(status)}</small><span>${E(x.journey.from)} → ${E(x.journey.to)} · ${E(x.journey.depart)}–${E(x.journey.arrive)}</span>` : ''}<a href="../departures-next/?${E(params.toString())}">${I('route')}${x.journey ? 'Review journey' : previous ? 'Journey from previous activity' : 'Check journey'}</a></div>`;
+    }
+    // The latest change is marked where it happened (owner, 18 Oct 2026,
+    // Composer review canvas board 9): "Moved from 13:00–14:00".
+    function marksFor(p) {
+        const last = state.conversation.lastApplied;
+        const plain = (x) => JSON.stringify(x ? { ...x, revision: 0 } : null);
+        return last?.date === p.date && last.after && plain(last.after) === plain(p)
+            ? new Map((last.rows || []).map((r) => [r.id, r]))
+            : new Map();
+    }
+    const markLabel = (m) =>
+        m.kind === 'moved'
+            ? `Moved from ${m.from}`
+            : m.kind === 'added'
+              ? 'Added'
+              : `In place of ${m.was}`;
+    function timeline(p, editable = false) {
+        const marks = marksFor(p);
+        return `<ol class="plan-timeline">${ordered(p)
+            .map((x) => {
+                const mark = marks.get(x.id);
+                const processItem = x.sourceType === 'bureaucracy';
+                const previewable =
+                    !processItem &&
+                    (place(x.id) || x.type === 'event' || x.personal);
+                const appointment =
+                    x.type === 'appointment' || x.id === 'appointment';
+                return `<li class="${x.fixed ? 'fixed-item' : ''}${mark ? ' is-changed' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.known ? 'Already in your plans' : x.type === 'event' ? 'Fixed event · sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${mark ? `<span class="changed-label">${E(markLabel(mark))}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
+            })
+            .join('')}</ol>`;
+    }
+    function plansPage() {
+        if (savedView)
+            return `<div class="plans-heading"><div><h1>Keep it for later.</h1><p>Saved ideas stay unscheduled until you add them to a plan.</p></div><span class="collection-total">${state.saved.length} ${state.saved.length === 1 ? 'idea' : 'ideas'}</span></div>${state.saved.length ? `<div class="discovery-grid saved-grid">${state.saved.map(place).filter(Boolean).map(card).join('')}</div>` : `<div class="saved-empty">${I('bookmark')}<h2>Keep something that catches your eye.</h2><p>Use the bookmark on an event. It stays here until you decide to plan it.</p><a class="studio-button light" href="${E(ExpaduStore.routes.events)}">See what’s on ${I('arrow')}</a></div>`}`;
+        const selected = state.date,
+            p = planFor(selected);
+        const d = new Date(selected + 'T12:00:00');
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const days = Array.from({ length: 7 }, (_, i) => {
+            const x = new Date(d);
+            x.setDate(d.getDate() + i);
+            return M.iso(x);
+        });
+        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${hasPlans(date) ? 'has-plan' : ''}" aria-label="${hasPlans(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}In your plans</span><button class="plain-button" data-open-plan="${E(p.date)}">${I('spark')}Change it with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}`;
+    }
+    const entryMarkup = new Map();
+    const dayMarkup = new WeakMap();
+    function render() {
+        const main = document.querySelector('#main');
+        const chapter = C.current(state);
+        const oldScroll = window.scrollY;
+        const anchor = [...main.querySelectorAll('[data-chat-entry]')].find(
+            (el) => el.getBoundingClientRect().bottom > 100,
+        );
+        const anchorTop = anchor?.getBoundingClientRect().top;
+        if (main.dataset.chapter !== chapter.id) {
+            main.innerHTML =
+                heading() +
+                `<div class="composer-day-row"></div><div class="chat-bar" hidden><p>Sample answers from the sample day · nothing here is live</p><button type="button" data-action="new">Start fresh</button></div><div class="chat-feed" aria-label="Conversation"></div>`;
+            main.dataset.chapter = chapter.id;
+            entryMarkup.clear();
+        }
+        let day = main.querySelector('.composer-day');
+        if (!day) {
+            day = document.createElement('aside');
+            day.className = 'composer-day';
+            day.setAttribute('aria-labelledby', 'composer-day-title');
+            main.prepend(day);
+        }
+        // Rebuilt only when what it shows changes, so focus isn't lost.
+        const dayHtml = dayPanel();
+        if (dayMarkup.get(day) !== dayHtml) {
+            day.innerHTML = dayHtml;
+            dayMarkup.set(day, dayHtml);
+        }
+        day.hidden = !dayHtml;
+        document.body.classList.toggle('has-composer-day', !!dayHtml);
+        const row = main.querySelector('.composer-day-row');
+        const rowHtml = dayRow(todayContext());
+        if (dayMarkup.get(row) !== rowHtml) {
+            row.innerHTML = rowHtml;
+            dayMarkup.set(row, rowHtml);
+        }
+        const feed = main.querySelector('.chat-feed');
+        main.querySelector('.chat-bar').hidden = !chapter.entries.length;
+        const empty = feed.querySelector('.studio-welcome');
+        if (!chapter.entries.length) {
+            // Drawn again only when it changes (a trip started or ended).
+            const welcomeHtml = welcome();
+            if (!empty || dayMarkup.get(feed) !== welcomeHtml) {
+                feed.innerHTML = welcomeHtml;
+                dayMarkup.set(feed, welcomeHtml);
+            }
+        } else {
+            empty?.remove();
+            for (const entry of chapter.entries) {
+                const html = StudioConversationView.entry(entry, {
+                    state,
+                    escape: E,
+                    icon: I,
+                    card,
+                    timeline,
+                    dateLabel: shortDate,
+                    place,
+                    serviceCard: features.serviceCard,
+                    nearby: nearbyCards,
+                });
+                if (entryMarkup.get(entry.id) === html) continue;
+                const existing = feed.querySelector(
+                    `[data-chat-entry="${entry.id}"]`,
+                );
+                if (existing) {
+                    const openDetails = [
+                        ...existing.querySelectorAll('details'),
+                    ]
+                        .map((d, i) => (d.open ? i : -1))
+                        .filter((i) => i >= 0);
+                    const template = document.createElement('template');
+                    template.innerHTML = html;
+                    const next = template.content.firstElementChild;
+                    openDetails.forEach((i) => {
+                        if (next.querySelectorAll('details')[i])
+                            next.querySelectorAll('details')[i].open = true;
+                    });
+                    existing.replaceWith(next);
+                } else if (html) {
+                    feed.insertAdjacentHTML('beforeend', html);
+                    if (!reducedMotion())
+                        feed.lastElementChild.animate(
+                            [
+                                { opacity: 0, transform: 'translateY(6px)' },
+                                { opacity: 1, transform: 'translateY(0)' },
+                            ],
+                            { duration: 220, easing: 'ease-out' },
+                        );
+                }
+                entryMarkup.set(entry.id, html);
+            }
+        }
+        input();
+        syncSend();
+        const requestField = document.querySelector('#studio-request');
+        if (requestField.value && !requestField.style.height)
+            requestField.style.height =
+                Math.min(120, requestField.scrollHeight) + 'px';
+        // With a day open, the box says which (board 9).
+        const planning = planFor(state.conversation.activeDate);
+        document.querySelector('#studio-request').placeholder = !chapter.entries
+            .length
+            ? 'Ask, discover, or plan…'
+            : planning
+              ? `Ask or change ${weekday(planning.date)}…`
+              : 'Ask or add a detail…';
+        syncPlanning();
+        syncSaved();
+        let live = document.querySelector('#chat-announcement');
+        if (!live) {
+            live = document.createElement('div');
+            live.id = 'chat-announcement';
+            live.className = 'sr-only';
+            live.setAttribute('role', 'status');
+            document.body.append(live);
+        }
+        const lastReply = chapter.entries
+            .filter((e) => e.role === 'assistant')
+            .at(-1);
+        // The short headline and the reply, as they read on screen.
+        const announcement = [lastReply?.title, lastReply?.text]
+            .filter(Boolean)
+            .join(' ');
+        if (live.textContent !== announcement) live.textContent = announcement;
+        if (panel) renderPanel();
+        features.mountGuides();
+        if (anchor) {
+            const next = document.querySelector(
+                `[data-chat-entry="${anchor.dataset.chatEntry}"]`,
+            );
+            if (next)
+                window.scrollTo({
+                    top:
+                        oldScroll +
+                        next.getBoundingClientRect().top -
+                        anchorTop,
+                    behavior: 'instant',
+                });
+        }
+    }
+    function revealPlan() {
+        const card = document
+            .querySelector('#studio-response')
+            ?.closest('.chat-entry');
+        if (!card) return;
+        const headerHeight =
+            document.querySelector('.scroll-header')?.getBoundingClientRect()
+                .height || 130;
+        card.style.scrollMarginTop = `${headerHeight + 16}px`;
+        card.scrollIntoView({
+            block: 'start',
+            behavior: reducedMotion() ? 'instant' : 'smooth',
+        });
+    }
+    // True while the page opens (below), so it lands where you are.
+    let landing = true;
+    function revealLatest() {
+        const feed = document.querySelector('.chat-feed');
+        const reply = feed?.lastElementChild;
+        if (!reply) return;
+        // Your question and the reply together when they fit; otherwise the
+        // start of the reply, so its card isn't hidden under the input.
+        const question = [...feed.querySelectorAll('.chat-user')].at(-1);
+        const top = contentTop() + 12;
+        const bottom =
+            document.querySelector('.studio-input-wrap')?.getBoundingClientRect()
+                .top || innerHeight;
+        const fits =
+            question &&
+            reply.getBoundingClientRect().bottom -
+                question.getBoundingClientRect().top <=
+                bottom - top;
+        const target = fits ? question : reply;
+        // Arriving with a request, the page lands on it at once; gliding
+        // from the top through the whole conversation is for a reply on a
+        // page you're already reading.
+        const behavior = landing || reducedMotion() ? 'instant' : 'smooth';
+        const place = () => {
+            const edge = contentTop() + 12;
+            const delta = target.getBoundingClientRect().top - edge;
+            if (Math.abs(delta) <= 4) return false;
+            window.scrollTo({ top: Math.max(0, scrollY + delta), behavior });
+            return true;
+        };
+        if (!place()) return;
+        // The header shrinks while the page scrolls; settle the position once.
+        const started = performance.now();
+        const settle = () => {
+            if (performance.now() - started < 1500) place();
+        };
+        if ('onscrollend' in window)
+            window.addEventListener('scrollend', settle, { once: true });
+        else setTimeout(settle, 450);
+    }
+    function note(text, extra = {}) {
+        return C.append(state, 'assistant', text, extra);
+    }
+    // A change goes straight into the plan, with its Undo in the reply
+    // (owner, 18 Oct 2026, Composer review canvas board 3); one that can't
+    // go in changes nothing and says why.
+    function said(label, result) {
+        if (result.problem)
+            return [`${result.problem} Your plan hasn’t changed.`, {}];
+        if (!result.applied) return [`${label}.`, {}];
+        // One item changed: said as it is now (board 9); more: the label.
+        const change = state.conversation.lastApplied;
+        const rows = change?.rows || [];
+        const one = rows.length === 1 ? rows[0] : null;
+        const text = !one
+            ? `${label}.`
+            : one.kind === 'moved'
+              ? `${one.title} is now ${one.to}.`
+              : one.kind === 'added'
+                ? `${one.title} is in your plan, ${one.to}.`
+                : one.kind === 'removed'
+                  ? `${one.title} is out of your plan.`
+                  : `${one.title} is in place of ${one.was}, ${one.to}.`;
+        return [text, { changeId: change.id, change: M.clone(rows) }];
+    }
+    const undoneText = (change) =>
+        !change
+            ? 'Undone.'
+            : change.after === null
+              ? `${weekday(change.date)}’s plan is back.`
+              : change.before === null
+                ? `${weekday(change.date)} is no longer in your plans.`
+                : `Undone: ${change.label}.`;
+    function changed(label, silent = false) {
+        const result = A.changed(state, label);
+        if (!silent) note(...said(label, result));
+        store();
+        render();
+        return result.applied;
+    }
+    // Edits work on the plan you see: a copy of it, saved by changed().
+    function draft() {
+        if (!state.proposal)
+            M.propose(state, [], state.conversation.activeDate || state.date);
+        return state.proposal;
+    }
+    // What a page hands over goes straight into the plan too, its message
+    // carrying the Undo (board 3).
+    function receiveHandoffs(shared) {
+        const result = StudioIntegration.receive(state, shared, M, C);
+        if (!state.proposal) return result;
+        const outcome = A.changed(state, 'Added from your selection');
+        const last = C.current(state).entries.at(-1);
+        if (outcome.applied && last?.role === 'assistant')
+            C.updateEntry(state, last.id, {
+                changeId: state.conversation.lastApplied.id,
+                change: M.clone(state.conversation.lastApplied.rows || []),
+            });
+        else if (outcome.problem)
+            note(`${outcome.problem} It wasn’t added to your plan.`);
+        return result;
+    }
+    function navigate(target) {
+        if (target === 'composer') {
+            closePanel();
+            return;
+        }
+        openPanel(target);
+    }
+    let loadingJob = null;
+    function cancelLoading(completing = false) {
+        if (!loadingJob) return;
+        const job = loadingJob;
+        loadingJob = null;
+        clearTimeout(job.timer);
+        job.gate.finish(job.ticket);
+        job.restore();
+        if (!completing && pendingReply) {
+            C.updateEntry(state, pendingReply, {
+                kind: 'cancelled',
+                text: 'Request stopped. Your plan has not changed.',
+            });
+            pendingReply = null;
+            store();
+            render();
+        }
+    }
+    function beginLoading(label, kind, complete, button = null) {
+        if (loadingJob) return;
+        const field = document.querySelector('#studio-request');
+        const send = document.querySelector('.send');
+        const main = document.querySelector('#main');
+        const form = document.querySelector('#studio-form');
+        const originalButton = button?.innerHTML;
+        const originalSend = send.innerHTML;
+        const sendLabel = send.getAttribute('aria-label');
+        field.readOnly = true;
+        send.disabled = true;
+        if (button) button.disabled = true;
+        const restore = () => {
+            form.classList.remove('is-thinking');
+            field.readOnly = false;
+            syncSend();
+            send.innerHTML = originalSend;
+            send.classList.remove('expadu-loading-button');
+            send.setAttribute('aria-label', sendLabel);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalButton;
+                button.classList.remove('expadu-loading-button');
+            }
+            main.removeAttribute('aria-busy');
+            document.querySelector('#composer-progress')?.remove();
+            document.querySelector('#response-placeholder')?.remove();
+            const welcome = document.querySelector('.studio-welcome');
+            if (welcome) welcome.hidden = false;
+        };
+        const gate = ExpaduLoading.createGate({
+            show() {
+                if (pendingReply) form.classList.add('is-thinking');
+                main.setAttribute('aria-busy', 'true');
+                send.innerHTML = ExpaduLoading.spark();
+                send.classList.add('expadu-loading-button');
+                send.setAttribute('aria-label', label);
+                if (button) {
+                    button.innerHTML =
+                        ExpaduLoading.spark() +
+                        `<span>${label.startsWith('Saving') ? 'Saving…' : 'Preparing…'}</span>`;
+                    button.classList.add('expadu-loading-button');
+                }
+                if (!pendingReply)
+                    document
+                        .querySelector(
+                            panel
+                                ? '#workspace-panel .panel-top'
+                                : '#studio-form',
+                        )
+                        .insertAdjacentHTML(
+                            panel ? 'afterend' : 'afterbegin',
+                            `<div id="composer-progress">${ExpaduLoading.status(label)}</div>`,
+                        );
+            },
+            hide: restore,
+        });
+        const job = { gate, ticket: gate.start(), restore, timer: null };
+        loadingJob = job;
+        // Deliberate preview latency demonstrates the shared state; live callers finish when their request settles.
+        job.timer = setTimeout(() => {
+            if (loadingJob !== job) return;
+            cancelLoading(true);
+            try {
+                complete();
+            } catch (error) {
+                notify(error.message);
+            } finally {
+                job.afterComplete?.();
+            }
+        }, 1100);
+    }
+    function submit(text, consumeDraft = false) {
+        if (loadingJob) return;
+        try {
+            if (refreshWorkspace()) return;
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+            return;
+        }
+        text = A.requestText(state, text, consumeDraft);
+        if (!text) return;
+        closePanel(false);
+        C.append(
+            state,
+            'user',
+            text,
+            state.pageContext?.label
+                ? { pageContext: { label: state.pageContext.label } }
+                : {},
+        );
+        const entry = C.append(state, 'assistant', 'Thinking…', {
+            kind: 'pending',
+            request: text,
+        });
+        pendingReply = entry.id;
+        if (consumeDraft) {
+            document.querySelector('#studio-request').value = '';
+            document.querySelector('#studio-request').style.height = '';
+        }
+        if (!store()) {
+            if (consumeDraft) {
+                state.prompt = text;
+                document.querySelector('#studio-request').value = text;
+            }
+            render();
+            return;
+        }
+        render();
+        revealLatest();
+        beginLoading('Thinking…', 'list', () => {
+            try {
+                submitNow(text, entry.id);
+            } catch (error) {
+                C.updateEntry(state, entry.id, {
+                    kind: 'failed',
+                    text: error.message,
+                });
+            }
+            pendingReply = null;
+            store();
+            render();
+            revealLatest();
+        });
+    }
+    function submitNow(text, replyId) {
+        const reply = (message, extra = {}) =>
+            C.updateEntry(state, replyId, {
+                kind: 'text',
+                text: message,
+                ...extra,
+            });
+        const situationChange = window.BureaucracySituation?.intent(text);
+        if (situationChange) {
+            const s = BureaucracyOrientation.load();
+            if (BureaucracySituation.applies(s)) {
+                BureaucracySituation.state(s);
+                const opened = BureaucracySituation.report(s, situationChange);
+                BureaucracyOrientation.review(s);
+                if (BureaucracyOrientation.save(s)) {
+                    state.conversation.activeDate = null;
+                    reply(
+                        opened
+                            ? 'Let’s review this change before updating your situation.'
+                            : 'There’s an unfinished update. Let’s finish or cancel that first.',
+                        {
+                            kind: 'bureaucracy',
+                            orientation: true,
+                            orientationPerson: s.person,
+                            orientationProfile: s.profileId,
+                        },
+                    );
+                } else
+                    reply(
+                        'Your situation changed in another view. Reopen Bureaucracy to review the latest answers.',
+                    );
+                return;
+            }
+        }
+        if (
+            /\b(code|javascript|python|hack|write.*poem|politics)\b/i.test(text)
+        ) {
+            state.conversation.activeDate = null;
+            reply(
+                'Composer helps with Expadu places, plans, events, journeys and reviewed bureaucracy information. I cannot create unrelated content. What would you like help with in your day?',
+            );
+            return;
+        }
+        if (/\b(book|pay|purchase|submit.*application)\b/i.test(text)) {
+            reply(
+                'This preview cannot book, pay or submit anything. These actions will always need your explicit confirmation, even when routine plan changes are allowed.',
+            );
+            return;
+        }
+        if (
+            /^(apply|confirm|save) (my |the |this )?(plan|changes|proposal)[.!]?$/i.test(
+                text,
+            )
+        ) {
+            const saved = A.commit(state);
+            reply(
+                saved
+                    ? 'Your plan is saved. Undo is available.'
+                    : 'Day cancelled. Undo is available below.',
+            );
+            return;
+        }
+        if (
+            /^undo( (that|last change|last applied change))?[.!]?$/i.test(text)
+        ) {
+            reply(undoneText(A.undo(state)));
+            return;
+        }
+        let r = M.respond(text, state);
+        // What you were looking at on another page, used once for this request.
+        const page = state.pageContext || null;
+        state.pageContext = null;
+        if (
+            page?.page === 'events' &&
+            page.eventIds?.length &&
+            (r.kind === 'clarify' ||
+                /\b(these|them|which|any of|one of|recommend|best|good for)\b/i.test(
+                    text,
+                ))
+        ) {
+            state.conversation.activeDate = null;
+            const listed = page.eventIds.map(eventById).filter(Boolean);
+            const filters = [
+                [
+                    /meet|people|friends|social|lonely|new here/i,
+                    (x) => ['Language', 'Games'].includes(x.category),
+                    'these are built around taking part with others',
+                ],
+                [/free|cheap|budget/i, (x) => /free/i.test(x.price || ''), 'these are free'],
+                [
+                    /outdoor|outside|nature|fresh air/i,
+                    (x) => x.category === 'Outdoors',
+                    'these are outside',
+                ],
+            ];
+            if (/kid|child|family/i.test(text)) {
+                reply(
+                    'The listings don’t say which of these events suit children, so I won’t pick for you. Check each event’s details on Events.',
+                    { suggestions: [{ label: 'Back to Events', href: ExpaduStore.routes.events }] },
+                );
+                return;
+            }
+            const match = filters.find(([pattern]) => pattern.test(text));
+            const chosen = match ? listed.filter(match[1]) : listed;
+            reply(
+                chosen.length
+                    ? `Of the events you were viewing, ${match ? match[2] : 'here they are again'}:`
+                    : 'None of the events you were viewing match that.',
+                chosen.length
+                    ? { kind: 'event', eventIds: chosen.map((x) => 'event:' + x.id) }
+                    : { suggestions: [{ label: 'Back to Events', href: ExpaduStore.routes.events }] },
+            );
+            return;
+        }
+        if (page?.page === 'travel' && r.kind === 'clarify')
+            r = { ...r, kind: 'journey' };
+        if (page?.page === 'services' && ['clarify', 'service'].includes(r.kind))
+            r = { ...r, kind: 'service', service: r.service || page.service };
+        if (
+            page?.page === 'paperwork' &&
+            (r.kind === 'clarify' ||
+                /\b(first|next step|what now|start)\b/i.test(text))
+        ) {
+            state.conversation.activeDate = null;
+            reply(
+                page.next
+                    ? `On Paperwork, your first step is for the ${page.next.name}: “${page.next.title}”. Open it there to see what it involves. I can’t add guidance beyond your reviewed checklist.`
+                    : 'Paperwork can help you work out where to start: answer a few questions and it shows the steps that apply to you. I can’t add guidance beyond reviewed records.',
+                {
+                    suggestions: [
+                        page.next
+                            ? { label: `Open ${page.next.name}`, href: page.next.url }
+                            : {
+                                  label: 'Get started on Paperwork',
+                                  href: `${ExpaduStore.routes.bureaucracy}?person=self`,
+                              },
+                    ],
+                },
+            );
+            return;
+        }
+        if (r.kind === 'help') {
+            state.conversation.activeDate = null;
+            reply(
+                'I can help you plan a day, find events and places, check a journey, and point you to reviewed paperwork information. In this preview my answers use sample data.',
+                { suggestions: everyday },
+            );
+            return;
+        }
+        if (r.kind === 'next') {
+            // A question about your plans: answer from them, change nothing.
+            state.conversation.activeDate = null;
+            const today = M.today(),
+                now = M.nowTime();
+            const sample = window.ExpaduSampleDay;
+            const items = [
+                ...state.plans.flatMap((p) =>
+                    p.items.map((x) => ({ ...x, date: p.date })),
+                ),
+                ...(state.proposal?.items || []).map((x) => ({
+                    ...x,
+                    date: state.proposal.date,
+                    proposed: true,
+                })),
+                ...knownPlans(today),
+                ...(sample?.upcoming || []),
+            ].filter(
+                (x) =>
+                    x.start &&
+                    (x.date > today || (x.date === today && x.start >= now)),
+            );
+            const appointmentLike = (x) =>
+                /appointment/i.test(x.title) ||
+                x.type === 'appointment' ||
+                x.kind === 'official';
+            const pool = r.appointment ? items.filter(appointmentLike) : items;
+            const next = pool.sort((a, b) =>
+                `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`),
+            )[0];
+            reply(
+                next
+                    ? `Your next ${r.appointment ? 'appointment' : 'plan'}: ${next.title}, ${whenLabel(next.date)} at ${next.start}${next.location ? ` in ${next.location}` : ''}.${next.proposed ? ' It’s in a proposal you haven’t confirmed yet.' : ''}`
+                    : `You have no ${r.appointment ? 'appointments' : 'plans'} from today onwards.`,
+                {
+                    suggestions: next
+                        ? next.date === today
+                            ? [{ label: 'Open Today', href: ExpaduStore.routes.today }]
+                            : [{ label: 'My Plans', nav: 'plans' }]
+                        : [everyday[1]],
+                },
+            );
+            return;
+        }
+        if (r.kind === 'indoor') {
+            state.conversation.activeDate = null;
+            reply(
+                `For rain I’d look indoors, but the sample listings here only have parks, sport pitches, a playground and a lake. Nothing changed for ${longDate(r.date)}.`,
+                { suggestions: [everyday[0], { label: 'My saved ideas', nav: 'saved' }] },
+            );
+            return;
+        }
+        if (r.kind === 'nearby') {
+            // Real places near a point, nearest first, from the sample catalogue.
+            // Adding one plans it for the day the answer is about.
+            state.conversation.activeDate = r.date;
+            const P = window.ExpaduPlaces;
+            const from = P?.anchors[r.near];
+            const end = window.ExpaduSampleDay?.appointment?.end;
+            // Around the appointment means when it ends; otherwise now.
+            const afterAppointment =
+                r.date === M.today() && !!end && (r.after || /appointment|blue card/i.test(text));
+            const time = afterAppointment ? end : r.date === M.today() ? M.nowTime() : '12:00';
+            const at = { date: r.date, time };
+            // "Somewhere green" covers parks and woods, lakes and nature areas.
+            const green = r.place === 'green';
+            const kind = green ? { many: 'Green spaces', one: 'Green space' } : P?.kinds[r.place];
+            const found = P && from ? P.near(from, { kinds: green ? ['park', 'nature'] : [r.place], limit: 3, at, open: r.open }) : [];
+            const many = (kind?.many || 'places').toLowerCase();
+            const when = r.date === M.today() ? `at ${time}` : `on ${shortDate(r.date)} at ${time}`;
+            const listedFor = afterAppointment
+                ? `${time}, when your appointment ends`
+                : r.date === M.today()
+                  ? time
+                  : `${shortDate(r.date)}, ${time}`;
+            const where = `${from?.name || 'there'}${r.near === 'neumarkt' && !/neumarkt/i.test(text) ? ', where you are now' : ''}`;
+            const lead = found.length
+                ? `Nearest first${r.open ? `, listed as open ${when}` : ''}.`
+                : `I don’t have ${many}${r.open ? ` listed as open ${when}` : ''} near ${where} in the sample places.`;
+            // The question names the kind, so the title doesn't repeat it.
+            const short = from?.name.split(',')[0] || 'there';
+            const title = found.length
+                ? `${found.length === 1 ? 'One' : countWord(found.length)} near ${short}.`
+                : 'None listed nearby.';
+            // Wi-Fi is only recorded for some libraries.
+            const wifi = found.filter(({ place: p }) => p.kind === 'library' && P.wifiText(p) === 'Yes');
+            const names = (list) => list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list.at(-1)}` : list[0];
+            const notes = [
+                found.some(({ place: p }) => p.hours?.week)
+                    ? `Hours are the listed ones for ${listedFor}, not a live check.`
+                    : found.length && !green
+                      ? 'Their opening times aren’t listed.'
+                      : '',
+                green && found.some(({ place: p }) => p.point === 'area')
+                    ? 'Large areas are measured to their middle, so distances are approximate.'
+                    : '',
+                r.wifi
+                    ? r.place === 'library'
+                        ? wifi.length
+                            ? `Wi-Fi is listed for ${names(wifi.map(({ place: p }) => p.name))}${wifi.length < found.length ? '; it isn’t recorded for the others' : ''}.`
+                            : 'Wi-Fi isn’t recorded for these libraries, so ask at the desk.'
+                        : 'Wi-Fi isn’t recorded in these listings yet, so ask the café.'
+                    : '',
+            ].filter(Boolean);
+            const mapKinds = [...new Set(found.map(({ place: p }) => p.kind))];
+            const mapKind = green ? (mapKinds.length === 1 ? mapKinds[0] : 'green') : r.place;
+            const map = P && from ? `${P.mapLink(mapKind, from)}&time=${time}${r.open ? '&open=1' : ''}` : '';
+            reply([lead, ...notes].join(' '), {
+                kind: 'nearby',
+                title,
+                placeIds: found.map(({ place: p }) => p.id),
+                near: r.near,
+                // Not `at`: chat entries already use it for their timestamp.
+                listedAt: at,
+                map,
+            });
+            return;
+        }
+        if (r.kind === 'service') {
+            state.conversation.activeDate = null;
+            const title =
+                ExpaduModel.categories?.find((x) => x.id === r.service)?.title ||
+                'Services';
+            // Services, where a request could wait for listings, is out of
+            // the first release (owner, 18 Oct 2026).
+            reply(`Expadu doesn’t list ${title.toLowerCase()} yet.`);
+            return;
+        }
+        if (r.kind === 'event') {
+            // Only what is still to come; captured listings that have passed stay on Events.
+            state.conversation.activeDate = null;
+            const from = r.date < M.today() ? M.today() : r.date;
+            const until = M.addDays(from, (r.days || 1) - 1);
+            const inWindow = allEvents().filter(
+                (x) =>
+                    x.date >= from &&
+                    x.date <= until &&
+                    (!r.evening || (x.start || '') >= '17:00'),
+            );
+            const topics = {
+                music: [/music|concert/i, 'concerts or live music'],
+                exhibition: [/exhibition|museum|\bart\b/i, 'exhibitions'],
+                film: [/film|cinema/i, 'films'],
+                football: [/football|match/i, 'football screenings'],
+            };
+            const topic = topics[r.topic];
+            const matching = topic
+                ? inWindow.filter((x) =>
+                      topic[0].test(`${x.title} ${x.category} ${x.description || ''}`),
+                  )
+                : inWindow;
+            const when =
+                r.days === 2
+                    ? 'this weekend'
+                    : r.days === 7
+                      ? 'this week'
+                      : from === M.today()
+                        ? r.evening
+                            ? 'tonight'
+                            : 'today'
+                        : `on ${longDate(from)}`;
+            const shown = matching.length ? matching : inWindow;
+            if (!inWindow.length)
+                reply(`Nothing is listed ${when} in this preview’s sample programme.`, {
+                    suggestions: [
+                        { label: 'Browse Events', href: ExpaduStore.routes.events },
+                        everyday[2],
+                    ],
+                });
+            else
+                reply(
+                    // The posters carry the rest; the booking note follows
+                    // them.
+                    topic && !matching.length
+                        ? `I don’t see ${topic[1]} ${when} in the sample programme. This is what’s on.`
+                        : '',
+                    {
+                        kind: 'event',
+                        title: `${shown.length === 1 ? 'One sample event' : `${countWord(shown.length)} sample events`} ${when}.`,
+                        eventIds: shown.map((x) => 'event:' + x.id),
+                    },
+                );
+            return;
+        }
+        // On your way: the trip you're on answers "Where do I get off?", "Is
+        // my tram on time?" and, when it's to the appointment, "When should
+        // I leave?", with the way back to it.
+        const way = onTheWay();
+        if (
+            way &&
+            (r.kind === 'onway' ||
+                (r.kind === 'journey' &&
+                    (r.status ||
+                        (r.appointmentId &&
+                            way.title === window.ExpaduSampleDay?.appointment?.title))))
+        ) {
+            state.conversation.activeDate = null;
+            const { text, entry } = tripAnswer(way, r.kind === 'onway' ? r.ask : r.status ? 'status' : 'leave');
+            reply(text, entry);
+            return;
+        }
+        if (r.kind === 'onway') r = { ...r, kind: 'clarify' };
+        if (r.kind === 'journey') {
+            state.conversation.activeDate = null;
+            const travel = page?.page === 'travel' ? page : null;
+            const shared = [...(state.contextItems || [])]
+                .reverse()
+                .find((x) => x.type === 'journey');
+            let from = r.from || travel?.from || '',
+                to = r.to || travel?.to || '';
+            if (!from && shared && (!to || to === shared.to)) {
+                from = shared.from || '';
+                to ||= shared.to || '';
+            }
+            const arriveBy = r.arriveBy || (shared && to === shared.to ? shared.targetStart : '') || '';
+            // The appointment's own trip: when to leave, by Today's rule
+            // (official appointments want ten minutes in hand).
+            const appointment = r.appointmentId && window.ExpaduSampleDay?.appointment;
+            if (appointment && appointment.id === r.appointmentId && appointment.journey) {
+                const { journey: j, planned, best, spare, margin, leaveNow } = appointmentTrip(appointment);
+                const hhmm = clockText;
+                const leaveText = leaveNow ? `Leave now — it’s ${M.nowTime()}.` : `Leave by ${hhmm(best.leave)}.`;
+                const stop = j.alightStop || to;
+                // After the steps: when you'll be there, and why not the
+                // planned tram when it leaves too little time.
+                const skipped =
+                    best !== planned
+                        ? ` I skipped the ${planned.depart} in your plan: it leaves only ${spare(planned)}, and ${appointment.kind === 'official' ? 'official appointments need' : 'plans need'} ${margin}.`
+                        : '';
+                // Asked without naming it, the answer says which trip; asked
+                // whether it's on time, it says there are no live times.
+                const which = `your ${appointment.title} at ${appointment.start}`;
+                reply(
+                    r.status
+                        ? `This preview has no live times, so I can’t tell if it’s running on time. It’s the tram for ${which}.`
+                        : `${r.unnamed ? `That’s for ${which}. ` : ''}You’ll be there at ${hhmm(best.there)} with ${spare(best)} minutes to spare.${skipped}`,
+                    {
+                        kind: 'trip',
+                        title: r.status
+                            ? `Tram ${j.line} at ${best.depart} from ${from}.`
+                            : leaveText,
+                        journey: { from, to, arriveBy },
+                        trip: {
+                            // Your way as Travel's trip shows it (way.js):
+                            // when each part starts, in Travel's words.
+                            way: [
+                                ...(j.accessWalkMinutes
+                                    ? [{ kind: 'walk', time: hhmm(best.leave), title: `Walk to ${from}`, sub: `${j.accessWalkMinutes} min on foot` }]
+                                    : []),
+                                {
+                                    kind: 'ride',
+                                    line: j.line,
+                                    time: best.depart,
+                                    title: `Tram ${j.line} to ${stop}`,
+                                    sub: `From ${from}${j.towards ? ` · towards ${j.towards}` : ''} · get off at ${best.arrive}`,
+                                },
+                                ...(j.walkMinutes
+                                    ? [{ kind: 'walk is-from-stop', time: best.arrive, title: 'Walk to your appointment', sub: `From ${stop} · ${j.walkMinutes} min on foot` }]
+                                    : []),
+                                { kind: 'end', time: hhmm(best.there), title: appointment.title, sub: `Starts at ${appointment.start} · ${appointment.location || to}` },
+                            ],
+                            href: `${ExpaduStore.routes.departures}?${new URLSearchParams({ from, to, date: M.today(), arrive: appointment.start })}`,
+                        },
+                    },
+                );
+                return;
+            }
+            if (from && to)
+                reply(
+                    /\b(faster|quicker|another route|alternative)\b/i.test(text)
+                        ? `I can’t compare routes here yet. Travel lists the sample routes from ${from} to ${to}, with their times.`
+                        : `Here’s your journey from ${from} to ${to}${arriveBy ? `, arriving by ${arriveBy}` : ''}. Your plan stays as it is.`,
+                    { kind: 'journey', journey: { from, to, arriveBy } },
+                );
+            else
+                reply(
+                    r.event
+                        ? `${r.event} starts at ${arriveBy} at ${to}. Where will you leave from? Then I’ll show the way.`
+                        : to
+                          ? `Where are you starting from? Then I’ll show the way to ${to}.`
+                          : 'Where are you heading? Your plan stays as it is.',
+                    { kind: 'journey', journeyDraft: { from, to, arriveBy } },
+                );
+            return;
+        }
+        if (r.kind === 'checklist') {
+            // Your own checklist's progress, from your records. Composer
+            // doesn't say what the office requires.
+            const appointment = window.ExpaduSampleDay?.appointment;
+            const record =
+                records().find((x) => x.id === appointment?.process) || records()[0];
+            if (record?.total) {
+                state.conversation.activeDate = null;
+                // Each document in Paperwork's own words for its state
+                // (bureaucracy-next/app.js), and the card opens its
+                // documents, as Today's "What to bring" does.
+                const states = {
+                    missing: 'Still to get',
+                    reported_available: 'You have it · not checked yet',
+                    confirmed_for_use: 'Checked and ready',
+                };
+                reply(
+                    `That’s from your own checklist. I can’t give verified guidance on what the office requires; the checklist and its official sources are in Paperwork.${record.optional ? ` It also lists ${record.optional} more that only apply in some cases.` : ''}`,
+                    {
+                        kind: 'checklist',
+                        title: `${record.prepared} of ${record.total} documents marked ready.`,
+                        record: {
+                            id: record.id,
+                            title: record.title,
+                            prepared: record.prepared,
+                            total: record.total,
+                            documents: (record.documents || []).map((d) => ({
+                                label: d.label,
+                                ready: d.readiness === 'confirmed_for_use',
+                                state: states[d.readiness] || states.missing,
+                            })),
+                            href: paperworkHref(record.id).replace(
+                                'view=detail',
+                                'view=paperwork',
+                            ),
+                        },
+                    },
+                );
+                return;
+            }
+            r = { ...r, kind: 'bureaucracy' };
+        }
+        if (r.kind === 'access') {
+            // Step-free access as the listing records it: the event's own,
+            // or its venue's (connected/places.js), never a guess.
+            state.conversation.activeDate = null;
+            const upcoming = allEvents().filter((x) => x.date >= M.today());
+            const about = r.about || '';
+            const event =
+                upcoming.find((x) => about.includes(x.title.toLowerCase())) ||
+                upcoming.find((x) => x.venue && about.includes(x.venue.toLowerCase())) ||
+                (/\b(cinema|film|movie)\b/.test(about) &&
+                    upcoming.find((x) => /cinema|film/i.test(`${x.title} ${x.icon || ''}`))) ||
+                (/\b(tonight|evening|event)\b/.test(about) &&
+                    upcoming.find((x) => x.date === M.today() && (x.start || '') >= '17:00'));
+            if (!event) {
+                reply(
+                    'Step-free access is only recorded for some places and events. Tell me which one you mean and I’ll check its listing.',
+                    { title: 'Which place do you mean?', suggestions: [{ label: 'What’s on tonight?', prompt: 'What’s on tonight?' }] },
+                );
+                return;
+            }
+            const venue = window.ExpaduPlaces?.venue?.(event.venue);
+            const venueAccess = venue?.wheelchair
+                ? `${window.ExpaduPlaces.wheelchairText[venue.wheelchair]} (venue listing)`
+                : '';
+            const access = event.accessibility || venueAccess;
+            reply(
+                access
+                    ? `That’s what ${event.accessibility ? 'the event’s' : `${event.venue}’s`} listing records. It’s worth checking with the organiser before you go.`
+                    : `Neither ${event.title} nor ${event.venue}’s listing records step-free access, so I won’t guess. It’s worth asking the organiser before you go.`,
+                {
+                    kind: 'facts',
+                    title: access ? `${access.replace(/ \(venue listing\)$/, '')}.` : 'Not listed.',
+                    eventId: event.id,
+                    facts: [
+                        { label: 'Accessibility', value: access || 'Not listed', known: !!access },
+                        { label: 'Admission', value: event.price || 'Not listed', known: !!event.price },
+                        { label: 'Starts', value: event.date === M.today() ? event.start : `${shortDate(event.date)} ${event.start}`, known: true },
+                    ],
+                },
+            );
+            return;
+        }
+        if (r.kind === 'bureaucracy') {
+            state.conversation.activeDate = null;
+            reply(
+                'I do not have verified guidance for this question in this preview. Open the reviewed process information to check its sources and coverage.',
+                {
+                    kind: 'bureaucracy',
+                    sourceKey: /anmeldung|register|registration|address/i.test(
+                        text,
+                    )
+                        ? 'core.anmeldung'
+                        : /blue card/i.test(text)
+                          ? 'case.bc.first_application.prepare'
+                          : null,
+                },
+            );
+            return;
+        }
+        if (/^(add|create|schedule).*appointment/i.test(text)) {
+            reply(
+                'Use Add appointment below to choose the title, date and time. Nothing will be booked for you.',
+                { kind: 'appointment-form' },
+            );
+            return;
+        }
+        if (
+            /^(cancel|delete|remove) (my |the |this )?(day|plan)[.!]?$/i.test(
+                text,
+            )
+        ) {
+            const date = state.conversation.activeDate,
+                current = planFor(date);
+            if (!current) {
+                reply('Open a confirmed day from My Plans first.');
+                return;
+            }
+            M.propose(state, [], date, current.id);
+            state.proposal.items = [];
+            A.changed(state, 'Cancelled the day', replyId);
+            reply(
+                `${weekday(date)}’s plan is cancelled. Your saved ideas are still available.`,
+                { kind: 'plan-cancelled', planDate: date, plan: M.clone(current) },
+            );
+            return;
+        }
+        const isEdit =
+            /\b(swap|replace|remove|delete|move|later|change|adjust|revise)\b/i.test(
+                text,
+            );
+        if (isEdit) {
+            const date = state.conversation.activeDate;
+            const current =
+                state.proposal?.date === date ? state.proposal : planFor(date);
+            if (!date || !current) {
+                reply('Which plan would you like to change? Open it from My Plans first.');
+                return;
+            }
+            if (
+                /\d{4}-\d{2}-\d{2}|\b(today|tomorrow|saturday)\b/i.test(text) &&
+                r.date !== date
+            ) {
+                reply(
+                    'That date is different from your active plan. Open the intended day in My Plans first.',
+                );
+                return;
+            }
+            const x = A.editTarget(current, text);
+            const was = { start: x.start, end: x.end };
+            if (/swap|replace/i.test(text)) {
+                const options = A.replacementOptions(state, x.id, catalogue);
+                reply(
+                    options.placeIds.length
+                        ? `Here are alternatives for ${x.title}. Its time stays ${x.start}–${x.end}.`
+                        : `No other sample places are available for ${x.title}.`,
+                    options,
+                );
+                return;
+            }
+            const created = !state.proposal;
+            if (created) M.propose(state, [], date, current.id);
+            if (/remove|delete/i.test(text))
+                state.proposal.items = state.proposal.items.filter(
+                    (i) => i.id !== x.id,
+                );
+            else {
+                const requested = text.match(/\b(\d{1,2}:\d{2})\b/);
+                if (requested) {
+                    const start = M.normalizeTime(requested[1]);
+                    const minutes = (value) =>
+                        Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+                    const endMinutes =
+                        start &&
+                        minutes(start) + minutes(x.end) - minutes(x.start);
+                    if (!start || endMinutes >= 1440)
+                        throw Error(
+                            'Choose a time that finishes within the same day.',
+                        );
+                    const end =
+                        String(Math.floor(endMinutes / 60)).padStart(2, '0') +
+                        ':' +
+                        String(endMinutes % 60).padStart(2, '0');
+                    M.setTime(state, x.id, start, end);
+                } else if (/later/i.test(text)) M.moveLater(state, x.id);
+                else {
+                    if (created) state.proposal = null;
+                    C.presentPlan(state, date);
+                    reply(
+                        'You can change the plan here. To change a time, try “Move Blücherpark to 14:00”.',
+                    );
+                    return;
+                }
+            }
+            // What changed, in words: removed, or its new time; a time it
+            // already has changes nothing.
+            const now = state.proposal.items.find((i) => i.id === x.id);
+            if (now && now.start === was.start && now.end === was.end) {
+                if (created) state.proposal = null;
+                reply(`${x.title} is already at ${was.start}–${was.end}.`);
+                return;
+            }
+            const label = now
+                ? `Moved ${x.title} to ${now.start}–${now.end}`
+                : `Removed ${x.title}`;
+            reply(...said(label, A.changed(state, label)));
+            return;
+        }
+        state.response = { ...r, request: text };
+        if (r.kind === 'proposal') {
+            state.date = r.date;
+            M.propose(state, [], r.date);
+            const kept = [];
+            for (const plan of knownPlans(r.date, text)) {
+                const title = plan.title.toLowerCase();
+                if (state.proposal.items.some((x) => x.title.toLowerCase() === title)) {
+                    kept.push(plan.title);
+                    continue;
+                }
+                try {
+                    M.addScheduled(
+                        state,
+                        {
+                            id: plan.id || `known-${title.replace(/\W+/g, '-')}-${plan.start}`,
+                            title: plan.title,
+                            location: plan.location || '',
+                            start: plan.start,
+                            end: plan.end,
+                            fixed: true,
+                            known: true,
+                            type: 'appointment',
+                        },
+                        r.date,
+                    );
+                    kept.push(plan.title);
+                } catch {
+                    /* A clash leaves the plan you already have untouched. */
+                }
+            }
+            M.propose(
+                state,
+                r.appointment ? ['walk', 'appointment'] : ['walk'],
+                r.date,
+            );
+            const result = A.changed(state, `Planned ${weekday(r.date)}`);
+            reply(
+                result.applied
+                    ? `${weekday(r.date)} is in your plans.${kept.length ? ` I kept ${listWords(kept)} at ${kept.length === 1 ? 'its' : 'their'} time${kept.length === 1 ? '' : 's'}.` : ''}`
+                    : result.problem
+                      ? `${result.problem} Nothing was added.`
+                      : `Nothing to plan for ${longDate(r.date)} yet.`,
+                result.applied ? { changeId: state.conversation.lastApplied.id } : {},
+            );
+        } else if (r.kind === 'discovery') {
+            state.conversation.activeDate = null;
+            const picked = r.category
+                ? catalogue.filter((p) => p.category === r.category).slice(0, 4)
+                : r.more
+                  ? catalogue.filter((p) => p.category !== 'Parks').slice(0, 4)
+                  : catalogue.slice(0, 2);
+            const label = { Family: 'families', Sport: 'sport', Swimming: 'a swim' }[r.category];
+            reply(
+                r.category
+                    ? picked.length
+                        ? `${picked.length === 1 ? 'One idea' : `${picked.length} ideas`} for ${label} from the sample city listings. Check access before you go.`
+                        : `The sample city listings have nothing for ${label} yet.`
+                    : r.more
+                      ? 'More places outside from the sample city listings: a pitch, table tennis, a playground and a lake.'
+                      : 'Two parks from the sample city listings. Save one for later, or add it to your plan.',
+                {
+                    kind: 'discovery',
+                    placeIds: picked.map((p) => p.id),
+                    ...(r.category || r.more
+                        ? {}
+                        : {
+                              suggestions: [
+                                  { label: 'More outdoor places', prompt: 'Show me more outdoor places' },
+                              ],
+                          }),
+                },
+            );
+        } else if (r.kind === 'answer') {
+            const p =
+                state.proposal?.date === r.date
+                    ? state.proposal
+                    : planFor(r.date);
+            state.conversation.activeDate = null;
+            if (p) {
+                C.presentPlan(state, p.date, replyId);
+            } else
+                reply(
+                    `Nothing planned for ${shortDate(r.date)} yet. You can ask me to put a day together.`,
+                );
+        } else {
+            state.conversation.activeDate = null;
+            if (r.kind === 'bureaucracy')
+                reply(
+                    'I do not have verified guidance for this question in this preview. Open the reviewed process information to check its sources and coverage.',
+                    {
+                        kind: 'bureaucracy',
+                        sourceKey:
+                            /anmeldung|register|registration|address/i.test(
+                                text,
+                            )
+                                ? 'core.anmeldung'
+                                : /blue card/i.test(text)
+                                  ? 'case.bc.first_application.prepare'
+                                  : null,
+                    },
+                );
+            else if (r.kind === 'unavailable')
+                reply(
+                    r.topic === 'listing'
+                        ? 'The sample listings here don’t cover that, or current opening times, so I can’t check it. I won’t guess.'
+                        : 'The sample listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
+                    { suggestions: [everyday[0], everyday[2]] },
+                );
+            else {
+                const previous = C.current(state)
+                    .entries.filter((x) => x.role === 'assistant' && x.id !== replyId)
+                    .at(-1);
+                // When it can't help (owner, 18 Oct 2026, Composer review
+                // canvas board 7): it says so, then what this preview does,
+                // the home's own cards as rows; a tap asks one.
+                const options = starters().map(({ kind, tag, icon, label, detail }) => ({ kind, tag, icon, label, detail }));
+                const asked = text.length > 40 ? `${text.slice(0, 39).trim()}…` : text;
+                reply(
+                    previous?.clarify
+                        ? 'It can do these:'
+                        : `“${asked}” isn’t something this preview knows. It can do these:`,
+                    {
+                        title: previous?.clarify ? 'That’s outside this preview too.' : 'I can’t answer that here yet.',
+                        clarify: true,
+                        ...(options.length ? { options } : { suggestions: everyday }),
+                    },
+                );
+            }
+        }
+    }
+    const closeTimeOptions = () => ExpaduTime.close();
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'replacement-search') {
+            cancelLoading();
+            replacement.query = e.target.value;
+            renderReplacementResults();
+            return;
+        }
+        if (e.target.id === 'studio-request') {
+            state.prompt = e.target.value;
+            syncSend();
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px';
+            store();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.target.closest('.studio-detail-dialog')) return;
+        if (
+            e.key === 'Escape' &&
+            document.querySelector('.composer-actions')?.open
+        ) {
+            e.preventDefault();
+            closeComposerActions(true);
+            return;
+        }
+        if (e.key === 'Escape' && loadingJob) {
+            e.preventDefault();
+            cancelLoading();
+            return;
+        }
+        if (
+            e.key === 'Escape' &&
+            panel === 'replace' &&
+            replacement.categoryOpen
+        ) {
+            e.preventDefault();
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (e.key === 'Escape' && panel) {
+            e.preventDefault();
+            closePanel();
+            return;
+        }
+        if (
+            e.key === 'Tab' &&
+            panel &&
+            (panel === 'replace' || matchMedia('(max-width: 999px)').matches)
+        ) {
+            const controls = [
+                ...document
+                    .querySelector('#workspace-panel')
+                    .querySelectorAll(
+                        'button:not(:disabled),a[href],input,summary',
+                    ),
+            ].filter((x) => x.getClientRects().length);
+            const first = controls[0],
+                last = controls.at(-1);
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+        if (
+            e.target.id === 'studio-request' &&
+            e.key === 'Enter' &&
+            !e.shiftKey &&
+            !e.isComposing
+        ) {
+            e.preventDefault();
+            e.target.form.requestSubmit();
+        }
+    });
+    document.addEventListener('submit', (e) => {
+        if (e.target.id === 'studio-form') {
+            e.preventDefault();
+            const t = document.querySelector('#studio-request').value.trim();
+            if (t) submit(t, true);
+            return;
+        }
+    });
+    document.addEventListener('change', (e) => {
+        if (e.target.id === 'plan-date' && e.target.value) {
+            state.date = e.target.value;
+            store();
+            render();
+        }
+    });
+    document.addEventListener('click', (e) => {
+        const el = e.target.closest('button,a');
+        // Quick look handles its own buttons, except saving a place or
+        // adding it to the plan, which work as they do everywhere else.
+        if (
+            !el ||
+            (el.closest('.studio-detail-dialog') &&
+                !el.matches('[data-save], [data-add]'))
+        )
+            return;
+        if (el.closest('.composer-actions-menu')) closeComposerActions(true);
+        if (
+            loadingJob &&
+            (el.dataset.nav || el.dataset.action || !el.closest('#studio-form'))
+        )
+            cancelLoading();
+        if (el.dataset.openSection) {
+            state.conversation.currentId = el.dataset.openSection;
+            state.conversation.activeDate = null;
+            closePanel(false);
+            store();
+            render();
+            revealLatest();
+            return;
+        }
+        if (el.dataset.retry) {
+            const entry = C.current(state).entries.find(
+                (x) => x.id === el.dataset.retry,
+            );
+            if (entry?.request) submit(entry.request);
+            return;
+        }
+        if (el.dataset.openPlan) {
+            const date = el.dataset.openPlan;
+            if (!planFor(date)) {
+                notify('Nothing is planned for that day now. Open My Plans to choose one.');
+                return;
+            }
+            state.date = date;
+            C.presentPlan(state, date);
+            closePanel(false);
+            store();
+            render();
+            revealPlan();
+            return;
+        }
+        if (el.dataset.chatReplace || el.dataset.browseReplacements) {
+            const entry = C.current(state).entries.find(
+                (x) =>
+                    x.id ===
+                    (el.dataset.entry || el.dataset.browseReplacements),
+            );
+            if (!entry || !A.replacementPlan(state, entry)) {
+                notify('Your plan has changed. Ask for new alternatives.');
+                return;
+            }
+            replacement = {
+                planDate: entry.planDate || state.conversation.activeDate,
+                proposalToken: entry.proposalToken,
+                itemId: entry.itemId,
+                selected: el.dataset.chatReplace || null,
+                query: '',
+                filter: 'all',
+                category: '',
+                categoryOpen: false,
+            };
+            if (el.dataset.browseReplacements) openPanel('replace');
+            else applyReplacement(el);
+            return;
+        }
+        if (el.dataset.action === 'undo-plan') {
+            try {
+                const undone = A.undo(state);
+                note(undoneText(undone));
+                store();
+                render();
+            } catch (error) {
+                notify(error.message);
+            }
+            return;
+        }
+        if (el.dataset.action === 'close-panel') {
+            if (panel === 'saved' && savedFrom) history.back();
+            else closePanel();
+            return;
+        }
+        if (el.dataset.nav) {
+            e.preventDefault();
+            navigate(el.dataset.nav);
+            return;
+        }
+        if (el.dataset.prompt) {
+            submit(el.dataset.prompt);
+            return;
+        }
+        if (el.dataset.save) {
+            const id = el.dataset.save,
+                before = state.saved.includes(id);
+            M.bookmark(state, id);
+            store();
+            el.setAttribute('aria-pressed', String(!before));
+            // A labelled button (Quick look) says it in words instead.
+            const label = el.querySelector('[data-save-label]');
+            if (label) label.textContent = before ? 'Save' : 'Saved';
+            else
+                el.setAttribute(
+                    'aria-label',
+                    `${before ? 'Save' : 'Unsave'} ${place(id).title}`,
+                );
+            window.ExpaduMotion?.feedback(el);
+            notify(
+                before ? 'Removed from saved ideas' : 'Saved for another day',
+                () => {
+                    state.saved = state.saved.filter((x) => x !== id);
+                    if (before) state.saved.push(id);
+                    store();
+                    render();
+                },
+            );
+            syncSaved();
+            if (savedView) {
+                render();
+                window.ExpaduMotion?.reveal(
+                    document.querySelector('#workspace-panel .panel-body'),
+                );
+            }
+            return;
+        }
+        if (el.dataset.add) {
+            const id = el.dataset.add;
+            if (el.getAttribute('aria-disabled') === 'true') return;
+            try {
+                const date = state.conversation.activeDate || state.date;
+                M.propose(state, [id], state.proposal?.date || date);
+                const added = state.proposal.items.find(
+                    (item) => item.id === id,
+                );
+                // A place from a "near …" answer starts at the time that
+                // answer was about ("after my appointment" means 14:30).
+                const answer = state.conversation.chapters
+                    .flatMap((chapter) => chapter.entries)
+                    .filter(
+                        (entry) =>
+                            entry.kind === 'nearby' &&
+                            entry.placeIds?.includes(id) &&
+                            entry.listedAt?.date === state.proposal.date,
+                    )
+                    .at(-1);
+                const wanted = answer?.listedAt.time;
+                if (wanted && wanted > added.start) {
+                    const [h, m] = wanted.split(':').map(Number);
+                    const until = `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    try {
+                        M.setTime(state, id, wanted, until);
+                    } catch {
+                        /* Keep the free slot propose found. */
+                    }
+                }
+                const applied = changed(
+                    `${place(id).title} added at ${added.start}–${added.end}`,
+                );
+                notify(
+                    applied
+                        ? 'Added to your plan. Keep choosing places.'
+                        : 'Added to the proposal. Keep choosing places, or review it below.',
+                );
+            } catch (error) {
+                notify(error.message);
+            }
+            return;
+        }
+        if (el.dataset.remove) {
+            const id = el.dataset.remove;
+            const p = draft();
+            const removed = p.items.find((x) => x.id === id);
+            p.items = p.items.filter((x) => x.id !== id);
+            changed(removed ? `Removed ${removed.title}` : 'Activity removed');
+            return;
+        }
+        if (el.dataset.editTime) {
+            const p =
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date);
+            const x = p?.items.find((item) => item.id === el.dataset.editTime);
+            if (!x || x.fixed) return;
+            const where = x.venue || x.location || place(x.id)?.area || '';
+            StudioTimeSheet.open({
+                title: x.title,
+                note: `${longDate(p.date)}${where ? ` · ${where}` : ''}`,
+                start: x.start,
+                end: x.end,
+                escape: E,
+                // What a time would clash with, said as you turn.
+                check: (start, end) => {
+                    const trial = M.clone(state);
+                    try {
+                        if (!trial.proposal) M.propose(trial, [], p.date);
+                        M.setTime(trial, x.id, start, end);
+                        return M.conflicts(trial.proposal)[0] || '';
+                    } catch (error) {
+                        return error.message;
+                    }
+                },
+                done: (start, end) => {
+                    if (start === x.start && end === x.end) return;
+                    try {
+                        draft();
+                        M.setTime(state, x.id, start, end);
+                    } catch (error) {
+                        state.proposal = null;
+                        note(`${error.message} Your plan hasn’t changed.`);
+                        store();
+                        render();
+                        return;
+                    }
+                    changed(`Moved ${x.title} to ${start}–${end}`);
+                },
+            });
+            return;
+        }
+        if (el.dataset.swap) {
+            const plan =
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date);
+            const item = plan?.items.find(
+                (item) => item.id === el.dataset.swap,
+            );
+            if (!item || item.fixed) return;
+            state.conversation.activeDate = plan.date;
+            submit(`Swap ${item.title}`);
+            return;
+        }
+        if (el.dataset.replacementFilter) {
+            replacement.filter =
+                replacement.filter === 'saved' ? 'all' : 'saved';
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            renderReplacementResults();
+            document
+                .querySelector('[data-replacement-filter="saved"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (el.dataset.action === 'toggle-replacement-categories') {
+            replacement.categoryOpen = !replacement.categoryOpen;
+            syncReplacementFilters();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            if (replacement.categoryOpen && !reducedMotion())
+                document.querySelector('#replacement-categories').animate(
+                    [
+                        { opacity: 0, transform: 'translateY(-4px)' },
+                        { opacity: 1, transform: 'translateY(0)' },
+                    ],
+                    { duration: 160, easing: 'ease-out' },
+                );
+            return;
+        }
+        if (el.hasAttribute('data-replacement-category')) {
+            replacement.category = el.dataset.replacementCategory;
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            renderReplacementResults();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (el.dataset.selectReplacement) {
+            replacement.selected = el.dataset.selectReplacement;
+            syncReplacementSelection();
+            if (!reducedMotion())
+                el.animate(
+                    [{ transform: 'scale(.985)' }, { transform: 'scale(1)' }],
+                    { duration: 180, easing: 'ease-out' },
+                );
+            return;
+        }
+        if (el.dataset.action === 'reset-replacement-search') {
+            replacement.filter = 'all';
+            replacement.query = '';
+            replacement.category = '';
+            replacement.categoryOpen = false;
+            renderReplacement();
+            document.querySelector('#replacement-search').focus();
+            return;
+        }
+        if (el.dataset.action === 'apply-replacement') {
+            applyReplacement(el);
+            return;
+        }
+        if (el.dataset.date) {
+            state.date = el.dataset.date;
+            store();
+            render();
+            return;
+        }
+        if (el.dataset.dayStep) {
+            const d = new Date(state.date + 'T12:00:00');
+            d.setDate(d.getDate() + Number(el.dataset.dayStep));
+            state.date = M.iso(d);
+            store();
+            render();
+            return;
+        }
+        const action = el.dataset.action;
+        if (action === 'undo') {
+            undo?.();
+            document.querySelector('#studio-toast').hidden = true;
+        }
+        // Deleting history asks first (owner, 21 Oct 2026): it's permanent.
+        // Plans and saved ideas stay.
+        if (action === 'delete-history')
+            features.confirmDeleteHistory(el, () => {
+                C.deleteHistory(state);
+                state.response = null;
+                store();
+                closePanel();
+                render();
+                notify('Conversation history deleted.');
+            });
+        if (action === 'new') {
+            C.startFresh(state);
+            state.response = null;
+            state.prompt = '';
+            store();
+            document.querySelector('#studio-request').value = '';
+            render();
+            window.scrollTo({
+                top: 0,
+                behavior: reducedMotion() ? 'instant' : 'smooth',
+            });
+            document
+                .querySelector('#studio-request')
+                .focus({ preventScroll: true });
+        }
+        // Your day: the day you're planning, or today (board 9).
+        if (action === 'day-today' || action === 'day-planning') {
+            state.dayShown =
+                action === 'day-today' ? state.conversation.activeDate : null;
+            store();
+            render();
+            return;
+        }
+        if (action === 'discover') submit('Find something outdoors');
+        if (action === 'plan-example')
+            submit(`Plan ${state.date} around my 15:00 appointment.`);
+    });
+    window.addEventListener('popstate', () => {
+        cancelLoading();
+        const target =
+            location.hash === '#history'
+                ? 'history'
+                : location.hash === '#saved'
+                  ? 'saved'
+                  : location.hash === '#plans'
+                    ? 'plans'
+                    : location.hash === '#replace' && replacement
+                      ? 'replace'
+                      : null;
+        if (target) openPanel(target, false);
+        else closePanel(true, false);
+    });
+    window.addEventListener('resize', panelAccessibility);
+    if (!C.current(state).entries.length && state.response) {
+        if (state.response.request)
+            C.append(state, 'user', state.response.request);
+        note(
+            'Your earlier work is available below. This conversation will now keep new exchanges.',
+        );
+        if (state.proposal || planFor(state.date))
+            C.recordPlan(state, 'Earlier plan');
+        else if (state.response.kind === 'discovery')
+            C.append(state, 'assistant', 'Previously suggested places', {
+                kind: 'discovery',
+                placeIds: catalogue.slice(0, 2).map((p) => p.id),
+            });
+    }
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-retry-handoff]')) {
+            const shared = ExpaduStore.read();
+            shared.draft = state.handoffs || [];
+            receiveHandoffs(shared);
+            shared.draft = state.handoffs;
+            if (!writeShared(shared)) return;
+            store();
+            render();
+        }
+    });
+    // Capture before ordinary action handling, so minimizing never cancels a reply.
+    document.addEventListener(
+        'click',
+        (event) => {
+            if (!event.target.closest('[data-minimize-composer]')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            minimizeComposer();
+        },
+        true,
+    );
+    let minimizeSwipe = null;
+    document.addEventListener('pointerdown', (event) => {
+        if (
+            event.pointerType !== 'touch' ||
+            !event.target.closest('.composer-heading') ||
+            event.target.closest('button')
+        )
+            return;
+        minimizeSwipe = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+        };
+    });
+    document.addEventListener('pointerup', (event) => {
+        const start = minimizeSwipe;
+        minimizeSwipe = null;
+        if (!start || start.id !== event.pointerId) return;
+        const dy = event.clientY - start.y,
+            dx = event.clientX - start.x;
+        if (dy > 64 && dy > Math.abs(dx) * 1.5) minimizeComposer();
+    });
+    document.addEventListener('pointercancel', () => {
+        minimizeSwipe = null;
+    });
+    let headerFrame = false;
+    function positionComposerHeader() {
+        if (headerFrame) return;
+        headerFrame = true;
+        requestAnimationFrame(() => {
+            headerFrame = false;
+            const header = document.querySelector('.scroll-header');
+            const bottom =
+                header && !header.classList.contains('is-hidden')
+                    ? header.getBoundingClientRect().bottom
+                    : 0;
+            document.documentElement.style.setProperty(
+                '--composer-header-top',
+                `${Math.max(0, bottom)}px`,
+            );
+        });
+    }
+    window.addEventListener('scroll', positionComposerHeader, {
+        passive: true,
+    });
+    window.addEventListener('resize', positionComposerHeader, {
+        passive: true,
+    });
+    window.addEventListener('load', positionComposerHeader);
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted && minimizing) {
+            minimizing = false;
+            document.body.classList.remove('is-minimizing');
+            for (const selector of ['#main', '.studio-input-wrap'])
+                document
+                    .querySelector(selector)
+                    ?.getAnimations()
+                    .forEach((animation) => animation.cancel());
+        }
+        // Back from Travel, the trip may have started, moved on or ended.
+        if (event.persisted) render();
+        positionComposerHeader();
+    });
+    const features = StudioReviewFeatures.create({
+        getState: () => state,
+        M,
+        C,
+        A,
+        E,
+        I,
+        changed,
+        render,
+        store,
+        note,
+        notify,
+        submit,
+        beginLoading,
+        shortDate,
+        closeTimeOptions,
+    });
+    const shared = ExpaduStore.read();
+    if (StudioIntegration.clearCancelledHandoffs(state, shared))
+        writeShared(shared);
+    const handoff = shared.composerHandoff;
+    const incoming = handoff && state.lastHandoff !== handoff.id;
+    if (!state.bookmarksConnected || incoming) {
+        state.saved = [
+            ...new Set([
+                ...state.saved,
+                ...(shared.savedIdeas || []).map(StudioIntegration.savedId),
+            ]),
+        ];
+        state.bookmarksConnected = true;
+    }
+    let incomingPrompt = '';
+    let incomingStepHelp = false;
+    // What a page hands over becomes the newest entry; it's shown, not the
+    // top of an earlier conversation.
+    const latestEntry = () => {
+        const c = state.conversation;
+        return (
+            c?.chapters?.find((x) => x.id === c.currentId)?.entries?.at(-1)
+                ?.id || null
+        );
+    };
+    const beforeHandoff = latestEntry();
+    if (incoming) {
+        if (handoff.action === 'new') {
+            C.startFresh(state);
+            state.response = null;
+            state.prompt = '';
+            shared.prompt = '';
+        }
+        const orientationPerson = new URLSearchParams(location.search).get(
+            'bureaucracyGuide',
+        );
+        const orientationState = BureaucracyOrientation.load();
+        const incomingGuide =
+            orientationPerson === orientationState.person &&
+            BureaucracyOrientation.allowed(orientationState);
+        if (incomingGuide) {
+            if (window.BureaucracySituation?.applies(orientationState))
+                BureaucracyOrientation.review(orientationState);
+            else BureaucracyOrientation.begin(orientationState);
+            BureaucracyOrientation.save(orientationState);
+        }
+        incomingStepHelp =
+            (incomingGuide &&
+                StudioIntegration.receiveBureaucracyGuide(
+                    state,
+                    orientationPerson,
+                    C,
+                    orientationState.profileId || null,
+                )) ||
+            StudioIntegration.receiveBureaucracyHelp(
+                state,
+                new URLSearchParams(location.search).get('helpStep'),
+                window.BureaucracySource || [],
+                C,
+            );
+        if (!incomingStepHelp) receiveHandoffs(shared);
+        state.lastHandoff = handoff.id;
+        if (handoff.submit) {
+            incomingPrompt = shared.prompt.trim();
+            state.pageContext = shared.pageContext || null;
+        }
+        else if (shared.prompt.trim() && !state.prompt.trim())
+            state.prompt = shared.prompt;
+        if (!incomingStepHelp) shared.draft = state.handoffs;
+        if (
+            handoff.date &&
+            (state.proposal?.date === handoff.date || planFor(handoff.date))
+        ) {
+            state.date = handoff.date;
+            C.presentPlan(state, handoff.date);
+        }
+        if (handoff.submit) {
+            shared.prompt = '';
+            shared.pageContext = null;
+        }
+        writeShared(shared);
+    }
+    window.addEventListener('storage', (event) => {
+        if (event.key !== KEY && event.key !== null) return;
+        try {
+            refreshWorkspace();
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+        }
+    });
+    render();
+    store();
+    // The trip session loads after this script; once it has, a trip you're
+    // on shows in Your day and the starters.
+    if (!window.JourneySession)
+        addEventListener(
+            'DOMContentLoaded',
+            () => {
+                if (window.JourneySession?.read()) render();
+            },
+            { once: true },
+        );
+    if (
+        incoming &&
+        !incomingPrompt &&
+        !initialPanel &&
+        (incomingStepHelp || latestEntry() !== beforeHandoff || handoff.date)
+    )
+        revealLatest();
+    if (incomingPrompt) submit(incomingPrompt);
+    landing = false;
+    // Opened from another section's bookmark, the list keeps its address
+    // and Back is that section.
+    if (initialPanel === 'saved' && savedFrom) openPanel(initialPanel, false);
+    else if (initialPanel) {
+        history.replaceState({}, '', StudioNavigation.panelUrl(location.href));
+        openPanel(initialPanel);
+    }
+    if (incoming && handoff.action === 'appointment')
+        features.appointment(
+            document.querySelector('.composer-actions > summary'),
+        );
+    if (incoming && handoff.action === 'examples')
+        features.examples(
+            document.querySelector('.composer-actions > summary'),
+        );
+    if (!persistent) store();
+})();

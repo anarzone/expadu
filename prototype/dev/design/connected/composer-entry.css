@@ -1,0 +1,258 @@
+@import url('tokens.css');
+/* Pages loading this entry use the shared tray. Keep legacy bootstrap markup
+   hidden from the first paint, before deferred Composer scripts replace it. */
+#dock,
+.composer-dock {
+    display: none !important;
+}
+
+.department-composer #composer-tray {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 40;
+    color: var(--color-text-soft, #426871);
+    box-sizing: border-box;
+}
+/* Tablets and desktops: Composer in the header, beside the city (owner
+   chose A, canvas row 23, 16 Oct 2026); opened, it is where it always was.
+   Phones keep the round button beside the menu (section-bar.css). */
+.composer-header {
+    display: none;
+}
+@media (min-width: 701px) {
+    #shell .header-utilities > .composer-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        margin-right: 6px;
+        padding: 0 8px 0 7px;
+        border: 1px solid var(--line, #e6ddcb);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface, #fffdf8);
+        color: var(--ink, #211d15);
+        font: inherit;
+        font-size: var(--text-control);
+        font-weight: var(--weight-medium);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background-color var(--duration-fast, 120ms) ease;
+    }
+    #shell .header-utilities > .composer-header:hover {
+        background: var(--color-bg-quiet, #f1ebdf);
+    }
+    #shell .composer-header-mark {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-round);
+        background: var(--teal, #00768b);
+        color: #fff;
+    }
+    #shell .composer-header-mark svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linejoin: round;
+    }
+    #shell .composer-header kbd {
+        padding: 2px 6px;
+        border: 1px solid var(--line, #e6ddcb);
+        border-radius: 6px;
+        background: var(--color-bg-canvas, #faf6ee);
+        color: var(--color-text-soft, #6e6657);
+        font: inherit;
+        font-size: var(--text-caption);
+    }
+    /* The corner button gives way to the header's (pages with the shared
+       header; an older page keeps its corner button). */
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray:not(.is-active) {
+        display: none;
+    }
+}
+/* Opened from the header, Composer sits just under it, centred, the page
+   dimmed behind it: near the button that opened it, not at the bottom of
+   the screen (owner chose A, canvas row 26, 16 Oct 2026). ⌘K and Esc as
+   before (composer-entry.js). */
+@media (min-width: 701px) {
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active {
+        top: 84px;
+        bottom: auto;
+        left: 0;
+        right: 0;
+        width: min(680px, calc(100% - 48px));
+        margin-inline: auto;
+        transform-origin: top center;
+        box-shadow:
+            0 24px 60px -24px #211d1599,
+            0 0 0 100vmax rgb(33 29 21 / 0.12);
+    }
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active
+        .composer-dismiss {
+        top: 10px;
+        right: 10px;
+        bottom: auto;
+    }
+    /* Under the header the menu opens down, onto the page, not off the
+       top of the screen. */
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active
+        .today-control-menu {
+        top: calc(100% + 10px);
+        bottom: auto;
+    }
+}
+/* Tablets and laptops narrower than 1280px: the sections share the
+   header's one row, so Composer keeps just its mark there (its name is its
+   label). */
+@media (min-width: 701px) and (max-width: 1279px) {
+    #shell .header-utilities > .composer-header {
+        justify-content: center;
+        width: 44px;
+        padding: 0;
+        border-radius: var(--radius-round);
+    }
+    #shell .composer-header :is(.composer-header-text, kbd) {
+        display: none;
+    }
+}
+.department-composer #composer-tray button,
+.department-composer #composer-tray summary {
+    font: inherit;
+    cursor: pointer;
+}
+.department-composer #composer-tray svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+.department-composer #request {
+    /* Pages without a text-field reset otherwise show a typewriter font. */
+    font-family: inherit;
+    width: 100%;
+    resize: none;
+    background: transparent;
+    box-sizing: border-box;
+    color: var(--color-text, #213b42);
+}
+.department-composer #included-ideas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-small);
+    border: 0;
+}
+.department-composer #included-ideas[hidden] {
+    display: none;
+}
+/* A conversation to go back to: one line at the top of the open box. */
+.department-composer #composer-resume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet, #f1ebdf);
+    color: var(--color-text, #211d15);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+}
+.department-composer #composer-resume > span:nth-child(2) {
+    flex: 1;
+}
+.department-composer #composer-resume svg {
+    width: 16px;
+    height: 16px;
+}
+.department-composer #composer-resume[hidden],
+.department-composer #composer-tray:not(.is-active) #composer-resume {
+    display: none;
+}
+/* Under the header the ✕ sits inside the box: the line leaves room for it. */
+@media (min-width: 701px) {
+    .department-composer #composer-resume {
+        width: calc(100% - 52px);
+    }
+}
+.department-composer main {
+    padding-bottom: 90px;
+}
+.department-return {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: var(--teal, #326b7b);
+    background: transparent;
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.department-return svg {
+    width: 18px;
+    height: 18px;
+}
+.department-return:hover {
+    background: var(--color-bg-quiet, #e9f2f4);
+}
+
+/* What this page is showing, sent with the request unless you remove it. */
+.composer-page-context {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 8px;
+    padding: 2px 4px 2px 12px;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet, #f1f7f8);
+    color: var(--color-text-soft, #426871);
+    font-size: var(--text-caption);
+}
+.composer-page-context span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-page-context button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.composer-page-context button:hover {
+    background: var(--color-bg-hover, #e9f2f4);
+}
+.composer-page-context svg {
+    width: 14px;
+    height: 14px;
+}
+#composer-tray:not(.is-active) .composer-page-context {
+    display: none;
+}

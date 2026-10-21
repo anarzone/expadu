@@ -64,7 +64,12 @@ async function withoutDraft(page: Page): Promise<void> {
     await page.addInitScript(() => {
         try {
             // sessionStorage, not local: the draft can hold residence details.
-            sessionStorage.removeItem('expadu:onboarding-draft');
+            // The key carries the account's id (expadu:onboarding-draft:<id>).
+            for (const key of Object.keys(sessionStorage)) {
+                if (key.startsWith('expadu:onboarding-draft')) {
+                    sessionStorage.removeItem(key);
+                }
+            }
         } catch {
             // Blocked storage means there is no draft to clear.
         }

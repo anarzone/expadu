@@ -1,0 +1,111 @@
+[
+  {
+    "id": "01-ember",
+    "name": "Ember",
+    "bottomDark": [
+      "#c5a8ff",
+      "#a17cef",
+      "#8059c9"
+    ],
+    "tipDark": "#d3b9ff",
+    "note": "Coral / violet",
+    "top": [
+      "#ffac69",
+      "#ff7249",
+      "#ed473e"
+    ],
+    "back": "#c93638",
+    "cap": [
+      "#ffbd81",
+      "#ff8156"
+    ],
+    "bottom": [
+      "#ab84f4",
+      "#7952d3",
+      "#5835a6"
+    ],
+    "turn": "#482576",
+    "tip": "#c19cff",
+    "ink": "#2c213c",
+    "paper": "#fbf7f5",
+    "soft": "#f4ecff",
+    "dark": "#281934",
+    "flat": [
+      "#ff7651",
+      "#7951d0"
+    ],
+    "recommended": true
+  },
+  {
+    "id": "02-tide",
+    "name": "Tide",
+    "bottomDark": [
+      "#68dac4",
+      "#35b6b1",
+      "#2893a2"
+    ],
+    "tipDark": "#9cf2df",
+    "note": "Turquoise / deep teal",
+    "top": [
+      "#adf6d6",
+      "#53d6ce",
+      "#13a8b4"
+    ],
+    "back": "#087f91",
+    "cap": [
+      "#d0ffde",
+      "#72ead3"
+    ],
+    "bottom": [
+      "#2fa299",
+      "#0f777a",
+      "#13515d"
+    ],
+    "turn": "#113e49",
+    "tip": "#68c5b2",
+    "ink": "#123f48",
+    "paper": "#f1faf7",
+    "soft": "#d4f3ec",
+    "dark": "#113942",
+    "flat": [
+      "#3ac9c5",
+      "#0d7075"
+    ]
+  },
+  {
+    "id": "03-cherry",
+    "name": "Cherry",
+    "bottomDark": [
+      "#d1acca",
+      "#b188ab",
+      "#89668f"
+    ],
+    "tipDark": "#e5bfd4",
+    "note": "Cherry / plum",
+    "top": [
+      "#ff8ea0",
+      "#ee4569",
+      "#cb274f"
+    ],
+    "back": "#aa1a44",
+    "cap": [
+      "#ffb0bb",
+      "#fc6d8a"
+    ],
+    "bottom": [
+      "#86607b",
+      "#51354f",
+      "#33263c"
+    ],
+    "turn": "#261b31",
+    "tip": "#a97995",
+    "ink": "#35253c",
+    "paper": "#fff5f6",
+    "soft": "#f7e3eb",
+    "dark": "#35253c",
+    "flat": [
+      "#ed4569",
+      "#51354f"
+    ]
+  }
+]

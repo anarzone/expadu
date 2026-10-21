@@ -1,0 +1,4805 @@
+/* Events as a poster wall (owner's choice, 8 October). Builds on the Events
+   page's own styles; only the posters, the column, the skyline and the
+   page layout are new. Poster inks are art, like Festival's yellow: the
+   page keeps the shared cream palette, cyan selections and orange actions. */
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('./fonts/bricolage-grotesque-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('./fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+    unicode-range: U+0100-024F, U+1E00-1EFF;
+}
+body[data-page='events'] {
+    --poster-display: 'Poster Grotesque', Geist, sans-serif;
+    --poster-purple: #4b2bb8;
+    --poster-night: #1b1840;
+    --poster-paper: #fff8e6;
+    --poster-green: #1f7a4d;
+    --poster-cream: #fff6d8;
+    --poster-column: #2e4a3f;
+    --poster-column-ring: #3e6152;
+}
+
+/* ---------- Heading: title, date tape and the view switch ---------- */
+.wall-heading {
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+.wall-heading-text p {
+    margin: 6px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-body);
+}
+.wall-heading-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+/* The date leads the search row. */
+.event-search-row > .wall-heading {
+    display: flex;
+    flex: none;
+    margin: 0;
+    padding: 0;
+}
+.wall-heading #event-calendar-toggle {
+    padding: 0 12px 0 14px;
+    background: var(--festival-yellow, #ffe363);
+    color: var(--color-text);
+    border-radius: 4px;
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: 17px;
+    transform: rotate(-2deg);
+    box-shadow: 0 2px 0 #211d1514;
+}
+.wall-heading #event-calendar-toggle > svg:first-child {
+    display: none;
+}
+/* ---------- The wall ---------- */
+/* A plastered wall: a little grain, softer and lighter patches, scraps of
+   older posters and a stencil. The column stands on its street corner at
+   the left and the day's posters flow round it, then across the full
+   width below. At night the wall darkens around the lit lantern. */
+.wall-board {
+    --wall-day: var(--color-bg-hover);
+    --wall-night: #24223a;
+    position: relative;
+    display: flow-root;
+    margin-top: 14px;
+    padding: 36px 32px 72px;
+    border-radius: 32px;
+    background-color: color-mix(
+        in srgb,
+        var(--wall-day),
+        var(--wall-night) calc(var(--street-dark, 0) * 88%)
+    );
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.27 0 0 0 0 0.2 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.008' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.22 -0.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E"),
+        linear-gradient(transparent 55%, #5a4a3012 82%, #4a3a241f),
+        radial-gradient(ellipse 30% 22% at 78% 18%, #ffffff2e, transparent 70%),
+        radial-gradient(ellipse 26% 30% at 18% 72%, #6b5a3a14, transparent 70%),
+        radial-gradient(ellipse 34% 20% at 60% 92%, #ffffff24, transparent 70%);
+    transition: background-color 400ms var(--ease-settle);
+}
+.wall-board > :not(.wall-decor) {
+    position: relative;
+    z-index: 1;
+}
+/* The list's box runs under the floated corner; the corner stays on top
+   so its column can be used. */
+.wall-board > .wall-scene {
+    z-index: 2;
+}
+.wall-board #event-list {
+    min-width: 0;
+}
+/* The notes sit beside the scene when there's room, else below it. */
+.wall-next {
+    display: flow-root;
+    max-width: 440px;
+}
+/* The skyline has the board to itself: the column stays on the Wall. */
+main[data-view='skyline'] .wall-scene,
+main[data-view='skyline'] .wall-decor {
+    display: none;
+}
+main[data-view='skyline'] .wall-board {
+    padding-bottom: 28px;
+    background-color: var(--wall-day);
+}
+main[data-view='skyline'] .wall-next {
+    max-width: none;
+}
+main[data-view='wall'] .wall-view--skyline,
+main[data-view='skyline'] .wall-view--wall {
+    display: none;
+}
+.wall-day {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 26px 22px;
+}
+/* On desktop the day's posters are laid like words, so they flow round
+   the street corner and then use the full width below it. */
+@media (min-width: 1000px) {
+    .wall-day {
+        display: block;
+    }
+    .wall-day > .pp {
+        display: inline-block;
+        margin: 0 22px 26px 0;
+        vertical-align: top;
+    }
+}
+.wall-day > .pp:nth-child(odd) {
+    rotate: 1.4deg;
+}
+.wall-day > .pp:nth-child(even) {
+    rotate: -1.1deg;
+}
+/* Posters are pasted onto the wall as the day loads, one after another. */
+@media (prefers-reduced-motion: no-preference) {
+    .wall-day > .pp {
+        animation: pp-paste 360ms var(--ease-settle) both;
+        animation-delay: calc(var(--i, 0) * 70ms);
+    }
+}
+/* Already up: pasted earlier in this tab (wall.js). */
+.wall-day > .pp.is-up {
+    animation: none;
+}
+@keyframes pp-paste {
+    from {
+        opacity: 0;
+        translate: 0 -16px;
+        scale: 1.05;
+    }
+    to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+    }
+}
+/* With a mouse, a poster leans towards the pointer and catches the light. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .wall-day > .pp {
+        transform: perspective(900px) rotateX(var(--tilt-y, 0deg))
+            rotateY(var(--tilt-x, 0deg));
+        transition:
+            transform var(--duration-fast) var(--ease-settle),
+            box-shadow var(--duration-base) var(--ease-settle);
+    }
+    .wall-day > .pp.is-tilting {
+        box-shadow: 0 24px 44px #211d1540;
+    }
+    .wall-day > .pp.is-tilting .pp-front::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at var(--glare-x, 50%) var(--glare-y, 50%),
+            #ffffff2e,
+            transparent 45%
+        );
+    }
+}
+.wall-day-note {
+    margin: 0;
+    color: var(--color-text-soft);
+}
+.wall-view .festival-credit {
+    margin: 18px 0 0;
+}
+
+/* The city's poster column (Litfaßsäule) holds the featured pick. */
+.wall-column {
+    --column-w: 364px;
+    --column-h: 560px;
+    /* Older posters show above and below the one facing you. */
+    --strip: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.wall-column-cap {
+    position: relative;
+    width: calc(var(--column-w) + 40px);
+    height: 58px;
+    border-radius: 50% 50% 8px 8px / 100% 100% 8px 8px;
+    background:
+        radial-gradient(ellipse 40% 70% at 34% 30%, #ffffff26, transparent 70%),
+        var(--poster-column);
+    box-shadow: inset 0 -6px 0 #0000002e;
+}
+.wall-column-cap > span {
+    position: absolute;
+    left: 50%;
+    top: -26px;
+    width: 14px;
+    height: 30px;
+    margin-left: -7px;
+    border-radius: 7px 7px 2px 2px;
+    background: var(--poster-column);
+}
+.wall-column-cap > span::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    width: 16px;
+    height: 16px;
+    margin-left: -8px;
+    border-radius: 50%;
+    background: #c9a54a;
+}
+/* A band under the dome: a gold line, small arches and another line. */
+.wall-column-frieze {
+    width: calc(var(--column-w) + 20px);
+    height: 26px;
+    border-top: 3px solid #c9a54a;
+    border-bottom: 3px solid #c9a54a;
+    background:
+        radial-gradient(circle at 50% 100%, transparent 6px, #c9a54a 6.5px 8px, transparent 8.5px) 0 0 / 22px 20px repeat-x,
+        var(--poster-column);
+}
+/* A lamp under the cap, lit while an evening or night poster faces you. */
+.wall-column-cap::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    bottom: -20px;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    border-radius: 50%;
+    background: var(--poster-column-ring);
+    transition:
+        background-color var(--duration-slow) var(--ease-settle),
+        box-shadow var(--duration-slow) var(--ease-settle);
+}
+.wall-column:is([data-ink='evening'], [data-ink='night']) .wall-column-cap::before {
+    background: var(--festival-yellow, #ffe363);
+    box-shadow: 0 0 18px 6px #ffe36380;
+}
+.wall-column-body {
+    position: relative;
+    width: var(--column-w);
+    height: calc(var(--column-h) + var(--strip) * 2 + var(--extra, 0px));
+    overflow: hidden;
+    /* Layers of old paper round the drum. */
+    background:
+        repeating-linear-gradient(0deg, transparent 0 9px, #211d1508 9px 10px),
+        #e7dfcd;
+    touch-action: pan-y;
+}
+/* Torn edges of older posters peek out above and below; when the column
+   grows to meet the posters beside it, older posters cover its lower
+   part, faded and torn, with lines of small print. */
+.wall-column-old > span {
+    position: absolute;
+    display: block;
+}
+.wall-column-old > span:nth-child(1) {
+    left: -4%;
+    top: 0;
+    width: 62%;
+    height: calc(var(--strip) + 14px);
+    background: #d9c26e;
+    clip-path: polygon(0 0, 100% 0, 100% 62%, 92% 80%, 84% 66%, 74% 88%, 63% 70%, 50% 100%, 36% 76%, 22% 92%, 10% 74%, 0 86%);
+}
+.wall-column-old > span:nth-child(2) {
+    right: -3%;
+    top: 0;
+    width: 52%;
+    height: calc(var(--strip) + 6px);
+    background:
+        radial-gradient(circle, #ffffff59 1.5px, transparent 2px) 0 0 / 8px 8px,
+        #9c8fc4;
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 86% 100%, 70% 72%, 54% 94%, 38% 70%, 20% 92%, 0 74%);
+}
+.wall-column-old > span:nth-child(3) {
+    left: -2%;
+    bottom: 0;
+    width: 58%;
+    height: calc(var(--strip) + 10px);
+    background:
+        repeating-linear-gradient(135deg, #ffffff33 0 6px, transparent 6px 14px),
+        #b9cfb3;
+    clip-path: polygon(0 24%, 12% 6%, 26% 22%, 40% 0, 56% 18%, 72% 4%, 86% 20%, 100% 8%, 100% 100%, 0 100%);
+}
+.wall-column-old > span:nth-child(4) {
+    right: -4%;
+    bottom: 0;
+    width: 50%;
+    height: calc(var(--strip) + 4px);
+    background: #eab79c;
+    clip-path: polygon(0 18%, 14% 0, 30% 20%, 48% 4%, 66% 24%, 82% 2%, 100% 14%, 100% 100%, 0 100%);
+}
+.wall-column-body[tabindex] {
+    cursor: grab;
+}
+.wall-column-body[data-turning] {
+    cursor: grabbing;
+}
+.wall-column-body:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 4px;
+}
+.wall-column-old > span:nth-child(5),
+.wall-column-old > span:nth-child(6) {
+    bottom: calc(var(--strip) + 8px);
+    filter: saturate(0.7);
+    opacity: 0.9;
+}
+/* The lower row: two older posters, faded, a title bar and small print. */
+.wall-column-old > span:nth-child(5) {
+    left: 5%;
+    width: 43%;
+    height: max(0px, calc(var(--extra, 0px) - 30px));
+    background:
+        linear-gradient(#211d1599, #211d1599) 14% 12% / 68% 13% no-repeat,
+        linear-gradient(#211d1566, #211d1566) 14% 30% / 44% 6% no-repeat,
+        repeating-linear-gradient(180deg, transparent 0 10px, #211d1529 10px 12px) 14% 78% / 72% 34% no-repeat,
+        #e9d48a;
+    clip-path: polygon(0 0, 80% 0, 86% 5%, 93% 1%, 100% 9%, 100% 100%, 0 100%);
+    rotate: -1deg;
+}
+.wall-column-old > span:nth-child(6) {
+    right: 4%;
+    width: 45%;
+    height: max(0px, calc(var(--extra, 0px) - 46px));
+    background:
+        radial-gradient(circle at 62% 38%, transparent 20%, #ffffff66 21% 26%, transparent 27%),
+        linear-gradient(#ffffffb3, #ffffffb3) 12% 76% / 60% 10% no-repeat,
+        repeating-linear-gradient(180deg, transparent 0 10px, #ffffff3d 10px 12px) 12% 92% / 66% 12% no-repeat,
+        #9d8fc6;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 22% 100%, 14% 93%, 6% 98%, 0 90%);
+    rotate: 1.2deg;
+}
+.wall-column-face {
+    position: absolute;
+    inset: var(--strip) 0 calc(var(--strip) + var(--extra, 0px));
+    transform-origin: center;
+    will-change: transform;
+}
+.wall-column-face > .pp {
+    width: 100%;
+    height: 100%;
+}
+.wall-column-glow {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 151;
+    height: 45%;
+    pointer-events: none;
+    background: radial-gradient(
+        ellipse 70% 60% at 50% 0,
+        #ffe36359,
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-settle);
+}
+.wall-column:is([data-ink='evening'], [data-ink='night']) .wall-column-glow {
+    opacity: 1;
+}
+/* The column's curve, over every poster. */
+.wall-column-body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 150;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        #0005 0%,
+        #0000 18%,
+        #ffffff14 42%,
+        #0000 66%,
+        #0006 100%
+    );
+}
+.wall-column-base {
+    position: relative;
+    width: calc(var(--column-w) + 24px);
+    height: 22px;
+    border-radius: 4px 4px 0 0;
+    background: var(--poster-column);
+}
+/* A stone plinth under the iron ring. */
+.wall-column-base > span {
+    position: absolute;
+    left: -14px;
+    right: -14px;
+    top: 22px;
+    height: 34px;
+    border-radius: 3px;
+    background: linear-gradient(#c8bfae, #a69d8b);
+    box-shadow: inset 0 3px 0 #ffffff40;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
+}
+.wall-column-count {
+    font-variant-numeric: tabular-nums;
+}
+.wall-column-caption {
+    margin: 14px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
+/* ---------- The backdrop: the hour's sky over the city ----------
+   Borrowed from the Skyline: the same sky (time, weather, sun and moon)
+   behind the Dom, Colonius and the Kranhäuser, above the wall's ledge.
+   The column's dome rises into it, like a set in front of a painted
+   backdrop. It reads the sky; nothing in it is a control. */
+.wall-board > .wall-sky {
+    display: block;
+    height: 230px;
+    margin: -36px -32px 26px;
+    border-radius: 32px 32px 0 0;
+}
+.wall-sky::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 12px;
+    background: linear-gradient(#d6cbb7, #b7ab95);
+    box-shadow: 0 6px 10px -4px #211d1540;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
+}
+.wall-sky .sky-weather {
+    position: absolute;
+    z-index: 2;
+    top: 18px;
+    right: 22px;
+}
+.wall-sky[data-light] .sky-weather {
+    color: var(--color-text);
+}
+@media (min-width: 1000px) {
+    .wall-board > .wall-scene {
+        margin-top: -202px;
+    }
+}
+main[data-view='skyline'] .wall-board > .wall-sky {
+    display: none;
+}
+
+/* ---------- Today's posters: on now, over, rain likely ---------- */
+.pp-top:has(.pp-flags) {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+/* A flag (On now, Rain likely) takes its own line under the category,
+   below the save button, so its words stay on one line. */
+.pp-top:has(.pp-flags) .pp-category {
+    margin-right: 100%;
+}
+.pp-flags {
+    display: contents;
+}
+.event-today .pp-flags {
+    display: flex;
+}
+/* The narrowest posters (272px) set long titles a touch smaller, so a
+   four-line title still leaves room for the time and place. */
+@container (max-width: 290px) {
+    .pp .pp-title {
+        font-size: clamp(20px, 12.4cqi, 60px);
+    }
+}
+/* A poster carrying a flag sets its title a little smaller, so its own
+   lines below always fit. */
+.pp:has(.pp-flags) .pp-title {
+    font-size: clamp(20px, 11.5cqi, 48px);
+}
+.pp-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    box-shadow: 0 2px 6px #211d1526;
+}
+.pp-flag--now {
+    background: var(--color-text);
+    color: var(--poster-cream);
+}
+.pp-flag--now > span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--festival-yellow, #ffe363);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pp-flag--now > span {
+        animation: pp-live 1.6s ease-out infinite;
+    }
+}
+@keyframes pp-live {
+    from {
+        box-shadow: 0 0 0 0 #ffe363b3;
+    }
+    to {
+        box-shadow: 0 0 0 8px #ffe36300;
+    }
+}
+.pp-flag--over {
+    background: #211d15cc;
+    color: var(--poster-cream);
+}
+.pp-flag--rain {
+    color: #1d5f99;
+}
+.pp-flag--rain svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    stroke: none;
+}
+/* An event that's over: faded, and no longer plannable. */
+.pp[data-when='over'] .pp-face > .pp-art,
+.pp[data-when='over'] :is(.pp-title, .pp-time, .pp-tape) {
+    filter: saturate(0.35) brightness(0.92);
+}
+.pp[data-when='over'] :is(.pp-plan, .pp-back-plan) {
+    display: none;
+}
+
+/* ---------- The street corner ---------- */
+/* The column stands on cobbles, with an old lantern behind a bench at its
+   left, a bike leaning on it and two pigeons. Drawn flat; it darkens at
+   night, the lantern lights at dusk, and rain falls and leaves puddles. */
+.wall-scene {
+    position: relative;
+}
+.wall-scene #event-featured {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+}
+.wall-scene-art,
+.wall-scene-art * {
+    stroke: none;
+}
+.wall-scene-art {
+    position: absolute;
+    z-index: 3;
+    overflow: visible;
+    pointer-events: none;
+}
+.wall-iron {
+    fill: #24302b;
+}
+.wall-lantern {
+    z-index: 1;
+    left: 0;
+    bottom: 62px;
+    width: 128px;
+    height: 700px;
+}
+.wall-lantern-glass {
+    fill: color-mix(in srgb, #d5dad0, #ffd36b calc(var(--lamp-on, 0) * 100%));
+}
+.wall-scene-glow {
+    position: absolute;
+    z-index: 0;
+    left: -86px;
+    top: 30px;
+    width: 300px;
+    height: 330px;
+    pointer-events: none;
+    background: radial-gradient(
+        circle closest-side at 50% 40%,
+        #ffd36b70,
+        #ffd36b24 45%,
+        transparent
+    );
+    opacity: var(--lamp-on, 0);
+    transition: opacity 400ms var(--ease-settle);
+}
+.wall-bench {
+    left: -22px;
+    bottom: 54px;
+    width: 150px;
+    height: 66px;
+}
+.wall-wood {
+    fill: #8b5d3e;
+}
+.wall-bike {
+    right: -34px;
+    bottom: 46px;
+    width: 160px;
+    height: 100px;
+    rotate: -6deg;
+    transform-origin: 22% 94%;
+}
+.wall-scene .wall-bike .wall-bike-wheels circle,
+.wall-scene .wall-bike .wall-bike-frame,
+.wall-scene .wall-bike .wall-bike-bits {
+    fill: none;
+    stroke: #2c2a35 !important;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.wall-scene .wall-bike .wall-bike-frame {
+    stroke: #4f6f8f !important;
+}
+.wall-bike-basket {
+    fill: #a8794f;
+}
+.wall-pigeons {
+    left: 168px;
+    bottom: 46px;
+    width: 96px;
+    height: 36px;
+}
+.wall-pigeon-body {
+    fill: #8d8f9a;
+}
+.wall-pigeon-head {
+    fill: #6f7180;
+}
+.wall-pigeon-beak {
+    fill: #d9a441;
+}
+.wall-scene .wall-pigeon-legs {
+    stroke: #c0646a !important;
+    stroke-width: 2;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .wall-pigeon.is-pecking .wall-pigeon-body {
+        transform-origin: 16px 28px;
+        animation: wall-peck 5s ease-in-out infinite;
+    }
+}
+@keyframes wall-peck {
+    0%,
+    80%,
+    100% {
+        rotate: 0deg;
+    }
+    86%,
+    92% {
+        rotate: 24deg;
+    }
+}
+/* Bench, bike and birds dim with the street; the lantern doesn't. */
+:is(.wall-bench, .wall-bike, .wall-pigeons) {
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
+}
+/* Cobbles: a shadow where the wall meets them, the stones, a kerb. */
+.wall-scene-ground {
+    position: absolute;
+    z-index: 0;
+    left: -24px;
+    right: -40px;
+    bottom: 34px;
+    height: 96px;
+    background:
+        linear-gradient(#211d154d, transparent) top / 100% 14px no-repeat,
+        linear-gradient(transparent calc(100% - 12px), #d6ccb9 calc(100% - 12px)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Crect width='40' height='20' fill='%23a1978a'/%3E%3Cg fill='%23c3baa8'%3E%3Crect x='1' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='21' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='11' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='-9' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='31' y='11' width='18' height='8' rx='3.5'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 26px 13px repeat-x,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Crect width='40' height='20' fill='%23a1978a'/%3E%3Cg fill='%23c8bfad'%3E%3Crect x='1' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='21' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='11' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='-9' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='31' y='11' width='18' height='8' rx='3.5'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 40px 20px;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.55));
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
+/* The column's shadow, and the lantern's pool of light. */
+.wall-scene-ground::before,
+.wall-scene-ground::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+}
+.wall-scene-ground::before {
+    left: 170px;
+    top: 30px;
+    width: 420px;
+    height: 30px;
+    background: radial-gradient(ellipse, #211d1559, transparent 70%);
+}
+.wall-scene-ground::after {
+    left: 20px;
+    top: 10px;
+    width: 200px;
+    height: 60px;
+    background: radial-gradient(ellipse, #ffd36b8c, transparent 70%);
+    opacity: var(--lamp-on, 0);
+}
+/* Puddles after rain, the one in front catching the column's colour. */
+.wall-puddle {
+    position: absolute;
+    z-index: 1;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, #edf3f8c4, #b9c9d866 55%, transparent 72%);
+    opacity: var(--wet, 0);
+    transition: opacity 600ms var(--ease-settle);
+}
+.wall-puddle:nth-child(1) {
+    left: 236px;
+    top: 66px;
+    width: 190px;
+    height: 24px;
+    background:
+        linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--reflect, #4b2bb8) 55%, transparent) 40% 60%, transparent 70%),
+        radial-gradient(ellipse at 50% 40%, #edf3f8c4, #b9c9d866 55%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse, #000 55%, transparent 72%);
+    mask-image: radial-gradient(ellipse, #000 55%, transparent 72%);
+}
+.wall-puddle:nth-child(2) {
+    left: 470px;
+    top: 72px;
+    width: 110px;
+    height: 16px;
+}
+.wall-puddle:nth-child(3) {
+    left: 150px;
+    top: 74px;
+    width: 96px;
+    height: 15px;
+}
+.wall-scene:has(.wall-column[data-ink='day']) {
+    --reflect: #ffe363;
+}
+.wall-scene:has(.wall-column[data-ink='night']) {
+    --reflect: #1b1840;
+}
+.wall-scene:has(.wall-column[data-ink='paper']) {
+    --reflect: #fff8e6;
+}
+/* Rain over the corner while it falls. */
+.wall-scene-rain {
+    position: absolute;
+    z-index: 4;
+    left: -24px;
+    right: -40px;
+    top: 0;
+    bottom: 34px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: calc(var(--rain, 0) * 0.7);
+}
+.wall-scene-rain svg {
+    width: 100%;
+    height: 100%;
+}
+.wall-scene-rain line {
+    stroke: #dbe6f2;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .wall-board[data-raining] .wall-rain-fall {
+        animation: sky-fall 0.6s linear infinite;
+    }
+}
+/* At night the lamp under the column's dome is on too. */
+.wall-board[data-dark] .wall-column-cap::before {
+    background: var(--festival-yellow, #ffe363);
+    box-shadow: 0 0 18px 6px #ffe36380;
+}
+.wall-board[data-dark] .wall-column-glow {
+    opacity: 1;
+}
+@media (min-width: 1000px) {
+    .wall-board[data-dark] :is(.festival-credit, .wall-column-caption, .wall-day-note) {
+        color: #e9e1d0;
+    }
+}
+/* Wet posters shine. */
+.wall-board[data-wet] .pp-front::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(115deg, transparent 32%, #ffffff36 39%, transparent 46%),
+        repeating-linear-gradient(180deg, transparent 0 15px, #ffffff0f 15px 16px);
+    opacity: var(--wet, 0);
+}
+/* The wall: water streaks, bricks where the plaster fell away, cracks,
+   torn older posters with tape and staples, stickers, paste marks, a
+   drainpipe, an enamel house number, a darker base and a stencil. It
+   dims with the street at night. */
+.wall-decor {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.6));
+    transition: filter 400ms var(--ease-settle);
+}
+.wall-decor > * {
+    position: absolute;
+}
+/* Rain has run down from the ledge for years. */
+.wall-streaks {
+    top: 230px;
+    left: 0;
+    right: 0;
+    height: 260px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260'%3E%3Cg fill='%235a4a30'%3E%3Crect x='18' width='5' height='150' opacity='.07'/%3E%3Crect x='64' width='9' height='210' opacity='.05'/%3E%3Crect x='71' width='3' height='120' opacity='.07'/%3E%3Crect x='140' width='6' height='90' opacity='.06'/%3E%3Crect x='212' width='12' height='240' opacity='.04'/%3E%3Crect x='226' width='4' height='170' opacity='.07'/%3E%3Crect x='300' width='7' height='130' opacity='.05'/%3E%3Crect x='362' width='5' height='200' opacity='.06'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 420px 260px repeat-x;
+    -webkit-mask-image: linear-gradient(#000, transparent);
+    mask-image: linear-gradient(#000, transparent);
+}
+/* Plaster fallen away, showing the bricks behind. */
+.wall-bricks {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='26'%3E%3Crect width='52' height='26' fill='%23c9b9a0'/%3E%3Crect x='1' y='1' width='23' height='11' rx='1.5' fill='%23a65a40'/%3E%3Crect x='27' y='1' width='24' height='11' rx='1.5' fill='%23b4664a'/%3E%3Crect x='-12' y='14' width='24' height='11' rx='1.5' fill='%23b06248'/%3E%3Crect x='14' y='14' width='24' height='11' rx='1.5' fill='%239c533b'/%3E%3Crect x='40' y='14' width='24' height='11' rx='1.5' fill='%23b06248'/%3E%3C/svg%3E") 0 0 / 52px 26px;
+    clip-path: polygon(6% 22%, 18% 6%, 34% 12%, 47% 0, 63% 9%, 80% 4%, 94% 18%, 100% 42%, 92% 60%, 97% 82%, 82% 96%, 64% 88%, 46% 100%, 28% 92%, 12% 97%, 3% 78%, 8% 58%, 0 40%);
+    opacity: 0.85;
+    filter: drop-shadow(0 0 0 #fff);
+}
+.wall-cracks {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+}
+.wall-decor .wall-cracks path {
+    stroke: #5a4a3080 !important;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+/* Torn older posters: white paper at the tears, faded print on top, and
+   a fragment of their big type. */
+.wall-scrap {
+    background: #f4efe4;
+    opacity: 0.8;
+    box-shadow: 0 1px 2px #211d1526;
+}
+.wall-scrap::after {
+    content: attr(data-print);
+    position: absolute;
+    inset: 4px 5px 6px 4px;
+    overflow: hidden;
+    padding: 2px 0 0 6px;
+    background:
+        radial-gradient(circle, #ffffff4d 1.5px, transparent 2px) 0 0 / 9px 9px,
+        var(--scrap);
+    color: #211d1559;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    clip-path: inherit;
+    filter: saturate(0.7);
+}
+.wall-scrap:nth-of-type(3n + 1),
+.wall-scrap:nth-of-type(3n + 1)::after {
+    clip-path: polygon(0 8%, 14% 0, 32% 10%, 55% 0, 78% 12%, 100% 4%, 96% 100%, 70% 88%, 44% 100%, 20% 90%, 0 100%);
+}
+.wall-scrap:nth-of-type(3n + 2),
+.wall-scrap:nth-of-type(3n + 2)::after {
+    clip-path: polygon(6% 0, 100% 0, 92% 30%, 100% 58%, 88% 100%, 0 96%, 8% 62%, 0 30%);
+}
+.wall-scrap:nth-of-type(3n),
+.wall-scrap:nth-of-type(3n)::after {
+    clip-path: polygon(0 0, 64% 0, 72% 14%, 100% 10%, 100% 100%, 30% 100%, 22% 84%, 0 90%);
+}
+/* A strip of yellowed tape and a staple hold what's left. */
+.wall-tape {
+    position: absolute;
+    z-index: 1;
+    top: -2px;
+    left: 18%;
+    width: 46px;
+    height: 14px;
+    background: #efe2b3c9;
+    rotate: -8deg;
+}
+.wall-tape::after {
+    content: '';
+    position: absolute;
+    left: 60px;
+    top: 4px;
+    width: 12px;
+    height: 2px;
+    background: #8b8d92;
+    box-shadow: 0 1px 0 #ffffff80;
+}
+.wall-paste {
+    width: 240px;
+    height: 320px;
+    background: #ffffff1f;
+    clip-path: polygon(2% 0, 98% 2%, 100% 97%, 60% 100%, 0 98%);
+    rotate: 2deg;
+}
+.wall-paste:nth-of-type(even) {
+    rotate: -3deg;
+}
+.wall-sticker--round {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, transparent 9px, #211d1559 9.5px 11px, transparent 11.5px),
+        #f2c94c;
+    opacity: 0.75;
+    rotate: 12deg;
+}
+.wall-sticker--strip {
+    width: 70px;
+    height: 22px;
+    border-radius: 3px;
+    background:
+        linear-gradient(90deg, #c8463a 0 30%, transparent 30%),
+        repeating-linear-gradient(180deg, transparent 0 6px, #211d152e 6px 8px) 34% 0 / 60% 100% no-repeat,
+        #f6f1e7;
+    opacity: 0.7;
+    rotate: -6deg;
+}
+/* A drainpipe down the right-hand edge, with its brackets. */
+.wall-pipe {
+    top: 218px;
+    bottom: 0;
+    right: 10px;
+    width: 20px;
+    background:
+        repeating-linear-gradient(180deg, transparent 0 210px, #5f615c 210px 220px),
+        linear-gradient(90deg, #7f817c, #c9cbc6 38%, #a3a59f 60%, #6f716c);
+    box-shadow: 2px 0 4px #211d1526;
+}
+/* Blue enamel house number, as on Cologne's houses. */
+.wall-number {
+    top: 31%;
+    right: 46px;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 34px;
+    border: 2px solid #f6f1e7;
+    border-radius: 6px;
+    outline: 2px solid #1f4e9c;
+    background: #1f4e9c;
+    color: #f6f1e7;
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px #211d1540;
+}
+/* The darker stone base along the foot of the wall. */
+.wall-sockel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 64px;
+    border-top: 3px solid #211d1517;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.18 0 0 0 0 0.15 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"),
+        #b5aa96;
+}
+.wall-stencil {
+    right: 46px;
+    bottom: 18px;
+    color: #211d15;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0.32;
+    rotate: -1.5deg;
+    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
+    mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
+}
+@media (min-width: 1000px) and (max-width: 1399px) {
+    .wall-board > .wall-scene {
+        width: 520px;
+        padding-left: 96px;
+    }
+    .wall-lantern {
+        left: -26px;
+    }
+    .wall-bench {
+        left: -18px;
+    }
+    .wall-day > .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
+@media (min-width: 1000px) {
+    /* The corner and the posters beside it scale to the screen's height
+       (fitWall in wall.js sets --wall-fit). */
+    .wall-scene,
+    .wall-view--wall .wall-day > .pp {
+        zoom: var(--wall-fit, 1);
+    }
+    /* The caption is text, not art: it keeps its size. */
+    .wall-scene .wall-column-caption {
+        font-size: calc(var(--text-caption) / var(--wall-fit, 1));
+    }
+    /* The sky above shrinks with them, so the picture keeps its
+       proportions. */
+    .wall-board > .wall-sky {
+        height: calc(230px * var(--wall-fit, 1));
+    }
+    .wall-scene {
+        float: left;
+        width: 560px;
+        margin: 0 36px 28px -8px;
+        padding: 34px 0 96px 136px;
+    }
+    /* The caption sits under the pavement. */
+    .wall-scene .wall-column-caption {
+        position: absolute;
+        top: calc(100% + 72px);
+        left: 0;
+        right: 0;
+        margin: 0;
+        text-align: center;
+    }
+}
+
+/* The week's notes, pinned to the wall. */
+.wall-note {
+    position: relative;
+    margin-top: 20px;
+    padding: 20px 18px 16px;
+    background: #fff1a8;
+    color: var(--color-text);
+    transform: rotate(-2deg);
+    box-shadow: 0 8px 18px #211d1524;
+}
+.wall-note-pin {
+    position: absolute;
+    left: 50%;
+    top: -9px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: var(--color-action);
+}
+.wall-note strong {
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: 18px;
+    line-height: 1.25;
+}
+.wall-note p {
+    margin: 8px 0 0;
+    font-size: var(--text-control);
+}
+
+/* Already taken down: the captured past day, faded. */
+.wall-past {
+    margin-top: 32px;
+}
+.wall-past[hidden] {
+    display: none;
+}
+.wall-past-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    margin-bottom: 14px;
+}
+.wall-past-head h2 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.5px;
+}
+.wall-past-head p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+.wall-past-open {
+    margin-left: auto;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.wall-past-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+}
+.wall-past-poster {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+    height: 190px;
+    padding: 12px;
+    overflow: hidden;
+    color: var(--pp-text, var(--color-text));
+    filter: sepia(0.4) saturate(0.45) contrast(0.9) brightness(1.04);
+}
+.wall-past-poster:nth-child(3n + 1) {
+    clip-path: polygon(0 0, 100% 0, 100% 88%, 93% 93%, 86% 88%, 78% 100%, 0 100%);
+}
+.wall-past-poster:nth-child(3n + 2) {
+    clip-path: polygon(0 5%, 7% 0, 100% 0, 100% 100%, 0 100%);
+}
+.wall-past-poster:nth-child(3n) {
+    clip-path: polygon(0 0, 80% 0, 87% 5%, 100% 3%, 100% 100%, 0 100%);
+}
+.wall-past-poster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        linear-gradient(103deg, transparent 46%, #ffffff40 47.5%, transparent 49%),
+        radial-gradient(circle at 25% 75%, #7a5a2a33, transparent 40%);
+}
+.wall-past-poster > .pp-art {
+    z-index: 0;
+}
+.wall-past-stamp,
+.wall-past-title {
+    position: relative;
+    z-index: 1;
+}
+.wall-past-stamp {
+    align-self: flex-start;
+    padding: 2px 6px;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    font-size: var(--text-micro);
+    font-weight: var(--weight-bold);
+    transform: rotate(-4deg);
+}
+.wall-past-title {
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 0.98;
+    text-transform: uppercase;
+}
+
+/* ---------- Posters ---------- */
+.pp {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+    position: relative;
+    flex: none;
+    container-type: inline-size;
+    background: var(--pp-ground);
+    color: var(--pp-text);
+    box-shadow: 0 14px 30px #211d1530;
+}
+.pp--day {
+    --pp-ground: var(--festival-yellow, #ffe363);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+}
+.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-text: var(--festival-yellow, #ffe363);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-text: var(--poster-cream);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp--paper {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text-soft);
+    --pp-shape: var(--poster-purple);
+}
+.pp--size-wall {
+    width: 300px;
+    height: 420px;
+}
+.pp--size-column {
+    width: 364px;
+    height: 560px;
+    box-shadow: none;
+}
+.pp-face {
+    position: absolute;
+    inset: 0;
+}
+.pp-face[hidden] {
+    display: none;
+}
+
+/* The art: the category's shape in the hour's ink. Also used alone as a
+   picture (a card's photo slot, the event sheet's cover). */
+.pp-art {
+    --pp-ground: var(--poster-paper);
+    --pp-shape: var(--poster-purple);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: var(--pp-ground);
+}
+.pp-art.pp--day {
+    --pp-ground: var(--festival-yellow, #ffe363);
+    --pp-shape: var(--poster-purple);
+}
+.pp-art.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp-art.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp-art::before,
+.pp-art::after,
+.pp-art > span {
+    content: '';
+    position: absolute;
+    box-sizing: border-box;
+}
+.pp-art.pp--rings::before {
+    right: -24%;
+    top: 12%;
+    width: 82%;
+    aspect-ratio: 1;
+    border: max(12px, 6cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.pp-art.pp--rings::after {
+    right: -10%;
+    top: 24%;
+    width: 54%;
+    aspect-ratio: 1;
+    border: max(9px, 4.5cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.42;
+}
+.pp-art.pp--rings > span,
+.pp-art.pp--dots > span {
+    left: 0;
+    bottom: 0;
+    width: 62%;
+    height: 32%;
+    background-image: radial-gradient(
+        circle,
+        var(--pp-shape) 2.2px,
+        transparent 2.6px
+    );
+    background-size: 13px 13px;
+    opacity: 0.32;
+}
+/* At night the rings become a moon among stars. */
+.pp-art.pp--night > span {
+    inset: 0;
+    width: auto;
+    height: auto;
+    background-image:
+        radial-gradient(circle, #fff6d8bf 1.1px, transparent 1.6px),
+        radial-gradient(circle, #ffe36399 1.6px, transparent 2.1px);
+    background-size:
+        37px 41px,
+        83px 71px;
+    background-position:
+        0 0,
+        19px 23px;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::before {
+    right: 9%;
+    top: 16%;
+    width: 32%;
+    border: 0;
+    background: var(--poster-cream);
+    box-shadow:
+        0 0 0 12px #ffe3634d,
+        0 0 0 26px #ffe3631f;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::after {
+    display: none;
+}
+.pp-art.pp--checks::before {
+    inset: 0 0 auto;
+    height: 17%;
+    background: repeating-conic-gradient(
+            var(--pp-shape) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--checks.pp--day::before,
+.pp-art.pp--checks.pp--paper::before {
+    background: repeating-conic-gradient(
+            var(--color-text) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--waves::before {
+    inset: 0 0 auto;
+    height: 22%;
+    background: repeating-radial-gradient(
+        circle at 50% 120%,
+        var(--poster-green) 0 7px,
+        transparent 7px 14px
+    );
+}
+.pp-art.pp--bubbles::before {
+    right: 8%;
+    top: 12%;
+    width: 34%;
+    height: 22%;
+    border: max(5px, 2.4cqi) solid var(--pp-shape);
+    border-radius: 999px 999px 999px 10px;
+}
+.pp-art.pp--bubbles::after {
+    right: 34%;
+    top: 26%;
+    width: 26%;
+    height: 17%;
+    border-radius: 999px 999px 10px 999px;
+    background: var(--pp-shape);
+    opacity: 0.55;
+}
+.pp-art.pp--dots > span {
+    width: 100%;
+    height: 40%;
+}
+/* Small or wide uses: keep the shapes, drop the detail. */
+.pp-art--slot::before,
+.pp-art--cover::before {
+    right: 4%;
+}
+
+.pp-open {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px 18px 18px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.pp-open:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+}
+.pp-top {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 44px;
+}
+.pp-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    background: #ffffff29;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    backdrop-filter: blur(8px);
+}
+.pp--day .pp-category {
+    background: #211d1514;
+}
+/* Paper posters print their pattern at the top, so the label gets paper. */
+.pp--paper .pp-category {
+    background: var(--poster-paper);
+    box-shadow: 0 0 0 1px #211d1524;
+    backdrop-filter: none;
+}
+.pp-category svg {
+    width: 15px;
+    height: 15px;
+}
+.pp-tape {
+    display: inline-block;
+    margin-top: auto;
+    padding: 3px 12px 1px;
+    background: var(--festival-yellow, #ffe363);
+    color: var(--color-text);
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-size: 17px;
+    line-height: 1.3;
+    transform: rotate(-3deg);
+}
+.pp--day .pp-tape {
+    background: var(--color-text);
+    color: var(--festival-yellow, #ffe363);
+}
+.pp-title {
+    margin-top: 14px;
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(22px, 13.5cqi, 60px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+/* Only very long words break, and only where both parts stay readable:
+   "Feierabend-rundgang", never "Fei-erabendrundgang" or "Klima-wandel". */
+.pp-title,
+.wall-past-title {
+    hyphens: auto;
+    hyphenate-limit-chars: 13 6 6;
+    -webkit-hyphenate-limit-before: 6;
+    -webkit-hyphenate-limit-after: 6;
+}
+.pp-translation {
+    margin-top: 6px;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    opacity: 0.9;
+}
+.pp-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+    padding-right: 66px;
+    box-sizing: border-box;
+}
+.pp-time {
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(32px, 17cqi, 64px);
+    line-height: 0.9;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--pp-text);
+}
+.pp--paper .pp-time {
+    font-family: var(--font-sans);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--pp-soft);
+    -webkit-text-stroke: 0;
+}
+.pp-meta,
+.pp-price {
+    color: var(--pp-soft);
+    font-size: var(--text-control);
+}
+.pp-meta {
+    font-weight: var(--weight-medium);
+}
+.pp-save,
+.pp-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.pp-save {
+    top: 16px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff59;
+    background: #ffffff2e;
+    color: var(--pp-soft);
+    backdrop-filter: blur(10px);
+}
+.pp--day .pp-save,
+.pp--paper .pp-save {
+    border-color: #211d1526;
+    background: #ffffff59;
+}
+.pp-save svg,
+.pp-back-save svg {
+    width: 19px;
+    height: 19px;
+}
+.pp-save[aria-pressed='true'],
+.pp-back-save[aria-pressed='true'] {
+    border-color: transparent;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.pp-save[aria-pressed='true'] svg,
+.pp-back-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.pp-plan {
+    right: 16px;
+    bottom: 16px;
+    width: 54px;
+    height: 54px;
+    border: 0;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    box-shadow: 0 6px 16px #c23b0e66;
+}
+.pp-plan:hover {
+    background: var(--color-action-hover);
+}
+.pp-plan svg,
+.pp-back-plan svg {
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.pp-save:active,
+.pp-plan:active,
+.pp-open:active {
+    transform: scale(0.97);
+}
+
+/* Past listings: weathered paper, no Save or Plan. Each wears in its own
+   way (torn edge, nicked side or peeling corner, from data-wear), faded by
+   sun and rain, creased and stained. Still readable. */
+.pp.is-past {
+    filter: sepia(0.35) saturate(0.55) contrast(0.92) brightness(1.03);
+    box-shadow: none;
+}
+.pp.is-past[data-wear='0'] {
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        100% 84%,
+        96% 88%,
+        92% 85%,
+        87% 92%,
+        82% 88%,
+        77% 95%,
+        71% 91%,
+        66% 100%,
+        0 100%
+    );
+}
+.pp.is-past[data-wear='1'] {
+    clip-path: polygon(
+        0 4%,
+        5% 0,
+        100% 0,
+        100% 100%,
+        3% 100%,
+        0 96%,
+        0 44%,
+        3% 41%,
+        1% 38%,
+        3% 35%,
+        0 32%
+    );
+}
+.pp.is-past[data-wear='2'] {
+    clip-path: polygon(
+        0 0,
+        74% 0,
+        79% 3%,
+        83% 1%,
+        88% 6%,
+        93% 4%,
+        100% 10%,
+        100% 100%,
+        0 100%
+    );
+}
+/* Creases and a water stain over the print. */
+.pp.is-past::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(103deg, transparent 46%, #ffffff3d 47.5%, transparent 49%),
+        linear-gradient(9deg, transparent 61%, #0000002b 62.5%, transparent 64%),
+        radial-gradient(circle at 22% 78%, #7a5a2a33, transparent 34%),
+        radial-gradient(circle at 80% 18%, #ffffff1f, transparent 30%);
+}
+/* A peeling corner shows the wall behind the paper. */
+.pp.is-past[data-wear='1']::after {
+    content: '';
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: 0;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(315deg, var(--color-bg-hover) 50%, #e9dcbf 50%);
+    box-shadow: -3px -3px 6px #211d1522;
+    pointer-events: none;
+}
+/* No Plan button on a past or later listing, so the facts take the width. */
+.pp:is(.is-past, .is-listing) .pp-bottom {
+    padding-right: 0;
+}
+.pp.is-past .pp-tape {
+    background: transparent;
+    color: inherit;
+    border: 2px solid currentColor;
+}
+
+/* The back: the listing's facts and the actions. */
+.pp-back {
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    background: var(--poster-paper);
+    color: var(--color-text);
+    box-shadow: inset 0 0 0 1px #211d1514;
+}
+.pp-back-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 14px;
+    background: var(--pp-ground);
+    color: var(--pp-soft);
+}
+.pp-back-head .pp-tape {
+    margin: 0;
+    font-size: 14px;
+}
+.pp-back-note {
+    flex: 1;
+    font-size: var(--text-small);
+}
+.pp-turn-back {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffff29;
+    color: inherit;
+}
+.pp--day .pp-turn-back,
+.pp--paper .pp-turn-back {
+    background: #211d1514;
+}
+.pp-turn-back svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.pp-back-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px 8px;
+    font-size: var(--text-small);
+}
+.pp-back-title {
+    font-size: var(--text-section);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+}
+.pp-back-body .pp-translation {
+    margin: 0;
+    color: var(--color-text-soft);
+}
+.pp-back-body p {
+    margin: 0;
+}
+.pp-back-when {
+    margin-top: 4px !important;
+}
+.pp-back-where,
+.pp-back-past {
+    color: var(--color-text-soft);
+}
+.pp-facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 12px;
+    margin: 8px 0 0;
+}
+.pp-facts > div {
+    display: contents;
+}
+.pp-facts dt {
+    color: var(--color-text-soft);
+}
+.pp-facts dd {
+    margin: 0;
+}
+.pp-facts dd.is-unknown {
+    color: var(--color-text-muted);
+    opacity: 0.85;
+}
+.pp-fit {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px !important;
+}
+.pp-fit > span {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: var(--color-select-text);
+}
+.pp-back-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px 12px;
+}
+.pp-back-plan,
+.pp-back-save,
+.pp-back-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+    cursor: pointer;
+}
+.pp-back-plan {
+    flex: 1;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.pp-back-save {
+    width: 44px;
+    padding: 0;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.pp-back-more {
+    padding: 0 12px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.pp.is-listing .pp-back-more,
+.pp.is-past .pp-back-more {
+    flex: 1;
+}
+.pp-back-more svg {
+    width: 16px;
+    height: 16px;
+}
+.pp-back-actions > * {
+    white-space: nowrap;
+}
+/* A narrow poster (the wall's are 272–300px) keeps one row: Add to plan
+   and Save as icons, as on the poster's front, and More about it in words.
+   Each icon keeps its name for screen readers and as a tooltip. The head
+   keeps its date and the way back. */
+@container (max-width: 330px) {
+    .pp-back-note {
+        display: none;
+    }
+    .pp-back-head .pp-tape {
+        margin-right: auto;
+    }
+    .pp-back-plan {
+        flex: none;
+        width: 48px;
+        padding: 0;
+    }
+    .pp-back-plan span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .pp-back-save {
+        width: 48px;
+    }
+    .pp-back-actions .pp-back-more {
+        flex: 1;
+    }
+}
+
+/* The sheet's cover: the poster's art sits behind the category, date and
+   time, never over them. */
+.event-ticket > .pp-art--cover,
+.event-ticket > .event-ticket-shade {
+    z-index: 0;
+}
+.event-ticket > div {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- "More about it" on the Events page ----------
+   The shared sheet in the Wall's colours: cream paper and dark text, cyan
+   for the selected tab and other selections, orange only for Add to plan.
+   The cover is the poster's art with its date tape and big time. */
+body[data-page='events'] .detail-dialog:has(.event-sheet) {
+    --event-canvas: var(--color-bg-canvas);
+    --event-violet: var(--color-select-text);
+    --event-lilac: var(--color-select-bg);
+    --muted: var(--color-text-soft);
+    --event-control-rail: var(--color-bg-quiet);
+}
+body[data-page='events'] .event-sheet .event-fact-icon {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+body[data-page='events'] .event-sheet .event-venue {
+    background: var(--color-bg-surface);
+}
+body[data-page='events'] .event-sheet .event-venue > svg:last-child {
+    color: var(--color-text-soft);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs svg {
+    color: var(--color-text-soft);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='true'] {
+    background: var(--color-bg-surface);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='true'] svg {
+    color: var(--color-select-text);
+}
+.event-sheet .event-ticket.is-wall {
+    height: 156px;
+    min-height: 156px;
+    flex-basis: 156px;
+    align-items: flex-end;
+}
+.event-ticket.is-wall .pp-tape {
+    margin-top: 8px;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.event-ticket.is-wall .event-ticket-time strong {
+    color: transparent;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: clamp(36px, 10vw, 48px);
+    font-weight: 800;
+    line-height: 0.95;
+    -webkit-text-stroke: 1.6px #fff8e6;
+}
+@media (max-height: 700px) {
+    .event-sheet .event-ticket.is-wall {
+        height: 120px;
+        min-height: 120px;
+        flex-basis: 120px;
+    }
+}
+/* Today's state, the rain warning and the fit with your day, first. */
+.event-today {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+.event-today .pp-flags {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0;
+}
+.event-today .pp-flag {
+    box-shadow: none;
+    border: 1px solid var(--color-border);
+}
+.event-today .pp-flag--now,
+.event-today .pp-flag--over {
+    border-color: transparent;
+}
+.event-today .pp-fit {
+    margin: 0 !important;
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+/* What the listing doesn't say, on one line. */
+.event-sheet .event-unlisted {
+    margin: 12px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.event-sheet .event-unlisted strong {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+
+/* A listing without a time doesn't print one. */
+.pp.is-listing .pp-time {
+    display: none;
+}
+
+/* ---------- Phone tilt ---------- */
+.wall-tilt {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+/* Beside the events count, at the row's end. */
+/* On the pavement's left, level with the column's caption. */
+.wall-scene > .wall-tilt {
+    position: absolute;
+    z-index: 3;
+    left: 16px;
+    bottom: -12px;
+}
+@media (min-width: 1000px) {
+    .wall-scene > .wall-tilt {
+        left: 0;
+        bottom: auto;
+        top: calc(100% + 60px);
+    }
+}
+.wall-tilt[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.wall-tilt svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+    html.wall-tilting .wall-day > .pp {
+        transform: perspective(900px)
+            rotateY(calc(var(--phone-x, 0) * 7deg))
+            rotateX(calc(var(--phone-y, 0) * -7deg));
+        transition: transform 120ms linear;
+    }
+    html.wall-tilting .wall-day > .pp .pp-front::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at calc(50% + var(--phone-x, 0) * 45%)
+                calc(40% + var(--phone-y, 0) * 45%),
+            #ffffff26,
+            transparent 50%
+        );
+    }
+    html.wall-tilting .wall-column {
+        transform: perspective(1400px)
+            rotateY(calc(var(--phone-x, 0) * 6deg))
+            rotateX(calc(var(--phone-y, 0) * -3deg));
+        transition: transform 120ms linear;
+    }
+    /* The skyline in depth: stars and the far city drift against the tilt,
+       the near city and its lights move with it. */
+    html.wall-tilting .sky-art .sky-stars {
+        transform: translateX(calc(var(--phone-x, 0) * -8px));
+    }
+    html.wall-tilting .sky-art :is(.sky-far, .sky-heavens) {
+        transform: translateX(calc(var(--phone-x, 0) * -18px));
+    }
+    html.wall-tilting
+        .sky-art
+        :is(.sky-near, .sky-windows, .sky-bridge, .sky-bridge-deck) {
+        transform: translateX(calc(var(--phone-x, 0) * 14px));
+    }
+    html.wall-tilting :is(.sky-light, .sky-you) {
+        margin-left: calc(var(--phone-x, 0) * 9px);
+    }
+}
+
+/* ---------- Your choices on the posters ---------- */
+/* Saved: a push pin. */
+.pp:has(.pp-save[aria-pressed='true'])::before {
+    content: '';
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: -8px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: #d23a26;
+    box-shadow:
+        0 3px 0 #211d1540,
+        inset -3px -3px 0 #0000002e;
+}
+.wall-column .pp:has(.pp-save[aria-pressed='true'])::before {
+    top: 10px;
+}
+/* In your plan: a rubber stamp. */
+.pp[data-stamp]::after {
+    content: attr(data-stamp);
+    position: absolute;
+    z-index: 3;
+    right: 14px;
+    top: 70px;
+    padding: 5px 9px;
+    border: 3px solid currentColor;
+    border-radius: 6px;
+    color: var(--pp-stamp, #7fe3f0);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    rotate: -8deg;
+    pointer-events: none;
+}
+.pp:is(.pp--day, .pp--paper)[data-stamp]::after {
+    --pp-stamp: var(--color-select-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pp:has(.pp-save[aria-pressed='true'])::before {
+        animation: pp-pin 320ms var(--ease-settle);
+    }
+    .pp[data-stamp]::after {
+        animation: pp-stamp 260ms cubic-bezier(0.2, 1.4, 0.4, 1);
+    }
+}
+@keyframes pp-pin {
+    from {
+        scale: 0;
+        translate: 0 -12px;
+    }
+    60% {
+        scale: 1.15;
+    }
+    to {
+        scale: 1;
+        translate: 0 0;
+    }
+}
+@keyframes pp-stamp {
+    from {
+        opacity: 0;
+        scale: 1.6;
+    }
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+/* ---------- Skyline: the day lit above the city ---------- */
+.sky {
+    --sky-1: #24175e;
+    --sky-2: #33208a;
+    --sky-3: #4b2bb8;
+    --sky-4: #7e36ae;
+    --sky-5: #d9785e;
+    --sky-far: #3b2a7a;
+    --sky-near: #140f36;
+    --sky-river: #1a2257;
+    --sky-cloud: #3a3560;
+    --sky-mist-c: #6e6c90;
+    --sky-window: 0.75;
+    --sky-stars: 1;
+    --sky-cover: 0;
+    --sky-rain: 0;
+    --sky-mist: 0;
+    --sun-x: 0;
+    --sun-y: 600;
+    --sun-o: 0;
+    --sun-c: #ffe363;
+    --moon-x: 0;
+    --moon-y: 600;
+    --moon-o: 0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--sky-1);
+    color: var(--poster-cream);
+}
+.sky-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: none;
+}
+/* Shared icon styles stroke every svg; the drawing has no outlines. */
+.sky-art,
+.sky-art * {
+    stroke: none;
+}
+.sky-art .sky-1 {
+    fill: var(--sky-1);
+}
+.sky-art .sky-2 {
+    fill: var(--sky-2);
+}
+.sky-art .sky-3 {
+    fill: var(--sky-3);
+}
+.sky-art .sky-4 {
+    fill: var(--sky-4);
+}
+.sky-art .sky-5 {
+    fill: var(--sky-5);
+}
+.sky-art .sky-far {
+    fill: var(--sky-far);
+}
+.sky-art .sky-near,
+.sky-art .sky-bridge-deck {
+    fill: var(--sky-near);
+}
+.sky-art .sky-bridge {
+    fill: none;
+    stroke: var(--sky-near) !important;
+    stroke-width: 10;
+}
+.sky-art .sky-river {
+    fill: var(--sky-river);
+}
+.sky-art .sky-windows {
+    fill: #f2c86b;
+    opacity: var(--sky-window);
+}
+.sky-art .sky-stars {
+    fill: var(--poster-cream);
+    opacity: var(--sky-stars);
+}
+/* The sun and moon stand where the hour puts them (the page works it out
+   and tweens it); clouds come in as the cover grows, rain and mist as the
+   forecast says. */
+.sky-art .sky-sun {
+    transform: translate(calc(var(--sun-x) * 1px), calc(var(--sun-y) * 1px));
+    opacity: var(--sun-o);
+}
+.sky-art :is(.sky-sun-disc, .sky-sun-halo) {
+    fill: var(--sun-c);
+}
+.sky-art .sky-sun-halo {
+    opacity: 0.16;
+}
+.sky-art .sky-moon {
+    transform: translate(calc(var(--moon-x) * 1px), calc(var(--moon-y) * 1px));
+    opacity: var(--moon-o);
+}
+.sky-art :is(.sky-moon-lit, .sky-moon-dark, .sky-moon-halo) {
+    fill: var(--poster-cream);
+}
+.sky-art .sky-moon-dark {
+    opacity: 0.14;
+}
+.sky-art .sky-moon-halo {
+    opacity: 0.08;
+}
+.sky-art .sky-cloud {
+    fill: var(--sky-cloud);
+    opacity: clamp(0, calc((var(--sky-cover) - var(--n) * 0.12) * 3), 0.92);
+}
+.sky-art .sky-rain {
+    opacity: calc(var(--sky-rain) * 0.55);
+}
+.sky-art .sky-rain line {
+    stroke: #dbe6f2 !important;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+.sky-art .sky-mist {
+    opacity: var(--sky-mist);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .sky-art .sky-cloud {
+        animation: sky-drift calc(30s + var(--n) * 5s) ease-in-out infinite alternate;
+        animation-delay: calc(var(--n) * -6s);
+    }
+    .sky[data-rain] .sky-rain-fall {
+        animation: sky-fall 0.55s linear infinite;
+    }
+    .sky-light {
+        transition: opacity 180ms var(--ease-settle);
+    }
+    .sky-light :is(.sky-light-dot, .sky-light-label) {
+        transition:
+            background-color 180ms var(--ease-settle),
+            color 180ms var(--ease-settle);
+    }
+}
+@keyframes sky-drift {
+    from {
+        transform: translateX(-70px);
+    }
+    to {
+        transform: translateX(70px);
+    }
+}
+@keyframes sky-fall {
+    to {
+        transform: translateY(64px);
+    }
+}
+.sky-head {
+    position: absolute;
+    z-index: 3;
+    left: 28px;
+    right: 24px;
+    top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: none;
+}
+.sky-head > * {
+    pointer-events: auto;
+}
+.sky-head h2 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: -1.2px;
+}
+.sky[data-light] .sky-head,
+.sky[data-light] .sky-note {
+    color: var(--color-text);
+}
+.sky-head p {
+    margin: 6px 0 0;
+    font-size: var(--text-body);
+    opacity: 0.9;
+}
+/* What the sky is showing: the hour, its weather and where that's from.
+   It reads the sky; it isn't a control. */
+.sky-weather {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    column-gap: 10px;
+    margin: 0;
+    padding: 8px 16px 8px 12px;
+    border-radius: 16px;
+    background: #ffffff24;
+    font-size: var(--text-small);
+    line-height: 1.3;
+    backdrop-filter: blur(10px);
+}
+.sky[data-light] .sky-weather {
+    background: #ffffff99;
+}
+.sky-weather-icon {
+    grid-row: span 2;
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.sky-weather-now {
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+}
+.sky-weather-now strong {
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.sky-weather small {
+    color: inherit;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    opacity: 0.85;
+}
+.sky-scroll {
+    position: relative;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+.sky-scroll::-webkit-scrollbar {
+    display: none;
+}
+.sky-scroll[data-panning] {
+    cursor: grabbing;
+}
+@media (hover: hover) and (pointer: fine) {
+    .sky-scroll {
+        cursor: grab;
+    }
+}
+/* Soft edges while there's more city beyond. */
+.sky-fade {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-settle);
+}
+.sky-fade--start {
+    left: 0;
+    background: linear-gradient(90deg, var(--sky-1), transparent);
+}
+.sky-fade--end {
+    right: 0;
+    background: linear-gradient(270deg, var(--sky-1), transparent);
+}
+.sky-stage[data-start='true'] .sky-fade--start,
+.sky-stage[data-end='true'] .sky-fade--end {
+    opacity: 0;
+}
+.sky-scroll:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+}
+.sky-inner {
+    position: relative;
+    /* Tall, but at most 60% of the stage's width on a narrow screen, and
+       never narrower than the stage (450 / 1376 of its width). */
+    height: max(min(clamp(380px, 62vh, 620px), 60cqw), 32.7cqw);
+    aspect-ratio: 1376 / 450;
+}
+.sky-light {
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--poster-cream);
+    /* `translate`, not `transform`: buttons share a pressed nudge. */
+    translate: -50% -100%;
+    cursor: pointer;
+}
+.sky-light.is-end {
+    align-items: flex-end;
+    translate: calc(-100% + 17px) -100%;
+}
+.sky-light.is-start {
+    align-items: flex-start;
+    translate: -17px -100%;
+}
+/* Labels are solid paper with dark text, so they read on any sky, and a
+   small tail points at their light. */
+.sky-light-label {
+    position: relative;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 11px;
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    box-shadow:
+        0 4px 14px #0f0b2e4d,
+        0 0 0 1px #211d151f;
+}
+/* A name that's fully shown can be tapped too; one that only opens on
+   hover never covers a neighbouring light. */
+.sky-light-label {
+    pointer-events: auto;
+}
+.sky-light:is(.is-quiet, .is-short) .sky-light-label {
+    pointer-events: none;
+}
+.sky-light-dot::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+}
+.sky-light-label::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    border-radius: 2px;
+    background: inherit;
+    rotate: 45deg;
+}
+.sky-light.is-start .sky-light-label::after {
+    left: 17px;
+}
+.sky-light.is-end .sky-light-label::after {
+    left: auto;
+    right: 12.5px;
+}
+.sky-when {
+    font-variant-numeric: tabular-nums;
+}
+.sky-light:focus-visible {
+    outline: none;
+}
+.sky-light-dot {
+    position: relative;
+    pointer-events: auto;
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--color-bg-surface);
+    border-radius: 50%;
+    background: var(--festival-yellow, #ffe363);
+    box-shadow:
+        0 0 0 9px #ffe36347,
+        0 0 40px 18px #ffe3636b;
+}
+/* A day that has already happened: its lights are out. */
+.sky.is-past .sky-art {
+    filter: saturate(0.45);
+}
+.sky.is-past .sky-art .sky-windows {
+    opacity: 0.15;
+}
+.sky-light.is-far .sky-light-dot {
+    width: 22px;
+    height: 22px;
+}
+.sky-light.is-out .sky-light-dot {
+    width: 18px;
+    height: 18px;
+    border: 3px solid var(--color-bg-surface);
+    background: var(--color-border-strong);
+    box-shadow: 0 0 0 1px #211d1540;
+}
+.sky-light.is-out .sky-light-label {
+    background: var(--color-bg-quiet);
+    color: #4a4438;
+    font-weight: var(--weight-medium);
+}
+/* Labels that would overlap shorten to the time, or hide. */
+.sky-light.is-short :is(.sky-what, .sky-wet) {
+    display: none;
+}
+/* On now: the light pulses gently (a still ring with reduced motion). */
+.sky-light.is-now .sky-light-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 3px solid #ffe363;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .sky-light.is-now .sky-light-dot::after {
+        animation: sky-now 1.8s ease-out infinite;
+    }
+}
+@keyframes sky-now {
+    from {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    to {
+        transform: scale(2.3);
+        opacity: 0;
+    }
+}
+/* Rain likely at an outdoor event's hour: a drop on its light and a
+   second line on its label. */
+.sky-light-label {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: max-content;
+}
+.sky-line {
+    white-space: nowrap;
+}
+.sky-wet {
+    padding-bottom: 5px;
+    color: #1d5f99;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    line-height: 1.2;
+}
+.sky-light-drop {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--color-bg-surface);
+    border-radius: 50% 0 50% 50%;
+    background: #3d9ad9;
+    rotate: -45deg;
+}
+.sky-light.is-quiet .sky-light-label {
+    display: none;
+}
+/* Pointing at a light focuses it: its full name, a cyan ring, and the
+   other lights step back. */
+.sky-light:is(:hover, :focus-visible, .is-picked) {
+    z-index: 5;
+}
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-light-label {
+    display: inline-flex !important;
+    box-shadow:
+        0 8px 22px #0f0b2e59,
+        0 0 0 2px var(--color-select-text);
+}
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-what {
+    display: inline !important;
+}
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-wet {
+    display: block !important;
+}
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-light-dot {
+    scale: 1.15;
+    outline: 3px solid var(--color-select-bg);
+    outline-offset: 3px;
+}
+.sky-inner:has(.sky-light:is(:hover, :focus-visible, .is-picked))
+    .sky-light:not(:hover):not(:focus-visible):not(.is-picked) {
+    opacity: 0.35;
+}
+/* From tablets up, the title sits above the drawing, so the Dom's spires
+   never meet it. */
+@media (min-width: 701px) {
+    main[data-view='skyline'] .sky-head {
+        position: static;
+        padding: 20px 20px 4px 24px;
+    }
+    main[data-view='skyline'] .sky-head h2 {
+        font-size: var(--text-display-sm);
+    }
+}
+.sky-you {
+    position: absolute;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: #ffffff24;
+    color: var(--poster-cream);
+    font-size: var(--text-caption);
+    white-space: nowrap;
+    transform: translateX(-100%);
+    backdrop-filter: blur(8px);
+}
+.sky-you > span {
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--poster-cream);
+    background: var(--color-paper-bg);
+    transform: rotate(45deg);
+}
+/* The drawing pans inside its stage; the note sits on the river. */
+.sky-stage {
+    position: relative;
+    container-type: inline-size;
+}
+.sky-note {
+    position: absolute;
+    z-index: 2;
+    left: 18px;
+    bottom: 10px;
+    margin: 0;
+    pointer-events: none;
+    font-size: var(--text-caption);
+    opacity: 0.85;
+}
+.sky-cards {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 22px;
+}
+.sky-cards .festival-card {
+    aspect-ratio: auto;
+    height: 380px;
+}
+.festival-card .pp-art--slot {
+    position: absolute;
+    inset: 0;
+}
+.sky-poster-label {
+    position: absolute;
+    z-index: 2;
+    left: 16px;
+    top: 58px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: #1b184099;
+    color: var(--poster-cream);
+    font-size: var(--text-caption);
+    backdrop-filter: blur(6px);
+}
+
+/* The event sheet's cover when it shows the poster's art. */
+.event-ticket .pp-art--cover {
+    z-index: 0;
+}
+
+/* ---------- Tablets and phones ---------- */
+@media (max-width: 999px) {
+    .event-gallery {
+        display: flex;
+        flex-direction: column;
+    }
+    .wall-board,
+    main[data-view='skyline'] .wall-board {
+        display: contents;
+    }
+    .wall-decor,
+    .wall-board > .wall-sky,
+    .wall-scene :is(.wall-lantern, .wall-bench, .wall-bike, .wall-pigeons, .wall-scene-glow) {
+        display: none;
+    }
+    /* The street runs to the screen's edges. The column stands on the
+       wall's plaster with cobbles at its foot, and its caption sits on the
+       page under them, so it reads at every hour. */
+    .wall-board {
+        --street-bleed: 32px;
+        --street-ground: 30px;
+        --street-plaster:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.27 0 0 0 0 0.2 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+            linear-gradient(
+                color-mix(in srgb, var(--wall-day), var(--wall-night) calc(var(--street-dark, 0) * 88%)) 0 0
+            );
+    }
+    /* The wall starts above the column's finial. */
+    .wall-scene {
+        order: -1;
+        align-self: stretch;
+        margin: 4px calc(var(--street-bleed) * -1) 18px;
+        padding: 44px var(--street-bleed) 0;
+    }
+    .wall-scene::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: 0 0 26px;
+        background: var(--street-plaster);
+    }
+    .wall-scene-ground {
+        left: 0;
+        right: 0;
+        bottom: 26px;
+        height: var(--street-ground);
+    }
+    .wall-scene .wall-column-caption {
+        min-height: 20px;
+        margin-top: calc(var(--street-ground) + 6px);
+        line-height: 20px;
+    }
+    .wall-scene-ground::before {
+        left: 15%;
+        top: 2px;
+        width: 70%;
+        height: 18px;
+    }
+    .wall-puddle:nth-child(1) {
+        left: 30%;
+        top: 8px;
+        width: 40%;
+        height: 16px;
+    }
+    .wall-puddle:nth-child(2) {
+        left: 76%;
+        top: 14px;
+        width: 18%;
+        height: 10px;
+    }
+    .wall-puddle:nth-child(3) {
+        left: 6%;
+        top: 14px;
+        width: 16%;
+        height: 10px;
+    }
+    .wall-scene-rain {
+        left: 0;
+        right: 0;
+        bottom: 26px;
+    }
+    .wall-column {
+        --column-h: 440px;
+    }
+    .wall-board #event-list {
+        margin-top: 4px;
+    }
+    .wall-next {
+        order: 1;
+        max-width: none;
+        margin-top: 26px;
+    }
+    .wall-day {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 16px;
+        margin: 0 -16px;
+        padding: 10px 16px 18px;
+        scrollbar-width: none;
+    }
+    .wall-day::-webkit-scrollbar {
+        display: none;
+    }
+    .wall-day > .pp {
+        scroll-snap-align: start;
+        scroll-margin-left: 16px;
+    }
+}
+@media (max-width: 700px) {
+    .wall-heading {
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .wall-heading-text p {
+        display: none;
+    }
+    .wall-heading-tools {
+        gap: 8px;
+    }
+    .wall-scene #event-featured,
+    .wall-column {
+        width: 100%;
+        align-self: stretch;
+    }
+    /* On a phone the column stands slim on its corner, about 60% of the
+       screen as on a tablet: finial, dome, arches and a stone plinth, with
+       the wall showing on both sides. */
+    .wall-column {
+        --column-w: clamp(216px, calc(100vw - 150px), 260px);
+        --column-h: 310px;
+        --strip: 16px;
+    }
+    .wall-column-cap {
+        width: calc(var(--column-w) + 32px);
+        height: 40px;
+    }
+    .wall-column-cap > span {
+        top: -20px;
+        width: 12px;
+        height: 24px;
+        margin-left: -6px;
+    }
+    .wall-column-cap > span::before {
+        top: -9px;
+        width: 14px;
+        height: 14px;
+        margin-left: -7px;
+    }
+    .wall-column-frieze {
+        width: calc(var(--column-w) + 16px);
+        height: 18px;
+        border-width: 2px;
+        background:
+            radial-gradient(circle at 50% 100%, transparent 4px, #c9a54a 4.5px 5.5px, transparent 6px) 0 0 / 15px 14px repeat-x,
+            var(--poster-column);
+    }
+    .wall-column-base {
+        width: calc(var(--column-w) + 18px);
+        height: 14px;
+    }
+    .wall-column-base > span {
+        left: -10px;
+        right: -10px;
+        top: 14px;
+        height: 20px;
+    }
+    /* A thinner line of cobbles, and lighter rain across the poster. The
+       filters run to the edge again: on a phone only their empty ends sit
+       under Composer's button (events.css). */
+    .wall-board {
+        --street-bleed: 20px;
+        --street-ground: 18px;
+    }
+    .wall-scene {
+        padding-top: 30px;
+    }
+    .wall-scene-rain {
+        opacity: calc(var(--rain, 0) * 0.4);
+    }
+    .wall-scene-ground::before {
+        top: 0;
+        height: 10px;
+    }
+    .wall-puddle:nth-child(n) {
+        top: 4px;
+        height: 9px;
+    }
+    .wall-column {
+        position: relative;
+    }
+    .wall-column-cap::before {
+        bottom: -11px;
+        width: 9px;
+        height: 9px;
+        margin-left: -4.5px;
+    }
+    .pp--size-column .pp-title {
+        font-size: clamp(28px, 11.5cqi, 42px);
+    }
+    /* A flag (On now, Over, Rain likely) takes a line on the slim column's
+       poster; its title gives that line back. */
+    .pp--size-column:has(.pp-flags) .pp-title {
+        font-size: clamp(20px, 9.5cqi, 36px);
+    }
+    .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+    .wall-past-row {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 132px;
+        overflow-x: auto;
+        margin: 0 -16px;
+        padding: 0 16px 8px;
+    }
+    .wall-past-open {
+        margin-left: 0;
+    }
+    .sky {
+        border-radius: 24px;
+    }
+    .sky-head {
+        left: 12px;
+        right: 12px;
+        top: 16px;
+        height: 356px;
+    }
+    .sky-head > div:first-child {
+        padding-left: 4px;
+    }
+    .sky-head p {
+        display: none;
+    }
+    /* The hour and its weather sit on the river, clear of the corner where
+       Composer's button floats. */
+    .sky-weather {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+    }
+    .sky-note {
+        display: none;
+    }
+    .sky-inner {
+        height: 384px;
+    }
+    .sky-cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---------- Today's posters under today's sky, on phones and tablets ---
+   Below the filters, the day's posters hang on a strip of the same wall,
+   cobbles at its foot. Over today's posters runs a slim band of today's
+   sky over the city, with its weather; another day's posters hang without
+   it, since it isn't their weather. The credit sits on the page under the
+   cobbles. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        display: block;
+        order: 0;
+        height: 96px;
+        margin: 8px calc(var(--street-bleed) * -1) 0;
+        border-radius: 0;
+    }
+    .wall-board[data-today-posters] #event-list {
+        margin-top: 0;
+    }
+    .wall-sky .sky-weather {
+        top: 10px;
+        right: 12px;
+        bottom: auto;
+        left: auto;
+        padding: 5px 10px 5px 8px;
+        font-size: var(--text-caption);
+    }
+    .wall-sky .sky-weather-icon {
+        width: 22px;
+        height: 22px;
+    }
+    .wall-view--wall .wall-day {
+        margin: 0 calc(var(--street-bleed) * -1);
+        padding: 24px var(--street-bleed) calc(var(--street-ground) + 24px);
+        background:
+            linear-gradient(rgb(0 0 0 / calc(var(--street-dark, 0) * 0.55)) 0 0) 0 100% / 100% var(--street-ground) no-repeat,
+            linear-gradient(#211d154d, transparent) 0 calc(100% - var(--street-ground)) / 100% 8px no-repeat,
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Crect width='40' height='20' fill='%23a1978a'/%3E%3Cg fill='%23c8bfad'%3E%3Crect x='1' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='21' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='11' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='-9' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='31' y='11' width='18' height='8' rx='3.5'/%3E%3C/g%3E%3C/svg%3E") 0 100% / calc(var(--street-ground) * 2) var(--street-ground) repeat-x,
+            var(--street-plaster);
+    }
+    .wall-view--wall .wall-day > .pp {
+        scroll-margin-left: var(--street-bleed);
+    }
+}
+
+/* ---------- No events count row (owner, 9 Oct 2026) ----------
+   The count is still read out to screen readers; the row shows only
+   when it has a note the posters can't carry (straight-line distances).
+   Reset filters ends the filter row instead. */
+main[data-view='wall'] .event-results-head:not(.has-note),
+main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+.event-control-scroller > #reset-event-filters {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    justify-content: center;
+    color: var(--action);
+}
+.event-control-scroller > #reset-event-filters[hidden] {
+    display: none;
+}
+
+/* ---------- Phones and tablets: the desktop's street corner, smaller ----------
+   Owner request, 9 October 2026. The filters lead the page; under them one
+   board, as on a desktop: today's sky (when the posters are today's), the
+   wall, the column standing at its left on its cobbles and the day's
+   posters pasted beside it, then across the full width below it. On a
+   phone the column and the posters share one compact width, so a poster
+   fits beside the column and two side by side below it. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        --corner-w: 260px;
+        --corner-gap: 16px;
+        display: flow-root;
+        margin: 6px calc(var(--street-bleed) * -1) 0;
+        padding: 18px var(--street-bleed) 28px;
+        border-radius: 0;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        height: 96px;
+        margin: -18px calc(var(--street-bleed) * -1) 18px;
+    }
+    main[data-view='wall'] .wall-scene {
+        order: 0;
+        float: left;
+        align-self: auto;
+        margin: 0 var(--corner-gap) 14px 0;
+        padding: 40px 0 0;
+    }
+    /* The column's dome rises in front of the sky, as on a desktop. */
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky + .wall-scene {
+        margin-top: -64px;
+    }
+    main[data-view='wall'] .wall-scene::before {
+        content: none;
+    }
+    main[data-view='wall'] .wall-scene #event-featured,
+    main[data-view='wall'] .wall-column {
+        width: auto;
+        align-self: auto;
+    }
+    main[data-view='wall'] .wall-column {
+        --column-w: var(--corner-w);
+        --column-h: calc(var(--corner-w) * 1.45);
+    }
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        max-width: calc(var(--corner-w) + 32px);
+        text-align: center;
+    }
+    /* Tilting starts under the caption; the column leans, the button
+       stays put. */
+    main[data-view='wall'] .wall-scene:has(> .wall-tilt) {
+        margin-bottom: 64px;
+    }
+    main[data-view='wall'] .wall-scene > .wall-tilt {
+        left: calc(50% - 22px);
+        bottom: -52px;
+    }
+    /* The posters are laid like words, round the corner and then below. */
+    main[data-view='wall'] .wall-view--wall .wall-day {
+        display: block;
+        overflow: visible;
+        margin: 0;
+        padding: 0;
+        background: none;
+        scroll-snap-type: none;
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp {
+        display: inline-block;
+        margin: 2px 14px 22px 0;
+        vertical-align: top;
+    }
+    main[data-view='wall'] .wall-next,
+    main[data-view='wall'] .wall-view--wall > :not(.wall-day) {
+        clear: both;
+    }
+    main[data-view='wall'] .wall-next {
+        margin-top: 8px;
+    }
+    /* A day without posters says so beside the column, not under it. */
+    main[data-view='wall'] #event-list > .event-empty {
+        display: flow-root;
+    }
+}
+@media (max-width: 700px) {
+    /* Two widths, the column's 32px of dome, the 12px gap, a poster's
+       10px margin and the space between posters fill the wall's width. */
+    main[data-view='wall'] .wall-board {
+        --corner-gap: 12px;
+        container-type: inline-size;
+    }
+    main[data-view='wall'] .wall-board > * {
+        --corner-w: clamp(124px, calc((100cqi - 62px) / 2), 190px);
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp--size-wall {
+        width: var(--corner-w);
+        height: calc(var(--corner-w) * 1.9);
+    }
+    main[data-view='wall'] .wall-column {
+        --column-h: calc(var(--corner-w) * 1.95);
+    }
+    /* The column's region is already named "Coming up"; the caption keeps
+       to the count and the gesture, on one line. */
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        white-space: nowrap;
+    }
+    main[data-view='wall'] .wall-column-lead {
+        display: none;
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp {
+        margin-right: 10px;
+    }
+    /* Compact posters: the same poster, set for about 150px. */
+    main[data-view='wall'] .wall-board .pp-open {
+        padding: 9px 10px 10px;
+    }
+    main[data-view='wall'] .wall-board .pp-top {
+        min-height: 30px;
+    }
+    main[data-view='wall'] .wall-board .pp-top:has(.pp-flags) {
+        gap: 4px;
+    }
+    main[data-view='wall'] .wall-board .pp-top + * {
+        margin-top: 6px;
+    }
+    main[data-view='wall'] .wall-board .pp-category {
+        height: 22px;
+        gap: 4px;
+        padding: 0 8px;
+        font-size: var(--text-micro);
+    }
+    main[data-view='wall'] .wall-board .pp-category svg {
+        width: 12px;
+        height: 12px;
+    }
+    main[data-view='wall'] .wall-board .pp-flag {
+        min-height: 20px;
+        gap: 4px;
+        padding: 2px 7px;
+        font-size: var(--text-micro);
+        line-height: 1.1;
+    }
+    main[data-view='wall'] .wall-board .pp-tape {
+        flex: none;
+        padding: 2px 7px 0;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    main[data-view='wall'] .wall-board .pp .pp-title {
+        margin-top: 6px;
+        font-size: clamp(14px, 12cqi, 26px);
+    }
+    main[data-view='wall'] .wall-board .pp:has(.pp-flags) .pp-title {
+        font-size: clamp(13px, 10.5cqi, 24px);
+    }
+    /* A past poster can't be planned; its long title keeps the room. */
+    main[data-view='wall'] .wall-board .pp.is-past .pp-translation {
+        display: none;
+    }
+    main[data-view='wall'] .wall-board .pp-translation,
+    main[data-view='wall'] .wall-board .pp-meta,
+    main[data-view='wall'] .wall-board .pp-price {
+        font-size: var(--text-micro);
+    }
+    /* The lines use the poster's width; only the last one, the price,
+       keeps clear of Add to plan in the corner. */
+    main[data-view='wall'] .wall-board .pp-bottom {
+        gap: 2px;
+        padding-top: 8px;
+        padding-right: 0;
+    }
+    main[data-view='wall'] .wall-board .pp-price {
+        min-height: 30px;
+        padding-right: 40px;
+    }
+    main[data-view='wall'] .wall-board .pp-time {
+        font-size: clamp(20px, 16cqi, 32px);
+        -webkit-text-stroke-width: 1.5px;
+    }
+    main[data-view='wall'] .wall-board .pp--paper .pp-time {
+        font-size: var(--text-caption);
+        -webkit-text-stroke-width: 0;
+    }
+    /* Smaller buttons, with the full touch target round them. */
+    main[data-view='wall'] .wall-board .pp-save {
+        top: 8px;
+        right: 8px;
+        width: 30px;
+        height: 30px;
+    }
+    main[data-view='wall'] .wall-board .pp-save svg {
+        width: 15px;
+        height: 15px;
+    }
+    main[data-view='wall'] .wall-board .pp-plan {
+        right: 9px;
+        bottom: 9px;
+        width: 36px;
+        height: 36px;
+        box-shadow: 0 4px 10px #c23b0e59;
+    }
+    main[data-view='wall'] .wall-board .pp-plan svg {
+        width: 17px;
+        height: 17px;
+    }
+    main[data-view='wall'] .wall-board :is(.pp-save, .pp-plan)::after {
+        content: '';
+        position: absolute;
+        inset: -7px;
+    }
+    main[data-view='wall'] .wall-board .pp-plan::after {
+        inset: -4px;
+    }
+}
+
+/* ---------- The whole wall on phones and tablets ----------
+   Owner request, 9 October 2026: not only the column and posters but the
+   whole street from the desktop, adjusted to the screen: the wall's bricks,
+   torn older posters, stickers, cracks, drainpipe and house number, its
+   stone base and stencil, and the lantern, bench, bike and pigeons round
+   the column on a strip of cobbles. The decor keeps its places (they're
+   set in percentages) at a smaller size; the street furniture stands in
+   the wall's edge and at the column's foot, so the posters keep their
+   width. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        --decor-scale: 0.7;
+        --street-art-scale: 0.62;
+        --lantern-scale: 0.66;
+        padding-bottom: calc(72px * var(--decor-scale));
+    }
+    main[data-view='wall'] .wall-decor {
+        display: block;
+    }
+    main[data-view='wall'] .wall-decor > :not(.wall-cracks) {
+        zoom: var(--decor-scale);
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        height: 120px;
+    }
+    main[data-view='wall'] .wall-scene :is(.wall-lantern, .wall-bench, .wall-bike, .wall-pigeons, .wall-scene-glow) {
+        display: block;
+    }
+    /* The lantern stands at the wall's edge, as tall as the column and
+       behind its dome; the bench in front of it, the bike leaning on the
+       plinth, pigeons on the cobbles. */
+    main[data-view='wall'] .wall-scene :is(.wall-bench, .wall-bike, .wall-pigeons) {
+        zoom: var(--street-art-scale);
+    }
+    main[data-view='wall'] .wall-scene :is(.wall-lantern, .wall-scene-glow) {
+        zoom: var(--lantern-scale);
+    }
+    main[data-view='wall'] .wall-scene .wall-lantern {
+        left: calc((var(--street-bleed) * -1 + 2px) / var(--lantern-scale));
+        bottom: calc(34px / var(--lantern-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-scene-glow {
+        left: calc((var(--street-bleed) * -1 - 90px) / var(--lantern-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-bench {
+        left: calc((var(--street-bleed) * -1 + 2px) / var(--street-art-scale));
+        bottom: calc(30px / var(--street-art-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-bike {
+        right: calc(-34px / var(--street-art-scale));
+        bottom: calc(28px / var(--street-art-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-pigeons {
+        left: 40%;
+        bottom: calc(30px / var(--street-art-scale));
+    }
+    /* The house number hangs by the pipe, below the first posters. */
+    main[data-view='wall'] .wall-decor > .wall-number {
+        top: 52%;
+    }
+    /* The pavement runs from the wall's edge to past the bike. */
+    main[data-view='wall'] .wall-scene-ground {
+        left: calc(var(--street-bleed) * -1);
+        right: -34px;
+        height: 34px;
+    }
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        position: relative;
+        z-index: 4;
+        margin-top: 40px;
+    }
+}
+@media (max-width: 700px) {
+    main[data-view='wall'] .wall-board {
+        --decor-scale: 0.5;
+        --street-art-scale: 0.44;
+        --lantern-scale: 0.42;
+    }
+}
+
+/* ---------- The wall is a rounded card on every screen ----------
+   Owner request, 9 October 2026: as on a desktop, the wall sits inside
+   the page's margins with rounded corners, the sky along its rounded top. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        margin: 6px 0 0;
+        border-radius: 28px;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        border-radius: 28px 28px 0 0;
+    }
+}
+@media (max-width: 700px) {
+    /* The card keeps 12px from the screen's edges, a little inside the
+       page's margin, so the posters keep their width. */
+    main[data-view='wall'] .wall-board {
+        --street-bleed: 10px;
+        --corner-gap: 10px;
+        margin-inline: -8px;
+        border-radius: 22px;
+    }
+    /* The lantern has a strip of wall at the left; the dome overhangs the
+       column a little less. */
+    main[data-view='wall'] .wall-scene {
+        padding-left: 14px;
+    }
+    main[data-view='wall'] .wall-column-cap {
+        width: calc(var(--column-w) + 24px);
+    }
+    main[data-view='wall'] .wall-column-base > span {
+        left: -6px;
+        right: -6px;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        border-radius: 22px 22px 0 0;
+    }
+}
+
+/* The date leads the search row, so its calendar opens from its left (on
+   a phone too: opened from its right it ran off the screen's left edge). */
+.event-search-row #event-calendar-panel {
+    left: 0;
+    right: auto;
+}
+@media (min-width: 1000px) {
+    /* The search keeps room to type next to the date. */
+    main[data-view='wall'] .event-gallery-head {
+        min-width: 440px;
+    }
+}
+/* On narrower desktops the categories drop their icons, so the date,
+   search, categories and filters still share one row. */
+@media (min-width: 1000px) and (max-width: 1399px) {
+    main[data-view='wall'] .event-categories .event-control-icon {
+        display: none;
+    }
+}
+
+
+/* ---------- The street (owner, 12 Oct 2026) ----------
+   On the Events page the wall is the Stories board from the "Events
+   reimagined" canvas, as it is: the living street with the hour's sky,
+   the rolling column, the hours' posters and the hours' stories
+   (street.js runs street-art.js). The old column and corner stay for the
+   Skyline view only. */
+main[data-view='wall'] #event-featured {
+    display: none;
+}
+/* app.js first draws the older layout (the big column, "Find your kind of
+   day"); wall.js rebuilds it once every script has loaded. A reload painted
+   that first drawing for a split second, so the page below the header waits
+   for wall.js (data-view). Opacity, as the old column sets its posters
+   visible. If a script never loads, it shows after 2s. */
+#main:not([data-view]) {
+    opacity: 0;
+    animation: wall-late-reveal 0s 2s forwards;
+}
+@keyframes wall-late-reveal {
+    to {
+        opacity: 1;
+    }
+}
+.st-board {
+    display: flex;
+    flex-direction: column;
+}
+.st-root[hidden] {
+    display: none;
+}
+.st-fit {
+    position: relative;
+    margin-inline: auto;
+}
+/* One spacing (owner chose "16 everywhere", 16 Oct 2026): the street is
+   16px under the filters, as they are under the header (page-frame.css)
+   and a laptop's street above the screen's bottom (street.js). A past
+   day's note sits between them at the same distance. */
+main[data-view='wall'] .st-board {
+    margin-top: 16px;
+}
+main[data-view='wall'] .st-board .event-past-note {
+    margin: 0 0 16px;
+}
+/* A phone: the hour rings float in the street's sky, 12px in from its
+   corner and level with the weather, and scroll sideways up to it
+   (street.js sets --rings-r). The street ends with rounded corners where
+   street.js ends it above the menu, and the swipe hint sits on its
+   pavement. */
+.st-root[data-layout='phone'] {
+    position: relative;
+}
+.st-root[data-layout='phone'] > .st-rings {
+    position: absolute;
+    z-index: 4;
+    top: 12px;
+    left: 12px;
+    right: var(--rings-r, 12px);
+}
+.st-root[data-layout='phone'] > .st-rings > div {
+    padding: 0 !important;
+}
+/* More rings than room: the row fades where it's cut (street.js). */
+.st-root[data-layout='phone'] > .st-rings > div[data-more] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.st-root[data-layout='phone'] > .st-fit {
+    overflow: hidden;
+    border-radius: 28px;
+}
+.st-hint {
+    position: absolute;
+    z-index: 4;
+    bottom: 12px;
+    left: 50%;
+    translate: -50% 0;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg-surface, #fffdf8) 88%, transparent);
+    color: var(--color-text, #211d15);
+    font-size: 12px;
+    white-space: nowrap;
+}
+/* A poster's slot on the street: placed by the street, not laid out as
+   the old wall's row. */
+/* On a desktop the street ends 16px above the screen's bottom, and the
+   page does too: one screen, no scroll. */
+#main[data-view='wall']:has(.st-root[data-layout='desktop']) {
+    padding-bottom: 16px;
+}
+/* The street's posters (the column's and the wall's) carry no Add to plan
+   (owner, 13 Oct 2026); a tap opens the details, which has it. */
+#main .st-root .st-card .pp-plan {
+    display: none;
+}
+/* What the hour hides (stars by day, the plane, the lit windows, a lamp's
+   flame) is drawn at opacity 0: it leaves the drawing altogether, so its
+   animations don't cost every frame. */
+#main .st-root .st-card svg [style^='opacity:0;'],
+#main .st-root .st-card svg [style='opacity:0'] {
+    display: none;
+}
+/* The whole day on one wall: where a busy day's posters overlap, the hour
+   you point at (or tab into) comes to the front. */
+#main .st-root .st-bay:hover,
+#main .st-root .st-bay:focus-within {
+    z-index: 3;
+}
+#main .st-root .wall-day.st-slot {
+    position: absolute;
+    display: block;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    background: none;
+    scroll-snap-type: none;
+}
+/* The street's small buttons keep 44px on screen to tap, however far the
+   street is scaled down; on a poster the area keeps to the poster
+   (street.js sets --hit-w, --hit-h and the shift, --hit-x and --hit-y). */
+#main .st-root .st-card button[style*='--hit-w']::after {
+    content: '';
+    position: absolute;
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: var(--hit-w);
+    height: var(--hit-h);
+    translate: calc(-50% + var(--hit-x, 0px)) calc(-50% + var(--hit-y, 0px));
+}
+/* Stories in the sky (owner, 13 Oct 2026): on a desktop or tablet the
+   hour rings float in the street's sky (street.js places them), so no row
+   stands between the filters and the street, which fits the screen. */
+.st-root[data-layout='desktop'] {
+    position: relative;
+}
+.st-root[data-layout='desktop'] > .st-rings {
+    position: absolute;
+    z-index: 4;
+    left: var(--rings-x, 30%);
+    top: var(--rings-y, 14px);
+    max-width: calc(var(--street-w, 900px) * 0.6);
+}
+.st-root[data-layout='desktop'] > .st-rings > div {
+    gap: 14px !important;
+    padding: 4px 4px 8px !important;
+}
+.st-root[data-layout='desktop'] > .st-rings button > span:first-child {
+    width: 68px !important;
+    height: 68px !important;
+    box-shadow: 0 6px 16px #211d1540;
+}
+.st-root[data-layout='desktop'] > .st-rings .st-art {
+    width: 62px !important;
+    height: 62px !important;
+}
+.st-root > .st-rings button > span:last-child {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: #fffdf8;
+    box-shadow: 0 2px 6px #211d1526;
+}
+/* The note under the filters (a starting point the preview has no
+   distances for): no leading dot (the count before it is hidden), a slim
+   line above the street's right edge on a desktop or tablet. */
+main[data-view='wall'] #event-count-note::before {
+    content: none;
+}
+main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note {
+    width: 100%;
+    max-width: var(--street-w, none);
+    min-height: 0;
+    margin: 8px auto 6px;
+}
+main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note .event-results-count {
+    justify-content: flex-end;
+}
+/* A story's progress bar glides from empty when it first appears. */
+.st-story [role='dialog'] i {
+    @starting-style {
+        /* Over the bar's own (inline) width. */
+        width: 0 !important;
+    }
+}
+/* An hour's story ring shows its first poster's picture. */
+.st-art {
+    position: relative;
+    overflow: hidden;
+    container-type: inline-size;
+}
+
+/* ---------- The event sheet's About tab (owner, 13 Oct 2026) ----------
+   It was the same grey everywhere, with cards barely lighter than the
+   sheet. How it fits your day leads, on a warm highlight; then labelled
+   rows split by hairlines with dark values; the description under its own
+   label; the reminder as a row. wall.js builds the rows. */
+#shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+#shared-dialog .event-sheet .event-today {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+}
+#shared-dialog .event-sheet .event-fit {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0 !important;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #fff1cc;
+    color: #2b2414;
+    font-size: 15.5px !important;
+    font-weight: 500;
+    line-height: 1.45;
+}
+#shared-dialog .event-sheet .event-fit > span {
+    flex: 1;
+    width: auto;
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+    background: none;
+}
+#shared-dialog .event-sheet .event-fit > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: #8a5a00;
+}
+#shared-dialog .event-sheet .event-fit b {
+    display: block;
+    margin-bottom: 2px;
+    color: #8a5a00;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .event-facts {
+    border-top: 1px solid #e6ddcb;
+}
+#shared-dialog .event-sheet .event-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 0;
+    border: 0;
+    border-bottom: 1px solid #e6ddcb;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #211d15;
+    font: inherit;
+    text-align: left;
+}
+#shared-dialog .event-sheet button.event-row {
+    cursor: pointer;
+}
+#shared-dialog .event-sheet button.event-row > svg:last-child {
+    width: 20px;
+    height: 20px;
+    color: #4b4437;
+}
+#shared-dialog .event-sheet .event-row-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #f1ead9;
+    color: #4b4437;
+}
+#shared-dialog .event-sheet .event-row-icon svg {
+    width: 20px;
+    height: 20px;
+}
+#shared-dialog .event-sheet .event-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+#shared-dialog .event-sheet .event-row-label {
+    margin: 0;
+    color: #6b6457;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .event-row-value {
+    color: #211d15;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+#shared-dialog .event-sheet .event-row-sub {
+    color: #4f493d;
+    font-size: 14px;
+    line-height: 1.35;
+}
+/* What the listing doesn't say reads quieter than what it does. */
+#shared-dialog .event-sheet .event-unlisted .event-row-value {
+    font-weight: 400;
+}
+#shared-dialog .event-sheet .event-about .event-row-label {
+    margin-bottom: 4px;
+}
+#shared-dialog .event-sheet .event-about .event-description {
+    max-width: 62ch;
+    margin: 0;
+    color: #2b261d;
+    font-size: 16px;
+    line-height: 1.55;
+}
+#shared-dialog .event-sheet .event-about .event-about-source {
+    margin: 6px 0 0;
+    color: #4f493d;
+}
+#shared-dialog .event-sheet .event-reminder {
+    padding: 10px 0;
+    border: 0;
+    border-top: 1px solid #e6ddcb;
+    border-bottom: 1px solid #e6ddcb;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .event-reminder .event-fact-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #f1ead9;
+}
+#shared-dialog .event-sheet .event-reminder strong {
+    color: #211d15;
+    font-size: 15.5px;
+}
+#shared-dialog .event-sheet .event-reminder small {
+    color: #4f493d;
+    font-size: 13.5px;
+}
+
+/* ---------- The event page: one step, one scroll (owner, 13 Oct 2026) ----------
+   A poster opens its details page directly. The page starts with the
+   poster itself (its art, category, date tape, title in the poster's type
+   and the big time; the rows below say where and until when), the whole
+   page scrolls as one, the tabs stick once the poster has gone by (Close
+   beside them), and Save and Add to plan fill the bottom bar. On a desktop
+   the page is as tall as the screen allows. wall.js builds the header. */
+@media (min-width: 701px) {
+    #shared-dialog:has(.event-hero) {
+        height: min(828px, calc(100vh - 32px));
+        max-height: none;
+    }
+}
+#shared-dialog:has(.event-hero) #dialog-body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+#shared-dialog .event-sheet:has(.event-hero) {
+    height: auto;
+    min-height: 100%;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-panel:not([hidden]) {
+    flex: 1 0 auto;
+    height: auto;
+    overflow: visible;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll {
+    flex: none;
+    height: auto;
+    overflow: visible;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    box-shadow: 0 0 0 12px var(--color-bg, #faf6ee);
+}
+/* One rhythm, as in Apple's grouped lists: 16 under the poster, 12 between
+   blocks, 20 above the bottom bar; rows are 44 tall at least. */
+#shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+    gap: 12px;
+    padding: 16px;
+}
+#shared-dialog .event-sheet [data-panel='about'] .event-source {
+    margin-top: 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-panel {
+    margin-top: 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll {
+    padding: 16px;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll > :last-child,
+#shared-dialog .event-sheet[data-section='plan'] .selection-hint {
+    margin-bottom: 0;
+}
+/* A short sub-page doesn't leave the rest of the screen empty: the page is
+   as tall as what's on it. */
+@media (min-width: 701px) {
+    #shared-dialog:has(.event-sheet[data-section]:not([data-section='about'])) {
+        height: fit-content;
+        max-height: min(828px, calc(100vh - 32px));
+    }
+    #shared-dialog:has(.event-hero) .event-sheet[data-section]:not([data-section='about']) {
+        min-height: 0;
+    }
+}
+/* Close floats on the poster; once it has gone by, it sits beside the tabs. */
+#shared-dialog:has(.event-hero) .dialog-head {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    right: 0;
+    left: 0;
+    z-index: 5;
+    justify-content: flex-end;
+    padding: 16px 16px 0;
+    border: 0;
+    background: none;
+}
+#shared-dialog:has(.event-hero) .dialog-head h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+#shared-dialog:has(.event-hero) .dialog-head [data-ui='close'] {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff59;
+    border-radius: 50%;
+    background: #ffffff2e;
+    color: #fff;
+    backdrop-filter: blur(10px);
+}
+#shared-dialog.is-scrolled .dialog-head [data-ui='close'],
+#shared-dialog:has(.event-hero:is(.pp--day, .pp--paper)) .dialog-head [data-ui='close'] {
+    border-color: #e6ddcb;
+    background: #f1ead9;
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+/* No tabs: Get there and Add to plan are pages inside, with Back. */
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-tabs {
+    display: none;
+}
+#shared-dialog .event-sheet > .event-subhead {
+    display: none;
+}
+#shared-dialog .event-sheet:not([data-section='about']):has(.event-hero) > .event-hero {
+    display: none;
+}
+#shared-dialog .event-sheet:not([data-section='about']) > .event-subhead {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 14px 72px 14px 16px;
+    border-bottom: 1px solid #e6ddcb;
+    background: var(--color-bg, #faf6ee);
+}
+#shared-dialog .event-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: #f1ead9;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#shared-dialog .event-back svg {
+    width: 20px;
+    height: 20px;
+}
+#shared-dialog .event-subhead-title {
+    display: none;
+    font-size: 18px;
+    color: var(--color-text);
+}
+#shared-dialog .event-sheet[data-section='directions'] .event-subhead-title[data-for='directions'],
+#shared-dialog .event-sheet[data-section='plan'] .event-subhead-title[data-for='plan'] {
+    display: block;
+}
+/* On a page inside, the head is only Close, clear of Back. */
+#shared-dialog:has(.event-sheet:not([data-section='about'])) .dialog-head {
+    left: auto;
+}
+#shared-dialog:has(.event-sheet:not([data-section='about'])) .dialog-head [data-ui='close'] {
+    border-color: #e6ddcb;
+    background: #f1ead9;
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+/* Where is also the way there: tinted, with how you'd set off. */
+#shared-dialog .event-sheet .event-facts:has(> .event-where:first-child) {
+    border-top: 0;
+}
+/* A band across the sheet, so its icon and words line up with the other
+   rows' (the sheet's side gutter is 20px, 16px on a phone). */
+#shared-dialog .event-sheet .event-row.event-where {
+    --gutter: 20px;
+    width: calc(100% + 2 * var(--gutter));
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 12px var(--gutter);
+    border: 0;
+    border-radius: 0;
+    background: #e8f0fb;
+    color: #12305c;
+}
+@media (max-width: 700px) {
+    #shared-dialog .event-sheet .event-row.event-where {
+        --gutter: 16px;
+    }
+}
+#shared-dialog .event-sheet .event-where .event-row-icon {
+    background: #fff;
+    color: #1d4d8f;
+}
+#shared-dialog .event-sheet .event-where .event-row-label {
+    color: #2b4a75;
+}
+#shared-dialog .event-sheet .event-where .event-row-value {
+    color: #12305c;
+}
+#shared-dialog .event-sheet .event-where .event-row-sub,
+#shared-dialog .event-sheet .event-where .event-where-area {
+    color: #2b4a75;
+    font-weight: 400;
+}
+#shared-dialog .event-sheet .event-where .event-where-go {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    color: #1d4d8f;
+    font-size: 14px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .event-where .event-where-go svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+#shared-dialog .event-sheet .event-where > svg:last-child {
+    color: #1d4d8f;
+}
+/* The bottom bar: Save and the wider Add to plan fill it. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e6ddcb;
+    background: var(--color-bg, #faf6ee);
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .button {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .button.primary {
+    flex: 2 1 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action {
+    width: auto;
+    padding: 0 16px;
+    border: 0;
+    background: #f1ead9;
+    color: var(--color-text);
+}
+/* "Save" or "Saved" on screen; screen readers hear the button's full name. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[data-save-item]::after {
+    content: 'Save';
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[data-save-item][aria-pressed='true']::after {
+    content: 'Saved';
+}
+/* Get there, planned as Travel plans a trip (get-there.js; Travel's
+   option card from departures-next/plan.css, its labels from labels.css),
+   with each line's own colour on the way instead of Travel's teal. */
+#shared-dialog .event-sheet .gt {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+/* What the plan used: one quiet line above the options. */
+#shared-dialog .event-sheet .gt-checked {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    color: #6b6457;
+    font-size: 13px;
+    line-height: 1.4;
+}
+#shared-dialog .event-sheet .gt-checked > svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 1px;
+    stroke-width: 2;
+}
+#shared-dialog .event-sheet .gt-checked b {
+    color: #8a5a00;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .gt .plan-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#shared-dialog .event-sheet .gt .plan-option {
+    border: 1px solid #e0d7c4;
+    border-radius: 18px;
+    background: #fffdf8;
+    transition: border-color 160ms ease;
+}
+#shared-dialog .event-sheet .gt .plan-option.is-on {
+    border-color: #211d15;
+    box-shadow: inset 0 0 0 0.5px #211d15;
+}
+#shared-dialog .event-sheet .gt .plan-option-pick {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 14px 4px;
+    border: 0;
+    border-radius: 18px;
+    background: none;
+    color: #211d15;
+    font: inherit;
+    text-align: left;
+    line-height: 1.35;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt .plan-option-pick.is-static {
+    padding-bottom: 14px;
+    cursor: default;
+}
+#shared-dialog .event-sheet .gt .plan-radio {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    border: 2px solid #b9ad95;
+    border-radius: 50%;
+    background: #fff;
+}
+#shared-dialog .event-sheet .gt .is-on .plan-radio {
+    border: 6px solid #211d15;
+}
+#shared-dialog .event-sheet .gt .plan-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+#shared-dialog .event-sheet .gt .plan-option-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+#shared-dialog .event-sheet .gt .plan-option-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+#shared-dialog .event-sheet .gt .plan-then svg {
+    width: 14px;
+    height: 14px;
+    color: #6b6457;
+}
+#shared-dialog .event-sheet .gt .plan-option-times {
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+#shared-dialog .event-sheet .gt .plan-option-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+    color: #2b261d;
+    font-size: 14px;
+}
+#shared-dialog .event-sheet .gt .plan-option-reasons > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+#shared-dialog .event-sheet .gt .plan-option-reasons .is-warn {
+    color: var(--color-attention-text, #7a4b00);
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .gt .plan-reason-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: #f1ead9;
+}
+#shared-dialog .event-sheet .gt .plan-reason-icon svg {
+    width: 14px;
+    height: 14px;
+}
+#shared-dialog .event-sheet .gt .details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    margin-left: 48px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #1d4d8f;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt .details-toggle svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 160ms ease;
+}
+#shared-dialog .event-sheet .gt .details-toggle[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+#shared-dialog .event-sheet .gt-disclosure {
+    padding: 0 14px 12px;
+    border-top: 1px solid #e6ddcb;
+}
+#shared-dialog .event-sheet .gt-steps {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+#shared-dialog .event-sheet .gt-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px 48px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 54px;
+    padding: 6px 0 10px;
+}
+#shared-dialog .event-sheet .gt-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 34px;
+    bottom: -6px;
+    left: 75px;
+    border-left: 2px dotted #b9ad95;
+}
+#shared-dialog .event-sheet .gt-step.is-ride::before {
+    border-left: 3px solid var(--line, #3b4a54);
+}
+#shared-dialog .event-sheet .gt-step time {
+    padding-top: 4px;
+    color: #4f493d;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+#shared-dialog .event-sheet .gt-node {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    min-height: 28px;
+}
+#shared-dialog .event-sheet .gt-node > svg {
+    width: 26px;
+    height: 26px;
+    padding: 5px;
+    border-radius: 8px;
+    background: #f1ead9;
+    color: #4b4437;
+}
+#shared-dialog .event-sheet .gt-step.is-arrive .gt-node > svg {
+    background: #f8e1d5;
+    color: #b8401a;
+}
+#shared-dialog .event-sheet .gt-node .tl-line {
+    height: 24px;
+    padding: 0 6px 0 4px;
+    font-size: 13px;
+}
+#shared-dialog .event-sheet .gt-step strong {
+    display: block;
+    padding-top: 3px;
+    color: #211d15;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+#shared-dialog .event-sheet .gt-step small {
+    display: block;
+    margin-top: 2px;
+    color: #4f493d;
+    font-size: 13px;
+}
+#shared-dialog .event-sheet .gt-source {
+    display: flex;
+    gap: 6px;
+    margin: 0;
+    color: #4f493d;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+#shared-dialog .event-sheet .gt-source svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+}
+#shared-dialog .event-sheet .gt-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px;
+    border: 1px dashed #b9ad95;
+    border-radius: 18px;
+}
+#shared-dialog .event-sheet .gt-empty p {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    font-size: 14px;
+}
+#shared-dialog .event-sheet .gt-empty strong {
+    font-size: 16px;
+}
+#shared-dialog .event-sheet .gt-starts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+#shared-dialog .event-sheet .gt-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid #e0d7c4;
+    border-radius: 999px;
+    background: #fffdf8;
+    color: #211d15;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt-start svg {
+    width: 16px;
+    height: 16px;
+}
+#shared-dialog .event-sheet .gt-none {
+    margin: 0;
+    font-size: 14px;
+}
+/* When and how, as small filters under the route (owner, 14 Oct 2026,
+   option A on the canvas): a time chip whose menu floats over the page, then
+   a chip for each way with its minutes. The date is in the menu. */
+#shared-dialog .event-sheet .place-journey:has(.gt-bar) .event-arrival {
+    display: none;
+}
+#shared-dialog .event-sheet .gt-bar {
+    position: relative;
+    margin-top: 8px;
+}
+#shared-dialog .event-sheet .gt-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+#shared-dialog .event-sheet .gt-bar-row::-webkit-scrollbar {
+    display: none;
+}
+/* When the chips don't all fit (a narrow phone, a long walk), the row
+   scrolls sideways and fades where it's cut. */
+#shared-dialog .event-sheet .gt-bar-row.is-clipped {
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+@media (max-width: 380px) {
+    #shared-dialog .event-sheet .gt-time .gt-pill > svg:first-child {
+        display: none;
+    }
+}
+#shared-dialog .event-sheet .gt-time {
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #211d15;
+    font: inherit;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt-pill,
+#shared-dialog .event-sheet .place-journey .gt-modes label > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 36px;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+#shared-dialog .event-sheet .gt-time .gt-pill {
+    border: 1px solid #d9cfbd;
+    background: #fffdf8;
+}
+#shared-dialog .event-sheet .gt-time[aria-expanded='true'] .gt-pill {
+    border-color: #211d15;
+}
+#shared-dialog .event-sheet .gt-pill svg,
+#shared-dialog .event-sheet .place-journey .gt-modes label > span svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+}
+#shared-dialog .event-sheet .gt-time .gt-pill > svg:last-child {
+    width: 12px;
+    height: 12px;
+}
+#shared-dialog .event-sheet .gt-bar-rule {
+    display: none;
+}
+#shared-dialog .event-sheet .place-journey fieldset.gt-modes {
+    display: flex;
+    flex: none;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label > span {
+    background: #f1ebdf;
+    color: #211d15;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label:has(:checked) > span {
+    background: #211d15;
+    color: #fff;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .gt-modes label.is-timed .event-mode-name,
+#shared-dialog .event-sheet .gt-modes .gt-mins:empty {
+    display: none;
+}
+#shared-dialog .event-sheet .gt-modes .gt-mins {
+    font-variant-numeric: tabular-nums;
+}
+#shared-dialog .event-sheet .gt-menu {
+    position: absolute;
+    top: 46px;
+    left: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    width: min(300px, 100%);
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1px solid #e6ddcb;
+    border-radius: 14px;
+    background: #fffdf8;
+    box-shadow: 0 14px 34px -14px rgb(20 12 4 / 45%);
+}
+#shared-dialog .event-sheet .gt-menu[hidden] {
+    display: none;
+}
+#shared-dialog .event-sheet .gt-menu > small {
+    padding: 8px 10px 4px;
+    color: #6b6457;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .gt-menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: #211d15;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt-menu button[aria-checked='true'] {
+    background: #f1ebdf;
+}
+#shared-dialog .event-sheet .gt-menu button > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+#shared-dialog .event-sheet .gt-menu button strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .gt-menu button small {
+    color: #4f493d;
+    font-size: 12.5px;
+}
+#shared-dialog .event-sheet .gt-menu button > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    visibility: hidden;
+}
+#shared-dialog .event-sheet .gt-menu button[aria-checked='true'] > svg {
+    visibility: visible;
+}
+/* The way back: from the venue, back to the place in the field. The venue
+   keeps its pin and your place its dot, as on the map. */
+#shared-dialog .event-sheet .place-route.is-back .event-route-fields {
+    display: flex;
+    flex-direction: column-reverse;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail {
+    grid-template-rows: 22px minmax(6px, 1fr) 12px;
+    margin-top: 24px;
+    margin-bottom: 15px;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail > svg {
+    order: -1;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail .route-dot {
+    order: 1;
+}
+#shared-dialog .event-sheet .place-route.is-back .place-journey-destination {
+    padding: 0 0 12px;
+}
+#shared-dialog .event-sheet .place-route.is-back .route-field-note {
+    display: none;
+}
+/* The reminder's bell sits between Save and Add to plan; on, it's tinted. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-bell {
+    flex: 0 0 56px;
+    padding: 0;
+}
+#shared-dialog .event-sheet .place-sheet-footer > .event-bell svg {
+    width: 22px;
+    height: 22px;
+}
+#shared-dialog .event-sheet .place-sheet-footer > .event-bell[aria-pressed='true'] {
+    background: #f8e1d5;
+    color: #8a2f10;
+}
+/* The listing's details: one small line under About. */
+#shared-dialog .event-sheet .event-about .event-source {
+    margin: 2px 0 0;
+    border: 0;
+}
+#shared-dialog .event-sheet .event-about .event-source summary {
+    min-height: 36px;
+    padding: 0;
+    font-size: 13px;
+}
+/* Added: the button says so, in a quieter tone; Undo shows above the bar
+   for a while. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
+    flex-wrap: wrap;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .button.primary.is-planned {
+    background: #f8e1d5;
+    box-shadow: none;
+    color: #8a2f10;
+}
+#shared-dialog .event-sheet .event-plan-notice {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 6px 0 14px;
+    border-radius: 12px;
+    background: #211d15;
+    color: #faf6ee;
+    font-size: 15px;
+    font-weight: 500;
+}
+#shared-dialog .event-sheet .event-plan-notice button {
+    min-width: 64px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: #ffb999;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) {
+    #shared-dialog .event-sheet .event-plan-notice {
+        animation: event-notice-in 220ms ease-out;
+    }
+}
+@keyframes event-notice-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+/* The ways to travel, named. */
+#shared-dialog .event-sheet .place-journey fieldset label > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+#shared-dialog .event-sheet .event-mode-name {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+/* The venue on our own map, with where you'd set off. */
+#shared-dialog .event-sheet .event-way-map {
+    position: relative;
+    height: 168px;
+    margin: 12px 0 0;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #ece5d6;
+}
+#shared-dialog .event-sheet .event-way-map-canvas {
+    position: absolute;
+    inset: 0;
+}
+#shared-dialog .event-sheet .event-way-map-note {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #4f493d;
+    font-size: 14px;
+}
+#shared-dialog .event-sheet .event-way-map.is-ready .event-way-map-note {
+    display: none;
+}
+#shared-dialog .event-sheet .event-way-map-credit {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 80%);
+    color: #4f493d;
+    font-size: 10px;
+}
+#shared-dialog .event-sheet .event-way-pin.is-venue {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50% 50% 50% 0;
+    background: #b8401a;
+    color: #fff;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+    transform: rotate(-45deg);
+}
+#shared-dialog .event-sheet .event-way-pin.is-venue svg {
+    width: 18px;
+    height: 18px;
+    transform: rotate(45deg);
+}
+#shared-dialog .event-sheet .event-way-pin.is-start {
+    width: 16px;
+    height: 16px;
+    border: 4px solid #1d4d8f;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}
+/* No Composer teal in the details: the start dot is the Where blue, the
+   date the action colour, the poster's backing dark, and focus rings
+   blue (and only for the keyboard). */
+#shared-dialog .event-sheet:has(.event-hero) {
+    --blue: #f1ead9;
+}
+#shared-dialog .event-sheet .event-route-rail .route-dot {
+    border-color: #1d4d8f;
+}
+#shared-dialog .event-sheet .event-fixed-day .event-date-badge {
+    background: #b8401a;
+    box-shadow: 0 3px 8px rgb(184 64 26 / 18%);
+}
+#shared-dialog .event-sheet .event-ticket.event-hero {
+    background-color: #221d17;
+}
+#shared-dialog:has(.event-hero) :focus-visible {
+    outline-color: #1d4d8f;
+}
+#shared-dialog[data-pointer]:has(.event-hero) :focus-visible {
+    outline: none;
+}
+/* With listed times, the planning page doesn't repeat them by its button. */
+#shared-dialog .event-sheet.is-listed-times .event-plan-summary {
+    display: none;
+}
+#shared-dialog .event-sheet.is-listed-times .selection-visit .actions .button.primary {
+    flex: 1;
+    justify-content: center;
+    min-height: 48px;
+}
+/* The header: the poster. */
+#shared-dialog .event-sheet .event-ticket.event-hero {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: auto;
+    min-height: 200px;
+    margin: 0;
+    padding: 64px 16px 18px;
+    overflow: hidden;
+    border-radius: 0;
+    container-type: inline-size;
+}
+#shared-dialog .event-hero > .pp-art {
+    position: absolute;
+    inset: 0;
+}
+#shared-dialog .event-hero > .event-hero-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #0000 20%, #000a 100%);
+}
+/* A light poster (day, paper) keeps dark type on a light shade. */
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-shade {
+    background: linear-gradient(180deg, #fff8e600 20%, #fff8e6e6 100%);
+}
+#shared-dialog .event-hero > .event-hero-chip {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #ffffff59;
+    border-radius: 999px;
+    background: #ffffff2e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-chip {
+    border-color: #211d1524;
+    background: #fff8e6cc;
+    color: var(--color-text);
+}
+#shared-dialog .event-hero > .event-hero-chip svg {
+    width: 16px;
+    height: 16px;
+}
+#shared-dialog .event-hero-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    -webkit-text-stroke: 0;
+}
+#shared-dialog .event-hero .pp-tape {
+    align-self: flex-start;
+    transform: rotate(-2deg);
+}
+#shared-dialog .event-hero-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+#shared-dialog .event-hero-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    color: var(--pp-text);
+    font-family: var(--poster-display);
+    font-size: clamp(28px, 7.5cqi, 40px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+#shared-dialog .event-hero-time {
+    flex: none;
+    color: transparent;
+    font-family: var(--poster-display);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 0.9;
+    -webkit-text-stroke: 1.5px var(--pp-text);
+}
+/* A shorter phone fits the details in one view too (owner, 13 Oct 2026):
+   up to 860 tall the blocks sit 10 apart; up to 760 (an iPhone SE or 8,
+   or most phones in Safari with its bars) the poster header is shorter and
+   the rows a little tighter. Nothing is left out. */
+@media (max-width: 700px) and (max-height: 860px) {
+    #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+        gap: 12px;
+        padding-bottom: 16px;
+    }
+}
+@media (max-width: 700px) and (max-height: 760px) {
+    #shared-dialog .event-sheet .event-ticket.event-hero {
+        min-height: 0;
+        padding: 54px 20px 8px;
+    }
+    #shared-dialog .event-hero > .event-hero-chip {
+        top: 21px;
+        left: 20px;
+        height: 30px;
+    }
+    #shared-dialog .event-hero-body {
+        gap: 4px;
+    }
+    #shared-dialog .event-hero .pp-tape {
+        font-size: 14px;
+    }
+    #shared-dialog .event-hero-title {
+        font-size: 24px;
+    }
+    #shared-dialog .event-hero-time {
+        font-size: 34px;
+    }
+    #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+        gap: 8px;
+        padding-top: 12px;
+        padding-bottom: 6px;
+    }
+    #shared-dialog .event-sheet .event-about .event-description {
+        line-height: 1.45;
+    }
+    #shared-dialog .event-sheet .event-row {
+        padding: 6px 0;
+    }
+    #shared-dialog .event-sheet .event-row.event-where {
+        padding-block: 8px;
+    }
+    #shared-dialog .event-sheet .event-today {
+        gap: 6px;
+    }
+    #shared-dialog .event-sheet .event-fit {
+        padding: 10px 12px;
+        font-size: 14.5px !important;
+        line-height: 1.4;
+    }
+    /* For you reads as one sentence after its label. */
+    #shared-dialog .event-sheet .event-fit b {
+        display: inline;
+        margin: 0 6px 0 0;
+    }
+    /* The listing's details line sits on About's label row; opened, they
+       show in place under the description. */
+    #shared-dialog .event-sheet .event-about {
+        position: relative;
+    }
+    #shared-dialog .event-sheet .event-about .event-source {
+        margin: 0;
+    }
+    #shared-dialog .event-sheet .event-about .event-source summary {
+        position: absolute;
+        top: -11px;
+        right: 0;
+    }
+    #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
+        padding-top: 8px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* On phones the date's calendar spans the page, with even edges. */
+@media (max-width: 700px) {
+    .event-search-row #event-calendar-panel {
+        right: auto;
+        width: calc(100vw - 32px);
+    }
+}

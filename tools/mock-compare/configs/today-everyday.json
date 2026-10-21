@@ -1,0 +1,169 @@
+{
+    "name": "today-everyday",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".day-panel",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "workspace",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "workspace (phone)",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [360, 390],
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "Your day",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day (phone)",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "date",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "date (phone)",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y"],
+            "widths": [360, 390],
+            "pixels": false
+        },
+        {
+            "name": "plan time",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan time (phone)",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "plan title",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan title (phone)",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "plan place",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan place (phone)",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "plan status",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan status (phone)",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "plan options",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan options (phone)",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "ignore": ["y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "Leave now",
+            "mock": ".agenda-item .trip-line",
+            "app": ".agenda-item .trip-line",
+            "widths": [768, 1280, 1440, 1512],
+            "pixelThreshold": 0.001
+        },
+        {
+            "name": "Leave now (phone)",
+            "mock": ".agenda-item .trip-line",
+            "app": ".agenda-item .trip-line",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixelThreshold": 0.002
+        },
+        {
+            "name": "Add a plan",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add a plan (phone)",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [360, 390],
+            "ignore": ["y"]
+        }
+    ],
+    "ignoreNote": "From 768 px y is compared everywhere.",
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "cardNote": "Leave now is Travel's card unchanged (the mock carries Travel's type and ink on Today since 979f0bb6). The mock page's 1.7px svg stroke still reaches the card's two line icons, which Travel draws at 1.75px: up to 0.1% of the card's pixels may differ there, and 0.2% on phones, where the card's live parts land at other fractions on other databases (the red sits only on the now ring's edge, the ⓘ and the ▶; 0.13% seen at 360) (reported to the coordinator).",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot.",
+    "workspaceNote": "The day's surface starts below the welcome and any deadline, which sit on the page; its height follows the sections' content, so only its place and width are compared."
+}

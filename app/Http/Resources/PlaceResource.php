@@ -28,6 +28,10 @@ class PlaceResource extends JsonResource
         $coarse = $fine?->coarse() ?? 'park';
         $mediaSelector = app(PublishedMediaSelector::class);
         $media = $mediaSelector->select($this->resource, 'hero');
+        $enrichment = $this->resource->relationLoaded('englishEnrichment') ? $this->englishEnrichment : null;
+        // Only the reviewed English enrichment carries a tip; a stored legacy
+        // tip has no evidence behind it and stays hidden.
+        $tip = $enrichment?->tip;
         $placeFacts = app(PlaceFacts::class)->resolve($this->resource);
         $mapPoint = $placeFacts['location']['map_point'];
         $entrancePoint = $placeFacts['location']['entrance_point'];
@@ -61,7 +65,8 @@ class PlaceResource extends JsonResource
                 default => null,
             } : null,
             'feature_chips' => $this->resolveFeatureChips($placeFacts['practical']),
-            'tip' => null,
+            'summary' => $enrichment?->summary,
+            'tip' => $tip,
             'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
@@ -69,22 +74,33 @@ class PlaceResource extends JsonResource
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
-            'place_facts' => [
-                'identity' => $placeFacts['identity'],
-                'name_kind' => $placeFacts['name_kind'],
-                'aliases' => $placeFacts['aliases'],
-                'location' => $placeFacts['location'],
-                'access' => $placeFacts['access'],
-                'fee' => $placeFacts['fee'],
-                'hours' => $placeFacts['hours'],
-                'contact' => $placeFacts['contact'],
-                'description' => $placeFacts['description'],
-                'negative_facts' => $placeFacts['negative_facts'],
-                'practical' => $placeFacts['practical'],
-                'activities' => $placeFacts['activities'],
-                'conflicts' => $placeFacts['conflicts'],
-                'revision' => $placeFacts['revision'],
-            ],
+            'place_facts' => $this->placeFacts($placeFacts),
+        ];
+    }
+
+    /**
+     * The full evidence record a detail view shows.
+     *
+     * @param  array<string, mixed>  $placeFacts
+     * @return array<string, mixed>
+     */
+    protected function placeFacts(array $placeFacts): array
+    {
+        return [
+            'identity' => $placeFacts['identity'],
+            'name_kind' => $placeFacts['name_kind'],
+            'aliases' => $placeFacts['aliases'],
+            'location' => $placeFacts['location'],
+            'access' => $placeFacts['access'],
+            'fee' => $placeFacts['fee'],
+            'hours' => $placeFacts['hours'],
+            'contact' => $placeFacts['contact'],
+            'description' => $placeFacts['description'],
+            'negative_facts' => $placeFacts['negative_facts'],
+            'practical' => $placeFacts['practical'],
+            'activities' => $placeFacts['activities'],
+            'conflicts' => $placeFacts['conflicts'],
+            'revision' => $placeFacts['revision'],
         ];
     }
 

@@ -1,0 +1,207 @@
+{
+    "name": "shell-composer",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": "header",
+        "before": [
+            {
+                "click": "button.composer-header:visible, button.composer-launcher:visible"
+            },
+            {
+                "wait": 500
+            }
+        ],
+        "screenshotStyle": "#composer-tray { backdrop-filter: none !important; background: rgb(255 253 248) !important; }"
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "button.shell-composer:visible, button.shell-composer-round:visible"
+            },
+            {
+                "wait": 500
+            }
+        ],
+        "screenshotStyle": ".composer-tray { backdrop-filter: none !important; background: rgb(255 253 248) !important; }"
+    },
+    "pageNote": "On Paperwork, where both sides name the page in the tray's About line (Events needs events in the database for the app's; Travel's app tray has none yet).",
+    "pairs": [
+        {
+            "name": "tray",
+            "mock": "#composer-tray.is-active",
+            "app": ".composer-tray",
+            "contentDiffers": true
+        },
+        {
+            "name": "About",
+            "mock": "#composer-tray .composer-page-context",
+            "app": ".composer-tray .composer-tray-about",
+            "ignore": ["w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "About words",
+            "mock": "#composer-tray .composer-page-context span",
+            "app": ".composer-tray .composer-tray-about span",
+            "ignore": ["w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "About remove",
+            "mock": "#composer-tray .composer-page-context button",
+            "app": ".composer-tray .composer-tray-about button",
+            "ignore": ["x"],
+            "pixels": false
+        },
+        {
+            "name": "request box",
+            "mock": "#composer-tray textarea",
+            "app": ".composer-tray textarea"
+        },
+        {
+            "name": "close",
+            "mock": "#composer-tray .composer-dismiss",
+            "app": ".composer-tray .composer-tray-dismiss",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "close (phone)",
+            "mock": "#composer-tray .composer-dismiss",
+            "app": ".composer-tray .composer-tray-dismiss",
+            "widths": [360, 390],
+            "pixels": false
+        },
+        {
+            "name": "actions",
+            "mock": "#composer-tray .today-composer-actions summary",
+            "app": ".composer-tray button[aria-label='Composer actions']"
+        },
+        {
+            "name": "send",
+            "mock": "#composer-tray .compose-button",
+            "app": ".composer-tray .composer-tray-send"
+        },
+        {
+            "name": "actions (open)",
+            "mock": "#composer-tray .today-composer-actions summary",
+            "app": ".composer-tray button[aria-label='Composer actions']",
+            "mockBefore": [
+                {
+                    "click": "#composer-tray .today-composer-actions summary"
+                },
+                {
+                    "wait": 300
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".composer-tray button[aria-label='Composer actions']"
+                },
+                {
+                    "wait": 300
+                }
+            ],
+            "widths": [360, 390]
+        },
+        {
+            "name": "actions (open, under the header)",
+            "mock": "#composer-tray .today-composer-actions summary",
+            "app": ".composer-tray button[aria-label='Composer actions']",
+            "mockBefore": [
+                {
+                    "click": "#composer-tray .today-composer-actions summary"
+                },
+                {
+                    "wait": 300
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".composer-tray button[aria-label='Composer actions']"
+                },
+                {
+                    "wait": 300
+                }
+            ],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "actions menu",
+            "mock": "#composer-tray .today-composer-actions[open] .today-control-menu",
+            "app": ".composer-tray-menu",
+            "widths": [360, 390]
+        },
+        {
+            "name": "actions menu (under the header)",
+            "mock": "#composer-tray .today-composer-actions[open] .today-control-menu",
+            "app": ".composer-tray-menu",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "first action",
+            "mock": "#composer-tray .today-control-menu > *",
+            "app": ".composer-tray-menu [role=menuitem]",
+            "index": 0,
+            "widths": [360, 390]
+        },
+        {
+            "name": "first action (under the header)",
+            "mock": "#composer-tray .today-control-menu > *",
+            "app": ".composer-tray-menu [role=menuitem]",
+            "index": 0,
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "first action icon",
+            "mock": "#composer-tray .today-control-menu > * svg",
+            "app": ".composer-tray-menu [role=menuitem] svg",
+            "index": 0,
+            "widths": [360, 390]
+        },
+        {
+            "name": "first action icon (under the header)",
+            "mock": "#composer-tray .today-control-menu > * svg",
+            "app": ".composer-tray-menu [role=menuitem] svg",
+            "index": 0,
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "last action",
+            "mock": "#composer-tray .today-control-menu > *",
+            "app": ".composer-tray-menu [role=menuitem]",
+            "index": 5,
+            "widths": [360, 390]
+        },
+        {
+            "name": "last action (under the header)",
+            "mock": "#composer-tray .today-control-menu > *",
+            "app": ".composer-tray-menu [role=menuitem]",
+            "index": 5,
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "frostNote": "The tray is frosted: it blurs whatever page lies behind it, and the two pages differ. For pixel shots both sides draw it on the same solid surface (screenshotStyle), so the shots compare the tray, not the page behind; its computed background and blur are still compared.",
+    "aboutNote": "The About line's words are each page's own (the mock: 'Paperwork · EU Blue Card'; the app: 'Your paperwork'), so its width, the remove button's x and that button's sub-pixel place differ: the button compares box (but x) and styles.",
+    "menuNote": "From 768 the tray sits under the header, and there the app opens the actions menu downward onto the page; the mock opens it upward, off the top of the screen (at 1440 its first rows sit at y -108). Reported to the coordinator as a mock defect. Until it's decided, the menu's y is set aside there and, with its rows off-screen in the mock, its pixels. The open + button's shot there also takes in the mock's menu shadow above it, so its pixels are set aside too.",
+    "trayNote": "The tray holds the About line, whose words are each page's own, so its pixels are content; box and styles are compared.",
+    "pixelThreshold": 0.0005,
+    "thresholdNote": "0.05% of a shot may differ: the menu's rounded corners show a few pixels of what lies behind them.",
+    "closeNote": "On phones the close button floats above the tray, over the page; its round corners show the page behind, which differs, so its pixels are not compared there. From 768 it sits inside the tray and is."
+}

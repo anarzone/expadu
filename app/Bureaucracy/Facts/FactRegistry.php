@@ -33,6 +33,11 @@ final class FactRegistry
         return new Collection($this->definitions->all());
     }
 
+    public function version(): string
+    {
+        return hash('sha256', json_encode($this->definitions->map(fn ($definition) => get_object_vars($definition))->all(), JSON_THROW_ON_ERROR));
+    }
+
     public function definition(string $key): FactDefinition
     {
         $definition = $this->definitions->get($key);
@@ -187,7 +192,22 @@ final class FactRegistry
         }
 
         $options = $this->options($key, $type, $attributes);
+        $dateSemantics = $attributes['date_semantics'] ?? null;
+        if ($dateSemantics !== null && ($type !== 'date' || ! in_array($dateSemantics, ['historical', 'expiry'], true))) {
+            throw new DomainException("Fact [{$key}] has invalid date semantics.");
+        }
         $legacyValues = $this->legacyValues($key, $type, $options, $attributes);
+        $subjectScope = $attributes['subject_scope'] ?? 'person';
+        $allowsNotApplicable = $attributes['allows_not_applicable'] ?? false;
+        $sources = $attributes['permissible_sources'] ?? FactDefinition::Sources;
+        if (! is_array($sources) || ! array_is_list($sources) || $sources === []
+            || count($sources) !== count(array_unique($sources, SORT_REGULAR))
+            || array_filter($sources, fn ($source) => ! is_string($source) || ! in_array($source, FactDefinition::Sources, true)) !== []) {
+            throw new DomainException("Fact [{$key}] has an invalid permissible source policy.");
+        }
+        if (! in_array($subjectScope, ['person', 'related_person_report'], true) || ! is_bool($allowsNotApplicable)) {
+            throw new DomainException("Fact [{$key}] has invalid subject or answer-state metadata.");
+        }
 
         if (array_key_exists('default', $attributes)) {
             $this->validateDefault($key, $type, $options, $attributes['default']);
@@ -209,6 +229,10 @@ final class FactRegistry
             priority: $this->requiredInteger($key, $attributes, 'priority', 0, 100),
             reconfirmAfterDays: $this->requiredInteger($key, $attributes, 'reconfirm_after_days', 1),
             legacyValues: $legacyValues,
+            dateSemantics: $dateSemantics,
+            subjectScope: $subjectScope,
+            allowsNotApplicable: $allowsNotApplicable,
+            permissibleSources: $sources,
         );
     }
 

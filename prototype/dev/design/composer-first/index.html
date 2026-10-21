@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light">
+<title>Expadu — Your kind of day</title>
+<meta name="description" content="An interactive Composer-first Today design exploration for Expadu.">
+<link rel="stylesheet" href="./today.css?v=144aa86dcbb4"><script src="./intent-model.js?v=322bf97537fc" defer></script><script src="./today.js?v=54bcc405f74d" defer></script>
+</head>
+<body>
+<a class="skip" href="#prompt">Skip to Composer</a>
+<div class="prototype-bar"><span>Today · Composer-first concept</span><span>Sample results <span class="separator">/</span> <a href="./report.html">Audit & design decisions ↗</a></span></div>
+<header class="app-header">
+ <a href="./" class="logo" aria-label="Expadu home"><svg viewBox="13 22 74 60" aria-hidden="true"><g transform="translate(2.45 2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect x="30" y="24" width="13" height="52" rx="6" fill="currentColor"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg><span>Expadu</span></a>
+ <nav class="main-nav" aria-label="Main navigation"><button class="active" data-action="today" aria-current="page">Today</button><button data-panel="explore">Explore Cologne</button><button data-panel="services">Everyday life</button></nav>
+ <div class="account-actions"><button class="saved-link" data-action="saved"><span data-icon="bookmark"></span><span>My day</span><span id="saved-count" hidden></span></button><button class="profile" data-panel="account" aria-label="Anar’s account">A</button></div>
+</header>
+<main id="main">
+ <section class="composer-stage" aria-labelledby="welcome-title">
+  <div class="greeting"><span class="sun" data-icon="sun"></span> Hi Anar. A little time for you.</div>
+  <h1 id="welcome-title">What would feel<br> good today?</h1>
+  <p class="intro">Somewhere quiet. A game. A little company.<br class="mobile-break"> Start with what you feel like.</p>
+  <form id="composer-form" class="composer-card">
+   <label class="sr-only" for="prompt">Tell Expadu what you need today</label>
+   <textarea id="prompt" rows="2" maxlength="800" placeholder="I’d love a quiet place to unwind…" required></textarea>
+   <div class="composer-bottom"><button class="context" type="button" data-panel="context"><span data-icon="pin"></span><span id="context-text">Today · Merkenich</span><span data-icon="down"></span></button><span class="input-hint">Make it your own</span><button type="submit" class="compose-button" aria-label="Find suggestions"><span class="submit-label">Find my day</span><span data-icon="arrow"></span></button></div>
+  </form>
+  <div class="starter-row" aria-label="Ideas to start with"><span class="starter-label">Or start here</span><button data-example="quiet" class="starter quiet"><span data-icon="leaf"></span>Somewhere quiet</button><button data-example="football" class="starter active"><span data-icon="ball"></span>A game of football</button><button data-example="social" class="starter social"><span data-icon="people"></span>A little company</button></div>
+  <p class="input-scope">Places, plans, getting around—or something you need to sort out.</p>
+ </section>
+ <section id="response" class="response" aria-live="polite" aria-atomic="false" hidden></section>
+ <section class="quiet-context" id="quiet-context" aria-label="Useful context"><button data-panel="weather"><span class="weather-icon" data-icon="sun"></span><span><strong>20° in Cologne</strong><small>Sample weather</small></span></button><span class="context-divider"></span><button data-panel="paperwork"><span data-icon="document"></span><span><strong>Your paperwork</strong><small>Pick up your checklist</small></span><span class="context-arrow" data-icon="right"></span></button></section>
+</main>
+<footer class="app-footer"><span>Make Cologne feel a little more like home.</span><button data-panel="services">Places, events & city services <span data-icon="arrow"></span></button></footer>
+<dialog id="panel" aria-labelledby="panel-title"><div id="panel-body"></div></dialog><div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

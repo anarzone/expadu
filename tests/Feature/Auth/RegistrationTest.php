@@ -22,7 +22,7 @@ test('new users can register and are redirected', function () {
     ]);
 
     $this->assertAuthenticated();
-    // Fortify redirects to dashboard, then onboarding middleware redirects to onboarding
+    // New accounts enter Today; settling-in questions are optional.
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 

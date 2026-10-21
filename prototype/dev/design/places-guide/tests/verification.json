@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-09-27T19:17:10.755Z",
+  "checks": [
+    "Prepared source integrity, unique identities and approved media hashes",
+    "Landing exposes actionable collections, full catalogue and no photo dependency",
+    "Collections, accent-insensitive search and recorded-area filters use the full snapshot",
+    "A place without a photo has practical details, explicit uncertainty and correct map coordinates",
+    "Saving is separate from planning; search changes preserve the unfinished visit form",
+    "Dated proposal, undo and Composer handoff retain full source records without confirming a plan",
+    "Directions use actual coordinates and shared travel preferences, without fake route results",
+    "Reviewed photo attribution, missing-photo mode and image failure leave a usable detail view",
+    "Layout at 320px: no overflow, first place and Save visible, return preserves browsing",
+    "Layout at 390px: no overflow, first place and Save visible, return preserves browsing",
+    "Layout at 768px: no overflow, first place and Save visible, return preserves browsing",
+    "Catalogue failure offers recovery without hiding saved data"
+  ],
+  "passed": 12,
+  "browserErrors": [],
+  "recordCount": 4956,
+  "photoCount": 8
+}

@@ -1,0 +1,2086 @@
+/* Today (the mock's today-next/brief/ and connected/day-*.css): one white
+   canvas with Your day on the left and what's next on the right, divided by
+   a hairline. Phones flatten both columns into one priority order (TD5).
+   Values follow the mock as it computes at 390, 768 and 1440. */
+
+/* ── Deadline strip: a Paperwork date within three days ─────────────── */
+.deadline-strip {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding: 8px 16px;
+    border: 1px solid var(--color-attention-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-attention-bg);
+    color: var(--color-text);
+    text-decoration: none;
+}
+.deadline-symbol {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.deadline-symbol svg {
+    width: 21px;
+    height: 21px;
+}
+.deadline-copy {
+    display: grid;
+    gap: 4px;
+}
+.deadline-copy strong {
+    display: block;
+    font-size: var(--text-section);
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+}
+.deadline-copy small {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.35;
+}
+.deadline-strip > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-attention-text);
+}
+
+/* ── The canvas ─────────────────────────────────────────────────────── */
+.today-workspace {
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+}
+.daily-canvas {
+    display: grid;
+    grid-template-columns: minmax(340px, 2fr) minmax(0, 3fr);
+    align-items: start;
+}
+.next-area {
+    position: relative;
+    display: grid;
+}
+.next-area::before {
+    content: '';
+    position: absolute;
+    inset: 20px auto 20px 0;
+    width: 1px;
+    background: linear-gradient(
+        transparent,
+        var(--color-border) 12%,
+        var(--color-border) 88%,
+        transparent
+    );
+}
+@media (max-width: 999px) {
+    .daily-canvas {
+        grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    }
+}
+
+/* ── Your day ───────────────────────────────────────────────────────── */
+.day-panel {
+    padding: 16px;
+}
+.day-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 8px;
+}
+.day-heading h2 {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 26px;
+    letter-spacing: -0.4px;
+}
+.day-heading small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* Nothing (more) planned: one quiet line, then Add a plan. */
+.day-empty strong {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--color-text-muted);
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+}
+.has-no-plans .day-actions {
+    margin-top: 4px;
+}
+.day-panel.has-no-plans {
+    padding-bottom: 20px;
+}
+@media (max-width: 700px) {
+    /* An empty day keeps to one line on phones: no heading. */
+    .day-panel.has-no-plans {
+        padding-block: 14px 6px;
+    }
+    .has-no-plans .day-heading {
+        display: none;
+    }
+}
+@media (max-width: 359px) {
+    .day-panel {
+        padding: 14px 12px 16px;
+    }
+    .day-heading {
+        margin-bottom: 10px;
+    }
+}
+.agenda {
+    display: grid;
+    gap: 16px;
+}
+/* Each plan hangs on the day's timeline: a dot at its time, a fading line
+   to the next. */
+.agenda-item {
+    position: relative;
+    padding-left: 26px;
+}
+.agenda-item::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: linear-gradient(
+        var(--color-brand-orange),
+        rgb(255 57 2 / 0.25)
+    );
+}
+.agenda-item::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-round);
+    background: var(--color-brand-orange);
+    box-shadow: 0 0 0 3px #fff3e9;
+}
+.agenda-item.is-secondary::before,
+.agenda-item.is-secondary::after {
+    filter: saturate(0.4);
+    opacity: 0.6;
+}
+.agenda-identity {
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.appointment-time {
+    font-size: var(--text-display-fluid);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: -1.8px;
+    font-variant-numeric: tabular-nums;
+}
+.appointment-title {
+    margin: 8px 44px 4px 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+.appointment-location {
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.agenda-item.is-secondary .appointment-time {
+    font-size: var(--text-title);
+    letter-spacing: -0.7px;
+}
+.agenda-item.is-secondary .appointment-title {
+    margin-top: 5px;
+    font-size: var(--text-section);
+}
+.status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 14px;
+}
+.agenda-item.is-secondary .status-row {
+    margin-bottom: 0;
+}
+/* What to bring: the Paperwork appointment's document count. */
+.agenda-paperwork {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    margin: -4px 0 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-text);
+    text-decoration: none;
+}
+.agenda-paperwork > svg:first-child {
+    width: 22px;
+    height: 22px;
+    color: var(--color-nav-violet);
+}
+.agenda-paperwork > svg:last-child {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+.agenda-paperwork span {
+    display: grid;
+    gap: 1px;
+}
+.agenda-paperwork small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.agenda-paperwork strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+/* The ⋯ menu on each plan. */
+.appointment-options {
+    position: absolute;
+    top: 0;
+    right: -7px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+}
+.appointment-options:hover,
+.appointment-options[aria-expanded='true'] {
+    background: var(--color-bg-quiet);
+}
+.appointment-options svg {
+    width: 22px;
+    height: 22px;
+}
+/* Earlier today: done or past plans in a fold, each opening its details;
+   a done one can be restored. */
+.earlier-plans {
+    margin-top: 10px;
+}
+.earlier-plans > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    list-style: none;
+    cursor: pointer;
+}
+.earlier-plans > summary::-webkit-details-marker {
+    display: none;
+}
+.earlier-plans > summary small {
+    font-size: var(--text-micro);
+}
+.earlier-plans > summary > svg {
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+}
+.earlier-plans[open] > summary > svg {
+    transform: rotate(180deg);
+}
+.earlier-plan {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.earlier-plan > button:first-child {
+    display: flex;
+    flex: 1;
+    align-items: start;
+    gap: 12px;
+    min-height: 48px;
+    padding-block: 8px;
+    font-size: var(--text-small);
+    text-align: left;
+    cursor: pointer;
+}
+.earlier-plan small {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+}
+.earlier-plan time {
+    color: var(--color-text-soft);
+    font-variant-numeric: tabular-nums;
+}
+/* The trip between two plans: dashed, quiet; "not checked" says so. */
+.plan-link {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    margin: 2px 0 14px 21px;
+    padding: 8px 12px 8px 8px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+}
+a.plan-link:hover {
+    background: var(--color-bg-quiet);
+}
+.plan-link-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.plan-link-icon svg {
+    width: 17px;
+    height: 17px;
+}
+.plan-link.is-tight .plan-link-icon {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.plan-link.is-conflict {
+    border-color: var(--color-conflict-border);
+}
+.plan-link.is-conflict .plan-link-icon {
+    background: var(--color-conflict);
+    color: var(--color-conflict-text);
+}
+.plan-link > span:nth-child(2) {
+    display: grid;
+    gap: 1px;
+}
+.plan-link small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.plan-link strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.plan-link-action {
+    color: var(--color-action-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.day-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+.text-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 8px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-body);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+}
+.text-action svg {
+    width: 22px;
+    height: 22px;
+}
+.text-action:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* ── Sheets on Today: the add/details forms ──────────────────────────── */
+.today-form {
+    display: flow-root;
+}
+.today-form .detail-intro {
+    margin: 0 0 14px;
+    color: var(--color-text-muted);
+}
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    margin-bottom: 18px;
+    font-size: var(--text-control);
+}
+.form-field small {
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+}
+.form-field input[type='text']:not(.ui-time-input) {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: #fff;
+    color: var(--color-text);
+    font: inherit;
+}
+.form-field input[type='text']:not(.ui-time-input):focus {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px #00758c26;
+}
+/* From – Until: the time fields are Travel's large tabular ones. */
+.selection-times {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+}
+.selection-times .form-field {
+    margin-bottom: 0;
+}
+.selection-times > span {
+    padding-top: 24px;
+    color: var(--color-text-soft);
+}
+.detail-note {
+    margin: 16px 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+}
+.today-form .detail-actions {
+    justify-content: flex-end;
+}
+.form-error {
+    margin: 0 0 12px;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+.outline-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 18px;
+    border: 1px solid var(--color-action);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+}
+.outline-action:hover {
+    background: var(--color-action-tint);
+}
+.outline-action:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+.outline-action svg {
+    width: 22px;
+    height: 22px;
+}
+/* Why the trip couldn't start, under the Leave now card. */
+.leave-note {
+    margin: 8px 0 0;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+
+/* Plan details (the mock's .today-sheet): when and where, its status, the
+   trip there, what is recorded, then Edit and Remove. */
+.today-sheet .detail-intro {
+    margin: 0 0 14px;
+    color: var(--color-text-muted);
+}
+.today-sheet .status-row {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 14px;
+}
+.detail-grid {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+}
+.detail-grid div {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.detail-grid dt {
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+}
+.detail-grid dd {
+    margin: 2px 0 0;
+    font-weight: var(--weight-semibold);
+}
+.detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    margin-top: 18px;
+}
+/* One orange action per sheet; the others are ink. */
+.today-sheet .text-action {
+    color: var(--color-text);
+}
+
+/* A tappable summary row inside a sheet: the trip to a plan. */
+.sheet-row {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+    color: var(--color-text);
+    text-align: left;
+    text-decoration: none;
+}
+.sheet-row:hover {
+    background: var(--color-select-bg-hover);
+}
+.sheet-row:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.sheet-row > svg {
+    width: 20px;
+    height: 20px;
+    color: var(--color-select-text);
+}
+.sheet-row > svg:last-child {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+.sheet-row > span:not(.tl-line) {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.sheet-row strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.sheet-row small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* The trip as Travel draws it: its line badge on the card's own surface. */
+.sheet-row.is-trip {
+    grid-template-columns: auto minmax(0, 1fr) 16px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg-surface);
+}
+.sheet-row.is-trip:hover {
+    background: var(--color-bg-hover);
+}
+
+/* ── Paperwork: the next step and its documents (the mock's
+   .paperwork-panel) ─────────────────────────────────────────────────── */
+.paperwork-panel .section-head {
+    align-items: start;
+}
+.section-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.section-tools .record-label {
+    max-width: 74px;
+    line-height: 15.4px;
+}
+.paperwork-focus {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px -8px 12px;
+    padding: 8px;
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    text-decoration: none;
+}
+.paperwork-focus:hover {
+    background: var(--color-paper-bg-quiet);
+}
+.paperwork-copy h3 {
+    margin: 8px 0 7px;
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+    font-weight: var(--weight-bold);
+    line-height: 1.12;
+    letter-spacing: -0.8px;
+}
+.paperwork-copy p {
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+.document-progress {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex: 0 0 78px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--color-paper-progress) var(--progress),
+        var(--color-paper-track) var(--progress)
+    );
+}
+.document-progress::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 7px;
+    border-radius: 50%;
+    background: var(--color-paper-inset);
+}
+.document-progress strong {
+    color: var(--color-paper-ink);
+    font-size: 28px;
+    line-height: 33.6px;
+}
+.document-progress small {
+    color: var(--color-paper-ink-soft);
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+    line-height: 16.8px;
+}
+.document-progress span {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.paperwork-followups {
+    display: grid;
+    gap: 8px;
+}
+.situation-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    padding: 2px 12px;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    text-decoration: none;
+}
+.situation-link span {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.situation-link span::after {
+    content: ' →';
+}
+
+/* ── What's next: the city's help (the mock's .practical-surface) ────── */
+.practical-surface {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px;
+    border-radius: 0 var(--radius-xl) 0 0;
+}
+.city-help {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0 12px;
+    align-content: start;
+    padding-left: 20px;
+}
+.section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+}
+.city-help > .section-head {
+    align-self: start;
+    margin: 6px 0 0;
+}
+.section-head h2 {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 26px;
+    letter-spacing: -0.4px;
+}
+/* Now, and a later hour, with where the forecast comes from. */
+.forecast-strip {
+    display: flex;
+    grid-column: 2;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px 6px;
+    min-height: 44px;
+    padding: 0 0 6px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+}
+.forecast-strip svg {
+    width: 22px;
+    height: 22px;
+    color: var(--color-attention-text);
+}
+.forecast-strip b {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+    line-height: 30px;
+    letter-spacing: -1px;
+}
+.forecast-strip span,
+.forecast-strip strong {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 16.5px;
+}
+.forecast-strip small {
+    flex: 0 1 100%;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 16.5px;
+    text-align: right;
+}
+/* Check departures: a stop, its next lines as Travel draws them. */
+.departure-board {
+    grid-column: 1 / -1;
+    margin: 10px 0 0;
+}
+.departure-board > summary {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    list-style: none;
+    cursor: pointer;
+}
+.departure-board > summary::-webkit-details-marker {
+    display: none;
+}
+.departure-board > summary svg {
+    width: 20px;
+    height: 20px;
+}
+.departure-board > summary svg:first-child {
+    color: var(--color-select-text);
+}
+.departure-board > summary svg:last-child {
+    width: 16px;
+    margin-left: auto;
+}
+.departure-board[open] > summary svg:last-child {
+    transform: rotate(180deg);
+}
+.board-content {
+    padding: 0 0 4px;
+}
+.stop-picker {
+    position: relative;
+}
+.stop-trigger {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 12px 6px 11px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+    cursor: pointer;
+}
+.stop-trigger svg {
+    width: 18px;
+    height: 18px;
+}
+.stop-trigger svg:last-child {
+    width: 16px;
+    height: 16px;
+}
+.stop-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.stop-list {
+    position: absolute;
+    z-index: 30;
+    inset: calc(100% + 6px) 0 auto;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: 0 14px 32px -12px #27241f47;
+    list-style: none;
+}
+.stop-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+    cursor: pointer;
+}
+.stop-list li[aria-selected='true'] {
+    background: var(--color-select-bg);
+    font-weight: var(--weight-semibold);
+}
+.stop-list li svg {
+    color: var(--color-select-text);
+}
+.stop-list li[aria-selected='false'] svg {
+    visibility: hidden;
+}
+.board-capture {
+    margin: 8px 0 2px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.board-capture span {
+    display: inline-block;
+    margin-left: 5px;
+    font-weight: var(--weight-semibold);
+}
+.departure-strips {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 4px;
+}
+.board-empty {
+    margin: 8px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.board-full {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.board-full::after {
+    content: '→';
+}
+
+@media (min-width: 701px) and (max-width: 999px) {
+    .practical-surface {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        padding: 20px;
+    }
+    .city-help {
+        grid-column: auto;
+        padding: 16px 0 0;
+    }
+}
+@media (max-width: 700px) {
+    .practical-surface {
+        display: block;
+    }
+    .city-help {
+        gap: 0 8px;
+        padding: 0;
+    }
+    .section-head h2 {
+        font-size: var(--text-body);
+        line-height: 19.5px;
+    }
+    .forecast-strip b {
+        font-size: var(--text-section);
+        line-height: 25.5px;
+    }
+    .departure-board {
+        margin: 0;
+    }
+}
+
+/* ── Useful city links: the city's official websites ────────────────── */
+.continue-support {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px 24px;
+    padding: 16px;
+}
+.city-source-section {
+    position: relative;
+    display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 16px;
+}
+.continue-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+/* The city links' head reads on one baseline (brief/cohesion.css). */
+.city-source-section .continue-head {
+    align-items: baseline;
+    gap: 4px 12px;
+}
+.continue-head h3 {
+    font-size: var(--text-control);
+    font-weight: var(--weight-bold);
+    line-height: 17.5px;
+    letter-spacing: -0.25px;
+}
+.record-label {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.city-source-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+}
+.city-source-links a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    color: var(--color-select-text);
+    font-size: var(--text-small);
+    text-decoration: none;
+}
+.city-source-links svg {
+    width: 18px;
+    height: 18px;
+}
+@media (max-width: 700px) {
+    .continue-support {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .city-source-section {
+        display: block;
+    }
+    .city-source-links {
+        margin-top: 6px;
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    .continue-support {
+        padding: 16px 18px;
+    }
+}
+
+/* ── Coming up: later days in a fold ─────────────────────────────────── */
+.coming-up {
+    position: relative;
+    padding: 8px 16px;
+    background: linear-gradient(var(--color-bg-quiet), transparent);
+}
+/* A hairline above Coming up and the city's links, as above discovery
+   (the mock's cohesion.css). */
+:is(.coming-up, .continue-support)::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
+.coming-up > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-soft);
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    list-style: none;
+    cursor: pointer;
+}
+.coming-up > summary::-webkit-details-marker {
+    display: none;
+}
+.coming-up > summary small {
+    margin-left: 8px;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-regular);
+}
+.coming-up > summary svg {
+    width: 22px;
+    height: 22px;
+    transition: transform var(--duration-base) var(--ease-settle);
+}
+/* The down mark turns up while it's open, as the mock's does. */
+.coming-up[open] > summary svg {
+    transform: rotate(180deg);
+}
+.upcoming-plans {
+    display: grid;
+    gap: 4px;
+    padding-top: 4px;
+}
+.upcoming-plan {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 8px 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+}
+.upcoming-date {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.upcoming-date small {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.5;
+}
+.upcoming-date b {
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+}
+.upcoming-copy {
+    flex: 1;
+    min-width: 0;
+}
+.upcoming-copy strong {
+    display: block;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.25;
+}
+.upcoming-copy small {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.upcoming-plan time {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+.plan-tomorrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    color: #a03919;
+    font-size: var(--text-small);
+    text-decoration: none;
+}
+.plan-tomorrow svg {
+    width: 23px;
+    height: 23px;
+}
+.plan-tomorrow:hover {
+    background: var(--color-action-tint);
+}
+
+/* ── Phones: one column, in the order the day needs (the page renders the
+   sections straight into the canvas there, without the two columns) ── */
+@media (max-width: 700px) {
+    .daily-canvas {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    /* The server renders the two columns; until the page hydrates, a phone
+       reads them as one. */
+    .day-area,
+    .next-area {
+        display: contents;
+    }
+    .next-area::before {
+        display: none;
+    }
+    .agenda-item {
+        padding-left: 21px;
+    }
+    .appointment-time {
+        font-size: var(--text-display);
+        letter-spacing: -1.5px;
+    }
+    .appointment-title {
+        margin-right: 35px;
+        font-size: var(--text-title-sm);
+    }
+    .appointment-location {
+        font-size: var(--text-small);
+    }
+    .status-row .ui-pill {
+        font-size: var(--text-micro);
+    }
+    .practical-surface {
+        border-radius: 0;
+    }
+    .continue-support {
+        gap: 16px;
+    }
+
+    /* Paperwork's next step is one quiet row under City help: a small
+       label, the step, and the count without its ring (the mock's
+       priorities.css and hierarchy.css). */
+    .practical-personal {
+        margin-top: 6px;
+    }
+    .paperwork-panel:not(.paperwork-optional) {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: center;
+        column-gap: 6px;
+        padding-top: 8px;
+    }
+    .paperwork-panel:not(.paperwork-optional)::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border),
+            transparent
+        );
+    }
+    .paperwork-panel:not(.paperwork-optional) > .section-head,
+    .paperwork-panel:not(.paperwork-optional) .section-tools {
+        display: contents;
+    }
+    .paperwork-panel:not(.paperwork-optional) .section-head h2 {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-medium);
+        line-height: 1.3;
+    }
+    .paperwork-panel .record-label,
+    .paperwork-followups {
+        display: none;
+    }
+    .paperwork-focus {
+        min-height: 54px;
+        margin: 0;
+        padding: 4px 0;
+        border-radius: var(--radius-sm);
+    }
+    .paperwork-copy h3 {
+        margin: 0 0 4px;
+        font-size: var(--text-section);
+        letter-spacing: -0.3px;
+    }
+    .paperwork-copy p {
+        font-size: var(--text-caption);
+    }
+    .document-progress {
+        flex: 0 0 auto;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-paper-text);
+    }
+    .document-progress::before {
+        content: none;
+    }
+    .document-progress strong {
+        font-size: var(--text-section);
+        line-height: 1.2;
+    }
+    .document-progress small {
+        font-size: var(--text-caption);
+        line-height: 1.2;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .coming-up > summary svg {
+        transition: none;
+    }
+}
+
+/* ── Discovery (the mock's .discovery: today-next/style.css, brief/
+   enhancements.css, hierarchy.css, cohesion.css): tonight's events as
+   posters, then compact listings. ─────────────────────────────────────── */
+.discovery {
+    position: relative;
+    margin: 0;
+    padding: 16px;
+}
+.discovery::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
+.discovery-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.discovery-heading h2 {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+    letter-spacing: -0.4px;
+}
+.discovery-heading > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.discovery-heading > a::after {
+    content: '→';
+    font-weight: var(--weight-regular);
+}
+/* A free day: "Ideas for this afternoon" and the weather under it. */
+.discovery-heading:has(.discovery-title-group) {
+    align-items: flex-start;
+}
+.discovery-heading:has(.discovery-title-group) > a {
+    flex: none;
+    white-space: nowrap;
+}
+.discovery-title-group {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.discovery-title-group p {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+.discovery-title-group p svg {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+    color: var(--color-sun);
+}
+.discovery-title-group p small {
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+    white-space: nowrap;
+}
+.discovery-empty {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.event-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding-bottom: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    touch-action: pan-x pan-y;
+}
+.event-card {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    height: clamp(260px, 23vw, 320px);
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--pp-ground);
+    scroll-snap-align: start;
+}
+.event-open {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    text-align: left;
+}
+.event-copy {
+    position: absolute;
+    right: 78px;
+    bottom: 21px;
+    left: 22px;
+    z-index: 1;
+    color: var(--pp-text);
+}
+.event-copy strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    letter-spacing: -0.6px;
+}
+.event-copy small {
+    display: block;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    line-height: 1.6;
+}
+.event-save,
+.event-plan {
+    position: absolute;
+    right: 16px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    /* The mock's are plain buttons, with a button's own padding. */
+    padding: 1px 6px;
+    border-radius: var(--radius-round);
+    color: #fff;
+}
+.event-save {
+    top: 16px;
+    border: 1px solid var(--color-poster-glass-edge);
+    background: var(--color-poster-glass);
+    backdrop-filter: blur(14px);
+}
+.event-plan {
+    bottom: 17px;
+    background: var(--color-action);
+}
+:is(
+        .event-save,
+        .event-plan,
+        .compact-event .icon-button,
+        .around-item > .icon-button
+    )
+    svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* A thumb in the poster's ink with the category's icon. */
+.event-thumb {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    color: var(--pp-text);
+}
+.event-thumb > svg {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+.compact-events {
+    margin-top: 4px;
+}
+.compact-event {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+}
+.compact-event + .compact-event::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: 60px 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-border), transparent);
+}
+.compact-event-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    /* The mock's are buttons, with a button's own padding. */
+    padding: 1px 6px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    text-decoration: none;
+}
+.compact-event-open > span {
+    min-width: 0;
+}
+.compact-event-open > .event-thumb {
+    width: 50px;
+    height: 50px;
+}
+.compact-event-open strong {
+    display: block;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.compact-event-open small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.compact-category {
+    margin-left: auto;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-event-chip-bg);
+    color: var(--color-event-chip-text);
+    font-size: var(--text-micro);
+}
+:is(.compact-event, .around-item) > .icon-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 1px 6px;
+    border-radius: var(--radius-round);
+}
+:is(.compact-plan, .around-item > .icon-button) {
+    color: var(--color-action-text);
+}
+
+/* ── Around the next plan (the mock's .around-plan: brief/enhancements.css,
+   cohesion.css, connected/place-card.css): an event in the plan's area and
+   the everyday places open there, with the listings' credit. ─────────── */
+.around-plan {
+    margin: 0 16px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(100deg, var(--color-around-wash), transparent);
+}
+.around-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.around-heading h3 {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+}
+.around-heading small,
+.around-places-title small {
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+}
+.around-context {
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.around-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+}
+.around-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 64px;
+    padding: 1px 6px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    text-decoration: none;
+}
+.around-open > span:last-child {
+    min-width: 0;
+}
+/* A saved place's mark (it has no poster). */
+.around-symbol {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.around-symbol svg {
+    width: 22px;
+    height: 22px;
+}
+.around-open strong {
+    display: block;
+    font-size: var(--text-control);
+    line-height: 1.3;
+}
+.around-open small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.around-places {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+}
+.around-places-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.nearby-place--line {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+}
+.nearby-place-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 2px;
+    text-align: left;
+}
+.nearby-place-icon {
+    display: grid;
+    flex: 0 0 36px;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.nearby-place-icon .place-icon {
+    width: 18px;
+    height: 18px;
+}
+.nearby-place-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.nearby-place-copy strong {
+    overflow: hidden;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nearby-place-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.place-hours.is-open {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+.around-places-source {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+}
+
+@media (min-width: 701px) and (max-width: 999px) {
+    .discovery {
+        padding-inline: 18px;
+    }
+    .event-rail {
+        grid-auto-columns: 88%;
+    }
+    .compact-category {
+        display: none;
+    }
+}
+@media (max-width: 700px) {
+    :is(.discovery, .coming-up, .continue-support)::before {
+        inset-inline: 16px;
+    }
+    /* On a phone the city's help follows the day, under a hairline too
+       (the mock's hierarchy.css). */
+    .practical-surface::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 16px;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border) 16%,
+            var(--color-border) 84%,
+            transparent
+        );
+    }
+    .discovery-heading h2 {
+        font-size: var(--text-section);
+    }
+    .event-rail {
+        grid-auto-columns: 86%;
+    }
+    .event-card {
+        height: 260px;
+    }
+    .event-copy {
+        right: 67px;
+        bottom: 20px;
+        left: 18px;
+    }
+    .event-save,
+    .event-plan {
+        right: 12px;
+    }
+    .compact-event {
+        gap: 0;
+    }
+    .compact-event-open {
+        gap: 9px;
+    }
+    .compact-event-open > .event-thumb {
+        width: 42px;
+        height: 46px;
+        border-radius: var(--radius-sm);
+    }
+    .compact-event-open strong {
+        font-size: var(--text-small);
+    }
+    .compact-event-open small {
+        font-size: var(--text-micro);
+    }
+    .compact-category {
+        display: none;
+    }
+    .around-heading {
+        flex-wrap: wrap;
+        gap: 3px 8px;
+    }
+    .around-open {
+        gap: 8px;
+    }
+}
+
+/* ── Saved for later (the mock's .saved-ideas: today-next/style.css). ── */
+.saved-ideas {
+    position: relative;
+    padding: 14px 22px;
+}
+.saved-ideas::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 14%,
+        var(--color-border) 85%,
+        transparent
+    );
+}
+.saved-ideas h2 {
+    font-size: var(--text-body);
+    line-height: 1.3;
+}
+.saved-all {
+    display: inline-flex;
+    text-align: center;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--color-action-text);
+    font-size: var(--text-caption);
+    text-decoration: none;
+}
+.saved-all span {
+    color: var(--color-text-muted);
+}
+.saved-idea {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 54px;
+    margin-top: 10px;
+}
+.saved-idea + .saved-idea {
+    margin-top: 6px;
+}
+.saved-idea .saved-title {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 4px 0;
+    text-align: left;
+    text-decoration: none;
+}
+.saved-title > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.saved-monogram {
+    display: grid;
+    flex: 0 0 40px;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-saved-bg);
+    color: var(--color-saved-ink);
+    font-weight: var(--weight-semibold);
+}
+.saved-monogram svg,
+.saved-idea .icon-button svg {
+    width: 22px;
+    height: 22px;
+}
+.saved-idea small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.saved-idea .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* The mock's are buttons, with a button's own padding. */
+    padding: 1px 6px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-round);
+    color: var(--color-action-text);
+}
+
+/* ── Pick up where you left off (the mock's .column-continuation:
+   today-next/style.css, brief/cohesion.css, hierarchy.css). ─────────── */
+.column-continuation {
+    position: relative;
+    margin: 0;
+    min-width: 0;
+}
+.column-continuation::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
+.continue-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 20px 22px;
+    border-radius: 0 0 0 var(--radius-xl);
+}
+.continue-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-nav-teal);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.continue-kind svg {
+    width: 20px;
+    height: 20px;
+}
+.continue-state {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.continue-summary h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+    letter-spacing: -0.7px;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+.continue-actions > a {
+    text-align: center;
+}
+.continue-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding-top: 4px;
+}
+.continue-actions .outline-action {
+    padding: 10px 14px;
+    border-color: var(--color-outline-quiet);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-control);
+}
+.continue-actions .text-action {
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 700px) {
+    .saved-ideas {
+        padding: 16px;
+    }
+    .column-continuation::before {
+        inset-inline: 16px;
+    }
+    .continue-composer {
+        padding: 18px 16px;
+        border-radius: 0;
+    }
+}
+
+/* ── The first visit (the mock's .today-welcome and .paperwork-optional:
+   brief/priorities.css). ─────────────────────────────────────────────── */
+.today-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+    padding: 20px 24px;
+    border-radius: var(--radius-xl);
+    background: var(--color-welcome-bg);
+}
+.today-welcome > div:first-child {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+}
+.welcome-symbol {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: var(--color-welcome-mark);
+}
+.today-welcome h2 {
+    margin: 0 0 4px;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+    letter-spacing: -0.4px;
+}
+.today-welcome p {
+    margin: 0;
+    color: var(--color-welcome-text);
+    font-size: var(--text-control);
+}
+.welcome-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.welcome-choices > * {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: var(--color-welcome-ink);
+    font: inherit;
+    font-size: var(--text-control);
+    text-decoration: none;
+    cursor: pointer;
+}
+.welcome-symbol svg {
+    width: 23px;
+    height: 23px;
+}
+.welcome-choices svg {
+    width: 22px;
+    height: 22px;
+}
+.welcome-choices svg {
+    color: var(--color-welcome-icon);
+}
+/* On a first visit City help and the way into Paperwork lead the day's
+   column, one under the other. */
+.day-area > .practical-surface {
+    grid-template-columns: minmax(0, 1fr);
+}
+.paperwork-optional a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+}
+.paperwork-optional svg {
+    width: 24px;
+    height: 22px;
+    color: var(--color-paper-text);
+}
+.paperwork-optional strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.paperwork-optional small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+}
+
+@media (max-width: 700px) {
+    .today-welcome {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px;
+    }
+    .today-welcome h2 {
+        font-size: var(--text-title-sm);
+    }
+    .welcome-choices {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .welcome-choices > * {
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: var(--text-small);
+    }
+    .welcome-choices > :last-child {
+        grid-column: 1 / -1;
+    }
+}

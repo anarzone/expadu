@@ -35,6 +35,12 @@ class TravelEstimator implements EstimatesTravel
 
     public function minutesBetween(float $fromLat, float $fromLng, float $toLat, float $toLng): int
     {
+        // A leg to or from an unroutable place (no map point) is not estimated;
+        // the plan marks it as travel unknown instead of showing minutes.
+        if (! is_finite($fromLat) || ! is_finite($fromLng) || ! is_finite($toLat) || ! is_finite($toLng)) {
+            return 0;
+        }
+
         return self::minutesFromKm($this->haversineKm($fromLat, $fromLng, $toLat, $toLng));
     }
 

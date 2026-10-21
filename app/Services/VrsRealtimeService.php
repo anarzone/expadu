@@ -6,6 +6,8 @@ use App\Models\Gtfs\GtfsStopTime;
 use App\Proto\TransitRealtime\FeedMessage;
 use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +18,8 @@ use Illuminate\Support\Facades\Log;
  */
 class VrsRealtimeService
 {
+    private const FEED_KEY = 'vrs_gtfsrt_trip_updates_v2';
+
     /**
      * Get real-time updates indexed by trip_id.
      *
@@ -23,6 +27,7 @@ class VrsRealtimeService
      *     trip_id: string,
      *     route_id: string,
      *     cancelled: bool,
+     *     observed_at: string|null,
      *     stops: array<string, array{delay: int, skipped: bool}>
      * }>
      */
@@ -32,15 +37,27 @@ class VrsRealtimeService
             return [];
         }
 
-        return Cache::remember('vrs_gtfsrt_trip_updates', 30, function () {
-            return $this->fetchAndParse();
-        });
+        // Read once per request (it is consulted per departure row). When it
+        // has expired, one worker refetches; the others wait for its copy.
+        $updates = Cache::memo()->get(self::FEED_KEY);
+        if (is_array($updates)) {
+            return $updates;
+        }
+
+        try {
+            return Cache::lock('vrs_gtfsrt:fetch', 15)->block(
+                10,
+                fn () => Cache::remember(self::FEED_KEY, 30, fn () => $this->fetchAndParse()),
+            );
+        } catch (LockTimeoutException) {
+            return [];
+        }
     }
 
     /**
      * Get delay info for a specific trip at a specific stop.
      *
-     * @return array{delay: int, skipped: bool, cancelled: bool}|null
+     * @return array{delay: int, skipped: bool, cancelled: bool, observed_at: string|null}|null
      */
     public function getDelayForTripAtStop(string $tripId, string $stopId): ?array
     {
@@ -51,9 +68,10 @@ class VrsRealtimeService
         }
 
         $trip = $updates[$tripId];
+        $observedAt = $trip['observed_at'] ?? null;
 
         if ($trip['cancelled']) {
-            return ['delay' => 0, 'skipped' => false, 'cancelled' => true];
+            return ['delay' => 0, 'skipped' => false, 'cancelled' => true, 'observed_at' => $observedAt];
         }
 
         if (isset($trip['stops'][$stopId])) {
@@ -63,6 +81,7 @@ class VrsRealtimeService
                 'delay' => $stop['delay'],
                 'skipped' => $stop['skipped'],
                 'cancelled' => false,
+                'observed_at' => $observedAt,
             ];
         }
 
@@ -70,7 +89,7 @@ class VrsRealtimeService
         $lastDelay = $this->propagateDelay($trip, $stopId);
 
         return $lastDelay !== null
-            ? ['delay' => $lastDelay, 'skipped' => false, 'cancelled' => false]
+            ? ['delay' => $lastDelay, 'skipped' => false, 'cancelled' => false, 'observed_at' => $observedAt]
             : null;
     }
 
@@ -108,7 +127,7 @@ class VrsRealtimeService
     /**
      * Fetch the GTFS-RT binary feed from VRS and parse it.
      *
-     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, stops: array}>
+     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, observed_at: string|null, stops: array}>
      */
     private function fetchAndParse(): array
     {
@@ -146,7 +165,7 @@ class VrsRealtimeService
     /**
      * Parse binary protobuf GTFS-RT FeedMessage into structured array.
      *
-     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, stops: array}>
+     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, observed_at: string|null, stops: array}>
      */
     private function parseProtobuf(string $binaryData): array
     {
@@ -174,6 +193,12 @@ class VrsRealtimeService
             }
 
             $cancelled = $trip->getScheduleRelationship() === ScheduleRelationship::CANCELED;
+            $timestamp = $tripUpdate->getTimestamp();
+
+            // Zero is protobuf's default when the optional trip timestamp is absent.
+            if ($timestamp === 0 || $timestamp === '0') {
+                $timestamp = $feed->getHeader()?->getTimestamp();
+            }
 
             $stops = [];
             foreach ($tripUpdate->getStopTimeUpdate() as $stu) {
@@ -202,7 +227,9 @@ class VrsRealtimeService
             $updates[$tripId] = [
                 'trip_id' => $tripId,
                 'route_id' => $trip->getRouteId() ?: '',
+                'service_date' => $this->serviceDate($trip->getStartDate()),
                 'cancelled' => $cancelled,
+                'observed_at' => $this->observationTime($timestamp),
                 'stops' => $stops,
             ];
         }
@@ -213,6 +240,29 @@ class VrsRealtimeService
         Log::info('VRS GTFS-RT parsed', ['trip_updates' => count($updates)]);
 
         return $updates;
+    }
+
+    private function serviceDate(string $date): ?string
+    {
+        if (! preg_match('/^([0-9]{4})([0-9]{2})([0-9]{2})$/D', $date, $parts)
+            || ! checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
+            return null;
+        }
+
+        return $parts[1].'-'.$parts[2].'-'.$parts[3];
+    }
+
+    private function observationTime(int|string|null $timestamp): ?string
+    {
+        $validated = filter_var($timestamp, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => now()->timestamp],
+        ]);
+
+        if ($validated === false) {
+            return null;
+        }
+
+        return CarbonImmutable::createFromTimestampUTC($validated)->toIso8601String();
     }
 
     /**

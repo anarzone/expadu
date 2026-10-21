@@ -24,6 +24,10 @@ class TriasAdapter implements RouteService
 
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
+        if ($departAt !== null || $arriveBy) {
+            throw new \RuntimeException('TRIAS does not support requested journey times');
+        }
+
         $result = $this->trias->planJourney($from->lat, $from->lng, $to->lat, $to->lng, $max);
 
         if ($result === null || empty($result['trips'])) {
@@ -45,6 +49,15 @@ class TriasAdapter implements RouteService
         return new JourneyResult($journeys, 'trias');
     }
 
+    /**
+     * TRIAS calls already time out after 3 s (connect 1 s) in VrsTriasService,
+     * and the failover only starts TRIAS with at least 2 s of budget left.
+     */
+    public function withTimeBudget(float $seconds): static
+    {
+        return $this;
+    }
+
     public function geocode(string $query, ?GeoPoint $bias = null): array
     {
         return [];
@@ -62,20 +75,14 @@ class TriasAdapter implements RouteService
     }
 
     /**
-     * TRIAS parse output uses H:i display times; anchor them to today.
-     * A journey crossing midnight gets its arrival bumped a day forward.
-     *
      * @param  array<string, mixed>  $trip
      */
     private function mapTrip(array $trip, GeoPoint $from, GeoPoint $to): ?Journey
     {
-        $departAt = $this->todayAt($trip['departure_time'] ?? '');
-        $arriveAt = $this->todayAt($trip['arrival_time'] ?? '');
-        if ($departAt === null || $arriveAt === null) {
+        $departAt = $this->exactTime($trip['departure_at'] ?? null);
+        $arriveAt = $this->exactTime($trip['arrival_at'] ?? null);
+        if ($departAt === null || $arriveAt === null || $arriveAt->lessThan($departAt)) {
             return null;
-        }
-        if ($arriveAt->lessThan($departAt)) {
-            $arriveAt = $arriveAt->addDay();
         }
 
         $legs = [];
@@ -83,10 +90,12 @@ class TriasAdapter implements RouteService
 
         foreach ($trip['segments'] ?? [] as $segment) {
             $leg = $this->mapSegment($segment, $cursor, $from, $to);
-            if ($leg !== null) {
-                $legs[] = $leg;
-                $cursor = $leg->arriveAt;
+            if ($leg === null || $leg->arriveAt->greaterThan($arriveAt)) {
+                return null;
             }
+
+            $legs[] = $leg;
+            $cursor = $leg->arriveAt;
         }
 
         if ($legs === []) {
@@ -108,11 +117,18 @@ class TriasAdapter implements RouteService
     private function mapSegment(array $segment, CarbonImmutable $cursor, GeoPoint $from, GeoPoint $to): ?Leg
     {
         $type = $segment['type'] ?? '';
-        $departAt = $this->todayAt($segment['departure_time'] ?? '') ?? $cursor;
         $durationMin = max(1, (int) ($segment['duration_min'] ?? 1));
-        $arriveAt = $this->todayAt($segment['arrival_time'] ?? '') ?? $departAt->addMinutes($durationMin);
-        if ($arriveAt->lessThan($departAt)) {
-            $arriveAt = $arriveAt->addDay();
+        $departAt = $this->exactTime($segment['departure_at'] ?? null);
+        $arriveAt = $this->exactTime($segment['arrival_at'] ?? null);
+
+        if ($type !== 'transit') {
+            $departAt ??= $cursor;
+            $arriveAt ??= $departAt->addMinutes($durationMin);
+        }
+
+        if ($departAt === null || $arriveAt === null
+            || $departAt->lessThan($cursor) || $arriveAt->lessThan($departAt)) {
+            return null;
         }
 
         $coordinates = $segment['coordinates'] ?? [];
@@ -156,13 +172,23 @@ class TriasAdapter implements RouteService
         );
     }
 
-    private function todayAt(string $time): ?CarbonImmutable
+    private function exactTime(mixed $time): ?CarbonImmutable
     {
-        if (! preg_match('/^\d{2}:\d{2}$/', $time)) {
+        if (! is_string($time)
+            || ! preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/', $time)) {
             return null;
         }
 
-        return CarbonImmutable::now('Europe/Berlin')
-            ->setTimeFromTimeString($time.':00');
+        try {
+            $parsed = CarbonImmutable::parse($time);
+
+            if ($parsed->format('Y-m-d\TH:i:s') !== substr($time, 0, 19)) {
+                return null;
+            }
+
+            return $parsed->setTimezone('Europe/Berlin');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

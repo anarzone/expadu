@@ -1,7 +1,6 @@
 import {
     IconBike,
     IconCalendarEvent,
-    IconCircleCheck,
     IconClock,
     IconRoute,
     IconTicket,
@@ -10,8 +9,11 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { ItemDetailLayout } from '@/components/details/item-detail-shell';
-import { CategoryIllustration } from '@/components/places/category-illustration';
 import { MiniMap } from '@/components/places/mini-map';
+import {
+    placePracticalDetails,
+    placeRoutingPoint,
+} from '@/components/places/place-evidence';
 import { PlaceFeedbackBar } from '@/components/places/place-feedback-menu';
 import type {
     NearbyPlace,
@@ -28,6 +30,7 @@ import type {
 export type NavigateTarget = {
     name: string;
     emoji?: string;
+    destinationId?: string;
     lat: number;
     lng: number;
 };
@@ -60,27 +63,6 @@ function modeLabel(place: Place): string {
     return 'Walk';
 }
 
-function accessLabel(place: Place): string {
-    const access = place.place_facts.access;
-
-    if (access.status === 'conflicting') {
-        return 'Access information needs review';
-    }
-
-    if (access.value === 'unknown' && access.conditional) {
-        return `Conditional — ${access.conditional}`;
-    }
-
-    return {
-        public: 'Public access',
-        private: 'Private access',
-        customers: 'Customers only',
-        members: 'Members only',
-        permit: 'Permit required',
-        unknown: 'Access not verified',
-    }[access.value];
-}
-
 function ModeIcon({ place }: { place: Place }) {
     const Icon =
         place.distance_mode === 'bike'
@@ -99,7 +81,7 @@ function ModeIcon({ place }: { place: Place }) {
  */
 export function PlaceRichDetail({
     place,
-    meta,
+    meta: _meta,
     onNavigate,
     onOpenPlace,
     onBack,
@@ -118,6 +100,8 @@ export function PlaceRichDetail({
         onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
     };
 }) {
+    const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+    const [nearbyError, setNearbyError] = useState<string | null>(null);
     const [contextResult, setContextResult] = useState<{
         placeId: number;
         data: PlaceContext;
@@ -176,17 +160,45 @@ export function PlaceRichDetail({
     const events =
         eventsResult?.placeId === place.id ? eventsResult.data : null;
 
-    const goHere = () =>
+    const routingPoint = placeRoutingPoint(place);
+    const practical = placePracticalDetails(place);
+    const showPhoto = !!place.photo_url && failedPhoto !== place.photo_url;
+    const destinationId = `spot:${place.place_facts?.identity?.canonical_id ?? place.id}`;
+    const locationLabel = [place.veedel, place.park]
+        .filter(Boolean)
+        .join(' · ');
+    const goHere = () => {
+        if (!routingPoint) {
+            return;
+        }
+
         onNavigate({
             name: place.name,
             emoji: place.emoji ?? undefined,
-            lat: place.routing_lat,
-            lng: place.routing_lng,
+            destinationId,
+            ...routingPoint,
         });
+    };
 
     function openNearby(nearby: NearbyPlace) {
+        setNearbyError(null);
+
         if (!onOpenPlace) {
-            onNavigate(nearby);
+            const point = placeRoutingPoint(nearby);
+
+            if (!point) {
+                setNearbyError(
+                    'The location of this place is not verified yet.',
+                );
+
+                return;
+            }
+
+            onNavigate({
+                ...nearby,
+                ...point,
+                destinationId: `spot:${nearby.id}`,
+            });
 
             return;
         }
@@ -196,41 +208,40 @@ export function PlaceRichDetail({
                 response.ok ? response.json() : Promise.reject(new Error()),
             )
             .then((json) => onOpenPlace(json.data))
-            .catch(() => onNavigate(nearby));
+            .catch(() =>
+                setNearbyError('This place couldn’t open. Please try again.'),
+            );
     }
 
-    const price =
-        place.price_text?.toLowerCase() === 'free'
-            ? 'Free entry'
-            : place.price_text;
-    const routeEstimate =
-        place.distance_min != null
-            ? `${place.distance_min} min by ${modeLabel(place).toLowerCase()}`
-            : place.distance_km != null
-              ? `${place.distance_km.toFixed(1)} km from your start`
-              : 'Live route calculated when you continue';
+    const price = practical.fee;
+    const routeEstimate = !routingPoint
+        ? 'Location not verified'
+        : place.distance_min != null
+          ? `About ${place.distance_min} min by ${modeLabel(place).toLowerCase()}`
+          : place.distance_km != null
+            ? `${place.distance_km.toFixed(1)} km from your start`
+            : 'Compare routes from your starting point';
     const usefulFacts = [
-        { label: 'Access', value: accessLabel(place) },
-        place.opening_hours_text
-            ? { label: 'Opening', value: place.opening_hours_text }
-            : null,
-        price ? { label: 'Entry', value: price } : null,
-        place.transit_hint
-            ? { label: 'Getting there', value: place.transit_hint }
-            : null,
-        ...place.facts.map((fact) => ({
-            label: fact.label,
-            value: fact.value,
-        })),
-    ]
-        .filter(
-            (fact): fact is { label: string; value: string } => fact !== null,
-        )
-        .slice(0, 6);
+        { label: 'Opening hours', value: practical.hours },
+        { label: 'Entry', value: practical.fee },
+        { label: 'Access', value: practical.access },
+        ...(place.transit_hint
+            ? [{ label: 'Getting there', value: place.transit_hint }]
+            : []),
+        ...place.facts
+            .filter(
+                (fact) =>
+                    !/^(opening|hours|entry|fee|access)$/i.test(fact.label),
+            )
+            .map((fact) => ({ label: fact.label, value: fact.value })),
+    ].slice(0, 6);
     const description =
-        place.place_facts.description.value ??
+        place.summary ??
+        (place.place_facts?.description?.status === 'known'
+            ? place.place_facts.description.value
+            : null) ??
         place.tip ??
-        'We are still verifying a useful description for this place.';
+        `${place.fine_label ?? place.category.replaceAll('_', ' ')}${place.veedel ? ` in ${place.veedel}` : ''}. Check the available details below before your visit.`;
 
     const main = (
         <div>
@@ -244,49 +255,74 @@ export function PlaceRichDetail({
                 </button>
             )}
 
-            <div className="relative h-[170px] overflow-hidden rounded-[16px] sm:h-[210px]">
-                {place.photo_url ? (
+            {showPhoto && (
+                <figure className="overflow-hidden rounded-[16px]">
                     <img
-                        src={place.photo_url}
+                        src={place.photo_url!}
                         alt={place.name}
-                        className="h-full w-full object-cover"
+                        onError={() => setFailedPhoto(place.photo_url)}
+                        className="h-[170px] w-full object-cover md:h-[210px]"
                     />
-                ) : (
-                    <CategoryIllustration
-                        coarse={place.category}
-                        className="h-full w-full"
-                        iconSize={48}
-                    />
-                )}
-                {place.photo_attribution && (
-                    <span className="absolute right-2 bottom-2 max-w-[85%] truncate rounded-full bg-black/60 px-2.5 py-1 text-[9px] text-white/90">
-                        {place.photo_attribution}
-                    </span>
-                )}
-            </div>
+                    {place.photo_attribution && (
+                        <figcaption className="flex flex-wrap items-center gap-x-3 px-1 py-1 text-xs leading-5 text-muted-foreground">
+                            <span>{place.photo_attribution}</span>
+                            {place.photo_source_url &&
+                                /^https?:\/\//i.test(
+                                    place.photo_source_url,
+                                ) && (
+                                    <a
+                                        href={place.photo_source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex min-h-11 items-center text-primary underline underline-offset-2"
+                                    >
+                                        Photo source
+                                    </a>
+                                )}
+                            {place.photo_license_url &&
+                                /^https?:\/\//i.test(
+                                    place.photo_license_url,
+                                ) && (
+                                    <a
+                                        href={place.photo_license_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex min-h-11 items-center text-primary underline underline-offset-2"
+                                    >
+                                        Photo licence
+                                    </a>
+                                )}
+                        </figcaption>
+                    )}
+                </figure>
+            )}
 
             <div className="mt-5 font-mono text-[10.5px] font-semibold tracking-[0.1em] text-primary uppercase">
                 {place.emoji ?? '📍'} {place.fine_label ?? place.category}
                 {place.park ? ` · ${place.park}` : ''}
             </div>
-            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] sm:text-[46px]">
+            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] md:text-[46px]">
                 {place.name}
             </h1>
-            <p className="mt-3 text-[14px] leading-relaxed text-text-2">
-                {meta}
-            </p>
+            {locationLabel && (
+                <p className="mt-3 text-[14px] leading-relaxed text-text-2">
+                    {locationLabel}
+                </p>
+            )}
 
             <div className="mt-4 flex flex-wrap gap-2">
-                {place.open_now !== null && (
+                {practical.openNow !== null && (
                     <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold ${
-                            place.open_now
+                            practical.openNow
                                 ? 'bg-success-soft text-success'
                                 : 'bg-secondary text-text-2'
                         }`}
                     >
                         <IconClock size={14} stroke={ICON_STROKE} />
-                        {place.open_now ? 'Open now' : 'Closed now'}
+                        {practical.openNow
+                            ? 'Open according to listed hours'
+                            : 'Closed according to listed hours'}
                     </span>
                 )}
                 {price && (
@@ -332,7 +368,7 @@ export function PlaceRichDetail({
                     <h2 className="font-display text-[24px] font-medium tracking-[-0.02em]">
                         Useful before you go
                     </h2>
-                    <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
                         {usefulFacts.map((fact, index) => (
                             <DetailCard
                                 key={`${fact.label}-${fact.value}-${index}`}
@@ -350,13 +386,13 @@ export function PlaceRichDetail({
                     <h2 className="font-display text-[24px] font-medium tracking-[-0.02em]">
                         What you can do here
                     </h2>
-                    <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
                         {place.activities.map((activity) => (
                             <DetailCard
                                 key={`${activity.emoji}-${activity.label}`}
                                 label={`${activity.emoji} ${activity.label}`}
                             >
-                                Available at this place
+                                Reported for this place · check current access
                             </DetailCard>
                         ))}
                     </div>
@@ -387,16 +423,16 @@ export function PlaceRichDetail({
                 </section>
             )}
 
-            <div className="flex items-center gap-2 rounded-[12px] bg-success-soft px-4 py-3 text-[12px] font-semibold text-success">
-                <IconCircleCheck size={16} stroke={ICON_STROKE} />
-                Live context is refreshed when you open this place
-            </div>
+            <p className="rounded-xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
+                Place details may change. Unverified information stays marked so
+                you can check before visiting.
+            </p>
         </div>
     );
 
     const rail = (
         <>
-            <div className="shrink-0 px-5 pt-6 pb-5 sm:px-6">
+            <div className="shrink-0 px-5 pt-6 pb-5 md:px-6">
                 <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-cyan-h uppercase">
                     Your next move
                 </div>
@@ -404,36 +440,46 @@ export function PlaceRichDetail({
                     Plan this into your day
                 </h2>
                 <p className="mt-2 text-[13px] leading-relaxed text-text-2">
-                    See where it is, what is nearby and the best live route from
-                    your selected starting point.
+                    Check the location and compare routes from your selected
+                    starting point.
                 </p>
             </div>
 
-            <div className="shrink-0 px-5 sm:px-6">
-                <MiniMap
-                    lat={place.lat}
-                    lng={place.lng}
-                    className="h-40 w-full sm:h-48"
-                    onActivate={goHere}
-                />
-            </div>
-
-            {context?.now && (
-                <div
-                    className={`mx-5 mt-4 shrink-0 rounded-[12px] px-4 py-3 text-[12.5px] leading-relaxed sm:mx-6 ${
-                        context.now.tone === 'good'
-                            ? 'bg-success-soft text-success'
-                            : 'bg-warn-soft text-warn'
-                    }`}
-                >
-                    <b className="block text-foreground">Right now</b>
-                    {context.now.text}
+            {routingPoint && (
+                <div className="shrink-0 px-5 md:px-6">
+                    <MiniMap
+                        lat={routingPoint.lat}
+                        lng={routingPoint.lng}
+                        className="h-40 w-full md:h-48"
+                        onActivate={goHere}
+                    />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                        {place.place_facts?.location?.entrance_point?.status ===
+                        'verified'
+                            ? 'Verified entrance'
+                            : 'Map location · entrance not verified'}
+                    </p>
                 </div>
             )}
 
-            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card sm:mx-6">
+            {context?.now &&
+                place.place_facts?.hours?.status === 'known' &&
+                !place.hours_assumed && (
+                    <div
+                        className={`mx-5 mt-4 shrink-0 rounded-[12px] px-4 py-3 text-[12.5px] leading-relaxed md:mx-6 ${
+                            context.now.tone === 'good'
+                                ? 'bg-success-soft text-success'
+                                : 'bg-warn-soft text-warn'
+                        }`}
+                    >
+                        <b className="block text-foreground">Right now</b>
+                        {context.now.text}
+                    </div>
+                )}
+
+            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card md:mx-6">
                 <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                    <b className="text-[13px]">Recommended start</b>
+                    <b className="text-[13px]">Your journey</b>
                     <span className="font-mono text-[10.5px] font-semibold text-cyan-h uppercase">
                         {modeLabel(place)}
                     </span>
@@ -454,12 +500,17 @@ export function PlaceRichDetail({
             </div>
 
             {context && context.nearby.length > 0 && (
-                <div className="mx-5 mt-5 shrink-0 sm:mx-6">
+                <div className="mx-5 mt-5 shrink-0 md:mx-6">
                     <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-text-3 uppercase">
                         {place.activities.length > 0
                             ? 'What is at this place'
                             : 'Nearby, after your visit'}
                     </div>
+                    {nearbyError && (
+                        <p role="status" className="mt-2 text-sm text-danger">
+                            {nearbyError}
+                        </p>
+                    )}
                     <div className="mt-2">
                         {context.nearby.map((nearby) => (
                             <button
@@ -483,13 +534,18 @@ export function PlaceRichDetail({
                 </div>
             )}
 
-            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur sm:p-6">
+            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur md:p-6">
                 <button
                     type="button"
                     onClick={goHere}
-                    className="flex min-h-12 w-full cursor-pointer items-center justify-between rounded-[11px] bg-primary px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                    disabled={!routingPoint}
+                    className="flex min-h-12 w-full cursor-pointer items-center justify-between rounded-[11px] bg-primary px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-default disabled:opacity-50"
                 >
-                    <span>Take me there</span>
+                    <span>
+                        {routingPoint
+                            ? 'Get directions'
+                            : 'Location not verified'}
+                    </span>
                     {place.distance_min != null && (
                         <small className="font-mono text-[11px]">
                             {place.distance_min} MIN

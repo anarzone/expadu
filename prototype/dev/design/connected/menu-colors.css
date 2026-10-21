@@ -1,0 +1,26 @@
+/* Each section keeps its icon colour, resting, hovered or selected; the
+   section you're in sits on the app's one "selected" colour
+   (--color-select-bg, via shell-review.css), not a tint of its own (owner,
+   18 Oct 2026, Composer review canvas board 14: colour is for what's
+   urgent). Shared geometry and interaction live in shell-review.css. */
+.shell-review :is(.service-nav, .services) > :is(a, button) {
+    --menu-accent: #009bbb;
+}
+.shell-review :is(.service-nav, .services) > [data-page='places'] {
+    --menu-accent: #11845b;
+}
+.shell-review :is(.service-nav, .services) > [data-page='events'] {
+    --menu-accent: #8352cf;
+}
+.shell-review :is(.service-nav, .services) > [data-page='bureaucracy'] {
+    --menu-accent: #a8760a;
+}
+.shell-review :is(.service-nav, .services) > [data-page='departures'] {
+    --menu-accent: #227db9;
+}
+.shell-review :is(.service-nav, .services) > [data-page='services'] {
+    --menu-accent: #666b93;
+}
+.shell-review :is(.service-nav, .services) > :is(a, button) svg {
+    color: var(--menu-accent);
+}

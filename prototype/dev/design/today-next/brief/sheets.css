@@ -1,0 +1,146 @@
+/* Today's details and short tasks (journey, plan details, forecast, Add a
+   plan) open as a bottom sheet on phones and a compact dialog on larger
+   screens, like the Event sheet. Light scrim, no blur, so the page stays
+   recognisable (guide: Sheets & dialogs). */
+.today-next .detail-dialog:has(.today-sheet) {
+    width: min(520px, calc(100vw - 32px));
+    max-height: min(760px, calc(100dvh - 48px));
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-sheet);
+    overflow: hidden;
+}
+.today-next .detail-dialog:has(.today-sheet)[open] {
+    display: flex;
+    flex-direction: column;
+}
+.today-next .detail-dialog:has(.today-sheet)::backdrop {
+    background: #0005;
+    backdrop-filter: none;
+}
+.today-next .detail-dialog:has(.today-sheet) .dialog-head {
+    position: relative;
+    flex: none;
+    margin: 0;
+    padding: 18px 20px 8px;
+}
+.today-next .detail-dialog:has(.today-sheet) #dialog-body {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0 20px 22px;
+}
+.today-sheet > :first-child {
+    margin-top: 0;
+}
+.today-sheet .detail-intro {
+    margin: 0 0 14px;
+}
+.today-sheet .status-row {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 14px;
+}
+.today-sheet .agenda-paperwork {
+    margin: 0 0 12px;
+}
+.today-sheet .detail-actions {
+    gap: 8px 18px;
+    margin-top: 18px;
+}
+/* One orange action per sheet; the others are ink. */
+.today-sheet .text-action {
+    color: var(--color-text);
+}
+
+/* A tappable summary row inside a sheet, e.g. the journey to a plan. */
+.sheet-row {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.sheet-row:hover {
+    background: var(--color-select-bg-hover);
+}
+.sheet-row:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.sheet-row > svg {
+    width: 20px;
+    height: 20px;
+    color: var(--color-select-text);
+}
+.sheet-row > svg:last-child {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+/* The words; a line badge keeps its own layout. */
+.sheet-row > span:not(.tl-line) {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.sheet-row strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.sheet-row small {
+    font-size: var(--text-small);
+    color: var(--color-text-soft);
+}
+/* The trip as Travel draws it: its line badge on the card's own surface, not
+   the cyan of a plain row (owner, 18 Oct 2026, Composer review canvas
+   board 12). */
+.sheet-row.is-trip {
+    grid-template-columns: auto minmax(0, 1fr) 16px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg-surface);
+}
+.sheet-row.is-trip:hover {
+    background: var(--color-bg-hover, var(--color-bg-quiet));
+}
+
+@media (max-width: 700px) {
+    .today-next .detail-dialog:has(.today-sheet) {
+        width: 100%;
+        max-width: 100%;
+        max-height: calc(100dvh - 40px);
+        margin: auto 0 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    /* The top edge is the handle: drag it down to close. */
+    .today-next .detail-dialog:has(.today-sheet) .dialog-head {
+        padding: 26px 16px 8px;
+        touch-action: none;
+    }
+    .today-next .detail-dialog:has(.today-sheet) .dialog-head::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+    .today-next .detail-dialog:has(.today-sheet) #dialog-body {
+        padding: 0 16px max(20px, env(safe-area-inset-bottom));
+    }
+}

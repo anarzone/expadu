@@ -1,0 +1,32 @@
+{
+  "method": "built-in image_gen",
+  "created_at": "2026-09-30",
+  "purpose": "Static Today concept with direct opening and secondary-action menus",
+  "outputs": [
+    {
+      "file": "01-everyday.png",
+      "reference": "/Users/anar/Projects/Own/Startups/expadu-app/prototype/dev/design/connected/concepts/today-modern-2026-09-30/action-icons-v7/01-everyday.png",
+      "first_pass": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-0bc905cd-6b0f-4a87-967b-5cb58b672782.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-ac9817fa-81f1-482a-8373-3aab9a2dc701.png"
+    },
+    {
+      "file": "02-important-event.png",
+      "reference": "/Users/anar/Projects/Own/Startups/expadu-app/prototype/dev/design/connected/concepts/today-modern-2026-09-30/action-icons-v7/02-important-event.png",
+      "first_pass": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-25c7a3fa-20a7-447f-b287-1ae9d6fa5bf9.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-e4de9324-70d8-4bcc-add4-e92d98e4e422.png"
+    },
+    {
+      "file": "03-route-delay.png",
+      "reference": "/Users/anar/Projects/Own/Startups/expadu-app/prototype/dev/design/connected/concepts/today-modern-2026-09-30/action-icons-v7/03-route-delay.png",
+      "first_pass": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-db77578f-86a5-492e-8a5d-63b4637b5d5a.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-db77578f-86a5-492e-8a5d-63b4637b5d5a.png"
+    },
+    {
+      "file": "04-interactions.png",
+      "reference": "/Users/anar/Projects/Own/Startups/expadu-app/prototype/dev/design/connected/concepts/today-modern-2026-09-30/action-icons-v7/04-interactions.png",
+      "first_pass": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-48ffb194-d821-4afa-8a87-008e44fdfc23.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-ebe5481c-fda6-47e0-9fe7-afc4ff054ee7.png"
+    }
+  ]
+}
+

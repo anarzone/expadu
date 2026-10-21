@@ -3,6 +3,22 @@
 **Status:** design thesis + phased plan (2026-07-05). Bugs in Phase 0 are shipped;
 everything below Phase 0 is proposed, not built.
 
+**Update (2026-10-18).** The thesis still stands. Three things below have changed:
+
+- **Phase 4 was replaced.** The brief UI was replaced by the 6 October Today
+  rewrite. The `Brief` lanes and the `LeadCard`, `NeedCard`, `AmbientRow` and
+  `CalmCard` components are gone. Today now shows at most 3 important tiles
+  and at most 2 ambient tiles, followed by events that aren't personalised.
+- **Take-me-there taps are not recorded.** They have not reached
+  `user_events` since 6 October, so Phase 3's "acted" signal has no source.
+- **The floor needs re-deciding for Paperwork v2.** v2 turns every step date
+  into a `preparation_target`, so a floor keyed on `bureaucracy_deadline`
+  either protects things that aren't legal deadlines, or nothing. Document
+  expiry (visa, residence title) is now the real consequence floor.
+
+The current plan (need model, learning, page shape) is section C of
+[AI data readiness and recommendation/notification/Today groundwork — Oct 2026](https://docs.anar.to/books/architecture/page/ai-data-readiness-and-recommendationnotificationtoday-groundwork).
+
 **Scope:** the Today screen's "Right Now" band — `app/Home/TileComposer.php`,
 `Tile.php`, `TileTriage.php`, the ContextEngine evaluators that feed it, and the
 `dashboard.tsx` presentation. Not the prompt/composer box, not the discovery rails.
@@ -256,8 +272,9 @@ largest slice; split it so early wins land first.
 ### Phase 3 — The acclimation loop (learning)
 
 - Capture the full resolution vocabulary: extend `TileTriageController` to record
-  *why* (already-handled vs not-relevant) and capture `acted` (take-me-there taps
-  already flow through `/api/track`).
+  *why* (already-handled vs not-relevant) and capture `acted`. Take-me-there
+  taps flowed through `/api/track` when this was written; since 6 October
+  nothing records them, so `acted` needs a new emitter (EXP-109, EXP-110).
 - Learn at `need-class × consequence × context` grain (generalise
   `dismissPenalties`), not per-type.
 - **Cohort priors** table/service → personal posterior; solves cold-start and makes
@@ -269,7 +286,10 @@ largest slice; split it so early wins land first.
   when personal signal is thin; decay quiets a repeatedly-handled type; the floor
   survives N dismissals.
 
-### Phase 4 — The brief UI (presentation) — **SHIPPED**
+### Phase 4 — The brief UI (presentation) — **SHIPPED, then replaced 6 Oct 2026**
+
+> The 6 October Today rewrite removed this UI (see the update at the top).
+> This section is kept as the record of what shipped in July.
 
 - `dashboard.tsx` "Right Now" is now the brief (`Brief` + `LeadCard`/`NeedCard`/
   `AmbientRow`/`CalmCard`), replacing the flat 8-tile list. A tile's TYPE picks its

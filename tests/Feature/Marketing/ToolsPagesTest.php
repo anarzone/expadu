@@ -1,14 +1,15 @@
 <?php
 
-use App\Bureaucracy\PermanentResidencyEligibility;
-
-test('the tools hub lists all three calculators', function () {
+test('the tools hub distinguishes available calculators from tools awaiting review', function () {
     $response = $this->get('/tools');
 
     $response->assertOk();
     $response->assertSeeText('Deutschlandticket break-even');
     $response->assertSeeText('Permanent-residency timeline');
     $response->assertSee('Citizenship quiz');
+    $response->assertSee('Awaiting review');
+    $response->assertDontSee('href="'.route('tools.citizenship').'"', escape: false);
+    $response->assertDontSee('href="'.route('tools.residency').'"', escape: false);
 });
 
 test('the D-Ticket tool carries the fare-engine constants and their source', function () {
@@ -23,30 +24,31 @@ test('the D-Ticket tool carries the fare-engine constants and their source', fun
     $response->assertSee(config('rheinlandtarif.source'));
 });
 
-test('the residency tool exposes the same tracks as the in-app eligibility engine', function () {
-    $response = $this->get('/tools/permanent-residency-timeline');
+test('unreviewed legal calculators do not publish figures or collect answers', function (string $path) {
+    $this->get($path)->assertOk()
+        ->assertSee('This tool is awaiting review')
+        ->assertSee('noindex', escape: false)
+        ->assertDontSee('id="tool-data"', escape: false)
+        ->assertDontSee('class="tool-form"', escape: false)
+        ->assertDontSee('fast track')
+        ->assertDontSee('qualify after');
+})->with(['/tools/permanent-residency-timeline', '/tools/citizenship-quiz']);
 
-    $response->assertOk();
-    foreach (PermanentResidencyEligibility::tracks() as $track) {
-        $response->assertSee($track['label']);
-    }
-});
-
-test('the citizenship quiz cites the statute and disclaims legal advice', function () {
-    $response = $this->get('/tools/citizenship-quiz');
-
-    $response->assertOk();
-    $response->assertSee('gesetze-im-internet.de/stag');
-    $response->assertSee('guide, not legal advice');
-});
-
-test('the sitemap includes the tool pages', function () {
+test('the sitemap promotes only available tool pages', function () {
     $response = $this->get('/sitemap.xml');
 
     $response->assertOk();
     $response->assertSee(route('tools.dticket'), escape: false);
-    $response->assertSee(route('tools.residency'), escape: false);
-    $response->assertSee(route('tools.citizenship'), escape: false);
+    $response->assertDontSee(route('tools.residency'), escape: false);
+    $response->assertDontSee(route('tools.citizenship'), escape: false);
+});
+
+test('the landing page does not advertise unreviewed legal calculator results', function () {
+    $this->get('/')->assertOk()
+        ->assertDontSee('href="'.route('tools.citizenship').'"', escape: false)
+        ->assertDontSee('href="'.route('tools.residency').'"', escape: false)
+        ->assertDontSee('under the current rules')
+        ->assertDontSee('Your earliest Niederlassungserlaubnis date');
 });
 
 test('the netto-brutto tool ships the sourced 2026 constants', function () {

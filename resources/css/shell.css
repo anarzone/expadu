@@ -1,0 +1,1094 @@
+/* The app shell: one header for every section, the sections as a capsule
+   (in the header from 701px, floating above the page on phones), and the
+   page frame. Ported from the mock's connected/today-header.css,
+   section-bar.css, page-frame.css, composer-entry.css and menu-colors.css,
+   as they compute on its pages. Breakpoints: ≤359 small phone, ≤700 phone,
+   701–999 tablet, ≥1000 desktop. */
+
+/* Every page keeps room for a scrollbar, scrolling or not, so the header
+   and the page sit in the same place on every page (shell-review.css). */
+html {
+    scrollbar-gutter: stable;
+}
+
+:root {
+    --page-max: 1440px;
+    --page-gutter: 32px;
+    --section-bar: 0px;
+}
+
+/* Keyboard users can skip the header; the link shows only when focused. */
+.skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 60;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    translate: 0 -200%;
+}
+.skip-link:focus-visible {
+    translate: none;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.shell {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding-inline: max(32px, calc((100% - var(--page-max)) / 2 + 32px));
+    background: var(--color-bg-header);
+    box-shadow: var(--shadow-flat);
+}
+.shell-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    min-height: 72px;
+    padding: 10px 0;
+    /* As the mock's header: what Geist lacks (the ⌘) falls back to Arial. */
+    font-family: Geist, 'Geist Fallback', Arial, sans-serif;
+    view-transition-name: app-header;
+}
+.shell-brand {
+    display: flex;
+    align-items: center;
+    justify-self: start;
+    gap: 6px;
+    color: var(--color-text);
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.5;
+    letter-spacing: -1.1px;
+    text-decoration: none;
+}
+.shell-brand svg {
+    width: 31px;
+    height: 31px;
+    flex: none;
+}
+
+/* The sections: a capsule in the header's middle. Each keeps its icon
+   colour; the one you're in sits on the app's one selected colour. */
+.shell-nav {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+}
+.shell-nav > a {
+    --section-ink: var(--color-nav-teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: var(--weight-medium);
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 140ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.shell-nav > a[data-section='events'] {
+    --section-ink: var(--color-nav-violet);
+}
+.shell-nav > a[data-section='paperwork'] {
+    --section-ink: var(--color-nav-rust);
+}
+.shell-nav > a svg {
+    width: 22px;
+    height: 22px;
+    color: var(--section-ink);
+}
+.shell-nav > a:hover {
+    background: var(--color-bg-quiet);
+}
+.shell-nav > a[aria-current] {
+    background: var(--color-select-bg);
+}
+/* Pressed or reached by keys, a section takes the selected tint at 75%,
+   as the mock's ::before does (shell-review.css). */
+.shell-nav > a:is(:active, :focus-visible):not([aria-current]) {
+    background: color-mix(in srgb, var(--color-select-bg) 75%, transparent);
+}
+
+/* City, Saved and the account, at the header's end. */
+.shell-utilities {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.shell-city {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 5px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-control);
+    cursor: pointer;
+}
+.shell-city svg {
+    width: 18px;
+    height: 22px;
+}
+.shell-city:hover {
+    background: var(--color-bg-quiet);
+}
+
+/* The city panel (the mock's location-popover): search the cities Expadu
+   covers. */
+.location-popover {
+    position: fixed;
+    z-index: 80;
+    box-sizing: border-box;
+    width: 232px;
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    outline: none;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 12px 32px #27241f1a;
+    animation: location-arrive 150ms ease-out;
+}
+.location-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-muted);
+}
+.location-search svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+.location-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-section);
+}
+.location-search:focus-within {
+    box-shadow: 0 0 0 2px var(--color-focus);
+}
+.location-search input::placeholder {
+    color: var(--color-text-soft);
+}
+.location-results {
+    margin-top: 6px;
+}
+.location-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.location-option[aria-pressed='true'] {
+    background: var(--color-select-bg);
+}
+.location-option:hover {
+    background: var(--color-bg-quiet);
+}
+.location-option:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.location-mark {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 20px;
+    height: 24px;
+    color: var(--color-select-text);
+}
+.location-mark svg {
+    width: 17px;
+    height: 17px;
+}
+.location-copy {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: 6px;
+}
+.location-copy strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 18px;
+}
+.location-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    line-height: 16px;
+}
+.location-selected {
+    color: var(--color-select-text);
+}
+/* The check rests on the line, as the mock's inline icon does. */
+.location-selected svg {
+    display: inline;
+    width: 19px;
+    height: 19px;
+    vertical-align: baseline;
+}
+.location-note {
+    margin: 8px 6px 2px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.location-empty {
+    margin: 20px 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+@media screen and (max-width: 700px) {
+    /* Already larger than the 16px that keeps iOS from zooming. */
+    .location-search input {
+        font-size: var(--text-section) !important;
+    }
+}
+@keyframes location-arrive {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .location-popover {
+        animation: none;
+    }
+}
+.shell-icon-button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.shell-icon-button svg {
+    width: 22px;
+    height: 22px;
+}
+/* Saved spaces its children as the mock's .my-day does. */
+.shell-saved {
+    gap: 8px;
+}
+.shell-icon-button:hover {
+    background: var(--color-bg-quiet);
+}
+.shell-account {
+    padding: 0;
+}
+.shell-account > span {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-round);
+    background: #eae4f7;
+    color: #4e3774;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.shell-account img {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-round);
+    object-fit: cover;
+}
+.shell :is(a, button):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* Composer in the header: opens the tray (composer-tray.tsx). */
+.shell-composer {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-right: 6px;
+    padding: 0 8px 0 7px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+    font-family: inherit;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) ease;
+}
+.shell-composer:hover {
+    background: var(--color-bg-quiet);
+}
+.shell-composer[aria-current] {
+    border-color: transparent;
+    background: var(--color-select-bg);
+}
+.shell-composer-mark {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-round);
+    background: var(--color-nav-teal);
+    color: #fff;
+}
+.shell-composer-mark svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+}
+.shell-composer kbd {
+    padding: 2px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg-canvas);
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-caption);
+}
+/* Composer's round button: phones only, beside the floating sections. */
+.shell-composer-round {
+    display: none;
+}
+
+/* The account popover. */
+.shell-account-menu {
+    width: min(256px, calc(100vw - 24px));
+    padding: 18px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 12px 32px #27241f1a;
+}
+.shell-account-menu h2 {
+    margin: 0 0 8px;
+    font-size: var(--text-section);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    letter-spacing: -0.7px;
+}
+.shell-account-menu p {
+    margin: 6px 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.shell-account-menu [role='menuitem'] {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+}
+/* As the mock's Sign out: the words take the action colour, no fill. */
+.shell-account-menu [role='menuitem'][data-highlighted] {
+    color: var(--color-action-text);
+    outline: none;
+}
+.shell-account-menu [role='menuitem']:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.shell-account-links [role='menuitem'] {
+    justify-content: space-between;
+    gap: 8px;
+}
+.shell-account-menu [role='menuitem'] b {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font-size: var(--text-micro);
+    line-height: 20px;
+    text-align: center;
+}
+.shell-account-links {
+    margin-top: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+/* The mock's Sign out (today-header.css .header-account-out): a line
+   above it, then the words. */
+.shell-account-out [role='menuitem'] {
+    margin-top: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* ── Tablets (701–999): compact sections; the city shows its pin, Composer
+   its mark (their names are their labels). ──────────────────────────── */
+@media (max-width: 999px) {
+    .shell {
+        padding-inline: 24px;
+    }
+    .shell-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 4px 12px;
+        padding: 6px 0;
+    }
+    .shell-nav > a {
+        gap: 6px;
+        padding: 0 11px;
+        font-size: 13.5px;
+    }
+    .shell-nav > a svg {
+        width: 18px;
+        height: 18px;
+    }
+    .shell-utilities {
+        gap: 4px;
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    /* Tablets: the pin alone. */
+    .shell-city {
+        justify-content: center;
+        padding: 0;
+    }
+    .shell-city > :not(:first-child) {
+        display: none;
+    }
+}
+/* Narrow tablets: the logo's mark alone makes the room. */
+@media (min-width: 701px) and (max-width: 779px) {
+    .shell-brand {
+        gap: 0;
+        font-size: 0;
+    }
+}
+/* Below 1280px the sections share the header's one row, so Composer keeps
+   just its mark there. */
+@media (min-width: 701px) and (max-width: 1279px) {
+    .shell-composer {
+        justify-content: center;
+        width: 44px;
+        padding: 0;
+        border-radius: var(--radius-round);
+    }
+    .shell-composer :is(.shell-composer-text, kbd) {
+        display: none;
+    }
+}
+
+/* ── Phones (≤700): the header keeps the logo, the city, Saved and the
+   account in one row and scrolls away; the sections float in one capsule
+   above the page, where the thumb rests, with Composer's round button
+   beside it. Scrolling down they step away; scrolling up, or the page's
+   top or end, brings them back (use-shell-scroll.ts). ──────────────── */
+@media (max-width: 700px) {
+    :root {
+        --menu-gap: max(16px, env(safe-area-inset-bottom, 0px));
+        --menu-height: 62px;
+        /* The room a page keeps at its end, so its last part clears the
+           menu. */
+        --section-bar: calc(var(--menu-height) + var(--menu-gap) + 16px);
+    }
+    body:has(.shell-nav) {
+        padding-bottom: var(--section-bar);
+    }
+    .shell {
+        top: -54px;
+        padding-inline: 16px;
+    }
+    .shell:focus-within {
+        top: 0;
+    }
+    /* A page's own top bar takes the header's place (useShellHeaderAside):
+       the row steps aside, the floating sections stay. */
+    :root[data-shell-header='aside'] .shell {
+        background: none;
+        box-shadow: none;
+    }
+    /* The row keeps its own 8px, as the mock's header does. */
+    :root[data-shell-header='aside'] .shell-header {
+        min-height: 0;
+    }
+    :root[data-shell-header='aside'] .shell-header > :not(.shell-nav) {
+        display: none;
+    }
+    .shell-header {
+        grid-template-columns: 1fr auto;
+        gap: 2px 7px;
+        min-height: 54px;
+        padding: 4px 0;
+    }
+    .shell-brand {
+        gap: 4px;
+    }
+    .shell-brand svg {
+        width: 28px;
+        height: 30px;
+    }
+    .shell-utilities {
+        grid-column: 2;
+        gap: 0;
+    }
+    /* Phones: the name and a small chevron. */
+    .shell-city {
+        gap: 2px;
+        border: 0;
+        font-size: var(--text-caption);
+    }
+    .shell-city > svg:first-child {
+        display: none;
+    }
+    .shell-city > svg:last-child {
+        width: 14px;
+    }
+    .shell-icon-button:not(.shell-account) {
+        padding: 10px 8px;
+    }
+    .shell-composer {
+        display: none;
+    }
+    .shell-nav {
+        position: fixed;
+        grid-column: auto;
+        grid-row: auto;
+        justify-self: stretch;
+        left: 14px;
+        right: calc(14px + var(--menu-height) + 10px);
+        bottom: var(--menu-gap);
+        z-index: 45;
+        overflow: clip;
+        border-color: color-mix(in srgb, var(--color-border) 85%, transparent);
+        /* Opaque, so the page's words never show through its labels. */
+        background: var(--color-bg-header);
+        box-shadow: 0 14px 34px -16px #211d156b;
+        transition:
+            right 380ms var(--ease-settle),
+            translate var(--duration-base) ease;
+        view-transition-name: section-bar;
+    }
+    .shell-nav > a {
+        flex: 1 1 0;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        min-height: 52px;
+        padding: 0;
+        font-size: 11.5px;
+        line-height: 1.1;
+    }
+    .shell-nav > a:is(:hover, :active) {
+        background: transparent;
+    }
+    .shell-nav > a[aria-current] {
+        background: var(--color-select-bg);
+        font-weight: var(--weight-bold);
+    }
+    .shell-nav > a svg {
+        width: 20px;
+        height: 20px;
+    }
+    .shell-composer-round {
+        position: fixed;
+        right: 14px;
+        bottom: var(--menu-gap);
+        z-index: 45;
+        display: grid;
+        place-items: center;
+        width: var(--menu-height);
+        height: var(--menu-height);
+        padding: 12px;
+        border: 0;
+        border-radius: var(--radius-round);
+        background: var(--color-select-text);
+        color: #fff;
+        box-shadow: 0 4px 14px #183f4426;
+        cursor: pointer;
+        transition:
+            translate var(--duration-base) ease,
+            background-color 220ms ease,
+            box-shadow 180ms ease,
+            transform 220ms ease;
+        view-transition-name: composer-tray;
+    }
+    .shell-composer-round::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: inherit;
+        pointer-events: none;
+        background: conic-gradient(#ff591f, #ff9b54, #05bbd5, #86eaf4, #ff591f);
+        mask: radial-gradient(
+            farthest-side,
+            transparent calc(100% - 6px),
+            #000 0
+        );
+        filter: blur(4px);
+        opacity: 0;
+        transition: opacity 160ms ease;
+    }
+    /* The mark rests on the line, as the mock's inline icon does. */
+    .shell-composer-round svg {
+        display: inline;
+        vertical-align: baseline;
+        width: 20px;
+        height: 20px;
+        transition:
+            transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+            color 220ms ease;
+    }
+    .shell-composer-round:is(:hover, :focus-visible) {
+        background: #005d70;
+    }
+    .shell-composer-round:is(:hover, :focus-visible) svg {
+        transform: rotate(90deg) scale(1.08);
+        color: #c6f5ec;
+    }
+    .shell-composer-round:active {
+        transform: scale(0.94);
+        box-shadow:
+            -5px 0 16px #ff591f66,
+            5px 0 16px #05bbd573;
+    }
+    .shell-composer-round:active::before {
+        opacity: 1;
+        animation: composer-glow 900ms linear infinite;
+    }
+    .shell-composer-round:focus-visible {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 3px;
+    }
+    /* Scrolling down: the menu and Composer's button step away; moving
+       into the menu with the keyboard keeps it. Out of the way while the
+       keyboard is open, back as it closes. */
+    body.menu-away .shell-nav:not(:focus-within),
+    body.menu-away .shell-composer-round:not(:focus),
+    :root.keyboard-open :is(.shell-nav, .shell-composer-round) {
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
+    }
+}
+@media (max-width: 359px) {
+    .shell-brand {
+        font-size: var(--text-title-sm);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .shell-nav,
+    .shell-nav > a,
+    .shell-composer-round,
+    .shell-composer-round svg,
+    .shell-composer-round::before {
+        transition: none;
+    }
+    .shell-composer-round:active,
+    .shell-composer-round:is(:hover, :focus-visible) svg {
+        transform: none;
+    }
+    .shell-composer-round:active::before {
+        animation: none;
+    }
+}
+
+/* ── Composer's tray: one box to ask in from any page. On phones it opens
+   above the floating sections; from 701px it sits just under the header,
+   centred, with the page dimmed behind it. ───────────────────────────── */
+.composer-tray {
+    position: fixed;
+    z-index: 46;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--menu-gap, 16px) + var(--menu-height, 0px) + 10px);
+    max-width: 830px;
+    margin-inline: auto;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    /* Frosted: the page shows through, blurred; solid where the person
+       asks for less transparency. */
+    background: color-mix(in srgb, var(--color-bg-surface) 72%, transparent);
+    backdrop-filter: blur(20px);
+    color: var(--color-text-soft);
+    box-shadow: 0 8px 28px #3e352b1c;
+    transform-origin: bottom right;
+}
+@media (prefers-reduced-transparency: reduce) {
+    .composer-tray {
+        background: var(--color-bg-surface);
+        backdrop-filter: none;
+    }
+}
+.composer-tray:has(textarea:focus) {
+    box-shadow:
+        0 0 0 1px var(--color-border-strong),
+        0 4px 20px #3e352b0d;
+}
+/* Every icon in the tray is 20px, as the mock's are. */
+.composer-tray svg {
+    width: 20px;
+    height: 20px;
+}
+:root.keyboard-open .composer-tray {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.composer-tray textarea {
+    display: block;
+    /* Inset 8px a side, as the mock's request sits in its .composer-entry. */
+    width: calc(100% - 16px);
+    min-height: 52px;
+    max-height: 120px;
+    box-sizing: border-box;
+    margin-inline: 8px;
+    padding: 4px 0;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    /* 17px, above the 16px phone floor that stops iOS zooming in. */
+    font-size: var(--text-section) !important;
+    line-height: 24px;
+}
+.composer-tray textarea::placeholder {
+    color: var(--color-text-muted);
+}
+.composer-tray-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+}
+.composer-tray-actions {
+    position: relative;
+}
+.composer-tray-actions > button {
+    display: grid;
+    place-items: center;
+    gap: 7px;
+    width: 44px;
+    height: 44px;
+    padding: 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+}
+.composer-tray-actions > button:is(:hover, :active) {
+    background: var(--color-bg-quiet);
+}
+.composer-tray-actions > button svg {
+    transition: transform 160ms ease;
+}
+.composer-tray-actions > button[aria-expanded='true'] svg {
+    transform: rotate(45deg);
+}
+.composer-tray-menu {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    z-index: 1;
+    width: min(230px, calc(100vw - 48px));
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: 0 8px 32px #3e352b1f;
+    animation: composer-menu-in 160ms ease-out;
+}
+.composer-tray-menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+    text-decoration: none;
+}
+.composer-tray-menu a:is(:hover, :focus-visible) {
+    background: var(--color-bg-quiet);
+    outline: none;
+}
+.composer-tray-menu a:last-child {
+    border-top: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+/* An icon on its line of text, as the mock's inline icons sit
+   (its + and close, and its menu's icons). */
+.composer-tray-icon svg {
+    display: inline;
+    vertical-align: baseline;
+}
+.composer-tray-send {
+    display: grid;
+    place-items: center;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    padding: 4px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background-color: var(--color-action);
+    background-clip: content-box;
+    color: var(--color-text-on-action);
+    cursor: pointer;
+    transition:
+        background-color 160ms ease,
+        transform 160ms ease;
+}
+/* The arrow at the line icons' 1.7px, as the mock draws it. */
+.composer-tray-send svg {
+    stroke-width: 1.7px;
+}
+.composer-tray-send:disabled {
+    background-color: transparent;
+    color: var(--color-border-strong);
+    cursor: default;
+}
+.composer-tray-send:hover:not(:disabled) {
+    background-color: var(--color-action-hover);
+}
+.composer-tray-send:active:not(:disabled) {
+    transform: scale(0.94);
+}
+/* An explicit close for touch; closing keeps the request. */
+.composer-tray-dismiss {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 2px);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 12px;
+    border: 0;
+    border-radius: var(--radius-round);
+    /* A surface of its own, so it never merges with a button behind it. */
+    background: var(--color-bg-surface);
+    box-shadow: 0 2px 8px #3e352b1a;
+    color: var(--color-text-soft);
+    cursor: pointer;
+    transition:
+        background-color 160ms ease,
+        color 160ms ease;
+}
+.composer-tray-dismiss:is(:hover, :focus-visible) {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+/* What the page is showing, sent with the request unless you remove it. */
+.composer-tray-about {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 8px;
+    padding: 2px 4px 2px 12px;
+    box-sizing: border-box;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.composer-tray-about span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-tray-about button {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.composer-tray-about button:hover {
+    background: var(--color-bg-hover);
+}
+.composer-tray :is(a, button):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.composer-tray .composer-tray-dismiss:focus-visible {
+    outline-offset: -4px;
+}
+@media (min-width: 701px) {
+    .composer-tray {
+        top: 84px;
+        bottom: auto;
+        left: 0;
+        right: 0;
+        width: min(680px, calc(100% - 48px));
+        transform-origin: top center;
+        box-shadow:
+            0 24px 60px -24px #211d1599,
+            0 0 0 100vmax rgb(33 29 21 / 0.12);
+    }
+    /* Under the header it keeps the same shadow while you type. */
+    .composer-tray:has(textarea:focus) {
+        box-shadow:
+            0 24px 60px -24px #211d1599,
+            0 0 0 100vmax rgb(33 29 21 / 0.12);
+    }
+    .composer-tray-dismiss {
+        top: 10px;
+        right: 10px;
+        bottom: auto;
+    }
+    .composer-tray-menu a {
+        font-size: 16px;
+    }
+    .composer-tray-about {
+        max-width: calc(100% - 52px);
+    }
+    /* Under the header the menu opens down, onto the page, not off the
+       top of the screen. */
+    .composer-tray-menu {
+        top: calc(100% + 10px);
+        bottom: auto;
+    }
+}
+@keyframes composer-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes composer-glow {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-tray-menu {
+        animation: none;
+    }
+    .composer-tray-actions > button svg,
+    .composer-tray-send,
+    .composer-tray-dismiss {
+        transition: none;
+    }
+}
+
+/* ── Page frame: every section's main column is the same width with the
+   same 32px sides from 701px; 16px under the header and between sections.
+   A page that scrolls ends 48px under its last section on a laptop; on a
+   phone it ends 16px above the floating menu, whose room the body keeps.
+   A page passing `fullWidth` (awaiting its rebuild) sets its own column. */
+.page-frame {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 16px 16px 0;
+}
+@media (max-width: 359px) {
+    .page-frame {
+        padding-inline: 12px;
+    }
+}
+@media (min-width: 701px) {
+    .page-frame {
+        max-width: var(--page-max);
+        margin-inline: auto;
+        padding: 16px var(--page-gutter) 48px;
+    }
+}
+
+/* ── Moving between sections, the header, the menu and Composer's button
+   stay still while the page fades across in 150ms. ───────────────────── */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+    animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none;
+    }
+}

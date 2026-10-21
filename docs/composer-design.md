@@ -1,7 +1,39 @@
 # Day Composer v2 — Design & Architecture
 
-**Status:** Proposal for owner review · 2026-06-13
+**Status:** Proposal for owner review · 2026-06-13. Kept as the design record;
+the section below says where the code has moved on (checked 2026-10-18).
 **Companions:** expadu-v2-brief.md §4.2/§5.2 (the original composer spec) · system-design-bureaucracy-onboarding.md (the attribute engine it reads from)
+
+---
+
+## Where the code differs from this proposal (18 Oct 2026)
+
+- **The LLM now ranks venues.** `AnthropicCandidateRanker` ranks a closed
+  shortlist of at most 40 candidate ids that Expadu has already validated. If its answer contains an unknown or
+  repeated id, or misses one, the whole ranking is discarded and the plan is
+  built without it. Its order feeds `llm_rank`,
+  which at weight 45 is the largest of `PlanScorer`'s 13 terms. `SlotFiller`
+  still owns scheduling, travel, opening hours, appointments and pinned
+  choices. The ranker runs during compose with an 8 s timeout and is off by
+  default (`COMPOSER_LLM_ENABLED`). So "the LLM never picks venues" in §1
+  describes the June design, not the code.
+- **The parser is heuristic by default.** `LLM_DRIVER=heuristic` runs
+  `HeuristicPromptParser`. `OpenAiCompatiblePromptParser` (DeepSeek or OpenAI)
+  is opt-in. The Anthropic parser was removed.
+- **Travel uses real minutes for the first leg.** `MatrixTravelEstimator`
+  takes real one-to-many minutes for the leg from the origin, and falls back
+  to the haversine `TravelEstimator` for hops between stops.
+- **There is no search index (§5).** There is no Scout, `tsvector` or
+  `pg_trgm` index.
+- **Signals (§3.4) are not all arriving.** Of the signals listed there,
+  take-me-there taps are no longer written to `user_events` (since 6 October),
+  and swap-aways sit on `/composer/swap`, which the current UI doesn't call.
+  See [recommendation-system.md](recommendation-system.md).
+- **There is no attribution.** Plans keep no scores, ranker mode or model.
+  EXP-113 adds `composer_runs` and `llm_calls`.
+
+Current architecture:
+[AI data readiness and recommendation/notification/Today groundwork — Oct 2026](https://docs.anar.to/books/architecture/page/ai-data-readiness-and-recommendationnotificationtoday-groundwork).
 
 ---
 

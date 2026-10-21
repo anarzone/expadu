@@ -16,6 +16,11 @@ final class RuleSourcePolicy
 
     public const SingleSourceApproved = 'single_source_approved';
 
+    /** Approved by the automated source check, not by a person. See ClaimCheck. */
+    public const QuoteChecked = 'quote_checked';
+
+    public const AutomatedReviewer = 'automated_source_check';
+
     /**
      * Validate raw authored data before the importer writes any catalogue row.
      *
@@ -34,7 +39,9 @@ final class RuleSourcePolicy
             return [];
         }
 
-        $errors = $this->approvalMetadataErrors($data, requireSingleSourceFlag: true);
+        $automated = ($data['source_verification'] ?? null) === self::QuoteChecked;
+        $errors = $this->approvalMetadataErrors($data, requireSingleSourceFlag: true, requireVerifiedAt: ! $automated);
+        $errors = [...$errors, ...$this->automationErrors($data)];
 
         foreach (['verified_at', 'effective_from', 'effective_to'] as $field) {
             if (array_key_exists($field, $data) && $data[$field] !== null && ! $this->isIsoDate($data[$field])) {
@@ -80,6 +87,11 @@ final class RuleSourcePolicy
             'legal_sources' => $task->legal_sources,
         ], requireSingleSourceFlag: false);
 
+        if (($task->source_verification === self::QuoteChecked) !== ($task->reviewed_by === self::AutomatedReviewer)
+            || ($task->source_verification === self::QuoteChecked && ! is_array($task->claims))) {
+            $errors[] = '`quote_checked` needs the automated reviewer and source claims';
+        }
+
         $today ??= CarbonImmutable::today(config('app.timezone'));
 
         if ($task->review_due_at === null) {
@@ -115,6 +127,11 @@ final class RuleSourcePolicy
             return null;
         }
 
+        // Automatically checked cards get their window from passing source checks, never from YAML.
+        if (($data['source_verification'] ?? null) === self::QuoteChecked) {
+            return null;
+        }
+
         $interval = $data['review_interval_days'] ?? ($this->containsFigure($data) ? 90 : 365);
 
         if (! in_array($interval, [90, 365], true)) {
@@ -132,7 +149,7 @@ final class RuleSourcePolicy
      * @param  array<string, mixed>  $data
      * @return list<string>
      */
-    private function approvalMetadataErrors(array $data, bool $requireSingleSourceFlag): array
+    private function approvalMetadataErrors(array $data, bool $requireSingleSourceFlag, bool $requireVerifiedAt = true): array
     {
         $errors = [];
 
@@ -143,7 +160,7 @@ final class RuleSourcePolicy
         }
 
         $verifiedAt = $data['verified_at'] ?? null;
-        if (! $this->isNonBlankString($verifiedAt) && ! $verifiedAt instanceof DateTimeInterface) {
+        if ($requireVerifiedAt && ! $this->isNonBlankString($verifiedAt) && ! $verifiedAt instanceof DateTimeInterface) {
             $errors[] = 'verified_at is required';
         }
 
@@ -161,14 +178,44 @@ final class RuleSourcePolicy
         }
 
         $verification = $data['source_verification'] ?? null;
-        if (! in_array($verification, [self::DualSource, self::SingleSourceApproved], true)) {
-            $errors[] = 'source_verification must be `dual_source` or `single_source_approved`';
+        if (! in_array($verification, [self::DualSource, self::SingleSourceApproved, self::QuoteChecked], true)) {
+            $errors[] = 'source_verification must be `dual_source`, `single_source_approved` or `quote_checked`';
         } elseif ($verification === self::DualSource && ! $hasImplementation) {
             $errors[] = 'dual_source requires an allowed implementation source';
         } elseif ($verification === self::SingleSourceApproved
             && $requireSingleSourceFlag
             && ($data['single_source_approved'] ?? null) !== true) {
             $errors[] = 'single_source_approved requires the explicit boolean true';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * The automated stamp and the automated check belong together: a card cannot claim
+     * one without the other, and its review dates come only from passing checks.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function automationErrors(array $data): array
+    {
+        $automated = ($data['source_verification'] ?? null) === self::QuoteChecked;
+        $stamped = ($data['reviewed_by'] ?? null) === self::AutomatedReviewer;
+        if (! $automated && ! $stamped) {
+            return [];
+        }
+        if ($automated !== $stamped) {
+            return ['`quote_checked` and reviewed_by `'.self::AutomatedReviewer.'` must be used together'];
+        }
+        $errors = [];
+        foreach (['verified_at', 'review_interval_days', 'single_source_approved'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $errors[] = "{$field} is set by the source check, not authored, on `quote_checked` cards";
+            }
+        }
+        if (! is_array($data['claims'] ?? null) || $data['claims'] === []) {
+            $errors[] = '`quote_checked` cards need source claims';
         }
 
         return $errors;

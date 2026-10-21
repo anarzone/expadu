@@ -11,6 +11,7 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
+use App\Transit\TripConditions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,11 +47,22 @@ class TakeMeThereController extends Controller
     /** Brisk walk / light jog — the feasibility bound for "could still catch it". */
     private const SPRINT_M_PER_MIN = 110;
 
+    /**
+     * One wall-clock budget for the whole request. Both plans and the fare
+     * look-ups draw on it, so a slow router can't hold a PHP worker for a
+     * minute: whatever is late is skipped, never waited for.
+     */
+    private const REQUEST_BUDGET_SECONDS = 12.0;
+
+    /** The tight option is a second full plan; only start it with this much budget left. */
+    private const TIGHT_MIN_SECONDS = 4.0;
+
     public function __invoke(
         Request $request,
         RouteService $routes,
         FareAdvisor $fareAdvisor,
         DisruptionService $disruptions,
+        TripConditions $conditions,
     ): JsonResponse {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -119,7 +131,9 @@ class TakeMeThereController extends Controller
         $nearest = $this->nearestStop($from);
         $atStop = $nearest !== null && $nearest['metres'] <= self::AT_STOP_METRES;
 
-        $result = $routes->plan(
+        $deadline = microtime(true) + self::REQUEST_BUDGET_SECONDS;
+
+        $result = $routes->withTimeBudget($this->secondsLeft($deadline))->plan(
             $atStop ? $nearest['point'] : $from,
             $to, $departAt, 10, $arriveBy, $variety,
         );
@@ -134,8 +148,12 @@ class TakeMeThereController extends Controller
             && ! $arriveBy
             && $nearest !== null
             && $nearest['metres'] <= self::SPRINT_METRES
+            && $this->secondsLeft($deadline) >= self::TIGHT_MIN_SECONDS
         ) {
-            $tight = $this->tightOption($routes, $nearest, $to, $result->journeys);
+            $tight = $this->tightOption(
+                $routes->withTimeBudget($this->secondsLeft($deadline)),
+                $nearest, $to, $result->journeys,
+            );
 
             if ($tight !== null) {
                 array_unshift($journeys, $tight);
@@ -149,10 +167,14 @@ class TakeMeThereController extends Controller
             ->first(fn ($journey) => $journey->mode() === 'transit');
         $ticket = null;
         if ($transitJourney !== null) {
+            // Both look-ups share what is left of the budget (they are usually
+            // cached). One that can't run in time leaves its municipality
+            // unknown, and the fare is then estimated by distance and flagged.
+            $lookups = $routes->withTimeBudget($this->secondsLeft($deadline));
             $ticket = $fareAdvisor->advise(
                 $transitJourney,
-                $routes->reverseGeocode($from)?->municipality,
-                $routes->reverseGeocode($to)?->municipality,
+                $lookups->reverseGeocode($from)?->municipality,
+                $lookups->reverseGeocode($to)?->municipality,
                 (bool) ($user->has_deutschlandticket ?? false),
             )->toArray();
         }
@@ -171,6 +193,8 @@ class TakeMeThereController extends Controller
                 'title' => $d['title'] ?? '',
                 'severity' => $d['severity'] ?? 'minor',
                 'lines' => $d['affected_lines'] ?? [],
+                // KVB's notice in plain English, when one is written.
+                'brief' => $d['brief'] ?? null,
             ])
             ->values()
             ->all();
@@ -183,6 +207,11 @@ class TakeMeThereController extends Controller
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
             'ticket' => $ticket,
             'disruptions' => $relevantDisruptions,
+            // Plan a trip's "We checked": the weather on the way, lifts out.
+            'conditions' => $conditions->for($journeys),
+            // Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
+            // them as the stop signs do.
+            'city' => config('geocoding.search_default.city'),
         ]);
     }
 
@@ -288,6 +317,11 @@ class TakeMeThereController extends Controller
             'access_walk_min' => max(1, (int) round($walkMin)),
             'access_stop_name' => $nearest['name'],
         ];
+    }
+
+    private function secondsLeft(float $deadline): float
+    {
+        return max(0.0, $deadline - microtime(true));
     }
 
     private function metresBetween(float $lat1, float $lng1, float $lat2, float $lng2): float

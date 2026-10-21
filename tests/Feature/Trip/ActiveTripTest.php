@@ -2,8 +2,10 @@
 
 use App\Models\ActiveTrip;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 beforeEach(function () {
+    $this->travelTo(CarbonImmutable::parse('2026-07-03T17:55:00+02:00'));
     $this->user = User::factory()->onboarded()->create();
     $this->actingAs($this->user);
 });
@@ -21,7 +23,7 @@ function tripPayload(array $overrides = []): array
             'duration_min' => 24,
             'transfers' => 1,
             'legs' => [
-                ['mode' => 'tram', 'line' => '12'],
+                ['mode' => 'tram', 'line' => '12', 'depart_at' => '2026-07-03T18:00:00+02:00', 'arrive_at' => '2026-07-03T18:24:00+02:00'],
             ],
         ],
         'destination' => [
@@ -52,10 +54,11 @@ test('starting a trip persists it for the user', function () {
     expect($trip->started_at)->not->toBeNull();
 });
 
-test('starting a new trip replaces the old one (one row per user)', function () {
+test('starting a new trip replaces the old one once confirmed (one row per user)', function () {
     $this->postJson('/api/trip/start', tripPayload())->assertOk();
     $this->postJson('/api/trip/start', tripPayload([
         'destination' => ['name' => 'Rudolfplatz'],
+        'replace' => true,
     ]))->assertOk();
 
     expect(ActiveTrip::query()->where('user_id', $this->user->id)->count())->toBe(1);

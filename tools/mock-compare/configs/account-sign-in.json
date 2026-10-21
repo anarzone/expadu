@@ -1,0 +1,155 @@
+{
+    "name": "account-sign-in",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/account/#sign-in",
+        "wait": ".account-poster h1"
+    },
+    "app": {
+        "url": "/login",
+        "wait": ".account-poster h1"
+    },
+    "pairs": [
+        {
+            "name": "street",
+            "mock": ".account-street",
+            "app": ".account-street",
+            "ignore": ["background-image"],
+            "reason": "The same picture at its own address on each side: the mock’s account/street.webp, copied into the app’s public/images/account/. Its pixels are compared."
+        },
+        {
+            "name": "top",
+            "mock": ".account-top",
+            "app": ".account-top"
+        },
+        {
+            "name": "brand",
+            "mock": ".account-brand",
+            "app": ".account-brand"
+        },
+        {
+            "name": "brand mark",
+            "mock": ".account-brand svg",
+            "app": ".account-brand svg"
+        },
+        {
+            "name": "switch",
+            "mock": ".account-switch",
+            "app": ".account-switch"
+        },
+        {
+            "name": "poster",
+            "mock": ".account-poster",
+            "app": ".account-poster"
+        },
+        {
+            "name": "label",
+            "mock": ".account-label",
+            "app": ".account-label"
+        },
+        {
+            "name": "heading",
+            "mock": ".account-poster h1",
+            "app": ".account-poster h1"
+        },
+        {
+            "name": "lead",
+            "mock": ".account-lead",
+            "app": ".account-lead"
+        },
+        {
+            "name": "Google",
+            "mock": ".account-social button",
+            "app": ".account-social a"
+        },
+        {
+            "name": "Google mark",
+            "mock": ".account-social svg",
+            "app": ".account-social svg"
+        },
+        {
+            "name": "or with email",
+            "mock": ".account-or",
+            "app": ".account-or"
+        },
+        {
+            "name": "email field",
+            "mock": ".account-field",
+            "app": ".account-field",
+            "index": 0
+        },
+        {
+            "name": "email label",
+            "mock": ".account-field label",
+            "app": ".account-field label",
+            "index": 0
+        },
+        {
+            "name": "email box",
+            "mock": ".account-input",
+            "app": ".account-input",
+            "index": 0
+        },
+        {
+            "name": "email input",
+            "mock": ".account-input input",
+            "app": ".account-input input",
+            "index": 0
+        },
+        {
+            "name": "password field",
+            "mock": ".account-field",
+            "app": ".account-field",
+            "index": 1
+        },
+        {
+            "name": "password label",
+            "mock": ".account-field label",
+            "app": ".account-field label",
+            "index": 1
+        },
+        {
+            "name": "password box",
+            "mock": ".account-input",
+            "app": ".account-input",
+            "index": 1
+        },
+        {
+            "name": "password input",
+            "mock": ".account-input input",
+            "app": ".account-input input",
+            "index": 1
+        },
+        {
+            "name": "password head",
+            "mock": ".account-field-head",
+            "app": ".account-field-head"
+        },
+        {
+            "name": "Show",
+            "mock": ".account-input button",
+            "app": ".account-input button"
+        },
+        {
+            "name": "Forgot password?",
+            "mock": ".account-field-head a",
+            "app": ".account-field-head a"
+        },
+        {
+            "name": "keep me signed in",
+            "mock": ".account-keep",
+            "app": ".account-keep"
+        },
+        {
+            "name": "keep checkbox",
+            "mock": ".account-keep input",
+            "app": ".account-keep input"
+        },
+        {
+            "name": "Sign in",
+            "mock": ".account-primary",
+            "app": ".account-primary"
+        }
+    ]
+}

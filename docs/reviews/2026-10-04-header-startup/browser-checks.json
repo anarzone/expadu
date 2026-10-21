@@ -1,0 +1,328 @@
+{
+  "before": {
+    "headerHeight": 80,
+    "headingTop": 177.75,
+    "icons": 0,
+    "navInsideHeader": false
+  },
+  "initial": [
+    {
+      "headerHeight": 72,
+      "headerText": "Expadu\nToday\nEvents\nPaperwork\nTravel\nServices\nCologne\nA",
+      "headingTop": 98.75,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — Travel",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — Good things to turn up for",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — One step at a time",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — A little help goes a long way",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — Today preview",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "[Initial HTML QA] Expadu — Composer",
+      "shellHeight": 72
+    }
+  ],
+  "loaded": [
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "headingTop": 98.75,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — Travel",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — Good things to turn up for",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — One step at a time",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — A little help goes a long way",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — Today preview",
+      "shellHeight": 72
+    },
+    {
+      "headerHeight": 72,
+      "headers": 1,
+      "icons": 5,
+      "navInsideHeader": true,
+      "navLabels": [
+        "Today",
+        "Events",
+        "Paperwork",
+        "Travel",
+        "Services"
+      ],
+      "page": "Expadu — Saved ideas",
+      "shellHeight": 72
+    }
+  ],
+  "mobile": [
+    {
+      "page": "departures-next",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    },
+    {
+      "page": "events-next",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    },
+    {
+      "page": "bureaucracy-next",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    },
+    {
+      "page": "services-next",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    },
+    {
+      "page": "today-next/brief",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    },
+    {
+      "page": "composer-studio",
+      "initial": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      },
+      "loaded": {
+        "headers": 1,
+        "height": 120,
+        "icons": 5,
+        "navRight": 374,
+        "utilities": 1,
+        "width": 390
+      }
+    }
+  ],
+  "reloads": [
+    {
+      "headers": 1,
+      "headingTop": 98.75,
+      "height": 72,
+      "icons": 5,
+      "legacyComposer": 0
+    },
+    {
+      "headers": 1,
+      "headingTop": 98.75,
+      "height": 72,
+      "icons": 5,
+      "legacyComposer": 0
+    },
+    {
+      "headers": 1,
+      "headingTop": 98.75,
+      "height": 72,
+      "icons": 5,
+      "legacyComposer": 0
+    }
+  ]
+}

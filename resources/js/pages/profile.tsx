@@ -12,9 +12,10 @@ import {
 import type { IconProps } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import type { ComponentType } from 'react';
-import { ProfileRightPanel } from '@/components/profile/profile-right-panel';
+import { showToast } from '@/components/ui/toast';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { writeJson } from '@/lib/reliable-write';
 import type { Auth } from '@/types';
 
 // ============================================================
@@ -216,6 +217,8 @@ export default function Profile() {
     // Inline edit state
     const [editingField, setEditingField] = useState<string | null>(null);
     const [editValue, setEditValue] = useState('');
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
 
     // Interests — seeded from backend, persisted to /settings/profile
     const [interests, setInterests] = useState<string[]>(serverInterests ?? []);
@@ -235,6 +238,8 @@ export default function Profile() {
     }));
 
     const [showPlaceForm, setShowPlaceForm] = useState(false);
+    const [placeSaving, setPlaceSaving] = useState(false);
+    const [placeError, setPlaceError] = useState<string | null>(null);
     const [placeName, setPlaceName] = useState('');
     const [placeAddr, setPlaceAddr] = useState('');
     const [placeLat, setPlaceLat] = useState<number | null>(null);
@@ -250,11 +255,6 @@ export default function Profile() {
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
 
     // Toast
-    const [toastMsg, setToastMsg] = useState<string | null>(null);
-    const showToast = useCallback((msg: string) => {
-        setToastMsg(msg);
-        setTimeout(() => setToastMsg(null), 2500);
-    }, []);
 
     // Build the full PATCH payload the backend always requires (name + email),
     // optionally overriding one field with a fresh value.
@@ -288,75 +288,84 @@ export default function Profile() {
 
     // Inline edit handlers
     function startEdit(field: string, currentValue: string) {
+        if (profileSaving) {
+            return;
+        }
+
+        setProfileError(null);
         setEditingField(field);
         setEditValue(currentValue);
     }
 
-    function saveEdit(field: string) {
+    async function saveEdit(field: string) {
         const val = editValue.trim();
 
-        if (!val) {
+        if (!val || profileSaving) {
             return;
         }
 
-        // Update local state immediately
-        switch (field) {
-            case 'name':
-                setProfileName(val);
-                break;
-            case 'email':
-                setProfileEmail(val);
-                break;
-            case 'city':
-                setProfileCity(val);
-                break;
-            case 'situation':
-                setProfileSituation(val);
-                break;
-            case 'german':
-                setProfileGerman(val);
-                break;
+        setProfileSaving(true);
+        setProfileError(null);
+
+        try {
+            await writeJson(
+                '/settings/profile',
+                'PATCH',
+                buildProfilePayload(field, val),
+            );
+
+            switch (field) {
+                case 'name':
+                    setProfileName(val);
+                    break;
+                case 'email':
+                    setProfileEmail(val);
+                    break;
+                case 'city':
+                    setProfileCity(val);
+                    break;
+                case 'situation':
+                    setProfileSituation(val);
+                    break;
+                case 'german':
+                    setProfileGerman(val);
+                    break;
+            }
+
+            setEditingField(null);
+            showToast(
+                '✓ ' +
+                    field.charAt(0).toUpperCase() +
+                    field.slice(1) +
+                    ' updated',
+            );
+            router.reload({ only: ['auth'] });
+        } catch (error) {
+            setProfileError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            setProfileSaving(false);
         }
-
-        setEditingField(null);
-
-        router.patch('/settings/profile', buildProfilePayload(field, val), {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () =>
-                showToast(
-                    '✓ ' +
-                        field.charAt(0).toUpperCase() +
-                        field.slice(1) +
-                        ' updated',
-                ),
-            onError: (errors) => {
-                const firstError = Object.values(errors)[0];
-                showToast(
-                    'Error: ' +
-                        (typeof firstError === 'string'
-                            ? firstError
-                            : 'Could not save'),
-                );
-
-                switch (field) {
-                    case 'name':
-                        setProfileName(user?.name ?? '');
-                        break;
-                    case 'email':
-                        setProfileEmail(user?.email ?? '');
-                        break;
-                }
-            },
-        });
     }
 
     function cancelEdit() {
+        if (profileSaving) {
+            return;
+        }
+
         setEditingField(null);
+        setProfileError(null);
     }
 
     // Interests — toggle a chip and persist alongside required profile fields.
-    function toggleInterest(value: string) {
+    async function toggleInterest(value: string) {
+        if (profileSaving) {
+            return;
+        }
+
         const isOn = interests.includes(value);
 
         // Don't let the user drop below the minimum; backend also enforces this.
@@ -376,25 +385,33 @@ export default function Profile() {
             ? interests.filter((i) => i !== value)
             : [...interests, value];
 
-        setInterests(next);
+        setProfileSaving(true);
+        setProfileError(null);
 
-        router.patch(
-            '/settings/profile',
-            buildProfilePayload('interests', '', next),
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => showToast('✓ Interests updated'),
-                onError: () => {
-                    showToast('Error: Could not save interests');
-                    setInterests(interests);
-                },
-            },
-        );
+        try {
+            await writeJson(
+                '/settings/profile',
+                'PATCH',
+                buildProfilePayload('interests', '', next),
+            );
+            setInterests(next);
+            showToast('✓ Interests updated');
+            router.reload({ only: ['auth'] });
+        } catch (error) {
+            setProfileError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save your interests. Please try again.',
+            );
+        } finally {
+            setProfileSaving(false);
+        }
     }
 
     // Places
     function openPlaceForm(place?: Place) {
+        setPlaceError(null);
+
         if (place) {
             setPlaceName(place.name);
             setPlaceAddr(place.addr);
@@ -424,11 +441,18 @@ export default function Profile() {
     }
 
     function savePlace() {
+        if (placeSaving) {
+            return;
+        }
+
         if (!placeName.trim()) {
-            showToast('Please enter a place name');
+            setPlaceError('Please enter a place name.');
 
             return;
         }
+
+        setPlaceSaving(true);
+        setPlaceError(null);
 
         if (editingPlaceId) {
             // Update via backend
@@ -448,15 +472,17 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () =>
-                        showToast('✓ ' + placeName.trim() + ' updated'),
+                    onSuccess: () => {
+                        setShowPlaceForm(false);
+                        showToast('✓ ' + placeName.trim() + ' updated');
+                    },
+                    onFinish: () => setPlaceSaving(false),
                     onError: (errors) => {
                         const firstError = Object.values(errors)[0];
-                        showToast(
-                            'Error: ' +
-                                (typeof firstError === 'string'
-                                    ? firstError
-                                    : 'Could not update'),
+                        setPlaceError(
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Could not update',
                         );
                     },
                 },
@@ -479,24 +505,24 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () =>
+                    onSuccess: () => {
+                        setShowPlaceForm(false);
                         showToast(
                             '✓ ' + placeName.trim() + ' added to your places',
-                        ),
+                        );
+                    },
+                    onFinish: () => setPlaceSaving(false),
                     onError: (errors) => {
                         const firstError = Object.values(errors)[0];
-                        showToast(
-                            'Error: ' +
-                                (typeof firstError === 'string'
-                                    ? firstError
-                                    : 'Could not save'),
+                        setPlaceError(
+                            typeof firstError === 'string'
+                                ? firstError
+                                : 'Could not save',
                         );
                     },
                 },
             );
         }
-
-        setShowPlaceForm(false);
     }
 
     // Use browser geolocation → reverse geocode with Photon
@@ -565,7 +591,7 @@ export default function Profile() {
         );
     }
 
-    // Search address via /api/geocode and get coordinates
+    // Search address via /api/geocode/search and get coordinates
     const [addrSuggestions, setAddrSuggestions] = useState<
         { name: string; address: string; lat: number; lng: number }[]
     >([]);
@@ -587,9 +613,24 @@ export default function Profile() {
 
                 timer = setTimeout(async () => {
                     try {
-                        const res = await fetch(
-                            `/api/geocode?q=${encodeURIComponent(query.trim())}`,
-                        );
+                        // What was typed goes in the body, never a URL or an access log.
+                        const res = await fetch('/api/geocode/search', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Accept: 'application/json',
+                                'X-CSRF-TOKEN':
+                                    document
+                                        .querySelector(
+                                            'meta[name="csrf-token"]',
+                                        )
+                                        ?.getAttribute('content') ?? '',
+                            },
+                            body: JSON.stringify({
+                                q: query.trim().slice(0, 100),
+                            }),
+                        });
 
                         if (res.ok) {
                             const data = await res.json();
@@ -647,22 +688,19 @@ export default function Profile() {
         'Complete your profile';
 
     return (
-        <AppLayout
-            breadcrumbs={[{ title: 'Profile', href: '/profile' }]}
-            rightPanel={<ProfileRightPanel />}
-        >
+        <AppLayout>
             <Head title="Profile" />
             <div className="mx-auto w-full max-w-[680px]">
                 {/* ── Profile header (simple — no hero) ── */}
                 <div className="flex items-center gap-3.5 px-1 pt-3 pb-5">
-                    <div className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-primary font-display text-[22px] font-semibold text-white">
+                    <div className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-action font-display text-[22px] font-semibold text-white">
                         {(profileName.charAt(0) || '?').toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <div className="font-display text-[21px] leading-tight font-semibold">
+                        <h1 className="font-display text-[21px] leading-tight font-semibold">
                             {profileName || 'Your profile'}
-                        </div>
-                        <div className="mt-1 text-[13px] text-muted-foreground">
+                        </h1>
+                        <div className="mt-1 text-[13px] text-text-muted">
                             {profileSubtitle}
                         </div>
                     </div>
@@ -670,6 +708,22 @@ export default function Profile() {
 
                 {/* ── Profile drill-in menu ── */}
                 <div className="py-2">
+                    {profileError && (
+                        <p
+                            role="alert"
+                            className="px-5 py-3 text-sm text-conflict-text"
+                        >
+                            {profileError}
+                        </p>
+                    )}
+                    {profileSaving && (
+                        <p
+                            role="status"
+                            className="px-5 py-2 text-sm text-text-muted"
+                        >
+                            Saving…
+                        </p>
+                    )}
                     {/* PERSONAL DETAILS — drill-in */}
                     <SettingsSection
                         id="details"
@@ -690,6 +744,7 @@ export default function Profile() {
                             onEditValue={setEditValue}
                             onSave={saveEdit}
                             onCancel={cancelEdit}
+                            saving={profileSaving}
                             selectOptions={[
                                 'Non-EU employee',
                                 'EU employee',
@@ -711,6 +766,7 @@ export default function Profile() {
                             onEditValue={setEditValue}
                             onSave={saveEdit}
                             onCancel={cancelEdit}
+                            saving={profileSaving}
                             selectOptions={[
                                 'None yet',
                                 'A1 — Beginner',
@@ -725,12 +781,12 @@ export default function Profile() {
 
                         {/* Redo onboarding: re-asks every answer, the
                         plan recomputes, nothing is deleted. */}
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-[#EFEDE7] px-3.5 py-3 dark:bg-[#2A2920]">
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-bg-quiet px-3.5 py-3">
                             <div className="min-w-0">
                                 <div className="text-[13px] font-semibold">
                                     Situation changed?
                                 </div>
-                                <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                <div className="text-xs text-text-soft">
                                     Walk through the welcome questions again —
                                     your plan adapts, and nothing you've done is
                                     lost.
@@ -746,7 +802,7 @@ export default function Profile() {
                                         router.post('/onboarding/restart');
                                     }
                                 }}
-                                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#E2DFD6] bg-white px-3 py-2 text-xs font-semibold text-[#18170F] transition-colors hover:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F6F5F1] dark:hover:border-[#5B8DEF]"
+                                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-select-text"
                             >
                                 <IconRefresh size={16} stroke={ICON_STROKE} />
                                 Redo onboarding
@@ -766,7 +822,7 @@ export default function Profile() {
                     >
                         <div className="mb-3 flex items-center justify-end">
                             <span
-                                className="text-[#AAA89F]"
+                                className="text-text-soft"
                                 style={{
                                     fontSize: 11,
                                     fontWeight: 700,
@@ -777,7 +833,7 @@ export default function Profile() {
                                 {`${interests.length}/${INTEREST_MAX}`}
                             </span>
                         </div>
-                        <p className="mb-3 text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                        <p className="mb-3 text-xs text-text-soft">
                             Pick {INTEREST_MIN}–{INTEREST_MAX}. We lead your
                             home feed and day plans with these.
                         </p>
@@ -798,10 +854,10 @@ export default function Profile() {
                                         }
                                         className={`flex items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
                                             on
-                                                ? 'border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/15'
+                                                ? 'border-select-text bg-select-bg text-select-text'
                                                 : disabled
-                                                  ? 'border-[#E2DFD6] bg-white opacity-40 dark:border-[#3A3930] dark:bg-[#1E1D15]'
-                                                  : 'border-[#E2DFD6] bg-white hover:border-[#1A4CD4]/30 dark:border-[#3A3930] dark:bg-[#1E1D15]'
+                                                  ? 'border-border bg-bg-surface opacity-40'
+                                                  : 'border-border bg-bg-surface hover:border-select-text/30'
                                         }`}
                                     >
                                         <span className="text-[20px] leading-none">
@@ -809,7 +865,7 @@ export default function Profile() {
                                         </span>
                                         {interest.label}
                                         {on && (
-                                            <span className="ml-auto text-[#1A4CD4]">
+                                            <span className="ml-auto text-select-text">
                                                 ✓
                                             </span>
                                         )}
@@ -832,7 +888,7 @@ export default function Profile() {
                         {places.map((p) => (
                             <div
                                 key={p.id}
-                                className="flex items-center justify-between border-b border-[#E2DFD6] py-3.5 last:border-b-0 dark:border-[#3A3930]"
+                                className="flex items-center justify-between border-b border-border py-3.5 last:border-b-0"
                                 style={{ gap: 12 }}
                             >
                                 <span
@@ -853,7 +909,7 @@ export default function Profile() {
                                         {p.name}
                                     </div>
                                     <div
-                                        className="text-[#AAA89F]"
+                                        className="text-text-soft"
                                         style={{
                                             fontSize: 12,
                                             marginTop: 2,
@@ -864,7 +920,7 @@ export default function Profile() {
                                 </div>
                                 <button
                                     onClick={() => openPlaceForm(p)}
-                                    className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-2.5 py-1 text-[#6B6860] transition-all hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                                    className="cursor-pointer rounded-[9px] border border-border bg-bg-surface px-2.5 py-1 text-text-soft transition-all hover:bg-bg-hover"
                                     style={{
                                         fontFamily: "'Geist', sans-serif",
                                         fontSize: 11,
@@ -879,13 +935,13 @@ export default function Profile() {
                                         <button
                                             onClick={() => deletePlace(p.id)}
                                             aria-label={`Delete ${p.name}`}
-                                            className="cursor-pointer rounded-[9px] border border-[#FDE8E6] bg-[#FDE8E6] px-2.5 py-1 transition-all hover:bg-[#F9CCC8]"
+                                            className="cursor-pointer rounded-[9px] border border-conflict-bg bg-conflict-bg px-2.5 py-1 transition-all hover:bg-conflict"
                                             style={{
                                                 fontFamily:
                                                     "'Geist', sans-serif",
                                                 fontSize: 11,
                                                 fontWeight: 600,
-                                                color: '#C4271A',
+                                                color: 'var(--color-conflict-text)',
                                             }}
                                         >
                                             <IconX
@@ -897,9 +953,9 @@ export default function Profile() {
                             </div>
                         ))}
                         {showPlaceForm && (
-                            <div className="mt-2.5 rounded-[14px] border border-[#E2DFD6] bg-[#EFEDE7] p-3.5 dark:border-[#3A3930] dark:bg-[#2A2920]">
+                            <div className="mt-2.5 rounded-[14px] border border-border bg-bg-quiet p-3.5">
                                 <div
-                                    className="text-[#6B6860] dark:text-[#AAA89F]"
+                                    className="text-text-soft"
                                     style={{
                                         fontSize: 12,
                                         fontWeight: 700,
@@ -914,14 +970,14 @@ export default function Profile() {
                                 {showIconPicker ? (
                                     <>
                                         <div className="mb-1 flex items-center justify-between">
-                                            <span className="text-[11px] font-bold tracking-[0.07em] text-[#AAA89F] uppercase">
+                                            <span className="text-[11px] font-bold tracking-[0.07em] text-text-soft uppercase">
                                                 Choose an icon
                                             </span>
                                             <button
                                                 onClick={() =>
                                                     setShowIconPicker(false)
                                                 }
-                                                className="text-[11px] font-semibold text-[#1A4CD4]"
+                                                className="text-[11px] font-semibold text-select-text"
                                             >
                                                 Done
                                             </button>
@@ -936,7 +992,7 @@ export default function Profile() {
                                                             false,
                                                         );
                                                     }}
-                                                    className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD]' : 'border-2 border-transparent bg-white dark:bg-[#1E1D15]'}`}
+                                                    className={`flex cursor-pointer items-center justify-center rounded-[9px] transition-all ${placeEmoji === ico ? 'border-2 border-select-text bg-select-bg' : 'border-2 border-transparent bg-bg-surface'}`}
                                                     style={{
                                                         width: 40,
                                                         height: 40,
@@ -958,8 +1014,9 @@ export default function Profile() {
                                         style={{
                                             width: 44,
                                             height: 44,
-                                            background: '#EBF0FD',
-                                            border: '2px solid #1A4CD4',
+                                            background:
+                                                'var(--color-select-bg)',
+                                            border: '2px solid var(--color-select-text)',
                                             fontSize: 22,
                                         }}
                                     >
@@ -971,7 +1028,7 @@ export default function Profile() {
                                             setPlaceName(e.target.value)
                                         }
                                         placeholder="Name (e.g. Home)"
-                                        className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                        className="flex-1 rounded-[9px] border border-border bg-bg-surface px-3 py-[9px] text-sm outline-none"
                                         style={{
                                             fontFamily: "'Geist', sans-serif",
                                         }}
@@ -1050,7 +1107,7 @@ export default function Profile() {
                                                     }, 200)
                                                 }
                                                 placeholder="Address or area (e.g. Ehrenfeld)"
-                                                className="w-full rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                                className="w-full rounded-[9px] border border-border bg-bg-surface px-3 py-[9px] text-sm outline-none"
                                                 style={{
                                                     fontFamily:
                                                         "'Geist', sans-serif",
@@ -1058,7 +1115,7 @@ export default function Profile() {
                                             />
                                             {/* Address autocomplete dropdown */}
                                             {addrSuggestions.length > 0 && (
-                                                <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-[#E2DFD6] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#3A3930] dark:bg-[#1E1D15]">
+                                                <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-[9px] border border-border bg-bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
                                                     {addrSuggestions.map(
                                                         (s, i) => (
                                                             <div
@@ -1084,20 +1141,20 @@ export default function Profile() {
                                                                         i,
                                                                     )
                                                                 }
-                                                                className={`cursor-pointer px-3 py-2.5 transition-colors ${addrHighlight === i ? 'bg-[#EBF0FD] dark:bg-[#1A4CD4]/20' : 'hover:bg-[#EFEDE7] dark:hover:bg-[#2A2920]'}`}
+                                                                className={`cursor-pointer px-3 py-2.5 transition-colors ${addrHighlight === i ? 'bg-select-bg' : 'hover:bg-bg-hover'}`}
                                                                 style={{
                                                                     borderBottom:
                                                                         i <
                                                                         addrSuggestions.length -
                                                                             1
-                                                                            ? '1px solid #F0EDE7'
+                                                                            ? '1px solid var(--color-border)'
                                                                             : 'none',
                                                                 }}
                                                             >
-                                                                <div className="text-sm font-medium text-[#18170F] dark:text-[#F5F4F0]">
+                                                                <div className="text-sm font-medium text-text">
                                                                     {s.name}
                                                                 </div>
-                                                                <div className="text-xs text-[#6B6860] dark:text-[#AAA89F]">
+                                                                <div className="text-xs text-text-soft">
                                                                     {s.address}
                                                                 </div>
                                                             </div>
@@ -1111,7 +1168,7 @@ export default function Profile() {
                                             type="button"
                                             onClick={useMyLocation}
                                             disabled={locating}
-                                            className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-[#E2DFD6] bg-white transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] disabled:opacity-50 dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                            className="flex shrink-0 cursor-pointer items-center justify-center rounded-[9px] border border-border bg-bg-surface transition-all hover:border-select-text hover:bg-select-bg disabled:opacity-50"
                                             style={{
                                                 width: 40,
                                                 height: 40,
@@ -1123,9 +1180,9 @@ export default function Profile() {
                                                     style={{
                                                         width: 14,
                                                         height: 14,
-                                                        border: '2px solid #E2DFD6',
+                                                        border: '2px solid var(--color-border)',
                                                         borderTopColor:
-                                                            '#1A4CD4',
+                                                            'var(--color-select-text)',
                                                         borderRadius: '50%',
                                                         animation:
                                                             'spin .7s linear infinite',
@@ -1146,14 +1203,14 @@ export default function Profile() {
                                         onClick={() =>
                                             setShowArriveBy(!showArriveBy)
                                         }
-                                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showArriveBy ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
+                                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showArriveBy ? 'bg-select-bg text-select-text' : 'bg-bg-quiet text-text-soft'}`}
                                     >
                                         <IconClock size={14} stroke={1.7} />{' '}
                                         Arrive by
                                     </button>
                                     <button
                                         onClick={() => setShowDays(!showDays)}
-                                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-[#EBF0FD] text-[#1A4CD4] dark:bg-[#1A4CD4]/20 dark:text-[#6B9AFF]' : 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]'}`}
+                                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-select-bg text-select-text' : 'bg-bg-quiet text-text-soft'}`}
                                     >
                                         <IconCalendar size={14} stroke={1.7} />{' '}
                                         Days
@@ -1164,7 +1221,7 @@ export default function Profile() {
                                 {showArriveBy && (
                                     <div className="mb-2.5 flex items-center gap-2">
                                         <span
-                                            className="text-[#6B6860] dark:text-[#AAA89F]"
+                                            className="text-text-soft"
                                             style={{
                                                 fontSize: 12,
                                                 whiteSpace: 'nowrap',
@@ -1178,18 +1235,18 @@ export default function Profile() {
                                             onChange={(e) =>
                                                 setPlaceArriveBy(e.target.value)
                                             }
-                                            className="flex-1 rounded-[9px] border border-[#E2DFD6] bg-white px-3 py-[9px] text-sm outline-none dark:border-[#3A3930] dark:bg-[#1E1D15]"
+                                            className="flex-1 rounded-[9px] border border-border bg-bg-surface px-3 py-[9px] text-sm outline-none"
                                             style={{
                                                 fontFamily:
                                                     "'Geist Mono', monospace",
                                                 color: placeArriveBy
-                                                    ? '#1A4CD4'
-                                                    : '#AAA89F',
+                                                    ? 'var(--color-select-text)'
+                                                    : 'var(--color-text-soft)',
                                             }}
                                             placeholder="--:--"
                                         />
                                         <span
-                                            className="text-[#AAA89F]"
+                                            className="text-text-soft"
                                             style={{ fontSize: 11 }}
                                         >
                                             For smart commute
@@ -1224,7 +1281,7 @@ export default function Profile() {
                                                     onClick={() =>
                                                         setPlaceDayMode(m.id)
                                                     }
-                                                    className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-[#1A4CD4] bg-[#1A4CD4] text-white' : 'border-[#E2DFD6] bg-white text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]'}`}
+                                                    className={`cursor-pointer rounded-full border px-2.5 py-[4px] transition-all ${placeDayMode === m.id ? 'border-select-text bg-action text-white' : 'border-border bg-bg-surface text-text-soft'}`}
                                                     style={{
                                                         fontSize: 11,
                                                         fontWeight: 600,
@@ -1267,7 +1324,7 @@ export default function Profile() {
                                                                           ],
                                                             )
                                                         }
-                                                        className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-[#1A4CD4] bg-[#EBF0FD] text-[#1A4CD4]' : 'border-2 border-transparent bg-[#EFEDE7] text-[#AAA89F] dark:bg-[#2A2920]'}`}
+                                                        className={`flex cursor-pointer items-center justify-center transition-all ${placeActiveDays.includes(d) ? 'border-2 border-select-text bg-select-bg text-select-text' : 'border-2 border-transparent bg-bg-quiet text-text-soft'}`}
                                                         style={{
                                                             width: 32,
                                                             height: 32,
@@ -1286,21 +1343,33 @@ export default function Profile() {
                                         )}
                                     </div>
                                 )}
+                                {placeError && (
+                                    <p
+                                        role="alert"
+                                        className="mb-3 text-sm text-conflict-text"
+                                    >
+                                        {placeError}
+                                    </p>
+                                )}
                                 <div className="flex gap-2">
                                     <button
                                         onClick={savePlace}
-                                        className="flex-1 cursor-pointer rounded-[9px] border-none bg-[#1A4CD4] py-[9px] text-[13px] font-semibold text-white"
+                                        disabled={placeSaving}
+                                        className="flex-1 cursor-pointer rounded-[9px] border-none bg-action py-[9px] text-[13px] font-semibold text-white"
                                         style={{
                                             fontFamily: "'Geist', sans-serif",
                                         }}
                                     >
-                                        {editingPlaceId
-                                            ? 'Update place'
-                                            : 'Save place'}
+                                        {placeSaving
+                                            ? 'Saving…'
+                                            : editingPlaceId
+                                              ? 'Update place'
+                                              : 'Save place'}
                                     </button>
                                     <button
                                         onClick={() => setShowPlaceForm(false)}
-                                        className="cursor-pointer rounded-[9px] border border-[#E2DFD6] bg-white px-3.5 py-[9px] text-[13px] text-[#6B6860] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#AAA89F]"
+                                        disabled={placeSaving}
+                                        className="cursor-pointer rounded-[9px] border border-border bg-bg-surface px-3.5 py-[9px] text-[13px] text-text-soft"
                                         style={{
                                             fontFamily: "'Geist', sans-serif",
                                         }}
@@ -1313,7 +1382,7 @@ export default function Profile() {
                         {!showPlaceForm && (
                             <button
                                 onClick={() => openPlaceForm()}
-                                className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-[#E2DFD6] bg-transparent py-2.5 text-[13px] font-medium text-[#1A4CD4] transition-all hover:border-[#1A4CD4] hover:bg-[#EBF0FD] dark:border-[#3A3930]"
+                                className="mt-2.5 w-full cursor-pointer rounded-[9px] border-[1.5px] border-dashed border-border bg-transparent py-2.5 text-[13px] font-medium text-select-text transition-all hover:border-select-text hover:bg-select-bg"
                                 style={{
                                     fontFamily: "'Geist', sans-serif",
                                 }}
@@ -1343,7 +1412,7 @@ export default function Profile() {
                                 Going
                             </span>
                             <span
-                                className="text-[#AAA89F]"
+                                className="text-text-soft"
                                 style={{
                                     fontSize: 11,
                                     fontWeight: 700,
@@ -1358,20 +1427,20 @@ export default function Profile() {
                             (goingEvents ?? []).map((ev) => (
                                 <CompactCard
                                     key={ev.id}
-                                    barColor="#0A7C52"
+                                    barColor="var(--color-success)"
                                     title={ev.title}
                                     sub={`${ev.date} · ${ev.time}${ev.venue ? ` · ${ev.venue}` : ''}`}
                                     badge="✓ Going"
-                                    badgeBg="#D4F0E6"
-                                    badgeColor="#0A7C52"
+                                    badgeBg="var(--color-success-soft)"
+                                    badgeColor="var(--color-success)"
                                 />
                             ))
                         ) : (
-                            <div className="rounded-xl border border-dashed border-[#E2DFD6] p-6 text-center text-sm text-[#AAA89F] dark:border-[#3A3930]">
+                            <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-soft">
                                 No upcoming events. Browse the{' '}
                                 <a
                                     href="/events"
-                                    className="text-[#1A4CD4] underline"
+                                    className="text-select-text underline"
                                 >
                                     Events
                                 </a>{' '}
@@ -1384,13 +1453,13 @@ export default function Profile() {
                                 {(pastEvents ?? []).map((ev) => (
                                     <CompactCard
                                         key={ev.id}
-                                        barColor="#E2DFD6"
+                                        barColor="var(--color-border)"
                                         title={ev.title}
-                                        titleColor="#6B6860"
+                                        titleColor="var(--color-text-soft)"
                                         sub={`${ev.date}${ev.venue ? ` · ${ev.venue}` : ''}`}
                                         badge="Attended"
-                                        badgeBg="#EFEDE7"
-                                        badgeColor="#AAA89F"
+                                        badgeBg="var(--color-bg-quiet)"
+                                        badgeColor="var(--color-text-soft)"
                                     />
                                 ))}
                             </div>
@@ -1400,14 +1469,6 @@ export default function Profile() {
             </div>
 
             {/* Toast */}
-            {toastMsg && (
-                <div
-                    className="pointer-events-none fixed bottom-20 left-1/2 z-[9000] -translate-x-1/2 rounded-[14px] bg-[#18170F] px-[18px] py-[11px] text-[13px] font-medium whitespace-nowrap text-white shadow-[0_8px_24px_rgba(0,0,0,0.15)] dark:bg-[#F5F4F0] dark:text-[#18170F]"
-                    style={{ maxWidth: '90vw', textAlign: 'center' }}
-                >
-                    {toastMsg}
-                </div>
-            )}
         </AppLayout>
     );
 }
@@ -1442,7 +1503,7 @@ function SettingsSection({
         return (
             <button
                 onClick={() => onNavigate(id)}
-                className={`flex w-full cursor-pointer items-center gap-3 border-b border-[#E2DFD6] px-5 py-3.5 text-left transition-colors hover:bg-[#F6F5F1] dark:border-[#3A3930] dark:hover:bg-[#2A2920] ${danger ? 'text-[#C4271A]' : ''}`}
+                className={`flex w-full cursor-pointer items-center gap-3 border-b border-border px-5 py-3.5 text-left transition-colors hover:bg-bg-quiet ${danger ? 'text-conflict-text' : ''}`}
             >
                 <span className="flex shrink-0 items-center">
                     <Icon size={18} stroke={ICON_STROKE} />
@@ -1457,7 +1518,7 @@ function SettingsSection({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="shrink-0 text-[#AAA89F]"
+                    className="shrink-0 text-text-soft"
                 >
                     <polyline points="9 18 15 12 9 6" />
                 </svg>
@@ -1471,11 +1532,11 @@ function SettingsSection({
             <div>
                 <button
                     onClick={onBack}
-                    className="flex w-full items-center gap-2 border-b border-[#E2DFD6] px-5 py-3 text-[13px] font-semibold text-[#6B6860] transition-colors hover:text-[#1A4CD4] dark:border-[#3A3930] dark:text-[#AAA89F]"
+                    className="flex w-full items-center gap-2 border-b border-border px-5 py-3 text-[13px] font-semibold text-text-soft transition-colors hover:text-select-text"
                 >
                     {backLabel}
                 </button>
-                <div className="border-b border-[#E2DFD6] px-5 py-4 dark:border-[#3A3930]">
+                <div className="border-b border-border px-5 py-4">
                     <div className="mb-3 flex items-center gap-2">
                         <Icon size={18} stroke={ICON_STROKE} />
                         <span className="text-base font-semibold">{title}</span>
@@ -1508,14 +1569,18 @@ function SectionHeader({
                 <span
                     onClick={onAction}
                     className="cursor-pointer hover:underline"
-                    style={{ fontSize: 13, color: '#1A4CD4', fontWeight: 500 }}
+                    style={{
+                        fontSize: 13,
+                        color: 'var(--color-select-text)',
+                        fontWeight: 500,
+                    }}
                 >
                     {action}
                 </span>
             )}
             {badge && (
                 <span
-                    className="text-[#AAA89F]"
+                    className="text-text-soft"
                     style={{
                         fontSize: 11,
                         fontWeight: 700,
@@ -1551,7 +1616,7 @@ function CompactCard({
 }) {
     return (
         <div
-            className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-[#E2DFD6] bg-white p-3.5 transition-all last:mb-0 hover:border-[rgba(26,76,212,0.2)] hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]"
+            className="mb-2 flex cursor-pointer items-center gap-3 rounded-[14px] border border-border bg-bg-surface p-3.5 transition-all last:mb-0 hover:border-[rgba(26,76,212,0.2)] hover:bg-bg-hover"
             style={style}
         >
             <div
@@ -1574,10 +1639,7 @@ function CompactCard({
                 >
                     {title}
                 </div>
-                <div
-                    className="text-[#6B6860] dark:text-[#AAA89F]"
-                    style={{ fontSize: 12 }}
-                >
+                <div className="text-text-soft" style={{ fontSize: 12 }}>
                     {sub}
                 </div>
             </div>
@@ -1607,6 +1669,7 @@ function InlineEditRow({
     onEditValue,
     onSave,
     onCancel,
+    saving,
     inputType,
     selectOptions,
     subText,
@@ -1621,6 +1684,7 @@ function InlineEditRow({
     onEditValue: (val: string) => void;
     onSave: (field: string) => void;
     onCancel: () => void;
+    saving: boolean;
     inputType?: string;
     selectOptions?: string[];
     subText?: string;
@@ -1630,11 +1694,9 @@ function InlineEditRow({
 
     if (isEditing) {
         return (
-            <div
-                className={`py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
-            >
+            <div className={`py-3.5 ${isLast ? '' : 'border-b border-border'}`}>
                 <div
-                    className="text-[#AAA89F]"
+                    className="text-text-soft"
                     style={{
                         fontSize: 11,
                         fontWeight: 700,
@@ -1647,9 +1709,11 @@ function InlineEditRow({
                 </div>
                 {selectOptions ? (
                     <select
+                        aria-label={label}
+                        disabled={saving}
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
-                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F5F4F0]"
+                        className="w-full rounded-lg border-[1.5px] border-border bg-bg-surface px-3.5 py-[11px] text-[15px] text-text outline-none focus:border-focus"
                         style={{
                             fontFamily: "'Geist', sans-serif",
                             boxSizing: 'border-box',
@@ -1664,10 +1728,12 @@ function InlineEditRow({
                     </select>
                 ) : (
                     <input
+                        aria-label={label}
+                        disabled={saving}
                         type={inputType || 'text'}
                         value={editValue}
                         onChange={(e) => onEditValue(e.target.value)}
-                        className="w-full rounded-lg border-[1.5px] border-[#E2DFD6] bg-white px-3.5 py-[11px] text-[15px] text-[#18170F] outline-none focus:border-[#1A4CD4] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:text-[#F5F4F0]"
+                        className="w-full rounded-lg border-[1.5px] border-border bg-bg-surface px-3.5 py-[11px] text-[15px] text-text outline-none focus:border-focus"
                         style={{
                             fontFamily: "'Geist', sans-serif",
                             boxSizing: 'border-box',
@@ -1687,7 +1753,7 @@ function InlineEditRow({
                 )}
                 {subText && (
                     <div
-                        className="text-[#AAA89F]"
+                        className="text-text-soft"
                         style={{ fontSize: 12, marginTop: 6 }}
                     >
                         {subText}
@@ -1695,15 +1761,17 @@ function InlineEditRow({
                 )}
                 <div className="mt-2.5 flex gap-2">
                     <button
+                        disabled={saving}
                         onClick={() => onSave(field)}
-                        className="cursor-pointer rounded-lg border-none bg-[#1A4CD4] px-5 py-[9px] text-[13px] font-semibold text-white transition-all hover:bg-[#1541B8]"
+                        className="cursor-pointer rounded-lg border-none bg-action px-5 py-[9px] text-[13px] font-semibold text-white transition-all hover:bg-action-hover"
                         style={{ fontFamily: "'Geist', sans-serif" }}
                     >
-                        Save
+                        {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button
+                        disabled={saving}
                         onClick={onCancel}
-                        className="cursor-pointer rounded-lg border border-[#E2DFD6] bg-[#EFEDE7] px-4 py-[9px] text-[13px] text-[#6B6860] transition-all hover:bg-[#E2DFD6] dark:border-[#3A3930] dark:bg-[#2A2920] dark:text-[#AAA89F] dark:hover:bg-[#3A3930]"
+                        className="cursor-pointer rounded-lg border border-border bg-bg-quiet px-4 py-[9px] text-[13px] text-text-soft transition-all hover:bg-bg-hover"
                         style={{ fontFamily: "'Geist', sans-serif" }}
                     >
                         Cancel
@@ -1714,13 +1782,16 @@ function InlineEditRow({
     }
 
     return (
-        <div
-            className={`flex cursor-pointer items-center justify-between py-3.5 ${isLast ? '' : 'border-b border-[#E2DFD6] dark:border-[#3A3930]'}`}
+        <button
+            type="button"
+            aria-label={`Edit ${label}`}
+            disabled={saving}
+            className={`flex w-full cursor-pointer items-center justify-between py-3.5 text-left ${isLast ? '' : 'border-b border-border'}`}
             onClick={() => onStartEdit(field, value)}
         >
-            <div className="min-w-0 flex-1">
-                <div
-                    className="text-[#AAA89F]"
+            <span className="min-w-0 flex-1">
+                <span
+                    className="block text-text-soft"
                     style={{
                         fontSize: 11,
                         fontWeight: 700,
@@ -1730,20 +1801,20 @@ function InlineEditRow({
                     }}
                 >
                     {label}
-                </div>
-                <div
-                    className="text-[#18170F] dark:text-[#F5F4F0]"
+                </span>
+                <span
+                    className="block text-text"
                     style={{ fontSize: 15, fontWeight: 500 }}
                 >
                     {value || '—'}
-                </div>
-            </div>
+                </span>
+            </span>
             <span
-                className="ml-3 shrink-0 text-[#AAA89F] transition-colors hover:text-[#1A4CD4]"
+                className="ml-3 shrink-0 text-text-soft transition-colors hover:text-select-text"
                 style={{ fontSize: 13, fontWeight: 600 }}
             >
                 Edit
             </span>
-        </div>
+        </button>
     );
 }

@@ -1,0 +1,741 @@
+/* Event posters set from the listing: no photograph, nothing added. The
+   hour picks the ink (day yellow, evening purple, night navy, paper without
+   a time) and the category picks the shape. Ported from the mock's
+   connected/poster-art.css and the poster rules of events-next/wall.css.
+   Inks are tokens from app.css. The faces carry the mock's own names
+   (events-next/festival.css and wall.css) on the app's font files:
+   'Festival Marker' is Permanent Marker, 'Poster Grotesque' Bricolage
+   Grotesque (app.css's --font-poster, the same files). */
+
+@font-face {
+    font-family: 'Festival Marker';
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/permanent-marker-400.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+:root {
+    --poster-display: 'Poster Grotesque', var(--font-poster);
+}
+
+/* ---------- Inks ---------- */
+.pp,
+.pp-art {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+}
+.pp--day {
+    --pp-ground: var(--poster-yellow);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+}
+.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-text: var(--poster-yellow);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--poster-yellow);
+}
+.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-text: var(--poster-cream);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--poster-yellow);
+}
+.pp--paper {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text-soft);
+    --pp-shape: var(--poster-purple);
+}
+
+/* ---------- The art: the category's shape in the hour's ink ---------- */
+.pp-art {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    container-type: inline-size;
+    background: var(--pp-ground);
+}
+.pp-art::before,
+.pp-art::after,
+.pp-art > span {
+    content: '';
+    position: absolute;
+    box-sizing: border-box;
+}
+.pp-art.pp--rings::before {
+    right: -24%;
+    top: 12%;
+    width: 82%;
+    aspect-ratio: 1;
+    border: max(12px, 6cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.pp-art.pp--rings::after {
+    right: -10%;
+    top: 24%;
+    width: 54%;
+    aspect-ratio: 1;
+    border: max(9px, 4.5cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.42;
+}
+.pp-art.pp--rings > span,
+.pp-art.pp--dots > span {
+    left: 0;
+    bottom: 0;
+    width: 62%;
+    height: 32%;
+    background-image: radial-gradient(
+        circle,
+        var(--pp-shape) 2.2px,
+        transparent 2.6px
+    );
+    background-size: 13px 13px;
+    opacity: 0.32;
+}
+/* At night the rings become a moon among stars. */
+.pp-art.pp--night > span {
+    inset: 0;
+    width: auto;
+    height: auto;
+    background-image:
+        radial-gradient(circle, #fff6d8bf 1.1px, transparent 1.6px),
+        radial-gradient(circle, #ffe36399 1.6px, transparent 2.1px);
+    background-size:
+        37px 41px,
+        83px 71px;
+    background-position:
+        0 0,
+        19px 23px;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::before {
+    right: 9%;
+    top: 16%;
+    width: 32%;
+    border: 0;
+    background: var(--poster-cream);
+    box-shadow:
+        0 0 0 12px #ffe3634d,
+        0 0 0 26px #ffe3631f;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::after {
+    display: none;
+}
+.pp-art.pp--checks::before {
+    inset: 0 0 auto;
+    height: 17%;
+    background: repeating-conic-gradient(
+            var(--pp-shape) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--checks.pp--day::before,
+.pp-art.pp--checks.pp--paper::before {
+    background: repeating-conic-gradient(
+            var(--color-text) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--waves::before {
+    inset: 0 0 auto;
+    height: 22%;
+    background: repeating-radial-gradient(
+        circle at 50% 120%,
+        var(--poster-green) 0 7px,
+        transparent 7px 14px
+    );
+}
+.pp-art.pp--bubbles::before {
+    right: 8%;
+    top: 12%;
+    width: 34%;
+    height: 22%;
+    border: max(5px, 2.4cqi) solid var(--pp-shape);
+    border-radius: 999px 999px 999px 10px;
+}
+.pp-art.pp--bubbles::after {
+    right: 34%;
+    top: 26%;
+    width: 26%;
+    height: 17%;
+    border-radius: 999px 999px 10px 999px;
+    background: var(--pp-shape);
+    opacity: 0.55;
+}
+.pp-art.pp--dots > span {
+    width: 100%;
+    height: 40%;
+}
+/* Small or wide uses: keep the shapes, drop the detail. */
+.pp-art--slot::before,
+.pp-art--cover::before {
+    right: 4%;
+}
+
+/* ---------- The poster ---------- */
+.pp {
+    position: relative;
+    flex: none;
+    container-type: inline-size;
+    background: var(--pp-ground);
+    color: var(--pp-text);
+    box-shadow: 0 14px 30px #211d1530;
+}
+.pp--size-wall {
+    width: 300px;
+    height: 420px;
+}
+/* A wall poster is a size smaller on a phone, and on the street's wall
+   between 1000 and 1399px (the mock's wall.css); a size set on the poster
+   itself still wins. */
+@media (max-width: 700px) {
+    .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
+@media (min-width: 1000px) and (max-width: 1399px) {
+    .st-slot > .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
+.pp--size-column {
+    width: 364px;
+    height: 560px;
+    box-shadow: none;
+}
+.pp-face {
+    position: absolute;
+    inset: 0;
+}
+.pp svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.pp-open {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px 18px 18px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.pp-open:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+}
+.pp-top {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 44px;
+}
+.pp-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    background: #ffffff29;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    backdrop-filter: blur(8px);
+}
+.pp--day .pp-category {
+    background: #211d1514;
+}
+/* Paper posters print their pattern at the top, so the label gets paper. */
+.pp--paper .pp-category {
+    background: var(--poster-paper);
+    box-shadow: 0 0 0 1px #211d1524;
+    backdrop-filter: none;
+}
+.pp-category svg {
+    width: 15px;
+    height: 15px;
+}
+.pp-tape {
+    display: inline-block;
+    margin-top: auto;
+    padding: 3px 12px 1px;
+    background: var(--poster-yellow);
+    color: var(--color-text);
+    font-family: 'Festival Marker', var(--font-sans);
+    font-size: 17px;
+    line-height: 1.3;
+    transform: rotate(-3deg);
+}
+.pp--day .pp-tape {
+    background: var(--color-text);
+    color: var(--poster-yellow);
+}
+.pp-title {
+    margin-top: 14px;
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(22px, 13.5cqi, 60px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+/* Only very long words break, and only where both parts stay readable:
+   "Feierabend-rundgang", never "Fei-erabendrundgang" or "Klima-wandel".
+   A word no dictionary can split (a street pair with a slash) still
+   breaks rather than run off the paper. */
+.pp-title {
+    max-width: 100%;
+    hyphens: auto;
+    hyphenate-limit-chars: 13 6 6;
+    -webkit-hyphenate-limit-before: 6;
+    -webkit-hyphenate-limit-after: 6;
+}
+/* The narrowest posters (272px) set long titles a touch smaller, so a
+   four-line title still leaves room for the time and place. */
+@container (max-width: 290px) {
+    .pp .pp-title {
+        font-size: clamp(20px, 12.4cqi, 60px);
+    }
+}
+.pp-translation {
+    margin-top: 6px;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    opacity: 0.9;
+}
+.pp-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+    padding-right: 66px;
+    box-sizing: border-box;
+}
+.pp-time {
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(32px, 17cqi, 64px);
+    line-height: 0.9;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--pp-text);
+}
+.pp--paper .pp-time {
+    font-family: var(--font-sans);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--pp-soft);
+    -webkit-text-stroke: 0;
+}
+/* A later listing doesn't print a time it doesn't have. */
+.pp.is-listing .pp-time {
+    display: none;
+}
+.pp-meta,
+.pp-price {
+    color: var(--pp-soft);
+    font-size: var(--text-control);
+}
+.pp-meta {
+    font-weight: var(--weight-medium);
+}
+.pp-save,
+.pp-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.pp-save {
+    top: 16px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff59;
+    background: #ffffff2e;
+    color: var(--pp-soft);
+    backdrop-filter: blur(10px);
+}
+.pp--day .pp-save,
+.pp--paper .pp-save {
+    border-color: #211d1526;
+    background: #ffffff59;
+}
+.pp-save svg {
+    width: 19px;
+    height: 19px;
+}
+.pp-save[aria-pressed='true'] {
+    border-color: transparent;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.pp-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.pp-plan {
+    right: 16px;
+    bottom: 16px;
+    width: 54px;
+    height: 54px;
+    border: 0;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    box-shadow: 0 6px 16px #c23b0e66;
+}
+.pp-plan:hover {
+    background: var(--color-action-hover);
+}
+.pp-plan svg {
+    width: 23px;
+    height: 23px;
+    stroke-width: 2;
+}
+.pp-save:active,
+.pp-plan:active,
+.pp-open:active {
+    transform: scale(0.97);
+}
+
+/* ---------- Today's posters: on now, over, rain likely ---------- */
+.pp-top:has(.pp-flags) {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+/* A flag takes its own line under the category, below the save button,
+   so its words stay on one line. */
+.pp-top:has(.pp-flags) .pp-category {
+    margin-right: 100%;
+}
+.pp-flags {
+    display: contents;
+}
+/* A poster carrying a flag sets its title a little smaller, so its own
+   lines below always fit. */
+.pp:has(.pp-flags) .pp-title {
+    font-size: clamp(20px, 11.5cqi, 48px);
+}
+/* Real listings run longer than the mock's: a title that doesn't fit
+   sets a step smaller, then two (useTitleFit). At the smallest step it
+   keeps to six lines and an unsplittable word breaks, so the time and
+   place below always keep their room. The whole title is in the poster's
+   spoken name and on its details page. */
+.pp[data-title='long'] .pp-title {
+    font-size: clamp(18px, 10cqi, 44px);
+}
+.pp[data-title='longer'] .pp-title {
+    display: -webkit-box;
+    overflow-wrap: break-word;
+    overflow: hidden;
+    font-size: clamp(16px, 8cqi, 36px);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+}
+.pp-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    box-shadow: 0 2px 6px #211d1526;
+}
+.pp-flag--now {
+    background: var(--color-text);
+    color: var(--poster-cream);
+}
+.pp-flag--now > span {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--poster-yellow);
+}
+/* The live dot's ring spreads 8px and fades (the mock's box-shadow pulse),
+   drawn as a scaling disc so the compositor runs it, not each frame's
+   paint. */
+@media (prefers-reduced-motion: no-preference) {
+    .pp-flag--now > span::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: #ffe363b3;
+        animation: pp-live 6.4s linear infinite;
+    }
+}
+/* Four pulses a run: each repeat wakes the page. */
+@keyframes pp-live {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    24.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    49.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    74.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(3);
+    }
+}
+.pp-flag--over {
+    background: #211d15cc;
+    color: var(--poster-cream);
+}
+.pp-flag--rain {
+    color: #1d5f99;
+}
+.pp-flag--rain svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    stroke: none;
+}
+/* An event that's over: faded, and no longer plannable. */
+.pp[data-when='over'] .pp-face > .pp-art,
+.pp[data-when='over'] :is(.pp-title, .pp-time, .pp-tape) {
+    filter: saturate(0.35) brightness(0.92);
+}
+
+/* ---------- Past listings ----------
+   Weathered paper, no Save or Plan. Each wears in its own way (torn edge,
+   nicked side or peeling corner, from data-wear), faded by sun and rain,
+   creased and stained. Still readable. */
+.pp.is-past {
+    filter: sepia(0.35) saturate(0.55) contrast(0.92) brightness(1.03);
+    box-shadow: none;
+}
+.pp.is-past[data-wear='0'] {
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        100% 84%,
+        96% 88%,
+        92% 85%,
+        87% 92%,
+        82% 88%,
+        77% 95%,
+        71% 91%,
+        66% 100%,
+        0 100%
+    );
+}
+.pp.is-past[data-wear='1'] {
+    clip-path: polygon(
+        0 4%,
+        5% 0,
+        100% 0,
+        100% 100%,
+        3% 100%,
+        0 96%,
+        0 44%,
+        3% 41%,
+        1% 38%,
+        3% 35%,
+        0 32%
+    );
+}
+.pp.is-past[data-wear='2'] {
+    clip-path: polygon(
+        0 0,
+        74% 0,
+        79% 3%,
+        83% 1%,
+        88% 6%,
+        93% 4%,
+        100% 10%,
+        100% 100%,
+        0 100%
+    );
+}
+/* Creases and a water stain over the print. */
+.pp.is-past::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(
+            103deg,
+            transparent 46%,
+            #ffffff3d 47.5%,
+            transparent 49%
+        ),
+        linear-gradient(
+            9deg,
+            transparent 61%,
+            #0000002b 62.5%,
+            transparent 64%
+        ),
+        radial-gradient(circle at 22% 78%, #7a5a2a33, transparent 34%),
+        radial-gradient(circle at 80% 18%, #ffffff1f, transparent 30%);
+}
+/* A peeling corner shows the wall behind the paper. */
+.pp.is-past[data-wear='1']::after {
+    content: '';
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: 0;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(315deg, var(--color-bg-hover) 50%, #e9dcbf 50%);
+    box-shadow: -3px -3px 6px #211d1522;
+    pointer-events: none;
+}
+/* No Plan button on a past or later listing, so the facts take the width. */
+.pp:is(.is-past, .is-listing) .pp-bottom {
+    padding-right: 0;
+}
+.pp.is-past .pp-tape {
+    background: transparent;
+    color: inherit;
+    border: 2px solid currentColor;
+}
+
+/* ---------- Your choices on the posters ---------- */
+/* Saved: a push pin. */
+.pp:has(.pp-save[aria-pressed='true'])::before {
+    content: '';
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: -8px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: #d23a26;
+    box-shadow:
+        0 3px 0 #211d1540,
+        inset -3px -3px 0 #0000002e;
+}
+/* In your plan: a rubber stamp. */
+.pp[data-stamp]::after {
+    content: attr(data-stamp);
+    position: absolute;
+    z-index: 3;
+    right: 14px;
+    top: 70px;
+    padding: 5px 9px;
+    border: 3px solid currentColor;
+    border-radius: 6px;
+    color: var(--pp-stamp, #7fe3f0);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    rotate: -8deg;
+    pointer-events: none;
+}
+.pp:is(.pp--day, .pp--paper)[data-stamp]::after {
+    --pp-stamp: var(--color-select-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pp:has(.pp-save[aria-pressed='true'])::before {
+        animation: pp-pin 320ms var(--ease-settle);
+    }
+    .pp[data-stamp]::after {
+        animation: pp-stamp 260ms cubic-bezier(0.2, 1.4, 0.4, 1);
+    }
+}
+@keyframes pp-pin {
+    from {
+        scale: 0;
+        translate: 0 -12px;
+    }
+    60% {
+        scale: 1.15;
+    }
+    to {
+        scale: 1;
+        translate: 0 0;
+    }
+}
+@keyframes pp-stamp {
+    from {
+        opacity: 0;
+        scale: 1.6;
+    }
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}

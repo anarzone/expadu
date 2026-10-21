@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light"><title>Expadu — Today, your way</title><meta name="description" content="An interactive daily-cover design concept for Expadu."><link rel="stylesheet" href="./style.css?v=90073c7e3187"><script defer src="./app.js?v=71edb095472c"></script></head>
+<body>
+<div id="home">
+ <div class="preview-note"><span>Design preview <span class="note-dot"></span> Sample content</span><button data-action="palette">The palette <span class="swatches"><i></i><i></i><i></i></span></button></div>
+ <header class="app-header">
+  <a href="./" class="brand" aria-label="Expadu home"><svg viewBox="13 22 74 60" aria-hidden="true"><g transform="translate(2.45 2.05)"><circle cx="20.5" cy="50" r="6" fill="#05badd"/><rect x="30" y="24" width="13" height="52" rx="6" fill="currentColor"/><rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)"/><rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)"/><rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)"/></g></svg>Expadu</a>
+  <nav aria-label="Main"><button class="nav-active" data-action="today" aria-current="page">Today<span></span></button><button data-action="explore">Explore</button><button data-action="everyday">Everyday life</button></nav>
+  <div class="header-right"><button class="my-day" data-action="day"><span data-icon="bookmark"></span><span>My day</span><b id="count" hidden>0</b></button><button class="avatar" data-action="account" aria-label="Your account">A</button></div>
+ </header>
+ <main class="cover">
+  <section class="welcome" aria-labelledby="greeting"><div><p class="date">Sunday, 6 September</p><h1 id="greeting">Hello, Anar<span class="greeting-dot">.</span></h1><p class="welcome-copy">A little inspiration for your day.</p></div><button class="weather" data-action="weather" aria-label="Weather, 21 degrees, partly sunny"><span class="weather-art" aria-hidden="true"><span class="sun"></span><span class="cloud"></span></span><span><strong>21°</strong><small>A little sunshine</small></span></button></section>
+  <section class="feature" aria-labelledby="feature-title">
+   <div class="feature-copy"><span class="feature-tag"><span data-icon="sun"></span> A reason to get out</span><h2 id="feature-title">Coffee &<br>good company.</h2><p>A relaxed get-together.<br>A few new faces. An easy hello.</p><button class="feature-button" data-action="feature">Take a look <span data-icon="arrow"></span></button><span class="feature-footnote">Community coffee · Example event</span></div>
+   <div class="feature-visual"><div class="photo-arch" id="feature-photo"><div class="art-pending" aria-hidden="true"><span data-icon="coffee"></span></div></div><span class="hello-sticker" aria-hidden="true">a little<br>hello <svg viewBox="0 0 55 20"><path d="M3 4c12 17 36 16 49-1"/></svg></span><span class="photo-caption">Room for one more.</span></div>
+  </section>
+  <section class="discovery" aria-labelledby="discovery-title"><div class="section-heading"><h2 id="discovery-title">Or follow your mood</h2><button data-action="explore">Explore places <span data-icon="arrow"></span></button></div><div class="discovery-options"><button class="discover quiet" data-prompt="I’d like somewhere quiet to unwind."><span class="discover-symbol" data-icon="leaf"></span><span><strong>A little breathing room</strong><small>Find your quieter corner</small></span><span class="discover-arrow" data-icon="arrow"></span></button><button class="discover active" data-prompt="I feel like doing something active."><span class="discover-symbol" data-icon="ball"></span><span><strong>A change of pace</strong><small>Make time to move</small></span><span class="discover-arrow" data-icon="arrow"></span></button></div></section>
+  <div class="everyday-line"><span data-icon="document"></span><span>Your everyday essentials, together.</span><button data-action="everyday">Take a look <span data-icon="arrow"></span></button></div>
+ </main>
+</div>
+<section id="workspace" class="workspace" aria-label="Composer" hidden>
+ <header class="workspace-header"><button class="back-button" data-action="close-composer"><span data-icon="back"></span>Today</button><span class="workspace-name"><span data-icon="spark"></span>Composer</span><button class="my-day" data-action="day"><span data-icon="bookmark"></span><span>My day</span></button></header>
+ <div class="workspace-scroll" id="workspace-scroll"><div id="conversation" aria-live="polite"></div></div>
+</section>
+<div class="dock-zone" id="dock-zone"><form id="compose-form" class="compose-dock"><span class="compose-mark" data-icon="spark"></span><label class="sr-only" for="request">What do you need today?</label><textarea id="request" rows="1" placeholder="What do you need today?" maxlength="700"></textarea><button type="submit" class="compose-submit" aria-label="Compose"><span>Compose</span><span data-icon="arrow"></span></button></form><div class="dock-caption"><span class="ready-dot"></span>A place, a plan, a little help. Start anywhere.</div></div>
+<dialog id="sheet" aria-labelledby="sheet-title"><div class="sheet-grab" aria-hidden="true"></div><header class="sheet-header"><h2 id="sheet-title"></h2><button class="icon-button" data-action="close-sheet" aria-label="Close details"><span data-icon="close"></span></button></header><div id="sheet-content"></div></dialog>
+<div class="toast" id="toast" role="status"><span id="toast-message"></span><button id="undo" hidden>Undo</button></div>
+</body></html>

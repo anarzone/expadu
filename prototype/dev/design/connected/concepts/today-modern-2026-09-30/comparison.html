@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Today design comparison · Expadu</title>
+  <link rel="stylesheet" href="comparison.css">
+  <script src="comparison.js" defer></script>
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <p class="brand">Expadu <span>/ Design review</span></p>
+      <h1>Today, side by side.</h1>
+      <p class="intro">Every version in one place. Click a design to enlarge it.</p>
+      <a class="working-preview" href="http://127.0.0.1:8765/dev/design/today-next/">Open working Today preview</a>
+    </div>
+    <div class="collection-note"><strong>7 versions</strong><span>28 desktop, mobile &amp; interaction boards</span></div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="scenarios" role="group" aria-label="Scenario">
+        <button type="button" data-scenario="everyday" aria-pressed="true">Everyday</button>
+        <button type="button" data-scenario="important-event" aria-pressed="false">Important event</button>
+        <button type="button" data-scenario="route-delay" aria-pressed="false">Route delay</button>
+        <button type="button" data-scenario="interactions" aria-pressed="false">Interactions</button>
+      </div>
+      <div class="display-controls">
+        <div class="columns" role="group" aria-label="Designs per row">
+          <button type="button" data-columns="2" aria-pressed="false">2 across</button>
+          <button type="button" data-columns="3" aria-pressed="true">3 across</button>
+        </div>
+        <label class="sort-label"><span class="sr-only">Version order</span>
+          <select id="order"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
+        </label>
+      </div>
+    </div>
+    <div class="section-caption">
+      <h2 id="scenario-title">Everyday</h2>
+      <p id="board-count" aria-live="polite"></p>
+    </div>
+    <section class="gallery" id="gallery" aria-labelledby="scenario-title" data-columns="3"></section>
+    <noscript><p class="no-script">Enable JavaScript to compare and enlarge the boards, or open the <a href="fresh-v10/01-everyday.png">latest design</a>.</p></noscript>
+  </main>
+
+  <footer class="page-footer">Static design studies · Sample content · September–October 2026</footer>
+
+  <dialog id="viewer" aria-labelledby="viewer-title" aria-describedby="viewer-context">
+    <div class="viewer-shell">
+      <header class="viewer-header">
+        <div class="viewer-heading"><h2 id="viewer-title"></h2><p id="viewer-context"></p></div>
+        <div class="viewer-actions">
+          <a id="original-link" target="_blank" rel="noopener">Original</a>
+          <button type="button" id="close-viewer" class="icon-button" aria-label="Close enlarged design" title="Close (Esc)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="viewer-stage" id="viewer-stage" aria-busy="false">
+        <div class="viewer-canvas" id="viewer-canvas"><img id="viewer-image" alt="" draggable="false"></div>
+        <p class="image-error" id="image-error" hidden>Unable to load this board. Try opening the original.</p>
+      </div>
+      <footer class="viewer-footer">
+        <div class="version-navigation">
+          <button type="button" id="previous" class="icon-button" aria-label="Previous version" title="Previous version (left arrow)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+          </button>
+          <span id="viewer-position" aria-live="polite"></span>
+          <button type="button" id="next" class="icon-button" aria-label="Next version" title="Next version (right arrow)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="viewer-hint">Double-click to zoom · Drag to pan</p>
+        <div class="zoom-controls" role="group" aria-label="Image zoom">
+          <button type="button" id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out (−)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </button>
+          <output id="zoom-level" aria-live="polite">100%</output>
+          <button type="button" id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in (+)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
+          </button>
+          <button type="button" id="fit-image">Fit</button>
+          <button type="button" id="actual-size">100%</button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+</body>
+</html>

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\LlmRollout;
+use App\Composer\ActivePlanStore;
+use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -9,26 +12,38 @@ use App\Composer\Constraints;
 use App\Composer\Contracts\EstimatesTravel;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
+use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
+use App\Composer\OpenAiCompatiblePromptParser;
+use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
+use App\Composer\PlanCatalogue;
 use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
+use App\Composer\PrivatePlanCache;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\Swapper;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
+use App\Composer\WorkspaceStore;
+use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
+use App\Http\Requests\ParseComposerPromptRequest;
+use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
+use App\Privacy\ProcessingAcceptanceRules;
+use App\Privacy\ProcessingConsentStore;
+use App\Privacy\ProcessingPurpose;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -40,9 +55,11 @@ use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -51,12 +68,15 @@ use Inertia\Response;
 /**
  * Day Composer endpoints: parse, compose, and swap. Composition adds an
  * optional grounded LLM preference layer, while the deterministic pipeline
- * retains authority over facts, constraints, travel, and timing. Plan state
- * lives in Redis for 72h — the composer's whole scope.
+ * retains authority over facts, constraints, travel, and timing. Intermediate
+ * recommendations live in Redis; WorkspaceStore persists confirmed plans and chat.
  */
 class ComposerController extends Controller
 {
-    private const PLAN_TTL_HOURS = 72;
+    /** How long a page's hand-off waits for Composer to open, in seconds. */
+    private const ENTRY_TTL = 300;
+
+    public function __construct(private ActivePlanStore $plans) {}
 
     private ?array $forecastCache = null;
 
@@ -76,7 +96,17 @@ class ComposerController extends Controller
             : null;
 
         return Inertia::render('composer', [
+            'workspace' => app(WorkspaceStore::class)->read($request->user()),
+            // Your day: the shared day projection (plans, appointments, when to leave for
+            // the next) and what the person's Paperwork record has coming up. Deferred
+            // together, so the frame paints first.
+            'day' => DayProjection::deferred($request),
+            'paperwork' => Inertia::defer(fn () => app(PaperworkGlance::class)->for($request->user()), 'day'),
+            'around' => Inertia::defer(fn () => app(DayAround::class)->for($request->user()), 'day'),
+            // What a page handed over by POST (see entry()); present once.
+            'entry' => fn () => $this->takeEntry($request),
             'prompt' => $request->query('prompt'),
+            'planDate' => $request->query('plan'),
             'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
             'homeVeedel' => $homeVeedel,
             'homeBezirk' => $homeBezirk,
@@ -102,21 +132,65 @@ class ComposerController extends Controller
     }
 
     /**
+     * The hand-off from entry(), removed as it is read. Words left waiting longer than a
+     * few minutes (the visit never arrived) are dropped rather than shown later.
+     *
+     * @return array{prompt: string, about: ?string}|null
+     */
+    private function takeEntry(Request $request): ?array
+    {
+        $entry = $request->session()->pull('composer.entry');
+
+        if (! is_array($entry) || now()->getTimestamp() - (int) ($entry['at'] ?? 0) > self::ENTRY_TTL) {
+            return null;
+        }
+
+        return ['prompt' => (string) $entry['prompt'], 'about' => $entry['about'] ?? null];
+    }
+
+    /**
+     * What a page hands Composer (the tray's words and the page they came
+     * from) arrives by POST and waits in the session, never in the URL, so it
+     * stays out of browser history and access logs. Composer's own page takes
+     * it, once (takeEntry()); a flash would go to whichever request came next,
+     * such as one the previous page still had in flight.
+     */
+    public function entry(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'prompt' => ['required', 'string', 'max:500'],
+            'about' => ['nullable', 'string', 'max:160'],
+            'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
+        ]);
+        $request->session()->put('composer.entry', [
+            'prompt' => trim($validated['prompt']),
+            'about' => $validated['about'] ?? null,
+            'at' => now()->getTimestamp(),
+        ]);
+
+        return redirect()->route('composer', array_filter(['panel' => $validated['panel'] ?? null]));
+    }
+
+    /**
      * The single parse call: classify intent + extract payload. The result
      * carries the intent so the frontend renders the right surface (plan,
      * verified answer, or search), plus `source` so a degraded parse is
      * framed honestly. The parser never picks venues or answers questions.
      */
-    public function parse(Request $request, ParsesPrompt $parser, ProfileEngine $profiles): JsonResponse
+    public function parse(ParseComposerPromptRequest $request, ParsesPrompt $parser, ProfileEngine $profiles): JsonResponse
     {
-        $validated = $request->validate([
-            'text' => ['required', 'string', 'max:500'],
-        ]);
+        $validated = $request->validated();
+        $profile = $profiles->build($request->user());
+        $permit = $parser instanceof OpenAiCompatiblePromptParser && isset($validated['processing'])
+            ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
+                OpenAiCompatiblePromptParser::processingContext($validated['text'], $profile), $validated['processing'])
+            : null;
 
         $parsed = $parser->parse(
             $validated['text'],
-            $profiles->build($request->user()),
+            $profile,
             CarbonImmutable::now('Europe/Berlin'),
+            $permit,
         );
 
         return response()->json($parsed->toArray());
@@ -168,6 +242,7 @@ class ComposerController extends Controller
             'from_area' => ['nullable', 'string', Rule::in($areas)],
             // A saved place picked as the origin — coordinates resolve server-side by id.
             'from_place' => ['nullable', 'integer'],
+            ...ProcessingAcceptanceRules::rules(),
         ]);
 
         $user = $request->user();
@@ -178,21 +253,16 @@ class ComposerController extends Controller
             return response()->json(['message' => 'The composer plans at most 72 hours ahead.'], 422);
         }
 
+        // Resolve commitments before optional ranking or travel calls. Missing timing/location is not guessed.
+        $appointmentSnapshot = $appointments->snapshot($user, $constraints);
+
         $profile = $profiles->build($user);
 
         // "Locked" picks from the result page are kept across recomposes —
         // mechanically identical to home-feed pins, so they merge.
         $pins = app(PlaceIdentity::class)->candidateIds([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]);
         $excluded = app(PlaceIdentity::class)->candidateIds($validated['excluded'] ?? []);
-        $spotPins = array_values(array_filter(array_diff($pins, $excluded), fn (string $id): bool => str_starts_with($id, 'spot:')));
-        $pinCandidates = $candidates->byIds($spotPins, $constraints->windowStart);
-        $availablePins = array_map(fn (Candidate $candidate): string => $candidate->id, $pinCandidates);
-        if (collect($pinCandidates)->contains(fn (Candidate $candidate): bool => ! $filter->matchesBudget($constraints, $candidate))) {
-            throw ValidationException::withMessages(['pins' => 'A pinned place does not have a verified price within your budget. Remove it or change your budget.']);
-        }
-        if (array_diff($spotPins, $availablePins) !== []) {
-            return response()->json(['message' => 'A pinned place is no longer available. Remove it or choose another place.'], 422);
-        }
+        $pins = array_values(array_diff($pins, $excluded));
 
         // The plan's start: the shared origin (explicit pick / live / confirmed
         // / recent ping), else the area being planned, else the user's
@@ -244,9 +314,18 @@ class ComposerController extends Controller
             ->all();
         $affinity = $this->planAffinity($profile, $constraints->companions);
         $intentWeights = $intents->for($user);
-        $llmPreferences = $intents->preferenceVector($user) + [
-            'category_affinities' => $affinity,
-        ];
+        // A stable per-user bucket decides whether the LLM ranks this person's
+        // plans, so LLM on and off can be compared (default: everyone). Only
+        // behavioural weights are offered; situation-derived affinities stay here.
+        $llmBucket = app(LlmRollout::class)->allows($user, 'composer_llm');
+        $llmPreferences = $intents->preferenceVector($user);
+        $rankingPermit = $llmBucket && $candidateRanker instanceof AnthropicCandidateRanker && isset($validated['processing'])
+            ? app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerRank,
+                $candidateRanker->processingContext($constraints, $rankable, $llmPreferences), $validated['processing'])
+            : null;
+        $llmRankWeights = $llmBucket
+            ? $candidateRanker->rank($constraints, $rankable, $llmPreferences, $rankingPermit)
+            : [];
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
             preferredAreas: $constraints->areas !== []
@@ -257,17 +336,22 @@ class ComposerController extends Controller
             pinnedIds: $pins,
             affinity: $affinity,
             rotationSeed: $this->rotationSeed($user, $constraints),
-            llmRankWeights: $candidateRanker->rank($constraints, $rankable, $llmPreferences),
+            llmRankWeights: $llmRankWeights,
         );
         $pinned = collect([
             ...$candidates->byIds($pins, $constraints->windowStart, $originLat, $originLng),
             ...collect($rawPool)->filter(fn (Candidate $candidate): bool => in_array($candidate->id, $pins, true))->all(),
         ])->unique(fn (Candidate $candidate): string => $candidate->id)->values()->all();
-        if (collect($pinned)->contains(fn (Candidate $candidate): bool => ! $filter->matchesDiscovery($constraints, $candidate))) {
-            throw ValidationException::withMessages(['pins' => 'A pinned place no longer meets your activity, access, distance or budget requirements. Remove it or change your filters.']);
+        $availablePins = array_column($pinned, 'id');
+        if (array_diff($pins, $availablePins) !== []) {
+            throw ValidationException::withMessages(['pins' => 'A pinned place or event is no longer available. Remove it or choose another item.']);
         }
-        $pool = collect([...$appointments->within($user, $constraints), ...$pinned, ...$feasible])
-            ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
+        $itineraryConstraints = $this->itineraryConstraints($constraints, $soloCategory);
+        if (count($filter->filter($itineraryConstraints, $pinned)) !== count($pinned)) {
+            throw ValidationException::withMessages(['pins' => 'A pinned place or event no longer meets your plan requirements. Remove it or change your filters.']);
+        }
+        $pool = collect([...$appointmentSnapshot['candidates'], ...$pinned, ...$feasible])
+            ->reject(fn (Candidate $c) => ! $c->isAppointment() && in_array($c->id, $excluded, true))
             ->unique(fn (Candidate $c) => $c->id)
             ->values()
             ->all();
@@ -275,7 +359,8 @@ class ComposerController extends Controller
         $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
         $roles = $soloCategory !== null ? $this->activityRoles($soloCategory) : null;
-        $plan = $filler->fill($constraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
+        $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
+        $this->recordRun($user, $plan, $filler->pickedScores(), $llmBucket, $llmRankWeights, count($rankable));
 
         // ── Browse options (A few options) ──
         // The chosen activity, listed: several nearby pitches to pick from, no
@@ -285,14 +370,19 @@ class ComposerController extends Controller
             ? $this->browseOptions($filter, $constraints, $rawPool, $pinned, $excluded, $context, $estimator, $originLat, $originLng)
             : $plan->toArray()['slots'];
 
-        Cache::put($this->planKey($user), $plan->toArray() + [
+        $this->plans->save($user, $plan->toArray() + [
+            'appointment_revision' => $appointmentSnapshot['revision'],
             'origin' => [$originLat, $originLng],
             'origin_area' => $originArea,
             'pins' => $pins,
             'excluded' => $excluded,
-        ], now()->addHours(self::PLAN_TTL_HOURS));
+        ]);
+
+        $handoffToken = (string) Str::uuid();
+        app(PrivatePlanCache::class)->putHandoff($user, $handoffToken, $plan->toArray() + ['origin_label' => $originContext->label, 'origin' => [$originLat, $originLng]]);
 
         return response()->json([
+            'handoff_token' => $handoffToken,
             'plan' => $plan->toArray(),
             'options' => $options,
             'notices' => $this->notices($constraints, $plan, $poolRelaxed),
@@ -343,6 +433,43 @@ class ComposerController extends Controller
      *
      * @return array<string, float>
      */
+    /**
+     * How this plan was ranked, for comparing LLM on and off: the ranker mode,
+     * the bucket, and each slot's type, category, score and LLM rank weight.
+     * No place or event ids are stored.
+     *
+     * @param  array<string, float>  $scores
+     * @param  array<string, float>  $llmRankWeights
+     */
+    private function recordRun(User $user, Plan $plan, array $scores, bool $llmBucket, array $llmRankWeights, int $candidateCount): void
+    {
+        $mode = match (true) {
+            ! $llmBucket => 'bucket_off',
+            ! config('services.composer_llm.enabled') || ! config('services.composer_llm.key') => 'llm_disabled',
+            $llmRankWeights === [] => 'llm_fallback',
+            default => 'llm',
+        };
+
+        try {
+            ComposerRun::query()->create([
+                'user_id' => $user->id,
+                'ranker_mode' => $mode,
+                'llm_bucket' => $llmBucket,
+                'candidate_count' => min($candidateCount, 65535),
+                'slot_count' => count($plan->slots),
+                'slots' => array_map(fn (PlanSlot $slot): array => [
+                    'type' => $slot->candidate->type,
+                    'category' => $slot->candidate->category,
+                    'score' => $scores[$slot->candidate->id] ?? null,
+                    'llm_rank' => $llmRankWeights[$slot->candidate->id] ?? null,
+                ], $plan->slots),
+            ]);
+        } catch (\Throwable $exception) {
+            // Telemetry must never break planning.
+            Log::warning('composer run could not be recorded', ['error' => $exception->getMessage()]);
+        }
+    }
+
     private function planAffinity(Profile $profile, ?string $companions): array
     {
         $map = CategoryAffinity::map($profile);
@@ -379,7 +506,7 @@ class ComposerController extends Controller
 
     /**
      * Feasible itinerary candidates, with the solo-activity widening applied.
-     * Explicit constraints are retained even when no verified option matches.
+     * Explicit requirements remain in force even when no verified option matches.
      *
      * @param  list<Candidate>  $rawPool
      * @return array{0: list<Candidate>, 1: bool} [feasible, relaxed]
@@ -489,7 +616,7 @@ class ComposerController extends Controller
         ]);
 
         $user = $request->user();
-        $stored = Cache::get($this->planKey($user));
+        $stored = $this->plans->get($user);
         if (! is_array($stored)) {
             return response()->json(['message' => 'No active plan — compose one first.'], 404);
         }
@@ -581,12 +708,14 @@ class ComposerController extends Controller
         $rejectedMap = $stored['rejected'] ?? [];
         $rejectedMap[$slotIndex] = $rejected;
 
-        Cache::put($this->planKey($user), $swapped->toArray() + [
+        $this->plans->save($user, $swapped->toArray() + [
+            'appointment_revision' => $stored['appointment_revision'],
             'origin' => [$originLat, $originLng],
+            'origin_area' => $originArea,
             'rejected' => $rejectedMap,
             'pins' => $pins,
             'excluded' => $excluded,
-        ], now()->addHours(self::PLAN_TTL_HOURS));
+        ]);
 
         return response()->json([
             'plan' => $swapped->toArray(),
@@ -609,14 +738,19 @@ class ComposerController extends Controller
             'keep.*' => ['string'],
         ]);
 
-        $stored = Cache::get($this->planKey($request->user()));
+        $stored = $this->plans->get($request->user());
         if (! is_array($stored) || empty($stored['slots'])) {
             return response()->json(['message' => 'No plan to save — compose one first.'], 404);
         }
 
         $stored = app(PlaceIdentity::class)->normalizePlan($stored);
-        if ($validated['keep'] ?? null) {
+        if (is_array($validated['keep'] ?? null)) {
             $keep = app(PlaceIdentity::class)->candidateIds($validated['keep']);
+            foreach ($stored['slots'] as $slot) {
+                if (($slot['is_appointment'] ?? false) && ! in_array($slot['id'], $keep, true)) {
+                    return response()->json(['message' => 'A recorded appointment cannot be removed from the itinerary. Review it in Bureaucracy or change the planning time.'], 422);
+                }
+            }
             $stored['slots'] = array_values(array_filter(
                 $stored['slots'],
                 fn ($slot) => in_array($slot['id'] ?? null, $keep, true),
@@ -645,11 +779,6 @@ class ComposerController extends Controller
         $today->forget($request->user());
 
         return response()->json(['cleared' => true]);
-    }
-
-    private function planKey(User $user): string
-    {
-        return "composer:plan:{$user->id}";
     }
 
     /**
@@ -758,11 +887,9 @@ class ComposerController extends Controller
     private function notices(Constraints $constraints, Plan $plan, bool $poolRelaxed = false): array
     {
         $notices = [];
-
         if ($constraints->radiusKm !== null) {
             $notices[] = ['type' => 'info', 'text' => 'Within '.$constraints->radiusKm.' km of your starting point, measured in a straight line.'];
         }
-
         if ($plan->slots === []) {
             $notices[] = ['type' => 'info', 'text' => 'No verified places match these requirements. Try a different area or change your filters.'];
         }
@@ -783,6 +910,7 @@ class ComposerController extends Controller
                 break;
             }
         }
+        array_push($notices, ...Plan::appointmentNotices($plan->toArray()['slots']));
 
         // Weather no longer rides the notice pills — it's the dedicated cyan
         // line above the plan (see weatherNote()), so it isn't duplicated here.
@@ -826,11 +954,12 @@ class ComposerController extends Controller
     private function travelEstimator(User $user, float $originLat, float $originLng, array $pool): EstimatesTravel
     {
         $fallback = new TravelEstimator;
-        if ($pool === []) {
+        // No journey is computed to a text-only appointment place.
+        $candidates = array_values(array_filter($pool, fn (Candidate $c) => $c->routable));
+        if ($candidates === []) {
             return $fallback;
         }
 
-        $candidates = array_values($pool);
         $destinations = array_map(
             fn (Candidate $c) => new GeoPoint((float) $c->lat, (float) $c->lng),
             $candidates,
@@ -875,13 +1004,14 @@ class ComposerController extends Controller
         // Refresh from the same local pool the plan was composed against.
         [$originLat, $originLng] = $stored['origin'] ?? [50.9375, 6.9603];
         $storedPool = $candidates->byIds(array_column($stored['slots'], 'id'), $constraints->windowStart, $originLat, $originLng);
-        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool, ...$storedPool])->keyBy('id');
+        $pool = collect([...$appointmentPool, ...$pinnedPool, ...$storedPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {
             $candidate = $pool->get($slotData['id']);
-            if ($candidate === null || (! $candidate->isAppointment() && (! app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate) || ! $candidate->coversVisit(CarbonImmutable::parse($slotData['start_at']), CarbonImmutable::parse($slotData['end_at']))))) {
-                throw new \DomainException('A place or appointment in this plan is no longer available. Recompose the plan before swapping.');
+            if ($candidate === null || (! $candidate->isAppointment()
+                && ! app(PlanCatalogue::class)->available($candidate, $constraints, CarbonImmutable::parse($slotData['start_at']), CarbonImmutable::parse($slotData['end_at'])))) {
+                throw new \DomainException('A place or event in this plan is no longer available. Review the plan before saving or swapping.');
             }
             $slots[] = new PlanSlot(
                 candidate: $candidate,

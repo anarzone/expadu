@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Places\InterestTaxonomy;
+use App\Services\AnthropicEventClassifier;
 use App\Services\ClassificationRefused;
 use App\Services\ClassifiesEvents;
 use App\Services\EventEnrichmentService;
@@ -12,14 +14,15 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * The per-event half of the ingest pipeline: one AI classification
- * (stored forever — the read path makes zero AI calls), guardrails,
- * and venue resolution with the ≤50m place link. Idempotent: an
- * already-classified event is skipped.
+ * The per-event half of the ingest pipeline: deterministic enrichment,
+ * venue resolution with the ≤50m place link, and optional AI classification
+ * stored for zero-AI-call reads. Idempotent: an already-classified event is
+ * skipped.
  */
 class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 {
@@ -35,6 +38,10 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public Event $event)
     {
+        // Its own queue and worker: a job can run for up to 15 minutes and
+        // must not hold weather refreshes, mail or media checks behind it.
+        $this->onQueue('llm');
+
         $translationChunks = (int) ceil(mb_strlen((string) $event->description) / 2000);
         $this->timeout = min(self::MAX_TIMEOUT_SECONDS, max(45, 30 + ($translationChunks * 35)));
     }
@@ -49,6 +56,10 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
         app(EventEnrichmentService::class)->enrichEvent($event);
         $event->refresh();
         $this->resolveVenue($event);
+
+        if (! config('events.classification.enabled')) {
+            return;
+        }
 
         $inputHash = $this->inputHash($event);
         if ($this->translationsAreComplete($event)
@@ -98,6 +109,24 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             'relevance' => $result['relevance'],
             'needs_review' => $needsReview,
             'classification_input_hash' => $inputHash,
+        ]);
+
+        // The event row keeps only the current values; keep each run's model
+        // and confidence as history so classifications can be audited and
+        // compared across models.
+        $category = (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value;
+        DB::table('event_enrichments')->insert([
+            'event_id' => $event->id,
+            'producer' => class_basename($classifier),
+            'model' => $classifier instanceof AnthropicEventClassifier ? config('services.anthropic.model') : null,
+            'confidence' => round(max(0.0, min(1.0, (float) $result['confidence'])), 3),
+            'relevance' => round(max(0.0, min(1.0, (float) $result['relevance'])), 3),
+            'category' => $category,
+            'chips' => json_encode(array_values((array) $result['chips'])),
+            'interests' => json_encode(app(InterestTaxonomy::class)->forEventCategory($category)),
+            'needs_review' => $needsReview,
+            'input_hash' => $inputHash,
+            'created_at' => now(),
         ]);
 
         $this->resolveVenue($event);

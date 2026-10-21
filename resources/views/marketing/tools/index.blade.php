@@ -4,7 +4,7 @@
 @section('theme_color', '#ffe363')
 
 @section('title', 'Free tools for life in Germany — Expadu')
-@section('meta_description', 'Free calculators for newcomers in Germany: netto-brutto salary, Deutschlandticket break-even, permanent-residency timeline, citizenship quiz. No signup, official sources.')
+@section('meta_description', 'Free salary and Deutschlandticket estimates with source links. Legal calculators are awaiting review.')
 @section('canonical', route('tools.index'))
 @section('og_image', asset('marketing/og/tools.png'))
 @section('waitlist_source', 'tools')
@@ -14,7 +14,7 @@
         <div class="sec-head">
             <span class="eyebrow">Free · no signup · official sources</span>
             <h1>Tools for your life in Germany.</h1>
-            <p class="sub">Each one answers a real newcomer question in under a minute — with the source for every number.</p>
+            <p class="sub">Explore the available estimates and their sources. Tools awaiting review are clearly marked below.</p>
         </div>
     </div>
 @endsection
@@ -35,18 +35,18 @@
                 <p>Is €63/month worth it for how you actually move? Honest verdict against Cologne's per-ride fares.</p>
                 <span class="mk-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </a>
-            <a class="tool tool--lilac" href="{{ route('tools.residency') }}">
+            <article class="tool tool--lilac">
                 <span class="tool__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16M9.5 16l2 2 3.5-4"/></svg></span>
+                <span class="mk-kicker">Awaiting review</span>
                 <h3><span class="nobr">Permanent-residency</span> timeline</h3>
-                <p>Your earliest Niederlassungserlaubnis date — watch the timeline fill, and see what legally speeds it up.</p>
-                <span class="mk-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-            </a>
-            <a class="tool tool--peach" href="{{ route('tools.citizenship') }}">
+                <p>This calculator is unavailable while its information is reviewed.</p>
+            </article>
+            <article class="tool tool--peach">
                 <span class="tool__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M9 17h6"/></svg></span>
+                <span class="mk-kicker">Awaiting review</span>
                 <h3>Citizenship quiz</h3>
-                <p>Are you on track for a German passport under the 2024 rules? Five questions, sourced answers.</p>
-                <span class="mk-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-            </a>
+                <p>This quiz is unavailable while its information is reviewed.</p>
+            </article>
         </div>
         <p class="note" style="color:var(--muted);font-size:14px;margin-top:22px">The numbers here follow the same rule as the app: nothing unsourced, and every constant links to where it comes from.</p>
     </div>

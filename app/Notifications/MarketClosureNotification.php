@@ -2,16 +2,26 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class MarketClosureNotification extends Notification
+class MarketClosureNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
+
+    /**
+     * Queued per user on the commute queue, so an evaluator looping over
+     * users never waits on a push service.
+     */
     public function __construct(
         private readonly string $reason,
         private readonly ?string $holidayName = null,
-    ) {}
+    ) {
+        $this->onQueue('commute');
+    }
 
     /** @return array<int, string> */
     public function via(mixed $notifiable): array

@@ -1,0 +1,100 @@
+{
+    "name": "shell-scroll",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": "header"
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "scrollNote": "Phones only, on Paperwork (long on both sides). Scrolling down a screen, the sections and Composer's round button step away below the screen; scrolling back up a screen brings them back. Stepped away they are off-screen, so their pixels are not compared, only where they are. The mock steps its whole closed tray away (#composer-tray), the app its round button; both are the same 62px circle. Back up, the two pages (of different lengths) stop at different scroll positions, so y is set aside there; translate: none says the bar is back.",
+    "pairs": [
+        {
+            "name": "sections, scrolled down",
+            "mock": "nav.service-nav",
+            "app": "nav.shell-nav",
+            "before": [
+                {
+                    "key": "PageDown"
+                },
+                {
+                    "wait": 500
+                }
+            ],
+            "props": [
+                "translate",
+                "opacity",
+                "visibility",
+                "background-color",
+                "border-radius",
+                "box-shadow"
+            ],
+            "pixels": false
+        },
+        {
+            "name": "Composer button, scrolled down",
+            "mock": "#composer-tray",
+            "app": "button.shell-composer-round",
+            "props": [
+                "translate",
+                "opacity",
+                "visibility",
+                "background-color",
+                "border-radius",
+                "box-shadow"
+            ],
+            "pixels": false
+        },
+        {
+            "name": "sections, back up",
+            "mock": "nav.service-nav",
+            "app": "nav.shell-nav",
+            "before": [
+                {
+                    "key": "PageDown"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "key": "PageUp"
+                },
+                {
+                    "wait": 500
+                }
+            ],
+            "props": [
+                "translate",
+                "opacity",
+                "visibility",
+                "background-color",
+                "border-radius",
+                "box-shadow"
+            ],
+            "pixels": false,
+            "ignore": ["y"]
+        },
+        {
+            "name": "Composer button, back up",
+            "mock": "#composer-tray",
+            "app": "button.shell-composer-round",
+            "props": [
+                "translate",
+                "opacity",
+                "visibility",
+                "background-color",
+                "border-radius",
+                "box-shadow"
+            ],
+            "pixels": false,
+            "ignore": ["y"]
+        }
+    ]
+}

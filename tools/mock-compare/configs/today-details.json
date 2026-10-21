@@ -1,0 +1,106 @@
+{
+    "name": "today-details",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".day-panel",
+        "before": [
+            {
+                "click": ".appointment-options summary"
+            },
+            {
+                "wait": 200
+            },
+            {
+                "click": "[data-today-details]"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "button.appointment-options"
+            },
+            {
+                "wait": 200
+            },
+            {
+                "click": "role=menuitem[name=\"Details\"]"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "sheet",
+            "mock": "dialog[open]",
+            "app": "dialog[open]",
+            "pixels": false,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "sheet title",
+            "mock": "dialog[open] .dialog-head h2",
+            "app": "dialog[open] .ui-sheet-head h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "sheet close",
+            "mock": "dialog[open] .dialog-head button",
+            "app": "dialog[open] .ui-sheet-close",
+            "ignore": ["y"]
+        },
+        {
+            "name": "when and where",
+            "mock": "dialog[open] .detail-intro",
+            "app": "dialog[open] .detail-intro",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "status",
+            "mock": "dialog[open] .status-row",
+            "app": "dialog[open] .status-row",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "trip row",
+            "mock": "dialog[open] .sheet-row.is-trip",
+            "app": "dialog[open] .sheet-row.is-trip",
+            "ignore": ["y"]
+        },
+        {
+            "name": "booking",
+            "mock": "dialog[open] .detail-grid > div",
+            "app": "dialog[open] .detail-grid > div",
+            "ignore": ["y"],
+            "contentDiffers": true
+        },
+        {
+            "name": "booking note",
+            "mock": "dialog[open] .detail-note",
+            "app": "dialog[open] .detail-note",
+            "ignore": ["y"]
+        }
+    ],
+    "ignoreNote": "y: the sheet is centred on wider screens and rests on the bottom edge on phones, so where its parts sit follows its height, and its height is content (no Edit or Remove: see contentNote). Its pixels are not compared where that offset falls at another fraction of a pixel.",
+    "contentNote": "Its booking is recorded by you in Paperwork ('Recorded by you'; the mock's sample: 'Not recorded in Expadu'), and an official appointment is changed in Paperwork, not here, so the sheet offers no Edit or Remove (the mock's sample plan does)."
+}

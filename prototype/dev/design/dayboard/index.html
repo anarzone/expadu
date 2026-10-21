@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Your daily board</title>
+        <link rel="stylesheet" href="./style.css?v=99c606b57914" />
+        <script defer src="./model.js?v=732027498db5"></script>
+        <script defer src="./app.js?v=223a8afd301b"></script>
+    </head>
+    <body>
+        <div id="home">
+            <div class="preview-bar">
+                <span
+                    >Design B <span class="preview-dot"></span> App snapshot ·
+                    26 Jun 2026</span
+                ><a href="../today-blue/"
+                    >Today Blue <span aria-hidden="true">↗</span></a
+                >
+            </div>
+            <header class="app-header">
+                <a class="brand" href="./" aria-label="Expadu home"
+                    ><svg viewBox="13 22 74 60" aria-hidden="true">
+                        <g transform="translate(2.45 2.05)">
+                            <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                            <rect
+                                x="30"
+                                y="24"
+                                width="13"
+                                height="52"
+                                rx="6"
+                                fill="currentColor"
+                            />
+                            <rect
+                                x="46"
+                                y="24"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-7 46 30)"
+                            />
+                            <rect
+                                x="46"
+                                y="43.5"
+                                width="25"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-4 46 50)"
+                            />
+                            <rect
+                                x="46"
+                                y="63"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-2 46 69)"
+                            />
+                        </g></svg
+                    >Expadu</a
+                >
+                <nav class="desktop-nav" aria-label="Main navigation">
+                    <span aria-current="page">Today</span
+                    ><button data-action="places">Places</button
+                    ><button data-action="events">Events</button
+                    ><button data-action="paperwork">Bureaucracy</button
+                    ><button data-action="journey">Departures</button
+                    ><button data-action="services">Services</button>
+                </nav>
+                <div class="header-actions">
+                    <button class="day-button" data-action="plan">
+                        <span data-icon="bookmark"></span><span>My day</span
+                        ><b class="day-count" hidden>0</b></button
+                    ><button
+                        class="menu-button icon-button"
+                        data-action="menu"
+                        aria-label="Open menu"
+                    >
+                        <span data-icon="menu"></span></button
+                    ><button
+                        class="account-button"
+                        data-action="account"
+                        aria-label="Your account"
+                    >
+                        A
+                    </button>
+                </div>
+            </header>
+            <main class="page">
+                <div class="welcome-row">
+                    <div class="welcome-copy">
+                        <p>Good afternoon, Anar</p>
+                        <h1>
+                            Today, your way<span class="orange-period">.</span>
+                        </h1>
+                    </div>
+                    <button class="weather-button" data-action="weather">
+                        <span class="weather-sun" data-icon="sun"></span
+                        ><span
+                            ><strong>Weather</strong
+                            ><small>Unavailable</small></span
+                        >
+                    </button>
+                </div>
+                <div class="board-heading">
+                    <p id="day-date">Monday, 7 September</p>
+                    <button class="plain-button" data-action="location">
+                        <span data-icon="pin"></span>Cologne<span
+                            data-icon="down"
+                        ></span>
+                    </button>
+                </div>
+                <section
+                    id="saved-strip"
+                    aria-label="Your saved day"
+                    hidden
+                ></section>
+                <section class="daily-board" aria-label="Your daily board">
+                    <article class="board-card photo-card walk-card">
+                        <button class="photo-content" data-detail="walk">
+                            <img
+                                src="https://commons.wikimedia.org/wiki/Special:FilePath/See%20bluecherpark%203.jpg?width=800"
+                                alt="Blücherpark"
+                            /><span class="image-note">Around Ehrenfeld</span
+                            ><span class="photo-copy"
+                                ><span class="card-category"
+                                    >Park · Neuehrenfeld</span
+                                ><strong>Blücherpark</strong
+                                ><span class="photo-meta"
+                                    >See place details<span
+                                        data-icon="arrow"
+                                    ></span></span
+                            ></span>
+                        </button>
+                        <button
+                            class="keep-button"
+                            data-keep="walk"
+                            aria-label="Keep Blücherpark"
+                            aria-pressed="false"
+                        >
+                            <span data-icon="plus"></span>
+                        </button>
+                    </article>
+                    <article class="board-card journey-card">
+                        <button class="journey-content" data-action="journey">
+                            <span class="card-topline"
+                                ><span
+                                    ><span data-icon="train"></span>Your
+                                    departures</span
+                                ><span data-icon="arrow"></span></span
+                            ><strong class="setup-title"
+                                >Where are you heading?</strong
+                            ><span class="ticket-footer"
+                                ><span>Choose a stop or destination</span
+                                ><span data-icon="arrow"></span
+                            ></span>
+                        </button>
+                    </article>
+                    <article class="board-card community-card">
+                        <button class="community-content" data-action="events">
+                            <span class="card-category">Events</span
+                            ><span class="conversation-art" aria-hidden="true"
+                                ><span
+                                    class="bubble-one"
+                                    data-icon="chat"
+                                ></span
+                                ><span
+                                    class="bubble-two"
+                                    data-icon="chat"
+                                ></span></span
+                            ><strong>Find your<br />people</strong
+                            ><span class="event-types"
+                                >Language exchange · Sports · Culture</span
+                            ><span class="card-footline"
+                                >Explore dates<span data-icon="arrow"></span
+                            ></span>
+                        </button>
+                    </article>
+                    <article class="board-card music-card">
+                        <button class="music-content" data-action="plan">
+                            <span class="card-topline"
+                                ><span>Your day</span
+                                ><span
+                                    class="music-symbol"
+                                    data-icon="bookmark"
+                                ></span></span
+                            ><strong id="board-plan-title"
+                                >Room for a plan</strong
+                            ><span class="card-footline"
+                                ><span id="board-plan-note"
+                                    >Keep a place to begin</span
+                                ><span data-icon="arrow"></span
+                            ></span>
+                        </button>
+                    </article>
+                    <article class="board-card photo-card cafe-card">
+                        <button class="photo-content" data-detail="greenbelt">
+                            <img
+                                src="https://commons.wikimedia.org/wiki/Special:FilePath/Mehrgenerationen%20Trimm%20Parcours%20im%20Inneren%20Gr%C3%BCng%C3%BCrtel.jpg?width=800"
+                                alt="Innerer Grüngürtel"
+                            /><span class="image-note">Places to discover</span
+                            ><span class="photo-copy"
+                                ><span class="card-category"
+                                    >Park · Ehrenfeld</span
+                                ><strong>Innerer<br />Grüngürtel</strong
+                                ><span class="photo-meta"
+                                    >See place details<span
+                                        data-icon="arrow"
+                                    ></span></span
+                            ></span></button
+                        ><button
+                            class="keep-button"
+                            data-keep="greenbelt"
+                            aria-label="Keep Innerer Grüngürtel"
+                            aria-pressed="false"
+                        >
+                            <span data-icon="plus"></span>
+                        </button>
+                    </article>
+                    <article class="board-card paperwork-card">
+                        <button
+                            class="paperwork-content"
+                            data-action="paperwork"
+                        >
+                            <span class="paperwork-head"
+                                ><span class="card-category">Bureaucracy</span
+                                ><span data-icon="document"></span></span
+                            ><span class="paperwork-main"
+                                ><span
+                                    ><strong>Register your address</strong
+                                    ><small>Anmeldung</small></span
+                                ></span
+                            ><span class="card-footline"
+                                >Check task details<span
+                                    data-icon="arrow"
+                                ></span
+                            ></span>
+                        </button>
+                    </article>
+                </section>
+                <footer class="page-footer">
+                    <span>Captured app content · not live</span
+                    ><button data-action="about">
+                        About this preview<span data-icon="arrow"></span>
+                    </button>
+                </footer>
+                <div class="photo-credits">
+                    Photos:
+                    <a
+                        href="https://commons.wikimedia.org/wiki/File:See_bluecherpark_3.jpg"
+                        target="_blank"
+                        rel="noopener"
+                        >Blücherpark — Superbass · CC BY-SA 3.0</a
+                    ><a
+                        href="https://commons.wikimedia.org/wiki/File:Mehrgenerationen_Trimm_Parcours_im_Inneren_Gr%C3%BCng%C3%BCrtel.jpg"
+                        target="_blank"
+                        rel="noopener"
+                        >Grüngürtel — Carla Kolumna · CC BY-SA 4.0</a
+                    >
+                </div>
+            </main>
+        </div>
+        <div class="composer-tray" id="composer-tray">
+            <button
+                class="included-ideas"
+                id="included-ideas"
+                data-action="plan"
+                hidden
+            >
+                <span data-icon="bookmark"></span
+                ><span id="included-label"></span
+                ><span data-icon="arrow"></span>
+            </button>
+            <form id="compose-form" class="composer-form">
+                <label class="composer-label" for="request"
+                    ><span data-icon="spark"></span><span>Composer</span></label
+                >
+                <div class="composer-entry">
+                    <textarea
+                        id="request"
+                        rows="1"
+                        maxlength="700"
+                        aria-label="What do you need today?"
+                        placeholder="What do you need today?"
+                    ></textarea
+                    ><button
+                        class="compose-button"
+                        type="submit"
+                        aria-label="Compose"
+                    >
+                        <span>Compose</span><span data-icon="arrow"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <dialog
+            id="composer"
+            class="composer-workspace"
+            aria-labelledby="composer-title"
+        >
+            <header class="workspace-header">
+                <button class="plain-button" data-action="close-composer">
+                    <span data-icon="back"></span>Today
+                </button>
+                <h2 id="composer-title">
+                    <span data-icon="spark"></span>Composer
+                </h2>
+                <button class="plain-button" data-action="plan">
+                    <span data-icon="bookmark"></span>My day
+                </button>
+            </header>
+            <div id="workspace-scroll">
+                <div id="response" aria-live="polite"></div>
+            </div>
+            <form id="refine-form" class="refine-form">
+                <label class="sr-only" for="refine-request"
+                    >Edit your request</label
+                ><textarea
+                    id="refine-request"
+                    rows="1"
+                    maxlength="700"
+                    placeholder="Change your request…"
+                ></textarea
+                ><button
+                    class="compose-button"
+                    type="submit"
+                    aria-label="Compose again"
+                >
+                    <span data-icon="arrow"></span>
+                </button>
+            </form>
+        </dialog>
+        <dialog id="sheet" class="detail-sheet" aria-labelledby="sheet-title">
+            <header class="sheet-header">
+                <h2 id="sheet-title"></h2>
+                <button
+                    class="icon-button"
+                    data-action="close-sheet"
+                    aria-label="Close details"
+                >
+                    <span data-icon="close"></span>
+                </button>
+            </header>
+            <div id="sheet-content"></div>
+        </dialog>
+        <div class="toast" role="status" id="toast">
+            <span id="toast-text"></span><button id="undo" hidden>Undo</button>
+        </div>
+    </body>
+</html>

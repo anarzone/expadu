@@ -1,0 +1,647 @@
+@import url('../connected/tokens.css');
+/* The same personal situation on the page and inside Composer. */
+:is(.situation-welcome, .situation-summary) .orientation-primary {
+    background: var(--action);
+    color: white;
+    border: 0;
+    border-radius: var(--radius-md);
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+:is(.situation-welcome, .situation-summary) .orientation-secondary {
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    min-height: 44px;
+    font: inherit;
+    font-size: var(--text-control);
+    color: var(--ink);
+    cursor: pointer;
+}
+.situation-welcome {
+    display: grid;
+    gap: 24px;
+    margin: 10px 0 24px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: white;
+}
+.situation-welcome-copy {
+    padding: 24px 22px 0;
+}
+.situation-emblem,
+.situation-symbol {
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--ink);
+    background: var(--cyan-soft, var(--color-select-bg, #dff4f8));
+    border-radius: var(--radius-lg);
+}
+.situation-emblem {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+}
+.situation-emblem.small {
+    width: 40px;
+    height: 40px;
+}
+.situation-emblem svg {
+    width: 26px;
+    height: 26px;
+}
+.situation-symbol {
+    width: 38px;
+    height: 38px;
+}
+.situation-symbol svg {
+    width: 21px;
+    height: 21px;
+}
+.situation-welcome h2 {
+    font-size: clamp(var(--text-title-lg), 4vw, var(--text-display));
+    letter-spacing: -0.045em;
+    line-height: 1.08;
+    margin: 0 0 12px;
+    max-width: 15ch;
+}
+.situation-welcome p {
+    color: var(--muted);
+    line-height: 1.5;
+    font-size: var(--text-body);
+    margin: 0 0 16px;
+    max-width: 46ch;
+}
+.situation-benefits {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.situation-benefits span {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.situation-benefits svg {
+    width: 18px;
+    height: 18px;
+}
+.situation-start {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 22px;
+    border-top: 1px solid var(--color-border);
+}
+.situation-start h3 {
+    margin: 0;
+    font-size: var(--text-title-sm);
+    letter-spacing: -0.03em;
+    width: 100%;
+}
+.situation-start p,
+.situation-start > small {
+    width: 100%;
+}
+.situation-start p {
+    margin: 0 0 6px;
+}
+.situation-start > small {
+    color: var(--muted);
+    margin-top: 6px;
+}
+.situation-start [data-situation='composer-start'] {
+    width: 100%;
+    justify-content: flex-start;
+}
+.situation-start .orientation-primary,
+.situation-start .orientation-secondary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.situation-start svg,
+.situation-summary svg,
+.situation-topics svg,
+.situation-change-grid svg,
+.situation-change-card svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+.situation-summary {
+    padding: 22px;
+    background: white;
+    border-radius: var(--radius-xl);
+    margin: 12px 0 24px;
+}
+/* On the overview: one line that opens in place. */
+.situation-summary.situation-compact {
+    padding: 0;
+}
+.situation-compact > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 12px 16px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--radius-xl);
+}
+.situation-compact > summary::-webkit-details-marker {
+    display: none;
+}
+.situation-compact > summary:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.situation-compact-copy {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+}
+.situation-compact-copy strong {
+    font-size: var(--text-section);
+}
+.situation-compact-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.situation-compact > summary > svg {
+    color: var(--color-text-soft);
+    transition: transform 200ms ease;
+}
+.situation-compact[open] > summary > svg {
+    transform: rotate(180deg);
+}
+.situation-compact-body {
+    padding: 4px 22px 22px;
+}
+@media (max-width: 420px) {
+    .situation-compact-body {
+        padding: 4px 16px 18px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .situation-compact > summary > svg {
+        transition: none;
+    }
+}
+.situation-section-head {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.situation-section-head h2 {
+    font-size: var(--text-title);
+    letter-spacing: -0.035em;
+    margin: 0 0 5px;
+}
+.situation-section-head p {
+    color: var(--muted);
+    font-size: var(--text-control);
+    margin: 0;
+    line-height: 1.45;
+}
+.situation-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    padding: 6px 8px;
+    font-size: var(--text-caption);
+}
+.situation-status.review,
+.situation-status.check {
+    background: #fff2cd;
+    color: #705418;
+}
+.situation-status.current {
+    background: var(--color-select-bg, #dff4f8);
+}
+.situation-status svg {
+    width: 16px;
+    height: 16px;
+}
+.situation-facts {
+    display: grid;
+    gap: 8px;
+}
+.situation-fact {
+    min-width: 0;
+    background: var(--paper);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.situation-fact > button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    padding: 11px;
+    text-align: left;
+    background: none;
+    min-height: 64px;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+}
+.situation-fact > button > span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+}
+.situation-fact small,
+.situation-change-grid small,
+.situation-change-card small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    margin-bottom: 3px;
+}
+.situation-fact strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    overflow-wrap: anywhere;
+}
+.situation-fact > button > svg {
+    width: 17px;
+    height: 17px;
+    color: var(--muted);
+}
+.situation-fact.needs-review {
+    background: #fff7df;
+}
+.situation-fact-review {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 8px;
+    font-size: var(--text-caption);
+    color: #705418;
+}
+.situation-fact-review button {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    background: white;
+    border: 0;
+    border-radius: var(--radius-sm);
+    min-height: 44px;
+    padding: 0 10px;
+}
+.situation-summary-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+.situation-summary-actions button {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.situation-summary-actions button:first-child {
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-bg-surface);
+}
+.situation-checkin {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    padding: 16px;
+    border-radius: var(--radius-xl);
+    margin-bottom: 18px;
+}
+.situation-checkin p {
+    color: var(--muted);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.situation-checkin > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.situation-note {
+    color: var(--muted);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.situation-note svg {
+    width: 17px;
+    height: 17px;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+.situation-notice {
+    font-size: var(--text-control);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 12px;
+    background: var(--color-select-bg, #e5f5f8);
+    border-radius: var(--radius-md);
+}
+.situation-history {
+    margin-top: 16px;
+    font-size: var(--text-control);
+}
+.situation-history summary {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+}
+.situation-history summary::-webkit-details-marker {
+    display: none;
+}
+.situation-history > div {
+    padding: 10px 0;
+}
+.situation-history strong {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: var(--text-control);
+}
+.situation-history small {
+    display: block;
+    margin: 5px 0 0 28px;
+    color: var(--muted);
+}
+.situation-topics {
+    margin: 24px 0;
+}
+.situation-topic-grid {
+    display: grid;
+    gap: 10px;
+}
+.situation-topic-grid article {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: white;
+    border-radius: var(--radius-xl);
+}
+.situation-topic-grid article > strong {
+    flex: 1;
+    font-size: var(--text-section);
+}
+.situation-topic-grid article > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+}
+.situation-topic-grid a,
+.situation-topic-grid button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--text-small);
+    color: var(--ink);
+    cursor: pointer;
+}
+/* A secondary action: outlined in ink, not the selection colour. */
+.situation-topic-grid button {
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    padding: 0 12px;
+    background: var(--color-bg-surface);
+    font-weight: var(--weight-semibold);
+}
+.situation-topic-grid button:disabled {
+    border-color: transparent;
+}
+.situation-topic-grid button:disabled {
+    color: var(--muted);
+    background: var(--paper);
+}
+.situation-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: var(--text-small);
+    margin: 0 0 18px;
+}
+/* A label, not a selection: Paperwork's lavender. */
+.situation-progress span:last-child {
+    border-radius: var(--radius-sm);
+    background: var(--color-paper-bg);
+    padding: 5px 9px;
+    color: var(--color-paper-text);
+    font-weight: var(--weight-semibold);
+}
+.situation-change-grid {
+    display: grid;
+    gap: 8px;
+}
+.situation-change-grid > button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+    padding: 12px;
+    min-height: 66px;
+    font: inherit;
+    color: var(--ink);
+}
+.situation-change-grid > button > span:nth-child(2) {
+    flex: 1;
+}
+.situation-change-grid strong {
+    font-size: var(--text-body);
+}
+.situation-change-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--color-select-bg, #e5f5f8);
+    padding: 18px;
+    border-radius: var(--radius-xl);
+    margin-bottom: 20px;
+}
+.situation-change-card > svg {
+    width: 28px;
+    height: 28px;
+}
+.situation-change-card strong {
+    font-size: var(--text-title-sm);
+}
+.orientation .situation-summary {
+    margin: 0;
+    padding: 0;
+    background: none;
+}
+.situation-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: var(--text-caption);
+    color: var(--muted);
+    margin: 16px 0;
+}
+.situation-preview label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.situation-preview select {
+    font: inherit;
+    color: var(--ink);
+    background: white;
+    border: 0;
+    border-radius: var(--radius-md);
+    padding: 8px;
+    min-height: 44px;
+    max-width: 190px;
+}
+.has-situation-guide .bureaucracy-view {
+    display: none;
+}
+:is(
+        .situation-welcome,
+        .situation-summary,
+        .situation-topics,
+        .situation-change-grid
+    )
+    button {
+    transition:
+        background 160ms ease,
+        transform 160ms ease;
+    touch-action: manipulation;
+}
+:is(
+        .situation-welcome,
+        .situation-summary,
+        .situation-topics,
+        .situation-change-grid
+    )
+    button:active {
+    transform: scale(0.985);
+}
+:is(
+        .situation-welcome,
+        .situation-summary,
+        .situation-topics,
+        .situation-change-grid
+    )
+    button:focus:not(:focus-visible) {
+    outline: none;
+}
+:is(
+        .situation-welcome,
+        .situation-summary,
+        .situation-topics,
+        .situation-change-grid
+    )
+    button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+}
+@media (min-width: 701px) {
+    .situation-welcome {
+        grid-template-columns: 1.15fr 1fr;
+        gap: 0;
+    }
+    .situation-welcome-copy {
+        padding: 32px;
+    }
+    .situation-start {
+        padding: 32px;
+        align-content: center;
+    }
+    .situation-facts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .situation-topic-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .situation-summary {
+        padding: 26px;
+    }
+    .situation-change-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(
+            .situation-welcome,
+            .situation-summary,
+            .situation-topics,
+            .situation-change-grid
+        )
+        button {
+        transition: none;
+        transform: none;
+    }
+}
+@media (max-width: 359px) {
+    .situation-welcome {
+        gap: 16px;
+    }
+    .situation-welcome-copy {
+        padding: 18px 18px 0;
+    }
+    .situation-start {
+        padding: 18px;
+    }
+    .situation-emblem {
+        margin-bottom: 12px;
+    }
+    .situation-benefits {
+        gap: 10px 12px;
+    }
+}
+
+/* "Address registration is now in Your tasks": what your answers opened. */
+.situation-arrived {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.situation-arrived svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 2px;
+}

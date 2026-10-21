@@ -2,15 +2,16 @@
 
 use App\Composer\IntentWeights;
 use App\Enums\SpotFeedbackState;
-use App\Home\HomeFeed;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserEvent;
+use App\Places\OpenNearby;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
-// The discovery scan is cached globally; flush so freshly-seeded spots show.
+// Start each test from an empty cache, so freshly seeded places show.
 beforeEach(fn () => Cache::flush());
 
 function feedbackUser(): User
@@ -22,15 +23,20 @@ function feedbackUser(): User
     ]);
 }
 
-function railSpotNames(User $user): Collection
+/** The parks OpenNearby lists as open there on Wednesday 30 September at 14:30. */
+function openParkNames(float $lat, float $lng): Collection
 {
-    return collect(app(HomeFeed::class)->rails($user))
-        ->flatMap(fn (array $rail) => collect($rail['cards'])->pluck('name'));
+    return app(OpenNearby::class)
+        ->around($lat, $lng, CarbonImmutable::parse('2026-09-30 14:30', 'Europe/Berlin'), ['park'], limit: 20)
+        ->pluck('name');
 }
 
 test('more like this records a signal and keeps the place in discovery', function () {
     $user = feedbackUser();
-    $spot = Spot::factory()->create(['name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
+    $spot = Spot::factory()->create([
+        'name' => 'Stadtgarten', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92,
+        'source' => 'osm', 'source_id' => 'way/4201', 'tags' => ['opening_hours' => 'Mo-Su 06:00-22:00'], 'public_access_allowed' => true,
+    ]);
 
     $this->actingAs($user)
         ->postJson("/api/places/{$spot->id}/feedback", ['action' => 'more_like_this'])
@@ -40,11 +46,11 @@ test('more like this records a signal and keeps the place in discovery', functio
     expect(SpotFeedback::where('user_id', $user->id)->where('spot_id', $spot->id)->value('state'))->toBe(SpotFeedbackState::MoreLikeThis);
     $this->assertDatabaseHas('user_events', ['user_id' => $user->id, 'event_type' => 'spot_more_like_this']);
 
-    // Forward-looking interest — the place still surfaces in discovery.
-    expect(railSpotNames($user))->toContain('Stadtgarten');
+    // Forward-looking interest — the place still surfaces in what's open nearby.
+    expect(openParkNames(50.95, 6.92))->toContain('Stadtgarten');
 });
 
-test('not interested hides the place from discovery and the places list', function () {
+test('not interested hides the place from the places list', function () {
     $user = feedbackUser();
     $spot = Spot::factory()->create(['name' => 'Boring Lot', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 
@@ -53,13 +59,12 @@ test('not interested hides the place from discovery and the places list', functi
         ->assertOk();
 
     $this->assertDatabaseHas('user_events', ['user_id' => $user->id, 'event_type' => 'spot_not_interested']);
-    expect(railSpotNames($user))->not->toContain('Boring Lot');
 
     $names = collect($this->actingAs($user)->getJson('/api/places')->json('data'))->pluck('name');
     expect($names)->not->toContain('Boring Lot');
 });
 
-test('been with a rating records taste and leaves discovery; been alone is silent but still leaves', function () {
+test('been with a rating records taste; been alone is silent', function () {
     $user = feedbackUser();
     $liked = Spot::factory()->create(['name' => 'Loved Park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
     $known = Spot::factory()->create(['name' => 'Known Park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.93]);
@@ -72,9 +77,6 @@ test('been with a rating records taste and leaves discovery; been alone is silen
     // Rated visit carries a taste signal; the unrated one records none.
     expect(UserEvent::where('user_id', $user->id)->where('event_type', 'spot_been_liked')->count())->toBe(1);
     expect(UserEvent::where('user_id', $user->id)->where('event_type', 'spot_been_disliked')->exists())->toBeFalse();
-
-    // Both "been" places drop out of discovery — you already know them.
-    expect(railSpotNames($user))->not->toContain('Loved Park')->not->toContain('Known Park');
 });
 
 test('clear removes the standing feedback', function () {

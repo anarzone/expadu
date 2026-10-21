@@ -204,7 +204,7 @@ test('placeholder venue text is never shown as a venue', function () {
     expect($data[0]['meta'])->not->toContain('Siehe');
 });
 
-test('an unreviewed legacy place photo never richens an event card', function () {
+test('an unmanaged venue place photo stays private', function () {
     $place = Spot::factory()->create([
         'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
         'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
@@ -273,7 +273,7 @@ test('weekend window catches a weekly recurring stammtisch', function () {
     expect($data[0]['recurrence_text'])->toBe('Every Saturday');
 });
 
-test('weekend means the upcoming weekend when requested on Sunday', function () {
+test('weekend retains remaining Sunday events when requested on Sunday', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-14 12:00', 'Europe/Berlin'));
 
     Event::factory()->create([
@@ -294,10 +294,10 @@ test('weekend means the upcoming weekend when requested on Sunday', function () 
 
     $response = $this->getJson('/api/events?window=weekend')->assertOk();
 
-    expect($response->json('window.from'))->toContain('2026-06-20T00:00:00')
-        ->and($response->json('window.to'))->toContain('2026-06-21T23:59:59')
+    expect($response->json('window.from'))->toContain('2026-06-14T00:00:00')
+        ->and($response->json('window.to'))->toContain('2026-06-14T23:59:59')
         ->and(collect($response->json('data'))->pluck('title')->all())
-        ->toBe(['Next Saturday', 'Next Sunday']);
+        ->toBe(['This Sunday']);
 });
 
 test('category, veedel and free filters compose', function () {
@@ -396,6 +396,21 @@ test('due reminders are delivered once through the notification channel', functi
         1,
     );
     expect($reminder->refresh()->sent_at)->not->toBeNull();
+});
+
+test('an unreviewed legacy place photo never richens an event card', function () {
+    $place = Spot::factory()->create([
+        'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $venue = makeVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
+
+    expect($data[0]['photo_url'])->toBeNull();
+    expect($data[0]['photo_attribution'])->toBeNull();
 });
 
 test('the free chip shows only when the price fields say free', function () {

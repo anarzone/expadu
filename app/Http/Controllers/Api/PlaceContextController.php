@@ -44,11 +44,20 @@ class PlaceContextController extends Controller
             return null;
         }
 
-        $current = Cache::remember(
-            'place-context:weather',
-            600,
-            fn () => $weather->getCurrentWeather(),
-        );
+        $current = Cache::get('place-context:weather');
+
+        if (! is_array($current)) {
+            $current = $weather->getCurrentWeather();
+
+            // Only a real reading is worth holding for ten minutes — caching
+            // the "unavailable" placeholder would keep the line blank long
+            // after the weather cache has recovered.
+            if (! ($current['available'] ?? false)) {
+                return null;
+            }
+
+            Cache::put('place-context:weather', $current, 600);
+        }
 
         $temp = $current['temperature'] ?? null;
         if ($temp === null) {

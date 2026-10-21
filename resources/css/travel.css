@@ -1,0 +1,1451 @@
+/* Travel's shared parts (components/travel/*): the line badge and labels,
+   the line strip, the trip card, your way and the On your way bar. Ported
+   from the mock unchanged (prototype/dev/design/departures-next/labels.css,
+   strip.css, trip-card.css, way.css and connected/journey-session.css) so a
+   trip and a departure look the same on every page (owner, 18 Oct 2026).
+   Imported by the components themselves; tokens come from app.css. */
+
+/* A Travel icon draws Travel's line wherever it's used (Today's Leave now,
+   Events' Get there, Composer), not a host page's `svg` rule: the same as
+   the page's own base (departures-next/style.css `svg`). A class, so a host
+   page's bare `svg` rules don't reach it; the parts' own rules (fills,
+   heavier strokes, sizes) are more specific and still win. */
+.travel-icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Travel's icons are line drawings (departures-next/style.css `svg`); the
+   parts' own rules set their sizes. :where keeps this the weakest rule. */
+:where(
+        .tl-line,
+        .tl-chip,
+        .tl-strip,
+        .tl-tile,
+        .tl-banner,
+        .nearby-strip,
+        .trip-line,
+        .nav-way,
+        .way-strip,
+        .journey-resume
+    )
+    svg {
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* A narrow column folds its strips into rows (strip.css). */
+.travel-strips {
+    container-type: inline-size;
+}
+
+/* The trip card's one button (Travel's .primary): the section's orange action. */
+.next-trip-go {
+    border: 0;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-size: var(--text-control);
+    line-height: 1.4;
+    cursor: pointer;
+}
+.next-trip-go:hover {
+    background: var(--color-action-hover);
+}
+.next-trip-go:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.next-trip-go:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.trip-line-more {
+    cursor: pointer;
+}
+.trip-line-more:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* ---------- Labels (labels.css) ---------- */
+/* Travel labels (owner-approved 10 Oct 2026, canvas row 10). Colours keep
+   their roles from connected/design-decisions.md: line colours say which
+   line, coral says it won't work, amber says watch out, a dashed outline
+   says we aren't sure. Tokens only. */
+.tl-line {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 8px 0 6px;
+    border-radius: 7px;
+    background: var(--line);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+}
+.tl-line svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-line.is-big {
+    height: 32px;
+    padding: 0 10px 0 8px;
+    border-radius: 9px;
+    font-size: var(--text-control);
+}
+.tl-line.is-big svg {
+    width: 19px;
+    height: 19px;
+}
+.tl-line.is-mode {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.tl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 24px;
+    padding: 2px 9px 2px 7px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: var(--weight-bold);
+    line-height: 1.15;
+    white-space: nowrap;
+}
+.tl-chip svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-chip.is-lg {
+    min-height: 30px;
+    padding: 3px 12px 3px 9px;
+    font-size: var(--text-small);
+}
+.tl-chip.is-lg svg {
+    width: 16px;
+    height: 16px;
+}
+.tl-chip.is-sm {
+    min-height: 22px;
+    padding: 2px 7px 2px 5px;
+    gap: 4px;
+    font-size: 11.5px;
+}
+.tl-chip.is-sm svg {
+    width: 12px;
+    height: 12px;
+}
+.tl-chip.is-conflict,
+.tl-strip.is-conflict {
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-chip.is-attention,
+.tl-strip.is-attention {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.tl-chip.is-unsure {
+    padding-block: 1px;
+    border: 1.5px dashed var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-weight: var(--weight-semibold);
+}
+.tl-chip.is-calm {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.tl-chip.is-select {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.tl-chip.is-best {
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+.tl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.tl-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 12px 0 10px;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.2px;
+    line-height: 1;
+}
+.tl-now i {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: tl-blink 1.6s ease-in-out infinite;
+}
+@keyframes tl-blink {
+    50% {
+        opacity: 0.35;
+    }
+}
+.tl-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-8);
+    padding: 6px 9px;
+    border-radius: 11px;
+    font-size: 12.5px;
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+    text-align: left;
+}
+.tl-strip svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    line-height: 1.3;
+}
+.tl-banner > p {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.tl-banner strong {
+    display: block;
+    font-size: var(--text-control);
+}
+.tl-banner p > span {
+    display: block;
+    margin-top: 1px;
+    font-size: var(--text-small);
+}
+.tl-tile {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+}
+.tl-tile svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-banner.is-conflict {
+    background: var(--color-conflict-bg);
+    box-shadow: inset 4px 0 0 var(--color-conflict-text);
+}
+.tl-banner.is-conflict .tl-tile {
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-banner.is-conflict p > span {
+    color: var(--color-conflict-text);
+}
+.tl-banner.is-attention {
+    background: var(--color-attention-bg);
+    box-shadow: inset 4px 0 0 var(--color-attention-border);
+}
+.tl-banner.is-attention .tl-tile {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.tl-banner.is-attention p > span {
+    color: var(--color-attention-text);
+}
+.tl-banner.is-unsure {
+    border: 1.5px dashed var(--color-border-strong);
+    background: var(--color-bg-surface);
+}
+.tl-banner.is-unsure .tl-tile {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+.tl-banner.is-unsure p > span {
+    color: var(--color-text-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+    .tl-now i {
+        animation: none;
+    }
+}
+/* Long labels wrap rather than push the page sideways. */
+.nearby-stop .tl-chip {
+    max-width: 100%;
+    white-space: normal;
+}
+
+/* ---------- Line strips (strip.css) ---------- */
+/* A line through a stop, as Travel's Nearby draws it (owner, 14 Oct 2026,
+   Travel directions canvas row 16): its badge, the stop's dot on the line's
+   track, and at each end where it goes, via which stops and when. Shared
+   with strip.js (TravelStrip) so pages outside Travel show departures the
+   same way (Today's Check departures; owner, 18 Oct 2026, Composer review
+   canvas board 12). A narrow column folds a strip into rows: give the
+   strips' parent `container-type: inline-size`. */
+.nearby-strip {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 120px minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-20);
+    width: 100%;
+    min-height: 84px;
+    padding: var(--space-8) 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 160ms ease;
+}
+.nearby-strip:first-child {
+    border-top: 0;
+}
+.nearby-strip:hover {
+    background: color-mix(in srgb, var(--line) 5%, transparent);
+}
+.nearby-strip.is-selected {
+    background: color-mix(in srgb, var(--line) 9%, transparent);
+}
+.nearby-strip:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+    border-radius: var(--radius-md);
+}
+.strip-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+.strip-end {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.strip-end.is-left {
+    align-items: flex-end;
+    text-align: right;
+}
+.strip-end.is-empty small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.strip-dest {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    font-size: 15.5px;
+    font-weight: var(--weight-semibold);
+}
+.strip-dest svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2;
+}
+/* Names and vias in full; they wrap rather than end in "…" (the approved
+   line card; review, 15 Oct 2026). */
+.strip-via {
+    max-width: 100%;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+}
+.strip-when {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+.strip-end.is-left .strip-when {
+    flex-direction: row-reverse;
+}
+.strip-track {
+    position: relative;
+    height: 44px;
+}
+.strip-track i {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 3px;
+    background: var(--line);
+}
+.strip-track b {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    box-sizing: border-box;
+    border: 4px solid var(--line);
+    border-radius: 50%;
+    background: var(--color-bg-surface);
+}
+.nearby-strip > .tl-strip {
+    grid-column: 1 / -1;
+    margin-top: var(--space-8);
+}
+@container (max-width: 620px) {
+    .nearby-strip {
+        grid-template-columns: 52px 10px minmax(0, 1fr);
+        grid-template-areas:
+            'badge track first'
+            'badge track second';
+        row-gap: var(--space-10);
+        column-gap: var(--space-12);
+        min-height: 0;
+    }
+    .strip-badge {
+        grid-area: badge;
+        align-self: start;
+        padding-top: 2px;
+    }
+    /* The track runs the strip's full height, so the line joins the two
+       ways with the stop's dot between them. */
+    .strip-track {
+        grid-area: track;
+        align-self: stretch;
+        height: auto;
+    }
+    .strip-track i {
+        top: 8px;
+        bottom: 8px;
+        left: 3px;
+        right: auto;
+        width: 4px;
+        height: auto;
+        margin: 0;
+    }
+    .strip-track b {
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
+        border-width: 3px;
+    }
+    .strip-end.is-right {
+        grid-area: first;
+    }
+    .strip-end.is-left {
+        grid-area: second;
+        align-items: stretch;
+        text-align: left;
+    }
+    .strip-end:not(.is-empty) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: var(--space-8);
+        align-items: center;
+    }
+    .strip-dest {
+        grid-column: 1;
+    }
+    .strip-via {
+        grid-column: 1;
+    }
+    /* The minutes keep the right; a tag ("Running 2 min late") goes under
+       the via, so the via keeps the row's width and doesn't wrap round it
+       onto three lines. */
+    .strip-when,
+    .strip-end.is-left .strip-when {
+        display: contents;
+    }
+    .strip-when > .nearby-time {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        justify-self: end;
+    }
+    .strip-when > :not(.nearby-time) {
+        grid-column: 1;
+        justify-self: start;
+        margin-top: 2px;
+    }
+    .strip-dest {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .strip-dest > span {
+        min-width: 0;
+    }
+    .strip-end.is-left .strip-dest svg {
+        display: none;
+    }
+    .strip-end.is-left .strip-dest::before {
+        content: '→';
+        color: var(--color-text-soft);
+    }
+    .strip-end.is-right .strip-dest svg {
+        display: none;
+    }
+    .strip-end.is-right .strip-dest::before {
+        content: '→';
+        color: var(--color-text-soft);
+    }
+}
+/* When it leaves: minutes, "Now" in the line's colour, or a paused clock. */
+.nearby-time {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.nearby-time strong {
+    font-size: 24px;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.6px;
+}
+.nearby-time small {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.nearby-time.is-paused {
+    color: var(--color-text-soft);
+}
+.nearby-time.is-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    color: color-mix(in srgb, var(--line) 78%, var(--color-text));
+}
+.nearby-time.is-now i {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: tl-blink 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .nearby-time.is-now i {
+        animation: none;
+    }
+}
+
+/* ---------- The trip card (trip-card.css) ---------- */
+/* Your next trip as one card (trip-card.js): the ring and what to do, the
+   facts as tiles, the one button. Travel's Nearby and My day draw it, and
+   Today's plan for the trip, so a trip looks the same wherever it shows
+   (owner, 18 Oct 2026, Composer review canvas board 11). Moved from
+   hub.css and nearby.css. */
+/* ---------- Your next thing as one line (owner, 15 Oct 2026; Travel
+   directions canvas rows 17–18, option B). Colour says how much it
+   matters, never which line: the edge and the ring stay neutral while
+   there's time, turn amber when it's time to go or you missed it, coral
+   when it won't work. Line colours stay on the badge and the strip. Nearby
+   and My day show the same line. ---------- */
+:root {
+    --trip-amber: #b07800;
+    --trip-amber-edge: #e8c77a;
+    --trip-ink: color-mix(
+        in srgb,
+        var(--color-text) 78%,
+        var(--color-bg-surface)
+    );
+}
+.trip-line {
+    --trip-tone: var(--color-text-soft);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    margin: 0 0 var(--space-16);
+    padding: var(--space-16);
+    border: 1.5px solid var(--color-border);
+    border-radius: 22px;
+    background: var(--color-bg-surface);
+    /* Travel's own type wherever the card sits (Today, My day), so a host
+       page's base size doesn't reach it. */
+    font-family: var(--font-sans);
+    font-size: var(--text-control);
+    line-height: var(--leading-snug);
+    transition: border-color 300ms var(--ease-standard);
+}
+/* Sub-lines keep the card's ink, as on Travel, not a host page's grey
+   small; the card's own soft lines say so below. */
+.trip-line small {
+    color: inherit;
+}
+.trip-line[hidden] {
+    display: none;
+}
+.trip-line.is-attention {
+    --trip-tone: var(--trip-amber);
+    border-color: var(--trip-amber-edge);
+}
+.trip-line.is-conflict {
+    --trip-tone: var(--color-conflict-text);
+    border-color: var(--color-conflict-border);
+}
+/* Wide (desktop's Nearby): what to do, the facts, the buttons in one row.
+   Narrow (below): stacked. */
+.trip-line-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 300px) minmax(0, 1fr) auto auto;
+    grid-template-areas: 'head body go more';
+    align-items: center;
+    gap: var(--space-12) 20px;
+}
+.trip-head {
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-width: 0;
+}
+.trip-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    line-height: 1.25;
+}
+.trip-title strong {
+    font-size: 19px;
+    font-weight: var(--weight-bold);
+}
+.trip-title span {
+    color: var(--color-text);
+    font-size: 14.5px;
+    font-weight: var(--weight-medium);
+}
+.trip-body {
+    grid-area: body;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.trip-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+/* The facts: one big value each, a small label over it, a line under. */
+.trip-facts {
+    display: grid;
+    grid-template-columns: repeat(var(--facts, 3), minmax(0, 1fr));
+    gap: var(--space-8);
+}
+.trip-fact {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 10px 7px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-canvas);
+}
+.trip-fact-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 22px;
+    color: var(--color-text-soft);
+    font-size: 11px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.trip-fact-label .tl-line {
+    letter-spacing: 0;
+    text-transform: none;
+}
+.trip-fact strong {
+    font-size: 22px;
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.trip-fact strong span {
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+}
+.trip-fact small {
+    font-size: 12.5px;
+    line-height: 1.3;
+}
+.trip-fact.is-attention {
+    border-color: var(--color-attention-border);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.trip-fact.is-conflict {
+    border-color: var(--color-conflict-border);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+}
+.trip-fact:is(.is-attention, .is-conflict) .trip-fact-label {
+    color: inherit;
+}
+/* Why this tram and not your plan's: quiet, under the facts. */
+.trip-plan {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.trip-plan svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+}
+.trip-line-row > .next-trip-go {
+    grid-area: go;
+}
+.trip-line-row > .trip-line-more {
+    grid-area: more;
+}
+/* The ring: what's left of the last half hour, full when it's time. */
+.trip-ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    color: var(--trip-tone);
+}
+.trip-ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 3.2;
+}
+.trip-ring circle:first-child {
+    stroke: var(--color-border);
+}
+.trip-ring circle + circle {
+    stroke: currentColor;
+    stroke-linecap: round;
+    transition:
+        stroke-dasharray 500ms var(--ease-standard),
+        stroke 300ms var(--ease-standard);
+}
+.trip-ring > span {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+.trip-ring strong {
+    font-size: 15px;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.trip-ring small {
+    color: inherit;
+    font-size: 9.5px;
+    font-weight: var(--weight-semibold);
+}
+.trip-ring.is-icon {
+    box-sizing: border-box;
+    border: 3px solid var(--color-border);
+    border-radius: 50%;
+}
+.trip-ring.is-icon svg {
+    position: static;
+    width: 22px;
+    height: 22px;
+    transform: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.trip-line .next-trip-go {
+    min-height: 44px;
+    padding: 0 var(--space-16);
+    border-radius: 14px;
+    white-space: nowrap;
+}
+.trip-line .next-trip-go svg {
+    width: 14px;
+    height: 14px;
+}
+.trip-line-more {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+.trip-line-more svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 300ms var(--ease-standard);
+}
+.trip-line-more[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+/* The way, opened under the line. */
+.trip-line-way {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+    padding: var(--space-6) var(--space-4) var(--space-4);
+    animation: trip-line-open 320ms var(--ease-standard) both;
+}
+.trip-line-way[hidden] {
+    display: none;
+}
+@keyframes trip-line-open {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+.trip-line-note {
+    display: flex;
+    gap: var(--space-6);
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.trip-line-note svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+}
+.trip-line-others h3 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+.trip-line-others ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.trip-line-others li > span {
+    display: flex;
+    flex-direction: column;
+}
+.trip-line-others small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.trip-line-others .text-action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: var(--touch-target);
+    padding: 0;
+}
+.trip-line-others .text-action svg {
+    width: 14px;
+    height: 14px;
+}
+/* The strip of stations: each name and time sits under its mark, the
+   one map's marks (owner, 15 Oct review): the start a dot, a stop a
+   capsule, there a square. */
+.way-strip {
+    display: flex;
+    align-items: center;
+    max-width: 640px;
+    height: 26px;
+    margin: var(--space-6) 2px 46px;
+}
+.way-node {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: 26px;
+}
+.way-node > i {
+    display: block;
+    width: 24px;
+    height: 15px;
+    box-sizing: border-box;
+    border: 2.5px solid var(--color-text);
+    border-radius: 999px;
+    background: var(--color-bg-surface);
+}
+.way-node.is-start > i {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    background: var(--color-text);
+}
+.way-node.is-there > i {
+    width: 13px;
+    height: 13px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--color-text);
+}
+.way-node > span {
+    position: absolute;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 13px;
+    font-weight: var(--weight-medium);
+    line-height: 1.25;
+    white-space: nowrap;
+}
+.way-node.is-start > span {
+    left: 0;
+    transform: none;
+    align-items: flex-start;
+}
+.way-node.is-there > span {
+    left: auto;
+    right: 0;
+    transform: none;
+    align-items: flex-end;
+}
+.way-node small {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    font-weight: var(--weight-regular, 400);
+    font-variant-numeric: tabular-nums;
+}
+.way-strip.is-crowded .way-node.is-stop > span {
+    width: max-content;
+    max-width: 84px;
+    white-space: normal;
+    text-align: center;
+}
+.way-strip.is-crowded .way-name {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+.way-strip.is-crowded {
+    margin-bottom: 62px;
+}
+/* Its ends need the room: the title says when you leave and the There
+   tile when you're there. */
+.way-strip.is-crowded .way-node:is(.is-start, .is-there) > span {
+    display: none;
+}
+.way-walk {
+    flex: 1.3 1 0;
+    min-width: 14px;
+    border-top: 2px dotted
+        color-mix(
+            in srgb,
+            var(--color-border-strong) 55%,
+            var(--color-bg-surface)
+        );
+}
+.way-ride {
+    flex: 3 1 0;
+    min-width: 64px;
+    display: flex;
+    align-items: center;
+}
+.way-ride::before,
+.way-ride::after {
+    content: '';
+    flex: 1;
+    border-top: 5px solid var(--line);
+}
+.way-ride .tl-line {
+    height: 24px;
+    font-size: 12.5px;
+}
+.way-ride .tl-line svg {
+    width: 13px;
+    height: 13px;
+}
+/* Narrow (phones, My day, desktop's Nearby beside a big planner): the
+   ring, the words and the arrow on one row; the button under. */
+.trip-line {
+    container-type: inline-size;
+}
+@media (max-width: 699px) {
+    .trip-line {
+        gap: var(--space-12);
+        border-radius: 20px;
+    }
+}
+@container (max-width: 560px) {
+    .way-walk {
+        flex-grow: 2;
+    }
+    .way-ride {
+        flex-grow: 2.6;
+    }
+    .trip-ring {
+        width: 46px;
+        height: 46px;
+    }
+    .trip-ring strong {
+        font-size: 13px;
+    }
+    .trip-ring.is-icon svg {
+        width: 19px;
+        height: 19px;
+    }
+    .trip-title strong {
+        font-size: 17px;
+    }
+    /* A long stop name (KVB's "Mülheim Wiener Platz") wraps under its
+       mark instead of running into the next one; the strip keeps room
+       for two lines and the time. */
+    .way-node.is-stop > span {
+        width: max-content;
+        max-width: 84px;
+        white-space: normal;
+        text-align: center;
+    }
+    .way-strip {
+        margin-bottom: 62px;
+    }
+}
+/* The card keeps one row only where the facts have room beside the
+   title and the buttons (desktop's Nearby); below that, stacked: title,
+   facts, then the button (tablets, phones, My day, Nearby beside a big
+   planner). */
+@container (max-width: 820px) {
+    .trip-line-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: 'head more' 'body body' 'go go';
+        gap: var(--space-12);
+    }
+    .trip-line-row > .next-trip-go {
+        width: 100%;
+    }
+}
+/* Narrower still (My day's rail, the smallest phones): the badge alone
+   names the tram, its word goes. */
+@container (max-width: 340px) {
+    .trip-fact-label > [aria-hidden='true'] {
+        display: none;
+    }
+    /* The big figures and a stop's name stay inside their tiles. */
+    .trip-facts {
+        grid-template-columns: repeat(
+            var(--facts, 3),
+            minmax(min-content, 1fr)
+        );
+        gap: 6px;
+    }
+    .trip-fact {
+        padding-inline: 8px;
+    }
+    .trip-fact strong {
+        font-size: 18px;
+    }
+    .trip-fact strong span {
+        font-size: 12px;
+    }
+}
+/* In My day the line sits on the day's rail. */
+.day-river .trip-line {
+    margin: 0;
+}
+
+/* The next trip's button, in Nearby's line and My day. */
+.next-trip-go {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    min-height: 48px;
+}
+.next-trip-go svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+/* Outside Travel the button is a link and Travel's .primary isn't there:
+   the same weight, line height and no underline. */
+.trip-line .next-trip-go {
+    font-weight: var(--weight-semibold);
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+/* ---------- Your way (way.css) ---------- */
+/* Your way: a line of stations, the part you're on marked (way.js). Travel's
+   trip draws it, and so does Composer's answer about a trip: one look
+   wherever a trip shows (owner, 18 Oct 2026, Composer review canvas board
+   11). Moved from trip.css, where it lived under the trip only. */
+.nav-way-title {
+    margin: 0 0 var(--space-12);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.nav-way {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.nav-way li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px 16px minmax(0, 1fr);
+    column-gap: 12px;
+    padding-bottom: 20px;
+}
+.nav-way li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    bottom: 2px;
+    left: 67px;
+    border-left: 2px dotted
+        color-mix(
+            in srgb,
+            var(--color-border-strong) 60%,
+            var(--color-bg-surface)
+        );
+}
+.nav-way li.is-ride::before {
+    left: 66px;
+    border-left: 4px solid var(--line);
+}
+.nav-way time {
+    padding-top: 1px;
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+.nav-way li > i {
+    justify-self: center;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: var(--color-text);
+}
+.nav-way li:is(.is-ride, .is-from-stop) > i {
+    border: 3px solid var(--line);
+    background: var(--color-bg-surface);
+}
+.nav-way li.is-end > i {
+    border-radius: 4px;
+}
+.nav-way strong {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    font-size: 15px;
+    font-weight: var(--weight-semibold);
+}
+.nav-way .tl-line {
+    height: 22px;
+    font-size: 12.5px;
+}
+.nav-way .tl-line svg {
+    width: 13px;
+    height: 13px;
+}
+.nav-way small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+.nav-way li.is-done :is(time, strong) {
+    color: var(--color-text-soft);
+}
+.nav-way li.is-now strong {
+    font-weight: var(--weight-bold);
+}
+.nav-way em {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: var(--weight-bold);
+}
+@media (max-width: 700px) {
+    .nav-way li {
+        grid-template-columns: 44px 16px minmax(0, 1fr);
+    }
+    .nav-way li:not(:last-child)::before {
+        left: 63px;
+    }
+    .nav-way li.is-ride::before {
+        left: 62px;
+    }
+}
+
+/* ---------- On your way (connected/journey-session.css) ---------- */
+.journey-resume {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    /* The header's edges (connected/section-bar.css #shell): on a laptop
+       the bar starts at the logo and ends at the account, as the page's
+       content does (page-frame.css). */
+    margin: 12px max(32px, calc((100% - 1440px) / 2 + 32px));
+    padding: 10px 10px 10px 14px;
+    /* Travel's trip card, not a cyan block (departures-next/trip-card.css). */
+    border: 1.5px solid var(--color-border, #e6ddcb);
+    border-radius: 22px;
+    background: var(--color-bg-surface, #fffdf8);
+    color: var(--color-text, #211d15);
+    text-decoration: none;
+    font:
+        14px/1.4 Geist,
+        Arial,
+        sans-serif;
+}
+.journey-resume[hidden] {
+    display: none !important;
+}
+.journey-resume > svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+.journey-resume > span {
+    min-width: 0;
+    flex: 1;
+}
+.journey-resume strong,
+.journey-resume small {
+    display: block;
+}
+.journey-resume small {
+    font-size: var(--text-caption);
+    color: var(--color-text-soft, #506a74);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.journey-resume:focus-visible {
+    outline: 2px solid var(--color-focus, #32697b);
+    outline-offset: 2px;
+}
+.journey-resume > .tl-line {
+    flex: none;
+}
+/* Travel's button for a trip you've started; "Your trip" where the words
+   would crowd the title (narrow phones). */
+.journey-resume > .journey-resume-go {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--color-action, #c23b0e);
+    color: #fff;
+    font-weight: var(--weight-semibold, 600);
+    white-space: nowrap;
+}
+.journey-resume-go > span + span {
+    display: none;
+}
+@media (max-width: 420px) {
+    .journey-resume-go > span:first-child {
+        display: none;
+    }
+    .journey-resume-go > span + span {
+        display: inline;
+    }
+}
+.journey-resume:active {
+    background: var(--color-bg-quiet, #f1ebdf);
+}
+@media (max-width: 999px) {
+    .journey-resume {
+        margin-inline: 16px;
+    }
+}
+
+/* The mock's pages set 14px / 1.45 on the body; the parts carry it
+   themselves (after the ported rules, which reset buttons' font) so they
+   look the same on any page. The card (leading-snug) and the banner (1.3)
+   keep their own line height. */
+.trip-line,
+.nearby-strip,
+.tl-banner,
+.nav-way,
+.journey-resume {
+    font-size: var(--text-control);
+}
+.nearby-strip,
+.nav-way,
+.journey-resume {
+    line-height: 1.45;
+}
+
+/* ---------- "Replace the trip you're on?" (navigation.css) ---------- */
+.nav-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 10px 16px;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-control);
+    flex: 1;
+    cursor: pointer;
+}
+.nav-primary:active {
+    transform: scale(0.98);
+    background: var(--color-action-hover);
+}
+.nav-confirm {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+    align-items: center;
+    font-size: var(--text-caption);
+}
+.nav-confirm > span {
+    flex: 1;
+}
+.nav-confirm > span small {
+    display: block;
+    color: var(--color-text-soft);
+}
+.nav-confirm > button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+.nav-confirm > .nav-primary {
+    flex: 0;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font-size: var(--text-caption);
+    /* The button reset above takes the weight with font: inherit; the action keeps it. */
+    font-weight: var(--weight-semibold);
+}
+/* On a trip card it takes the button's place; on the one-row card it gets
+   a row of its own under the facts, so they keep their room. */
+.trip-line-row > .nav-confirm {
+    grid-area: go;
+}
+.trip-line-row:has(> .nav-confirm) {
+    grid-template-areas: 'head body body more' 'go go go go';
+}
+.trip-line-row:has(> .nav-confirm) > .nav-confirm {
+    justify-self: end;
+    width: auto;
+    max-width: 100%;
+}
+@container (max-width: 820px) {
+    .trip-line-row:has(> .nav-confirm) {
+        grid-template-areas: 'head more' 'body body' 'go go';
+    }
+    .trip-line-row:has(> .nav-confirm) > .nav-confirm {
+        justify-self: stretch;
+    }
+}
+
+/* ---------- Plan a trip's When menu (portalled out of the page) ---------- */
+.plan-schedule {
+    display: grid;
+    gap: var(--space-12);
+}
+.plan-schedule-done {
+    min-height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.plan-schedule-done:active {
+    transform: scale(0.98);
+    background: var(--color-action-hover);
+}

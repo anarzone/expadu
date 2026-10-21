@@ -1,5 +1,5 @@
 import { Head, usePage } from '@inertiajs/react';
-import { useCallback, useState } from 'react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import {
     Toggle,
@@ -9,6 +9,7 @@ import {
 import { usePushSubscription } from '@/hooks/use-push-subscription';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { writeJson } from '@/lib/reliable-write';
 
 /**
  * Per-type toggles. Keys map to the ActionBus preference gates
@@ -54,57 +55,74 @@ export default function NotificationsSettings() {
         preferences: Record<string, boolean>;
     }>().props;
 
-    const { isSupported, isSubscribed, subscribe, unsubscribe } =
-        usePushSubscription();
+    const {
+        isReady,
+        isSupported,
+        isSubscribed,
+        statusError,
+        retryStatus,
+        subscribe,
+        unsubscribe,
+    } = usePushSubscription();
 
     const [toggles, setToggles] =
         useState<Record<string, boolean>>(preferences);
     const [pushLoading, setPushLoading] = useState(false);
 
-    const csrf =
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') || '';
+    const savingRef = useRef(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const persist = useCallback(
-        (prefs: Record<string, boolean>) => {
-            fetch('/notification-preferences', {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify({ preferences: prefs }),
-            }).catch(() => {});
-        },
-        [csrf],
-    );
+    async function toggle(id: string) {
+        if (savingRef.current) {
+            return;
+        }
 
-    function toggle(id: string) {
-        setToggles((prev) => {
-            const next = { ...prev, [id]: !prev[id] };
-            persist(next);
+        savingRef.current = true;
+        setSaving(true);
+        setError(null);
+        const next = { ...toggles, [id]: !toggles[id] };
 
-            return next;
-        });
+        try {
+            await writeJson('/notification-preferences', 'PUT', {
+                preferences: { [id]: next[id] },
+            });
+            setToggles(next);
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            savingRef.current = false;
+            setSaving(false);
+        }
     }
 
     async function handlePushToggle() {
-        setPushLoading(true);
+        if (pushLoading) {
+            return;
+        }
 
-        if (isSubscribed) {
-            await unsubscribe();
-        } else {
-            await subscribe();
+        setPushLoading(true);
+        setError(null);
+        const saved = isSubscribed ? await unsubscribe() : await subscribe();
+
+        if (!saved) {
+            setError(
+                typeof Notification !== 'undefined' &&
+                    Notification.permission === 'denied'
+                    ? 'Notifications are blocked in this browser. You can allow them in your browser settings.'
+                    : 'We couldn’t update push notifications. Please try again.',
+            );
         }
 
         setPushLoading(false);
     }
 
     return (
-        <AppLayout rightPanel={null}>
+        <AppLayout>
             <Head title="Notification settings" />
 
             <h1 className="sr-only">Notification settings</h1>
@@ -119,28 +137,50 @@ export default function NotificationsSettings() {
 
                     {/* Master push toggle */}
                     <ToggleCard>
-                        <div className="flex items-center justify-between bg-surface-2 px-4 py-[13px]">
+                        <div className="flex items-center justify-between bg-bg-quiet px-4 py-[13px]">
                             <div>
                                 <div className="text-[13.5px] font-semibold">
                                     Push notifications
                                 </div>
-                                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                                    {!isSupported
-                                        ? 'Not supported on this browser'
-                                        : isSubscribed
-                                          ? 'Enabled — you will receive alerts on this device'
-                                          : 'Enable to receive alerts on this device'}
+                                <div className="mt-0.5 text-[11.5px] text-text-muted">
+                                    {!isReady
+                                        ? 'Checking this device…'
+                                        : !isSupported
+                                          ? 'Not supported on this browser'
+                                          : statusError
+                                            ? 'Status unavailable'
+                                            : isSubscribed
+                                              ? 'Enabled — you will receive alerts on this device'
+                                              : 'Enable to receive alerts on this device'}
                                 </div>
                             </div>
                             {isSupported && (
                                 <Toggle
+                                    label="Push notifications"
                                     on={isSubscribed}
                                     onClick={handlePushToggle}
-                                    disabled={pushLoading}
+                                    disabled={
+                                        pushLoading || !isReady || !!statusError
+                                    }
                                 />
                             )}
                         </div>
                     </ToggleCard>
+                    {statusError && (
+                        <div
+                            role="alert"
+                            className="text-sm text-conflict-text"
+                        >
+                            {statusError}{' '}
+                            <button
+                                type="button"
+                                className="min-h-11 font-semibold underline"
+                                onClick={retryStatus}
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    )}
 
                     {/* Per-type toggles. These also gate the in-app alerts
                         feed, so they stay meaningful when device push is off —
@@ -151,7 +191,7 @@ export default function NotificationsSettings() {
                             <div className="text-[13.5px] font-semibold">
                                 Alert types
                             </div>
-                            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                            <div className="mt-0.5 text-[11.5px] text-text-muted">
                                 {isSubscribed
                                     ? 'Shown in your alerts feed and pushed to this device.'
                                     : 'Shown in your alerts feed. Turn on push above to also get them on this device.'}
@@ -164,11 +204,22 @@ export default function NotificationsSettings() {
                                     label={setting.label}
                                     sub={setting.sub}
                                     on={!!toggles[setting.id]}
-                                    onToggle={() => toggle(setting.id)}
+                                    onToggle={() => void toggle(setting.id)}
+                                    disabled={saving}
                                 />
                             ))}
                         </ToggleCard>
                     </div>
+                    {error && (
+                        <p role="alert" className="text-sm text-conflict-text">
+                            {error}
+                        </p>
+                    )}
+                    {saving && (
+                        <p role="status" className="text-sm text-text-muted">
+                            Saving…
+                        </p>
+                    )}
                 </div>
             </SettingsLayout>
         </AppLayout>

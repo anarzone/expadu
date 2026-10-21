@@ -1,0 +1,129 @@
+{
+    "name": "today-city",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".city-help"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".city-help",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "city help",
+            "mock": "section.city-help",
+            "app": "section.city-help",
+            "pixels": false,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "heading",
+            "mock": ".city-help .section-head h2",
+            "app": ".city-help .section-head h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "forecast",
+            "mock": ".forecast-strip",
+            "app": ".forecast-strip",
+            "contentDiffers": true,
+            "ignore": ["y"]
+        },
+        {
+            "name": "forecast now",
+            "mock": ".forecast-strip b",
+            "app": ".forecast-strip b",
+            "contentDiffers": true,
+            "ignore": ["y", "x", "w"]
+        },
+        {
+            "name": "forecast source",
+            "mock": ".forecast-strip small",
+            "app": ".forecast-strip small",
+            "contentDiffers": true,
+            "ignore": ["y"]
+        },
+        {
+            "name": "Check departures",
+            "mock": ".departure-board > summary",
+            "app": ".departure-board > summary",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "stop",
+            "mock": ".stop-trigger",
+            "app": ".stop-trigger",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "capture",
+            "mock": ".board-capture",
+            "app": ".board-capture",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Full timetable",
+            "mock": ".board-full",
+            "app": ".board-full",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "city links",
+            "mock": ".city-source-section",
+            "app": ".city-source-section",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "city links title",
+            "mock": ".continue-head h3",
+            "app": ".continue-head h3",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "official websites",
+            "mock": ".continue-head .record-label",
+            "app": ".continue-head .record-label",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "KVB transport",
+            "mock": ".city-source-links a",
+            "app": ".city-source-links a",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "City news",
+            "mock": ".city-source-links a",
+            "app": ".city-source-links a",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "subpixelNote": "y is set aside: on wider screens City help sits under the Paperwork panel, which is taller than the mock's (the engine's next step wraps to two lines), and on phones Today's mock header is 2px shorter (see today-everyday's phoneNote). At those offsets the text sits at other fractions of a pixel, so those pixels are not compared; boxes and styles are exact.",
+    "clockNote": "The mock's sample day at 13:10, with the clock sent as a cookie on the first request: SampleWeather gives the app the mock's forecast, so nothing here depends on the hour the config runs. The forecast's words still differ, since the mock hard-codes '21° 17:00 20°' (its own sample file says 19° at 17:00) and 'Sample forecast'.",
+    "departuresNote": "The board's first line isn't compared yet: at 13:10 on the sample day the app's board has no departure for Neumarkt (it reads the schedule, which no longer covers 30 Sept), while the mock shows its capture (4 → Schlebusch, 4 min). It comes back once the app has the sample day's departures under the mock clock, as SampleWeather gives its forecast (asked of session 3)."
+}

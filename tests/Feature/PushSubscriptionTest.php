@@ -90,3 +90,18 @@ test('unsubscribe validates endpoint is required', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['endpoint']);
 });
+
+test('a browser push token is enabled only for its authenticated owner', function () {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $endpoint = 'https://push.example.com/subscriptions/private-device';
+    $owner->updatePushSubscription($endpoint, 'p256dh', 'auth');
+
+    $this->actingAs($owner)->postJson(route('push.status'), ['endpoint' => $endpoint])
+        ->assertOk()->assertJson(['subscribed' => true]);
+    $this->actingAs($other)->postJson(route('push.status'), ['endpoint' => $endpoint])
+        ->assertOk()->assertJson(['subscribed' => false]);
+
+    $this->actingAs($other)->postJson(route('push.unsubscribe'), ['endpoint' => $endpoint])->assertOk();
+    expect($owner->pushSubscriptions()->where('endpoint', $endpoint)->exists())->toBeTrue();
+});

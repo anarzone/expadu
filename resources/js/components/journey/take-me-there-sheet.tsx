@@ -35,51 +35,10 @@ import { ICON_STROKE } from '@/constants/icons';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import type { Journey, JourneyLeg } from '@/types/transit';
 
 /** A station ridden through on a transit leg (name + scheduled arrival). */
-export type IntermediateStop = {
-    name: string;
-    arrive_at: string;
-    arrive_time: string;
-    /** Stop coordinates — power live GPS map-matching during a trip. */
-    lat: number | null;
-    lng: number | null;
-};
-
-export type JourneyLeg = {
-    mode: string;
-    line: string | null;
-    headsign: string | null;
-    from: { name: string; lat: number; lng: number };
-    to: { name: string; lat: number; lng: number };
-    depart_at: string;
-    arrive_at: string;
-    depart_time: string;
-    arrive_time: string;
-    duration_min: number;
-    stops: number | null;
-    polyline: string | null;
-    color: string | null;
-    intermediate_stops: IntermediateStop[] | null;
-};
-
-export type Journey = {
-    mode: 'transit' | 'bike' | 'walk';
-    depart_at: string;
-    arrive_at: string;
-    depart_time: string;
-    arrive_time: string;
-    duration_min: number;
-    transfers: number;
-    legs: JourneyLeg[];
-    /** A departure the walk-folded plan drops as unreachable, surfaced anyway so
-     * the user can decide to jog for it. Present only on that one option. */
-    tight?: boolean;
-    /** Minutes on foot to the boarding stop — the walk this option omits. */
-    access_walk_min?: number;
-    /** Name of that boarding stop, for the "N-min walk to …" flag. */
-    access_stop_name?: string;
-};
+export type { IntermediateStop, Journey, JourneyLeg } from '@/types/transit';
 
 export type JourneyResponse = {
     source: 'transitous' | 'trias' | 'degraded';
@@ -515,7 +474,7 @@ export function TakeMeThereSheet({
         scheduleDefault(destination.arriveBy),
     );
     const isMobile = useIsMobile();
-    const { start, busy: startingTrip } = useActiveTrip();
+    const { start, busy: startingTrip, error: tripError } = useActiveTrip();
     // The user's default transport mode pre-selects the sheet so it opens in the
     // mode the Places list / composer measured distances in.
     const userPreferred = usePage().props.auth.user
@@ -684,7 +643,7 @@ export function TakeMeThereSheet({
             return;
         }
 
-        await start(
+        const saved = await start(
             journey,
             {
                 name: destination.name,
@@ -694,12 +653,17 @@ export function TakeMeThereSheet({
             },
             data.from,
         );
+
+        if (!saved) {
+            return;
+        }
+
         onClose();
     }
 
     const planner = (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="px-5 pt-5 sm:px-7 sm:pt-7">
+            <div className="px-5 pt-5 md:px-7 md:pt-7">
                 <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <div className="font-mono text-[11px] font-bold tracking-[0.15em] text-primary uppercase">
@@ -761,7 +725,7 @@ export function TakeMeThereSheet({
                 />
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-7">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 md:px-7">
                 {!data && error === null && (
                     <div className="space-y-3">
                         {[1, 2, 3].map((item) => (
@@ -920,7 +884,7 @@ export function TakeMeThereSheet({
             </div>
 
             {journey && data && (
-                <div className="grid gap-3 border-t border-border bg-card px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
+                <div className="grid gap-3 border-t border-border bg-card px-5 py-4 md:grid-cols-[1fr_auto] md:items-center md:px-7">
                     <div className="text-sm text-muted-foreground">
                         {effectiveMode === 'transit' &&
                         data.ticket?.covered_by_deutschlandticket ? (
@@ -942,6 +906,14 @@ export function TakeMeThereSheet({
                             'Direct route — no public-transport ticket needed.'
                         )}
                     </div>
+                    {tripError && (
+                        <p
+                            role="alert"
+                            className="mb-2 rounded-xl bg-danger-soft p-3 text-sm text-danger"
+                        >
+                            {tripError}
+                        </p>
+                    )}
                     <button
                         type="button"
                         onClick={startSelectedTrip}
@@ -995,13 +967,13 @@ export function TakeMeThereSheet({
             <DialogContent
                 aria-describedby={undefined}
                 showClose={false}
-                className="h-[min(860px,calc(100dvh-3rem))] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-[26px] border-border bg-card p-0 sm:max-w-[1180px]"
+                className="h-[min(860px,calc(100dvh-3rem))] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-[26px] border-border bg-card p-0 md:max-w-[1180px]"
                 data-journey-sheet
             >
                 <DialogTitle className="sr-only">
                     Journey to {destination.name}
                 </DialogTitle>
-                <header className="flex min-h-18 items-center justify-between gap-4 border-b border-border px-5 sm:px-7">
+                <header className="flex min-h-18 items-center justify-between gap-4 border-b border-border px-5 md:px-7">
                     <button
                         type="button"
                         aria-label={`Back to ${destination.backLabel ?? destination.name}`}

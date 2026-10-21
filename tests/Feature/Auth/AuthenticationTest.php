@@ -70,12 +70,12 @@ test('an authenticated user is bounced off the login screen with a flash', funct
         ->assertSessionHas('status');
 });
 
-test('an authenticated, not-yet-onboarded user is bounced off register to onboarding with a flash', function () {
+test('an authenticated, new user is returned from register to Today with a flash', function () {
     $user = User::factory()->notOnboarded()->create();
 
     $this->actingAs($user)
         ->get(route('register'))
-        ->assertRedirect(route('onboarding', absolute: false))
+        ->assertRedirect(route('dashboard', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -86,6 +86,7 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertRedirect('/login');
+    $response->assertSessionHas('inertia.clear_history', true);
 });
 
 test('users are rate limited', function () {
@@ -100,3 +101,33 @@ test('users are rate limited', function () {
 
     $response->assertTooManyRequests();
 });
+
+test('a wrong password and an unknown email get the same answer', function () {
+    $user = User::factory()->create();
+
+    $wrongPassword = $this->from(route('login'))->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ]);
+    $unknownEmail = $this->from(route('login'))->post(route('login.store'), [
+        'email' => 'nobody-here@example.com',
+        'password' => 'wrong-password',
+    ]);
+
+    $wrongPassword->assertSessionHasErrors(['email' => __('auth.failed')]);
+    $unknownEmail->assertSessionHasErrors(['email' => __('auth.failed')]);
+    $this->assertGuest();
+});
+
+test('a throttled sign-in says so on the poster, the same for any email', function (bool $hasAccount) {
+    $email = $hasAccount ? User::factory()->create()->email : 'nobody-here@example.com';
+    RateLimiter::increment(md5('login'.implode('|', [$email, '127.0.0.1'])), amount: 5);
+
+    $response = $this->from(route('login'))
+        ->withHeader('X-Inertia', 'true')
+        ->post(route('login.store'), ['email' => $email, 'password' => 'wrong-password']);
+
+    $response->assertRedirect(route('login'));
+    expect(session('error'))->toStartWith('Too many requests');
+    $this->assertGuest();
+})->with(['an account' => true, 'no account' => false]);

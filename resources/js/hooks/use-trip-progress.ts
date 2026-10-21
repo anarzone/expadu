@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocationSharingEnabled } from './use-geolocation';
 
 /** A timeline node the live cursor can sit on — scheduled time + coordinates. */
 export type ProgressStep = {
@@ -29,13 +30,50 @@ function metres(
 /** You count as "at" a stop within this radius (widened by GPS accuracy). */
 const MATCH_RADIUS_M = 120;
 
-type Fix = { lat: number; lng: number; acc: number };
+type Fix = { lat: number; lng: number; accuracy: number; timestamp: number };
+
+type ProgressState = {
+    key: string;
+    reached: number;
+    confirmed?: number;
+    checkedAt: number;
+    fix: Fix | null;
+    live: boolean;
+};
+type ProgressInput = {
+    steps: ProgressStep[];
+    enabled: boolean;
+    visible: boolean;
+    now: number;
+    fix?: Fix;
+    lost?: boolean;
+};
+
+const MAX_FIX_AGE_MS = 60_000;
+const MAX_FIX_ACCURACY_M = 100;
+
+function usableFix(fix: Fix | null, now: number): fix is Fix {
+    return (
+        fix !== null &&
+        [fix.lat, fix.lng, fix.accuracy, fix.timestamp].every(
+            Number.isFinite,
+        ) &&
+        Math.abs(fix.lat) <= 90 &&
+        Math.abs(fix.lng) <= 180 &&
+        fix.accuracy >= 0 &&
+        fix.accuracy <= MAX_FIX_ACCURACY_M &&
+        fix.timestamp <= now + 5_000 &&
+        now - fix.timestamp <= MAX_FIX_AGE_MS
+    );
+}
 
 export type TripProgress = {
     /** The furthest step reached, or -1 before the trip has begun. */
     currentIdx: number;
     /** True while a real GPS fix is driving the cursor (vs. the schedule clock). */
     live: boolean;
+    /** Actual foreground location; never a route or vehicle estimate. */
+    position: Fix | null;
 };
 
 /** Last step whose scheduled time has passed; -1 before the first. */
@@ -71,151 +109,184 @@ function gpsIdx(steps: ProgressStep[], fix: Fix): number {
         }
     }
 
-    return bestI >= 0 && bestD <= MATCH_RADIUS_M + fix.acc ? bestI : -1;
+    return bestI >= 0 && bestD <= MATCH_RADIUS_M + fix.accuracy ? bestI : -1;
 }
 
-/** A stable key for a step list, to reset progress when the journey swaps. */
 function stepsKey(steps: ProgressStep[]): string {
-    if (steps.length === 0) {
-        return '';
-    }
-
-    return `${steps.length}:${steps[0].at}:${steps[steps.length - 1].at}`;
+    return JSON.stringify(steps.map(({ at, lat, lng }) => [at, lat, lng]));
 }
 
-/**
- * The live position on a journey timeline. When enabled (an actually-started
- * trip, in the foreground) it watches GPS and snaps the cursor to the nearest
- * planned stop you've reached; otherwise — or before the first fix — it falls
- * back to the schedule clock. The cursor only ever moves forward, so a noisy
- * fix or a re-sort can't make the timeline jump backwards.
- *
- * State updates come only from the interval tick and GPS callbacks (never a
- * render-time write), and progress resets to the schedule position whenever the
- * journey (step list) changes, via the adjust-state-in-render pattern.
- */
+export function advanceTripProgress(
+    previous: ProgressState,
+    input: ProgressInput,
+): ProgressState {
+    const key = stepsKey(input.steps);
+    const changed = key !== previous.key;
+    const confirmed = changed ? -1 : (previous.confirmed ?? -1);
+    const candidate = input.fix ?? (changed ? null : previous.fix);
+    const fix =
+        input.enabled &&
+        input.visible &&
+        !input.lost &&
+        usableFix(candidate, input.now)
+            ? candidate
+            : null;
+    const gps = fix ? gpsIdx(input.steps, fix) : -1;
+    const nextConfirmed = gps >= 0 ? Math.max(confirmed, gps) : confirmed;
+    const reached = fix
+        ? nextConfirmed
+        : Math.max(nextConfirmed, scheduleIdx(input.steps, input.now));
+
+    return {
+        key,
+        reached,
+        confirmed: nextConfirmed,
+        checkedAt: input.now,
+        fix,
+        live: fix !== null && gps >= 0,
+    };
+}
+
+export function tripProgressSnapshot(
+    state: ProgressState,
+    {
+        steps,
+        tracking,
+        visible,
+        now,
+    }: {
+        steps: ProgressStep[];
+        tracking: boolean;
+        visible: boolean;
+        now: number;
+    },
+): TripProgress {
+    const sameRoute = state.key === stepsKey(steps);
+    const position =
+        tracking && visible && sameRoute && usableFix(state.fix, now)
+            ? state.fix
+            : null;
+
+    return {
+        currentIdx: sameRoute ? state.reached : -1,
+        live: position !== null && state.live,
+        position,
+    };
+}
+
+export function createTripProgressSession({
+    steps,
+    enabled,
+    onUpdate: setState,
+}: {
+    steps: ProgressStep[];
+    enabled: boolean;
+    onUpdate: (update: (previous: ProgressState) => ProgressState) => void;
+}): () => void {
+    let watchId: number | null = null;
+    let disposed = false;
+    const update = (event: { fix?: Fix; lost?: boolean } = {}) => {
+        if (disposed) {
+            return;
+        }
+
+        setState((previous) =>
+            advanceTripProgress(previous, {
+                steps,
+                enabled,
+                visible: !document.hidden,
+                now: Date.now(),
+                ...event,
+            }),
+        );
+    };
+    const stopWatch = () => {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+    };
+    const startWatch = () => {
+        if (
+            !enabled ||
+            document.hidden ||
+            watchId !== null ||
+            !navigator.geolocation
+        ) {
+            return;
+        }
+
+        watchId = navigator.geolocation.watchPosition(
+            (position) =>
+                update({
+                    fix: {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp,
+                    },
+                }),
+            () => update({ lost: true }),
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5_000,
+                timeout: 20_000,
+            },
+        );
+    };
+    const onVisibility = () => {
+        update({ lost: true });
+
+        if (document.hidden) {
+            stopWatch();
+        } else {
+            startWatch();
+        }
+    };
+    const initial = setTimeout(() => {
+        update({ lost: true });
+        startWatch();
+    }, 0);
+    const timer = setInterval(() => update(), 5_000);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+        disposed = true;
+        clearTimeout(initial);
+        clearInterval(timer);
+        stopWatch();
+        document.removeEventListener('visibilitychange', onVisibility);
+    };
+}
+
 export function useTripProgress(
     steps: ProgressStep[],
     enabled: boolean,
 ): TripProgress {
-    // Starts before-departure (-1); the mount/journey-change effect below fills
-    // in the real schedule position immediately (via a 0ms timer, off-render).
-    const [reached, setReached] = useState(-1);
-    const [hasFix, setHasFix] = useState(false);
+    const sharingEnabled = useLocationSharingEnabled();
+    const tracking = enabled && sharingEnabled;
+    const [state, setState] = useState<ProgressState>({
+        key: '',
+        checkedAt: 0,
+        reached: -1,
+        fix: null,
+        live: false,
+    });
+    useEffect(
+        () =>
+            createTripProgressSession({
+                steps,
+                enabled: tracking,
+                onUpdate: setState,
+            }),
+        [tracking, steps],
+    );
 
-    // Latest inputs for the async callbacks, kept in refs so they read fresh
-    // values without re-subscribing the interval/watch on every render.
-    const stepsRef = useRef(steps);
-    const posRef = useRef<Fix | null>(null);
-    const enabledRef = useRef(enabled);
-
-    useEffect(() => {
-        stepsRef.current = steps;
-    }, [steps]);
-    useEffect(() => {
-        enabledRef.current = enabled;
-    }, [enabled]);
-
-    // Reset the high-water mark when the journey changes (switch trip / re-plan)
-    // — the documented adjust-in-render pattern. The effect below then recomputes
-    // the real position off-render (Date.now() may not be read during render).
-    const key = stepsKey(steps);
-    const [prevKey, setPrevKey] = useState(key);
-
-    if (prevKey !== key) {
-        setPrevKey(key);
-        setReached(-1);
-    }
-
-    // Fuse schedule + GPS into the next forward-only cursor. Called only from
-    // timers/GPS callbacks, so this never sets state during render or an effect.
-    const applyProgress = useCallback(() => {
-        const s = stepsRef.current;
-        const fix = enabledRef.current ? posRef.current : null;
-        const sched = scheduleIdx(s, Date.now());
-        const gps = fix ? gpsIdx(s, fix) : -1;
-
-        setReached((prev) => {
-            // With a fix, trust GPS and hold between stops; else use the clock.
-            const raw = fix ? (gps >= 0 ? gps : prev) : sched;
-
-            return Math.max(prev, raw);
-        });
-    }, []);
-
-    // Compute the real position now (and whenever the journey changes) — off
-    // the render pass, so reading the clock stays out of render.
-    useEffect(() => {
-        const t = setTimeout(applyProgress, 0);
-
-        return () => clearTimeout(t);
-    }, [key, applyProgress]);
-
-    // Schedule clock — advances the cursor even without a GPS fix.
-    useEffect(() => {
-        const id = setInterval(applyProgress, 15_000);
-
-        return () => clearInterval(id);
-    }, [applyProgress]);
-
-    // Watch GPS only for a live trip, and only in the foreground (battery).
-    useEffect(() => {
-        if (!enabled || !('geolocation' in navigator)) {
-            return;
-        }
-
-        let watchId: number | null = null;
-
-        const startWatch = () => {
-            if (watchId !== null) {
-                return;
-            }
-
-            watchId = navigator.geolocation.watchPosition(
-                (p) => {
-                    posRef.current = {
-                        lat: p.coords.latitude,
-                        lng: p.coords.longitude,
-                        acc: p.coords.accuracy,
-                    };
-                    setHasFix(true);
-                    applyProgress();
-                },
-                () => {},
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 5_000,
-                    timeout: 20_000,
-                },
-            );
-        };
-
-        const stopWatch = () => {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-        };
-
-        const onVisibility = () => {
-            if (document.hidden) {
-                stopWatch();
-            } else {
-                startWatch();
-            }
-        };
-
-        if (!document.hidden) {
-            startWatch();
-        }
-
-        document.addEventListener('visibilitychange', onVisibility);
-
-        return () => {
-            stopWatch();
-            document.removeEventListener('visibilitychange', onVisibility);
-        };
-    }, [enabled, applyProgress]);
-
-    return { currentIdx: reached, live: enabled && hasFix };
+    return tripProgressSnapshot(state, {
+        steps,
+        tracking,
+        visible: typeof document !== 'undefined' && !document.hidden,
+        // The session checks age every five seconds and on visibility changes.
+        now: state.checkedAt,
+    });
 }

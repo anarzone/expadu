@@ -1,0 +1,930 @@
+/* The shared primitives (components/ui/*), ported from the mock: the sheet
+   (today-next/brief/sheets.css), the anchored picker (events-next/events.css
+   .events-popover), the toast (connected/ui.js), loading (connected/
+   loading.*), the date control (connected/date-control.*), the time wheels
+   (connected/time-control.*), the From/Until time sheet (composer-studio/
+   time-sheet.*), pills (connected/core-components.css) and the honest
+   states (guide: States). Sheets: no blur, a light scrim, settle motion,
+   always closable; nothing moves with reduced motion. */
+
+/* ── Sheet: a bottom sheet on phones, a compact dialog from 701px ───────── */
+.ui-sheet {
+    box-sizing: border-box;
+    width: min(520px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(760px, calc(100dvh - 48px));
+    /* Centred: Tailwind's reset takes away the browser's dialog margin. */
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sheet);
+    overflow: hidden;
+}
+.ui-sheet[open] {
+    display: flex;
+    flex-direction: column;
+}
+@media (min-width: 701px) {
+    /* Centred on the window, scrollbar or not, as the mock's sheets are. */
+    .ui-sheet {
+        inset-inline: calc((100vw - min(520px, 100vw - 32px)) / 2) auto;
+        margin-inline: 0;
+    }
+}
+.ui-sheet::backdrop {
+    background: #0005;
+}
+.ui-sheet-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex: none;
+    padding: 18px 20px 8px;
+}
+.ui-sheet-head h2 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+    letter-spacing: -0.4px;
+}
+.ui-sheet-head p {
+    margin: 4px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-body);
+}
+.ui-sheet-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.ui-sheet-close:hover {
+    background: var(--color-bg-quiet);
+}
+.ui-sheet-close svg {
+    width: 23px;
+    height: 23px;
+}
+.ui-sheet-body {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0 20px 22px;
+}
+.ui-sheet-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px 18px;
+    flex: none;
+    padding: 0 20px 22px;
+}
+.ui-sheet :is(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+@media (max-width: 700px) {
+    .ui-sheet {
+        width: 100%;
+        max-height: calc(100dvh - 40px);
+        margin: auto 0 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    /* The top edge is the handle: drag it down to close. */
+    .ui-sheet-head {
+        padding: 26px 16px 8px;
+        touch-action: none;
+    }
+    .ui-sheet-head::before,
+    .ui-menu.is-sheet .ui-menu-head::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+    .ui-sheet-body {
+        padding: 0 16px max(20px, env(safe-area-inset-bottom));
+    }
+    .ui-sheet-foot {
+        padding: 0 16px max(20px, env(safe-area-inset-bottom));
+    }
+    .ui-sheet:has(.ui-sheet-foot) .ui-sheet-body {
+        padding-bottom: 12px;
+    }
+}
+
+/* ── Anchored menu: floats over the page under its button; one open at a
+   time. Where a page asks, it becomes a bottom sheet on smaller screens. ─ */
+.ui-menu {
+    position: fixed;
+    z-index: 80;
+    box-sizing: border-box;
+    width: min(var(--ui-menu-width, 320px), calc(100vw - 16px));
+    max-height: min(440px, 55dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 12px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 12px 36px #211d151a;
+    animation: ui-menu-in 160ms var(--ease-settle);
+}
+.ui-menu:focus {
+    outline: none;
+}
+.ui-menu-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+}
+.ui-menu-head strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.ui-menu-head button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -8px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+}
+.ui-menu-head button:hover {
+    background: var(--color-bg-quiet);
+}
+.ui-menu-head svg {
+    width: 16px;
+    height: 16px;
+}
+.ui-menu-options {
+    display: grid;
+    gap: 4px;
+}
+.ui-menu-options.is-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ui-menu-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.ui-menu-option:hover {
+    background: var(--color-bg-quiet);
+}
+.ui-menu-option:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.ui-menu-option > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+.ui-menu-option > span {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.ui-menu-option small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+/* The selected row: cyan, with a check. */
+.ui-menu-option[aria-checked='true'] {
+    background: var(--color-select-bg);
+    font-weight: var(--weight-semibold);
+}
+.ui-menu-option[aria-checked='true']::after {
+    content: '';
+    flex: 0 0 14px;
+    height: 14px;
+    margin-left: auto;
+    background: var(--color-select-text);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+}
+.ui-menu-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 79;
+    background: #0005;
+    touch-action: none;
+}
+/* As a sheet: fixed to the bottom, the head is the handle. */
+.ui-menu.is-sheet {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0;
+    left: 0 !important;
+    width: min(100%, 560px);
+    max-height: calc(100dvh - 40px);
+    margin-inline: auto;
+    padding: 22px 16px max(20px, env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-sheet);
+    animation: ui-sheet-up 280ms var(--ease-settle);
+}
+.ui-menu.is-sheet .ui-menu-head {
+    touch-action: none;
+}
+.ui-menu.is-sheet .ui-menu-head::before {
+    top: -14px;
+}
+@media (min-width: 701px) {
+    .ui-menu.is-sheet .ui-menu-head::before {
+        content: '';
+        position: absolute;
+        top: -14px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+}
+@keyframes ui-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+@keyframes ui-sheet-up {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+/* ── Toast: brief, for results not visible where you are; Undo where a
+   change can be taken back. Above the floating sections on phones. ─── */
+.ui-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 88px;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    margin-bottom: var(--section-bar, 0px);
+    padding: 13px 20px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.5;
+    box-shadow: 0 6px 26px #3e352b22;
+    transform: translate(-50%, 0);
+    animation: ui-toast-in 180ms var(--ease-settle);
+}
+.ui-toast.is-error {
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    box-shadow:
+        inset 0 0 0 1px var(--color-conflict-border),
+        0 6px 26px #3e352b22;
+}
+.ui-toast button {
+    min-height: 44px;
+    margin: -12px -6px;
+    padding: 1px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--color-action-text);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.ui-toast button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+@keyframes ui-toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 16px);
+    }
+}
+
+/* ── Loading: placeholders only after 140ms; existing content stays. ─── */
+.ui-loading-lines {
+    display: grid;
+    gap: 10px;
+}
+.ui-loading-line {
+    position: relative;
+    display: block;
+    height: 12px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-quiet);
+}
+.ui-loading-line:nth-child(2n) {
+    width: 62%;
+}
+.ui-loading-line:nth-child(2n + 1) {
+    width: 88%;
+}
+.ui-loading-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        100deg,
+        transparent,
+        rgba(255, 255, 255, 0.55),
+        transparent
+    );
+    translate: -100% 0;
+    animation: ui-sweep 2100ms ease-in-out infinite;
+}
+.ui-loading-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    color: var(--color-text);
+    font-size: var(--text-control);
+    line-height: 1.4;
+}
+.ui-loading-spark {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    overflow: visible;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    animation: ui-breathe 1800ms ease-in-out infinite;
+}
+.ui-loading-spark .spark-outline {
+    stroke: #a6c9d1;
+}
+.ui-loading-spark .spark-tips path {
+    stroke: #02b6d4;
+    opacity: 0.18;
+    animation: ui-tip 1800ms ease-in-out infinite;
+}
+.ui-loading-spark .spark-tips path:nth-child(2) {
+    animation-delay: 450ms;
+}
+.ui-loading-spark .spark-tips path:nth-child(3) {
+    animation-delay: 900ms;
+}
+.ui-loading-spark .spark-tips path:nth-child(4) {
+    animation-delay: 1350ms;
+}
+@keyframes ui-sweep {
+    0%,
+    15% {
+        translate: -100% 0;
+    }
+    80%,
+    100% {
+        translate: 100% 0;
+    }
+}
+@keyframes ui-breathe {
+    0%,
+    100% {
+        transform: scale(0.96);
+    }
+    50% {
+        transform: scale(1.04);
+    }
+}
+@keyframes ui-tip {
+    0%,
+    70%,
+    100% {
+        opacity: 0.18;
+    }
+    25% {
+        opacity: 1;
+    }
+}
+
+/* ── Pills: short status labels. ─────────────────────────────────────── */
+.ui-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-inset);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.ui-pill svg {
+    width: 14px;
+    height: 14px;
+}
+.ui-pill.is-attention {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.ui-pill.is-paper {
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+}
+.ui-pill.is-select {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.ui-pill.is-conflict {
+    background: var(--color-conflict);
+    color: var(--color-conflict-text);
+}
+
+/* ── Honest states: empty, error, unavailable, stale, not listed. Keep the
+   layout steady; say what is missing and offer the next step. ───────── */
+.ui-notice {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+}
+.ui-notice strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    line-height: 1.4;
+}
+.ui-notice p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.ui-notice-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 8px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-body);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+}
+.ui-notice-action svg {
+    width: 20px;
+    height: 20px;
+}
+.ui-notice-action:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.ui-notice-when {
+    color: var(--color-text-soft);
+    font-family: var(--font-mono);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+.ui-not-listed {
+    color: var(--color-text-muted);
+}
+
+/* ── Date control: a button with the date, a month calendar under it. ─ */
+.ui-date-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-control);
+    text-align: left;
+    cursor: pointer;
+}
+.ui-date-toggle[aria-expanded='true'] {
+    border-color: var(--color-focus);
+}
+.ui-calendar {
+    width: 100%;
+}
+.ui-calendar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-small);
+}
+.ui-calendar button {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.ui-calendar button:hover:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.ui-calendar button:disabled {
+    color: var(--color-text-muted);
+    opacity: 0.45;
+    cursor: default;
+}
+.ui-calendar button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.ui-calendar-head button {
+    width: 44px;
+}
+.ui-calendar-head svg {
+    width: 18px;
+    height: 18px;
+}
+.ui-calendar-week,
+.ui-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+}
+.ui-calendar-week {
+    padding: 8px 0 4px;
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+}
+.ui-calendar-days .is-outside {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+.ui-calendar-days [aria-selected='true'] {
+    background: var(--color-select-bg);
+    box-shadow: inset 0 -2px var(--color-select-text);
+    font-weight: var(--weight-semibold);
+}
+.ui-calendar-days .is-today:not([aria-selected='true']) {
+    font-weight: var(--weight-semibold);
+}
+.ui-calendar .ui-calendar-today {
+    width: 100%;
+    margin-top: 5px;
+    color: var(--color-action-text);
+}
+
+/* ── Time field: HH:MM you can type, or turn on two wheels. ────────── */
+.ui-time-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+}
+.ui-time-input:focus {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px #00758c26;
+}
+.ui-time-input[aria-invalid='true'] {
+    border-color: var(--color-conflict-text);
+}
+.ui-time-options {
+    position: fixed;
+    z-index: 120;
+    width: 208px;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: 0 8px 24px #3e352b20;
+    animation: ui-fade-in 140ms ease-out;
+}
+.ui-time-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 2px 0 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 16px;
+    text-align: center;
+}
+.ui-time-pair {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+.ui-time-wheel {
+    position: relative;
+    z-index: 1;
+    height: 132px;
+    padding: 44px 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+}
+.ui-time-wheel::-webkit-scrollbar {
+    display: none;
+}
+.ui-time-wheel.is-dragging {
+    cursor: grabbing;
+    scroll-snap-type: none;
+}
+.ui-time-wheel:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.ui-time-wheel > [role='option'] {
+    display: grid;
+    place-items: center;
+    height: 44px;
+    scroll-snap-align: center;
+    color: var(--color-text-soft);
+    font-size: var(--text-section);
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color 120ms ease;
+}
+.ui-time-wheel > [aria-selected='true'] {
+    color: var(--color-text);
+}
+.ui-time-band {
+    position: absolute;
+    inset: 44px 0 auto;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--color-select-bg);
+    pointer-events: none;
+}
+.ui-time-colon {
+    position: absolute;
+    top: 44px;
+    left: 50%;
+    height: 44px;
+    color: var(--color-text-soft);
+    line-height: 44px;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+.ui-time-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+.ui-time-footer button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-caption);
+    cursor: pointer;
+}
+.ui-time-footer button:hover {
+    background: var(--color-bg-quiet);
+}
+.ui-time-footer button:last-child {
+    font-weight: var(--weight-semibold);
+}
+.ui-time-footer svg {
+    width: 14px;
+    height: 14px;
+}
+@keyframes ui-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+/* ── Time sheet: From and Until on two wheels in 15-minute steps; a sheet
+   over the bottom on phones, a dialog on laptops. ──────────────────── */
+.ui-time-sheet {
+    --row: 56px;
+    box-sizing: border-box;
+    width: min(420px, calc(100% - 32px));
+    max-width: none;
+    margin: auto;
+    padding: 20px 20px 24px;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 24px 60px -20px #211d1566;
+}
+.ui-time-sheet::backdrop {
+    background: #211d1552;
+}
+.ui-time-sheet-grab {
+    display: none;
+}
+.ui-time-sheet .ui-sheet-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    margin: 0;
+    color: var(--color-text-soft);
+}
+.ui-time-sheet h2 {
+    margin: 4px 48px 4px 0;
+    font-size: 26px;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.01em;
+}
+.ui-time-sheet-note {
+    margin: 0 0 16px;
+    color: var(--color-text-soft);
+    font-size: var(--text-body);
+}
+.ui-time-sheet-wheels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.ui-time-sheet-col {
+    position: relative;
+    display: grid;
+    gap: 8px;
+}
+.ui-time-sheet-col > span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.08em;
+    line-height: 20px;
+    text-align: center;
+    text-transform: uppercase;
+}
+/* The chosen time sits on a band in the middle row. */
+.ui-time-sheet-col::before {
+    content: '';
+    position: absolute;
+    top: calc(28px + var(--row));
+    left: 0;
+    right: 0;
+    height: var(--row);
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+}
+.ui-time-sheet-wheel {
+    position: relative;
+    height: calc(var(--row) * 3);
+    padding-block: var(--row);
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    border-radius: var(--radius-lg);
+    outline: none;
+}
+.ui-time-sheet-wheel::-webkit-scrollbar {
+    display: none;
+}
+.ui-time-sheet-wheel:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-focus);
+}
+.ui-time-sheet-option {
+    display: grid;
+    place-items: center;
+    height: var(--row);
+    scroll-snap-align: center;
+    color: var(--color-text-soft);
+    font-size: 26px;
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+.ui-time-sheet-option[aria-selected='true'] {
+    color: var(--color-text);
+    font-size: 30px;
+    font-weight: var(--weight-bold);
+}
+.ui-time-sheet-problem {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+    font-size: var(--text-small);
+}
+@media (max-width: 700px) {
+    .ui-time-sheet {
+        top: auto;
+        bottom: 0;
+        width: 100%;
+        margin: 0;
+        padding: 10px 16px max(24px, env(safe-area-inset-bottom));
+        border-radius: 28px 28px 0 0;
+    }
+    .ui-time-sheet-grab {
+        display: block;
+        width: 52px;
+        height: 24px;
+        margin: 0 auto 6px;
+        touch-action: none;
+        cursor: grab;
+        background: linear-gradient(
+                var(--color-border-strong),
+                var(--color-border-strong)
+            )
+            center / 44px 5px no-repeat;
+    }
+    .ui-time-sheet .ui-sheet-close {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-menu,
+    .ui-menu.is-sheet,
+    .ui-toast,
+    .ui-time-options {
+        animation: none;
+    }
+    .ui-loading-line::after {
+        display: none;
+    }
+    .ui-loading-spark,
+    .ui-loading-spark .spark-tips path {
+        animation: none;
+    }
+    .ui-loading-spark .spark-tips path {
+        opacity: 0.8;
+    }
+    .ui-time-wheel > [role='option'] {
+        transition: none;
+    }
+}

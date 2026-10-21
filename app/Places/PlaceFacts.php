@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PlaceFacts
 {
@@ -24,6 +25,11 @@ class PlaceFacts
      * Keep explicitly restricted places out of public recommendation pools.
      * Unknown access remains visible, but is represented as unknown to callers.
      *
+     * Reads the stored spots.public_access_allowed flag, which
+     * refreshPublicAccess() keeps exact on every observation, correction or
+     * source change. Recomputing the rule here scanned every observation in
+     * every place query.
+     *
      * @param  Builder<Spot>|QueryBuilder  $query
      */
     public function publiclyRecommendable(Builder|QueryBuilder $query, string $table = 'spots'): Builder|QueryBuilder
@@ -32,15 +38,60 @@ class PlaceFacts
             throw new \InvalidArgumentException('Unsupported place access-policy table alias.');
         }
 
-        // Parent checks already address one destination. Keep their indexed
-        // lookup bounded instead of nesting another catalogue-wide access set.
-        if ($table === 'destination') {
-            return $query->whereRaw($this->destinationAccessPolicy());
+        return $query->where("{$table}.public_access_allowed", true);
+    }
+
+    /**
+     * Recompute the stored access flag for these places with the per-place
+     * rule. Runs in the caller's transaction, so the flag changes with the
+     * facts that changed it.
+     *
+     * @param  iterable<int|string|null>  $spotIds
+     */
+    public function refreshPublicAccess(iterable $spotIds): void
+    {
+        $ids = [];
+        foreach ($spotIds as $id) {
+            if ($id !== null && (int) $id > 0) {
+                $ids[(int) $id] = true;
+            }
         }
 
-        // Resolve access once per query, preserving the same current-source
-        // and correction rules without repeating the history scan per place.
-        $policy = str_replace('__CURRENT_OBSERVATIONS__', PlaceObservationHistory::currentSql(), <<<'SQL'
+        if ($ids === []) {
+            return;
+        }
+
+        DB::update(
+            'UPDATE spots AS destination SET public_access_allowed = '.$this->destinationAccessPolicy()
+            .' WHERE destination.id = ANY(?::bigint[])',
+            ['{'.implode(',', array_keys($ids)).'}'],
+        );
+    }
+
+    /**
+     * Recompute every place's access flag with the set-based rule, writing
+     * only the rows that change. For bulk loads that bypass model events, and
+     * as a safety net after catalogue refreshes.
+     *
+     * @return int places whose flag changed
+     */
+    public function refreshAllPublicAccess(): int
+    {
+        return DB::update('WITH allowed AS MATERIALIZED ('.$this->catalogueAccessPolicy().')
+            UPDATE spots SET public_access_allowed = flags.allowed
+            FROM (SELECT candidate.id, candidate.id IN (SELECT id FROM allowed) AS allowed FROM spots AS candidate) AS flags
+            WHERE spots.id = flags.id AND spots.public_access_allowed IS DISTINCT FROM flags.allowed');
+    }
+
+    /**
+     * The access rule over the whole catalogue: the ids of every place a
+     * public recommendation may show. Equivalent to destinationAccessPolicy()
+     * per place; resolves access once instead of repeating the history scan
+     * per place.
+     */
+    private function catalogueAccessPolicy(): string
+    {
+        return str_replace('__CURRENT_OBSERVATIONS__', PlaceObservationHistory::currentSql(), <<<'SQL'
             WITH __CURRENT_OBSERVATIONS__, observation_access AS MATERIALIZED (
                 SELECT observations.spot_id,
                     bool_or(jsonb_exists(payload, 'access')) AS has_access,
@@ -77,8 +128,6 @@ class PlaceFacts
                     AND NOT COALESCE(jsonb_exists(access_spot.tags::jsonb, 'access:conditional'), false)
             END
             SQL);
-
-        return $query->whereRaw('spots.id IN (WITH allowed_places AS MATERIALIZED ('.$policy.') SELECT id FROM allowed_places)');
     }
 
     /** An explicit, current review can qualify an otherwise hidden facility for activity search. */
@@ -653,7 +702,10 @@ class PlaceFacts
         return 'https://www.openstreetmap.org/'.$spot->source_id;
     }
 
-    /** Same access policy for the single parent inside a reviewed-membership check. */
+    /**
+     * The access rule for one place (aliased `destination`): the per-place
+     * twin of catalogueAccessPolicy(), used to refresh a place's stored flag.
+     */
     private function destinationAccessPolicy(): string
     {
         return str_replace(['spots.', '__CURRENT_OBSERVATIONS__'], ['destination.', PlaceObservationHistory::currentSql('destination.id')], <<<'SQL'

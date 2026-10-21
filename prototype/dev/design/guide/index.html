@@ -1,0 +1,2696 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <meta
+            name="description"
+            content="Expadu design guide: colour roles, type, spacing, shapes, components and the live Today mock designs. Local design reference with sample content."
+        />
+        <title>Expadu Design Guide</title>
+        <link rel="stylesheet" href="../connected/today-palette.css" />
+        <link rel="stylesheet" href="../connected/core-components.css" />
+        <link rel="stylesheet" href="../connected/day-components.css" />
+        <link rel="stylesheet" href="./guide.css?v=661e3205596b" />
+        <script defer src="../connected/icons.js"></script>
+        <script defer src="../today-next/icons.js"></script>
+        <script defer src="./guide.js?v=e5530fb1faad"></script>
+    </head>
+    <body class="guide today-palette">
+        <a class="skip-link" href="#main">Skip to content</a>
+        <div class="guide-shell">
+            <nav class="layers" aria-label="Guide sections">
+                <div class="layers-brand">
+                    <svg viewBox="13 22 74 60" aria-hidden="true">
+                        <g transform="translate(2.45 2.05)">
+                            <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                            <rect
+                                x="30"
+                                y="24"
+                                width="13"
+                                height="52"
+                                rx="6"
+                                fill="#27241f"
+                            />
+                            <rect
+                                x="46"
+                                y="24"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-7 46 30)"
+                            />
+                            <rect
+                                x="46"
+                                y="43.5"
+                                width="25"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-4 46 50)"
+                            />
+                            <rect
+                                x="46"
+                                y="63"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-2 46 69)"
+                            />
+                        </g>
+                    </svg>
+                    <div>
+                        <strong>Expadu Design Guide</strong
+                        ><small>v0.1 · 6 Oct 2026</small>
+                    </div>
+                </div>
+                <h2>Start</h2>
+                <a href="#cover">Overview</a>
+                <h2>Foundations</h2>
+                <a href="#colour">Colour</a>
+                <a href="#roles">Colour roles</a>
+                <a href="#type">Typography</a>
+                <a href="#spacing">Spacing</a>
+                <a href="#shapes">Radius &amp; shapes</a>
+                <a href="#elevation">Elevation</a>
+                <a href="#icons">Icons</a>
+                <a href="#motion">Motion</a>
+                <h2>Components</h2>
+                <a href="#buttons">Buttons &amp; links</a>
+                <a href="#badges">Pills &amp; badges</a>
+                <a href="#inputs">Inputs &amp; menus</a>
+                <a href="#today-components">Today components</a>
+                <a href="#events">Event cards</a>
+                <a href="#navigation">Navigation</a>
+                <a href="#feedback">Feedback</a>
+                <h2>Patterns</h2>
+                <a href="#layout">Layout</a>
+                <a href="#breakpoints">Breakpoints</a>
+                <a href="#sheets">Sheets &amp; dialogs</a>
+                <a href="#states">States</a>
+                <a href="#voice">Content &amp; voice</a>
+                <a href="#accessibility">Accessibility</a>
+                <a href="#themes">Dark mode</a>
+                <h2>Records</h2>
+                <a href="#scales">Scale migration</a>
+                <h2>Mock designs</h2>
+                <a href="#mocks">Today prototype</a>
+                <a href="#departments">Department mocks</a>
+            </nav>
+
+            <main class="canvas" id="main" tabindex="-1">
+                <!-- Cover -->
+                <section class="frame" id="cover" aria-labelledby="cover-title">
+                    <p class="frame-label"><i data-icon="grid"></i>Cover</p>
+                    <div class="frame-body cover">
+                        <div>
+                            <h1 id="cover-title">
+                                Friendly, clear,<br />useful in
+                                <span>Cologne</span>.
+                            </h1>
+                            <p>
+                                The shared language for Expadu's connected
+                                pages: one job per colour, calm surfaces, honest
+                                content and touch-first controls. Components
+                                below mirror the approved Today mock; the live
+                                mocks are embedded at the end.
+                            </p>
+                            <div class="cover-meta">
+                                <span class="tag">Font · Geist</span>
+                                <span class="tag"
+                                    >Icons · Phosphor regular</span
+                                >
+                                <span class="tag">Touch targets ≥ 44px</span>
+                                <span class="tag">Sample data only</span>
+                            </div>
+                        </div>
+                        <ol class="principles">
+                            <li>
+                                <div>
+                                    <strong>Lead with what matters now</strong
+                                    ><span
+                                        >Deadlines, the next plan and delays
+                                        come before anything else.</span
+                                    >
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <strong>Join things up</strong
+                                    ><span
+                                        >Plans link to their journey, paperwork
+                                        and the travel between them.</span
+                                    >
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <strong>One job per colour</strong
+                                    ><span
+                                        >Ink for content, orange for the main
+                                        action, cyan for selection and
+                                        travel.</span
+                                    >
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <strong>Honest by default</strong
+                                    ><span
+                                        >Unknown stays unknown; samples and
+                                        captured data are labelled.</span
+                                    >
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <strong>Calm, mobile-first motion</strong
+                                    ><span
+                                        >Short, interruptible feedback; nothing
+                                        depends on hover.</span
+                                    >
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- Colour -->
+                <section
+                    class="frame"
+                    id="colour"
+                    aria-labelledby="colour-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Colour
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="colour-title">Colour palette</h2>
+                            <span class="note"
+                                >Click a swatch to copy its hex</span
+                            >
+                        </div>
+                        <p class="frame-intro">
+                            Values are read live from the shared palette, so
+                            this page always shows what the mocks use. The badge
+                            shows text contrast against the swatch (AA needs
+                            4.5:1 for body text).
+                        </p>
+                        <h3 class="sub">Surfaces &amp; lines</h3>
+                        <div
+                            class="swatch-group"
+                            data-swatches="surfaces"
+                        ></div>
+                        <h3 class="sub">Text</h3>
+                        <div class="swatch-group" data-swatches="text"></div>
+                        <h3 class="sub">Action</h3>
+                        <div class="swatch-group" data-swatches="action"></div>
+                        <h3 class="sub">Selection &amp; travel</h3>
+                        <div class="swatch-group" data-swatches="travel"></div>
+                        <h3 class="sub">Paperwork, attention &amp; conflict</h3>
+                        <div class="swatch-group" data-swatches="status"></div>
+                        <h3 class="sub">Section icons (navigation)</h3>
+                        <div
+                            class="swatch-group"
+                            data-swatches="sections"
+                        ></div>
+                    </div>
+                </section>
+
+                <!-- Colour roles -->
+                <section class="frame" id="roles" aria-labelledby="roles-title">
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Colour roles
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="roles-title">One job per colour</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Colour says what something is and what can be
+                            tapped. Approved 6 October; recorded in
+                            <code class="mono"
+                                >connected/design-decisions.md</code
+                            >.
+                        </p>
+                        <div class="table-scroll">
+                            <table class="roles-table">
+                                <thead>
+                                    <tr>
+                                        <th>Role</th>
+                                        <th>Use for</th>
+                                        <th>Never for</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="background: var(--ink)"
+                                            ></span
+                                            >Content
+                                        </td>
+                                        <td>
+                                            Titles, data, text links (→ when
+                                            they leave the page)
+                                        </td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="background: var(--muted)"
+                                            ></span
+                                            >Supporting
+                                        </td>
+                                        <td>
+                                            Details, labels, capture notes,
+                                            secondary links
+                                        </td>
+                                        <td>Primary actions</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="
+                                                    background: var(--action);
+                                                "
+                                            ></span
+                                            >Action
+                                        </td>
+                                        <td>
+                                            The one main action in a section;
+                                            event Plan buttons
+                                        </td>
+                                        <td>
+                                            Ordinary links, status dots,
+                                            decoration
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="background: var(--teal)"
+                                            ></span
+                                            >Selection &amp; travel
+                                        </td>
+                                        <td>
+                                            Selected state, line badges, journey
+                                            card, travel icons, Composer mark
+                                        </td>
+                                        <td>
+                                            Section backgrounds, non-travel
+                                            cards
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="
+                                                    background: var(--violet);
+                                                "
+                                            ></span
+                                            >Paperwork
+                                        </td>
+                                        <td>
+                                            Paperwork icons, progress indicator,
+                                            "What to bring"
+                                        </td>
+                                        <td>Text links and other copy</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="background: var(--amber)"
+                                            ></span
+                                            >Attention
+                                        </td>
+                                        <td>
+                                            Personal deadlines, tight timings,
+                                            delays
+                                        </td>
+                                        <td>Decoration</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span
+                                                class="role-dot"
+                                                style="
+                                                    background: var(
+                                                        --coral-ink
+                                                    );
+                                                "
+                                            ></span
+                                            >Conflict
+                                        </td>
+                                        <td>A plan that cannot work</td>
+                                        <td>Ordinary copy</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <h3 class="sub">Do / Don't</h3>
+                        <div class="dodont">
+                            <figure class="do">
+                                <div class="stack">
+                                    <a class="link-ink" href="#roles"
+                                        >Full timetable</a
+                                    >
+                                    <div class="variant-row">
+                                        <button
+                                            class="btn btn-text"
+                                            type="button"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan</button
+                                        ><button
+                                            class="btn btn-secondary"
+                                            type="button"
+                                        >
+                                            Continue planning
+                                        </button>
+                                    </div>
+                                </div>
+                                <figcaption>
+                                    <i data-icon="check"></i>One orange action;
+                                    links in ink
+                                </figcaption>
+                            </figure>
+                            <figure class="dont">
+                                <div class="stack">
+                                    <a
+                                        href="#roles"
+                                        style="
+                                            color: var(--action-ink);
+                                            font-size: 13px;
+                                        "
+                                        >Full timetable</a
+                                    >
+                                    <div class="variant-row">
+                                        <button
+                                            class="btn btn-text"
+                                            type="button"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan</button
+                                        ><button
+                                            class="btn btn-outline"
+                                            type="button"
+                                        >
+                                            Continue planning</button
+                                        ><span
+                                            class="icon-btn is-plain"
+                                            aria-hidden="true"
+                                            ><i data-icon="spark"></i
+                                        ></span>
+                                    </div>
+                                </div>
+                                <figcaption>
+                                    <i data-icon="close"></i>Orange links,
+                                    competing outlines, extra sparkles
+                                </figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Typography -->
+                <section class="frame" id="type" aria-labelledby="type-title">
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Typography
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="type-title">Type scale · Geist</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Tight negative tracking on large sizes; tabular
+                            figures for times. Data is never heavier than its
+                            section title.
+                        </p>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Display / Time</strong
+                                ><span class="mono"
+                                    >36–52 · 700 · −1.8 · 1.0</span
+                                >
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="
+                                    font-size: 52px;
+                                    font-weight: 700;
+                                    letter-spacing: -1.8px;
+                                    line-height: 1;
+                                    font-variant-numeric: tabular-nums;
+                                "
+                            >
+                                14:00
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Page title</strong
+                                ><span class="mono"
+                                    >27 · 700 · −0.9 · 1.15</span
+                                >
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="
+                                    font-size: 27px;
+                                    font-weight: 700;
+                                    letter-spacing: -0.9px;
+                                    line-height: 1.15;
+                                "
+                            >
+                                Today, Anar<span style="color: var(--action)"
+                                    >.</span
+                                >
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Card title</strong
+                                ><span class="mono">25 · 650 · −0.6 · 1.1</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="
+                                    font-size: 25px;
+                                    font-weight: 650;
+                                    letter-spacing: -0.6px;
+                                    line-height: 1.1;
+                                "
+                            >
+                                Street culture night
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Plan title</strong
+                                ><span class="mono">23 · 650 · −0.5 · 1.2</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="
+                                    font-size: 23px;
+                                    font-weight: 650;
+                                    letter-spacing: -0.5px;
+                                    line-height: 1.2;
+                                "
+                            >
+                                Blue Card appointment
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Section</strong
+                                ><span class="mono">15–17 · 650</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="font-size: 17px; font-weight: 650"
+                            >
+                                Cologne today
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Body</strong
+                                ><span class="mono">15 · 400 · 1.5</span>
+                            </div>
+                            <div class="type-sample" style="font-size: 15px">
+                                Submit the Blue Card application before your D
+                                visa expires.
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Small / control</strong
+                                ><span class="mono">13–14 · 500–550</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="font-size: 14px; font-weight: 550"
+                            >
+                                Leave by 13:20 · in 10 min
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Caption</strong
+                                ><span class="mono">12 · 400 · muted</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="font-size: 12px; color: var(--muted)"
+                            >
+                                Captured 7 Sept 2026 · 23:37 · Not live
+                            </div>
+                        </div>
+                        <div class="type-row">
+                            <div class="type-spec">
+                                <strong>Micro label</strong
+                                ><span class="mono">11 · 550</span>
+                            </div>
+                            <div
+                                class="type-sample"
+                                style="
+                                    font-size: 11px;
+                                    font-weight: 550;
+                                    color: var(--muted);
+                                "
+                            >
+                                Sample forecast
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Spacing -->
+                <section
+                    class="frame"
+                    id="spacing"
+                    aria-labelledby="spacing-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Spacing
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="spacing-title">Spacing scale</h2>
+                        </div>
+                        <p class="frame-intro">
+                            A 2px-based scale. Phones use a 16px page gutter;
+                            desktop sections use 22px inner padding.
+                        </p>
+                        <div data-spacing></div>
+                        <h3 class="sub">Redlines · Deadline strip</h3>
+                        <div
+                            class="redline phone-width today-reference"
+                            data-redline
+                        >
+                            <a class="deadline-strip" href="#spacing"
+                                ><span
+                                    class="deadline-symbol"
+                                    aria-hidden="true"
+                                    ><i data-icon="clock"></i></span
+                                ><span class="deadline-copy"
+                                    ><strong>Visa expires tomorrow</strong
+                                    ><small
+                                        >Prepare the evidence for your first
+                                        Blue Card application · 1 of 5
+                                        documents ready</small
+                                    ></span
+                                ><i data-icon="arrow"></i
+                            ></a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Shapes -->
+                <section
+                    class="frame"
+                    id="shapes"
+                    aria-labelledby="shapes-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Radius &amp;
+                        shapes
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="shapes-title">Radius &amp; shapes</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Soft, friendly corners that grow with the element.
+                            Buttons are pills; dots and connectors carry the
+                            journey.
+                        </p>
+                        <div class="tiles">
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 7px"
+                                ></div>
+                                <strong>7–9px</strong>Line badges, pills
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 10px"
+                                ></div>
+                                <strong>10px</strong>Controls, menu rows
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 12px"
+                                ></div>
+                                <strong>12px</strong>Rows, advice, links
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 14px"
+                                ></div>
+                                <strong>14–16px</strong>Cards, menus, fields
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 22px"
+                                ></div>
+                                <strong>20–24px</strong>Sections, event cards
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="radius-shape"
+                                    style="border-radius: 999px"
+                                ></div>
+                                <strong>Pill</strong>Buttons, chips
+                            </div>
+                        </div>
+                        <h3 class="sub">Signature shapes</h3>
+                        <div class="tiles">
+                            <div class="tile">
+                                <div class="shape-demo">
+                                    <div
+                                        class="timeline"
+                                        style="height: 60px; width: 40px"
+                                    ></div>
+                                </div>
+                                <strong>Timeline dot</strong>Orange, 12px, 3px
+                                halo
+                            </div>
+                            <div class="tile">
+                                <div class="shape-demo">
+                                    <div
+                                        class="connector"
+                                        style="width: 110px"
+                                    ></div>
+                                </div>
+                                <strong>Route connector</strong>Teal line + stop
+                                dots
+                            </div>
+                            <div class="tile">
+                                <div class="shape-demo">
+                                    <span class="line-chip">18</span>
+                                </div>
+                                <strong>Line badge</strong>Cyan surface, teal
+                                ink
+                            </div>
+                            <div class="tile">
+                                <div class="shape-demo">
+                                    <span class="date-tile"
+                                        ><small>Oct</small><b>1</b></span
+                                    >
+                                </div>
+                                <strong>Date tile</strong>Upcoming plans
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Elevation -->
+                <section
+                    class="frame"
+                    id="elevation"
+                    aria-labelledby="elevation-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Elevation
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="elevation-title">Elevation</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Mostly flat. Sections are separated by faded
+                            hairlines; shadows are reserved for things that
+                            float.
+                        </p>
+                        <div class="tiles">
+                            <div class="tile">
+                                <div
+                                    class="shadow-shape"
+                                    style="
+                                        box-shadow: 0 1px 0 #51453814;
+                                        border: 1px solid var(--line);
+                                    "
+                                ></div>
+                                <strong>0 · Flat</strong>Sections, rows
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="shadow-shape"
+                                    style="box-shadow: 0 4px 20px #3e352b14"
+                                ></div>
+                                <strong>1 · Raised</strong>Workspace
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="shadow-shape"
+                                    style="
+                                        box-shadow: 0 14px 32px -12px
+                                            rgba(39, 36, 31, 0.28);
+                                    "
+                                ></div>
+                                <strong>2 · Menu</strong>Dropdowns, popovers
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="shadow-shape"
+                                    style="box-shadow: 0 10px 30px #3e352b22"
+                                ></div>
+                                <strong>3 · Sheet</strong>Bottom sheets,
+                                launcher
+                            </div>
+                            <div class="tile">
+                                <div
+                                    class="shadow-shape"
+                                    style="
+                                        box-shadow: inset 0 0 0 2px var(--focus);
+                                    "
+                                ></div>
+                                <strong>Focus</strong>2px teal ring
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Icons -->
+                <section class="frame" id="icons" aria-labelledby="icons-title">
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Icons
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="icons-title">Icons</h2>
+                            <span class="tag is-issue">Two styles in use</span>
+                        </div>
+                        <p class="frame-intro">
+                            Phosphor regular is the approved set. Some icons
+                            still fall back to an older line set; migrate those
+                            so every icon shares one weight. Sizes: 16 (inline),
+                            18 (controls), 22 (navigation).
+                        </p>
+                        <h3 class="sub">Phosphor regular · approved</h3>
+                        <div class="icon-grid" data-icons="primary"></div>
+                        <h3 class="sub">Line set · to migrate</h3>
+                        <div class="icon-grid" data-icons="legacy"></div>
+                    </div>
+                </section>
+
+                <!-- Motion -->
+                <section
+                    class="frame"
+                    id="motion"
+                    aria-labelledby="motion-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Foundations / Motion
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="motion-title">Motion</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Short and interruptible. Respect reduced motion;
+                            never rely on hover for feedback.
+                        </p>
+                        <div class="motion-grid">
+                            <div class="motion-card">
+                                <div class="motion-stage" data-motion>
+                                    <span class="motion-ball"></span>
+                                </div>
+                                <strong>Settle</strong
+                                ><small class="mono"
+                                    >cubic-bezier(0.22, 1, 0.36, 1)</small
+                                ><small
+                                    >Sheets, menus, reveals · 160–280ms</small
+                                ><button
+                                    class="btn btn-secondary"
+                                    type="button"
+                                    data-play
+                                >
+                                    Play
+                                </button>
+                            </div>
+                            <div class="motion-card">
+                                <div class="motion-stage" data-motion>
+                                    <span class="motion-ball is-linear"></span>
+                                </div>
+                                <strong>Standard</strong
+                                ><small class="mono">ease · 150–200ms</small
+                                ><small
+                                    >Colour, border and background
+                                    changes</small
+                                ><button
+                                    class="btn btn-secondary"
+                                    type="button"
+                                    data-play
+                                >
+                                    Play
+                                </button>
+                            </div>
+                            <div class="motion-card">
+                                <div
+                                    class="motion-stage"
+                                    style="display: grid; place-items: center"
+                                >
+                                    <button
+                                        class="btn btn-primary"
+                                        type="button"
+                                    >
+                                        Press me
+                                    </button>
+                                </div>
+                                <strong>Press</strong
+                                ><small class="mono"
+                                    >scale 0.97 · 160ms settle</small
+                                ><small
+                                    >Immediate touch feedback on every
+                                    action</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Buttons -->
+                <section
+                    class="frame"
+                    id="buttons"
+                    aria-labelledby="buttons-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Buttons &amp; links
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="buttons-title">Buttons &amp; links</h2>
+                        </div>
+                        <p class="frame-intro">
+                            At most one orange action per section. Secondary
+                            actions are outlined in ink; links are ink text.
+                        </p>
+                        <div class="component-set">
+                            <span class="set-label">Button</span>
+                            <div class="variant-scroll">
+                                <div class="variant-grid">
+                                    <span class="axis"></span
+                                    ><span class="axis">Default</span
+                                    ><span class="axis">Hover</span
+                                    ><span class="axis">Pressed</span
+                                    ><span class="axis">Focus</span
+                                    ><span class="axis">Disabled</span>
+                                    <span class="axis">Primary</span>
+                                    <span
+                                        ><button
+                                            class="btn btn-primary"
+                                            type="button"
+                                        >
+                                            Find a route
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-primary is-hover"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Find a route
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-primary is-pressed"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Find a route
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-primary is-focus"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Find a route
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-primary"
+                                            type="button"
+                                            disabled
+                                        >
+                                            Find a route
+                                        </button></span
+                                    >
+                                    <span class="axis">Outline</span>
+                                    <span
+                                        ><button
+                                            class="btn btn-outline"
+                                            type="button"
+                                        >
+                                            Alternatives
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-outline is-hover"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Alternatives
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-outline is-pressed"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Alternatives
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-outline is-focus"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Alternatives
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-outline"
+                                            type="button"
+                                            disabled
+                                        >
+                                            Alternatives
+                                        </button></span
+                                    >
+                                    <span class="axis">Secondary</span>
+                                    <span
+                                        ><button
+                                            class="btn btn-secondary"
+                                            type="button"
+                                        >
+                                            Continue
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-secondary is-hover"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Continue
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-secondary is-pressed"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Continue
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-secondary is-focus"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            Continue
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-secondary"
+                                            type="button"
+                                            disabled
+                                        >
+                                            Continue
+                                        </button></span
+                                    >
+                                    <span class="axis">Text</span>
+                                    <span
+                                        ><button
+                                            class="btn btn-text"
+                                            type="button"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-text is-hover"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-text is-pressed"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-text is-focus"
+                                            type="button"
+                                            tabindex="-1"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button></span
+                                    >
+                                    <span
+                                        ><button
+                                            class="btn btn-text"
+                                            type="button"
+                                            disabled
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button></span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-set">
+                            <span class="set-label">Icon button</span>
+                            <div class="variant-row">
+                                <button
+                                    class="icon-btn"
+                                    type="button"
+                                    aria-label="More options"
+                                >
+                                    <i data-icon="dots"></i>
+                                </button>
+                                <button
+                                    class="icon-btn"
+                                    type="button"
+                                    aria-pressed="false"
+                                    aria-label="Save"
+                                    data-toggle-pressed
+                                >
+                                    <i data-icon="bookmark"></i>
+                                </button>
+                                <button
+                                    class="icon-btn"
+                                    type="button"
+                                    aria-pressed="true"
+                                    aria-label="Saved"
+                                    data-toggle-pressed
+                                >
+                                    <i data-icon="bookmark"></i>
+                                </button>
+                                <button
+                                    class="icon-btn is-action"
+                                    type="button"
+                                    aria-label="Plan to go"
+                                >
+                                    <i data-icon="calendar-plus"></i>
+                                </button>
+                                <button
+                                    class="icon-btn is-plain"
+                                    type="button"
+                                    aria-label="Plan"
+                                >
+                                    <i data-icon="plus"></i>
+                                </button>
+                                <span
+                                    class="icon-btn is-frost"
+                                    style="background: #27241fb3"
+                                    role="img"
+                                    aria-label="Save on photo"
+                                    ><i data-icon="bookmark"></i
+                                ></span>
+                            </div>
+                            <p class="specimen-caption">
+                                Neutral · Toggle (off / on — try it) · Action on
+                                photo · Plain plus · Frosted on photo. Always
+                                44×44.
+                            </p>
+                        </div>
+                        <div class="component-set">
+                            <span class="set-label">Link</span>
+                            <div class="variant-row">
+                                <a class="link-ink" href="#buttons"
+                                    >Full timetable</a
+                                >
+                                <a class="link-ink" href="#buttons"
+                                    >All events</a
+                                >
+                                <a class="link-soft" href="#buttons"
+                                    >Review details</a
+                                >
+                            </div>
+                            <p class="specimen-caption">
+                                Ink link with arrow (leaves the page) ·
+                                Supporting link.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Badges -->
+                <section
+                    class="frame"
+                    id="badges"
+                    aria-labelledby="badges-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Pills &amp; badges
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="badges-title">Pills &amp; badges</h2>
+                        </div>
+                        <div class="component-set">
+                            <span class="set-label">Status pill</span>
+                            <div class="variant-row">
+                                <span class="pill">In your plan</span>
+                                <span class="pill">To review</span>
+                                <span class="pill warning"
+                                    >Est. 10 min late</span
+                                >
+                                <span class="pill warning">12 min delay</span>
+                                <span class="pill sample">Simulated</span>
+                                <span class="pill sample">Sample</span>
+                                <span class="pill category">Language</span>
+                            </div>
+                            <p class="specimen-caption">
+                                Neutral · Warning (amber) · Sample (lavender) ·
+                                Category.
+                            </p>
+                        </div>
+                        <div class="component-set">
+                            <span class="set-label">Badges</span>
+                            <div class="variant-row">
+                                <span class="line-chip">1</span
+                                ><span class="line-chip">9</span
+                                ><span class="line-chip">18</span
+                                ><span class="line-chip">121</span>
+                                <span class="count">3</span>
+                                <span class="date-tile"
+                                    ><small>Oct</small><b>3</b></span
+                                >
+                            </div>
+                            <p class="specimen-caption">
+                                Line badge · Count · Date tile.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inputs -->
+                <section
+                    class="frame"
+                    id="inputs"
+                    aria-labelledby="inputs-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Inputs &amp; menus
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="inputs-title">Inputs &amp; menus</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Custom menus in the app's style instead of
+                            operating-system menus. One menu open at a time;
+                            Escape and outside taps close it.
+                        </p>
+                        <div class="spec-columns">
+                            <div class="component-set">
+                                <span class="set-label">Text field</span>
+                                <div class="stack">
+                                    <label class="field"
+                                        >What's the plan?<input
+                                            placeholder="Appointment, lunch, a little time outside"
+                                    /></label>
+                                    <label class="field"
+                                        >Where? <small>Optional</small
+                                        ><input value="Ehrenfeld"
+                                    /></label>
+                                    <label class="field is-error"
+                                        >Until<input
+                                            value="14:30"
+                                            aria-describedby="until-error"
+                                        /><span class="error" id="until-error"
+                                            >Choose an end time after the
+                                            start.</span
+                                        ></label
+                                    >
+                                </div>
+                            </div>
+                            <div class="stack">
+                                <div class="component-set">
+                                    <span class="set-label">Select menu</span>
+                                    <div
+                                        class="today-reference"
+                                        style="max-width: 320px"
+                                    >
+                                        <div class="stop-picker" data-picker>
+                                            <button
+                                                type="button"
+                                                class="stop-trigger"
+                                                aria-haspopup="listbox"
+                                                aria-expanded="false"
+                                                aria-controls="guide-stop-list"
+                                            >
+                                                <i data-icon="train"></i
+                                                ><span data-picker-label
+                                                    >Köln Neumarkt</span
+                                                ><i data-icon="down"></i>
+                                            </button>
+                                            <ul
+                                                class="stop-list"
+                                                id="guide-stop-list"
+                                                role="listbox"
+                                                aria-label="Departure stop"
+                                                hidden
+                                            >
+                                                <li
+                                                    role="option"
+                                                    tabindex="-1"
+                                                    aria-selected="false"
+                                                >
+                                                    <span>Merkenich Mitte</span
+                                                    ><i data-icon="check"></i>
+                                                </li>
+                                                <li
+                                                    role="option"
+                                                    tabindex="-1"
+                                                    aria-selected="false"
+                                                >
+                                                    <span>Merkenich</span
+                                                    ><i data-icon="check"></i>
+                                                </li>
+                                                <li
+                                                    role="option"
+                                                    tabindex="-1"
+                                                    aria-selected="true"
+                                                >
+                                                    <span>Köln Neumarkt</span
+                                                    ><i data-icon="check"></i>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <p class="specimen-caption">
+                                        Live: open it, use arrow keys, Enter and
+                                        Escape.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label">Segmented</span>
+                                    <div class="segmented" data-segmented>
+                                        <button
+                                            type="button"
+                                            aria-pressed="false"
+                                        >
+                                            Leave now
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-pressed="true"
+                                        >
+                                            Arrive by
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-pressed="false"
+                                        >
+                                            Later
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Today components -->
+                <section
+                    class="frame"
+                    id="today-components"
+                    aria-labelledby="today-components-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Today
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="today-components-title">
+                                Today components
+                            </h2>
+                            <span class="tag">Live · shared CSS</span>
+                        </div>
+                        <p class="frame-intro">
+                            These render from the same stylesheets as the Today
+                            mock (<code class="mono"
+                                >connected/core-components.css</code
+                            >,
+                            <code class="mono"
+                                >connected/day-components.css</code
+                            >), so a change there shows here immediately. Sample
+                            content.
+                        </p>
+                        <div class="spec-columns today-reference">
+                            <div class="stack">
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Deadline strip</span
+                                    >
+                                    <a
+                                        class="deadline-strip"
+                                        href="#today-components"
+                                        ><span
+                                            class="deadline-symbol"
+                                            aria-hidden="true"
+                                            ><i data-icon="clock"></i></span
+                                        ><span class="deadline-copy"
+                                            ><strong
+                                                >Visa expires tomorrow</strong
+                                            ><small
+                                                >Prepare the evidence for your
+                                                first Blue Card application · 1
+                                                of 5 documents ready</small
+                                            ></span
+                                        ><i data-icon="arrow"></i
+                                    ></a>
+                                    <p class="specimen-caption">
+                                        Only for the person's own deadline
+                                        within 3 days. Uses the record's
+                                        wording.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label">What to bring</span>
+                                    <a
+                                        class="agenda-paperwork"
+                                        href="#today-components"
+                                        ><i data-icon="document"></i
+                                        ><span
+                                            ><small
+                                                >What to bring · EU Blue
+                                                Card</small
+                                            ><strong
+                                                >1 of 5 documents ready</strong
+                                            ></span
+                                        ><i data-icon="arrow"></i
+                                    ></a>
+                                    <p class="specimen-caption">
+                                        On an appointment recorded from
+                                        Paperwork; links to its checklist.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label">Status pill</span>
+                                    <div class="variant-row">
+                                        <span class="status-pill"
+                                            >In your plan</span
+                                        ><span class="status-pill"
+                                            >To review</span
+                                        ><span class="status-pill warning"
+                                            >Est. 10 min late</span
+                                        ><span class="status-pill sample"
+                                            >Simulated</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Plan link · status</span
+                                    >
+                                    <div class="stack">
+                                        <a
+                                            class="plan-link is-ok"
+                                            href="#today-components"
+                                            ><span class="plan-link-icon"
+                                                ><i data-icon="train"></i></span
+                                            ><span
+                                                ><small
+                                                    >Mülheim → Ehrenfeld ·
+                                                    sample estimate</small
+                                                ><strong
+                                                    >About 30 min · 30 min to
+                                                    spare</strong
+                                                ></span
+                                            ><span class="plan-link-action"
+                                                >Route</span
+                                            ></a
+                                        >
+                                        <a
+                                            class="plan-link is-tight"
+                                            href="#today-components"
+                                            ><span class="plan-link-icon"
+                                                ><i data-icon="train"></i></span
+                                            ><span
+                                                ><small
+                                                    >Ehrenfeld → Stadtgarten ·
+                                                    sample estimate</small
+                                                ><strong
+                                                    >About 15 min · only 5 min
+                                                    to spare</strong
+                                                ></span
+                                            ><span class="plan-link-action"
+                                                >Check route</span
+                                            ></a
+                                        >
+                                        <a
+                                            class="plan-link is-conflict"
+                                            href="#today-components"
+                                            ><span class="plan-link-icon"
+                                                ><i data-icon="info"></i></span
+                                            ><span
+                                                ><small
+                                                    >Mülheim → Ehrenfeld ·
+                                                    sample estimate</small
+                                                ><strong
+                                                    >Needs about 30 min, you
+                                                    have 15 · start Lunch at
+                                                    15:05 or later</strong
+                                                ></span
+                                            ><span class="plan-link-action"
+                                                >Check route</span
+                                            ></a
+                                        >
+                                        <a
+                                            class="plan-link is-unknown"
+                                            href="#today-components"
+                                            ><span class="plan-link-icon"
+                                                ><i data-icon="train"></i></span
+                                            ><span
+                                                ><small
+                                                    >Ehrenfeld → New
+                                                    place</small
+                                                ><strong
+                                                    >40 min between plans ·
+                                                    travel time not
+                                                    checked</strong
+                                                ></span
+                                            ><span class="plan-link-action"
+                                                >Check route</span
+                                            ></a
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stack">
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Journey card · on time</span
+                                    >
+                                    <button class="route-summary" type="button">
+                                        <span class="route-leave"
+                                            ><i data-icon="walk"></i
+                                            ><strong>Leave by 13:20</strong
+                                            ><small>in 10 min</small></span
+                                        ><span class="route-caption"
+                                            ><strong
+                                                >Line 4 · Neumarkt →
+                                                Mülheim</strong
+                                            ></span
+                                        ><span class="route-times"
+                                            ><i data-icon="train"></i
+                                            ><span class="route-time"
+                                                ><small>Departs</small
+                                                ><b>13:24</b></span
+                                            ><span
+                                                class="route-connector"
+                                                aria-hidden="true"
+                                                ><i></i></span
+                                            ><span class="route-time"
+                                                ><small>At stop</small
+                                                ><b>13:52</b></span
+                                            ></span
+                                        ><span class="route-foot"
+                                            >6 min walk ·
+                                            <strong
+                                                >at appointment 13:58</strong
+                                            >
+                                            · 2 min to spare</span
+                                        ><span class="route-foot"
+                                            >Scheduled · no live status</span
+                                        >
+                                    </button>
+                                    <p class="route-advice" role="note">
+                                        <strong>Only 2 min to spare.</strong>
+                                        Leave now for the 13:14 and arrive with
+                                        12 min to spare.
+                                    </p>
+                                    <p class="specimen-caption">
+                                        Official appointments need ≥ 10 min to
+                                        spare, other plans ≥ 5.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Journey card · delayed</span
+                                    >
+                                    <button class="route-summary" type="button">
+                                        <span class="route-caption"
+                                            ><span class="status-pill warning"
+                                                >12 min delay</span
+                                            ><span class="status-pill sample"
+                                                >Simulated</span
+                                            ><strong
+                                                >Line 4 · Neumarkt →
+                                                Mülheim</strong
+                                            ></span
+                                        ><span class="route-times"
+                                            ><i data-icon="train"></i
+                                            ><span class="route-time"
+                                                ><small>Departs</small
+                                                ><del>13:24</del
+                                                ><b>13:36</b></span
+                                            ><span
+                                                class="route-connector"
+                                                aria-hidden="true"
+                                                ><i></i></span
+                                            ><span class="route-time"
+                                                ><small>At stop</small
+                                                ><del>13:52</del
+                                                ><b>14:04</b></span
+                                            ></span
+                                        ><span class="route-foot"
+                                            >6 min walk ·
+                                            <strong
+                                                >Est. at appointment
+                                                14:10</strong
+                                            ></span
+                                        >
+                                    </button>
+                                    <div class="recovery-row">
+                                        <button
+                                            class="outline-action"
+                                            type="button"
+                                            aria-expanded="true"
+                                            data-today-alternatives
+                                        >
+                                            Alternatives<i data-icon="down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="inline-alternatives">
+                                        <p class="alternative-lead">
+                                            You may arrive 10 min late. These
+                                            could get you there on time:
+                                        </p>
+                                        <ul class="alternative-list">
+                                            <li>
+                                                <a
+                                                    class="alternative"
+                                                    href="#today-components"
+                                                    ><span
+                                                        class="alternative-mode"
+                                                        ><i
+                                                            data-icon="train"
+                                                        ></i></span
+                                                    ><span
+                                                        class="alternative-copy"
+                                                        ><strong
+                                                            >Line 18 + S-Bahn
+                                                            S11</strong
+                                                        ><small
+                                                            >Change at Köln Hbf
+                                                            · leave 13:13</small
+                                                        ></span
+                                                    ><span
+                                                        class="alternative-arrival"
+                                                        ><b>13:50</b
+                                                        ><small
+                                                            >10 min early</small
+                                                        ></span
+                                                    ></a
+                                                >
+                                            </li>
+                                            <li>
+                                                <a
+                                                    class="alternative"
+                                                    href="#today-components"
+                                                    ><span
+                                                        class="alternative-mode"
+                                                        ><i
+                                                            data-icon="train"
+                                                        ></i></span
+                                                    ><span
+                                                        class="alternative-copy"
+                                                        ><strong
+                                                            >Stay on Line
+                                                            4</strong
+                                                        ><small
+                                                            >Delayed 12 min ·
+                                                            leave 13:32</small
+                                                        ></span
+                                                    ><span
+                                                        class="alternative-arrival is-late"
+                                                        ><b>14:10</b
+                                                        ><small
+                                                            >10 min late</small
+                                                        ></span
+                                                    ></a
+                                                >
+                                            </li>
+                                        </ul>
+                                        <p class="alternative-note">
+                                            Sample alternatives · not live.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label">Actions</span>
+                                    <div class="variant-row">
+                                        <button
+                                            class="outline-action"
+                                            type="button"
+                                        >
+                                            Find a route</button
+                                        ><button
+                                            class="text-action"
+                                            type="button"
+                                        >
+                                            <i data-icon="plus"></i>Add a plan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Event cards -->
+                <section
+                    class="frame"
+                    id="events"
+                    aria-labelledby="events-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Event cards
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="events-title">Event cards</h2>
+                            <span class="tag is-issue"
+                                >Illustrations are AI samples, not Cologne</span
+                            >
+                        </div>
+                        <div class="spec-columns">
+                            <div class="component-set">
+                                <span class="set-label">Event · immersive</span>
+                                <article class="event-card">
+                                    <img
+                                        src="../events-next/photos/garden.webp"
+                                        alt=""
+                                        loading="lazy"
+                                    />
+                                    <div class="event-copy">
+                                        <strong>Street culture night</strong
+                                        ><small
+                                            >18:30–21:00 · Rheinauhafen</small
+                                        >
+                                    </div>
+                                    <button
+                                        class="icon-btn is-frost"
+                                        type="button"
+                                        aria-label="Save Street culture night"
+                                    >
+                                        <i data-icon="bookmark"></i>
+                                    </button>
+                                    <button
+                                        class="icon-btn is-action"
+                                        type="button"
+                                        aria-label="Plan to go to Street culture night"
+                                    >
+                                        <i data-icon="calendar-plus"></i>
+                                    </button>
+                                </article>
+                            </div>
+                            <div class="component-set">
+                                <span class="set-label">Event · compact</span>
+                                <div class="stack">
+                                    <div class="compact-event">
+                                        <img
+                                            src="../events-next/photos/tandem.webp"
+                                            alt=""
+                                            loading="lazy"
+                                        /><span
+                                            ><strong>Language café</strong
+                                            ><small
+                                                >15:00 · Mülheim</small
+                                            ></span
+                                        ><span class="pill category"
+                                            >Language</span
+                                        ><button
+                                            class="icon-btn is-plain"
+                                            type="button"
+                                            aria-label="Save Language café"
+                                            style="color: var(--ink)"
+                                        >
+                                            <i data-icon="bookmark"></i></button
+                                        ><button
+                                            class="icon-btn is-plain"
+                                            type="button"
+                                            aria-label="Plan Language café"
+                                        >
+                                            <i data-icon="plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="compact-event">
+                                        <img
+                                            src="../events-next/photos/schach.webp"
+                                            alt=""
+                                            loading="lazy"
+                                        /><span
+                                            ><strong>Chess &amp; coffee</strong
+                                            ><small
+                                                >18:00 · Ehrenfeld</small
+                                            ></span
+                                        ><span class="pill category">Games</span
+                                        ><button
+                                            class="icon-btn is-plain"
+                                            type="button"
+                                            aria-label="Save Chess &amp; coffee"
+                                            style="color: var(--ink)"
+                                        >
+                                            <i data-icon="bookmark"></i></button
+                                        ><button
+                                            class="icon-btn is-plain"
+                                            type="button"
+                                            aria-label="Plan Chess &amp; coffee"
+                                        >
+                                            <i data-icon="plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="specimen-caption">
+                                    Known issue: the Plan icon differs between
+                                    card styles (calendar-plus vs plus).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <section
+                    class="frame"
+                    id="navigation"
+                    aria-labelledby="navigation-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Navigation
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="navigation-title">
+                                Header &amp; navigation
+                            </h2>
+                            <span class="tag">Live from the Today mock</span>
+                        </div>
+                        <p class="frame-intro">
+                            One header on every page. Five sections with fixed
+                            icon colours; the current page is marked with the
+                            cyan surface, never by changing type or spacing.
+                        </p>
+                        <div class="header-stage">
+                            <div class="device">
+                                <span class="device-label">Phone</span>
+                                <div
+                                    class="device-viewport header-crop"
+                                    data-crop="phone"
+                                >
+                                    <iframe
+                                        title="Header on a phone"
+                                        loading="lazy"
+                                        tabindex="-1"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            <div class="device" style="width: 100%">
+                                <span class="device-label">Desktop</span>
+                                <div
+                                    class="device-viewport is-desktop header-crop"
+                                    data-crop="desktop"
+                                >
+                                    <iframe
+                                        title="Header on desktop"
+                                        loading="lazy"
+                                        tabindex="-1"
+                                    ></iframe>
+                                </div>
+                            </div>
+                        </div>
+                        <ul class="rule-list">
+                            <li>
+                                <strong>Order is fixed:</strong> Today · Events
+                                · Paperwork · Travel · Services. Labels always
+                                visible.
+                            </li>
+                            <li>
+                                <strong>Phones:</strong> a compact utility row
+                                (brand, city, Saved, account) above five equal
+                                tabs; only the tabs stay visible while
+                                scrolling. The city choice is plain text with a
+                                chevron.
+                            </li>
+                            <li>
+                                <strong>Desktop:</strong> one 72px row; the city
+                                choice sits in an outlined pill.
+                            </li>
+                            <li>
+                                <strong>Targets:</strong> every control is at
+                                least 44 × 44px. Composer is reached from the
+                                floating button, not from the header.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Feedback -->
+                <section
+                    class="frame"
+                    id="feedback"
+                    aria-labelledby="feedback-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Components / Feedback
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="feedback-title">Feedback</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Confirm in place, close to what changed. Prefer Undo
+                            over “Are you sure?”.
+                        </p>
+                        <div class="spec-columns">
+                            <div class="stack">
+                                <div class="component-set">
+                                    <span class="set-label">Undo row</span>
+                                    <div class="undo-row">
+                                        <span>Lunch with Sara removed</span
+                                        ><button type="button">Undo</button>
+                                    </div>
+                                    <p class="specimen-caption">
+                                        After removing or completing something.
+                                        Stays until dismissed or the next
+                                        change.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label">Toast</span>
+                                    <div class="toast-specimen">
+                                        Saved for later
+                                    </div>
+                                    <p class="specimen-caption">
+                                        Brief, for actions whose result is not
+                                        visible where you are. 1.8–3.5 s; never
+                                        the only place an error appears.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="stack">
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Inline validation</span
+                                    ><label class="field is-error"
+                                        >Until<input
+                                            value="14:30"
+                                            aria-describedby="feedback-error"
+                                        /><span
+                                            class="error"
+                                            id="feedback-error"
+                                            >Choose an end time after the
+                                            start.</span
+                                        ></label
+                                    >
+                                    <p class="specimen-caption">
+                                        Say what to do, next to the field, when
+                                        the person leaves it or submits — not
+                                        while typing.
+                                    </p>
+                                </div>
+                                <div class="component-set">
+                                    <span class="set-label"
+                                        >Inline confirm</span
+                                    >
+                                    <div class="confirm-row">
+                                        <span>Remove this plan?</span
+                                        ><button
+                                            class="btn btn-secondary"
+                                            type="button"
+                                        >
+                                            Keep</button
+                                        ><button
+                                            class="btn btn-outline"
+                                            type="button"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <p class="specimen-caption">
+                                        Only for actions that cannot be undone.
+                                        Compact, in place — no large modal.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Layout -->
+                <section
+                    class="frame"
+                    id="layout"
+                    aria-labelledby="layout-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Layout
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="layout-title">Page anatomy · Today</h2>
+                        </div>
+                        <p class="frame-intro">
+                            Phones read top to bottom by current need. Desktop
+                            keeps the personal column (2fr) beside the city
+                            column (3fr).
+                        </p>
+                        <div class="anatomy">
+                            <div class="anatomy-phone" aria-label="Phone order">
+                                <span>Header · 5 tabs</span>
+                                <span class="is-deadline"
+                                    >Deadline strip (when due)</span
+                                >
+                                <span class="is-agenda"
+                                    >Your day · timeline + journeys</span
+                                >
+                                <span class="is-travel"
+                                    >Cologne today · weather, departures</span
+                                >
+                                <span class="is-paper"
+                                    >Paperwork · one next step</span
+                                >
+                                <span class="is-ideas"
+                                    >Ideas · events (first on a free day)</span
+                                >
+                                <span>Saved · Coming up · Composer</span>
+                            </div>
+                            <div
+                                class="anatomy-desktop"
+                                aria-label="Desktop layout"
+                            >
+                                <span class="full"
+                                    >Header · brand · 5 sections · city · Saved
+                                    · account</span
+                                >
+                                <span class="full is-deadline"
+                                    >Deadline strip</span
+                                >
+                                <div class="anatomy-col">
+                                    <span class="is-agenda">Your day</span
+                                    ><span class="is-ideas"
+                                        >Around your plan</span
+                                    ><span>Saved · Coming up</span
+                                    ><span>Composer continuation</span>
+                                </div>
+                                <div class="anatomy-col">
+                                    <span class="is-paper"
+                                        >Paperwork · Need a hand?</span
+                                    ><span class="is-travel">Cologne today</span
+                                    ><span class="is-ideas"
+                                        >A little Cologne · events</span
+                                    ><span
+                                        >Journeys · requests · city links</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Breakpoints -->
+                <section
+                    class="frame"
+                    id="breakpoints"
+                    aria-labelledby="breakpoints-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Breakpoints
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="breakpoints-title">Breakpoints</h2>
+                            <span class="tag">Applied 7 Oct 2026</span>
+                        </div>
+                        <p class="frame-intro">
+                            One set for every page, in CSS and in scripts that
+                            check screen width. Media queries cannot read CSS
+                            variables, so use these exact values:
+                        </p>
+                        <div class="breakpoint-bar" aria-hidden="true">
+                            <span style="flex: 360"
+                                >Small phone<small>≤ 359</small></span
+                            ><span style="flex: 340"
+                                >Phone<small>360–700</small></span
+                            ><span style="flex: 300"
+                                >Tablet<small>701–999</small></span
+                            ><span style="flex: 440"
+                                >Desktop<small>≥ 1000</small></span
+                            >
+                        </div>
+                        <div class="table-scroll">
+                            <table class="roles-table">
+                                <thead>
+                                    <tr>
+                                        <th>Use</th>
+                                        <th>Query</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Small phone only</td>
+                                        <td class="mono">
+                                            @media (max-width: 359px)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Phones</td>
+                                        <td class="mono">
+                                            @media (max-width: 700px)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tablet only</td>
+                                        <td class="mono">
+                                            @media (min-width: 701px) and
+                                            (max-width: 999px)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Below desktop</td>
+                                        <td class="mono">
+                                            @media (max-width: 999px)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Desktop</td>
+                                        <td class="mono">
+                                            @media (min-width: 1000px)
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <ul class="rule-list">
+                            <li>
+                                <strong
+                                    >Between breakpoints, let layouts adapt by
+                                    themselves:</strong
+                                >
+                                grids with a minimum column width (<code
+                                    class="mono"
+                                    >repeat(auto-fit, minmax(260px, 1fr))</code
+                                >) and rows that wrap, instead of adding a new
+                                breakpoint.
+                            </li>
+                            <li>
+                                <strong>Phone first:</strong> design at 390 ×
+                                844; check 320 for wrapping and 1024 for narrow
+                                desktops.
+                            </li>
+                            <li>
+                                <strong>Page gutter:</strong> 16px on phones,
+                                24px from tablet up. The only other width rule
+                                is ≥ 1500px, which caps the content width (not a
+                                layout switch).
+                            </li>
+                            <li>
+                                <strong>Header:</strong> compact two-row header
+                                up to 700px. <strong>Today:</strong> one column
+                                up to 700px, two columns above.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Sheets & dialogs -->
+                <section
+                    class="frame"
+                    id="sheets"
+                    aria-labelledby="sheets-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Sheets &amp; dialogs
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="sheets-title">Sheets &amp; dialogs</h2>
+                            <span class="tag">Applied to Today 7 Oct 2026</span>
+                        </div>
+                        <p class="frame-intro">
+                            Keep the person in context. Choose the lightest
+                            surface that does the job.
+                        </p>
+                        <div class="surface-ladder">
+                            <figure>
+                                <div class="ladder-demo">
+                                    <span class="ladder-inline"></span>
+                                </div>
+                                <figcaption>
+                                    <strong>1 · Inline</strong>Disclosure, menu,
+                                    Undo row. Default for simple choices.
+                                </figcaption>
+                            </figure>
+                            <figure>
+                                <div class="ladder-demo">
+                                    <span class="ladder-popover"></span>
+                                </div>
+                                <figcaption>
+                                    <strong>2 · Anchored menu</strong>Pickers
+                                    and filters. One open at a time.
+                                </figcaption>
+                            </figure>
+                            <figure>
+                                <div class="ladder-demo is-phone">
+                                    <span class="ladder-sheet"></span>
+                                </div>
+                                <figcaption>
+                                    <strong>3 · Bottom sheet (phone)</strong
+                                    >Details and short tasks: event, place,
+                                    journey, Add a plan.
+                                </figcaption>
+                            </figure>
+                            <figure>
+                                <div class="ladder-demo">
+                                    <span class="ladder-dialog"></span>
+                                </div>
+                                <figcaption>
+                                    <strong>4 · Compact dialog (desktop)</strong
+                                    >Same content as the phone sheet, centred
+                                    over a light scrim, like the Event sheet.
+                                    Composer's collections use a side panel.
+                                </figcaption>
+                            </figure>
+                        </div>
+                        <ul class="rule-list">
+                            <li>
+                                <strong
+                                    >No blurred backdrops or oversized
+                                    buttons.</strong
+                                >
+                                A light scrim at most; the page stays
+                                recognisable.
+                            </li>
+                            <li>
+                                <strong>Always closable:</strong> close button,
+                                Escape, swipe down on phones; focus returns to
+                                what opened it.
+                            </li>
+                            <li>
+                                <strong>Motion:</strong> slide 200–280ms with
+                                the settle curve; no cross-fade that overlaps
+                                text.
+                            </li>
+                            <li>
+                                <strong>Reference:</strong> the Event sheet,
+                                and Today's journey, plan details, forecast and
+                                Add a plan sheets. Phone sheets slide up from
+                                the bottom and close by dragging their top
+                                edge down.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- States -->
+                <section
+                    class="frame"
+                    id="states"
+                    aria-labelledby="states-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / States
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="states-title">
+                                Empty, loading, error &amp; not live
+                            </h2>
+                        </div>
+                        <p class="frame-intro">
+                            Every module needs all four. Keep the layout steady;
+                            never show a blank area or a guess.
+                        </p>
+                        <div class="state-grid">
+                            <div class="state-card">
+                                <span class="state-kind">Loading</span>
+                                <div
+                                    class="skeleton-line"
+                                    style="width: 70%"
+                                ></div>
+                                <div
+                                    class="skeleton-line"
+                                    style="width: 45%"
+                                ></div>
+                                <small
+                                    >Keep existing content visible; show a
+                                    placeholder only after 140ms. One quiet line
+                                    per module, sized like the content it
+                                    replaces.</small
+                                >
+                            </div>
+                            <div class="state-card">
+                                <span class="state-kind">Empty</span
+                                ><strong>No plans added for today</strong
+                                ><button class="btn btn-text" type="button">
+                                    <i data-icon="plus"></i>Add a plan</button
+                                ><small
+                                    >Say what's missing and offer the next step.
+                                    Never imply free time or a fact we don't
+                                    have.</small
+                                >
+                            </div>
+                            <div class="state-card">
+                                <span class="state-kind">Error</span
+                                ><strong>Events could not be loaded.</strong
+                                ><button class="btn btn-text" type="button">
+                                    Try again</button
+                                ><small
+                                    >Plain cause, a retry, and what still works.
+                                    Keep the person's input.</small
+                                >
+                            </div>
+                            <div class="state-card">
+                                <span class="state-kind">Not live / sample</span
+                                ><span class="pill sample">Sample</span
+                                ><small class="mono"
+                                    >Captured 7 Sept 2026 · 23:37 · Not
+                                    live</small
+                                ><small
+                                    >Captured, sample or estimated data always
+                                    says so, with its date.</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Content & voice -->
+                <section class="frame" id="voice" aria-labelledby="voice-title">
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Content &amp; voice
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="voice-title">Content &amp; voice</h2>
+                        </div>
+                        <p class="frame-intro">
+                            A friendly local who has been through it: plain,
+                            warm, specific — and honest about what we don't
+                            know.
+                        </p>
+                        <div class="dodont">
+                            <figure class="do">
+                                <ul class="copy-list">
+                                    <li>Price to check</li>
+                                    <li>Leave by 13:20 · in 10 min</li>
+                                    <li>Anmeldung (address registration)</li>
+                                    <li>Nothing in your plan yet</li>
+                                </ul>
+                                <figcaption>
+                                    <i data-icon="check"></i>Specific, honest,
+                                    German term explained
+                                </figcaption>
+                            </figure>
+                            <figure class="dont">
+                                <ul class="copy-list">
+                                    <li>Free!</li>
+                                    <li>Your train leaves soon</li>
+                                    <li>Anmeldung</li>
+                                    <li>You're free this afternoon</li>
+                                </ul>
+                                <figcaption>
+                                    <i data-icon="close"></i>Guessed, vague,
+                                    unexplained, assumes
+                                </figcaption>
+                            </figure>
+                        </div>
+                        <h3 class="sub">Formats</h3>
+                        <div class="table-scroll">
+                            <table class="roles-table">
+                                <thead>
+                                    <tr>
+                                        <th>What</th>
+                                        <th>Format</th>
+                                        <th>Example</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Time</td>
+                                        <td>24-hour, no seconds</td>
+                                        <td class="mono">14:00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Time range</td>
+                                        <td>En dash, no spaces</td>
+                                        <td class="mono">18:30–21:00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Date</td>
+                                        <td>Short weekday, day, short month</td>
+                                        <td class="mono">Wed 30 Sept</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Relative time</td>
+                                        <td>Only within the next hour</td>
+                                        <td class="mono">in 10 min · now</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Duration / estimate</td>
+                                        <td>“About” for estimates</td>
+                                        <td class="mono">About 30 min</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Money</td>
+                                        <td>
+                                            Euro sign first; unknown says so
+                                        </td>
+                                        <td class="mono">
+                                            €12 · Price to check
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Case</td>
+                                        <td>
+                                            Sentence case for titles and buttons
+                                        </td>
+                                        <td class="mono">Add a plan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <ul class="rule-list">
+                            <li>
+                                <strong>Paperwork:</strong> never invent fees,
+                                deadlines or legal facts; use reviewed wording
+                                and show its source.
+                            </li>
+                            <li>
+                                <strong>Samples:</strong> label sample, captured
+                                and simulated content wherever it appears.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Accessibility -->
+                <section
+                    class="frame"
+                    id="accessibility"
+                    aria-labelledby="accessibility-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Accessibility
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="accessibility-title">Accessibility</h2>
+                        </div>
+                        <div class="check-grid">
+                            <div>
+                                <strong>Contrast</strong
+                                ><span
+                                    >Text ≥ 4.5:1 (all current pairs pass); form
+                                    borders and icons that carry meaning ≥
+                                    3:1.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Not colour alone</strong
+                                ><span
+                                    >Status always has words too: “Est. 10 min
+                                    late”, “Not live”.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Touch</strong
+                                ><span
+                                    >Targets ≥ 44 × 44px; feedback on press,
+                                    never only on hover.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Focus</strong
+                                ><span
+                                    >Visible 2px teal ring; logical order; focus
+                                    returns after menus and sheets close.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Names</strong
+                                ><span
+                                    >Every icon button has a label (“Save Street
+                                    culture night”); decorative icons are
+                                    hidden.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Keyboard</strong
+                                ><span
+                                    >Menus: arrows, Home/End, Enter, Escape.
+                                    Sheets trap focus until closed.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Motion</strong
+                                ><span
+                                    >Respect reduced motion: no slides or
+                                    reveals, instant state changes.</span
+                                >
+                            </div>
+                            <div>
+                                <strong>Readable sizes</strong
+                                ><span
+                                    >Nothing below 11px; body 15px; times use
+                                    tabular figures.</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Dark mode -->
+                <section
+                    class="frame"
+                    id="themes"
+                    aria-labelledby="themes-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Patterns / Dark mode
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="themes-title">Dark mode</h2>
+                            <span class="tag is-issue">Not designed yet</span>
+                        </div>
+                        <p class="frame-intro">
+                            The real app supports dark mode (it toggles
+                            <code class="mono">html.dark</code>); the mocks and
+                            this guide are light only. Because every colour is
+                            now a role token, a dark theme is one more set of
+                            values in
+                            <code class="mono">connected/tokens.css</code> — the
+                            components don't change.
+                        </p>
+                        <ul class="rule-list">
+                            <li>
+                                <strong>To decide:</strong> a warm dark canvas
+                                that keeps the cream character, the cyan and
+                                orange at matching contrast, and how photos and
+                                posters sit on it.
+                            </li>
+                            <li>
+                                <strong>Rule until then:</strong> new components
+                                use tokens only, so they will follow the dark
+                                set automatically.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Scale proposal -->
+                <section
+                    class="frame"
+                    id="scales"
+                    aria-labelledby="scales-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Records / Scale migration
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="scales-title">Scale migration</h2>
+                            <span class="tag">Applied 6 Oct 2026</span>
+                        </div>
+                        <p class="frame-intro">
+                            Every font size, weight and corner radius in the
+                            Today mock mapped onto the shared tokens (<code
+                                class="mono"
+                                >connected/tokens.css</code
+                            >). Nothing changes in the mocks until this is
+                            approved; the proposed version runs from a separate
+                            copy.
+                        </p>
+                        <div class="scale-stats" data-scale-stats></div>
+                        <h3 class="sub">What changes</h3>
+                        <div class="scale-tables" data-scale-tables></div>
+                        <p class="note" style="margin-top: 14px">
+                            Regenerate with
+                            <code class="mono"
+                                >node tools/normalize-scales.mjs --preview</code
+                            >; apply after approval with
+                            <code class="mono">--apply</code>.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Mock designs -->
+                <section class="frame" id="mocks" aria-labelledby="mocks-title">
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Mock designs / Today
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="mocks-title">Today prototype</h2>
+                            <a
+                                class="link-ink"
+                                href="../today-next/brief/"
+                                target="_blank"
+                                rel="noopener"
+                                data-mock-open
+                                >Open full page</a
+                            >
+                        </div>
+                        <p class="frame-intro">
+                            The live mock at phone and desktop sizes. Both
+                            frames show the same scenario; all content is sample
+                            data.
+                        </p>
+                        <div class="mock-toolbar">
+                            <div
+                                class="scenario-chips"
+                                role="group"
+                                aria-label="Scenario"
+                                data-scenarios
+                            ></div>
+                        </div>
+                        <div class="mock-stage">
+                            <div class="device">
+                                <span class="device-label"
+                                    >Phone · 390 × 844</span
+                                >
+                                <div
+                                    class="device-viewport"
+                                    data-device="phone"
+                                >
+                                    <iframe
+                                        title="Today mock on a phone"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                            <div class="device" style="width: 100%">
+                                <span class="device-label"
+                                    >Desktop · 1440 × 900</span
+                                >
+                                <div
+                                    class="device-viewport is-desktop"
+                                    data-device="desktop"
+                                >
+                                    <iframe
+                                        title="Today mock on desktop"
+                                        loading="lazy"
+                                    ></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    class="frame"
+                    id="departments"
+                    aria-labelledby="departments-title"
+                >
+                    <p class="frame-label">
+                        <i data-icon="grid"></i>Mock designs / Departments
+                    </p>
+                    <div class="frame-body">
+                        <div class="frame-title">
+                            <h2 id="departments-title">Department mocks</h2>
+                        </div>
+                        <p class="frame-intro">
+                            The connected department mocks. Choose one to
+                            preview it here; it opens one at a time so sample
+                            states don't mix.
+                        </p>
+                        <div class="department-grid" data-departments></div>
+                        <div
+                            class="department-viewer"
+                            hidden
+                            data-department-viewer
+                        >
+                            <div
+                                class="device-label"
+                                style="margin-bottom: 8px"
+                            >
+                                <span data-department-name></span
+                                ><a
+                                    href="#departments"
+                                    target="_blank"
+                                    rel="noopener"
+                                    data-department-open
+                                    >Open full page ↗</a
+                                >
+                            </div>
+                            <div
+                                class="device-viewport is-desktop"
+                                data-device="department"
+                            >
+                                <iframe
+                                    title="Department mock preview"
+                                ></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+        <div class="toast" role="status" aria-live="polite" data-toast></div>
+    </body>
+</html>

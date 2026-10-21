@@ -1,1022 +1,550 @@
-import { Head, Deferred, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
+import EventOtherDayController from '@/actions/App/Http/Controllers/Api/EventOtherDayController';
+import TransportModeController from '@/actions/App/Http/Controllers/Api/TransportModeController';
+import { api } from '@/components/composer/types';
+import { occurrenceKey } from '@/components/events/event-presentation';
+import type { EventOccurrence } from '@/components/events/types';
+import { EventDetails } from '@/components/events-details/event-details';
+import type { EventFilters } from '@/components/events-filters/event-filters';
 import {
-    IconBike,
-    IconBolt,
-    IconBus,
-    IconCalendarEvent,
-    IconCalendarWeek,
-    IconCheck,
-    IconChevronDown,
-    IconFilter,
-    IconMapPin,
-    IconSortDescending,
-    IconSunrise,
-    IconTicket,
-    IconWalk,
-    IconX,
-} from '@tabler/icons-react';
-import type { Icon as TablerIcon } from '@tabler/icons-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { index as eventsIndex } from '@/actions/App/Http/Controllers/Api/EventsController';
-import LocationConfirmController from '@/actions/App/Http/Controllers/Api/LocationConfirmController';
-import { EventRichDetail } from '@/components/events/event-rich-detail';
-import { RemindMeButton } from '@/components/events/remind-me-button';
+    areaChoices,
+    categoryChoices,
+    eventsUrl,
+    matches,
+    narrowed,
+    noFilters,
+} from '@/components/events-filters/event-filters';
+import { EmptyDay, NoMatch } from '@/components/events-filters/events-empty';
+import type { OtherDay } from '@/components/events-filters/events-empty';
+import {
+    EventsFilterBar,
+    FromNote,
+} from '@/components/events-filters/events-filter-bar';
 import type {
-    EventOccurrence,
-    EventReminderEntry,
-} from '@/components/events/types';
-import { eventIllustrationKey } from '@/components/events/types';
-import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
-import type { Destination } from '@/components/journey/take-me-there-sheet';
-import { ContentCard } from '@/components/places/content-card';
-import type { CardChip } from '@/components/places/content-card';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
-import type { Place } from '@/components/places/types';
-import { ICON_STROKE } from '@/constants/icons';
-import { MAX_LOCATION_ACCURACY_M } from '@/hooks/use-geolocation';
-import { useIsMobile } from '@/hooks/use-mobile';
+    StartingPoint,
+    TravelMode,
+} from '@/components/events-filters/events-filter-bar';
+import { PastNote } from '@/components/events-filters/past-note';
+import {
+    EventsStreet,
+    useNowHour,
+} from '@/components/events-street/events-street';
+import type { StreetListing } from '@/components/events-street/events-street';
+import { rainLikely } from '@/components/events-street/street-weather';
+import type { DayForecast } from '@/components/events-street/street-weather';
+import { Poster } from '@/components/posters/poster-art';
+import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
+import { showToast } from '@/components/ui/toast';
+import { useSavedEvents } from '@/hooks/use-saved-events';
 import AppLayout from '@/layouts/app-layout';
+import { kmBetween } from '@/lib/geo';
+import { usePageContext } from '@/lib/page-context';
+import type { Auth } from '@/types';
+import type { DayProjection } from '@/types/day';
+import '@/components/events-street/events-page.css';
 
-const WINDOWS: Array<{ id: string; label: string; Icon: TablerIcon }> = [
-    { id: 'today', label: 'Today', Icon: IconBolt },
-    { id: 'tomorrow', label: 'Tomorrow', Icon: IconSunrise },
-    { id: 'weekend', label: 'Weekend', Icon: IconCalendarEvent },
-    { id: 'week', label: 'Next 7 days', Icon: IconCalendarWeek },
-];
-
-const CATEGORIES: Array<{ id: string; label: string; emoji: string }> = [
-    { id: 'language_exchange', label: 'Language exchange', emoji: '🗣️' },
-    { id: 'stammtisch', label: 'Stammtisch', emoji: '🍻' },
-    { id: 'intl_meetup', label: 'International', emoji: '🌍' },
-    { id: 'sports', label: 'Sports', emoji: '⚽' },
-    { id: 'culture', label: 'Culture', emoji: '🎭' },
-    { id: 'party', label: 'Party', emoji: '🎉' },
-];
-
-type EventMode = 'walk' | 'transit' | 'bike';
-
-const EVENT_MODES: ReadonlyArray<{
-    id: EventMode;
-    label: string;
-    Icon: TablerIcon;
-}> = [
-    { id: 'walk', label: 'Walk', Icon: IconWalk },
-    { id: 'transit', label: 'Transit', Icon: IconBus },
-    { id: 'bike', label: 'Bike', Icon: IconBike },
-];
-
-type EventSort = 'Soonest' | 'Nearest' | 'Recommended';
-
-type EventsOrigin = {
-    source: string;
-    label: string | null;
+type Props = {
+    /** The day shown, YYYY-MM-DD (Cologne). */
+    date: string;
+    today: string;
+    /** The day's occurrences, earliest first, earlier hours included. */
+    listings: EventOccurrence[];
+    /** From the URL, so a deep link opens the same view. */
+    filters: EventFilters;
+    /** The day's forecast, deferred (WeatherService::getDayForecast). */
+    weather?: DayForecast;
+    /** The URL's starting point, when it names a public point or one of
+        the person's saved places (EventStartingPoint). */
+    starting_point: PlacePoint | null;
+    /** The person's own Home and Work, when saved. */
+    saved_places: PlacePoint[];
+    /** Today's last recorded appointment, for the details' "For you" and
+        Get there's start (its place, when the person recorded one). */
+    appointment: {
+        title: string;
+        end: string;
+        place: { name: string; lat: number; lng: number } | null;
+    } | null;
+    /** The day shown, as Travel reads it: only once Get there asks. */
+    day?: DayProjection | null;
+    /** The categories and areas the listings have on any day, for the
+        filters (the mock's catalogue). */
+    catalogue: { categories: string[]; areas: string[] };
+    /** On a past day, the first day from today with listings (deferred). */
+    next_listed?: string | null;
 };
 
-function occurrenceKey(o: {
-    event_id?: number;
-    id?: number;
-    occurrence_start: string;
-}): string {
-    return `${o.event_id ?? o.id}|${new Date(o.occurrence_start).getTime()}`;
+/** The open details, as the URL carries them (?event=&start=). */
+type Detail = { event: number; start: string };
+
+function detailIn(url: string): Detail | null {
+    const query = new URLSearchParams(url.split('?')[1] ?? '');
+    const event = Number(query.get('event'));
+    const start = query.get('start');
+
+    return event && start ? { event, start } : null;
 }
 
-function eventChips(occurrence: EventOccurrence): CardChip[] {
-    const chips: CardChip[] = occurrence.chips.slice(0, 3).map((chip) => ({
-        label: chip,
-        tone: chip === 'free' ? ('price' as const) : ('feature' as const),
-    }));
+const withDetail = (base: string, d: Detail | null) =>
+    d ? `${base}&event=${d.event}&start=${encodeURIComponent(d.start)}` : base;
 
-    // Paid events wear their price like places do
-    if (
-        occurrence.price_text &&
-        occurrence.price_text.toLowerCase() !== 'free'
-    ) {
-        chips.push({ label: occurrence.price_text, tone: 'price' });
-    }
+type PlacePoint = { key: string; name: string; lat: number; lng: number };
 
-    return chips.slice(0, 4);
-}
+const asStartingPoint = (p: PlacePoint): StartingPoint => ({
+    name: p.name,
+    key: p.key,
+    point: { lat: p.lat, lng: p.lng },
+});
 
-function startsWithinFourHours(occurrence: EventOccurrence): boolean {
-    const diff = new Date(occurrence.occurrence_start).getTime() - Date.now();
+type Listing = StreetListing & {
+    occurrence: EventOccurrence;
+    km: number | null;
+};
 
-    return diff > 0 && diff <= 4 * 3600 * 1000;
-}
+const longDate = (date: string) =>
+    new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'UTC',
+    });
 
-function dateBadge(occurrence: EventOccurrence): {
-    top: string;
-    bottom: string;
-} {
-    const start = new Date(occurrence.occurrence_start);
-
-    return {
-        top: start.toLocaleDateString('en-GB', { weekday: 'short' }),
-        bottom: String(start.getDate()),
-    };
-}
-
-function placeMeta(place: Place): string {
-    return [
-        place.fine_label ?? 'Place',
-        place.park ?? place.veedel,
-        place.distance_min != null ? `${place.distance_min} min away` : null,
-    ]
-        .filter(Boolean)
-        .join(' · ');
-}
-
-function eventMeta(occurrence: EventOccurrence, mode: EventMode): string {
-    const proximity =
-        occurrence.travel_min != null
-            ? `${occurrence.travel_min} min ${mode === 'walk' ? 'walk' : 'bike'}`
-            : occurrence.distance_km != null
-              ? `${occurrence.distance_km.toFixed(1)} km away`
-              : null;
-
-    return [occurrence.meta, proximity].filter(Boolean).join(' · ');
-}
-
-export default function Events() {
-    const { filters, veedelOptions } = usePage<{
-        filters: {
-            window: string;
-            category: string | null;
-            veedel: string | null;
-            free: boolean;
-            venue: string | null;
-            sort: 'soonest' | 'nearest' | 'recommended';
-            mode: EventMode;
-        };
-        veedelOptions?: string[];
-    }>().props;
-
-    const [window_, setWindow] = useState(filters.window);
-    const [category, setCategory] = useState<string | null>(filters.category);
-    const [veedel, setVeedel] = useState<string | null>(filters.veedel);
-    const [free, setFree] = useState<boolean>(filters.free);
-    // Venue deep-link from a place's events strip — dismissible chip
-    const [venueId, setVenueId] = useState<string | null>(filters.venue);
-
-    // v4 controls row — From popover + Sort menu (the distance recompute behind
-    // From, and Nearest/Popular sort, light up once event distances land).
-    const [evMode, setEvMode] = useState<EventMode>(filters.mode);
-    const [evSort, setEvSort] = useState<EventSort>(
-        `${filters.sort[0].toUpperCase()}${filters.sort.slice(1)}` as EventSort,
-    );
-    const [fromOpen, setFromOpen] = useState(false);
-    const [sortOpen, setSortOpen] = useState(false);
-    const [filterOpen, setFilterOpen] = useState(false);
-
-    const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
-    const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
-    const [origin, setOrigin] = useState<EventsOrigin | null>(null);
-    const [needsLocation, setNeedsLocation] = useState(false);
-    const [usingLiveOrigin, setUsingLiveOrigin] = useState(false);
-    const [locationStatus, setLocationStatus] = useState<
-        'idle' | 'locating' | 'error'
-    >('idle');
-    const [reminders, setReminders] = useState<Set<string>>(new Set());
-
-    const [detail, setDetail] = useState<EventOccurrence | null>(null);
-    const [placeDetail, setPlaceDetail] = useState<Place | null>(null);
-    const [destination, setDestination] = useState<Destination | null>(null);
-
-    const isMobile = useIsMobile();
-    const reqRef = useRef(0);
-
-    const fetchEvents = useCallback(
-        (w: string, c: string | null, v: string | null, f: boolean) => {
-            const token = ++reqRef.current;
-            const params = new URLSearchParams({ window: w });
-            params.set('sort', evSort.toLowerCase());
-            params.set('mode', evMode);
-
-            if (c) {
-                params.set('category', c);
-            }
-
-            if (v) {
-                params.set('veedel', v);
-            }
-
-            if (f) {
-                params.set('free', '1');
-            }
-
-            if (venueId) {
-                params.set('venue', venueId);
-            }
-
-            fetch(eventsIndex.url({ query: Object.fromEntries(params) }), {
-                credentials: 'same-origin',
-            })
-                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-                .then((json) => {
-                    if (token !== reqRef.current) {
-                        return;
-                    }
-
-                    setOccurrences(json.data ?? []);
-                    setOrigin(json.origin ?? null);
-                    setNeedsLocation(json.needs_location === true);
-                    setStatus('ok');
-                })
-                .catch(() => {
-                    if (token === reqRef.current) {
-                        setStatus('error');
-                    }
-                });
-        },
-        [venueId, evSort, evMode],
+/* What the listing or the venue's record says: the venue's recorded
+   setting, or a listing that says it's outdoors or open-air. Never more. */
+const outdoor = (o: EventOccurrence) =>
+    o.venue.setting === 'outdoor' ||
+    /\b(outdoors?|open[- ]air|im freien)\b/i.test(
+        `${o.title_original ?? ''} ${o.title} ${o.summary ?? ''}`,
     );
 
-    // Fetch on filter change + keep the URL shareable
+const distanceLabel = (value: number) =>
+    value < 1 ? `${Math.round(value * 1000)} m` : `${value.toFixed(1)} km`;
+
+/** Events: the day's listings as posters on a Cologne street (the mock's
+    events-next), narrowed by the filters above it. */
+export default function Events({
+    date,
+    today,
+    listings,
+    filters,
+    weather,
+    starting_point,
+    saved_places,
+    appointment,
+    day: dayPlan,
+    catalogue,
+    next_listed,
+}: Props) {
+    const { props: shared, url } = usePage<{ auth: Auth }>();
+    const { auth } = shared;
+    // The details open over the street live in the URL, so a link (or a
+    // reload) opens the same details.
+    const detail = detailIn(url);
+    const saved = useSavedEvents(auth.user.id);
+    const f = { ...noFilters, ...filters };
+
+    // The search follows typing at once; the URL catches up after a pause.
+    // The typed text belongs to the URL value it started from, so Back,
+    // Forward or Clear (a new URL value) take over from it.
+    const [search, setSearch] = useState({ base: f.q, text: f.q });
+    const q = search.base === f.q ? search.text : f.q;
+    const current = { ...f, q };
+
+    const replace = (next: EventFilters) =>
+        router.replace({
+            url: withDetail(eventsUrl(date, next), detail),
+            props: (props) => ({ ...props, filters: next }),
+            preserveState: true,
+            preserveScroll: true,
+        });
+
     useEffect(() => {
-        fetchEvents(window_, category, veedel, free);
-
-        const params = new URLSearchParams();
-
-        if (window_ !== 'today') {
-            params.set('window', window_);
-        }
-
-        if (category) {
-            params.set('category', category);
-        }
-
-        if (veedel) {
-            params.set('veedel', veedel);
-        }
-
-        if (free) {
-            params.set('free', '1');
-        }
-
-        if (venueId) {
-            params.set('venue', venueId);
-        }
-
-        if (evSort !== 'Soonest') {
-            params.set('sort', evSort.toLowerCase());
-        }
-
-        if (evMode !== 'walk') {
-            params.set('mode', evMode);
-        }
-
-        const qs = params.toString();
-        // Preserve history.state — Inertia v2 stores its page snapshot
-        // there; replacing it with {} breaks back/forward app-wide.
-        globalThis.history.replaceState(
-            globalThis.history.state,
-            '',
-            `/events${qs ? `?${qs}` : ''}`,
-        );
-    }, [
-        window_,
-        category,
-        veedel,
-        free,
-        venueId,
-        evSort,
-        evMode,
-        usingLiveOrigin,
-        fetchEvents,
-    ]);
-
-    function locateMe() {
-        if (!navigator.geolocation) {
-            setLocationStatus('error');
-
+        if (q === f.q) {
             return;
         }
 
-        setLocationStatus('locating');
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                if (position.coords.accuracy > MAX_LOCATION_ACCURACY_M) {
-                    setLocationStatus('error');
+        const timer = window.setTimeout(() => replace({ ...f, q }), 350);
 
-                    return;
-                }
+        return () => window.clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only the typed text schedules the URL update.
+    }, [q]);
 
-                const next = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
+    const onFilters = (partial: Partial<EventFilters>) => {
+        if ('q' in partial) {
+            setSearch({ base: f.q, text: partial.q ?? '' });
 
-                try {
-                    const response = await fetch(
-                        LocationConfirmController.url(),
-                        {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN':
-                                    document
-                                        .querySelector(
-                                            'meta[name="csrf-token"]',
-                                        )
-                                        ?.getAttribute('content') ?? '',
-                            },
-                            body: JSON.stringify(next),
-                        },
-                    );
-
-                    if (!response.ok) {
-                        throw new Error('Location confirmation failed');
-                    }
-
-                    setUsingLiveOrigin(true);
-                    setLocationStatus('idle');
-                    setNeedsLocation(false);
-                } catch {
-                    setLocationStatus('error');
-                }
-            },
-            () => setLocationStatus('error'),
-            { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
-        );
-    }
-
-    // Back/forward re-reads the URL
-    useEffect(() => {
-        function onPop() {
-            // Also fires when leaving the page — don't touch state then
-            if (globalThis.location.pathname !== '/events') {
+            if (Object.keys(partial).length === 1) {
                 return;
             }
-
-            const sp = new URLSearchParams(globalThis.location.search);
-            setWindow(sp.get('window') ?? 'today');
-            setCategory(sp.get('category'));
-            setVeedel(sp.get('veedel'));
-            setFree(sp.get('free') === '1');
-            setVenueId(sp.get('venue'));
-            const sort = sp.get('sort');
-            setEvSort(
-                sort === 'nearest'
-                    ? 'Nearest'
-                    : sort === 'recommended'
-                      ? 'Recommended'
-                      : 'Soonest',
-            );
-            const mode = sp.get('mode');
-            setEvMode(mode === 'bike' || mode === 'transit' ? mode : 'walk');
         }
-        globalThis.addEventListener('popstate', onPop);
 
-        return () => globalThis.removeEventListener('popstate', onPop);
-    }, []);
+        replace({ ...current, ...partial });
+    };
 
-    // The user's pending reminders → filled-bell state
+    const onDate = (day: string) =>
+        router.get(
+            eventsUrl(day, current),
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+
+    // The starting point. The URL carries only a public point's name or a
+    // saved place's key, resolved on the server; a typed address stays in
+    // this state, out of the URL, history and server logs.
+    const [chosen, setChosen] = useState<StartingPoint | null>(null);
+    const [mode, setMode] = useState<TravelMode>(
+        (auth.user.transport_mode as TravelMode | null) ?? 'transit',
+    );
+    const shownFrom =
+        chosen && chosen.key === (f.from ?? null)
+            ? chosen
+            : f.from && starting_point?.key === f.from
+              ? asStartingPoint(starting_point)
+              : null;
+
+    const onFrom = (next: StartingPoint | null) => {
+        setChosen(next);
+        onFilters({
+            from: next?.key ?? null,
+            sort:
+                !next && current.sort === 'closest' ? 'soonest' : current.sort,
+        });
+    };
+
+    const onMode = (next: TravelMode) => {
+        setMode(next);
+        api(TransportModeController.url(), { mode: next }).catch(() =>
+            showToast('Your travel mode wasn’t saved. Please try again.', {
+                error: true,
+            }),
+        );
+    };
+
+    // The day, and what passes the filters, in the chosen order.
+    const point = shownFrom?.point ?? null;
+    const day: Listing[] = listings.map((occurrence) => ({
+        key: occurrenceKey(occurrence),
+        poster: { ...posterEvent(occurrence), id: occurrenceKey(occurrence) },
+        occurrence,
+        km: point ? kmBetween(point, occurrence.venue) : null,
+    }));
+    const wall = day
+        .filter((l) => matches(l.occurrence, current, l.key, saved.keys))
+        .sort((a, b) => {
+            if (current.sort === 'closest') {
+                return (a.km ?? Infinity) - (b.km ?? Infinity);
+            }
+
+            if (current.sort === 'evening') {
+                const ea = (a.poster.start ?? '') >= '17:00' ? 0 : 1;
+                const eb = (b.poster.start ?? '') >= '17:00' ? 0 : 1;
+
+                return ea - eb;
+            }
+
+            return 0;
+        });
+    const filtering = narrowed(current);
+    const empty = listings.length === 0;
+    const noMatch =
+        !empty &&
+        filtering &&
+        wall.length === 0 &&
+        !(current.saved && saved.loading);
+
+    // Where else the search or filters match (or, on an empty day, any listing).
+    const [other, setOther] = useState<{ key: string; value: OtherDay }>({
+        key: '',
+        value: null,
+    });
+    const otherKey =
+        empty || noMatch
+            ? eventsUrl(date, { ...current, sort: 'soonest', from: null })
+            : '';
+
     useEffect(() => {
-        fetch('/api/reminders', { credentials: 'same-origin' })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-            .then((json) => {
-                setReminders(
-                    new Set(
-                        (json.data ?? []).map((r: EventReminderEntry) =>
-                            occurrenceKey(r),
-                        ),
-                    ),
-                );
-            })
-            .catch(() => {});
-    }, []);
-
-    function openOccurrence(occurrence: EventOccurrence) {
-        setDetail(occurrence);
-    }
-
-    function takeMeThere(occurrence: EventOccurrence) {
-        if (occurrence.venue.lat == null || occurrence.venue.lng == null) {
+        if (!otherKey) {
             return;
         }
 
-        setDestination({
-            name: occurrence.venue.name ?? occurrence.title,
-            backLabel: occurrence.title,
-            emoji: occurrence.emoji,
-            lat: occurrence.venue.lat,
-            lng: occurrence.venue.lng,
-            arriveBy: occurrence.occurrence_start,
-        });
-    }
+        const controller = new AbortController();
+        const query: Record<string, string> = { date };
 
-    function openPlace(placeId: number) {
-        fetch(`/api/places/${placeId}`, { credentials: 'same-origin' })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-            .then((json) => {
-                setDetail(null);
-                setPlaceDetail(json.data);
-            })
-            .catch(() => {});
-    }
-
-    function setReminded(occurrence: EventOccurrence, reminded: boolean) {
-        setReminders((prev) => {
-            const next = new Set(prev);
-            const key = occurrenceKey(occurrence);
-
-            if (reminded) {
-                next.add(key);
-            } else {
-                next.delete(key);
+        if (!empty) {
+            if (current.q.trim()) {
+                query.q = current.q.trim();
             }
 
-            return next;
-        });
+            if (current.category) {
+                query.category = current.category;
+            }
+
+            if (current.area) {
+                query.area = current.area;
+            }
+
+            if (current.free) {
+                query.free = '1';
+            }
+
+            if (current.saved) {
+                query.saved = '1';
+            }
+        }
+
+        api<{ date: string | null; count: number }>(
+            EventOtherDayController.url({ query }),
+            undefined,
+            controller.signal,
+        )
+            .then((value) => setOther({ key: otherKey, value }))
+            .catch(() => setOther({ key: otherKey, value: null }));
+
+        return () => controller.abort();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- The key carries the day and filters.
+    }, [otherKey]);
+
+    const otherDay = other.key === otherKey ? other.value : null;
+
+    usePageContext(
+        wall.length
+            ? {
+                  page: 'events',
+                  label: `Events on ${posterWeekday(date)} · ${wall.length} listed`,
+              }
+            : null,
+    );
+
+    async function toggleSave(listing: Listing) {
+        const isSaved = saved.keys.has(listing.key);
+        const ok = await saved.setSaved(listing.occurrence, !isSaved);
+
+        if (!ok && saved.error) {
+            showToast(saved.error, { error: true });
+        }
     }
 
-    const windowLabel = WINDOWS.find((w) => w.id === window_)?.label ?? 'Today';
-    const railOptions = veedelOptions ?? [];
-    const activeFilterCount =
-        Number(category !== null) +
-        Number(veedel !== null) +
-        Number(free) +
-        Number(venueId !== null);
-    const emptyMessage =
-        activeFilterCount > 0
-            ? 'No events match these filters.'
-            : window_ === 'today'
-              ? "Today's events have finished — see what starts tomorrow."
-              : window_ === 'tomorrow'
-                ? 'Nothing is scheduled tomorrow — the weekend has more options.'
-                : window_ === 'weekend'
-                  ? 'No events are scheduled this weekend.'
-                  : 'No events are scheduled in the next 7 days.';
-    const emptyActionLabel =
-        activeFilterCount > 0
-            ? 'Clear filters'
-            : window_ === 'today'
-              ? 'See tomorrow'
-              : window_ === 'tomorrow'
-                ? 'See the weekend'
-                : window_ === 'weekend'
-                  ? 'See the next 7 days'
-                  : 'Try again';
-    const EvModeIcon = (
-        EVENT_MODES.find((m) => m.id === evMode) ?? EVENT_MODES[0]
-    ).Icon;
+    // Today's posters say where they stand now: on (until its listed end),
+    // over, and rain likely at the start for an outdoor venue.
+    const nowHour = useNowHour();
+    const hours = (time: string) =>
+        Number(time.slice(0, 2)) + Number(time.slice(3, 5)) / 60;
+    const todayState = (listing: Listing) => {
+        const p = listing.poster;
+
+        if (date !== today || !p.start) {
+            return { when: null, flags: null };
+        }
+
+        const start = hours(p.start);
+        let end = p.end ? hours(p.end) : null;
+
+        if (end !== null && end <= start) {
+            end += 24;
+        }
+
+        const when =
+            end === null
+                ? null
+                : nowHour >= end
+                  ? ('over' as const)
+                  : nowHour >= start
+                    ? ('now' as const)
+                    : null;
+        const wet =
+            when !== 'over' &&
+            outdoor(listing.occurrence) &&
+            rainLikely(weather, p.start);
+
+        return {
+            when,
+            flags:
+                when || wet ? (
+                    <>
+                        {when === 'now' ? (
+                            <span className="pp-flag pp-flag--now">
+                                <span aria-hidden="true" />
+                                On now · until {p.end}
+                            </span>
+                        ) : when === 'over' ? (
+                            <span className="pp-flag pp-flag--over">Over</span>
+                        ) : null}
+                        {wet ? (
+                            <span className="pp-flag pp-flag--rain">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 3.5c-3.2 4.2-5.6 7.2-5.6 10.2a5.6 5.6 0 0 0 11.2 0c0-3-2.4-6-5.6-10.2Z" />
+                                </svg>
+                                Rain likely · forecast
+                            </span>
+                        ) : null}
+                    </>
+                ) : null,
+        };
+    };
+
+    // A poster opens its details (the mock's "one step"); closing keeps
+    // the street and its filters as they were.
+    const showDetail = (d: Detail | null) =>
+        router.replace({
+            url: withDetail(eventsUrl(date, current), d),
+            preserveState: true,
+            preserveScroll: true,
+        });
+    const opened = detail
+        ? (day.find(
+              (l) =>
+                  l.occurrence.id === detail.event &&
+                  Date.parse(l.occurrence.occurrence_start) ===
+                      Date.parse(detail.start),
+          ) ?? null)
+        : null;
+
+    const poster = (
+        item: StreetListing,
+        where: 'wall' | 'column' | 'story',
+        style?: CSSProperties,
+    ) => {
+        const listing = item as Listing;
+        const state = todayState(listing);
+
+        return (
+            <Poster
+                event={listing.poster}
+                today={today}
+                size={where === 'column' ? 'column' : 'wall'}
+                style={style}
+                distance={
+                    listing.km !== null ? distanceLabel(listing.km) : undefined
+                }
+                when={state.when}
+                flags={state.flags}
+                saved={saved.keys.has(listing.key)}
+                onSave={() => toggleSave(listing)}
+                // A story's poster has Add to plan: it opens the details, where
+                // the plan is made (the mock's mxOpen(e, 'plan')).
+                onPlan={
+                    where === 'story'
+                        ? () =>
+                              showDetail({
+                                  event: listing.occurrence.id,
+                                  start: listing.occurrence.occurrence_start,
+                              })
+                        : undefined
+                }
+                onOpen={() =>
+                    showDetail({
+                        event: listing.occurrence.id,
+                        start: listing.occurrence.occurrence_start,
+                    })
+                }
+            />
+        );
+    };
 
     return (
-        <AppLayout fullWidth>
+        <AppLayout>
             <Head title="Events" />
-            <div className="mx-auto h-full w-full max-w-[1120px] overflow-y-auto px-4 pt-6 pb-24 md:px-8">
-                {/* Header */}
-                <div className="mb-[22px]">
-                    <h1 className="font-display text-[30px] font-medium tracking-[-0.02em]">
-                        Events
-                    </h1>
-                    <p className="mt-[3px] text-[13.5px] text-text-2">
-                        Show up alone, leave with a contact
-                    </p>
-                </div>
-
-                {/* Time rail — styled like the Places category rail */}
-                <div
-                    className="mb-4 flex gap-2 overflow-x-auto pb-1"
-                    style={{ scrollbarWidth: 'none' }}
-                >
-                    {WINDOWS.map(({ id, label, Icon }) => {
-                        const on = window_ === id;
-
-                        return (
-                            <button
-                                key={id}
-                                onClick={() => setWindow(id)}
-                                aria-pressed={on}
-                                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-all ${
-                                    on
-                                        ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                        : 'border-border bg-card font-medium text-text-2 hover:border-primary hover:text-primary'
-                                }`}
-                            >
-                                <Icon size={15} stroke={ICON_STROKE} />
-                                {label}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Places-style toolbar — filters (left) · From + Sort (right) */}
-                <div className="relative z-20 mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative">
-                        <button
-                            onClick={() => {
-                                setFilterOpen((open) => !open);
-                                setFromOpen(false);
-                                setSortOpen(false);
-                            }}
-                            aria-expanded={filterOpen}
-                            className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary sm:w-auto"
-                        >
-                            <IconFilter size={15} stroke={ICON_STROKE} />
-                            <span className="font-medium text-text-2">
-                                Events in
-                            </span>
-                            {veedel ?? 'All Cologne'}
-                            {activeFilterCount > 0 && (
-                                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                                    {activeFilterCount}
-                                </span>
-                            )}
-                            <IconChevronDown
-                                size={13}
-                                stroke={ICON_STROKE}
-                                className="ml-auto sm:ml-0"
-                            />
-                        </button>
-
-                        {filterOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-30"
-                                    onClick={() => setFilterOpen(false)}
-                                />
-                                <div className="absolute top-12 left-0 z-40 w-[min(420px,calc(100vw-2rem))] rounded-[16px] border border-border bg-card p-4 shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
-                                    <div className="mb-[11px] font-mono text-[10.5px] tracking-[0.1em] text-text-3 uppercase">
-                                        What kind of event?
-                                    </div>
-                                    <div className="flex flex-wrap gap-[7px]">
-                                        {CATEGORIES.map((item) => {
-                                            const on = category === item.id;
-
-                                            return (
-                                                <button
-                                                    key={item.id}
-                                                    onClick={() =>
-                                                        setCategory(
-                                                            on ? null : item.id,
-                                                        )
-                                                    }
-                                                    aria-pressed={on}
-                                                    className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
-                                                        on
-                                                            ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary'
-                                                    }`}
-                                                >
-                                                    {item.emoji} {item.label}
-                                                </button>
-                                            );
-                                        })}
-                                        <button
-                                            onClick={() =>
-                                                setFree((value) => !value)
-                                            }
-                                            aria-pressed={free}
-                                            className={`inline-flex items-center gap-1.5 rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
-                                                free
-                                                    ? 'border-success bg-success-soft font-semibold text-success'
-                                                    : 'border-border bg-card font-medium text-text-2 hover:border-success hover:text-success'
-                                            }`}
-                                        >
-                                            <IconTicket
-                                                size={14}
-                                                stroke={ICON_STROKE}
-                                            />
-                                            Free only
-                                        </button>
-                                    </div>
-
-                                    {venueId && (
-                                        <button
-                                            onClick={() => setVenueId(null)}
-                                            title="Clear venue filter"
-                                            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary-soft px-[13px] py-[7px] text-[12.5px] font-semibold text-primary"
-                                        >
-                                            <IconMapPin
-                                                size={14}
-                                                stroke={ICON_STROKE}
-                                            />
-                                            This venue
-                                            <IconX
-                                                size={13}
-                                                stroke={ICON_STROKE}
-                                            />
-                                        </button>
-                                    )}
-
-                                    <div className="my-[14px] h-px bg-border" />
-                                    <div className="mb-[11px] font-mono text-[10.5px] tracking-[0.1em] text-text-3 uppercase">
-                                        Where?
-                                    </div>
-                                    <div className="flex flex-wrap gap-[7px]">
-                                        <button
-                                            onClick={() => setVeedel(null)}
-                                            aria-pressed={veedel === null}
-                                            className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
-                                                veedel === null
-                                                    ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                                    : 'border-border bg-card font-medium text-text-2 hover:border-primary'
-                                            }`}
-                                        >
-                                            All Cologne
-                                        </button>
-                                        <Deferred
-                                            data="veedelOptions"
-                                            fallback={
-                                                <div className="h-8 w-24 animate-pulse rounded-full bg-secondary" />
-                                            }
-                                        >
-                                            {railOptions.map((name) => (
-                                                <button
-                                                    key={name}
-                                                    onClick={() =>
-                                                        setVeedel(
-                                                            veedel === name
-                                                                ? null
-                                                                : name,
-                                                        )
-                                                    }
-                                                    aria-pressed={
-                                                        veedel === name
-                                                    }
-                                                    className={`rounded-full border px-[13px] py-[7px] text-[12.5px] transition-colors ${
-                                                        veedel === name
-                                                            ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                                            : 'border-border bg-card font-medium text-text-2 hover:border-primary'
-                                                    }`}
-                                                >
-                                                    {name}
-                                                </button>
-                                            ))}
-                                        </Deferred>
-                                    </div>
-
-                                    {activeFilterCount > 0 && (
-                                        <button
-                                            onClick={() => {
-                                                setCategory(null);
-                                                setVeedel(null);
-                                                setFree(false);
-                                                setVenueId(null);
-                                            }}
-                                            className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary"
-                                        >
-                                            <IconX
-                                                size={14}
-                                                stroke={ICON_STROKE}
-                                            />
-                                            Clear filters
-                                        </button>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {/* From — cyan ("cyan locates") */}
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setFromOpen((o) => !o);
-                                    setFilterOpen(false);
-                                    setSortOpen(false);
-                                }}
-                                className="inline-flex items-center gap-[7px] rounded-full border border-cyan-bd bg-card px-[14px] py-[9px] text-[13px] font-semibold text-cyan-h transition-colors hover:border-cyan"
-                            >
-                                <IconMapPin size={14} stroke={ICON_STROKE} />
-                                <span className="font-medium text-[#7fb6c4]">
-                                    from
-                                </span>
-                                {origin?.label ??
-                                    (needsLocation ? 'Set location' : 'You')}
-                                <span className="text-[#9ccada]">·</span>
-                                <EvModeIcon size={13} stroke={ICON_STROKE} />
-                                <IconChevronDown
-                                    size={12}
-                                    stroke={ICON_STROKE}
-                                />
-                            </button>
-
-                            {fromOpen && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-30"
-                                        onClick={() => setFromOpen(false)}
-                                    />
-                                    <div className="absolute top-12 right-0 z-40 w-[260px] rounded-[16px] border border-cyan-bd bg-card p-[15px] shadow-[0_14px_40px_rgba(33,29,21,0.16)]">
-                                        <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
-                                            Measure distances from
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={locateMe}
-                                            disabled={
-                                                locationStatus === 'locating'
-                                            }
-                                            className="inline-flex items-center gap-1.5 rounded-full border border-cyan bg-cyan-soft px-[11px] py-[7px] text-[12px] font-semibold text-cyan-h disabled:opacity-60"
-                                        >
-                                            <IconMapPin
-                                                size={13}
-                                                stroke={ICON_STROKE}
-                                            />
-                                            {locationStatus === 'locating'
-                                                ? 'Finding you…'
-                                                : usingLiveOrigin
-                                                  ? 'Refresh my location'
-                                                  : 'Use my live location'}
-                                        </button>
-                                        {origin?.label && !usingLiveOrigin && (
-                                            <p className="mt-2 text-[11px] text-text-2">
-                                                Currently measuring from{' '}
-                                                {origin.label}.
-                                            </p>
-                                        )}
-                                        {locationStatus === 'error' && (
-                                            <p className="mt-2 text-[11px] text-primary">
-                                                Location is unavailable. Allow
-                                                location access and try again.
-                                            </p>
-                                        )}
-
-                                        <div className="my-[13px] h-px bg-border" />
-
-                                        <div className="mb-2.5 font-mono text-[10px] tracking-[0.1em] text-text-3 uppercase">
-                                            Travelling by
-                                        </div>
-                                        <div className="flex gap-1 rounded-full border border-border bg-surface-2 p-[3px]">
-                                            {EVENT_MODES.map(
-                                                ({ id, label, Icon }) => {
-                                                    const on = evMode === id;
-
-                                                    return (
-                                                        <button
-                                                            key={id}
-                                                            onClick={() =>
-                                                                setEvMode(id)
-                                                            }
-                                                            aria-pressed={on}
-                                                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-[10px] py-2 text-[12px] transition-colors ${
-                                                                on
-                                                                    ? 'border border-cyan-bd bg-card font-semibold text-cyan-h shadow-card'
-                                                                    : 'border border-transparent font-medium text-text-2'
-                                                            }`}
-                                                        >
-                                                            <Icon
-                                                                size={13}
-                                                                stroke={
-                                                                    ICON_STROKE
-                                                                }
-                                                            />
-                                                            {label}
-                                                        </button>
-                                                    );
-                                                },
-                                            )}
-                                        </div>
-                                        {evMode === 'transit' && (
-                                            <p className="mt-2 text-[11px] text-text-2">
-                                                Open an event for a live transit
-                                                route and travel time.
-                                            </p>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Sort */}
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setSortOpen((o) => !o);
-                                    setFilterOpen(false);
-                                    setFromOpen(false);
-                                }}
-                                className="inline-flex items-center gap-[7px] rounded-full border border-border bg-card px-[14px] py-[9px] text-[13px] font-semibold text-foreground shadow-card transition-colors hover:border-primary"
-                            >
-                                <IconSortDescending
-                                    size={13}
-                                    stroke={ICON_STROKE}
-                                />
-                                {evSort}
-                                <IconChevronDown
-                                    size={12}
-                                    stroke={ICON_STROKE}
-                                />
-                            </button>
-
-                            {sortOpen && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-30"
-                                        onClick={() => setSortOpen(false)}
-                                    />
-                                    <div className="absolute top-12 right-0 z-40 min-w-[176px] rounded-[13px] border border-border bg-card p-1.5 shadow-[0_14px_40px_rgba(33,29,21,0.18)]">
-                                        {(
-                                            [
-                                                'Soonest',
-                                                'Nearest',
-                                                'Recommended',
-                                            ] as const
-                                        ).map((opt) => {
-                                            const on = evSort === opt;
-
-                                            return (
-                                                <button
-                                                    key={opt}
-                                                    onClick={() => {
-                                                        setEvSort(opt);
-                                                        setSortOpen(false);
-                                                    }}
-                                                    className={`flex w-full items-center justify-between gap-2.5 rounded-[9px] px-[11px] py-[9px] text-left text-[13px] transition-colors ${
-                                                        on
-                                                            ? 'bg-cyan-soft font-semibold text-cyan-h'
-                                                            : 'font-medium text-foreground hover:bg-surface-2'
-                                                    }`}
-                                                >
-                                                    {opt}
-                                                    {on && (
-                                                        <IconCheck
-                                                            size={14}
-                                                            stroke={ICON_STROKE}
-                                                        />
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Result count */}
-                {status === 'ok' && (
-                    <div className="mb-3 font-mono text-[11px] tracking-[0.1em] text-text-2 uppercase">
-                        {occurrences.length}{' '}
-                        {occurrences.length === 1 ? 'event' : 'events'} ·{' '}
-                        {windowLabel}
-                    </div>
+            <h1 className="sr-only">Events on {longDate(date)}</h1>
+            <EventsFilterBar
+                date={date}
+                filters={current}
+                onFilters={onFilters}
+                onDate={onDate}
+                categories={categoryChoices(
+                    catalogue.categories,
+                    current.category,
                 )}
-
-                {status === 'ok' && needsLocation && (
-                    <div className="mb-4 rounded-2xl border border-cyan-bd bg-cyan-soft p-4 text-sm text-cyan-h">
-                        Set your location to see nearest events and travel
-                        times.
-                        <button
-                            type="button"
-                            onClick={locateMe}
-                            className="ml-2 font-semibold underline underline-offset-2"
-                        >
-                            Use my location
-                        </button>
-                    </div>
-                )}
-
-                {status === 'loading' ? (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="h-56 animate-pulse rounded-2xl bg-secondary"
-                            />
-                        ))}
-                    </div>
-                ) : status === 'error' ? (
-                    <div className="rounded-2xl border border-border bg-card p-8 text-center">
-                        <p className="text-sm text-muted-foreground">
-                            Couldn't load events.
-                        </p>
-                        <button
-                            onClick={() =>
-                                fetchEvents(window_, category, veedel, free)
-                            }
-                            className="mt-3 rounded-[9px] bg-primary px-4 py-2 text-[13px] font-semibold text-white"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                ) : occurrences.length === 0 ? (
-                    <div className="rounded-2xl border border-border bg-card p-8 text-center">
-                        <p className="text-sm text-muted-foreground">
-                            {emptyMessage}
-                        </p>
-                        <button
-                            onClick={() => {
-                                if (activeFilterCount > 0) {
-                                    setCategory(null);
-                                    setFree(false);
-                                    setVeedel(null);
-                                    setVenueId(null);
-                                } else if (window_ === 'today') {
-                                    setWindow('tomorrow');
-                                } else if (window_ === 'tomorrow') {
-                                    setWindow('weekend');
-                                } else if (window_ === 'weekend') {
-                                    setWindow('week');
-                                } else {
-                                    fetchEvents('week', null, null, false);
-                                }
-                            }}
-                            className="mt-3 rounded-[9px] border border-border px-4 py-2 text-[13px] font-semibold text-primary"
-                        >
-                            {emptyActionLabel}
-                        </button>
-                    </div>
+                areas={areaChoices(catalogue.areas, current.area)}
+                from={shownFrom}
+                savedPlaces={saved_places.map(asStartingPoint)}
+                mode={mode}
+                onFrom={onFrom}
+                onMode={onMode}
+            />
+            <FromNote from={shownFrom} />
+            <section className="ev-board" aria-label="The day's events">
+                <p className="sr-only" aria-live="polite">
+                    {wall.length === 1
+                        ? '1 event'
+                        : `${wall.length || 'No'} events`}{' '}
+                    on {longDate(date)}
+                </p>
+                {date < today && wall.length ? (
+                    <PastNote
+                        date={date}
+                        nextListed={next_listed}
+                        onDate={onDate}
+                    />
+                ) : null}
+                {empty ? (
+                    <EmptyDay
+                        date={date}
+                        today={today}
+                        other={otherDay}
+                        onDate={onDate}
+                    />
+                ) : noMatch ? (
+                    <NoMatch
+                        date={date}
+                        today={today}
+                        q={current.q.trim()}
+                        narrowed={
+                            !!(
+                                current.category ||
+                                current.area ||
+                                current.free ||
+                                current.saved
+                            )
+                        }
+                        other={otherDay}
+                        onDate={onDate}
+                        onClear={(what) =>
+                            onFilters(
+                                what === 'search'
+                                    ? { q: '' }
+                                    : {
+                                          q: '',
+                                          category: null,
+                                          area: null,
+                                          free: false,
+                                          saved: false,
+                                      },
+                            )
+                        }
+                    />
                 ) : (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {occurrences.map((occurrence) => {
-                            const key = occurrenceKey(occurrence);
-
-                            return (
-                                <ContentCard
-                                    key={key}
-                                    variant="place"
-                                    coarse={eventIllustrationKey(
-                                        occurrence.category,
-                                    )}
-                                    title={occurrence.title}
-                                    emoji={occurrence.emoji}
-                                    badge={dateBadge(occurrence)}
-                                    meta={eventMeta(occurrence, evMode)}
-                                    photoUrl={occurrence.photo_url}
-                                    live={startsWithinFourHours(occurrence)}
-                                    chips={eventChips(occurrence)}
-                                    excerpt={
-                                        occurrence.tip
-                                            ? null
-                                            : occurrence.summary
-                                    }
-                                    tip={occurrence.tip}
-                                    onActivate={() =>
-                                        openOccurrence(occurrence)
-                                    }
-                                    secondaryAction={
-                                        <RemindMeButton
-                                            eventId={occurrence.id}
-                                            occurrenceStart={
-                                                occurrence.occurrence_start
-                                            }
-                                            reminded={reminders.has(key)}
-                                            onChange={(r) =>
-                                                setReminded(occurrence, r)
-                                            }
-                                        />
-                                    }
-                                    action={
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                takeMeThere(occurrence);
-                                            }}
-                                            className="rounded-[9px] bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
-                                        >
-                                            → Take me there
-                                        </button>
-                                    }
-                                />
-                            );
-                        })}
-                    </div>
+                    <EventsStreet
+                        date={date}
+                        today={today}
+                        wall={wall}
+                        column={day}
+                        poster={poster}
+                        forecast={weather}
+                        waiting={!!opened}
+                    />
                 )}
-            </div>
-
-            {detail && !destination && (
-                <EventRichDetail
-                    occurrence={detail}
-                    isMobile={isMobile}
-                    breadcrumb={windowLabel}
-                    onClose={() => setDetail(null)}
-                    onNavigate={() => takeMeThere(detail)}
-                    onOpenPlace={openPlace}
-                />
-            )}
-
-            {/* The linked place — same rich detail as the Places page */}
-            {placeDetail && !destination && (
-                <PlaceDetailModal
-                    place={placeDetail}
-                    isMobile={isMobile}
-                    meta={placeMeta(placeDetail)}
-                    onClose={() => setPlaceDetail(null)}
-                    onNavigate={(target) => {
-                        setDestination({
-                            ...target,
-                            backLabel: placeDetail.name,
-                        });
-                    }}
-                />
-            )}
-
-            {destination && (
-                <TakeMeThereSheet
-                    destination={destination}
-                    onBack={() => setDestination(null)}
-                    onClose={() => {
-                        setDestination(null);
-                        setDetail(null);
-                        setPlaceDetail(null);
-                    }}
-                />
-            )}
+            </section>
+            <EventDetails
+                listing={opened}
+                date={date}
+                today={today}
+                from={
+                    shownFrom?.point
+                        ? { name: shownFrom.name, ...shownFrom.point }
+                        : null
+                }
+                appointment={appointment}
+                mode={mode}
+                day={dayPlan}
+                saved={opened ? saved.keys.has(opened.key) : false}
+                onSave={() => opened && toggleSave(opened)}
+                onClose={() => showDetail(null)}
+            />
         </AppLayout>
     );
 }

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Gtfs\GtfsStop;
 use App\Models\User;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
@@ -74,50 +73,33 @@ class NearbyStopService
      */
     public function getNearbyRailStations(float $lat, float $lng, int $radiusMeters = 5000): array
     {
-        return Cache::remember("rail_stations_{$lat}_{$lng}_{$radiusMeters}", 300, function () use ($lat, $lng, $radiusMeters) {
-            // Find GTFS stops that serve rail routes (route_type=2)
-            // Use a generous radius — rail stations are spaced further apart than tram stops
-            $stations = GtfsStop::query()
-                ->whereNotNull('stop_lat')
-                ->whereNotNull('stop_lng')
-                ->where('location_type', 0)
-                ->whereIn('stop_id', function ($q) {
-                    $q->select('st.stop_id')
-                        ->from('gtfs_stop_times as st')
-                        ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
-                        ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
-                        ->where('r.route_type', 2)
-                        ->distinct();
-                })
-                ->get();
+        // Use a generous radius — rail stations are spaced further apart than tram stops
+        $seenNames = [];
 
-            $seenNames = [];
-
-            foreach ($stations as $stop) {
-                $dist = $this->haversineMeters($lat, $lng, (float) $stop->stop_lat, (float) $stop->stop_lng);
-                if ($dist > $radiusMeters) {
-                    continue;
-                }
-
-                $key = $stop->stop_name;
-                if (isset($seenNames[$key]) && $seenNames[$key]['distance_m'] <= (int) round($dist)) {
-                    continue;
-                }
-
-                $seenNames[$key] = [
-                    'name' => $stop->stop_name,
-                    'lat' => (float) $stop->stop_lat,
-                    'lng' => (float) $stop->stop_lng,
-                    'distance_m' => (int) round($dist),
-                    'walk_min' => max(1, (int) round($dist / 80)),
-                ];
+        foreach (app(GtfsRailStations::class)->all() as $stop) {
+            $dist = $this->haversineMeters($lat, $lng, $stop['lat'], $stop['lng']);
+            if ($dist > $radiusMeters) {
+                continue;
             }
 
-            $result = array_values($seenNames);
-            usort($result, fn ($a, $b) => $a['distance_m'] <=> $b['distance_m']);
+            $key = $stop['name'];
+            if (isset($seenNames[$key]) && $seenNames[$key]['distance_m'] <= (int) round($dist)) {
+                continue;
+            }
 
-            return array_slice($result, 0, 3);
-        });
+            $seenNames[$key] = [
+                'name' => $stop['name'],
+                'lat' => $stop['lat'],
+                'lng' => $stop['lng'],
+                'distance_m' => (int) round($dist),
+                'walk_min' => max(1, (int) round($dist / 80)),
+            ];
+        }
+
+        $result = array_values($seenNames);
+        usort($result, fn ($a, $b) => $a['distance_m'] <=> $b['distance_m']);
+
+        return array_slice($result, 0, 3);
     }
 
     /**
@@ -178,6 +160,15 @@ class NearbyStopService
         $stopsUsed = [];
         $seenLineDir = [];
 
+        $railStations = $this->getNearbyRailStations($lat, $lng);
+
+        // Live departures for every stop below in one parallel round trip,
+        // rather than one TRIAS call per stop in turn.
+        $gtfs->prefetchDepartures([
+            ...array_column(array_slice($stops, 0, 3), 'name'),
+            ...array_column($railStations, 'name'),
+        ], 15);
+
         // Query departures from top 3 nearest KVB stops for tram/bus
         foreach (array_slice($stops, 0, 3) as $stop) {
             $result = $gtfs->getDepartures($stop['name'], 15);
@@ -228,8 +219,6 @@ class NearbyStopService
         }
 
         // Query departures from nearby GTFS rail stations (S-Bahn / RE / RB)
-        $railStations = $this->getNearbyRailStations($lat, $lng);
-
         foreach ($railStations as $station) {
             $result = $gtfs->getDepartures($station['name'], 15);
 

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Places, with room for every kind of day</title>
+        <link rel="stylesheet" href="../connected/style.css" />
+        <link rel="stylesheet" href="../connected/shell-review.css?v=b5816d314f49" />
+        <link rel="stylesheet" href="./style.css" />
+        <script defer src="../connected/model.js"></script>
+        <script defer src="./sample.js"></script>
+        <script defer src="../connected/store.js?v=2cc367c374d2"></script>
+        <script defer src="../connected/icons.js?v=d57bd11ed911"></script>
+        <script defer src="../connected/motion.js"></script>
+        <script defer src="../connected/ui.js"></script>
+        <script defer src="../connected/handoffs.js?v=33932970adf3"></script>
+        <script defer src="../connected/planning-ui.js?v=4b0a7b379d2f"></script>
+        <script defer src="../places-next/filters.js"></script>
+        <script defer src="./model.js"></script>
+        <script defer src="./app.js"></script>
+    </head>
+    <body class="shell-review places-optional" data-page="places">
+        <a class="skip-link" href="#place-search">Skip to places</a>
+        <div class="preview-notice">
+            <span>Design preview · recorded Cologne sample</span
+            ><a href="../places-next/">Original concept</a>
+        </div>
+        <header class="app-header">
+            <a class="brand" href="../today-c/" aria-label="Expadu home"
+                ><svg viewBox="13 22 74 60" aria-hidden="true">
+                    <g transform="translate(2.45 2.05)">
+                        <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                        <rect
+                            x="30"
+                            y="24"
+                            width="13"
+                            height="52"
+                            rx="6"
+                            fill="currentColor"
+                        />
+                        <rect
+                            x="46"
+                            y="24"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-7 46 30)"
+                        />
+                        <rect
+                            x="46"
+                            y="43.5"
+                            width="25"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-4 46 50)"
+                        />
+                        <rect
+                            x="46"
+                            y="63"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-2 46 69)"
+                        />
+                    </g></svg
+                >Expadu</a
+            >
+            <span class="sample-city"
+                ><span data-symbol="pin"></span>Cologne</span
+            >
+            <a class="composer-header" href="../composer-studio/"
+                ><span data-symbol="spark"></span><span>Composer</span></a
+            >
+        </header>
+        <nav class="service-nav" aria-label="Main navigation">
+            <a href="../today-c/"
+                ><span data-symbol="home"></span><span>Today</span></a
+            >
+            <a href="./" aria-current="page"
+                ><span data-symbol="pin"></span><span>Places</span></a
+            >
+            <a href="../events-next/"
+                ><span data-symbol="calendar"></span><span>Events</span></a
+            >
+            <a href="../bureaucracy-next/"
+                ><span data-symbol="document"></span><span>Bureaucracy</span></a
+            >
+            <a href="../departures-next/"
+                ><span data-symbol="train"></span><span>Departures</span></a
+            >
+            <a href="../services-next/"
+                ><span data-symbol="grid"></span><span>Services</span></a
+            >
+        </nav>
+        <main class="places-main" id="main">
+            <div class="places-heading">
+                <div>
+                    <h1>Places</h1>
+                    <p>A coffee, a little fresh air, something to discover.</p>
+                </div>
+                <a class="composer-link" href="../composer-studio/"
+                    ><span data-symbol="spark"></span>Find something with
+                    Composer</a
+                >
+            </div>
+            <section class="discovery" aria-label="Find places">
+                <div class="search-row">
+                    <label class="place-search"
+                        ><span data-symbol="search"></span
+                        ><input
+                            id="place-search"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="Search a place, street or activity"
+                            aria-label="Search places" /><button
+                            type="button"
+                            id="clear-search"
+                            class="icon-button"
+                            aria-label="Clear search"
+                            hidden
+                        >
+                            <span data-symbol="close"></span></button></label
+                    ><button
+                        id="saved-only"
+                        class="saved-only"
+                        type="button"
+                        aria-pressed="false"
+                    >
+                        <span data-symbol="bookmark"></span><span>Saved</span>
+                    </button>
+                </div>
+                <div
+                    class="category-tabs"
+                    role="group"
+                    aria-label="Place categories"
+                    id="categories"
+                ></div>
+                <div class="discovery-toolbar">
+                    <label class="compact-select area-control"
+                        ><span data-symbol="pin"></span
+                        ><span class="sr-only">Search area</span
+                        ><select id="area" aria-label="Search area">
+                            <option value="">All areas</option>
+                        </select></label
+                    >
+                    <details class="travel-control" id="travel-control">
+                        <summary>
+                            <span data-symbol="route"></span><span>Travel</span>
+                        </summary>
+                        <form id="travel-form" class="travel-popover">
+                            <label for="travel-from"
+                                >Starting point<input
+                                    name="from"
+                                    id="travel-from"
+                                    maxlength="120"
+                                    placeholder="Address, place or stop"
+                                    autocomplete="off"
+                            /></label>
+                            <fieldset>
+                                <legend>Travelling by</legend>
+                                <div class="mode-options">
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="mode"
+                                            value="walk"
+                                        /><span data-symbol="walk"></span
+                                        >Walk</label
+                                    ><label
+                                        ><input
+                                            type="radio"
+                                            name="mode"
+                                            value="bike"
+                                        /><span data-symbol="bike"></span
+                                        >Cycle</label
+                                    ><label
+                                        ><input
+                                            type="radio"
+                                            name="mode"
+                                            value="transit"
+                                        /><span data-symbol="train"></span
+                                        >Transit</label
+                                    >
+                                </div>
+                            </fieldset>
+                            <p>
+                                Used for directions. This preview has no live
+                                travel times.
+                            </p>
+                            <button class="button primary" type="submit">
+                                Keep preferences
+                            </button>
+                        </form>
+                    </details>
+                    <label class="compact-select sort-control"
+                        ><span data-symbol="sort"></span
+                        ><span class="sr-only">Sort places</span
+                        ><select id="sort" aria-label="Sort places">
+                            <option value="default">As listed</option>
+                            <option value="name">Name A–Z</option>
+                        </select></label
+                    >
+                    <div
+                        class="view-control"
+                        role="group"
+                        aria-label="View places"
+                    >
+                        <button
+                            type="button"
+                            data-view="list"
+                            aria-pressed="true"
+                        >
+                            <span data-symbol="list"></span
+                            ><span>List</span></button
+                        ><button
+                            type="button"
+                            data-view="map"
+                            aria-pressed="false"
+                        >
+                            <span data-symbol="map"></span><span>Map</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            <div class="results-caption">
+                <span id="result-count" role="status" aria-live="polite"></span
+                ><button type="button" id="reset-filters" hidden>
+                    Clear filters</button
+                ><span class="sample-caption"
+                    >Sample, not live availability</span
+                >
+            </div>
+            <section
+                class="map-panel"
+                id="map-panel"
+                aria-label="Map of matching places"
+                hidden
+            >
+                <div class="map-heading">
+                    <p>Same places. A different view.</p>
+                    <button type="button" id="fit-map">Show all results</button>
+                </div>
+                <div
+                    id="places-map"
+                    role="region"
+                    aria-label="Cologne place map"
+                ></div>
+                <p class="map-status" id="map-status" role="status">
+                    Loading map…
+                </p>
+                <p class="map-note">
+                    Pins show recorded map points. Entrances may be elsewhere.
+                </p>
+            </section>
+            <div class="results-layout" id="results-layout">
+                <section
+                    id="place-list"
+                    class="place-list"
+                    aria-label="Places"
+                ></section>
+                <section
+                    id="place-detail"
+                    class="place-detail"
+                    aria-label="Place details"
+                    hidden
+                ></section>
+            </div>
+            <footer class="sample-footer">
+                <p>
+                    16 public place records from 18 September 2026. Details may
+                    have changed.
+                    <a
+                        href="https://www.openstreetmap.org/copyright"
+                        target="_blank"
+                        rel="noopener"
+                        >© OpenStreetMap contributors</a
+                    >
+                </p>
+                <details>
+                    <summary>Preview options</summary>
+                    <label
+                        ><input type="checkbox" id="hide-photos" />Review with
+                        all photos hidden</label
+                    >
+                    <p>
+                        This is a design sample, not citywide coverage. Saving
+                        and planning use the existing local prototype; nothing
+                        is booked or sent.
+                    </p>
+                </details>
+            </footer>
+        </main>
+        <noscript
+            ><p class="no-script">
+                This interactive preview needs JavaScript.
+                <a href="./sample.json">Read the public sample records</a>.
+            </p></noscript
+        >
+    </body>
+</html>

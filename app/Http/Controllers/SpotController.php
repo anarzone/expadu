@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SpotCategory;
 use App\Models\UserPlace;
 use App\Profile\ProfileEngine;
 use App\Services\VeedelDirectory;
@@ -36,9 +37,21 @@ class SpotController extends Controller
             $bezirk = $homeBezirk ?? 'all';
         }
 
+        $categoryOrder = array_flip(['park', 'culture', 'pitch', 'court', 'swimming', 'playground', 'dog_park']);
+
         return Inertia::render('places', [
             'homeVeedel' => $homeVeedel,
             'homeBezirk' => $homeBezirk,
+            'categories' => collect(SpotCategory::placesCoarse())
+                ->sortBy(fn (string $category): int => $categoryOrder[$category] ?? count($categoryOrder))
+                ->map(fn (string $category): array => [
+                    'id' => $category,
+                    'label' => SpotCategory::coarseLabel($category),
+                    'emoji' => $category === 'court'
+                        ? SpotCategory::Basketball->emoji()
+                        : SpotCategory::from(SpotCategory::finesForCoarse($category)[0])->emoji(),
+                ])
+                ->values()->all(),
             // Saved origins for the "From" picker (Home / Work / pins). Only the
             // id, label and a sublabel reach the client — the coordinates stay
             // server-side and are resolved by id when one is picked.

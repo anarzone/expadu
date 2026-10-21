@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+    <meta charset="utf-8" /><title>Bureaucracy responsive review</title
+    ><style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e7e7eb;
+            font: 14px system-ui;
+        }
+        label {
+            display: block;
+            margin-bottom: 16px;
+        }
+        iframe {
+            display: block;
+            border: 0;
+            width: 393px;
+            height: 852px;
+            background: white;
+        }</style
+    ><label
+        >Preview width
+        <select
+            aria-label="Preview width"
+            onchange="
+                document.querySelector('iframe').style.width = this.value + 'px'
+            "
+        >
+            <option value="320">320px</option>
+            <option value="393" selected>393px</option>
+            <option value="560">560px</option>
+        </select></label
+    ><iframe src="../../" title="Bureaucracy preview"></iframe>
+</html>

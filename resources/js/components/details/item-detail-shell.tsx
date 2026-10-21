@@ -15,7 +15,7 @@ export function ItemDetailLayout({
 }) {
     return (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-            <article className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7 sm:py-7 lg:px-8">
+            <article className="min-h-0 overflow-y-auto px-5 py-5 md:px-7 md:py-7 lg:px-8">
                 {main}
             </article>
             <aside className="flex min-h-0 flex-col border-t border-border bg-secondary/35 lg:overflow-y-auto lg:border-t-0 lg:border-l">
@@ -43,7 +43,7 @@ function ItemDetailContent({
             data-item-detail={kind}
             className="flex min-h-0 flex-1 flex-col bg-card text-foreground"
         >
-            <header className="flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-5 sm:px-6">
+            <header className="flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-5 md:px-6">
                 <div
                     className="flex min-w-0 items-center gap-2 font-mono text-[11px] font-semibold tracking-[0.08em] text-text-3 uppercase"
                     aria-label={`${kind === 'event' ? 'Events' : 'Places'} breadcrumb`}
@@ -126,7 +126,7 @@ export function ItemDetailShell({
             <DialogContent
                 aria-describedby={undefined}
                 showClose={false}
-                className="h-[min(790px,calc(100dvh-2rem))] w-[calc(100vw-2rem)] max-w-[1100px] gap-0 overflow-hidden rounded-[24px] border-border bg-card p-0 shadow-[0_24px_90px_rgba(33,29,21,0.24)] sm:max-w-[1100px]"
+                className="h-[min(790px,calc(100dvh-2rem))] w-[calc(100vw-2rem)] max-w-[1100px] gap-0 overflow-hidden rounded-[24px] border-border bg-card p-0 shadow-[0_24px_90px_rgba(33,29,21,0.24)] md:max-w-[1100px]"
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 {content}

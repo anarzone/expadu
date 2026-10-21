@@ -1,0 +1,103 @@
+{
+    "name": "travel-leave-now-open",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=scheduled",
+        "wait": "#next-trip .trip-line-row",
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": "#departures > .trip-line .trip-line-row",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "note": "The mock opens its timetable-only state (?scenario=scheduled), as the app is at the sample moment: \"Scheduled · not live\" over the facts.",
+    "pairs": [
+        {
+            "name": "the way (open)",
+            "mock": "#departures > .trip-line .way-strip",
+            "app": "#departures > .trip-line .way-strip",
+            "contentDiffers": true
+        },
+        {
+            "name": "other ways (open)",
+            "mock": "#departures > .trip-line .trip-line-others",
+            "app": "#departures > .trip-line .trip-line-others",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+        },
+        {
+            "name": "compare link (open)",
+            "mock": "#departures > .trip-line .trip-line-others .text-action",
+            "app": "#departures > .trip-line .trip-line-others .text-action",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+        },
+        {
+            "name": "way: start",
+            "mock": "#departures > .trip-line .way-node.is-start",
+            "app": "#departures > .trip-line .way-node.is-start",
+            "contentDiffers": true
+        },
+        {
+            "name": "way: boarding stop",
+            "mock": "#departures > .trip-line .way-node.is-stop",
+            "app": "#departures > .trip-line .way-node.is-stop",
+            "index": 0,
+            "contentDiffers": true
+        },
+        {
+            "name": "way: ride",
+            "mock": "#departures > .trip-line .way-ride",
+            "app": "#departures > .trip-line .way-ride",
+            "contentDiffers": true
+        },
+        {
+            "name": "way: there",
+            "mock": "#departures > .trip-line .way-node.is-there",
+            "app": "#departures > .trip-line .way-node.is-there",
+            "contentDiffers": true
+        },
+        {
+            "name": "other ways heading",
+            "mock": "#departures > .trip-line .trip-line-others h3",
+            "app": "#departures > .trip-line .trip-line-others h3",
+            "contentDiffers": true
+        },
+        {
+            "name": "other way",
+            "mock": "#departures > .trip-line .trip-line-others li",
+            "app": "#departures > .trip-line .trip-line-others li",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+        }
+    ]
+}

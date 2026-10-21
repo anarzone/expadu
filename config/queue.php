@@ -76,6 +76,20 @@ return [
             'after_commit' => false,
         ],
 
+        // The commute worker's view of the same Redis queues. Jobs are still
+        // dispatched on `redis`; a job's visibility timeout is set by the
+        // connection of the worker that reserves it, so the `commute` worker
+        // running on this connection retries a killed alert job after two
+        // minutes instead of an hour. Keep the worker's --timeout below it.
+        'redis-commute' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'commute',
+            'retry_after' => (int) env('REDIS_COMMUTE_RETRY_AFTER', 120),
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
         'deferred' => [
             'driver' => 'deferred',
         ],

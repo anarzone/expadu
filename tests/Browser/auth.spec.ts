@@ -8,7 +8,7 @@ test.describe('Authentication', () => {
         await page.goto('/login');
 
         await expect(
-            page.getByRole('button', { name: 'Log in' }),
+            page.getByRole('button', { name: 'Sign in' }),
         ).toBeVisible();
         expect(errors).toHaveLength(0);
     });
@@ -17,13 +17,11 @@ test.describe('Authentication', () => {
         await page.goto('/login');
         await page.getByLabel('Email').fill('nobody@example.com');
         await page.locator('input#password').fill('wrong-password');
-        await page.getByRole('button', { name: 'Log in' }).click();
+        await page.getByRole('button', { name: 'Sign in' }).click();
 
-        // The credential error surfaces both as an auto-dismissing toast (a
-        // <div>) and as a persistent inline field error (a <p>). Scope to the
-        // paragraph so the assertion is unambiguous and doesn't race the toast.
+        // The poster says it above the fields, in its own words.
         await expect(
-            page.getByRole('paragraph').filter({ hasText: /credentials/i }),
+            page.getByRole('alert').filter({ hasText: /don’t match/ }),
         ).toBeVisible({ timeout: 5_000 });
     });
 

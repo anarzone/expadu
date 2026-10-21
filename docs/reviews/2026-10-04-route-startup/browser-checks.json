@@ -1,0 +1,654 @@
+{
+  "before": {
+    "initial": {
+      "elements": {
+        "#journey-form": {
+          "height": 349.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 231
+        },
+        "#planner-modes": {
+          "height": 0,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 416.84375
+        },
+        "#sample-routes": {
+          "height": 0,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 301.1953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 482.84375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 270.84375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 428.84375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 536.84375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": 98.75
+        }
+      },
+      "modeCount": 0,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 1512
+    },
+    "loaded": {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 231
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 416.84375
+        },
+        "#sample-routes": {
+          "height": 511.171875,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 301.1953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 526.84375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 270.84375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 472.84375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 580.84375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": 98.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 1512
+    }
+  },
+  "after": {
+    "initial": {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 231
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 416.84375
+        },
+        "#sample-routes": {
+          "height": 0,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 301.1953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 526.84375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 270.84375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 472.84375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 580.84375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": 98.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 1512
+    },
+    "loaded": {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 231
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 416.84375
+        },
+        "#sample-routes": {
+          "height": 511.171875,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 301.1953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 526.84375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 270.84375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 472.84375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 580.84375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": 98.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 1512
+    }
+  },
+  "mobile": {
+    "initial": {
+      "elements": {
+        "#journey-form": {
+          "height": 386.6953125,
+          "width": 358,
+          "x": 16,
+          "y": 263
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 441.6953125
+        },
+        "#sample-routes": {
+          "height": 0,
+          "width": 358,
+          "x": 16,
+          "y": 754.890625
+        },
+        ".app-header": {
+          "height": 120,
+          "width": 358,
+          "x": 16,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 358,
+          "x": 16,
+          "y": 551.6953125
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 358,
+          "x": 16,
+          "y": 295.6953125
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 497.6953125
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 605.6953125
+        },
+        "h1": {
+          "height": 31.046875,
+          "width": 79.4140625,
+          "x": 16,
+          "y": 144.4765625
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 390
+    },
+    "loaded": {
+      "elements": {
+        "#journey-form": {
+          "height": 386.6953125,
+          "width": 358,
+          "x": 16,
+          "y": 263
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 441.6953125
+        },
+        "#sample-routes": {
+          "height": 476.390625,
+          "width": 358,
+          "x": 16,
+          "y": 754.890625
+        },
+        ".app-header": {
+          "height": 120,
+          "width": 358,
+          "x": 16,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 358,
+          "x": 16,
+          "y": 551.6953125
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 358,
+          "x": 16,
+          "y": 295.6953125
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 497.6953125
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 358,
+          "x": 16,
+          "y": 605.6953125
+        },
+        "h1": {
+          "height": 31.046875,
+          "width": 79.4140625,
+          "x": 16,
+          "y": 144.4765625
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 0,
+      "width": 390
+    }
+  },
+  "mobileReload": {
+    "elements": {
+      "#journey-form": {
+        "height": 386.6953125,
+        "width": 358,
+        "x": 16,
+        "y": 61
+      },
+      "#planner-modes": {
+        "height": 44,
+        "width": 358,
+        "x": 16,
+        "y": 239.6953125
+      },
+      "#sample-routes": {
+        "height": 476.390625,
+        "width": 358,
+        "x": 16,
+        "y": 552.890625
+      },
+      ".app-header": {
+        "height": 120,
+        "width": 358,
+        "x": 16,
+        "y": -52
+      },
+      ".find-routes": {
+        "height": 46,
+        "width": 358,
+        "x": 16,
+        "y": 349.6953125
+      },
+      ".journey-fields": {
+        "height": 132,
+        "width": 358,
+        "x": 16,
+        "y": 93.6953125
+      },
+      ".journey-utilities": {
+        "height": 44,
+        "width": 358,
+        "x": 16,
+        "y": 295.6953125
+      },
+      ".planner-help": {
+        "height": 44,
+        "width": 358,
+        "x": 16,
+        "y": 403.6953125
+      },
+      "h1": {
+        "height": 31.046875,
+        "width": 79.4140625,
+        "x": 16,
+        "y": -57.5234375
+      }
+    },
+    "modeCount": 3,
+    "scrollX": 0,
+    "scrollY": 202,
+    "width": 390
+  },
+  "modeChecks": [
+    {
+      "buttonY": 551.6953125,
+      "focused": "bike",
+      "selected": [
+        "Cycle"
+      ]
+    },
+    {
+      "buttonY": 551.6953125,
+      "focused": "walk",
+      "selected": [
+        "Walk"
+      ]
+    },
+    {
+      "buttonY": 551.6953125,
+      "focused": "transit",
+      "selected": [
+        "Transit"
+      ]
+    }
+  ],
+  "reloads": [
+    {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 63.5
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 249.34375
+        },
+        "#sample-routes": {
+          "height": 511.171875,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 133.6953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 359.34375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 103.34375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 305.34375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 413.34375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": -68.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 167.5,
+      "width": 1512
+    },
+    {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 63.5
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 249.34375
+        },
+        "#sample-routes": {
+          "height": 511.171875,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 133.6953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 359.34375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 103.34375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 305.34375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 413.34375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": -68.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 167.5,
+      "width": 1512
+    },
+    {
+      "elements": {
+        "#journey-form": {
+          "height": 393.84375,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 63.5
+        },
+        "#planner-modes": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 249.34375
+        },
+        "#sample-routes": {
+          "height": 511.171875,
+          "width": 600.5,
+          "x": 683.4921875,
+          "y": 133.6953125
+        },
+        ".app-header": {
+          "height": 72,
+          "width": 1464,
+          "x": 24,
+          "y": 0
+        },
+        ".find-routes": {
+          "height": 46,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 359.34375
+        },
+        ".journey-fields": {
+          "height": 132,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 103.34375
+        },
+        ".journey-utilities": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 305.34375
+        },
+        ".planner-help": {
+          "height": 44,
+          "width": 382.4921875,
+          "x": 228,
+          "y": 413.34375
+        },
+        "h1": {
+          "height": 34.5,
+          "width": 87.6328125,
+          "x": 228,
+          "y": -68.75
+        }
+      },
+      "modeCount": 3,
+      "scrollX": 0,
+      "scrollY": 167.5,
+      "width": 1512
+    }
+  ],
+  "errors": []
+}

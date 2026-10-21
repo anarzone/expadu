@@ -47,53 +47,85 @@ class OpeningHoursParser
         $week = array_fill_keys(self::DAYS, []);
         $matched = false;
 
+        // ";" separates rules where a later one overrides earlier ones for the
+        // days it names; "," before a day selector adds a rule ("Mo-Fr
+        // 11:30-14:30, Th 17:30-20:00" keeps both Thursday intervals).
         foreach (preg_split('/\s*;\s*/', $raw) as $rule) {
-            $rule = trim((string) $rule);
-            if ($rule === '') {
-                continue;
-            }
+            $additive = false;
+            foreach (preg_split('/(?<=\d)\s*,\s*(?=(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)\b)/', trim((string) $rule)) as $part) {
+                $parsed = self::parseRule(trim((string) $part));
+                if ($parsed === null) {
+                    continue;
+                }
 
-            $isOff = (bool) preg_match('/\boff\b/i', $rule);
-            if ($isOff) {
-                $rule = trim((string) preg_replace('/\boff\b/i', '', $rule));
-            }
-
-            // "<days> <times>" — the space between the two is optional in the wild.
-            if (! preg_match('/^([A-Za-z][A-Za-z,\- ]*?)\s*(\d[\d:,\-]*)?$/', $rule, $m)) {
-                continue;
-            }
-
-            $days = self::expandDays($m[1]);
-            if ($days === null) {
-                continue;
-            }
-
-            if ($isOff || ! isset($m[2]) || $m[2] === '') {
+                [$days, $intervals] = $parsed;
                 foreach ($days as $d) {
-                    $week[self::DAYS[$d]] = [];
+                    $week[self::DAYS[$d]] = $additive && $intervals !== []
+                        ? [...$week[self::DAYS[$d]], ...$intervals]
+                        : $intervals;
                 }
                 $matched = true;
-
-                continue;
+                $additive = true;
             }
-
-            $intervals = self::parseTimes($m[2]);
-            if ($intervals === null) {
-                continue;
-            }
-
-            foreach ($days as $d) {
-                $week[self::DAYS[$d]] = $intervals;
-            }
-            $matched = true;
         }
 
         return $matched ? $week : null;
     }
 
+    /**
+     * One rule: its weekdays and intervals (an empty list = closed). Public
+     * holidays (PH) aren't modelled, so a PH selector is dropped and a
+     * holiday-only rule is skipped; a rule without a weekday selector applies
+     * to every day.
+     *
+     * @return array{0: list<int>, 1: list<array{0: string, 1: string}>}|null
+     */
+    private static function parseRule(string $rule): ?array
+    {
+        if ($rule === '') {
+            return null;
+        }
+
+        $isOff = (bool) preg_match('/\boff\b/i', $rule);
+        if ($isOff) {
+            $rule = trim((string) preg_replace('/\boff\b/i', '', $rule));
+        }
+
+        $hasHoliday = (bool) preg_match('/\bPH\b/', $rule);
+        $rule = trim((string) preg_replace('/\s*,?\s*\bPH\b\s*,?\s*/', ' ', $rule));
+        $rule = trim((string) preg_replace('/^,|,$/', '', $rule));
+
+        // "<days> <times>" — the space between the two is optional in the wild;
+        // a bare "<times>" means every day.
+        if (! preg_match('/^([A-Za-z][A-Za-z,\- ]*?)?\s*(\d[\d:,\-]*)?$/', $rule, $m) || $rule === '') {
+            return null;
+        }
+
+        $daySpec = trim($m[1] ?? '');
+        if ($daySpec === '') {
+            if ($hasHoliday) {
+                return null; // a holiday-only rule
+            }
+            $days = range(0, 6);
+        } else {
+            $days = self::expandDays($daySpec);
+            if ($days === null) {
+                return null;
+            }
+        }
+
+        if ($isOff || ! isset($m[2]) || $m[2] === '') {
+            return $daySpec === '' && ! $isOff ? null : [$days, []];
+        }
+
+        $intervals = self::parseTimes($m[2]);
+
+        return $intervals === null ? null : [$days, $intervals];
+    }
+
     private static function isParseable(string $raw): bool
     {
-        $residue = preg_replace('/(Mo|Tu|We|Th|Fr|Sa|Su)/', '', $raw);
+        $residue = preg_replace('/(Mo|Tu|We|Th|Fr|Sa|Su|PH)/', '', $raw);
         $residue = preg_replace('/\d{1,2}:\d{2}/', '', (string) $residue);
         $residue = preg_replace('/off/i', '', (string) $residue);
         $residue = preg_replace('#[\s,;:\-.|/]#', '', (string) $residue);

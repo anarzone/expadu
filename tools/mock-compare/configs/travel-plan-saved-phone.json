@@ -1,0 +1,171 @@
+{
+    "name": "travel-plan-saved-phone",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": ".travel-phone-bar button",
+        "before": [
+            {
+                "click": ".travel-phone-bar button"
+            },
+            {
+                "wait": 400
+            },
+            {
+                "click": "#day-places button"
+            },
+            {
+                "wait": 300
+            },
+            {
+                "click": ".find-routes"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-action=\"save-plan\"]"
+            },
+            {
+                "wait": 500
+            }
+        ],
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
+        ]
+    },
+    "app": {
+        "url": "/up",
+        "wait": ".plan-option",
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); for (const item of day.items || []) { if (item.planned) await fetch('/api/travel/planned-trips/' + item.planned.id, { method: 'DELETE', headers, credentials: 'same-origin' }); } } finally { location.replace('/timetable?view=journey&activity=appointment%3A7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d&compare=1'); } })(); }",
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })",
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '[title=\"Open the QA persona switcher\"] { display: none !important; }'; document.head.append(s); })"
+        ],
+        "before": [
+            {
+                "click": ".plan-save"
+            },
+            {
+                "wait": 10000
+            }
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
+    },
+    "note": "Measuring aid, on both sides alike: the planner's own scrolling and its sticky bars (back row, Show the way / Add to plan) are made static, so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. The app's QA persona switcher (local only, not in the mock) is hidden: it floats over Add to plan on phones. Each width starts clean: the app side opens on /up, removes the account's planned way for the sample day (the app's own API), then opens Plan a trip, so the width before's Add to plan doesn't carry over (the mock starts clean at every width). Add to plan is given 10 s to answer before measuring (it took up to 5.6 s on a heavily loaded machine).",
+    "pairs": [
+        {
+            "name": "saved view",
+            "mock": ".plan-saved",
+            "app": ".plan-saved",
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "The reminder starts on only where notifications are already allowed (the mock starts it on), and the mock's watching row ends with its own \"This preview doesn't watch.\": both rows are shorter here."
+        },
+        {
+            "name": "saved mark",
+            "mock": ".plan-saved-mark",
+            "app": ".plan-saved-mark"
+        },
+        {
+            "name": "saved title",
+            "mock": "#plan-saved-title",
+            "app": "#plan-saved-title"
+        },
+        {
+            "name": "saved summary",
+            "mock": ".plan-saved-summary",
+            "app": ".plan-saved-summary"
+        },
+        {
+            "name": "It's on My day",
+            "mock": ".plan-saved-list li",
+            "app": ".plan-saved-list li",
+            "index": 0
+        },
+        {
+            "name": "Remind me",
+            "mock": ".plan-saved-list li",
+            "app": ".plan-saved-list li",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "The reminder starts off without notifications allowed (the mock starts it on)."
+        },
+        {
+            "name": "switch",
+            "mock": ".plan-saved-list [role=\"switch\"] .plan-switch",
+            "app": ".plan-saved-list [role=\"switch\"] .plan-switch",
+            "contentDiffers": true,
+            "reason": "Off here, on in the mock (see Remind me): its colour, and it sits mid-row in a row of another height.",
+            "ignore": ["y", "background-color"]
+        },
+        {
+            "name": "We keep watching it",
+            "mock": ".plan-saved-list .is-note",
+            "app": ".plan-saved-list .is-note",
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "reason": "The mock's row ends with its own \"This preview doesn't watch.\", a line the app doesn't need. It follows the reminder row (see Remind me)."
+        },
+        {
+            "name": "watching icon",
+            "mock": ".plan-saved-icon.is-watch",
+            "app": ".plan-saved-icon.is-watch",
+            "ignore": ["y"],
+            "reason": "After the reminder row, which is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "watching title",
+            "mock": ".plan-saved-list .is-note strong",
+            "app": ".plan-saved-list .is-note strong",
+            "ignore": ["y"],
+            "reason": "After the reminder row, which is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "saved actions",
+            "mock": ".plan-saved-actions",
+            "app": ".plan-saved-actions",
+            "ignore": ["y"],
+            "reason": "Follows the list (its reminder and watching rows). After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "Change the plan",
+            "mock": ".plan-saved-actions .quiet-button",
+            "app": ".plan-saved-actions .quiet-button",
+            "ignore": ["y"],
+            "reason": "Follows the list. After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "Done",
+            "mock": ".plan-saved-actions .primary",
+            "app": ".plan-saved-actions .primary",
+            "ignore": ["y"],
+            "reason": "Follows the list. After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "back row",
+            "mock": ".plan-back-row",
+            "app": ".plan-back-row"
+        },
+        {
+            "name": "bar title",
+            "mock": "#plan-bar-title",
+            "app": "#plan-bar-title"
+        }
+    ]
+}

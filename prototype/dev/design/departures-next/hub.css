@@ -1,0 +1,515 @@
+@import url('../connected/tokens.css');
+/* Plan a trip's panel (owner, 14 Oct 2026; Travel directions canvas, row 16).
+   Desktop: no Nearby / Plan a trip tabs. Plan a trip is a panel beside
+   Nearby, 420px, that grows to two thirds of the page. Every size: at rest
+   the panel offers your favourites and today's places; typing where to
+   opens From above it, as Google Maps does; a picked place shows its ways.
+   An app, not a website: the panel slides and resizes, From opens with
+   motion, and the controls are sized for a mouse on desktop. */
+
+/* ★ beside a stop's name (every size). */
+.nearby-star {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    cursor: pointer;
+}
+.nearby-star svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.nearby-star[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.nearby-star:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+
+/* Favourites at the top of the panel's start: starred stops, Home, Work. */
+.favourite-stops {
+    display: grid;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+.favourite-stops:empty {
+    display: none;
+}
+.favourite-stops button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-height: 56px;
+    padding: var(--space-8) var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.favourite-stops .favourite-text {
+    display: flex;
+    flex-direction: column;
+}
+.favourite-stops small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.favourite-mark {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.favourite-mark svg {
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+#journey-start .plan-subhead + .favourite-stops {
+    margin-top: var(--space-10);
+}
+#journey-start .saved-places {
+    margin-bottom: 28px;
+}
+
+/* Home and Work: dashed until they have an address, then a plain row. */
+#favourite-places button svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+#favourite-places button:not(.is-empty) {
+    border-style: solid;
+    border-width: 1px;
+    border-color: var(--color-border);
+    background: var(--color-bg-surface);
+}
+#favourite-places button:not(.is-empty) small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#favourite-places button > span:last-child {
+    min-width: 0;
+}
+/* Setting Home or Work: the Where to? line shows what it's for. */
+body.travel-palette.plan-setting[data-plan-stage] .to-field > label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+#favourite-places button[aria-pressed='true'] {
+    border-color: var(--teal);
+    background: var(--color-bg-surface);
+}
+
+/* The panel's own header (desktop): what it is, the sample clock, and the
+   bigger / smaller button once there are ways to compare. */
+.plan-panel-head {
+    display: none;
+}
+
+/* From opens once you type where to (every size). */
+body.travel-palette .journey-fields > .from-field {
+    max-height: 120px;
+    overflow: hidden;
+    transition:
+        max-height 380ms var(--ease),
+        opacity 260ms ease,
+        padding 380ms var(--ease);
+}
+body.travel-palette[data-plan-stage='rest'] .journey-fields > .from-field {
+    max-height: 0;
+    padding-block: 0;
+    opacity: 0;
+}
+body.travel-palette[data-plan-stage='rest']
+    .journey-fields
+    > .from-field::after {
+    display: none;
+}
+body.travel-palette .journey-fields > .swap {
+    transition:
+        opacity 260ms ease,
+        transform 320ms var(--ease);
+}
+body.travel-palette[data-plan-stage='rest'] .journey-fields > .swap {
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+}
+/* At rest the field is just "Where to?" (its To label returns with From). */
+body.travel-palette[data-plan-stage='rest'] .to-field > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+body.travel-palette[data-plan-stage='rest'] .to-field input {
+    font-size: var(--text-section);
+}
+/* Home and Work side by side, as on the canvas. */
+#journey-start .saved-places {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+}
+/* At rest the panel is "Where to?" with favourites and today's places. */
+body.travel-palette[data-plan-stage='rest']
+    :is(.plan-controls, .find-routes, #plan-hint) {
+    display: none;
+}
+
+/* Stations as line strips, not a map (owner, 14 Oct 2026; canvas row 16).
+   Each boarding group is a card; each line runs through the stop's dot,
+   with where it goes, via which stops and when at each end. A narrow column
+   (a phone, or Nearby's third beside a big panel) folds a strip into rows.
+   The strips themselves: strip.css, shared with pages outside Travel. */
+body.travel-palette .nearby-list {
+    container-type: inline-size;
+}
+body.travel-palette .nearby-area {
+    padding: var(--space-16) var(--space-16) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: 22px;
+    background: var(--color-bg-surface);
+}
+body.travel-palette .nearby-area .nearby-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: var(--space-8);
+}
+.nearby-change {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin: var(--space-12) var(--space-4);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.nearby-change svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+@media (min-width: 1000px) {
+    /* Two panes: Plan a trip's panel, then Nearby. */
+    body.travel-palette .page-navigation {
+        display: none;
+    }
+    body.travel-palette.departures-page #main {
+        display: grid;
+        grid-template-columns: 420px minmax(0, 1fr);
+        column-gap: var(--space-32);
+        align-items: start;
+        transition: grid-template-columns 460ms var(--ease);
+    }
+    body.travel-palette.departures-page.plan-big #main {
+        grid-template-columns: calc(66.6% - 16px) minmax(0, 1fr);
+    }
+    body.travel-palette.departures-page #main > :not(#journey-view) {
+        grid-column: 2;
+    }
+    body.travel-palette.departures-page #main > :is(#active-trip, #day-view),
+    body.travel-palette.departures-page.trip-open #main > :not(#journey-view) {
+        grid-column: 1 / -1;
+    }
+    body.travel-palette #journey-view {
+        grid-column: 1;
+        grid-row: 1 / span 6;
+        position: sticky;
+        top: 96px;
+        max-height: calc(100vh - 120px);
+        box-sizing: border-box;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        /* Its scrollbar keeps clear of the rounded corners
+           (connected/scrollbars.css): the panel's top and bottom 12px are
+           a clear border its background fills, and the hairline is drawn
+           as an outline over the edge. The content sits where it did. */
+        padding: 5px var(--space-16);
+        border: 1px solid transparent;
+        border-block-width: 12px;
+        outline: 1px solid var(--color-border);
+        outline-offset: -1px;
+        border-radius: 28px;
+        background: var(--color-bg-surface);
+        box-shadow: 0 18px 50px -36px #211d1559;
+    }
+    body.trip-open #journey-view {
+        display: none;
+    }
+    .plan-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-12);
+        margin-bottom: var(--space-20);
+    }
+    .plan-panel-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .plan-panel-title strong {
+        font-size: 21px;
+        letter-spacing: -0.3px;
+    }
+    .plan-panel-title small {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    body.travel-palette .plan-grow {
+        flex: none;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        background: var(--color-bg-surface);
+        transition:
+            background-color 160ms ease,
+            transform 140ms ease;
+    }
+    body.travel-palette .plan-grow:hover {
+        background: var(--color-bg-quiet);
+    }
+    body.travel-palette .plan-grow:active {
+        transform: scale(0.96);
+    }
+    body.travel-palette .plan-grow[hidden] {
+        display: none;
+    }
+    body.travel-palette .plan-grow svg {
+        width: 18px;
+        height: 18px;
+    }
+    /* The panel names itself; the form's own heading isn't needed. */
+    body.travel-palette .planner-heading {
+        display: none;
+    }
+    /* One column in the panel; options beside the form when it's big. */
+    body.travel-palette .journey-intro-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+    }
+    body.travel-palette.plan-big .journey-intro-grid {
+        grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.4fr);
+        gap: 36px;
+    }
+    body.travel-palette .journey-results {
+        padding: 0;
+        border: 0;
+    }
+    body.travel-palette.plan-big .journey-results {
+        padding-left: 36px;
+        border-left: 1px solid var(--color-border);
+    }
+    /* Nearby sizes its parts to the width it has, not the window's. */
+    body.travel-palette #departures {
+        container-type: inline-size;
+    }
+    /* Options show as soon as a place is picked, and update as you change
+       when or what matters, so the panel needs no Plan it button then. */
+    body.travel-palette[data-plan-stage='picked'] .find-routes {
+        display: none;
+    }
+    /* Desktop controls are sized for a mouse; the air stays between groups. */
+    body.travel-palette #journey-view :is(.day-places, .saved-places) button,
+    body.travel-palette #journey-view .favourite-stops button {
+        min-height: 52px;
+        padding-block: var(--space-8);
+    }
+    body.travel-palette #journey-view .plan-when button {
+        min-height: 38px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.travel-palette.departures-page #main,
+    body.travel-palette .journey-fields > .from-field,
+    body.travel-palette .journey-fields > .swap {
+        transition: none;
+    }
+}
+
+
+/* Station notices speak the same way: the ring holds the icon, the edge
+   carries the colour, the words stay ink. */
+body.travel-palette .nearby-banner.is-labelled .tl-banner {
+    align-items: center;
+    gap: 18px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 22px;
+    background: var(--color-bg-surface);
+    box-shadow: none;
+}
+body.travel-palette .nearby-banner.is-labelled .tl-tile {
+    width: 52px;
+    height: 52px;
+    box-sizing: border-box;
+    border: 3px solid currentColor;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-soft);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-tile svg {
+    width: 22px;
+    height: 22px;
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner strong {
+    font-size: 18px;
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner p > span {
+    margin-top: 3px;
+    color: var(--trip-ink);
+    font-size: 14px;
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-attention {
+    border-color: var(--trip-amber-edge);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-attention .tl-tile {
+    color: var(--trip-amber);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-conflict {
+    border-color: var(--color-conflict-border);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-conflict .tl-tile {
+    color: var(--color-conflict-text);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-unsure {
+    border: 1.5px dashed var(--color-border-strong);
+}
+body.travel-palette .nearby-banner.is-labelled .tl-banner.is-unsure .tl-tile {
+    border-style: dashed;
+}
+@media (max-width: 699px) {
+    body.travel-palette .nearby-banner.is-labelled .tl-banner {
+        gap: var(--space-12);
+        border-radius: 20px;
+    }
+    body.travel-palette .nearby-banner.is-labelled .tl-tile {
+        width: 46px;
+        height: 46px;
+    }
+    body.travel-palette .nearby-banner.is-labelled .tl-banner strong {
+        font-size: 16px;
+    }
+    body.travel-palette .nearby-banner.is-labelled .tl-banner p > span {
+        font-size: 12.5px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .trip-line,
+    .trip-ring circle + circle,
+    .trip-line-more svg {
+        transition: none;
+    }
+    .trip-line-way {
+        animation: none;
+    }
+}
+/* Desktop, once a place is picked: When and What matters fold into one line
+   under To, so the options come first; the line opens them in place
+   (review, 15 Oct 2026). */
+.plan-choices-summary {
+    display: none;
+}
+@media (min-width: 1000px) {
+    body.travel-palette[data-plan-stage='picked'] .plan-choices-summary {
+        display: flex;
+        align-items: center;
+        gap: var(--space-10);
+        width: 100%;
+        min-height: 52px;
+        margin-top: var(--space-10);
+        padding: var(--space-8) var(--space-14);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface);
+        color: var(--color-text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+    .plan-choices-summary > span:first-child {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        line-height: var(--leading-snug);
+    }
+    .plan-choices-summary small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .plan-choices-summary strong {
+        font-size: var(--text-control);
+        font-weight: var(--weight-semibold);
+    }
+    .plan-choices-summary > span:last-child svg {
+        width: 16px;
+        height: 16px;
+        transition: transform var(--duration-fast) var(--ease-standard);
+    }
+    .plan-choices-summary[aria-expanded='true'] > span:last-child svg {
+        transform: rotate(180deg);
+    }
+    body.travel-palette[data-plan-stage='picked'] .plan-controls:not(.is-open) {
+        display: none;
+    }
+    /* The To field above names the place and the When line says when, so
+       the options start at once; sort stays at their right (review, 16 Oct
+       2026). The heading stays for screen readers. */
+    body.travel-palette #results .results-top {
+        justify-content: flex-end;
+    }
+    /* Back to your request takes that row's left (style.css), where the
+       row alone would sit. */
+    body.travel-palette #results .results-lead {
+        margin: 0 0 12px;
+    }
+    body.travel-palette #results .results-lead .results-top {
+        margin: 0;
+    }
+    body.travel-palette
+        #results
+        :is(.results-top h2, .results-heading > span) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}

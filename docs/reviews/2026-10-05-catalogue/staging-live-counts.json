@@ -1,0 +1,28 @@
+{
+    "checked_at": "2026-10-05T13:40:12+00:00",
+    "scope": "read_only_aggregate_counts_not_native_consumer_qualification",
+    "spots": {
+        "stored": 11803,
+        "aliases": 798,
+        "source_null": 4356,
+        "source_null_active_recommendable": 0,
+        "active_recommendable_canonical_flags": 4242
+    },
+    "events": {
+        "stored": 4362,
+        "active": 1347,
+        "active_unexpired_end": 1335,
+        "recurrence_rows": 45,
+        "active_unlocated": 143,
+        "newest_verified_at": "2026-10-05 15:32:47"
+    },
+    "media": {
+        "stored": 628,
+        "approved_active_assets": 256
+    },
+    "attachments": {
+        "stored": 1771,
+        "accepted_match_flag": 268
+    },
+    "boundaries": 86
+}

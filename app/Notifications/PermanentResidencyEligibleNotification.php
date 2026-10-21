@@ -37,6 +37,12 @@ class PermanentResidencyEligibleNotification extends Notification implements Res
         return ['database', WebPushChannel::class];
     }
 
+    /** Prevent already queued legacy estimates from being delivered. */
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        return false;
+    }
+
     public function toWebPush(mixed $notifiable): WebPushMessage
     {
         return (new WebPushMessage)

@@ -2,6 +2,7 @@ import type {
     GeoJSONSource,
     LngLatBoundsLike,
     Map as MaplibreMap,
+    Marker,
 } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
@@ -27,15 +28,19 @@ export function JourneyMap({
     legs,
     origin,
     destination,
+    position = null,
     className,
 }: {
     legs: Leg[];
     origin: Point | null;
     destination: Point;
+    /** A fresh foreground device fix from the active journey's existing watcher. */
+    position?: (Point & { accuracy: number }) | null;
     className?: string;
 }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MaplibreMap | null>(null);
+    const positionMarker = useRef<Marker | null>(null);
     const geojsonRef = useRef<RouteGeoJson>({
         type: 'FeatureCollection',
         features: [],
@@ -66,6 +71,10 @@ export function JourneyMap({
                     attributionControl: { compact: true },
                 });
                 mapRef.current = map;
+                map.addControl(
+                    new bm.maplibregl.NavigationControl({ showCompass: false }),
+                    'top-right',
+                );
                 let mapLoaded = false;
 
                 // Style layers are wiped by setStyle, so (re)apply on every
@@ -120,6 +129,8 @@ export function JourneyMap({
             cancelled = true;
             observer?.disconnect();
             resizeObserver?.disconnect();
+            positionMarker.current?.remove();
+            positionMarker.current = null;
             mapRef.current?.remove();
             mapRef.current = null;
         };
@@ -128,10 +139,53 @@ export function JourneyMap({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        if (status !== 'ready' || !position || !mapRef.current) {
+            positionMarker.current?.remove();
+            positionMarker.current = null;
+
+            return;
+        }
+
+        const fix = position;
+        loadBasemap()
+            .then(({ maplibregl }) => {
+                if (cancelled || !mapRef.current) {
+                    return;
+                }
+
+                if (!positionMarker.current) {
+                    const dot = document.createElement('div');
+                    dot.className =
+                        'size-5 rounded-full border-[3px] border-white bg-cyan-h shadow-[0_0_0_7px_rgba(0,118,139,0.18)]';
+                    dot.setAttribute('role', 'img');
+                    dot.setAttribute('aria-label', 'Your approximate location');
+                    positionMarker.current = new maplibregl.Marker({
+                        element: dot,
+                    })
+                        .setLngLat([fix.lng, fix.lat])
+                        .addTo(mapRef.current);
+                } else {
+                    positionMarker.current.setLngLat([fix.lng, fix.lat]);
+                }
+            })
+            .catch(() => {
+                /* The itinerary stays available when the map fails. */
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [position, status]);
+
+    const hasGeometry = legs.some((leg) => !!leg.polyline);
+
     return (
         <div
             className={cn(
-                'relative h-[230px] overflow-hidden rounded-[14px] border border-border bg-secondary',
+                'relative h-[230px] overflow-hidden rounded-[14px] border border-border bg-secondary [&_.maplibregl-ctrl-group_button]:size-11',
                 className,
             )}
         >
@@ -140,18 +194,47 @@ export function JourneyMap({
             {status === 'loading' && (
                 <div className="absolute inset-0 grid place-items-center bg-secondary">
                     <span className="animate-pulse rounded-full border border-border bg-card/85 px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-                        Drawing live route…
+                        Loading map…
                     </span>
                 </div>
             )}
 
             {status === 'error' && (
                 <div className="absolute inset-0 grid place-items-center bg-card px-4 text-center text-[13px] text-muted-foreground">
-                    Map unavailable — the step-by-step route is in the List tab.
+                    Map unavailable. Your journey steps are still available.
                 </div>
             )}
 
-            {status === 'ready' && (
+            {status === 'ready' && !hasGeometry && (
+                <p className="absolute top-3 right-16 left-3 rounded-lg bg-card/95 px-3 py-2 text-xs text-muted-foreground">
+                    Route geometry is unavailable. Only known locations are
+                    shown.
+                </p>
+            )}
+            {status === 'ready' && position && (
+                <p
+                    className="absolute top-3 left-3 rounded-lg bg-card/95 px-3 py-2 text-xs text-cyan-h"
+                    style={!hasGeometry ? { top: '4.5rem' } : undefined}
+                >
+                    Your location · accuracy about{' '}
+                    {Math.round(position.accuracy)} m
+                </p>
+            )}
+            {status === 'ready' && position && (
+                <button
+                    type="button"
+                    onClick={() =>
+                        mapRef.current?.jumpTo({
+                            center: [position.lng, position.lat],
+                            zoom: 15,
+                        })
+                    }
+                    className="absolute right-3 bottom-12 min-h-11 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-cyan-h focus-visible:outline-2 focus-visible:outline-cyan"
+                >
+                    My location
+                </button>
+            )}
+            {status === 'ready' && hasGeometry && (
                 <div className="pointer-events-none absolute bottom-2.5 left-2.5 flex gap-2.5 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur">
                     <Key color="var(--map-walk, #AAA89F)" label="Walk" />
                     <Key color="#D8232A" label="Tram" />

@@ -2,9 +2,12 @@
 
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Enums\SpotCategory;
+use App\Http\Resources\PlaceResource;
 use App\Models\MediaAsset;
 use App\Models\PlaceFactCorrection;
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
@@ -31,6 +34,23 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
+test('places page offers every supported catalogue filter from the server', function () {
+    $this->get('/explore?category=shopping')->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('places')
+            ->where('filters.category', 'shopping')
+            ->where('categories', function ($options): bool {
+                $options = collect($options);
+
+                expect($options->pluck('id')->all())->toEqualCanonicalizing(SpotCategory::placesCoarse())
+                    ->and($options->firstWhere('id', 'shopping')['label'])->toBe('Shopping')
+                    ->and($options->firstWhere('id', 'services')['label'])->toBe('Local services')
+                    ->and($options->firstWhere('id', 'health')['label'])->toBe('Health');
+
+                return $options->every(fn ($option) => filled($option['emoji']));
+            }));
+});
+
 test('lists leisure places with the full contract shape', function () {
     Spot::factory()->create([
         'name' => 'Grüngürtel court',
@@ -45,7 +65,7 @@ test('lists leisure places with the full contract shape', function () {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'routing_lat', 'routing_lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'tip', 'transit_hint', 'facts', 'place_facts']],
+        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'routing_lat', 'routing_lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'summary', 'tip', 'transit_hint', 'facts', 'place_facts']],
         'meta' => ['total'],
     ]);
     // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
@@ -60,93 +80,41 @@ test('lists leisure places with the full contract shape', function () {
     $response->assertJsonPath('data.0.tip_is_generic', false);
 });
 
-test('place cards expose reviewed names and evidence-backed practical facts', function () {
-    $this->travelTo(CarbonImmutable::parse('2026-09-17 10:00:00', 'Europe/Berlin'));
+test('outdoor place API respects explicit fees and conditional restrictions', function (array $tags, ?string $price, ?bool $open) {
+    $spot = Spot::factory()->create(['category' => 'pitch', 'name' => 'Source-backed pitch', 'lat' => 50.949, 'lng' => 6.922, 'tags' => $tags]);
+
+    $this->getJson("/api/places/{$spot->id}")->assertOk()
+        ->assertJsonPath('data.price_text', $price)
+        ->assertJsonPath('data.open_now', $open);
+})->with([
+    'explicit public free' => [['fee' => 'no', 'access' => 'yes', 'opening_hours' => '24/7'], 'free', true],
+    'paid facility' => [['fee' => 'yes'], 'paid', null],
+    'conditional fee' => [['fee' => 'no', 'fee:conditional' => 'yes @ (Sa-Su)'], null, null],
+    'conflicting fee' => [['fee' => 'no', 'charge' => '5 EUR'], null, null],
+    'conditional access' => [['access' => 'yes', 'opening_hours' => '24/7', 'access:conditional' => 'private @ (Mo-Fr)'], null, null],
+]);
+
+test('places expose ready or stale English enrichment without overwriting source fields', function () {
     $spot = Spot::factory()->create([
-        'name' => 'Source projection',
+        'description' => 'Original German source description.',
         'category' => 'park',
         'veedel' => 'Ehrenfeld',
         'lat' => 50.949,
         'lng' => 6.922,
-        'source' => 'osm',
-        'source_id' => 'way/991',
     ]);
-    app(RecordPlaceObservation::class)->record($spot, [
-        'provider' => 'osm',
-        'provider_record_id' => 'way/991',
-        'source_url' => 'https://www.openstreetmap.org/way/991',
-        'observed_at' => '2026-09-17T10:00:00+00:00',
-        'ingestion_key' => 'osm-api-991',
-        'payload' => [
-            'name' => 'Quellenname',
-            'aliases' => ['Source Park'],
-            'location' => ['lat' => 50.949, 'lng' => 6.922, 'kind' => 'source_center', 'boundary_reference' => 'way/991'],
-            'access' => ['raw' => 'yes', 'conditional' => null],
-            'fee' => ['raw' => 'no'],
-            'hours' => ['raw' => 'Mo-Su 08:00-22:00'],
-            'contact' => ['website' => 'https://official.example.test/park', 'phone' => null, 'address' => 'Parkweg 9, Köln'],
-        ],
-    ]);
-    $review = app(ReviewPlaceFacts::class);
-    $changes = [
-        'name' => 'Friendly reviewed park',
-        'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225],
-    ];
-    $preview = $review->preview($spot->id, $changes);
-    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park', 'reviewer@example.test');
-
-    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
-
-    expect($place['name'])->toBe('Friendly reviewed park')
-        ->and($place['lat'])->toBe(50.949)
-        ->and($place['lng'])->toBe(6.922)
-        ->and($place['routing_lat'])->toBe(50.9494)
-        ->and($place['routing_lng'])->toBe(6.9225)
-        ->and($place['open_now'])->toBeTrue()
-        ->and($place['opening_hours_text'])->toBe('Mo-Su 08:00-22:00')
-        ->and($place['price_text'])->toBe('free')
-        ->and($place['place_facts']['name_kind'])->toBe('reviewed')
-        ->and($place['place_facts']['aliases'])->toContain('Quellenname', 'Source Park')
-        ->and($place['place_facts']['location']['map_point']['kind'])->toBe('source_center')
-        ->and($place['place_facts']['contact']['website']['value'])->toBe('https://official.example.test/park')
-        ->and($place['place_facts']['revision'])->toBeGreaterThan(0);
-});
-
-test('source entrance candidates are visible but never used for routing', function () {
-    $spot = Spot::factory()->create([
-        'name' => 'Park with candidate entrance',
-        'category' => 'park',
-        'veedel' => 'Ehrenfeld',
-        'lat' => 50.949,
-        'lng' => 6.922,
-        'source' => 'osm',
-        'source_id' => 'way/992',
-    ]);
-    app(RecordPlaceObservation::class)->record($spot, [
-        'provider' => 'osm',
-        'provider_record_id' => 'way/992',
-        'source_url' => 'https://www.openstreetmap.org/way/992',
-        'observed_at' => '2026-09-17T10:00:00+00:00',
-        'ingestion_key' => 'osm-api-992',
-        'payload' => [
-            'location' => [
-                'lat' => 50.949,
-                'lng' => 6.922,
-                'kind' => 'source_center',
-                'boundary_reference' => 'way/992',
-                'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225, 'status' => 'candidate'],
-            ],
-        ],
+    SpotEnrichment::factory()->create([
+        'spot_id' => $spot->id,
+        'status' => 'stale',
+        'summary' => 'An English summary from the last checked source snapshot.',
+        'tip' => 'Bring a blanket for the lawns.',
     ]);
 
-    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+    $place = $this->getJson('/api/places')->assertOk()->json('data.0');
 
-    expect($place['place_facts']['location']['entrance_point'])->toMatchArray([
-        'lat' => 50.9494,
-        'lng' => 6.9225,
-        'status' => 'candidate',
-    ])->and($place['routing_lat'])->toBe(50.949)
-        ->and($place['routing_lng'])->toBe(6.922);
+    expect($place['summary'])->toBe('An English summary from the last checked source snapshot.')
+        ->and($place['tip'])->toBe('Bring a blanket for the lawns.')
+        ->and($place['tip_is_generic'])->toBeFalse()
+        ->and($spot->fresh()->description)->toBe('Original German source description.');
 });
 
 test('place cards expose only approved active media and prefer it over legacy columns', function () {
@@ -268,33 +236,14 @@ test('an explicit From by geocoded point carries its label', function () {
         ->assertJsonPath('origin.label', 'Neumarkt');
 });
 
-test('food and drink places are browsable while unrelated indoor categories remain excluded', function (string $category) {
-    $food = Spot::factory()->create(['name' => 'Independent food venue', 'category' => $category, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    $library = Spot::factory()->create(['category' => 'library', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    $coworking = Spot::factory()->create(['category' => 'coworking', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    $park = Spot::factory()->create(['name' => 'Separate park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+test('excludes indoor/legacy categories from Places', function () {
+    Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    Spot::factory()->create(['category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
 
-    $places = collect($this->getJson('/api/places')->assertOk()->json('data'));
-    expect($places->pluck('id')->all())->toContain($food->id, $park->id)
-        ->not->toContain($library->id, $coworking->id);
-    expect($places->firstWhere('id', $food->id)['category'])->toBe('food_drink');
+    $response = $this->getJson('/api/places');
 
-    $this->getJson('/api/places?category=food_drink')->assertOk()
-        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
-    $this->getJson('/api/places?activity='.$category)->assertOk()
-        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
-    $this->getJson('/api/places?category=park&activity='.$category)->assertOk()
-        ->assertJsonCount(0, 'data');
-})->with(['cafe', 'restaurant', 'fast_food', 'bar', 'bakery']);
-
-test('an independent cafe geographically inside a park remains a separate place', function () {
-    $park = Spot::factory()->create(['name' => 'Test park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
-    $cafe = Spot::factory()->create(['name' => 'Independent park cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id, 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211]);
-
-    $ids = collect($this->getJson('/api/places')->assertOk()->json('data'))->pluck('id')->all();
-    expect($ids)->toContain($park->id, $cafe->id);
-    $this->getJson('/api/places?category=food_drink')->assertOk()
-        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $cafe->id);
+    expect(collect($response->json('data'))->pluck('category')->all())->not->toContain('other');
+    expect(collect($response->json('data'))->pluck('category')->all())->toContain('park');
 });
 
 test('filters by coarse category', function () {
@@ -815,6 +764,147 @@ test('the list carries feedback state and hides not-interested places', function
     expect($data->pluck('name')->all())->toContain('Saved park');
     expect($data->pluck('name')->all())->not->toContain('Hidden park');
     expect($data->firstWhere('name', 'Saved park')['feedback_state'])->toBe('saved');
+});
+
+test('unmanaged legacy photos do not bypass the publication rights gate', function () {
+    Spot::factory()->create([
+        'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.949, 'lng' => 6.922,
+        'photo_url' => 'https://legacy.example/unreviewed.jpg',
+        'photo_attribution' => 'Unreviewed credit',
+    ]);
+    $this->getJson('/api/places')->assertOk()
+        ->assertJsonPath('data.0.photo_url', null)
+        ->assertJsonPath('data.0.photo_attribution', null);
+});
+
+test('missing place coordinates remain missing rather than becoming zero', function () {
+    $spot = Spot::factory()->create(['category' => 'park']);
+    $spot->lat = null;
+    $spot->lng = null;
+    $data = (new PlaceResource($spot))->toArray(request());
+    expect($data['lat'])->toBeNull()->and($data['lng'])->toBeNull();
+});
+
+test('place cards expose reviewed names and evidence-backed practical facts', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-17 10:00:00', 'Europe/Berlin'));
+    $spot = Spot::factory()->create([
+        'name' => 'Source projection',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/991',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/991',
+        'source_url' => 'https://www.openstreetmap.org/way/991',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-991',
+        'payload' => [
+            'name' => 'Quellenname',
+            'aliases' => ['Source Park'],
+            'location' => ['lat' => 50.949, 'lng' => 6.922, 'kind' => 'source_center', 'boundary_reference' => 'way/991'],
+            'access' => ['raw' => 'yes', 'conditional' => null],
+            'fee' => ['raw' => 'no'],
+            'hours' => ['raw' => 'Mo-Su 08:00-22:00'],
+            'contact' => ['website' => 'https://official.example.test/park', 'phone' => null, 'address' => 'Parkweg 9, Köln'],
+        ],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = [
+        'name' => 'Friendly reviewed park',
+        'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225],
+    ];
+    $preview = $review->preview($spot->id, $changes);
+    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park', 'reviewer@example.test');
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['name'])->toBe('Friendly reviewed park')
+        ->and($place['lat'])->toBe(50.949)
+        ->and($place['lng'])->toBe(6.922)
+        ->and($place['routing_lat'])->toBe(50.9494)
+        ->and($place['routing_lng'])->toBe(6.9225)
+        ->and($place['open_now'])->toBeTrue()
+        ->and($place['opening_hours_text'])->toBe('Mo-Su 08:00-22:00')
+        ->and($place['price_text'])->toBe('free')
+        ->and($place['place_facts']['name_kind'])->toBe('reviewed');
+
+    // List cards carry a slim evidence record; the detail has the full one.
+    $detail = $this->getJson("/api/places/{$spot->id}")->assertOk()->json('data');
+
+    expect($detail['place_facts']['aliases'])->toContain('Quellenname', 'Source Park')
+        ->and($detail['place_facts']['location']['map_point']['kind'])->toBe('source_center')
+        ->and($detail['place_facts']['contact']['website']['value'])->toBe('https://official.example.test/park')
+        ->and($detail['place_facts']['revision'])->toBeGreaterThan(0);
+});
+
+test('source entrance candidates are visible but never used for routing', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Park with candidate entrance',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/992',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/992',
+        'source_url' => 'https://www.openstreetmap.org/way/992',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-992',
+        'payload' => [
+            'location' => [
+                'lat' => 50.949,
+                'lng' => 6.922,
+                'kind' => 'source_center',
+                'boundary_reference' => 'way/992',
+                'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225, 'status' => 'candidate'],
+            ],
+        ],
+    ]);
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['place_facts']['location']['entrance_point'])->toMatchArray([
+        'lat' => 50.9494,
+        'lng' => 6.9225,
+        'status' => 'candidate',
+    ])->and($place['routing_lat'])->toBe(50.949)
+        ->and($place['routing_lng'])->toBe(6.922);
+});
+
+test('food and drink places are browsable while unrelated indoor categories remain excluded', function (string $category) {
+    $food = Spot::factory()->create(['name' => 'Independent food venue', 'category' => $category, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $library = Spot::factory()->create(['category' => 'library', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $coworking = Spot::factory()->create(['category' => 'coworking', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $park = Spot::factory()->create(['name' => 'Separate park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+
+    $places = collect($this->getJson('/api/places')->assertOk()->json('data'));
+    expect($places->pluck('id')->all())->toContain($food->id, $park->id)
+        ->not->toContain($library->id, $coworking->id);
+    expect($places->firstWhere('id', $food->id)['category'])->toBe('food_drink');
+
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?activity='.$category)->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?category=park&activity='.$category)->assertOk()
+        ->assertJsonCount(0, 'data');
+})->with(['cafe', 'restaurant', 'fast_food', 'bar', 'bakery']);
+
+test('an independent cafe geographically inside a park remains a separate place', function () {
+    $park = Spot::factory()->create(['name' => 'Test park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $cafe = Spot::factory()->create(['name' => 'Independent park cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id, 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211]);
+
+    $ids = collect($this->getJson('/api/places')->assertOk()->json('data'))->pluck('id')->all();
+    expect($ids)->toContain($park->id, $cafe->id);
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $cafe->id);
 });
 
 test('nearby same named food venues retain their distinct identities', function () {

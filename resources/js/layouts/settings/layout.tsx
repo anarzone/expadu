@@ -7,7 +7,6 @@ import { Separator } from '@/components/ui/separator';
 import { ICON_STROKE } from '@/constants/icons';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editNotifications } from '@/routes/notifications';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -31,27 +30,18 @@ const sidebarNavItems: NavItem[] = [
         title: 'Security',
         href: editSecurity(),
     },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-    },
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
-    // When server-side rendering, we only render the layout on the client...
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
     return (
-        <div className="px-4 py-6">
+        <div className="py-6">
             <div className="relative">
                 <button
                     onClick={() => router.visit('/dashboard')}
                     aria-label="Close settings"
-                    className="absolute top-0 right-0 flex size-8 cursor-pointer items-center justify-center rounded-full text-[#6B6860] transition-colors hover:bg-[#EFEDE7] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                    className="absolute top-0 right-0 flex size-11 cursor-pointer items-center justify-center rounded-full text-text-soft transition-colors hover:bg-bg-hover"
                 >
                     <IconX size={18} stroke={ICON_STROKE} />
                 </button>
@@ -64,7 +54,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="flex gap-1 overflow-x-auto pb-1 lg:flex-col"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -73,9 +63,14 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
-                                })}
+                                className={cn(
+                                    'min-h-11 w-auto shrink-0 justify-start lg:w-full',
+                                    {
+                                        'bg-bg-quiet': isCurrentOrParentUrl(
+                                            item.href,
+                                        ),
+                                    },
+                                )}
                             >
                                 <Link href={item.href}>
                                     {item.icon && (

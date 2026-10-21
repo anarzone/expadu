@@ -1,0 +1,301 @@
+{
+    "name": "travel-plan-options-phone",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": ".travel-phone-bar button",
+        "before": [
+            {
+                "click": ".travel-phone-bar button"
+            },
+            {
+                "wait": 400
+            },
+            {
+                "click": "#day-places button"
+            },
+            {
+                "wait": 300
+            },
+            {
+                "click": ".find-routes"
+            },
+            {
+                "wait": 600
+            }
+        ],
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
+        ]
+    },
+    "app": {
+        "url": "/timetable?view=journey&activity=appointment%3A7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d&compare=1",
+        "wait": ".plan-option",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'",
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "note": "Measuring aid, on both sides alike: the planner's own scrolling and its sticky bars (back row, Show the way / Add to plan) are made static, so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. Pairs run top of the page first: a screenshot of a tall element (results, an option) scrolls the page, and an element shot after that sits at another sub-pixel offset on each side. Journey details are closed on phones (the mock's links inside them are clipped, not shown), so the boarding stop and Places nearby are measured on desktop.",
+    "pairs": [
+        {
+            "name": "from field",
+            "mock": ".from-field",
+            "app": ".from-field",
+            "ignore": ["y"],
+            "reason": "The mock's own sample wording (\"(sample)\"). (its note)",
+            "contentDiffers": true
+        },
+        {
+            "name": "from note",
+            "mock": "#from-note",
+            "app": "#from-note",
+            "contentDiffers": true,
+            "ignore": ["w"],
+            "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."
+        },
+        {
+            "name": "picked plan",
+            "mock": ".to-picked",
+            "app": ".to-picked"
+        },
+        {
+            "name": "picked plan title",
+            "mock": ".to-picked strong",
+            "app": ".to-picked strong"
+        },
+        {
+            "name": "picked plan place",
+            "mock": ".to-picked small",
+            "app": ".to-picked small"
+        },
+        {
+            "name": "we checked",
+            "mock": ".plan-checks",
+            "app": ".plan-checks",
+            "contentDiffers": true,
+            "reason": "The checks are live (timetable-only departures at the sample moment, today's KVB lifts), so the chips' words, and how they wrap, differ from the mock's sample.",
+            "ignore": ["h", "y"]
+        },
+        {
+            "name": "we checked title",
+            "mock": ".plan-checks-toggle strong",
+            "app": ".plan-checks-toggle strong"
+        },
+        {
+            "name": "check chip",
+            "mock": ".plan-check-chips .tl-chip",
+            "app": ".plan-check-chips .tl-chip",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": [
+                "background-color",
+                "border-bottom-color",
+                "border-bottom-style",
+                "border-bottom-width",
+                "border-left-color",
+                "border-left-style",
+                "border-left-width",
+                "border-right-color",
+                "border-right-style",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "color",
+                "padding-bottom",
+                "padding-top",
+                "w"
+            ],
+            "reason": "Live: the app's departures are timetable-only at the sample moment (the unsure chip)."
+        },
+        {
+            "name": "best chip",
+            "mock": ".plan-option .tl-chip.is-best",
+            "app": ".plan-option .tl-chip.is-best",
+            "widths": [390, 768]
+        },
+        {
+            "name": "best chip @360",
+            "mock": ".plan-option .tl-chip.is-best",
+            "app": ".plan-option .tl-chip.is-best",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher. Shifted, its rounded ends land on another sub-pixel offset and antialiase differently (15 edge pixels); box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "spare chip",
+            "mock": ".plan-option-head .tl-chip",
+            "app": ".plan-option-head .tl-chip",
+            "index": 1,
+            "widths": [390, 768]
+        },
+        {
+            "name": "spare chip @360",
+            "mock": ".plan-option-head .tl-chip",
+            "app": ".plan-option-head .tl-chip",
+            "index": 1,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option title",
+            "mock": ".plan-option-title",
+            "app": ".plan-option-title",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option title @360",
+            "mock": ".plan-option-title",
+            "app": ".plan-option-title",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option line",
+            "mock": ".plan-option-title .tl-line",
+            "app": ".plan-option-title .tl-line",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option line @360",
+            "mock": ".plan-option-title .tl-line",
+            "app": ".plan-option-title .tl-line",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option times",
+            "mock": ".plan-option-times",
+            "app": ".plan-option-times",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option times @360",
+            "mock": ".plan-option-times",
+            "app": ".plan-option-times",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "first reason",
+            "mock": ".plan-option-reasons > span",
+            "app": ".plan-option-reasons > span",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "first reason @360",
+            "mock": ".plan-option-reasons > span",
+            "app": ".plan-option-reasons > span",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "details toggle",
+            "mock": ".details-toggle",
+            "app": ".details-toggle",
+            "index": 0,
+            "ignore": ["y"],
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher."
+        },
+        {
+            "name": "back row",
+            "mock": ".plan-back-row",
+            "app": ".plan-back-row"
+        },
+        {
+            "name": "bar title",
+            "mock": "#plan-bar-title",
+            "app": "#plan-bar-title"
+        },
+        {
+            "name": "results",
+            "mock": "#results",
+            "app": "#results",
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "Live checks and option reasons (below) change its height."
+        },
+        {
+            "name": "first option",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 0,
+            "widths": [390, 768],
+            "contentDiffers": true,
+            "reason": "The mock's own sample wording: its weather reason reads \"Dry on the way (sample)\", the app's \"Dry on the way\" (the same sample forecast, local fixture)."
+        },
+        {
+            "name": "first option @360",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 0,
+            "widths": [360],
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. The mock's own sample wording: its weather reason reads \"Dry on the way (sample)\", the app's \"Dry on the way\" (the same sample forecast, local fixture)."
+        },
+        {
+            "name": "second option",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. The mock's own sample wording: its weather reason reads \"Dry on the way (sample)\", the app's \"Dry on the way\" (the same sample forecast, local fixture)."
+        },
+        {
+            "name": "second option, weather",
+            "mock": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)",
+            "app": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "reason": "Third reason of the second option, its weather. At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. The mock's own sample wording: its weather reason reads \"Dry on the way (sample)\", the app's \"Dry on the way\" (the same sample forecast, local fixture)."
+        },
+        {
+            "name": "actions",
+            "mock": ".plan-actions",
+            "app": ".plan-actions",
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. Below the fold, after the options, it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match."
+        },
+        {
+            "name": "Show the way",
+            "mock": ".plan-go",
+            "app": ".plan-go",
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. Below the fold, after the options, it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match."
+        },
+        {
+            "name": "Add to plan",
+            "mock": ".plan-save",
+            "app": ".plan-save",
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock's checks wrap onto three rows (its \"Lifts unknown\" on its own) and the app's onto two (KVB's lifts are known: \"No lifts out\"), so what follows starts 30px higher. Below the fold, after the options, it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match."
+        }
+    ]
+}

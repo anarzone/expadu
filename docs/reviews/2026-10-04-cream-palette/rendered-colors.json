@@ -1,0 +1,64 @@
+{
+  "readyText": "QA · persona\nToday, New.\n\nSun 4 Oct\n\nYour day\n\nNo plans added for today.\n\nAdd a plan\nPick up where you left off\n\nYour plan is saved. You can keep editing here. Undo is available.\n\nContinue in Composer\nPaperwork\nGuidance when you need it\nExplore reviewed information for your situation.\nCity help\nPlan a trip\nCheck departures\nLocal services\nA little city life\nAll events\n\nNo more matching events for today.\n\nSee what’s coming up",
+  "surfaces": [
+    {
+      "background": "rgb(255, 253, 248)",
+      "class": "connected-app-header border-b border-border bg-card",
+      "color": "rgb(33, 29, 21)",
+      "tag": "HEADER"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "w-full min-w-0 flex-1 pb-20",
+      "color": "rgb(33, 29, 21)",
+      "heading": "Today, New.",
+      "tag": "MAIN"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "today-agenda",
+      "color": "rgb(33, 29, 21)",
+      "heading": "Your day",
+      "tag": "SECTION"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "today-composer",
+      "color": "rgb(33, 29, 21)",
+      "heading": "Pick up where you left off",
+      "tag": "SECTION"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "today-paperwork",
+      "color": "rgb(33, 29, 21)",
+      "heading": "Paperwork",
+      "tag": "SECTION"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "today-city-help",
+      "color": "rgb(33, 29, 21)",
+      "heading": "City help",
+      "tag": "SECTION"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "class": "today-discovery",
+      "color": "rgb(33, 29, 21)",
+      "heading": "A little city life",
+      "tag": "SECTION"
+    }
+  ],
+  "tokens": {
+    "--background": "#faf6ee",
+    "--border": "#e6ddcb",
+    "--card": "#fffdf8",
+    "--cyan-h": "#0a7f99",
+    "--cyan-soft": "#d8f3fb",
+    "--foreground": "#211d15",
+    "--muted-foreground": "#6e6657",
+    "--primary": "#ff3902",
+    "--surface-2": "#f1ebdf"
+  }
+}

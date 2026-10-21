@@ -25,16 +25,18 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
-use App\Listeners\CreateAlertFromNotification;
+use App\Models\User;
+use App\Observers\BureaucracyAccountObserver;
+use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -44,6 +46,13 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Ssr\Gateway;
+use Resend\Client as ResendClient;
+use Resend\Contracts\Client as ResendClientContract;
+use Resend\Laravel\Exceptions\ApiKeyIsMissing;
+use Resend\Transporters\HttpTransporter;
+use Resend\ValueObjects\ApiKey as ResendApiKey;
+use Resend\ValueObjects\Transporter\BaseUri as ResendBaseUri;
+use Resend\ValueObjects\Transporter\Headers as ResendHeaders;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,9 +62,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
-            $configuration = config('services.bureaucracy_llm');
-
-            if (! is_array($configuration) || ! $this->bureaucracyLlmIsConfigured($configuration)) {
+            if (! ProcessingPurpose::FactExtraction->available()) {
                 return $app->make(UnavailableCaseFactExtractor::class);
             }
 
@@ -76,7 +83,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ParsesPrompt::class, function ($app) {
             $heuristic = $app->make(HeuristicPromptParser::class);
 
-            if (config('services.llm.driver') === 'openai' && config('services.llm.key')) {
+            if (ProcessingPurpose::ComposerParse->available()) {
                 return new OpenAiCompatiblePromptParser($heuristic);
             }
 
@@ -89,31 +96,39 @@ class AppServiceProvider extends ServiceProvider
             ClassifiesEvents::class,
             AnthropicEventClassifier::class,
         );
+
+        $this->bindResendClient();
+    }
+
+    /**
+     * resend-laravel builds its client with a bare Guzzle instance — no connect
+     * or total timeout — so a stalled Resend call would hang the request or
+     * queue worker. Rebind it (same wiring as `Resend::client()`) with bounded
+     * timeouts; the package's `resend` alias follows the contract binding.
+     */
+    private function bindResendClient(): void
+    {
+        $this->app->singleton(ResendClientContract::class, function (): ResendClient {
+            $apiKey = config('resend.api_key') ?? config('services.resend.key');
+
+            if (! is_string($apiKey)) {
+                throw ApiKeyIsMissing::create();
+            }
+
+            return new ResendClient(new HttpTransporter(
+                new GuzzleClient([
+                    'connect_timeout' => config('services.resend.connect_timeout'),
+                    'timeout' => config('services.resend.timeout'),
+                ]),
+                ResendBaseUri::from(getenv('RESEND_BASE_URL') ?: 'api.resend.com'),
+                ResendHeaders::withAuthorization(ResendApiKey::from($apiKey)),
+            ));
+        });
     }
 
     /**
      * @param  array<string, mixed>  $configuration
      */
-    private function bureaucracyLlmIsConfigured(array $configuration): bool
-    {
-        if (($configuration['enabled'] ?? false) !== true) {
-            return false;
-        }
-
-        foreach (['base_url', 'model', 'key', 'processor_name', 'processor_privacy_url', 'prompt_version'] as $key) {
-            if (! is_string($configuration[$key] ?? null) || trim($configuration[$key]) === '') {
-                return false;
-            }
-        }
-
-        return filter_var($configuration['base_url'], FILTER_VALIDATE_URL) !== false
-            && filter_var($configuration['processor_privacy_url'], FILTER_VALIDATE_URL) !== false
-            && is_int($configuration['timeout'] ?? null)
-            && $configuration['timeout'] > 0
-            && is_int($configuration['daily_limit'] ?? null)
-            && $configuration['daily_limit'] > 0;
-    }
-
     /**
      * Bootstrap any application services.
      */
@@ -122,7 +137,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRateLimiting();
 
-        Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
+        User::observe(BureaucracyAccountObserver::class);
+
+        // CreateAlertFromNotification is registered by listener discovery.
         Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
@@ -220,21 +237,15 @@ class AppServiceProvider extends ServiceProvider
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
-        RateLimiter::for('bureaucracy-ai-burst', function (Request $request): array {
-            $response = fn (Request $_request, array $headers) => response()->json([
-                'outcome' => 'limited',
-                'message' => 'Please wait a moment before trying again. You can still use the choices below.',
-            ], 429, $headers);
-
-            return [
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-user:'.$request->user()?->getAuthIdentifier())
-                    ->response($response),
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-ip:'.$request->ip())
-                    ->response($response),
-            ];
-        });
+        // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
+        // `throttle:N,M` middleware shares one per-user signature, so a stacked group
+        // limit's shorter decay would reset the hourly caps on the routes below.
+        $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
+        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
+        RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
+        RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
+        RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));
     }

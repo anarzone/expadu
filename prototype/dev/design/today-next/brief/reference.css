@@ -1,0 +1,126 @@
+/* Restore the owner's continuity-desktop reference, before the joined canvas.
+   Shared components and interactions come from the preserved Today page. */
+.today-reference .today-workspace {
+    background: transparent;
+    border-radius: 0;
+}
+.today-reference .daily-canvas {
+    gap: 22px;
+    align-items: start;
+}
+.today-reference .day-area {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding-bottom: 16px;
+}
+.today-reference .next-area::before,
+.today-reference .discovery::before,
+.today-reference .coming-up::before,
+.today-reference .continuity::before,
+.today-reference .continuity-grid.has-composer .continue-support::before {
+    content: none;
+}
+.today-reference .practical-surface {
+    background: linear-gradient(110deg, #eee8f8, #f6f3f9 65%, var(--surface));
+    border-radius: var(--radius-xl);
+}
+.today-reference .coming-up {
+    margin: 0 16px;
+    padding: 8px 16px 12px;
+    background: var(--surface-quiet);
+    border-radius: var(--radius-xl);
+}
+.today-reference .discovery {
+    margin-top: 18px;
+    padding: 0;
+}
+.today-reference .continuity {
+    margin-top: 24px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+}
+.today-reference .continuity-heading {
+    padding: 0;
+    margin-bottom: 12px;
+}
+.today-reference .continuity-grid {
+    gap: 20px;
+}
+.today-reference .continuity-grid.has-composer.has-support {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+}
+.today-reference .continue-composer {
+    padding: 24px;
+    border-radius: var(--radius-xl);
+    background: var(--blue);
+}
+.today-reference .continue-support {
+    display: block;
+    padding: 22px;
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+}
+.today-reference .continue-support > section {
+    padding: 0;
+}
+.today-reference .continue-support > section + section {
+    margin-top: 16px;
+    padding: 16px 0 0;
+}
+.today-reference .continue-support > section + section::before {
+    inset: 0 0 auto;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+.today-reference .continue-start .next-starters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    margin-top: 12px;
+}
+.today-reference .next-starters :is(a, button) {
+    background: var(--surface-quiet);
+    padding-inline: 16px;
+}
+.today-reference .next-starters :is(a, button):is(:hover, :active) {
+    background: var(--cyan-hover);
+}
+.today-reference .continuity-fresh {
+    padding: 22px;
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+}
+@media (max-width: 700px) {
+    .today-reference .daily-canvas {
+        gap: 16px;
+    }
+    .today-reference .day-area,
+    .today-reference .practical-surface {
+        border-radius: var(--radius-xl);
+    }
+    .today-reference .day-area {
+        padding-bottom: 12px;
+    }
+    .today-reference .coming-up {
+        margin-inline: 12px;
+        padding: 4px 12px 8px;
+        border-radius: var(--radius-lg);
+    }
+    .today-reference .discovery {
+        margin-top: 14px;
+    }
+    .today-reference .continuity {
+        margin-top: 18px;
+    }
+    .today-reference .continuity-grid.has-composer.has-support {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+    .today-reference .continue-composer,
+    .today-reference .continue-support,
+    .today-reference .continuity-fresh {
+        padding: 18px;
+        border-radius: var(--radius-xl);
+    }
+}

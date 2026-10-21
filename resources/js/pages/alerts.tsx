@@ -16,6 +16,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { writeJson } from '@/lib/reliable-write';
 import { edit as editNotifications } from '@/routes/notifications';
 
 type Alert = {
@@ -35,8 +36,14 @@ type Alert = {
 
 /** Severity → left border + icon-tile tint (the design's sev-* classes). */
 const SEVERITY: Record<Alert['severity'], { border: string; icon: string }> = {
-    danger: { border: 'border-l-danger', icon: 'bg-danger-soft text-danger' },
-    warn: { border: 'border-l-warn', icon: 'bg-warn-soft text-warn' },
+    danger: {
+        border: 'border-l-danger',
+        icon: 'bg-conflict-bg text-conflict-text',
+    },
+    warn: {
+        border: 'border-l-warn',
+        icon: 'bg-attention-bg text-attention-text',
+    },
     info: { border: 'border-l-navy', icon: 'bg-navy-soft text-navy' },
     success: {
         border: 'border-l-success',
@@ -57,7 +64,7 @@ const CATEGORY_ICON: Record<
 const CATEGORIES: { id: 'all' | Alert['category']; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'transit', label: 'Transit' },
-    { id: 'bureau', label: 'Bureaucracy' },
+    { id: 'bureau', label: 'Paperwork' },
     { id: 'events', label: 'Events' },
     { id: 'city', label: 'City' },
 ];
@@ -92,42 +99,25 @@ function timeAgo(iso: string): string {
     });
 }
 
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
-
-function post(url: string): void {
-    void fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'X-CSRF-TOKEN': csrfToken(), Accept: 'application/json' },
-    })
-        .then(() => router.reload({ only: ['unreadAlertCount'] }))
-        .catch(() => {});
-}
-
 function AlertCard({
     alert,
     onRead,
     onAction,
     onDismiss,
+    pending,
 }: {
     alert: Alert;
     onRead: (id: number) => void;
     onAction: (a: Alert) => void;
     onDismiss: (id: number) => void;
+    pending: boolean;
 }) {
     const Icon = CATEGORY_ICON[alert.category];
     const sev = SEVERITY[alert.severity];
 
     return (
         <div
-            onClick={() => !alert.read && onRead(alert.id)}
-            className={`group relative mb-2.5 flex cursor-pointer gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-card p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
+            className={`group relative mb-2.5 flex gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-bg-surface p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
         >
             <span
                 className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${sev.icon}`}
@@ -140,34 +130,47 @@ function AlertCard({
                         {alert.title}
                     </span>
                     {!alert.read && (
-                        <span className="mt-1.5 size-[7px] shrink-0 rounded-full bg-primary" />
+                        <span className="mt-1.5 size-[7px] shrink-0 rounded-full bg-action" />
                     )}
                 </div>
                 {alert.body && (
-                    <p className="mt-1.5 text-[13px] leading-[1.55] text-text-2">
+                    <p className="mt-1.5 text-[13px] leading-[1.55] text-text-soft">
                         {alert.body}
                     </p>
                 )}
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[10px] tracking-[0.05em] text-text-3 uppercase">
+                    <span className="font-mono text-[10px] tracking-[0.05em] text-text-muted uppercase">
                         {alert.source}
                     </span>
-                    <span className="text-[11px] text-text-3">·</span>
-                    <span className="font-mono text-[10.5px] text-text-3">
+                    <span className="text-[11px] text-text-muted">·</span>
+                    <span className="font-mono text-[10.5px] text-text-muted">
                         {timeAgo(alert.created_at)}
                     </span>
                     {alert.occurrences > 1 && (
                         <>
-                            <span className="text-[11px] text-text-3">·</span>
-                            <span className="font-mono text-[10.5px] text-text-3">
+                            <span className="text-[11px] text-text-muted">
+                                ·
+                            </span>
+                            <span className="font-mono text-[10.5px] text-text-muted">
                                 updated {alert.occurrences}×
                             </span>
                         </>
                     )}
                 </div>
+                {!alert.read && (
+                    <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onRead(alert.id)}
+                        className="mt-2 min-h-11 text-sm font-medium text-action-text disabled:opacity-50"
+                    >
+                        Mark read
+                    </button>
+                )}
                 {alert.action_label && alert.deep_link && (
                     <div className="mt-3">
                         <button
+                            disabled={pending}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onAction(alert);
@@ -175,8 +178,8 @@ function AlertCard({
                             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-semibold transition-colors ${
                                 alert.lane === 'action' &&
                                 alert.severity === 'danger'
-                                    ? 'bg-primary text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)] hover:bg-primary/90'
-                                    : 'border border-border bg-card text-foreground hover:border-primary hover:text-primary'
+                                    ? 'bg-action text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)] hover:bg-action/90'
+                                    : 'border border-border bg-bg-surface text-text hover:border-action hover:text-action-text'
                             }`}
                         >
                             {alert.action_label}
@@ -190,8 +193,9 @@ function AlertCard({
                     e.stopPropagation();
                     onDismiss(alert.id);
                 }}
-                aria-label="Dismiss"
-                className="absolute top-2.5 right-2.5 flex size-[25px] items-center justify-center rounded-[7px] text-text-3 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-surface-2"
+                disabled={pending}
+                aria-label={`Dismiss ${alert.title}`}
+                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-[7px] text-text-muted transition-colors hover:bg-bg-quiet disabled:opacity-50"
             >
                 <IconX size={15} stroke={ICON_STROKE} />
             </button>
@@ -212,14 +216,14 @@ function Lane({
 }) {
     return (
         <>
-            <div className="mt-6 mb-3 flex items-center gap-2.5 font-mono text-[11px] font-medium tracking-[0.12em] text-text-3 uppercase">
+            <div className="mt-6 mb-3 flex items-center gap-2.5 font-mono text-[11px] font-medium tracking-[0.12em] text-text-muted uppercase">
                 {title}
                 {count !== undefined && (
                     <span
                         className={`rounded-full px-2 py-px text-[10.5px] font-bold ${
                             countTone === 'good'
                                 ? 'bg-success-soft text-success'
-                                : 'bg-danger-soft text-danger'
+                                : 'bg-conflict-bg text-conflict-text'
                         }`}
                     >
                         {count}
@@ -240,7 +244,11 @@ export default function Alerts() {
     const [cat, setCat] = useState<'all' | Alert['category']>('all');
     const [readIds, setReadIds] = useState<Set<number>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
+    const [allMarkedRead, setAllMarkedRead] = useState(false);
     const [showRead, setShowRead] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const pendingRef = useRef(false);
+    const [pending, setPending] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -305,19 +313,55 @@ export default function Alerts() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serverAlerts, dismissedIds, readIds, cat]);
 
+    async function saveAction(
+        url: string,
+        saved: () => void,
+    ): Promise<boolean> {
+        if (pendingRef.current) {
+            return false;
+        }
+
+        pendingRef.current = true;
+        setPending(true);
+        setError(null);
+
+        try {
+            await writeJson(url, 'POST');
+            saved();
+            router.reload({ only: ['unreadAlertCount'] });
+
+            return true;
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+
+            return false;
+        } finally {
+            pendingRef.current = false;
+            setPending(false);
+        }
+    }
+
     function markRead(id: number) {
-        setReadIds((s) => new Set(s).add(id));
-        post(`/alerts/${id}/read`);
+        return saveAction(`/alerts/${id}/read`, () =>
+            setReadIds((s) => new Set(s).add(id)),
+        );
     }
 
     function dismiss(id: number) {
-        setDismissedIds((s) => new Set(s).add(id));
-        flash('Dismissed');
-        post(`/alerts/${id}/dismiss`);
+        void saveAction(`/alerts/${id}/dismiss`, () => {
+            setDismissedIds((s) => new Set(s).add(id));
+            flash('Dismissed');
+        });
     }
 
-    function act(a: Alert) {
-        markRead(a.id);
+    async function act(a: Alert) {
+        if (!a.read && !(await markRead(a.id))) {
+            return;
+        }
 
         if (a.deep_link) {
             router.visit(a.deep_link);
@@ -325,17 +369,24 @@ export default function Alerts() {
     }
 
     function markAll() {
-        setReadIds(new Set(serverAlerts.map((a) => a.id)));
-        flash('All marked read');
-        post('/alerts/read-all');
+        void saveAction('/alerts/read-all', () => {
+            setReadIds(new Set(serverAlerts.map((a) => a.id)));
+            setAllMarkedRead(true);
+            flash('All marked read');
+        });
     }
 
-    const headerUnread = unreadCount || serverUnread;
+    const locallyRead = serverAlerts.filter(
+        (a) => !a.read && (readIds.has(a.id) || dismissedIds.has(a.id)),
+    ).length;
+    const headerUnread = allMarkedRead
+        ? 0
+        : Math.max(unreadCount, serverUnread - locallyRead);
     const allCaught =
         laneAction.length + laneGood.length + lanePosted.length === 0;
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}>
+        <AppLayout>
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px] px-1 pb-16">
                 {/* Header */}
@@ -344,15 +395,16 @@ export default function Alerts() {
                         <h1 className="font-display text-[30px] leading-tight font-medium tracking-[-0.02em]">
                             Alerts
                         </h1>
-                        <p className="mt-1.5 text-[13.5px] text-text-2">
+                        <p className="mt-1.5 text-[13.5px] text-text-soft">
                             {summary}
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                         {headerUnread > 0 && (
                             <button
+                                disabled={pending}
                                 onClick={markAll}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary hover:text-primary"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg-surface px-3 py-2 text-[12.5px] font-semibold text-text-soft transition-colors hover:border-action hover:text-action-text"
                             >
                                 <IconChecks size={14} stroke={ICON_STROKE} />
                                 Mark all read
@@ -364,13 +416,26 @@ export default function Alerts() {
                             }
                             aria-label="Notification settings"
                             title="Notification settings"
-                            className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-text-2 transition-colors hover:border-primary hover:text-primary"
+                            className="flex size-9 items-center justify-center rounded-full border border-border bg-bg-surface text-text-soft transition-colors hover:border-action hover:text-action-text"
                         >
                             <IconSettings size={18} stroke={1.7} />
                         </button>
                     </div>
                 </div>
 
+                {error && (
+                    <p
+                        role="alert"
+                        className="mt-4 rounded-xl border border-conflict-text/20 p-3 text-sm text-conflict-text"
+                    >
+                        {error}
+                    </p>
+                )}
+                {pending && (
+                    <p role="status" className="mt-2 text-sm text-text-muted">
+                        Saving…
+                    </p>
+                )}
                 {/* Category filter */}
                 <div className="mt-[18px] flex gap-2 overflow-x-auto pb-1.5">
                     {CATEGORIES.map((c) => {
@@ -383,8 +448,8 @@ export default function Alerts() {
                                 onClick={() => setCat(c.id)}
                                 className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-colors ${
                                     on
-                                        ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                        : 'border-border bg-card font-medium text-text-2 hover:border-primary'
+                                        ? 'border-action bg-action-tint font-semibold text-action-text'
+                                        : 'border-border bg-bg-surface font-medium text-text-soft hover:border-action'
                                 }`}
                             >
                                 {c.label}
@@ -406,7 +471,7 @@ export default function Alerts() {
                         <div className="font-display text-[21px] font-medium">
                             You're all caught up
                         </div>
-                        <div className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-relaxed text-text-2">
+                        <div className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-relaxed text-text-soft">
                             {cat === 'all'
                                 ? 'Nothing needs you right now. We’ll ping you the moment something does.'
                                 : 'Switch the filter to see other alerts.'}
@@ -427,6 +492,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -444,6 +510,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -457,6 +524,7 @@ export default function Alerts() {
                                         onRead={markRead}
                                         onAction={act}
                                         onDismiss={dismiss}
+                                        pending={pending}
                                     />
                                 ))}
                             </Lane>
@@ -469,7 +537,7 @@ export default function Alerts() {
                     <>
                         <button
                             onClick={() => setShowRead((v) => !v)}
-                            className="mt-4 mb-2.5 flex w-full items-center justify-between rounded-[14px] border border-dashed border-border px-4 py-3 text-[13px] font-semibold text-text-2"
+                            className="mt-4 mb-2.5 flex w-full items-center justify-between rounded-[14px] border border-dashed border-border px-4 py-3 text-[13px] font-semibold text-text-soft"
                         >
                             <span>
                                 {readList.length} read{' '}
@@ -492,6 +560,7 @@ export default function Alerts() {
                                     onRead={markRead}
                                     onAction={act}
                                     onDismiss={dismiss}
+                                    pending={pending}
                                 />
                             ))}
                     </>
@@ -500,7 +569,7 @@ export default function Alerts() {
 
             {toast && (
                 <div className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 md:bottom-8">
-                    <div className="rounded-full border border-transparent bg-foreground px-4 py-2.5 text-[13px] font-medium text-background shadow-lg dark:border-border dark:bg-secondary dark:text-foreground">
+                    <div className="rounded-full border border-transparent bg-text px-4 py-2.5 text-[13px] font-medium text-bg-canvas shadow-lg">
                         {toast}
                     </div>
                 </div>
