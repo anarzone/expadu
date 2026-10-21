@@ -1,10 +1,11 @@
-import { clsx } from 'clsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CommandError, commands, reads } from './api';
 import { answerLabel, choices, fieldIcon, fieldLabel, order } from './facts';
 import { formatDate } from './format';
 import { Icon } from './icons';
 import { offerFor } from './questions';
+import { SayItInYourWords } from './say-it';
+import type { Suggestion } from './say-it';
 import { usePaperwork } from './state';
 import type { SituationRequest } from './state';
 import type {
@@ -34,14 +35,26 @@ interface Draft {
     question?: Question;
     /** The saved answer as it was when the person reviewed the change. */
     previous?: Answer | null;
+    /** A suggested answer the person chose to use; it is saved only on confirm. */
+    suggestion?: Suggestion | null;
 }
 
-const operationLabels: Record<string, string> = {
-    asserted: 'Answer confirmed',
-    corrected: 'Earlier answer corrected',
-    changed: 'Situation changed',
-    resolved: 'Conflicting answers reviewed',
-};
+/** Someone who may change the answers but not see them gets the question alone. */
+const blank: FactView = { revision: 0, values: {}, states: {}, evidence: {} };
+
+/** "3 Sept 2026", as the mock's "Last checked". */
+const day = (iso: string) =>
+    new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).format(new Date(iso));
+
+/** "2 Sept", for a saved answer in a conflict. */
+const shortDay = (iso: string) =>
+    new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(
+        new Date(iso),
+    );
 
 const uncertain: { state: Exclude<AnswerState, 'value'>; label: string }[] = [
     { state: 'unknown', label: 'I’m not sure' },
@@ -56,6 +69,7 @@ export function Situation({ request }: { request: SituationRequest }) {
     const { plan, jurisdiction, closeSituation, refresh } = usePaperwork();
     const personId = plan.person_id;
     const canEdit = plan.scopes.includes('edit_facts');
+    const canView = plan.scopes.includes('view_facts');
     const [facts, setFacts] = useState<FactView | null>(null);
     const [schema, setSchema] = useState<Record<string, FactDefinition>>({});
     const [conflicts, setConflicts] = useState<Record<string, FactConflict>>(
@@ -75,14 +89,15 @@ export function Situation({ request }: { request: SituationRequest }) {
     const load = useCallback(async (): Promise<FactView | null> => {
         try {
             const [view, registry] = await Promise.all([
-                reads.facts(personId),
+                canView ? reads.facts(personId) : Promise.resolve(blank),
                 reads.schema(),
             ]);
             setSchema(
                 Object.fromEntries(registry.facts.map((f) => [f.key, f])),
             );
             setFacts(view);
-            const disputed = Object.values(view.states).includes('conflict');
+            const disputed =
+                canView && Object.values(view.states).includes('conflict');
             const review = disputed
                 ? await reads.conflicts(personId)
                 : { conflicts: [] };
@@ -103,7 +118,7 @@ export function Situation({ request }: { request: SituationRequest }) {
 
             return null;
         }
-    }, [personId]);
+    }, [personId, canView]);
 
     const edit = useCallback(
         (key: string, view: FactView, question?: Question) => {
@@ -212,7 +227,16 @@ export function Situation({ request }: { request: SituationRequest }) {
         const { key, answer, operation } = draft;
 
         try {
-            if (operation === 'assert' && draft.question) {
+            if (operation === 'assert' && draft.suggestion) {
+                // The suggestion the person reviewed: confirmed as they left it.
+                const { session, id, token } = draft.suggestion;
+                await commands.confirmSuggestion(
+                    session,
+                    id,
+                    token,
+                    answer.value,
+                );
+            } else if (operation === 'assert' && draft.question) {
                 const offer = await offerFor(
                     plan,
                     jurisdiction,
@@ -252,9 +276,17 @@ export function Situation({ request }: { request: SituationRequest }) {
                 );
             }
 
+            if (!canView) {
+                // Nothing else to show them: the question was all they had.
+                await refresh();
+                closeSituation();
+
+                return;
+            }
+
             await Promise.all([load(), refresh()]);
             setDraft(null);
-            setNotice('Answer saved for you.');
+            setNotice('Answer saved for this person.');
             setMode('summary');
         } catch (e) {
             if (e instanceof CommandError && e.status === 409) {
@@ -286,8 +318,17 @@ export function Situation({ request }: { request: SituationRequest }) {
         try {
             const offer = await offerFor(plan, jurisdiction, question);
             await commands.deferQuestion(offer.session, offer.id, offer.token);
-            await refresh();
-            closeSituation();
+
+            if (!canView) {
+                await refresh();
+                closeSituation();
+
+                return;
+            }
+
+            // Left for later: back to the answers, where it says so.
+            await Promise.all([load(), refresh()]);
+            toSummary();
         } catch (e) {
             setError(
                 e instanceof CommandError
@@ -342,15 +383,29 @@ export function Situation({ request }: { request: SituationRequest }) {
         const question = plan.questions.question;
         const pendingKey =
             question?.kind === 'answer' ? question.fact_key : null;
+        // As the mock lists them: your answers in the registry's order, the
+        // ones left for later, the current question, then any conflicts.
+        const registry = order;
+        const states = Object.keys(facts.states);
         const keys = [
-            ...order,
-            ...Object.keys(facts.states).filter((k) => !order.includes(k)),
-        ].filter(
-            (k) =>
-                k in facts.states ||
-                plan.questions.deferred.includes(k) ||
-                k === pendingKey,
-        );
+            ...new Set([
+                ...[
+                    ...registry,
+                    ...states.filter((k) => !registry.includes(k)),
+                ].filter(
+                    (k) => k in facts.states && facts.states[k] !== 'conflict',
+                ),
+                ...plan.questions.deferred,
+                ...(pendingKey ? [pendingKey] : []),
+                ...states.filter((k) => facts.states[k] === 'conflict'),
+            ]),
+        ];
+        // When the answers were last confirmed, by the newest check.
+        const lastChecked = Object.values(facts.evidence)
+            .map((e) => e.checked_at)
+            .filter((at): at is string => !!at)
+            .sort()
+            .at(-1);
         const status = (key: string) => {
             const state = facts.states[key];
 
@@ -382,6 +437,7 @@ export function Situation({ request }: { request: SituationRequest }) {
                 </h2>
                 <p className="orientation-intro">
                     Answer what you know. Come back to anything else.
+                    {lastChecked ? ` Last checked ${day(lastChecked)}.` : ''}
                 </p>
                 {notice ? (
                     <p className="details-notice" role="status">
@@ -450,6 +506,11 @@ export function Situation({ request }: { request: SituationRequest }) {
                         You can keep using the app with unanswered questions.
                     </p>
                 )}
+                <AnswerHistory
+                    personId={personId}
+                    keys={Object.keys(facts.evidence)}
+                    type={type}
+                />
             </>
         );
     } else if (mode === 'reason') {
@@ -503,11 +564,6 @@ export function Situation({ request }: { request: SituationRequest }) {
                         Cancel
                     </button>
                 </div>
-                <AnswerHistory
-                    personId={personId}
-                    factKey={draft.key}
-                    type={type(draft.key)}
-                />
             </>
         );
     } else if (mode === 'answer') {
@@ -520,7 +576,9 @@ export function Situation({ request }: { request: SituationRequest }) {
             definition?.allows_not_applicable ??
             draft.question?.answer_schema.allows_not_applicable;
         const answer = draft.answer;
-        const pick = (next: Answer) => setDraft({ ...draft, answer: next });
+        // A hand-picked answer is the person's own, not the suggestion's.
+        const pick = (next: Answer) =>
+            setDraft({ ...draft, answer: next, suggestion: null });
         const unsure = [
             ...uncertain,
             ...(allowsNotApplicable
@@ -547,19 +605,19 @@ export function Situation({ request }: { request: SituationRequest }) {
                 </h2>
                 <p className="orientation-intro">
                     {conflict
-                        ? 'These answers disagree. Neither has been chosen for you.'
-                        : draft.question?.why ||
-                          'Only a confirmed answer changes your saved details.'}
+                        ? 'Two of your saved answers disagree. Neither has been chosen for you.'
+                        : (definition?.why ??
+                          (draft.question?.why ||
+                              'Only a confirmed answer changes your saved details.'))}
                 </p>
                 {conflict?.choices?.length ? (
                     <div className="details-claims">
                         {conflict.choices.map((c) => (
                             <div key={c.fact_id}>
                                 <small>
-                                    Recorded{' '}
                                     {c.recorded_at
-                                        ? formatDate(c.recorded_at.slice(0, 10))
-                                        : 'earlier'}
+                                        ? `Your answer on ${shortDay(c.recorded_at)}`
+                                        : 'Your earlier answer'}
                                 </small>
                                 <strong>
                                     {c.answer_state === 'invalid'
@@ -651,6 +709,24 @@ export function Situation({ request }: { request: SituationRequest }) {
                         </button>
                     ))}
                 </div>
+                {kind === 'date' &&
+                !conflict &&
+                draft.question &&
+                plan.ai?.available ? (
+                    <SayItInYourWords
+                        question={draft.question}
+                        label={(value) =>
+                            show(draft.key, { state: 'value', value })
+                        }
+                        onUse={(value, suggestion) =>
+                            setDraft({
+                                ...draft,
+                                answer: { state: 'value', value },
+                                suggestion,
+                            })
+                        }
+                    />
+                ) : null}
                 {draft.operation === 'change' ? (
                     <label className="details-date details-effective">
                         When did this change? <small>Optional</small>
@@ -666,9 +742,6 @@ export function Situation({ request }: { request: SituationRequest }) {
                         />
                     </label>
                 ) : null}
-                <p className="details-error" role="alert" hidden={!error}>
-                    {error}
-                </p>
                 <div className="orientation-actions">
                     <button
                         type="button"
@@ -741,9 +814,6 @@ export function Situation({ request }: { request: SituationRequest }) {
                         ? 'Nothing is sent to an authority.'
                         : 'The earlier record stays in history.'}
                 </p>
-                <p className="details-error" role="alert" hidden={!error}>
-                    {error}
-                </p>
                 <div className="orientation-actions">
                     <button
                         type="button"
@@ -785,68 +855,110 @@ export function Situation({ request }: { request: SituationRequest }) {
         );
     }
 
+    // On the answers, back leaves the panel; deeper in, back returns to them.
+    // Someone who may not see the answers only ever has the question.
+    const atAnswers = mode === 'summary' || !draft || !canView;
+
     return (
         <section
             ref={panel}
-            className={clsx('orientation', 'details-review')}
+            className="orientation"
             aria-label="Your situation"
         >
-            <div className="orientation-header">
+            <header className="orientation-header">
                 <span className="orientation-kicker">
-                    <Icon name="sliders" />
+                    <Icon name="document" />
                     Your situation
                 </span>
                 <button
                     type="button"
                     className="orientation-close"
-                    aria-label="Close your situation"
+                    aria-label="Pause and close"
                     onClick={closeSituation}
                 >
                     <Icon name="close" />
                 </button>
+            </header>
+            <div className="orientation-content">
+                <div className="details-review">
+                    <button
+                        type="button"
+                        className="details-back"
+                        onClick={atAnswers ? closeSituation : toSummary}
+                    >
+                        <Icon name="back" />
+                        {atAnswers ? 'Your overview' : 'All answers'}
+                    </button>
+                    <div className="details-person">
+                        <Icon name="people" />
+                        For you
+                    </div>
+                    {body}
+                </div>
             </div>
-            {mode !== 'summary' && draft ? (
-                <button
-                    type="button"
-                    className="details-back"
-                    onClick={toSummary}
-                >
-                    <Icon name="back" />
-                    All answers
-                </button>
-            ) : null}
-            <div className="details-person">
-                <Icon name="people" />
-                For you
-            </div>
-            {body}
+            <p className="orientation-error" role="alert" hidden={!error}>
+                {error}
+            </p>
         </section>
     );
 }
 
-/** The confirmed history of one answer, read when the person opens it. */
+const operationLabels: Record<string, string> = {
+    asserted: 'Answer confirmed',
+    corrected: 'Earlier answer corrected',
+    changed: 'Situation changed',
+    resolved: 'Conflicting answers reviewed',
+};
+
+/** Every answer's confirmed history, oldest first, read when the person opens it. */
 function AnswerHistory({
     personId,
-    factKey,
+    keys,
     type,
 }: {
     personId: number;
-    factKey: string;
-    type: string | undefined;
+    keys: string[];
+    type: (key: string) => string | undefined;
 }) {
-    const [history, setHistory] = useState<FactHistory | null>(null);
+    type Entry = FactHistory['entries'][number] & { key: string };
+    const [entries, setEntries] = useState<Entry[] | null>(null);
     const [failed, setFailed] = useState(false);
-    const show = (a: { answer_state: AnswerState; value: unknown }) =>
-        answerLabel(factKey, type, { state: a.answer_state, value: a.value });
+
+    if (!keys.length) {
+        return null;
+    }
+
+    const show = (
+        key: string,
+        a: { answer_state: AnswerState; value: unknown },
+    ) => answerLabel(key, type(key), { state: a.answer_state, value: a.value });
 
     return (
         <details
             className="details-history"
             onToggle={(e) => {
-                if ((e.target as HTMLDetailsElement).open && !history) {
-                    reads
-                        .history(personId, factKey)
-                        .then(setHistory)
+                if ((e.target as HTMLDetailsElement).open && !entries) {
+                    Promise.all(
+                        keys.map((key) =>
+                            reads.history(personId, key).then((h) =>
+                                h.entries.map((entry) => ({
+                                    ...entry,
+                                    key,
+                                })),
+                            ),
+                        ),
+                    )
+                        .then((all) =>
+                            setEntries(
+                                all
+                                    .flat()
+                                    .sort((a, b) =>
+                                        (a.recorded_at ?? '').localeCompare(
+                                            b.recorded_at ?? '',
+                                        ),
+                                    ),
+                            ),
+                        )
                         .catch(() => setFailed(true));
                 }
             }}
@@ -860,21 +972,19 @@ function AnswerHistory({
                 <p className="details-soft">
                     The history could not be loaded right now.
                 </p>
-            ) : !history ? (
+            ) : !entries ? (
                 <p className="details-soft">Loading…</p>
             ) : (
-                history.entries.map((h) => (
-                    <div key={h.fact_id}>
-                        <strong>
-                            {operationLabels[h.operation] ?? 'Answer recorded'}
-                        </strong>
+                entries.map((h) => (
+                    <div key={`${h.key}:${h.fact_id}`}>
+                        <strong>{fieldLabel(h.key)}</strong>
                         <small>
-                            {h.recorded_at
-                                ? formatDate(h.recorded_at.slice(0, 10))
-                                : null}
+                            {operationLabels[h.operation] ?? 'Answer recorded'}
                         </small>
-                        {h.before ? <p>Before: {show(h.before)}</p> : null}
-                        <p>Confirmed: {show(h.after)}</p>
+                        {h.before ? (
+                            <p>Before: {show(h.key, h.before)}</p>
+                        ) : null}
+                        <p>Confirmed: {show(h.key, h.after)}</p>
                         {h.effective_from ? (
                             <p>Effective from {formatDate(h.effective_from)}</p>
                         ) : null}

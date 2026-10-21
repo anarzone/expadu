@@ -172,7 +172,14 @@ export function PaperworkProvider({
     const [message, setMessage] = useState<string | null>(null);
     const [sheet, setSheet] = useState<Sheet | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
-    const [situation, setSituation] = useState<SituationRequest | null>(null);
+    // `?guide=details` opens Your situation (Today's "Your situation" link), for
+    // someone who may see the answers.
+    const [situation, setSituation] = useState<SituationRequest | null>(() =>
+        new URLSearchParams(window.location.search).get('guide') ===
+            'details' && plan.scopes.includes('view_facts')
+            ? {}
+            : null,
+    );
     const timer = useRef<number | null>(null);
 
     useEffect(() => {
@@ -304,7 +311,15 @@ export function PaperworkProvider({
                 setEditor(null);
                 setSituation(request);
             },
-            closeSituation: () => setSituation(null),
+            closeSituation: () => {
+                setSituation(null);
+                const url = new URL(window.location.href);
+
+                if (url.searchParams.has('guide')) {
+                    url.searchParams.delete('guide');
+                    window.history.replaceState({}, '', url.toString());
+                }
+            },
             refresh,
             processByKey: (key) =>
                 key ? all.find((p) => p.occurrence_key === key) : undefined,
