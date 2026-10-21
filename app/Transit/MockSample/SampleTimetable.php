@@ -4,6 +4,7 @@ namespace App\Transit\MockSample;
 
 use App\Services\TimetableService;
 use App\Support\MockClock;
+use App\Support\MockScenario;
 use Carbon\CarbonImmutable;
 
 /**
@@ -12,8 +13,10 @@ use Carbon\CarbonImmutable;
  * captures at the sample moment: departure feeds have nothing for a past
  * day. A stop the mock has a capture for answers with it, counted from the
  * mock clock; any other stop answers with nothing, never the live board.
- * No network call is made. Every request without the mock clock reads the
- * real board. Bound only in local (TravelServiceProvider).
+ * In the mock's "live times paused" situation (MockScenario `stale`) the
+ * board is the last one read, from the capture's own time. No network call
+ * is made. Every request without the mock clock reads the real board.
+ * Bound only in local (TravelServiceProvider).
  */
 final class SampleTimetable extends TimetableService
 {
@@ -33,7 +36,11 @@ final class SampleTimetable extends TimetableService
             return null;
         }
 
-        $now = CarbonImmutable::now('Europe/Berlin')->startOfMinute();
+        $paused = MockScenario::is('stale');
+        // Paused, the last reading's times count from when it was read.
+        $now = ($paused ? CarbonImmutable::parse($station['observed_at']) : CarbonImmutable::now())
+            ->setTimezone('Europe/Berlin')->startOfMinute();
+        $basis = $paused ? 'stale' : $station['time_basis'];
         $departures = [];
         foreach ($station['rows'] as $i => [$line, $destination, $mode, $minutes, $delay, $disrupted, $via]) {
             $services = [];
@@ -45,7 +52,7 @@ final class SampleTimetable extends TimetableService
                     'scheduled_at' => $at->subMinutes($delay)->toIso8601String(),
                     'delay' => $delay,
                     'cancelled' => false,
-                    'time_basis' => 'realtime',
+                    'time_basis' => $basis,
                 ];
             }
             $departures[] = [
@@ -64,9 +71,10 @@ final class SampleTimetable extends TimetableService
 
         return [
             'source' => $station['source'],
-            'time_basis' => 'realtime',
-            'is_stale' => false,
-            'fetched_at' => $now->toIso8601String(),
+            'time_basis' => $basis,
+            'is_stale' => $paused,
+            // Paused: the last reading is the capture's own.
+            'fetched_at' => $paused ? $station['observed_at'] : $now->toIso8601String(),
             'generated_at' => $now->toIso8601String(),
             'departures' => $departures,
         ];
