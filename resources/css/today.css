@@ -616,7 +616,6 @@ a.plan-link:hover {
    .paperwork-panel) ─────────────────────────────────────────────────── */
 .paperwork-panel .section-head {
     align-items: start;
-    margin: 0;
 }
 .section-tools {
     display: flex;
@@ -736,9 +735,11 @@ a.plan-link:hover {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    align-self: start;
     justify-content: space-between;
     gap: 6px 12px;
+}
+.city-help > .section-head {
+    align-self: start;
     margin: 6px 0 0;
 }
 .section-head h2 {
@@ -1033,6 +1034,21 @@ a.plan-link:hover {
     padding: 8px 16px;
     background: linear-gradient(var(--color-bg-quiet), transparent);
 }
+/* A hairline above Coming up and the city's links, as above discovery
+   (the mock's cohesion.css). */
+:is(.coming-up, .continue-support)::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
 .coming-up > summary {
     display: flex;
     align-items: center;
@@ -1146,13 +1162,16 @@ a.plan-link:hover {
     background: var(--color-action-tint);
 }
 
-/* ── Phones: one column, in the order the day needs (TD5) ───────────── */
+/* ── Phones: one column, in the order the day needs (the page renders the
+   sections straight into the canvas there, without the two columns) ── */
 @media (max-width: 700px) {
     .daily-canvas {
         display: flex;
         flex-direction: column;
         align-items: stretch;
     }
+    /* The server renders the two columns; until the page hydrates, a phone
+       reads them as one. */
     .day-area,
     .next-area {
         display: contents;
@@ -1176,6 +1195,87 @@ a.plan-link:hover {
     }
     .status-row .ui-pill {
         font-size: var(--text-micro);
+    }
+    .practical-surface {
+        border-radius: 0;
+    }
+    .continue-support {
+        gap: 16px;
+    }
+
+    /* Paperwork's next step is one quiet row under City help: a small
+       label, the step, and the count without its ring (the mock's
+       priorities.css and hierarchy.css). */
+    .practical-personal {
+        margin-top: 6px;
+    }
+    .paperwork-panel:not(.paperwork-optional) {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: center;
+        column-gap: 6px;
+        padding-top: 8px;
+    }
+    .paperwork-panel:not(.paperwork-optional)::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border),
+            transparent
+        );
+    }
+    .paperwork-panel:not(.paperwork-optional) > .section-head,
+    .paperwork-panel:not(.paperwork-optional) .section-tools {
+        display: contents;
+    }
+    .paperwork-panel:not(.paperwork-optional) .section-head h2 {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-medium);
+        line-height: 1.3;
+    }
+    .paperwork-panel .record-label,
+    .paperwork-followups {
+        display: none;
+    }
+    .paperwork-focus {
+        min-height: 54px;
+        margin: 0;
+        padding: 4px 0;
+        border-radius: var(--radius-sm);
+    }
+    .paperwork-copy h3 {
+        margin: 0 0 4px;
+        font-size: var(--text-section);
+        letter-spacing: -0.3px;
+    }
+    .paperwork-copy p {
+        font-size: var(--text-caption);
+    }
+    .document-progress {
+        flex: 0 0 auto;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-paper-text);
+    }
+    .document-progress::before {
+        content: none;
+    }
+    .document-progress strong {
+        font-size: var(--text-section);
+        line-height: 1.2;
+    }
+    .document-progress small {
+        font-size: var(--text-caption);
+        line-height: 1.2;
     }
 }
 
@@ -1609,8 +1709,24 @@ a.plan-link:hover {
     }
 }
 @media (max-width: 700px) {
-    .discovery::before {
+    :is(.discovery, .coming-up, .continue-support)::before {
         inset-inline: 16px;
+    }
+    /* On a phone the city's help follows the day, under a hairline too
+       (the mock's hierarchy.css). */
+    .practical-surface::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 16px;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border) 16%,
+            var(--color-border) 84%,
+            transparent
+        );
     }
     .discovery-heading h2 {
         font-size: var(--text-section);
@@ -1663,6 +1779,21 @@ a.plan-link:hover {
 .saved-ideas {
     position: relative;
     padding: 14px 22px;
+}
+.saved-ideas::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 14%,
+        var(--color-border) 85%,
+        transparent
+    );
 }
 .saved-ideas h2 {
     font-size: var(--text-body);
@@ -1916,6 +2047,7 @@ a.plan-link:hover {
 }
 .paperwork-optional svg {
     width: 24px;
+    height: 22px;
     color: var(--color-paper-text);
 }
 .paperwork-optional strong {

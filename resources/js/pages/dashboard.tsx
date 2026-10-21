@@ -1,4 +1,6 @@
 import { Deferred, Head, usePage } from '@inertiajs/react';
+import { Fragment } from 'react';
+import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
 import type { Forecast, Weather } from '@/components/today/city-help';
 import { ComingUp } from '@/components/today/coming-up';
@@ -13,6 +15,8 @@ import {
 import type { TodayPaperwork } from '@/components/today/paperwork';
 import { PickUp } from '@/components/today/pick-up';
 import type { TodayContinuationData } from '@/components/today/pick-up';
+import { PHONE_ORDER, useSteadyLead } from '@/components/today/priority';
+import type { Block } from '@/components/today/priority';
 import { SavedForLater } from '@/components/today/saved';
 import type { TodaySavedData } from '@/components/today/saved';
 import { useDayRefresh } from '@/components/today/use-day-refresh';
@@ -20,6 +24,7 @@ import { TodayWelcome } from '@/components/today/welcome';
 import { YourDay } from '@/components/today/your-day';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { LoadingLines, useDelayedLoading } from '@/components/ui/loading';
+import { usePhone } from '@/hooks/use-phone';
 import AppLayout from '@/layouts/app-layout';
 import type { DayProjection } from '@/types/day';
 import '../../css/today.css';
@@ -62,36 +67,75 @@ export default function Today() {
         (item) => !item.completed && item.state !== 'elapsed',
     );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
-    // A first visit keeps "A little Cologne" rather than a free day's ideas
-    // (the mock's freeDay).
-    const ideas = discovery && {
-        ...discovery,
-        free: discovery.free && !welcome,
-    };
+    const phone = usePhone();
+    const lead = useSteadyLead(day, !!welcome);
 
     useDayRefresh(day);
 
-    // Paperwork's next step (or, with no record yet, the way in) and City help.
-    const practical = (
-        <div className="practical-surface">
-            {welcome ? null : paperwork?.focus ? (
-                <div className="practical-personal">
-                    <PaperworkPanel focus={paperwork.focus} />
-                </div>
-            ) : (
-                paperwork !== undefined && <SettlingIn />
-            )}
-            <CityHelp
-                weather={weather}
-                forecast={forecast}
-                station={station}
-                stop={stop}
-                favourites={favouriteStops ?? []}
-                planned={planned}
-            />
-            {welcome && <SettlingIn />}
+    // Paperwork's next step, or with no record yet its way in ("Settling
+    // in?"). City help comes first where the essentials lead and on phones
+    // (the mock's arrange()).
+    const cityFirst = phone || lead === 'essentials';
+    const personal = paperwork?.focus ? (
+        <div className="practical-personal">
+            <PaperworkPanel focus={paperwork.focus} />
         </div>
+    ) : (
+        (welcome || paperwork !== undefined) && <SettlingIn />
     );
+    const blocks: Record<Block, ReactNode> = {
+        agenda: (
+            <Deferred data="day" fallback={<DayLoading />}>
+                {day ? (
+                    <YourDay day={day} paperwork={paperwork?.processes} />
+                ) : (
+                    <DayLoading />
+                )}
+            </Deferred>
+        ),
+        essentials: (
+            <div className="practical-surface">
+                {!cityFirst && personal}
+                <CityHelp
+                    weather={weather}
+                    forecast={forecast}
+                    station={station}
+                    stop={stop}
+                    favourites={favouriteStops ?? []}
+                    planned={planned}
+                />
+                {cityFirst && personal}
+            </div>
+        ),
+        around: discovery?.around && (
+            <div id="around-plan-slot">
+                <AroundPlan around={discovery.around} />
+            </div>
+        ),
+        // A first visit isn't a free day (the mock's freeDay), so it keeps
+        // "A little Cologne".
+        discovery: discovery && (
+            <Discovery
+                discovery={discovery}
+                free={lead === 'discovery'}
+                weather={weather}
+            />
+        ),
+        composer: continuation && (
+            <div id="personal-continuity-slot">
+                <PickUp continuation={continuation} />
+            </div>
+        ),
+        saved: saved && <SavedForLater saved={saved} />,
+        upcoming: comingUp && <ComingUp comingUp={comingUp} />,
+        support: (
+            <div className="continue-support">
+                <CityLinks />
+            </div>
+        ),
+    };
+    const place = (keys: Block[]) =>
+        keys.map((key) => <Fragment key={key}>{blocks[key]}</Fragment>);
 
     return (
         <AppLayout>
@@ -100,46 +144,42 @@ export default function Today() {
             <div className="today-workspace">
                 {welcome && <TodayWelcome />}
                 <DeadlineStrip strip={paperwork?.strip ?? null} />
+                {/* Phones read one column in priority order; wider screens
+                    keep the day on the left and what's next on the right.
+                    The elements themselves move, so reading, keyboard and
+                    visual order agree. */}
                 <div className="daily-canvas">
-                    <div className="day-area">
-                        {/* A first visit leads with the city's help (the mock's arrange()). */}
-                        {welcome && practical}
-                        <Deferred data="day" fallback={<DayLoading />}>
-                            {day ? (
-                                <YourDay
-                                    day={day}
-                                    paperwork={paperwork?.processes}
-                                />
-                            ) : (
-                                <DayLoading />
-                            )}
-                        </Deferred>
-                        {discovery?.around && (
-                            <div id="around-plan-slot">
-                                <AroundPlan around={discovery.around} />
+                    {phone ? (
+                        place(PHONE_ORDER[lead])
+                    ) : (
+                        <>
+                            <div className="day-area">
+                                {place([
+                                    ...(lead === 'essentials'
+                                        ? (['essentials'] as const)
+                                        : []),
+                                    'agenda',
+                                    'around',
+                                    'saved',
+                                    'upcoming',
+                                    'composer',
+                                ])}
                             </div>
-                        )}
-                        {saved && <SavedForLater saved={saved} />}
-                        {comingUp && <ComingUp comingUp={comingUp} />}
-                        {continuation && (
-                            <div id="personal-continuity-slot">
-                                <PickUp continuation={continuation} />
+                            <div className="next-area">
+                                {place(
+                                    lead === 'discovery'
+                                        ? ['discovery', 'essentials', 'support']
+                                        : lead === 'essentials'
+                                          ? ['discovery', 'support']
+                                          : [
+                                                'essentials',
+                                                'discovery',
+                                                'support',
+                                            ],
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <div className="next-area">
-                        {/* A free day leads with ideas (the mock's arrange()). */}
-                        {ideas?.free && (
-                            <Discovery discovery={ideas} weather={weather} />
-                        )}
-                        {!welcome && practical}
-                        {ideas && !ideas.free && (
-                            <Discovery discovery={ideas} weather={weather} />
-                        )}
-                        <div className="continue-support">
-                            <CityLinks />
-                        </div>
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
         </AppLayout>

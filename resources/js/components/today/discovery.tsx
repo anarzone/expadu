@@ -39,7 +39,6 @@ export type DiscoveryPlace = {
 };
 
 export type TodayDiscovery = {
-    free: boolean;
     part: 'morning' | 'afternoon' | 'evening';
     events: DiscoveryEvent[];
     around: {
@@ -110,12 +109,18 @@ function useSaves() {
     };
 }
 
-/** "A little Cologne": posters for the next two, compact listings after. */
+/**
+ * "A little Cologne": posters for the next two, compact listings after. A
+ * free day (nothing left in the plan, and not a first visit) heads it as
+ * ideas for this part of the day.
+ */
 export function Discovery({
     discovery,
+    free,
     weather,
 }: {
     discovery: NonNullable<TodayDiscovery>;
+    free: boolean;
     weather?: Weather;
 }) {
     const saves = useSaves();
@@ -125,7 +130,7 @@ export function Discovery({
     return (
         <section className="discovery" aria-labelledby="discovery-title">
             <div className="discovery-heading">
-                {discovery.free ? (
+                {free ? (
                     <div className="discovery-title-group">
                         <h2 id="discovery-title">
                             Ideas for this {discovery.part}

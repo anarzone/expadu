@@ -37,7 +37,7 @@ final class TodayDiscovery
         private SavedCollection $saved,
     ) {}
 
-    /** @return array{free: bool, part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
+    /** @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
     public function for(User $user, ?CarbonImmutable $now = null): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
@@ -61,8 +61,8 @@ final class TodayDiscovery
             ->map(fn (array $event, int $index) => [...$event, 'layout' => $index < 2 ? 'poster' : 'compact']);
 
         return [
-            'free' => $active->isEmpty(),
-            // A free day's heading: "Ideas for this afternoon".
+            // A free day's heading (Today decides it's free): "Ideas for
+            // this afternoon".
             'part' => $now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening'),
             'events' => $listed->all(),
             'around' => $around,
