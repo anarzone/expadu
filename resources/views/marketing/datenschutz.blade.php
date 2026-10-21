@@ -10,7 +10,7 @@
     <div class="wrap mk-hero__prose">
     <span class="eyebrow">Privacy</span>
     <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
-    <p class="meta">Last updated: 5 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 21 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
     </div>
 @endsection
 
@@ -90,6 +90,52 @@
         interest, Art. 6(1)(f) GDPR); error reports are scrubbed of sensitive values where
         feasible. We do not sell data, we do not use it for advertising, and we make no automated
         decisions with legal effect about you.
+    </p>
+
+    <h3>AI features (Anthropic)</h3>
+    <p>
+        Some features use Claude, an AI service from Anthropic PBC (USA), which processes the
+        request for us under its commercial terms and data processing addendum. Anthropic does not
+        use this data to train its models. The AI never decides anything about you; times,
+        places, fees and legal facts always come from our own checked data, not from the AI.
+    </p>
+    <ul>
+        <li>
+            <strong>Composer.</strong> When you send a request in Composer, what you typed, your
+            home neighbourhood and the current time are sent to Anthropic to read the request.
+            The line next to the box says so; sending is your consent for that one request
+            (Art. 6(1)(a) GDPR). Nothing else from your account is sent.
+        </li>
+        <li>
+            <strong>Paperwork: your own words and questions.</strong> When you tap “Suggest an
+            answer”, what you typed and the question it answers are sent to Anthropic; the
+            suggestion goes into your record only when you confirm it. When you tap “Ask”, your
+            question is sent with the text of the matching source-checked cards and only those
+            answers on your record that those cards need (dates and counts are sent as
+            “recorded”, never their value); the reply comes only from those cards. Each tap is
+            your consent for that one request (Art. 6(1)(a) GDPR).
+        </li>
+        <li>
+            <strong>Public information.</strong> Event listings, public transport notices and
+            place descriptions are translated or summarised from public sources. No personal data
+            is involved.
+        </li>
+    </ul>
+    <p>
+        Anthropic’s reply is kept by us for at most 15 minutes for that request. Transfers to the
+        USA are covered by the European Commission’s standard contractual clauses in Anthropic’s
+        data processing addendum. You can withdraw your consent at any time; it then ends for any
+        request not yet sent.
+    </p>
+
+    <h3>Personalisation (opt-in)</h3>
+    <p>
+        If you turn on personalisation in your settings, we learn from what you do in the app,
+        such as which places and events you open, save, travel to or turn down, to rank
+        suggestions for you (Art. 6(1)(a) GDPR). This is stored under a pseudonymous key, never
+        includes your location or anything you type, and individual records are deleted after 90
+        days. Turning personalisation off deletes everything learned. It is off unless you turn
+        it on.
     </p>
 
     <h2>7. Retention &amp; deletion</h2>

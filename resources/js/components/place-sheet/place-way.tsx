@@ -22,14 +22,14 @@ const MODES: [WayMode, string][] = [
 ];
 
 export function PlaceWay({
-    place,
     to,
     from: start,
+    spotId,
 }: {
-    /** The place's id. */
-    place: number;
     to: WayPlace;
     from: WayPlace | null;
+    /** The place the Get there tap was for, as the journey request's tag. */
+    spotId: number;
 }) {
     const from = useFrom(start);
     const [mode, setMode] = useState<WayMode>('transit');
@@ -61,7 +61,7 @@ export function PlaceWay({
     const { status, answer, ways, retry } = useWays({
         from: from.place,
         to,
-        tag: { item: `spot:${place}`, surface: 'place_sheet' },
+        getThere: { item: `spot:${spotId}`, surface: 'place_sheet' },
     });
     const shown = ways[mode];
     const pickedId = picked[0] === answer ? picked[1] : '';

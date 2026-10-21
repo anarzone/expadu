@@ -10,7 +10,6 @@ import type {
     PlanAnswer,
     PlanOption,
 } from '@/components/travel/plan/plan-model';
-import type { SignalSurface } from '@/lib/signals';
 
 export type WayMode = 'transit' | 'walk' | 'bike';
 
@@ -63,18 +62,14 @@ export function useWays({
     to,
     departAt = null,
     arriveBy = false,
-    tag = null,
+    getThere = null,
 }: {
     from: WayPlace | null;
     to: WayPlace | null;
     departAt?: string | null;
     arriveBy?: boolean;
-    /** The place or event whose Get there this is (#210's `get_there`
-        signal; the server counts it once a day, with the opt-in). */
-    tag?: {
-        item: `spot:${number}` | `event:${number}`;
-        surface: SignalSurface;
-    } | null;
+    /** What the Get there tap was for ("spot:12", "event:34"); the server records it only for people who opted in. */
+    getThere?: { item: string; surface: string } | null;
 }) {
     const [status, setStatus] = useState<WayStatus>({ kind: 'idle' });
     const [attempt, setAttempt] = useState(0);
@@ -107,8 +102,8 @@ export function useWays({
             body.arrive_by = '1';
         }
 
-        if (tag) {
-            body.get_there = tag;
+        if (getThere) {
+            body.get_there = getThere;
         }
 
         const controller = new AbortController();
@@ -163,18 +158,22 @@ export function useWays({
             })),
         [answer],
     );
-    // As the mock orders them: the earliest there first, and best.
+    // As the mock orders them. There by a time (the caller already took its
+    // margin off it), the best is the way My day would take: the latest that
+    // still gets there, the earliest there breaking a tie. Leaving now, the
+    // earliest there first.
     const ways = useMemo<Record<WayMode, PlanOption[]>>(
         () => ({
             transit: rankOptions(
                 options.filter((x) => x.journey.mode === 'transit'),
                 'arrival',
                 [],
+                arriveBy && departAt ? { at: departAt, margin: 0 } : null,
             ).slice(0, 3),
             walk: options.filter((x) => x.journey.mode === 'walk').slice(0, 1),
             bike: options.filter((x) => x.journey.mode === 'bike').slice(0, 1),
         }),
-        [options],
+        [options, arriveBy, departAt],
     );
 
     return {

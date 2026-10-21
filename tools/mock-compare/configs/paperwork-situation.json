@@ -1,0 +1,205 @@
+{
+    "name": "paperwork-situation",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": "button.case-details"
+            },
+            {
+                "wait": 800
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": "button.case-details"
+            },
+            {
+                "wait": 800
+            }
+        ]
+    },
+    "note": "Your situation (PW4), the details panel as it opens from the header's \"Your situation\": the answers the plan is built from, the next question and the Answer history. The same sample record and clock as paperwork.json. The mock's bottom bar (\"Continue in Composer\", sample note) is left out until Composer can host the questions (session 2, 21 Oct); its \"Preview states\" demo is mock-only.",
+    "pairs": [
+        {
+            "name": "panel",
+            "mock": "section.orientation",
+            "app": "section.orientation",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The mock's bottom bar (\"Continue in Composer\" and its sample note) is left out until Composer can host the questions (session 2, 21 Oct), and its \"Preview states\" demo is mock-only, so the panel ends after the Answer history."
+        },
+        {
+            "name": "header",
+            "mock": "section.orientation .orientation-header",
+            "app": "section.orientation .orientation-header"
+        },
+        {
+            "name": "kicker",
+            "mock": "section.orientation .orientation-kicker",
+            "app": "section.orientation .orientation-kicker"
+        },
+        {
+            "name": "close",
+            "mock": "section.orientation .orientation-close",
+            "app": "section.orientation .orientation-close"
+        },
+        {
+            "name": "content",
+            "mock": "section.orientation .orientation-content",
+            "app": "section.orientation .orientation-content",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The mock's bottom bar (\"Continue in Composer\" and its sample note) is left out until Composer can host the questions (session 2, 21 Oct), and its \"Preview states\" demo is mock-only, so the panel ends after the Answer history."
+        },
+        {
+            "name": "details",
+            "mock": "section.orientation .details-review",
+            "app": "section.orientation .details-review",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The mock's bottom bar (\"Continue in Composer\" and its sample note) is left out until Composer can host the questions (session 2, 21 Oct), and its \"Preview states\" demo is mock-only, so the panel ends after the Answer history."
+        },
+        {
+            "name": "back",
+            "mock": "section.orientation .details-back",
+            "app": "section.orientation .details-back",
+            "ignore": [
+                "w"
+            ],
+            "contentDiffers": true,
+            "reason": "The app has no \"Getting started\" screen: back from the answers returns to Your overview (\"Your overview\"), and from an answer to the answers (\"All answers\")."
+        },
+        {
+            "name": "for",
+            "mock": "section.orientation .details-person",
+            "app": "section.orientation .details-person",
+            "contentDiffers": true,
+            "pixels": false,
+            "reason": "\"For you\": the mock prints its sample's name as \"For You\" and marks it \"Sample\"."
+        },
+        {
+            "name": "heading",
+            "mock": "section.orientation .details-review h2",
+            "app": "section.orientation .details-review h2"
+        },
+        {
+            "name": "intro",
+            "mock": "section.orientation .details-review .orientation-intro",
+            "app": "section.orientation .details-review .orientation-intro",
+            "ignore": [
+                "h"
+            ],
+            "contentDiffers": true,
+            "pixels": false,
+            "reason": "The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answers",
+            "mock": "section.orientation .details-facts",
+            "app": "section.orientation .details-facts",
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same answer and words; the small icon tile behind each answer's icon is a shade apart (not chased, owner's rule of 21 Oct). The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answer 1",
+            "mock": "section.orientation .details-facts button",
+            "app": "section.orientation .details-facts button",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same answer and words; the small icon tile behind each answer's icon is a shade apart (not chased, owner's rule of 21 Oct). The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answer 2",
+            "mock": "section.orientation .details-facts button",
+            "app": "section.orientation .details-facts button",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same answer and words; the small icon tile behind each answer's icon is a shade apart (not chased, owner's rule of 21 Oct). The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answer 3",
+            "mock": "section.orientation .details-facts button",
+            "app": "section.orientation .details-facts button",
+            "index": 2,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same answer and words; the small icon tile behind each answer's icon is a shade apart (not chased, owner's rule of 21 Oct). The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answer 4",
+            "mock": "section.orientation .details-facts button",
+            "app": "section.orientation .details-facts button",
+            "index": 3,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same answer and words; the small icon tile behind each answer's icon is a shade apart (not chased, owner's rule of 21 Oct). The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "next question",
+            "mock": "section.orientation .details-review .orientation-actions",
+            "app": "section.orientation .details-review .orientation-actions",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "Continue",
+            "mock": "section.orientation .details-review .orientation-actions .orientation-primary",
+            "app": "section.orientation .details-review .orientation-actions .orientation-primary",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        },
+        {
+            "name": "answer history",
+            "mock": "section.orientation .details-history",
+            "app": "section.orientation .details-history",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The intro ends with the record's real \"Last checked\" date (\"30 Sept 2026\"; the mock's sample says \"3 Sept 2026\"); on phones it takes a third line, so what follows sits lower."
+        }
+    ]
+}

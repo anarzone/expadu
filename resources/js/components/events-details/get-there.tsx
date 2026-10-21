@@ -116,6 +116,7 @@ export default function GetThere({
     const { status, answer, ways, minutesOf, retry } = useWays({
         from: back ? venue : place,
         to: back ? place : venue,
+        getThere: { item: `event:${o.id}`, surface: 'event_sheet' },
         departAt:
             when === 'arrive'
                 ? new Date(
@@ -126,7 +127,6 @@ export default function GetThere({
                   ? o.occurrence_end
                   : null,
         arriveBy: when === 'arrive',
-        tag: { item: `event:${o.id}`, surface: 'event_sheet' },
     });
     const shown = ways[mode];
     const pickedId = picked[0] === answer ? picked[1] : '';

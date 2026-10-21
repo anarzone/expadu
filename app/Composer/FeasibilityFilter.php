@@ -66,6 +66,10 @@ class FeasibilityFilter
             && ($candidate->distanceKmFromOrigin === null || $candidate->distanceKmFromOrigin > $constraints->radiusKm)) {
             return false;
         }
+        // A hard need is met only by a verified fact; an unknown never passes.
+        if (in_array('step_free', $constraints->needs, true) && ! $candidate->isAppointment() && ! $candidate->stepFree()) {
+            return false;
+        }
         if ($constraints->activities !== []) {
             $facts = $candidate->placeFacts;
             if (array_intersect($constraints->activities, $facts['activities'] ?? []) === []
@@ -135,7 +139,10 @@ class FeasibilityFilter
 
     private function matchesCategoryAndCompanions(Constraints $constraints, Candidate $candidate, array $allowedCategories): bool
     {
-        return ($allowedCategories === [] || in_array($candidate->category, $allowedCategories, true))
+        return ($allowedCategories === [] || in_array($candidate->category, $allowedCategories, true)
+                // "event" asks for events of any kind; theirs are event categories, not place ones.
+                || ($candidate->type === 'event' && in_array('event', $allowedCategories, true)))
+            && ! in_array($candidate->category, $this->allowedCategories($constraints->avoid), true)
             && ($constraints->companions !== 'kids' || ! in_array($candidate->category, ['bar', 'coworking'], true));
     }
 }
