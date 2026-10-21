@@ -106,7 +106,12 @@ class ScrapeEvents extends Command
                         continue;
                     }
 
-                    $startsAt = Carbon::parse($ev['start_date'] ?? now());
+                    // A listing without a start isn't given one.
+                    if (! is_string($ev['start_date'] ?? null) || trim($ev['start_date']) === '') {
+                        continue;
+                    }
+
+                    $startsAt = Carbon::parse($ev['start_date']);
                     if ($startsAt->isPast()) {
                         continue;
                     }
@@ -142,9 +147,10 @@ class ScrapeEvents extends Command
                     $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
                     $copyChanged = ! $isNew
                         && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
+                    // The end alone doesn't change what the classifier writes,
+                    // so correcting it costs no new classification.
                     $classifierInputChanged = ! $isNew && ($copyChanged
                         || ! $event->starts_at?->equalTo($attributes['starts_at'])
-                        || ! $event->ends_at?->equalTo($attributes['ends_at'])
                         || $event->location_name !== $attributes['location_name']
                         || $event->address !== $attributes['address']
                         || $event->price_text !== $attributes['price_text']
@@ -333,7 +339,8 @@ class ScrapeEvents extends Command
             'description' => $description ?: null,
             'source_lang' => 'de',
             'starts_at' => $startsAt,
-            'ends_at' => isset($sourceEvent['end_date']) ? Carbon::parse($sourceEvent['end_date']) : $startsAt->copy()->addHours(2),
+            // koeln.de's own end, or none: never one made up.
+            'ends_at' => filled($sourceEvent['end_date'] ?? null) ? Carbon::parse($sourceEvent['end_date']) : null,
             'location_name' => $locationName,
             'address' => $locationAddress,
             'is_free' => $isFree ?? false,

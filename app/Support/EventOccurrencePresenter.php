@@ -121,13 +121,14 @@ class EventOccurrencePresenter
 
     /**
      * A listing without a time is stored as its whole day (the official
-     * importer writes start of day to end of day), so posters print
-     * "Time not listed yet" instead of 00:00.
+     * importer writes start of day to end of day), or as midnight with no
+     * end (a date-only koeln.de listing), so posters print "Time not
+     * listed yet" instead of 00:00.
      */
     public function timeListed(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt): bool
     {
         return ! ($startsAt->format('H:i:s') === '00:00:00'
-            && $endsAt?->format('H:i:s') === '23:59:59');
+            && ($endsAt === null || $endsAt->format('H:i:s') === '23:59:59'));
     }
 
     /**
