@@ -9,9 +9,11 @@ use Illuminate\Database\Seeder;
  * The everyday places around Wiener Platz that the mock's sample day shows
  * under "Open near Wiener Platz at 14:30" (prototype/dev/design/connected/
  * sample-places.js: Expadu's own catalogue export of 7 October 2026, place
- * data © OpenStreetMap contributors, ODbL), for tools/mock-compare. Local
- * only; it adds the places a database is missing and never changes one that
- * is already there.
+ * data © OpenStreetMap contributors, ODbL), for tools/mock-compare, and the
+ * facts the sample records for them (step-free access, website, phone, food
+ * and Wi-Fi), which Around here's rows and place sheet read. Local only; it
+ * adds the places a database is missing and the facts a place is missing,
+ * and never changes a value that is already there.
  *
  * php artisan db:seed --class="Database\Seeders\MockSample\PlacesSeeder"
  */
@@ -31,6 +33,25 @@ class PlacesSeeder extends Seeder
         ['REWE', 'supermarket', 50.962625, 7.003478, 'Mo-Sa 07:00-24:00', 'node/1841208275'],
     ];
 
+    /**
+     * What the sample records for each place (sample-places.js), by OSM id:
+     * its tags, and its website and phone (which a place keeps in its own
+     * columns, not its tags). Nothing else is recorded there.
+     *
+     * @var array<string, array<string, string>>
+     */
+    private const TAGS = [
+        'node/3354736381' => ['wheelchair' => 'yes', 'website' => 'https://eck-apotheke.de/', 'phone' => '+49 221 612590'],
+        'node/317630493' => ['wheelchair' => 'yes', 'website' => 'http://www.einhornapothekekoeln.de/index1.htm', 'phone' => '+49 221 611160'],
+        'node/343578721' => ['wheelchair' => 'yes', 'website' => 'https://www.brueckenapotheke-koeln.de/', 'phone' => '+49 221 9639970'],
+        'node/1593180033' => ['wheelchair' => 'no', 'outdoor_seating' => 'yes'],
+        'node/2104161354' => ['wheelchair' => 'limited', 'phone' => '+49 221 611664', 'cuisine' => 'ice_cream;coffee_shop', 'outdoor_seating' => 'no', 'diet:vegetarian' => 'yes'],
+        'node/4422129390' => ['diet:vegetarian' => 'yes'],
+        'node/369748924' => ['wheelchair' => 'yes', 'outdoor_seating' => 'yes'],
+        'node/12442050740' => ['wheelchair' => 'yes'],
+        'node/1841208275' => ['wheelchair' => 'limited', 'phone' => '+49 221 9624053', 'internet_access' => 'wlan'],
+    ];
+
     public function run(): void
     {
         if (! app()->environment('local')) {
@@ -40,6 +61,7 @@ class PlacesSeeder extends Seeder
         }
 
         $added = 0;
+        $filled = 0;
         foreach (self::PLACES as [$name, $category, $lat, $lng, $hours, $osm]) {
             $spot = Spot::query()->firstOrCreate(
                 ['source' => 'osm', 'source_id' => $osm],
@@ -55,8 +77,23 @@ class PlacesSeeder extends Seeder
                 ],
             );
             $added += $spot->wasRecentlyCreated ? 1 : 0;
+
+            // Only what it lacks: a value already there is never changed (the
+            // same OSM place can be a real catalogue row).
+            $recorded = self::TAGS[$osm] ?? [];
+            $contact = array_filter(
+                array_intersect_key($recorded, array_flip(['website', 'phone'])),
+                fn (string $value, string $column): bool => $spot->{$column} === null,
+                ARRAY_FILTER_USE_BOTH,
+            );
+            $tags = is_array($spot->tags) ? $spot->tags : [];
+            $missing = array_diff_key(array_diff_key($recorded, array_flip(['website', 'phone'])), $tags);
+            if ($missing !== [] || $contact !== []) {
+                $spot->forceFill([...$contact, 'tags' => [...$tags, ...$missing]])->save();
+                $filled += count($missing) + count($contact);
+            }
         }
 
-        $this->command?->info("{$added} of ".count(self::PLACES).' sample places added around Wiener Platz.');
+        $this->command?->info("{$added} of ".count(self::PLACES)." sample places added around Wiener Platz; {$filled} missing facts filled.");
     }
 }

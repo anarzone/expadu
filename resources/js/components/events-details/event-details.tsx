@@ -25,11 +25,18 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { kmBetween } from '@/lib/geo';
+import {
+    addToPlan,
+    candidateFor,
+    inPlan,
+    readPlan,
+    undoChange,
+} from '@/lib/plan-workspace';
+import type { Workspace } from '@/lib/plan-workspace';
 import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import type { WayMode, WayStart, WayWhen } from './get-there';
-import { addToPlan, candidateFor, inPlan, readPlan, undoChange } from './plan';
-import type { Workspace } from './plan';
+
 import './event-details.css';
 
 // With Travel's styles and the map, only once someone asks for the way.
@@ -663,7 +670,7 @@ function Actions({
 
         try {
             const { workspace: next, change } = await addToPlan(
-                o,
+                candidateFor(o),
                 date,
                 workspace.revision,
             );

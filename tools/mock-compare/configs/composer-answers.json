@@ -1,0 +1,150 @@
+{
+    "name": "composer-answers",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> COMPOSER_ANSWERS=main php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerAnswersSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "clockRuns": true,
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/composer-studio/",
+        "wait": "#studio-form",
+        "screenshotStyle": "#shell, #shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => { const bar = document.querySelector('.chat-bar'); if (bar && !bar.hidden) bar.hidden = true; }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] }));"
+        ]
+    },
+    "app": {
+        "url": "/composer",
+        "wait": "article.chat-entry.chat-assistant >> nth=2",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "checklist answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 0,
+            "mockBefore": [
+                {
+                    "click": ".starter-card.starter-paperwork"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=0"
+                },
+                {
+                    "wait": 600
+                }
+            ]
+        },
+        {
+            "name": "checklist title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 0
+        },
+        {
+            "name": "checklist block",
+            "mock": ".answer-checklist",
+            "app": ".answer-checklist",
+            "index": 0
+        },
+        {
+            "name": "checklist documents",
+            "mock": ".answer-docs",
+            "app": ".answer-docs",
+            "index": 0
+        },
+        {
+            "name": "checklist note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 0
+        },
+        {
+            "name": "your request",
+            "mock": "article.chat-entry.chat-user",
+            "app": "article.chat-entry.chat-user",
+            "index": 0
+        },
+        {
+            "name": "step-free answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 1,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "Is the cinema step-free?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=1"
+                },
+                {
+                    "wait": 600
+                }
+            ]
+        },
+        {
+            "name": "step-free title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 1
+        },
+        {
+            "name": "step-free facts",
+            "mock": ".answer-facts",
+            "app": ".answer-facts",
+            "index": 0
+        },
+        {
+            "name": "clarify answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 2,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "blorp fizz"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=2"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock says “isn’t something this preview knows”; the app says “isn’t something Composer knows”, as it isn't a preview. Its options are the welcome's starters (see clarify options). On a phone the mock's longer Nearby option wraps, so the answer is taller.",
+            "ignore": ["h"]
+        },
+        {
+            "name": "clarify title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 2
+        },
+        {
+            "name": "clarify options",
+            "mock": ".answer-options",
+            "app": ".answer-options",
+            "index": 0,
+            "contentDiffers": true,
+            "ignoreReason": "The Nearby option names the appointment's recorded place (“Around Mülheim”), the mock its sample stop (“Around Wiener Platz, Mülheim”), as the welcome's Nearby starter does; on a phone the mock's longer wording wraps, so its options are taller.",
+            "ignore": ["h"]
+        }
+    ],
+    "screenshotStyleReason": "The text box band is fixed over the conversation on both sides, so it is hidden only while answers are shot, as are each side's header and its floating Composer button.",
+    "mockInitReason": "The mock's bar above its answers says they're samples (“Sample answers from the sample day · nothing here is live”); the app's aren't, so it has no such bar. It stays hidden on the mock (its own hidden state, .chat-bar[hidden] + .chat-feed), so both conversations start at the same place."
+}
