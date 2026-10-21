@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import { useState } from 'react';
+import { AskBody } from '@/components/paperwork/ask';
 import { TaskDetail } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
@@ -220,6 +221,17 @@ function Workspace({
                 <span>Your progress is your own record</span>
                 <button type="button" onClick={coverage}>
                     Where this comes from
+                </button>
+                <button
+                    type="button"
+                    onClick={() =>
+                        openSheet({
+                            title: 'Ask about your paperwork',
+                            body: <AskBody />,
+                        })
+                    }
+                >
+                    Ask a question
                 </button>
             </div>
             <SheetDialog />
