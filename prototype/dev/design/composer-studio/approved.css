@@ -179,6 +179,11 @@ body.studio {
     body.has-composer-day:not(.has-panel) .studio-input-wrap > * {
         pointer-events: auto;
     }
+    body.has-composer-day:not(.has-panel) .composer-ai-notice {
+        width: calc(var(--composer-column) - 12px);
+        max-width: none;
+        margin: 6px 0 0 calc(var(--composer-column-left) + 6px);
+    }
     .composer-day h2 {
         margin-bottom: -12px;
         font-family: var(--composer-display);
