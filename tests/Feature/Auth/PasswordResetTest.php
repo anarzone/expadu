@@ -76,3 +76,15 @@ test('password cannot be reset with invalid token', function () {
 
     $response->assertSessionHasErrors('email');
 });
+
+test('a reset link request answers the same whether or not the email has an account', function () {
+    Notification::fake();
+    $user = User::factory()->create();
+
+    $known = $this->from(route('password.request'))->post(route('password.email'), ['email' => $user->email]);
+    $unknown = $this->from(route('password.request'))->post(route('password.email'), ['email' => 'nobody-here@example.com']);
+
+    $known->assertSessionHasNoErrors()->assertSessionHas('status', __('passwords.sent'))->assertRedirect(route('password.request'));
+    $unknown->assertSessionHasNoErrors()->assertSessionHas('status', __('passwords.sent'))->assertRedirect(route('password.request'));
+    Notification::assertSentTimes(ResetPassword::class, 1);
+});

@@ -1,49 +1,46 @@
-import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { Head, useForm } from '@inertiajs/react';
+import type { FormEvent } from 'react';
+import {
+    AccountLabel,
+    AccountPassword,
+} from '@/components/account/account-parts';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/password/confirm';
 
+/** Your password again before a sensitive change, on the same poster. */
 export default function ConfirmPassword() {
+    const form = useForm({ password: '' });
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        form.post(store.url(), { onFinish: () => form.reset('password') });
+    }
+
     return (
-        <AuthLayout
-            title="Confirm your password"
-            description="This is a secure area of the application. Please confirm your password before continuing."
-        >
-            <Head title="Confirm password" />
-
-            <Form {...store.form()} resetOnSuccess={['password']}>
-                {({ processing, errors }) => (
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <PasswordInput
-                                id="password"
-                                name="password"
-                                placeholder="Password"
-                                autoComplete="current-password"
-                                autoFocus
-                            />
-
-                            <InputError message={errors.password} />
-                        </div>
-
-                        <div className="flex items-center">
-                            <Button
-                                className="w-full"
-                                disabled={processing}
-                                data-test="confirm-password-button"
-                            >
-                                {processing && <Spinner />}
-                                Confirm password
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </Form>
+        <AuthLayout>
+            <Head title="Confirm your password" />
+            <form onSubmit={submit}>
+                <AccountLabel>Nur zur Sicherheit</AccountLabel>
+                <h1 tabIndex={-1}>Confirm your password</h1>
+                <p className="account-lead">
+                    This part of your account asks for it once more.
+                </p>
+                <AccountPassword
+                    id="password"
+                    label="Password"
+                    autoComplete="current-password"
+                    value={form.data.password}
+                    onChange={(v) => form.setData('password', v)}
+                    error={form.errors.password}
+                />
+                <button
+                    className="account-primary"
+                    type="submit"
+                    disabled={form.processing}
+                >
+                    Confirm
+                </button>
+            </form>
         </AuthLayout>
     );
 }

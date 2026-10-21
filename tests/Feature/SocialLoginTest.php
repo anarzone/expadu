@@ -80,7 +80,9 @@ test('callback handles denied authorization gracefully', function () {
     // Callback without proper OAuth state will throw — controller catches it
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect(route('login'));
+    $response->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Signing in with Google didn’t finish. Try again, or use your email.');
+    $this->assertGuest();
 });
 
 test('invalid provider returns 404', function () {

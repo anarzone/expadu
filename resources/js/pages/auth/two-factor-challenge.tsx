@@ -1,131 +1,90 @@
-import { Form, Head } from '@inertiajs/react';
-import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    InputOTP,
-    InputOTPGroup,
-    InputOTPSlot,
-} from '@/components/ui/input-otp';
+import { Head, useForm } from '@inertiajs/react';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
+import { AccountField, AccountLabel } from '@/components/account/account-parts';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/two-factor/login';
 
+/** The second step of signing in, on the same poster: the authenticator's
+    code, or one of the saved recovery codes. */
 export default function TwoFactorChallenge() {
-    const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
-    const [code, setCode] = useState<string>('');
+    const [recovery, setRecovery] = useState(false);
+    const form = useForm({ code: '', recovery_code: '' });
 
-    const authConfigContent = useMemo<{
-        title: string;
-        description: string;
-        toggleText: string;
-    }>(() => {
-        if (showRecoveryInput) {
-            return {
-                title: 'Recovery code',
-                description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
-            };
-        }
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        form.transform((data) =>
+            recovery
+                ? { recovery_code: data.recovery_code }
+                : { code: data.code },
+        );
+        form.post(store.url(), { onError: () => form.reset() });
+    }
 
-        return {
-            title: 'Authentication code',
-            description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
-        };
-    }, [showRecoveryInput]);
-
-    const toggleRecoveryMode = (clearErrors: () => void): void => {
-        setShowRecoveryInput(!showRecoveryInput);
-        clearErrors();
-        setCode('');
-    };
+    function toggle() {
+        setRecovery((r) => !r);
+        form.clearErrors();
+        form.reset();
+    }
 
     return (
-        <AuthLayout
-            title={authConfigContent.title}
-            description={authConfigContent.description}
-        >
-            <Head title="Two-factor authentication" />
-
-            <div className="space-y-6">
-                <Form
-                    {...store.form()}
-                    className="space-y-4"
-                    resetOnError
-                    resetOnSuccess={!showRecoveryInput}
+        <AuthLayout>
+            <Head title="Two-step sign-in" />
+            <form onSubmit={submit}>
+                <AccountLabel>Noch ein Schritt</AccountLabel>
+                <h1 tabIndex={-1}>
+                    {recovery ? 'Use a recovery code' : 'Enter your code'}
+                </h1>
+                <p className="account-lead">
+                    {recovery
+                        ? 'One of the recovery codes you saved when you turned on two-step sign-in.'
+                        : 'The code your authenticator app shows for Expadu.'}
+                </p>
+                {recovery ? (
+                    <AccountField
+                        key="recovery"
+                        id="recovery_code"
+                        label="Recovery code"
+                        autoComplete="off"
+                        value={form.data.recovery_code}
+                        onChange={(v) => form.setData('recovery_code', v)}
+                        error={form.errors.recovery_code}
+                    />
+                ) : (
+                    <AccountField
+                        key="code"
+                        id="code"
+                        label={`${OTP_MAX_LENGTH}-digit code`}
+                        type="text"
+                        autoComplete="one-time-code"
+                        value={form.data.code}
+                        onChange={(v) =>
+                            form.setData(
+                                'code',
+                                v.replace(/\D/g, '').slice(0, OTP_MAX_LENGTH),
+                            )
+                        }
+                        error={form.errors.code}
+                    />
+                )}
+                <button
+                    className="account-primary"
+                    type="submit"
+                    disabled={form.processing}
                 >
-                    {({ errors, processing, clearErrors }) => (
-                        <>
-                            {showRecoveryInput ? (
-                                <>
-                                    <Input
-                                        name="recovery_code"
-                                        type="text"
-                                        placeholder="Enter recovery code"
-                                        autoFocus={showRecoveryInput}
-                                        required
-                                    />
-                                    <InputError
-                                        message={errors.recovery_code}
-                                    />
-                                </>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center space-y-3 text-center">
-                                    <div className="flex w-full items-center justify-center">
-                                        <InputOTP
-                                            name="code"
-                                            maxLength={OTP_MAX_LENGTH}
-                                            value={code}
-                                            onChange={(value) => setCode(value)}
-                                            disabled={processing}
-                                            pattern={REGEXP_ONLY_DIGITS}
-                                        >
-                                            <InputOTPGroup>
-                                                {Array.from(
-                                                    { length: OTP_MAX_LENGTH },
-                                                    (_, index) => (
-                                                        <InputOTPSlot
-                                                            key={index}
-                                                            index={index}
-                                                        />
-                                                    ),
-                                                )}
-                                            </InputOTPGroup>
-                                        </InputOTP>
-                                    </div>
-                                    <InputError message={errors.code} />
-                                </div>
-                            )}
-
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                disabled={processing}
-                            >
-                                Continue
-                            </Button>
-
-                            <div className="text-center text-sm text-muted-foreground">
-                                <span>or you can </span>
-                                <button
-                                    type="button"
-                                    className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                    onClick={() =>
-                                        toggleRecoveryMode(clearErrors)
-                                    }
-                                >
-                                    {authConfigContent.toggleText}
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </Form>
-            </div>
+                    Continue
+                </button>
+                <button
+                    className="account-quiet"
+                    type="button"
+                    onClick={toggle}
+                >
+                    {recovery
+                        ? 'Use the code from your app'
+                        : 'Use a recovery code instead'}
+                </button>
+            </form>
         </AuthLayout>
     );
 }

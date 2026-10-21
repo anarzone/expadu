@@ -25,7 +25,8 @@ class SocialLoginController extends Controller
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (\Throwable) {
-            return redirect()->route('login')->with('status', 'Social login was cancelled or failed.');
+            // Said on the sign-in poster, in the conflict colour.
+            return redirect()->route('login')->with('error', 'Signing in with '.ucfirst($provider).' didn’t finish. Try again, or use your email.');
         }
 
         $user = User::where('social_provider', $provider)
