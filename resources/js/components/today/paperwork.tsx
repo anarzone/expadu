@@ -195,3 +195,21 @@ export function WhatToBring({
         </Link>
     );
 }
+
+/** No Paperwork record yet: the optional way in (the mock's .paperwork-optional). */
+export function SettlingIn() {
+    return (
+        <section
+            className="paperwork-panel paperwork-optional"
+            aria-label="Optional settling-in help"
+        >
+            <Link href={bureaucracy()}>
+                <Icon name="document" />
+                <span>
+                    <strong>Settling in?</strong>
+                    <small>Get started when you’re ready</small>
+                </span>
+            </Link>
+        </section>
+    );
+}

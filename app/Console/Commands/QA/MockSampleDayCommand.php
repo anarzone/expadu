@@ -23,20 +23,22 @@ use Illuminate\Support\Str;
  *   busy      and a language class and Meet Maya after it
  *   quiet     nothing on the day (and no Paperwork seed)
  *   travel    the two evening events as plans (Travel's mock)
+ *   first-visit  nothing at all, not even Coming up (Today's welcome; use
+ *             an account with nothing saved, asked or recorded)
  *
- * Every view also keeps Coming up (1 and 3 October). It replaces only those
+ * Every other view also keeps Coming up (1 and 3 October). It replaces only those
  * three dates; the account's other plans stay. Pair it with the
  * `mock_clock` cookie (App\Support\MockClock).
  */
 class MockSampleDayCommand extends Command
 {
     protected $signature = 'mock:sample-day
-        {view=everyday : everyday, busy, quiet or travel}
+        {view=everyday : everyday, busy, quiet, travel or first-visit}
         {--email= : The account (default: the E2E account); created when missing}';
 
     protected $description = 'Local only: the mock\'s sample day (30 Sept 2026) in an account\'s plans, for tools/mock-compare';
 
-    private const VIEWS = ['everyday', 'busy', 'quiet', 'travel'];
+    private const VIEWS = ['everyday', 'busy', 'quiet', 'travel', 'first-visit'];
 
     private const DATES = ['2026-09-30', '2026-10-01', '2026-10-03'];
 
@@ -120,6 +122,10 @@ class MockSampleDayCommand extends Command
     /** @return array<string, list<array<string, mixed>>> */
     private function plans(string $view): array
     {
+        if ($view === 'first-visit') {
+            return [];
+        }
+
         $day = '2026-09-30';
         $plans = [
             '2026-10-01' => [$this->personal('mock:next-class', 'Language class', 'Ehrenfeld', 50.9497, 6.9187, '2026-10-01', '18:00', '19:00')],
