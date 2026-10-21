@@ -1030,7 +1030,8 @@
         padding: 18px 16px 8px;
     }
     .process-resources > button,
-    .process-resources > a {
+    .process-resources > a,
+    .process-resources > .process-resource-static {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -1041,7 +1042,8 @@
         padding: 8px 0;
     }
     .process-resources > button > span,
-    .process-resources > a > span {
+    .process-resources > a > span,
+    .process-resources > .process-resource-static > span {
         flex: 1;
     }
     .process-resources small {
