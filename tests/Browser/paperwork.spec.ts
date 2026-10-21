@@ -208,6 +208,21 @@ test.describe('Paperwork', () => {
     }) => {
         await openBlueCard(page);
         await ensureTracked(page);
+        // A retry finds the task as the failed attempt left it: start it from preparing.
+        const status = page.locator('.case-title-status .state-badge');
+
+        if ((await status.textContent())?.trim() === 'Blocked') {
+            await page.getByRole('button', { name: 'Update progress' }).click();
+            await page
+                .locator('.case-inline select')
+                .selectOption({ label: 'Back to preparing' });
+            await page
+                .locator('.case-inline')
+                .getByRole('button', { name: 'Save progress' })
+                .click();
+            await expect(status).toHaveText('Preparing');
+        }
+
         await page.getByRole('button', { name: 'Update progress' }).click();
 
         const editor = page.locator('.case-inline');
@@ -227,7 +242,7 @@ test.describe('Paperwork', () => {
             .fill('Waiting for my employment contract');
         await editor.getByRole('button', { name: 'Save progress' }).click();
         await expect(
-            page.locator('.process-detail-heading .state-badge'),
+            page.locator('.case-title-status .state-badge'),
         ).toHaveText('Blocked');
         await expect(
             page.getByText('Waiting for my employment contract').first(),
@@ -243,7 +258,7 @@ test.describe('Paperwork', () => {
             .getByRole('button', { name: 'Save progress' })
             .click();
         await expect(
-            page.locator('.process-detail-heading .state-badge'),
+            page.locator('.case-title-status .state-badge'),
         ).toHaveText('Preparing');
     });
 

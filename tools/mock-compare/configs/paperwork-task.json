@@ -1,0 +1,144 @@
+{
+    "name": "paperwork-task",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".process-grid .process-summary"
+            },
+            {
+                "wait": 800
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".process-grid .process-summary"
+            },
+            {
+                "wait": 800
+            }
+        ]
+    },
+    "seedNote": "PaperworkSeeder's everyday sample: the EU Blue Card task, preparing, one document ready, its 14:00 appointment today.",
+    "pairs": [
+        {
+            "name": "task title",
+            "mock": ".case-top h1",
+            "app": ".case-top h1"
+        },
+        {
+            "name": "steps",
+            "mock": ".detail-steps",
+            "app": ".detail-steps",
+            "ignore": [
+                "h"
+            ],
+            "reason": "Set aside time is not built yet (plannerNote)."
+        },
+        {
+            "name": "steps head",
+            "mock": ".detail-steps .case-section-head",
+            "app": ".detail-steps .case-section-head"
+        },
+        {
+            "name": "first step",
+            "mock": ".process-step",
+            "app": ".process-step",
+            "index": 0,
+            "ignore": [
+                "h"
+            ],
+            "reason": "Set aside time is not built yet (plannerNote)."
+        },
+        {
+            "name": "first step summary",
+            "mock": ".process-step > summary",
+            "app": ".process-step > summary",
+            "index": 0
+        },
+        {
+            "name": "second step",
+            "mock": ".process-step",
+            "app": ".process-step",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "resources",
+            "mock": ".process-resources",
+            "app": ".process-resources",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "documents link",
+            "mock": ".process-resources > *",
+            "app": ".process-resources > *",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "official link",
+            "mock": ".process-resources > *",
+            "app": ".process-resources > *",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "records",
+            "mock": ".process-records",
+            "app": ".process-records",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "appointment",
+            "mock": ".appointment-summary",
+            "app": ".appointment-summary",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "submission line",
+            "mock": ".submission-line",
+            "app": ".submission-line",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        }
+    ],
+    "plannerNote": "Set aside time (the mock's case planner, planning-ui.js: plan preparation time into your day) isn't built yet, so the first step is one button row shorter (h) and everything below it sits higher (y)."
+}

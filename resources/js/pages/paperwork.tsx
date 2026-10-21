@@ -2,12 +2,17 @@ import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import { useRef, useState } from 'react';
 import { AskBody } from '@/components/paperwork/ask';
-import { TaskDetail } from '@/components/paperwork/detail';
+import { TaskDetail, TaskTitleStatus } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
 import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
-import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
+import {
+    AllActions,
+    BackToOverview,
+    History,
+    SourcesBody,
+} from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
 import { Sharing } from '@/components/paperwork/sharing';
 import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
@@ -176,6 +181,12 @@ function Workspace({
 
     return (
         <>
+            {/* A task's page leads with the way back, then its name with its status. */}
+            {titled ? (
+                <div className="case-back">
+                    <BackToOverview />
+                </div>
+            ) : null}
             <div
                 className={clsx(
                     'case-top',
@@ -186,6 +197,9 @@ function Workspace({
                 <h1 tabIndex={-1} className={titled ? undefined : 'sr-only'}>
                     {heading}
                 </h1>
+                {process ? (
+                    <TaskTitleStatus processKey={process.occurrence_key} />
+                ) : null}
                 {titled ? null : (
                     <div className="case-tabs" aria-label="Paperwork views">
                         <button

@@ -899,26 +899,6 @@
     .view-back svg {
         width: 18px;
     }
-    .process-detail-heading {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-    .process-detail-heading > div {
-        flex: 1;
-    }
-    .process-detail-heading h2 {
-        font-size: var(--text-title-sm);
-        letter-spacing: -0.4px;
-    }
-    .process-detail-heading .state-badge {
-        margin-top: 5px;
-    }
-    .process-detail-heading .topic-icon {
-        width: 42px;
-        height: 48px;
-    }
     .process-workspace {
         display: grid;
         gap: 18px;
@@ -2311,21 +2291,6 @@
     }
     #case-editor:has(.guide-choices) + .bureaucracy-view .question-card {
         display: none;
-    }
-
-    .process-detail-heading .view-back {
-        margin: 0 auto 0 0;
-    }
-    .process-detail-heading > div {
-        flex: none;
-    }
-    .process-detail-heading {
-        gap: 8px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-    }
-    .process-detail-heading .state-badge {
-        margin-top: 0;
     }
 
     @media (max-width: 700px) {
