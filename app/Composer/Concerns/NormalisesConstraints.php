@@ -52,24 +52,12 @@ trait NormalisesConstraints
             $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)->min($horizon);
         }
 
-        return new Constraints(
-            windowStart: $start,
-            windowEnd: $end,
-            // Everything the user asked for survives the window rescue. Dropping
-            // the categories here is what made "pitch today" at 22:00 compose
-            // "anything" and then return nothing. Areas stay exactly as named;
-            // when none were given we leave them empty rather than spelling out
-            // the home Bezirk — compose falls back to the profile's areas for
-            // scoring, so the plan is unchanged but the UI stays clean.
-            areas: $constraints->areas,
-            categories: $constraints->categories,
-            companions: $constraints->companions,
-            budget: $constraints->budget,
-            archetype: $constraints->archetype,
-            vibe: $constraints->vibe,
-            activities: $constraints->activities,
-            radiusKm: $constraints->radiusKm,
-        );
+        // Everything the user asked for survives the window rescue. Dropping the
+        // categories here is what made "pitch today" at 22:00 compose "anything"
+        // and then return nothing. Areas stay exactly as named; when none were
+        // given they stay empty rather than spelling out the home Bezirk —
+        // compose falls back to the profile's areas for scoring.
+        return $constraints->with(['windowStart' => $start, 'windowEnd' => $end]);
     }
 
     /**

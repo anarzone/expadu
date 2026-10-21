@@ -19,8 +19,9 @@ class WorkspaceCommandRequest extends FormRequest
             'revision' => ['required', 'integer', 'min:0'],
             // Every change applies directly with its own Undo; there is no
             // approval, draft or date-move command any more.
-            'action' => ['required', Rule::in(['message', 'reply', 'proposal', 'reapply', 'open', 'edit', 'remove', 'add', 'appointment', 'replace', 'undo', 'fresh', 'resume', 'delete_history', 'cancel_day', 'complete', 'uncomplete'])],
-            'text' => ['required_if:action,message', 'string', 'max:500'],
+            'action' => ['required', Rule::in(['message', 'reply', 'answer', 'proposal', 'reapply', 'open', 'edit', 'remove', 'add', 'appointment', 'replace', 'undo', 'fresh', 'resume', 'delete_history', 'cancel_day', 'complete', 'uncomplete'])],
+            // Only a message carries words; an answer is worked out from the stored one.
+            'text' => ['required_if:action,message', 'prohibited_unless:action,message', 'string', 'max:500'],
             'kind' => ['required_if:action,reply', Rule::in(['bureaucracy', 'find', 'journey', 'unknown', 'failed'])],
             'token' => ['required_if:action,proposal', 'string', 'max:80'],
             'id' => ['required_if:action,edit,remove,replace,resume,reapply,complete,uncomplete', 'string', 'max:120'],

@@ -9,6 +9,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\LocationConfirmController;
+use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\EmailConfirmationController;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::post('api/track', TrackEventController::class)->name('api.track');
+// Personalisation ledger: impressions and detail views only (opt-in; dropped otherwise).
+Route::post('api/signals', SignalController::class)->middleware('throttle:signals')->name('api.signals');
 Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 
@@ -37,11 +40,6 @@ Route::post('user/confirm-email/code', [EmailConfirmationController::class, 'sen
     ->middleware('throttle:email-confirmation')->name('email-confirmation.send');
 Route::post('user/confirm-email', [EmailConfirmationController::class, 'confirm'])
     ->middleware('throttle:10,1')->name('email-confirmation.confirm');
-
-// Card showcase — dev-only reference for ContentCard variants
-if (! app()->environment('production')) {
-    Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
-}
 
 // The shared primitives (components/ui), for checking against the mock —
 // local + staging only, like the design-system reference below.

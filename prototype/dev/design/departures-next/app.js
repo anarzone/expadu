@@ -63,17 +63,15 @@ const minutesOf = (time) => {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
 };
-const sourceNote = (route) =>
-    tripOf(route).evening
-        ? 'Sample day · VRS timetable, scheduled times'
-        : tripOf(route).id === 'day'
-          ? 'Sample day · scheduled times'
-          : '7 Sep 2026 capture';
+const sourceNote = (route) => P.note(tripOf(route));
 const placeName = (name) => name.replace(/^Köln\s+/, '');
 // Stops that are also points in the place layer (connected/places.js
 // anchors), so a stop can open "Around here".
 const placeAnchors = {
     neumarkt: 'neumarkt',
+    // KVB names the appointment's stop Mülheim Wiener Platz; the area is
+    // the place layer's Wiener Platz.
+    'mülheim wiener platz': 'wiener-platz',
     'wiener platz': 'wiener-platz',
     rheinauhafen: 'rheinauhafen',
     stadtgarten: 'stadtgarten',
@@ -128,6 +126,21 @@ function routeList(tripId = requestTrip(), mode = state.routeMode) {
                 a.index - b.index,
         )
         .map(({ route }) => route);
+}
+// Best for you leads Plan a trip's ways. Arriving by a time, it's the way
+// Leave now and My day would take (wayFor; owner, 21 Oct 2026), not the
+// earliest arrival; leaving at or now, or ranked your own way, it's the
+// first of that order.
+function bestFirst(list, trip) {
+    if (
+        state.schedule !== 'arrive' ||
+        state.sort !== 'arrival' ||
+        state.fewer ||
+        state.lessWalk
+    )
+        return list;
+    const best = P.wayFor(list, state.time, trip.kind === 'official');
+    return best ? [best, ...list.filter((route) => route !== best)] : list;
 }
 const currentRoute = (id) =>
     window.JourneyNavigation?.currentRoute?.(id) ||
@@ -923,57 +936,17 @@ function renderSampleRoutes() {
 }
 // The approved label set (labels.js): icon + word, by strength.
 const L = window.TravelLabels;
-const spareLabel = (minutes, margin) =>
-    minutes < margin
-        ? L.chip('attention', 'timer', `Only ${minutes} min spare`)
-        : minutes >= 90
-          ? // Leaving now for the evening: hours early.
-            L.chip(
-                'calm',
-                'clock',
-                `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''} early`,
-            )
-          : L.chip('calm', 'check', `${minutes} min spare`);
+// Plan a trip's way card and checks card, shared with Events (plan-card.js).
+const P = window.TravelPlanCard;
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
-const skies = {
-    clear: 'Clear',
-    partly: 'Partly cloudy',
-    cloudy: 'Cloudy',
-    showers: 'Showers',
-    rain: 'Rain',
-    mist: 'Mist',
-};
 // The shared sample weather at a sample-day clock, or nothing.
-function sampleWeather(date, time) {
-    const hours = window.ExpaduSampleWeather?.days?.[date];
-    const hour = hours?.[Number(time.slice(0, 2))];
-    if (!hour) return null;
-    const [sky, degrees, rain] = hour;
-    return { sky: skies[sky] || sky, degrees, rain, wet: rain >= 50 };
-}
-// The way to take to be somewhere by a time (owner, 9 Oct 2026): the
-// latest leave that still keeps the margin (10 min for an official
-// appointment, else 5), the earliest arrival breaking a tie; when none
-// keeps it, the one with the most room.
-function wayFor(ways, start, official) {
-    const room = (route) => minutesOf(start) - minutesOf(route.arrive);
-    const keeps = ways.filter((route) => room(route) >= (official ? 10 : 5));
-    return (
-        keeps.sort(
-            (a, b) =>
-                minutesOf(b.depart) - minutesOf(a.depart) ||
-                minutesOf(a.arrive) - minutesOf(b.arrive),
-        )[0] ||
-        ways.slice().sort((a, b) => room(b) - room(a))[0] ||
-        null
-    );
-}
+const sampleWeather = (date, time) => P.weather(date, time);
 function nextTripChoice(trip = J.day) {
     const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
     const planned = J.dayRoutes.find((route) => route.inPlan);
     const best =
-        wayFor(J.dayRoutes, trip.start, trip.kind === 'official') || planned;
+        P.wayFor(J.dayRoutes, trip.start, trip.kind === 'official') || planned;
     return { best, planned, spare };
 }
 // Your next thing as one line (owner, 15 Oct 2026: option B on the Travel
@@ -1253,135 +1226,44 @@ function platformOnStep(route, step) {
 // A way's steps in the trip page's words (review, 15 Oct 2026): "Walk to
 // Neumarkt", "Tram 4 to Wiener Platz · From Neumarkt · towards Schlebusch",
 // never "Köln …" or "Board line 4".
-function stepWords(route, step, steps, index) {
-    const plain = (text = '') => text.replace(/Köln\s+/g, '');
-    if (step.mode !== 'transit')
-        return { title: plain(step.title), detail: plain(step.detail) };
-    const line = step.line || route.line;
-    const off = steps.slice(index).find((item) => item.mode === 'alight');
-    const kind =
-        step.vehicle === 'bus' || window.TravelLabels?.look(line, 'tram')?.bus
-            ? 'Bus'
-            : step.vehicle === 'rail'
-              ? 'Train'
-              : 'Tram';
-    return {
-        title: `${kind} ${line} to ${plain(off?.title.replace(/^Get off at /, '') || '')}`,
-        detail: `From ${plain(step.placeName || step.from || '')} · ${plain(step.detail).replace(/^Towards /, 'towards ')}`,
-    };
-}
+// The way step by step (plan-card.js), with Travel's own links on a step:
+// its platform, the timetable at a boarding stop, places nearby.
 function stepsMarkup(route) {
     const trip = tripOf(route);
     const steps =
         window.JourneyNavigationModel?.steps(route) || J.tripSteps(route);
-    return `<ol class="route-steps">${steps
-        .map((step, index) => ({
-            step,
-            words: stepWords(route, step, steps, index),
-        }))
-        .map(
-            ({ step, words }) =>
-                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(words.title)}</strong><small>${safe(words.detail)}</small>${step.mode === 'transit' ? platformOnStep(route, step) : ''}${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
-        )
-        .join('')}</ol>`;
+    return P.steps(route, steps, trip, (step) => {
+        const nearby =
+            step.mode === 'alight' &&
+            nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time);
+        const board = step.boardStop
+            ? T.stops.find((stop) => stop.id === step.boardStop).name
+            : '';
+        return `${step.mode === 'transit' ? platformOnStep(route, step) : ''}${nearby ? `<a class="step-nearby" href="${nearby}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(board)}">${safe(board)}${icon('chevron')}</button>` : ''}`;
+    });
 }
 function details(route) {
     const trip = tripOf(route);
     return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.evening ? 'Sample day, scheduled times from the VRS timetable.' : trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove from your plan' : 'Add to plan'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'In your plan' : 'Add to plan'}">${icon('plus')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
-// What the planner looked at for this trip, and what the preview has of it.
+// What the planner looked at for this trip (plan-card.js says it), from
+// Travel's state.
 function checks(tripId, trip, route) {
     const day = J.isSampleDay ? J.isSampleDay(tripId) : tripId === 'day';
-    const weather =
-        day && route ? sampleWeather(trip.date, route.depart) : null;
-    const between = day
-        ? dayPlaces().filter(
-              (place) => place.time > trip.time && place.time < trip.start,
-          )
-        : [];
-    return [
-        {
-            short: 'Departures',
-            icon: day ? 'check' : 'offline',
-            tone: day ? 'calm' : 'unsure',
-            title: day ? 'Departures' : 'Departures, as captured',
-            text: trip.evening
-                ? `Scheduled times from the VRS timetable for ${boardDateLabel(trip.date)}, captured 13 Oct`
-                : day
-                ? `Scheduled sample times for ${boardDateLabel(trip.date)}`
-                : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
-        },
-        {
-            short:
-                state.scenario === 'cancelled' && day
-                    ? '1 notice'
-                    : day
-                      ? 'No notices'
-                      : 'Notices',
-            icon: state.scenario === 'cancelled' && day ? 'alert' : 'check',
-            tone:
-                state.scenario === 'cancelled' && day
-                    ? 'conflict'
-                    : day
-                      ? 'calm'
-                      : 'unsure',
-            title: 'KVB notices',
-            text:
-                state.scenario === 'cancelled' && day
-                    ? 'Tram 4 at 13:14 is cancelled (sample)'
-                    : day
-                      ? 'None in the sample day'
-                      : 'Only historical examples were captured; current notices aren’t known',
-            flag: state.scenario === 'cancelled' && day,
-        },
-        {
-            short: 'Weather',
-            icon: weather?.wet ? 'cloud' : 'sun',
-            title: 'Weather',
-            text: weather
-                ? `${weather.sky}, ${weather.degrees}° when you leave · sample weather`
-                : 'Not recorded for this trip',
-            muted: !weather,
-        },
-        {
-            short: 'My day',
-            title: 'My day',
-            text: trip.back
-                ? `After ${trip.event}, which ends at ${trip.after}`
-                : day
-                  ? between.length
-                      ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
-                      : `Nothing else before ${trip.start}`
-                  : 'Not part of your sample day',
-            muted: !day,
-        },
-        {
-            short:
-                state.scenario === 'lift'
-                    ? 'Lift out of order'
-                    : 'Lifts unknown',
-            icon: state.scenario === 'lift' ? 'lift' : 'liftok',
-            tone:
-                state.scenario === 'lift'
-                    ? 'conflict'
-                    : state.stepfree
-                      ? 'attention'
-                      : 'unsure',
-            title: 'Lifts on the way',
-            text:
-                state.scenario === 'lift'
-                    ? 'A lift at Neumarkt is out of order (sample)'
-                    : state.stepfree
-                      ? 'Lift status isn’t in this preview, so we can’t promise step-free'
-                      : 'Not in this preview',
-            muted: state.scenario !== 'lift',
-            flag: state.stepfree || state.scenario === 'lift',
-        },
-    ];
+    return P.facts(trip, {
+        day,
+        weather: day && route ? sampleWeather(trip.date, route.depart) : null,
+        between: day
+            ? dayPlaces().filter(
+                  (place) => place.time > trip.time && place.time < trip.start,
+              )
+            : [],
+        scenario: state.scenario,
+        stepfree: state.stepfree,
+        dateLabel: boardDateLabel,
+    });
 }
-function checksMarkup(list) {
-    return `<section class="plan-checks" aria-label="What we checked"><button type="button" class="plan-checks-toggle" data-action="checks" aria-expanded="${state.checksOpen}" aria-controls="plan-checks-detail"><strong>We checked today’s conditions</strong><span class="plan-check-chips tl-chips">${list.map((item) => L.chip(item.tone || (item.flag ? 'attention' : item.muted ? 'unsure' : 'calm'), item.icon || 'check', item.short)).join('')}</span><span class="plan-checks-more">${state.checksOpen ? 'Hide' : 'Details'}${icon('down')}</span></button><div id="plan-checks-detail" class="plan-checks-detail" ${state.checksOpen ? '' : 'hidden'}>${list.map((item) => `<p><strong>${safe(item.title)}</strong><span>${safe(item.text)}</span></p>`).join('')}</div></section>`;
-}
+const checksMarkup = (list) => P.checks(list, state.checksOpen);
 const clockOf = (minutes) =>
     `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 function savedPlan(route) {
@@ -1394,7 +1276,7 @@ function savedPlan(route) {
     const day = desktopPlanner.matches
         ? `<button type="button" data-action="plan-done"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>Travel shows it as your next trip${trip.start ? `, between now and your ${trip.start}` : ''}</small></span>${icon('chevron')}</button>`
         : `<button type="button" data-view="day"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>${trip.start ? `Between now and your ${trip.start}` : 'With the rest of today'}</small></span>${icon('chevron')}</button>`;
-    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Added to your plan</h2><p class="plan-saved-summary">${safe(optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
+    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Added to your plan</h2><p class="plan-saved-summary">${safe(P.optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
 }
 // "Arrive by 14:00", with the date only when it isn't the planner's day.
 function planSummary() {
@@ -1403,137 +1285,20 @@ function planSummary() {
         state.date === home.date ? '' : `${boardDateLabel(state.date)}, `;
     return `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${day}${state.time}`;
 }
-// A line badge in the line's own colour, from Nearby's line looks.
-function lineBadge(line) {
-    const service = window.StationCapture?.services.find(
-        (item) => item.line === String(line),
-    );
-    const look = window.TravelLabels?.look(
-        String(line),
-        service?.type === 'bus' ? 'bus' : 'tram',
-    );
-    return `<span class="plan-line"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${safe(line)}</span>`;
-}
-function vehicleOf(line, leg) {
-    // A captured journey knows its vehicle; otherwise the station capture.
-    if (leg?.vehicle) return leg.vehicle === 'bus' ? 'Bus' : leg.vehicle === 'rail' ? 'Train' : 'Tram';
-    const service = window.StationCapture?.services.find(
-        (item) => item.line === String(line),
-    );
-    return service ? (service.type === 'bus' ? 'Bus' : 'Tram') : 'Line';
-}
-function optionTitle(route) {
-    if (route.mode === 'bike') return 'By bike';
-    if (route.mode === 'walk') return 'On foot';
-    const lines = route.legs.filter((leg) => leg.mode === 'transit');
-    const first = lines[0]?.line || route.line;
-    return `${vehicleOf(first)} ${first}${
-        route.changes
-            ? `, then ${
-                  lines
-                      .slice(1)
-                      .map((leg) => leg.line || '')
-                      .filter(Boolean)
-                      .join(', ') ||
-                  `${route.changes} change${route.changes > 1 ? 's' : ''}`
-              }`
-            : ', no change'
-    }`;
-}
-// Why an option is good or not, in the sample's own facts.
-function optionReasons(route, trip) {
-    // [words, ok or warn, icon]: each reason is a label of its own.
-    const reasons = [];
-    if (route.mode === 'transit')
-        reasons.push(
-            route.changes
-                ? [
-                      `${route.changes} change${route.changes > 1 ? 's' : ''}`,
-                      'ok',
-                      'route',
-                  ]
-                : ['No change', 'ok', 'check'],
-        );
+// Each way as Plan a trip's card (plan-card.js), with Travel's reasons:
+// the sample day's weather when it's the sample day.
+function planOption(route, list, trip, best) {
     const weather =
         (J.isSampleDay ? J.isSampleDay(trip.id) : trip.id === 'day') ? sampleWeather(trip.date, route.depart) : null;
-    if (route.walking || route.mode !== 'transit')
-        reasons.push([
-            `${route.mode === 'transit' ? route.walking : route.duration} min ${route.mode === 'bike' ? 'cycling' : 'walking'}`,
-            'ok',
-            route.mode === 'bike' ? 'bike' : 'walk',
-        ]);
-    if (weather)
-        reasons.push(
-            weather.wet
-                ? [`${weather.sky} likely on the way (sample)`, 'warn', 'cloud']
-                : ['Dry on the way (sample)', 'ok', 'sun'],
-        );
-    if (route.inPlan) reasons.push(['In your plan', 'ok', 'calendar']);
-    if (route.delayed)
-        reasons.push(['Delay flagged in the capture', 'warn', 'clock']);
-    if (trip.start) {
-        const spare = minutesOf(trip.start) - minutesOf(route.arrive);
-        if (spare < (trip.kind === 'official' ? 10 : 5))
-            reasons.push([
-                `Only ${spare} min before your ${trip.start}`,
-                'warn',
-                'timer',
-            ]);
-    }
-    return reasons;
-}
-function planOption(route, list, trip, best) {
-    const on = route.id === state.selected;
-    const expanded = state.expanded === route.id;
-    const spare = trip.start
-        ? minutesOf(trip.start) - minutesOf(route.arrive)
-        : null;
-    // The line badge (with its vehicle) is the option's name; how it goes
-    // is in the reasons below.
-    const transit = route.legs.filter((leg) => leg.mode === 'transit');
-    const badges =
-        route.mode === 'transit'
-            ? transit
-                  .map((leg, index) => {
-                      const id = String(leg.line || route.line);
-                      const vehicle = vehicleOf(id, leg);
-                      const bus = vehicle === 'Bus';
-                      const look = window.TravelLabels?.look(id, bus ? 'bus' : 'tram');
-                      return L.line(id, look, {
-                          word: index === 0,
-                          kind: bus ? 'bus' : vehicle === 'Train' ? 'rail' : 'tram',
-                      });
-                  })
-                  .join(`<span class="plan-then">${icon('arrow')}</span>`)
-            : `<span class="tl-line is-mode">${icon(route.mode)}<span>${route.mode === 'bike' ? 'By bike' : 'On foot'}</span></span>`;
-    // The first tram's time names the option, as the trip line does ("your
-    // 13:24"; review, 16 Oct).
-    const title = `<span class="plan-option-title">${badges}${transit[0]?.time ? `<span class="plan-option-at">at ${transit[0].time}</span>` : ''}</span>`;
-    const after = trip.back
-        ? minutesOf(route.depart) - minutesOf(trip.after) + (route.depart < '12:00' ? 1440 : 0)
-        : null;
-    const spareTag =
-        spare !== null
-            ? spareLabel(spare, trip.kind === 'official' ? 10 : 5)
-            : after !== null
-              ? L.chip('calm', 'clock', after > 0 ? `${after} min after it ends` : 'As it ends')
-              : L.chip('calm', 'clock', `${route.duration} min`);
-    return `<article class="plan-option${on ? ' is-on' : ''}" aria-label="${safe(optionTitle(route))}, leave ${route.depart}, there ${route.arrive}${overnight(route.arrive, trip) ? ' next day' : ''}">
-        <button type="button" class="plan-option-pick" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}" data-pick-route="${route.id}">
-            <span class="plan-radio" aria-hidden="true"></span>
-            <span class="plan-option-body"><span class="plan-option-head">${best ? L.chip('best', 'star', 'Best for you') : title}${spareTag}</span>${best ? title : ''}<span class="plan-option-times">Leave <strong>${route.depart}</strong> → there <strong>${route.arrive}</strong>${overnight(route.arrive, trip)}</span><span class="plan-option-reasons">${optionReasons(
-                route,
-                trip,
-            )
-                .map(
-                    ([text, kind, name]) =>
-                        `<span class="is-${kind}"><span class="plan-reason-icon">${icon(name)}</span>${safe(text)}</span>`,
-                )
-                .join('')}</span></span>
-        </button>
-        <button class="details-toggle" data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}">Journey details ${icon('down')}</button>
-        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
-    </article>`;
+    return P.option(route, {
+        trip,
+        on: route.id === state.selected,
+        expanded: state.expanded === route.id,
+        best,
+        why: P.reasons(route, trip, weather),
+        way: stepsMarkup(route),
+        note: sourceNote(route),
+    });
 }
 // Districts whose journeys couldn't load: their request shows as not in
 // the preview.
@@ -1547,7 +1312,7 @@ function renderResults() {
     const tripId = requestTrip(),
         matched = !!tripId,
         trip = J.trips?.[tripId] || J.capture,
-        list = routeList(tripId);
+        list = bestFirst(routeList(tripId), trip);
     // A district's evening journeys load when someone plans from (or back
     // to) it.
     const loading = !tripId && J.pending?.(fromPlace(), to.value);
@@ -1856,7 +1621,7 @@ function renderDay() {
     const goingTrip = going && J.tripFor(trip.to, going.venue);
     // Chosen as Leave now chooses (wayFor), not the earliest arrival.
     const way = goingTrip
-        ? wayFor(
+        ? P.wayFor(
               J.filtered({
                   trip: goingTrip,
                   schedule: 'arrive',

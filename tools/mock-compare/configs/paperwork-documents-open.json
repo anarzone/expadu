@@ -1,0 +1,83 @@
+{
+    "name": "paperwork-documents-open",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/?view=paperwork",
+        "wait": ".paperwork-groups",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".paperwork-group:first-child details.document-row:nth-of-type(4) summary"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy?view=paperwork",
+        "wait": ".paperwork-groups",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".paperwork-group:first-child details.document-row:nth-of-type(4) summary"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "note": "Paperwork's documents with the EU Blue Card's employment contract open (PW3): you have it, not checked yet, so the second step \"Mark as ready\" with \"I don’t have it\" beside it. The same sample record and clock as paperwork.json.",
+    "pairs": [
+        {
+            "name": "opened row",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4)",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4)"
+        },
+        {
+            "name": "actions",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions"
+        },
+        {
+            "name": "checklist line",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions > p:first-child",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions > p:first-child"
+        },
+        {
+            "name": "Mark as ready",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions .button.primary",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions .button.primary"
+        },
+        {
+            "name": "I don’t have it",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions .plain-button",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-actions .plain-button"
+        },
+        {
+            "name": "Check official source",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-info",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) .document-info"
+        },
+        {
+            "name": "row status",
+            "mock": ".paperwork-group:first-child details.document-row:nth-of-type(4) summary > span > small:last-child",
+            "app": ".paperwork-group:first-child details.document-row:nth-of-type(4) summary > span > small:last-child"
+        }
+    ]
+}

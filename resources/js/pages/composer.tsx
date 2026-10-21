@@ -19,6 +19,7 @@ import {
     event as selectedEvent,
     update,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import { AnswerBody, isAnswer } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
     readComposerEntry,
@@ -37,6 +38,7 @@ import {
     Welcome,
     YourDay,
     dayFacts,
+    starters,
     useComposerFrame,
     useComposerOrigin,
 } from '@/components/composer/frame';
@@ -66,8 +68,8 @@ import { EventRichDetail } from '@/components/events/event-rich-detail';
 import type { EventOccurrence } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import type { SavedPlace } from '@/components/places/from-bar';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import type { SavedPlace } from '@/components/place-shared/from-types';
+import { PlaceDetailModal } from '@/components/place-shared/place-detail-modal';
 import {
     Dialog,
     DialogContent,
@@ -208,6 +210,10 @@ export default function ComposerPage({
         ? (workspace.plans[workspace.focus] ?? null)
         : null;
     const activePlan = focused;
+    // The latest reply is the one that offers next steps.
+    const latestReplyId = conversation.messages.findLast(
+        (message) => message.role === 'assistant',
+    )?.id;
     const latestPlanMessage = [...conversation.messages]
         .reverse()
         .find((item) => item.kind === 'plan' && item.date === workspace.focus);
@@ -453,9 +459,15 @@ export default function ComposerPage({
                 const parsed = await api<{
                     intent: string;
                     constraints: Record<string, unknown> | null;
+                    kind: string;
+                    answer: boolean;
                 }>(parse.url(), { text });
 
-                if (parsed.intent === 'plan_day' && parsed.constraints) {
+                if (parsed.answer) {
+                    // Composer answers it from your day and records (the server works
+                    // out what you asked from your own words).
+                    await sendCommand({ action: 'answer' });
+                } else if (parsed.intent === 'plan_day' && parsed.constraints) {
                     setBusy('Putting your day together…');
                     const result = await api<{
                         handoff_token: string;
@@ -706,16 +718,6 @@ export default function ComposerPage({
                                 onAsk={ask}
                             />
                         )}
-                        {conversation.messages.length > 0 && (
-                            <p className="composer-conversation-date">
-                                {new Date(
-                                    conversation.created_at,
-                                ).toLocaleDateString('en-GB', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                })}
-                            </p>
-                        )}
                         {conversation.messages.map((message) => {
                             const live =
                                 message.id === latestPlanMessage?.id &&
@@ -724,27 +726,56 @@ export default function ComposerPage({
                             return (
                                 <article
                                     key={message.id}
-                                    className={`composer-message ${message.role === 'user' ? 'is-user' : ''}`}
+                                    className={clsx(
+                                        'chat-entry',
+                                        message.role === 'user'
+                                            ? 'chat-user'
+                                            : 'chat-assistant',
+                                        message.kind === 'plan' && 'chat-plan',
+                                    )}
+                                    data-chat-entry={message.id}
                                     id={
                                         live
                                             ? 'composer-current-plan'
                                             : undefined
                                     }
                                 >
-                                    <div className="composer-speaker">
-                                        {message.role === 'assistant' && (
-                                            <IconSparkles size={16} />
+                                    <span className="chat-speaker">
+                                        {message.role === 'user' ? (
+                                            'You'
+                                        ) : (
+                                            <>
+                                                <Icon
+                                                    name="spark"
+                                                    variant="line"
+                                                />
+                                                Composer
+                                            </>
                                         )}
-                                        {message.role === 'user'
-                                            ? 'You'
-                                            : 'Composer'}
-                                    </div>
-                                    {message.text && <p>{message.text}</p>}
+                                    </span>
+                                    {isAnswer(message) ? (
+                                        <AnswerBody
+                                            message={message}
+                                            latest={
+                                                message.id === latestReplyId
+                                            }
+                                            starters={starters(
+                                                day,
+                                                paperwork,
+                                                around,
+                                            )}
+                                            onAsk={ask}
+                                            onPanel={openCollection}
+                                        />
+                                    ) : (
+                                        message.text && <p>{message.text}</p>
+                                    )}
                                     {message.kind === 'plan' &&
                                         (live ? (
                                             <>
                                                 <PlanCard
                                                     plan={focused!}
+                                                    changes={workspace.changes}
                                                     busy={!!busy}
                                                     command={command}
                                                     swap={startSwap}
@@ -921,8 +952,8 @@ export default function ComposerPage({
                             );
                         })}
                         {pendingText && (
-                            <article className="composer-message is-user">
-                                <div className="composer-speaker">You</div>
+                            <article className="chat-entry chat-user">
+                                <span className="chat-speaker">You</span>
                                 <p>{pendingText}</p>
                             </article>
                         )}

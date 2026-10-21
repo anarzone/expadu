@@ -173,14 +173,14 @@ test.describe('Paperwork', () => {
             .getByRole('button', { name: /Documents\s*\d+ marked ready/ })
             .click();
         await expect(
-            page.getByRole('heading', { name: 'Your paperwork' }),
+            page.getByRole('heading', { name: 'Your documents' }),
         ).toBeVisible();
 
         const row = page.locator('.document-row').first();
         await row.locator('summary').click();
 
         const have = row.getByRole('button', { name: 'I have this' });
-        const ready = row.getByRole('button', { name: 'Ready for this task' });
+        const ready = row.getByRole('button', { name: 'Mark as ready' });
         const marked = row.getByText('Marked ready by you');
         // Whatever state a re-used account left it in, walk it forward step by step.
         await expect(have.or(ready).or(marked)).toBeVisible();
@@ -196,8 +196,8 @@ test.describe('Paperwork', () => {
 
         await expect(row.getByText('Marked ready by you')).toBeVisible();
 
-        // Not ready yet withdraws it again, so the account is reusable.
-        await row.getByRole('button', { name: 'Not ready yet' }).click();
+        // I don’t have it withdraws it again, so the account is reusable.
+        await row.getByRole('button', { name: 'I don’t have it' }).click();
         await expect(
             row.getByRole('button', { name: 'I have this' }),
         ).toBeVisible();
@@ -305,7 +305,9 @@ test.describe('Paperwork', () => {
             'I’m not sure',
         );
         await panel.getByRole('button', { name: 'Confirm answer' }).click();
-        await expect(panel.getByText('Answer saved for you.')).toBeVisible();
+        await expect(
+            panel.getByText('Answer saved for this person.'),
+        ).toBeVisible();
     });
 
     test('Your situation lists answers; a correction compares old and new first', async ({
@@ -322,15 +324,17 @@ test.describe('Paperwork', () => {
             hasText: 'Purpose of stay',
         });
         await expect(purpose).toContainText('Employment');
-        await purpose.click();
-        await expect(
-            panel.getByRole('heading', { name: 'What changed?' }),
-        ).toBeVisible();
 
+        // Every answer's history sits under the answers, as in the mock.
         await panel.locator('.details-history summary').click();
         await expect(panel.locator('.details-history')).toContainText(
             'Confirmed: Employment',
         );
+
+        await purpose.click();
+        await expect(
+            panel.getByRole('heading', { name: 'What changed?' }),
+        ).toBeVisible();
 
         await panel
             .getByRole('button', { name: /Correct an earlier answer/ })

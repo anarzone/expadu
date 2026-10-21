@@ -1,7 +1,10 @@
 import { IconCurrentLocation, IconMapPin } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
-import type { GeoResult, SavedPlace } from '@/components/places/from-bar';
+import type {
+    GeoResult,
+    SavedPlace,
+} from '@/components/place-shared/from-types';
 import { ComposerLoading } from './loading';
 import { api } from './types';
 

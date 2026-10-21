@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Gtfs\GtfsStop;
 use App\Models\JourneyRecent;
+use App\Personalisation\SignalRecorder;
 use App\Services\DisruptionService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
@@ -81,6 +82,7 @@ class TakeMeThereController extends Controller
         ]);
 
         $user = $request->user();
+        app(SignalRecorder::class)->getThere($user, $request->input('get_there'));
 
         if (isset($validated['from_lat'], $validated['from_lng'])) {
             // An explicit origin (the Places list's resolved From, or an "I'm

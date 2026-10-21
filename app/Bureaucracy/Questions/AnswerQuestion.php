@@ -8,6 +8,8 @@ use App\Bureaucracy\Facts\FactInputMethod;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\Facts\TemporalFactValidator;
+use App\Bureaucracy\People\AccessScope;
+use App\Bureaucracy\People\PersonAccess;
 use App\Models\BureaucracyQuestionSession;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
@@ -18,7 +20,7 @@ final class AnswerQuestion
 {
     public function __construct(private QuestionSessionScope $sessions, private QuestionToken $tokens, private PrepareAssessmentInput $inputs,
         private QuestionProtocol $protocol, private FactRegistry $registry, private TemporalFactValidator $validator,
-        private RecordFactChange $changes, private CorrectFact $corrections) {}
+        private RecordFactChange $changes, private CorrectFact $corrections, private PersonAccess $access) {}
 
     public function execute(User $actor, BureaucracyQuestionSession $session, int $questionId, string $token, mixed $value, string $answerState = 'value', string $operation = 'assert', ?string $effectiveFrom = null, FactInputMethod $method = FactInputMethod::Structured): array
     {
@@ -46,7 +48,10 @@ final class AnswerQuestion
                 }
                 $normal = $this->validator->normalize($this->registry->definition($offer->fact_key), $value, $answerState, $effectiveFrom);
                 $existing = $case->facts()->where('key', $offer->fact_key)->where('state', 'confirmed')->orderByDesc('id')->first();
-                if ($existing !== null && $existing->value !== null && $existing->value !== $normal && $operation === 'assert') {
+                // Asked to choose for any recorded value, whether it matches or not, by someone
+                // who may change answers but not see them: the reply never tells the two apart.
+                $blind = ! in_array(AccessScope::ViewFacts->value, $this->access->scopesFor($actor, $person), true);
+                if ($existing !== null && $existing->value !== null && $operation === 'assert' && ($blind || $existing->value !== $normal)) {
                     throw ValidationException::withMessages(['operation' => 'Is this a correction to an earlier answer, or a real change in circumstances?']);
                 }
                 $fact = $existing !== null && ($operation === 'correct' || ($existing->value === $normal && $operation === 'assert'))

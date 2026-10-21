@@ -12,26 +12,23 @@ final class CaseFactToolSchema
     public function for(FactDefinition $definition, bool $subjectAware = false): array
     {
         return [
-            'type' => 'function',
-            'function' => [
-                'name' => 'extract_authorized_fact',
-                'description' => 'Extract only the answer to the server-authored question. Do not provide advice or prose.',
-                'strict' => true,
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'result' => [
-                            'anyOf' => [
-                                $this->candidateSchema($definition, $subjectAware),
-                                $this->outcomeOnlySchema('unknown'),
-                                $this->outcomeOnlySchema('off_topic'),
-                                ...($subjectAware ? [$this->outcomeOnlySchema('unclear_subject')] : []),
-                            ],
+            'name' => 'extract_authorized_fact',
+            'description' => 'Extract only the answer to the server-authored question. Do not provide advice or prose.',
+            'strict' => true,
+            'input_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'result' => [
+                        'anyOf' => [
+                            $this->candidateSchema($definition, $subjectAware),
+                            $this->outcomeOnlySchema('unknown'),
+                            $this->outcomeOnlySchema('off_topic'),
+                            ...($subjectAware ? [$this->outcomeOnlySchema('unclear_subject')] : []),
                         ],
                     ],
-                    'required' => ['result'],
-                    'additionalProperties' => false,
                 ],
+                'required' => ['result'],
+                'additionalProperties' => false,
             ],
         ];
     }
@@ -75,8 +72,10 @@ final class CaseFactToolSchema
     {
         return match ($definition->type) {
             'enum' => ['type' => 'string', 'enum' => $definition->options],
-            'date' => ['type' => 'string', 'pattern' => '^\\d{4}-\\d{2}-\\d{2}$'],
-            'integer' => ['type' => 'integer', 'minimum' => 0],
+            // Strict tool schemas take string formats but no numeric bounds:
+            // the extractor itself rejects a negative integer.
+            'date' => ['type' => 'string', 'format' => 'date'],
+            'integer' => ['type' => 'integer'],
             'boolean' => ['type' => 'boolean'],
         };
     }

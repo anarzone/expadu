@@ -1,6 +1,6 @@
 {
     "name": "composer",
-    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerSeeder\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [
         360,

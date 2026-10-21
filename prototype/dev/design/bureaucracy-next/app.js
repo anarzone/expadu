@@ -207,6 +207,13 @@
     };
     const button = (text, action, cls = 'secondary') =>
         `<button type="button" class="button ${cls}" data-case="${action}">${text}</button>`;
+    // Your record's actions. Stopping its processing is one tap, and Resume
+    // undoes it (owner, 21 Oct 2026). Stopped, the page shows no plan, only
+    // that it's stopped and these actions: a plan that can't update would
+    // read as current (owner, 21 Oct 2026, as the app's page).
+    const stopped = () => !!state.paused && !state.preview;
+    const recordActions = () =>
+        `<div class="record-actions" data-record-actions><div class="actions">${button('Download a copy', 'record-export')}${state.paused ? button('Resume processing', 'record-resume') : button('Stop processing', 'record-pause')}${button('Delete your record', 'record-erase')}</div></div>`;
     // Review: a read-only preview of a persona's plan, like the app's QA
     // preview. Your own plan is kept aside, untouched, until you go back.
     const personas = [
@@ -460,6 +467,11 @@
             } catch {
                 searchable = false;
             }
+        if (stopped()) {
+            document.querySelector('#main').innerHTML =
+                `<h1 class="sr-only">Paperwork</h1><div id="case-editor"></div><div class="bureaucracy-view"><section class="access-blank"><h2>Processing stopped.</h2><p>Paperwork keeps your record but doesn’t use it until you resume. You can still download a copy or delete it.</p>${recordActions()}</section></div>`;
+            return;
+        }
         const tabs = `<div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div>`;
         document.querySelector('#main').innerHTML =
             `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}${titled ? `<div class="case-back">${back()}</div>` : ''}<div class="case-top${titled ? '' : ' is-untitled'}${searchable ? ' is-searchable' : ''}"><h1${titled ? '' : ' class="sr-only"'}>${E(heading)}</h1>${status}${titled ? '' : tabs}${searchable ? searchField() : ''}${sharedView() ? `<span class="person-picker is-static">${owner}’s plan</span>` : `<details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
@@ -1891,7 +1903,7 @@
                               )
                               .join('')
                         : '<p class="muted">Nobody yet.</p>'
-                }</section><form class="sharing-invite" data-sharing-invite><h3>Invite someone</h3><p class="muted">They always see your plan. Choose what else:</p>${check('view_facts', 'See your answers')}${check('edit_facts', 'Change your answers')}${check('manage_process', 'Update your progress')}${check('manage_evidence', 'Mark your documents', true)}<div class="actions"><button class="button primary" type="submit">Create invitation</button></div></form><div data-sharing-result></div><section class="sharing-grants"><h3>Your record</h3><p class="muted">Download a copy of everything Paperwork keeps about you, stop its processing, or delete it.</p><div class="actions">${button('Download a copy', 'record-export')}${button('Delete your record', 'record-erase')}</div></section>`,
+                }</section><form class="sharing-invite" data-sharing-invite><h3>Invite someone</h3><p class="muted">They always see your plan. Choose what else:</p>${check('view_facts', 'See your answers')}${check('edit_facts', 'Change your answers')}${check('manage_process', 'Update your progress')}${check('manage_evidence', 'Mark your documents', true)}<div class="actions"><button class="button primary" type="submit">Create invitation</button></div></form><div data-sharing-result></div><section class="sharing-grants"><h3>Your record</h3><p class="muted">Download a copy of everything Paperwork keeps about you, stop its processing, or delete it.</p>${recordActions()}</section>`,
             );
             return;
         }
@@ -1901,6 +1913,22 @@
                 action === 'record-export'
                     ? 'Sample: in the app this downloads a copy of your record.'
                     : 'Sample: in the app you confirm first, then your record is erased. Nothing is deleted here.',
+            );
+            return;
+        }
+        // A sample: the app stops and resumes processing (GDPR Art. 18).
+        if (action === 'record-pause' || action === 'record-resume') {
+            state.paused = action === 'record-pause';
+            closeEditor();
+            persist();
+            // Stopped, the page's Resume keeps the focus.
+            document
+                .querySelector('[data-case="record-resume"]')
+                ?.focus({ preventScroll: true });
+            U.toast(
+                state.paused
+                    ? 'Sample: in the app Paperwork stops using your record now. Nothing is deleted.'
+                    : 'Sample: in the app Paperwork uses your record again now.',
             );
             return;
         }
