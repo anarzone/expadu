@@ -7,6 +7,7 @@ use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * The events card contract — time-first, server-built meta. Shared by the
@@ -35,7 +36,8 @@ class EventOccurrencePresenter
             'title_original' => $event->title,
             'title_lang' => $event->source_lang,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
-            'language' => $event->language,
+            // The classifier's guess, so none when it wasn't sure.
+            'language' => $event->needs_review ? null : $event->language,
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -46,7 +48,8 @@ class EventOccurrencePresenter
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
             'tip' => $event->tip_en,
-            'summary' => $event->summary_en ?: ($event->description_en ?: null),
+            // Untranslated, the listing's own words: never nothing when it has some.
+            'summary' => $event->summary_en ?: ($event->description_en ?: (filled($event->description) ? Str::limit((string) $event->description, 400) : null)),
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
                 'name' => $venueName,
@@ -152,7 +155,11 @@ class EventOccurrencePresenter
         // "free" comes from the source's own price fields only. A stored
         // "free" chip from the classifier was a guess when the source said
         // nothing about the price.
-        $chips = array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
+        // A classification it wasn't sure of (needs_review) shows none of
+        // its chips, whichever path flagged it.
+        $chips = $event->needs_review
+            ? []
+            : array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
 
         if ($event->is_free || strtolower((string) $event->price_text) === 'free') {
             $chips[] = 'free';

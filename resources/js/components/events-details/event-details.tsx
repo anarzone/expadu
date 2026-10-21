@@ -107,9 +107,19 @@ const listWords = (words: string[]) =>
         ? words.join('')
         : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
 
+/** The classifier's own codes, in words; any other code by its name. */
+const LANGUAGE_WORDS: Record<string, string> = {
+    none_needed: 'None needed',
+    mixed: 'Mixed languages',
+};
+
 const languageName = (code: string | null | undefined) => {
     if (!code) {
         return null;
+    }
+
+    if (code in LANGUAGE_WORDS) {
+        return LANGUAGE_WORDS[code];
     }
 
     try {
