@@ -5,11 +5,7 @@ use App\Composer\ActivePlanStore;
 use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
 use App\Composer\PrivatePlanCache;
-use App\Home\HomeContext;
 use App\Models\User;
-use App\Models\UserTask;
-use App\Profile\ProfileEngine;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Cache;
@@ -149,39 +145,6 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
-}
-
-/**
- * Build a HomeContext for home-feed unit tests — real profile + open tasks,
- * with controllable now/rain/weights/events.
- *
- * @param  array<string, mixed>  $overrides
- */
-function homeContext(User $user, array $overrides = []): HomeContext
-{
-    return new HomeContext(
-        userId: $user->id,
-        profile: app(ProfileEngine::class)->build($user),
-        now: $overrides['now'] ?? CarbonImmutable::now('Europe/Berlin'),
-        rainExpected: $overrides['rainExpected'] ?? false,
-        rainSummary: $overrides['rainSummary'] ?? null,
-        intentWeights: $overrides['intentWeights'] ?? [],
-        isWeekendWindow: $overrides['isWeekendWindow'] ?? false,
-        isEvening: $overrides['isEvening'] ?? false,
-        openTasks: $overrides['openTasks'] ?? UserTask::query()
-            ->where('user_id', $user->id)
-            ->open()
-            ->notSnoozed()
-            ->with('task')
-            ->get(),
-        tonightEvents: $overrides['tonightEvents'] ?? collect(),
-        originLat: $overrides['originLat'] ?? null,
-        originLng: $overrides['originLng'] ?? null,
-        todayPlanSlots: $overrides['todayPlanSlots'] ?? [],
-        leaveByAnchors: $overrides['leaveByAnchors'] ?? [],
-        intendedEventIds: $overrides['intendedEventIds'] ?? [],
-        bureaucracyPlan: $overrides['bureaucracyPlan'] ?? null,
-    );
 }
 
 /**

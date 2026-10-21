@@ -5,7 +5,6 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
 use App\Composer\TodayPlanStore;
-use App\Home\DiscoveryFeed;
 use App\Http\Controllers\ReviewController;
 use App\Media\PublishedMediaSelector;
 use App\Models\Event;
@@ -15,6 +14,7 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\Venue;
+use App\Places\OpenNearby;
 use App\Places\PlaceIdentity;
 use App\Places\PlaceIdentityAudit;
 use App\Places\ReconcilePlace;
@@ -195,11 +195,10 @@ test('pending or broken alias media cannot fall through to legacy photos', funct
     $asset = MediaAsset::factory()->create(['rights_status' => $rights, 'health_status' => $health]);
     $alias->mediaAttachments()->create(['media_asset_id' => $asset->id, 'role' => 'hero']);
     reconcileIdentity($alias, $canonical);
-    $this->actingAs(User::factory()->onboarded()->create())->getJson("/api/places/{$canonical->id}")
-        ->assertOk()->assertJsonPath('data.photo_url', null);
-    $card = collect(app(DiscoveryFeed::class)->for(homeContext(User::factory()->onboarded()->create())))
-        ->flatMap(fn ($rail) => $rail['cards'])->firstWhere('id', "spot:{$canonical->id}");
-    expect($card)->not->toBeNull()->and($card['photo_url'])->toBeNull();
+    $this->actingAs(User::factory()->onboarded()->create());
+    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.photo_url', null);
+    $row = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $canonical->id);
+    expect($row)->not->toBeNull()->and($row['photo_url'] ?? null)->toBeNull();
 })->with([['pending', 'active'], ['approved', 'broken']]);
 
 test('map search and Composer resolve one canonical destination', function () {
@@ -212,17 +211,16 @@ test('map search and Composer resolve one canonical destination', function () {
     expect(array_map(fn ($candidate) => $candidate->id, $candidates))->toBe(["spot:{$canonical->id}"]);
 });
 
-test('reconciliation invalidates warm discovery cells and preserves alias suppression', function () {
+test('reconciliation keeps a place to one entry in what is open nearby', function () {
     [$alias, $canonical] = identityPair();
-    $user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
-    $feed = app(DiscoveryFeed::class);
-    $context = homeContext($user, ['originLat' => 50.95, 'originLng' => 6.95]);
-    $ids = fn () => collect($feed->for($context))->flatMap(fn ($rail) => $rail['cards'])->pluck('id')->all();
-    expect($ids())->toContain("spot:{$alias->id}");
+    foreach ([$alias, $canonical] as $spot) {
+        $spot->update(['tags' => ['opening_hours' => 'Mo-Su 06:00-22:00'], 'public_access_allowed' => true]);
+    }
+    $at = CarbonImmutable::parse('2026-09-30 14:30', 'Europe/Berlin');
+    $ids = fn () => app(OpenNearby::class)->around(50.95, 6.95, $at, ['park'], limit: 20)->pluck('id')->all();
+    expect($ids())->toContain($alias->id);
     reconcileIdentity($alias, $canonical);
-    expect($ids())->not->toContain("spot:{$alias->id}")->toContain("spot:{$canonical->id}");
-    SpotFeedback::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'state' => 'not_interested']);
-    expect($ids())->not->toContain("spot:{$canonical->id}");
+    expect($ids())->toBe([$canonical->id]);
 });
 
 test('neighbourhood directories count canonical destinations only', function () {

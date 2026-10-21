@@ -11,12 +11,9 @@ use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\PermanentResidencyEligibility;
 use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Bureaucracy\Processes\RecordProcessEvent;
-use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
-use App\Home\CurrentBureaucracyPlan;
-use App\Home\DiscoveryFeed;
 use App\Home\TodayPaperwork;
 use App\Models\BureaucracyCase;
 use App\Models\Task;
@@ -237,17 +234,13 @@ test('a dry run neither materialises tasks nor reopens completed recurring work'
         ->and($row->fresh()->completed_at)->not->toBeNull();
 });
 
-test('a prebuilt home context cannot replay withdrawn rule text', function (string $surface, string $change) {
+test('Today cannot replay withdrawn rule text', function (string $change) {
     $user = publicationBoundaryUser();
     $task = publicationBoundaryRule();
     $case = activatePublicationBoundary($user, $task);
     UserTask::factory()->for($user)->for($task)->create(['is_applicable' => true]);
-    $context = homeContext($user, ['bureaucracyPlan' => app(AccountHolderPlan::class)->for($user)]);
-    $visible = fn () => match ($surface) {
-        'paperwork' => collect(app(DiscoveryFeed::class)->for($context))->contains('key', 'paperwork'),
-        // Today's deadline strip and Paperwork panel read the live plan.
-        'today' => (fn (?array $today) => $today !== null && ($today['focus'] !== null || $today['strip'] !== null))(app(TodayPaperwork::class)->for($user)),
-    };
+    // Today's deadline strip and Paperwork panel read the live plan.
+    $visible = fn () => (fn (?array $today) => $today !== null && ($today['focus'] !== null || $today['strip'] !== null))(app(TodayPaperwork::class)->for($user));
     expect($visible())->toBeTrue();
     match ($change) {
         'withdrawal' => $task->update(['review_status' => 'legacy']),
@@ -260,30 +253,7 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     };
 
     expect($visible())->toBeFalse();
-})->with(['paperwork', 'today'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
-
-test('home never trusts a foreign or tampered plan snapshot', function (string $change) {
-    $user = publicationBoundaryUser();
-    $task = publicationBoundaryRule();
-    activatePublicationBoundary($user, $task);
-    $plan = app(AccountHolderPlan::class)->for($user);
-    if ($change === 'foreign subject') {
-        $plan['person_id'] = (string) Str::uuid();
-    } else {
-        $plan['overview']['next_actions'][0]['title'] = 'Injected unreviewed guidance';
-        $plan['actions'][0]['title'] = 'Injected unreviewed guidance';
-    }
-    $context = homeContext($user, ['bureaucracyPlan' => $plan]);
-    $current = app(CurrentBureaucracyPlan::class)->for($context);
-
-    if ($change === 'foreign subject') {
-        expect($current)->toBeNull();
-    } else {
-        expect($current)->not->toBeNull()
-            ->and(json_encode($current))->not->toContain('Injected unreviewed guidance')
-            ->and($current['actions'][0]['title'])->toBe($task->title);
-    }
-})->with(['foreign subject', 'tampered text']);
+})->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
 
 test('same-version content edits withdraw old actions alerts and queued wording', function () {
     $user = publicationBoundaryUser();
