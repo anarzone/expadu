@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, RefCallback } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { PosterEvent } from './poster-model';
@@ -50,6 +50,8 @@ export function PosterArt({
 }
 
 export type PosterProps = {
+    /** Called with the poster's card (Events' impressions). */
+    ref?: RefCallback<HTMLElement>;
     event: PosterEvent;
     /** Cologne's date today, YYYY-MM-DD (berlinDate()). */
     today: string;
@@ -142,6 +144,7 @@ function useTitleFit(title: string) {
     listings carry no Save or Plan; a listing without a time can't be
     planned. */
 export function Poster({
+    ref,
     event,
     today,
     size = 'wall',
@@ -157,7 +160,7 @@ export function Poster({
     className = '',
     style,
 }: PosterProps) {
-    const [card, titleStep] = useTitleFit(event.title);
+    const [cardRef, titleStep] = useTitleFit(event.title);
 
     const ink = posterInk(event.start);
     const family = posterFamily(event.category, { outdoor: event.outdoor });
@@ -198,7 +201,18 @@ export function Poster({
 
     return (
         <article
-            ref={card}
+            ref={(node) => {
+                cardRef.current = node;
+                const release = ref?.(node);
+
+                return () => {
+                    cardRef.current = null;
+
+                    if (typeof release === 'function') {
+                        release();
+                    }
+                };
+            }}
             className={classes(
                 'pp',
                 `pp--size-${size}`,

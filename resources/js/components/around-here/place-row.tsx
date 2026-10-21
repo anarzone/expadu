@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { cn } from '@/lib/utils';
 import { PlaceIcon } from './place-icon';
 import {
@@ -16,12 +17,14 @@ import type { AroundPlace } from './place-model';
    what the listing records (hours at the time, step-free access, food
    facts, Wi-Fi). Save keeps it for later. */
 export function PlaceRow({
+    ref,
     place,
     selected,
     onOpen,
     onHover,
     onSave,
 }: {
+    ref?: Ref<HTMLElement>;
     place: AroundPlace;
     selected: boolean;
     onOpen: () => void;
@@ -38,6 +41,7 @@ export function PlaceRow({
 
     return (
         <article
+            ref={ref}
             className={cn(
                 'nearby-place nearby-place--row',
                 selected && 'is-selected',

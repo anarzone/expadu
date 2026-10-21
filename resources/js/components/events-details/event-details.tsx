@@ -33,6 +33,7 @@ import {
     undoChange,
 } from '@/lib/plan-workspace';
 import type { Workspace } from '@/lib/plan-workspace';
+import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import type { WayMode, WayStart, WayWhen } from './get-there';
@@ -219,6 +220,7 @@ export function EventDetails({
 }) {
     // The page keeps what it showed while it slides away.
     const [shown, setShown] = useState(listing);
+    useDwell('event_sheet', 'event', listing?.occurrence.id ?? null);
     // The details, or Get there inside them; by the start at first.
     const [page, setPage] = useState<'about' | 'way'>('about');
     const [when, setWhen] = useState<WayWhen>('arrive');

@@ -11,6 +11,7 @@ import { cuisineNames, dietText } from '@/components/around-here/place-model';
 import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
+import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import { PlaceWay } from './place-way';
 import { PlanVisitFooter, PlanVisitPanel, usePlanVisit } from './plan-visit';
@@ -147,6 +148,7 @@ export function PlaceSheet({
     // The place whose details couldn't load, if it's the one asked for.
     const [failedFor, setFailedFor] = useState<number | null>(null);
     const [saved, setSaved] = useState(false);
+    useDwell('place_sheet', 'spot', place);
 
     useEffect(() => {
         if (place === null) {

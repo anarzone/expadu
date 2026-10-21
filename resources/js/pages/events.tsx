@@ -41,6 +41,7 @@ import { useSavedEvents } from '@/hooks/use-saved-events';
 import AppLayout from '@/layouts/app-layout';
 import { kmBetween } from '@/lib/geo';
 import { usePageContext } from '@/lib/page-context';
+import { useImpressions } from '@/lib/signals';
 import type { Auth } from '@/types';
 import type { DayProjection } from '@/types/day';
 import '@/components/events-street/events-page.css';
@@ -143,6 +144,7 @@ export default function Events({
     // reload) opens the same details.
     const detail = detailIn(url);
     const saved = useSavedEvents(auth.user.id);
+    const shown = useImpressions('events', 'event');
     const f = { ...noFilters, ...filters };
 
     // The search follows typing at once; the URL catches up after a pause.
@@ -411,9 +413,15 @@ export default function Events({
     ) => {
         const listing = item as Listing;
         const state = todayState(listing);
+        // Where it stands in what's shown, counting from 1.
+        const position =
+            (where === 'column' ? day : wall).findIndex(
+                (l) => l.key === listing.key,
+            ) + 1;
 
         return (
             <Poster
+                ref={shown(listing.occurrence.id, position)}
                 event={listing.poster}
                 today={today}
                 size={where === 'column' ? 'column' : 'wall'}
