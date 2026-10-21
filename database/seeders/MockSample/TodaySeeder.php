@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\DB;
  * Today's continuity for tools/mock-compare (today-continuity.json): two
  * saved ideas (Bau, from PlacesSeeder, then "Cinema under the stars", from
  * Events' EventsSeeder) and a Composer conversation to pick up, as that
- * config's mock side seeds into the mock's own store. Local only; it
+ * config's mock side seeds into the mock's own store; here it also has the
+ * Saturday plan it came to, which Pick up wraps up. Local only; it
  * replaces only these sample saves and the sample conversation.
  *
  * E2E_EMAIL=<you>@expadu.test php artisan db:seed --class="Database\Seeders\MockSample\TodaySeeder"
@@ -65,6 +66,15 @@ class TodaySeeder extends Seeder
                     'id' => self::CONVERSATION.'-1',
                     'role' => 'user',
                     'text' => 'Plan Saturday with Maya: something outdoors, then dinner.',
+                    'created_at' => '2026-09-30T11:00:00+02:00',
+                ], [
+                    // What it came to: Saturday's plan (mock:sample-day's 3 Oct),
+                    // which Today's Pick up wraps up (owner, 21 Oct 2026).
+                    'id' => self::CONVERSATION.'-2',
+                    'role' => 'assistant',
+                    'text' => '',
+                    'kind' => 'plan',
+                    'date' => '2026-10-03',
                     'created_at' => '2026-09-30T11:00:00+02:00',
                 ]],
             ];

@@ -4,12 +4,15 @@ import { composer } from '@/routes';
 
 /*
  * Pick up where you left off (the mock's .column-continuation), from
- * App\Home\TodayContinuation: the Composer conversation it opens on, when
- * it has something in it. Changes apply directly in Composer, so it only
- * offers to carry on, with History and My plans beside it.
+ * App\Home\TodayContinuation: what the Composer conversation came to, as
+ * a wrap-up ("Your Saturday plan · 3 stops", "Your trip to Mülheim"),
+ * never the person's own words; with no result there's no card (owner,
+ * 21 Oct 2026). Changes apply directly in Composer, so it only offers to
+ * carry on, with History and My plans beside it.
  */
 
 export type TodayContinuationData = {
+    kind: 'plan' | 'trip';
     title: string;
     last_at: string | null;
 } | null;
@@ -30,7 +33,11 @@ export function PickUp({
                         <Icon name="spark" variant="line" />
                         Composer
                     </span>
-                    <span className="continue-state">Your conversation</span>
+                    <span className="continue-state">
+                        {continuation.kind === 'plan'
+                            ? 'Your plan'
+                            : 'Your trip'}
+                    </span>
                 </div>
                 <div className="continue-summary">
                     <h3>{continuation.title}</h3>
