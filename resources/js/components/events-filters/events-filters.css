@@ -731,3 +731,40 @@
     white-space: normal;
     text-align: left;
 }
+
+/* ---------- A past day's note above the street (the mock's
+   .event-past-note in festival.css and wall.css) ---------- */
+.ev-past-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.ev-past-note > svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+.ev-past-note p {
+    flex: 1 1 220px;
+    margin: 0;
+}
+.ev-past-note button {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}

@@ -126,6 +126,14 @@ const dayMonth = (date: string) =>
         timeZone: 'UTC',
     });
 
+const weekdayDate = (date: string) =>
+    new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+    });
+
 /** The chip in the street's corner: the hour's weather and where it's from. */
 export function WeatherChip({
     forecast,
@@ -146,18 +154,32 @@ export function WeatherChip({
         return null;
     }
 
-    if (!h) {
-        const note =
-            forecast.reason === 'past'
-                ? 'Weather not recorded'
-                : forecast.reason === 'beyond_forecast'
-                  ? 'No forecast yet'
-                  : 'Weather unavailable';
+    // A past day keeps the plain sky's glyph and names its day twice, as
+    // the mock's chip does ("8 Sept · Tue 8 Sept").
+    if (!h && forecast.reason === 'past') {
+        return (
+            <div className="st-weather" role="note">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={ICON[daylight ? 'sun' : 'moon']} />
+                </svg>
+                <span>
+                    <strong>Weather not recorded</strong>
+                    <br />
+                    {`${dayMonth(date)} · ${weekdayDate(date)}`}
+                </span>
+            </div>
+        );
+    }
 
+    if (!h) {
         return (
             <div className="st-weather" role="note">
                 <span>
-                    <strong>{note}</strong>
+                    <strong>
+                        {forecast.reason === 'beyond_forecast'
+                            ? 'No forecast yet'
+                            : 'Weather unavailable'}
+                    </strong>
                     <br />
                     {dayMonth(date)}
                 </span>

@@ -9,6 +9,7 @@ use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CologneServiceArea;
+use App\Support\EventCancellation;
 use App\Support\OfficialEventSchedule;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
@@ -201,7 +202,11 @@ class ImportOfficialEvents extends Command
             'tags' => $this->mergedTags($event->tags ?? [], $record, $isMultiDay, filled($record['uhrzeit'] ?? null)),
             'organiser_id' => $organiserId,
             'quality_score' => $this->qualityScore($description, $locationName, $address, $startsAt, $priceText),
-            'status' => $scheduleIsClear ? 'active' : 'hidden',
+            'status' => match (true) {
+                EventCancellation::said((string) $title, $description) => 'cancelled',
+                $scheduleIsClear => 'active',
+                default => 'hidden',
+            },
             'verified_at' => now(),
             'recurrence' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? 'FREQ=DAILY' : null,
             'recurrence_until' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? $recurrenceUntil : null,
@@ -241,7 +246,7 @@ class ImportOfficialEvents extends Command
         $this->storeTrustedCoordinates($event, $record, $serviceArea, $metrics);
         $this->captureTeaserImage($event, $record, $captureMediaCandidate);
 
-        if ($contentChanged) {
+        if ($contentChanged && $event->status !== 'cancelled') {
             ProcessEventJob::dispatch($event);
         }
 

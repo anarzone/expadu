@@ -4,11 +4,13 @@ namespace App\Bureaucracy\Catalogue;
 
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\GuidancePublication;
+use App\Bureaucracy\ReadModel\CatalogueOrder;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Models\BureaucracyCatalogueRelease;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\Task;
 use DomainException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -81,6 +83,39 @@ final class CatalogueReleaseStore
                 'aggregate_version' => $pointer->version + 1, 'dedupe_key' => 'catalogue.suspended:'.($pointer->version + 1),
                 'payload' => [], 'available_at' => now()->utc(),
             ]);
+        });
+    }
+
+    /**
+     * The active release's process names (definition id => title), for reads that need only
+     * a name, such as Your day's "EU Blue Card appointment". A name is the process map's,
+     * or for a release without one its first step's title, as ProcessDetails names it; no
+     * figure or advice, so current()'s re-check of every card isn't needed. Cached per
+     * release; it never caches an approval.
+     *
+     * @return array<string, string>
+     */
+    public function processTitles(): array
+    {
+        $pointer = DB::table('bureaucracy_catalogue_pointers')->where('name', 'active')->first();
+        if ($pointer?->release_id === null) {
+            return [];
+        }
+
+        return Cache::remember('bureaucracy.process_titles.'.$pointer->release_id, now()->addDay(), function () use ($pointer): array {
+            $release = BureaucracyCatalogueRelease::query()->findOrFail($pointer->release_id);
+            $this->validateIntegrity($release);
+            // As ProcessDetails names a process: its own name, else its first step's title.
+            $order = new CatalogueOrder($release->artifact);
+            $titles = [];
+            foreach ($release->artifact['definitions'] as $definition) {
+                $title = $order->processTitle($definition['id']) ?? $order->definitionTitle($definition['id']);
+                if ($title !== null) {
+                    $titles[$definition['id']] = $title;
+                }
+            }
+
+            return $titles;
         });
     }
 
