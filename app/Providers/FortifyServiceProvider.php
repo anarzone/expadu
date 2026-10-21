@@ -4,12 +4,15 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\SocialLoginController;
+use App\Http\Responses\PasswordResetLinkFailedResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Contracts\LogoutResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -24,6 +27,12 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(
             LogoutResponse::class,
             \App\Http\Responses\LogoutResponse::class,
+        );
+
+        // A reset link request never reveals whether the email has an account.
+        $this->app->bind(
+            FailedPasswordResetLinkRequestResponse::class,
+            fn ($app, array $parameters) => new PasswordResetLinkFailedResponse($parameters['status']),
         );
     }
 
@@ -75,6 +84,9 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'socialProviders' => $socialProviders,
+            // The privacy policy lives on the marketing site (its own domain
+            // in production).
+            'privacyUrl' => route('datenschutz'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
@@ -91,7 +103,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $providers = [];
 
-        foreach (['google', 'apple'] as $provider) {
+        foreach (SocialLoginController::PROVIDERS as $provider) {
             if (config("services.{$provider}.client_id")) {
                 $providers[] = $provider;
             }

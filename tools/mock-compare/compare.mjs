@@ -112,7 +112,14 @@ async function login(browser, side) {
     const origin = new URL(side.url).origin;
     // Reuse a saved session while it still opens the app: repeated sign-ins
     // trip the login rate limit.
-    const email = process.env.MOCK_COMPARE_EMAIL ?? l.email;
+    // A config with its own account (`own: true`, e.g. an unverified one) keeps
+    // it; otherwise MOCK_COMPARE_EMAIL picks the compared account.
+    const account = l.own
+        ? l.email
+        : (process.env.MOCK_COMPARE_EMAIL ?? l.email);
+    // A config that needs an untouched account (a first visit) signs in as
+    // the compared account's sibling, <name>+<sibling>@…, which its seed makes.
+    const email = l.sibling ? account.replace('@', `+${l.sibling}@`) : account;
     const cache = path.join(
         'storage',
         'mock-compare',
@@ -143,7 +150,11 @@ async function login(browser, side) {
     await page
         .getByLabel(/password/i)
         .first()
-        .fill(process.env.MOCK_COMPARE_PASSWORD ?? l.password);
+        .fill(
+            l.own
+                ? l.password
+                : (process.env.MOCK_COMPARE_PASSWORD ?? l.password),
+        );
     await page
         .getByRole('button', { name: /log in|sign in/i })
         .first()

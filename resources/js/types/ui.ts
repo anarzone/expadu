@@ -15,10 +15,3 @@ export type AppLayoutProps = {
     /** @deprecated Ignored by the shell; drop it when the page is rebuilt. */
     showBack?: boolean;
 };
-
-export type AuthLayoutProps = {
-    children?: ReactNode;
-    name?: string;
-    title?: string;
-    description?: string;
-};

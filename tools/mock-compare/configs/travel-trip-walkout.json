@@ -83,10 +83,8 @@
             "name": "step card",
             "mock": ".nav-step-card",
             "app": ".nav-step-card",
-            "contentDiffers": true,
-            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). It holds the look row. The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset. Below the look row, a line taller in the mock on phones (see look text).",
-            "ignore": ["h", "y"],
-            "pixels": false
+            "pixels": false,
+            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). It holds the look row. The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). Below the look row, a line taller in the mock on phones (see look text)."
         },
         {
             "name": "ring",
@@ -99,29 +97,19 @@
         {
             "name": "step title",
             "mock": ".nav-step-lead h2",
-            "app": ".nav-step-lead h2",
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Both sit centred beside the ring, so a second line moves them.",
-            "contentDiffers": true,
-            "pixels": false
+            "app": ".nav-step-lead h2"
         },
         {
             "name": "step sub",
             "mock": ".moment-sub",
-            "app": ".moment-sub",
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Both sit centred beside the ring, so a second line moves them.",
-            "contentDiffers": true,
-            "pixels": false
+            "app": ".moment-sub"
         },
         {
             "name": "look row",
             "mock": ".nav-look",
             "app": ".nav-look",
-            "contentDiffers": true,
-            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset. For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process until the v2 reader lands (#132), so it says where and when instead.",
-            "ignore": ["h", "w", "y"],
-            "pixels": false
+            "pixels": false,
+            "reason": "The mock knows where to stand at Neumarkt (\"Gleis 2 (platform), underground\"); the app doesn't say a platform it doesn't know (call #9). The mock names the other lines at Neumarkt from its captured Nearby (\"Trams 3, 16 and 18 stop here too: take the 4\"); the trip page doesn't know a stop's other lines yet, so it says the mock's own fallback (\"Look for 4 Schlebusch\"). For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process yet, so it says where and when instead."
         },
         {
             "name": "look tile",
@@ -135,20 +123,14 @@
         {
             "name": "look title",
             "mock": ".nav-look-text strong",
-            "app": ".nav-look-text strong",
-            "ignore": ["h", "w", "y"],
-            "pixels": false,
-            "reason": "Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Centred in the look row, which is a line taller in the mock on phones (see look text); moved, it lands on another sub-pixel offset. Below or beside the look text, a line shorter here on phones (see look text). Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset. KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". For an official appointment the mock links \"What to bring\" to its Paperwork checklist; the trip doesn't carry the appointment's Paperwork process until the v2 reader lands (#132), so it says where and when instead.",
-            "contentDiffers": true
+            "app": ".nav-look-text strong"
         },
         {
             "name": "look text",
             "mock": ".nav-look-text small",
             "app": ".nav-look-text small",
-            "ignore": ["h", "w", "y"],
-            "reason": "Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset. The mock says \"street directions weren't captured\" (its sample capture); the app says \"street directions aren't shown here\", as Plan a trip does.",
             "pixels": false,
-            "contentDiffers": true
+            "reason": "The mock says \"street directions weren't captured\" (its sample capture); the app says \"street directions aren't shown here\", as Plan a trip does."
         },
         {
             "name": "follow",
@@ -252,55 +234,41 @@
             "mock": ".nav-way li",
             "app": ".nav-way li",
             "index": 1,
-            "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
-            "widths": [1280, 1440, 1512],
-            "pixels": false
+            "widths": [1280, 1440, 1512]
         },
         {
             "name": "way: tram (phones)",
             "mock": ".nav-way li",
             "app": ".nav-way li",
             "index": 1,
-            "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are. Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
             "widths": [360, 390, 768],
-            "pixels": false
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "way: walk out",
             "mock": ".nav-way li",
             "app": ".nav-way li",
             "index": 2,
-            "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
-            "widths": [1440, 1512],
-            "pixels": false
+            "widths": [1440, 1512]
         },
         {
             "name": "way: walk out (narrow)",
             "mock": ".nav-way li",
             "app": ".nav-way li",
             "index": 2,
-            "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Below the tram's row, whose stop name (see way: tram) takes another line where the column is narrow. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are. Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
-            "widths": [1280],
-            "pixels": false
+            "widths": [1280]
         },
         {
             "name": "way: walk out (phones)",
             "mock": ".nav-way li",
             "app": ".nav-way li",
             "index": 2,
-            "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
-            "reason": "KVB's own name for the stop is \"Mülheim Wiener Platz\"; the mock's sample shortens it to \"Wiener Platz\". Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are. Under a step title or sub that KVB's longer stop name (see step title) takes onto another line; moved, it lands on another sub-pixel offset.",
             "widths": [360, 390, 768],
-            "pixels": false
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "Below the map card, whose height follows its map (see map card): the mock's close-up has a legend and a caption under it. Moved, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "way: there",
