@@ -27,6 +27,16 @@ class EventOccurrencePresenter
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
         $media = $this->selectMedia($event);
+        // The model's words show only with the listing's evidence; manual events are ours.
+        $manual = $event->source === 'manual';
+        $source = EventEvidence::source($event);
+        $translated = $manual
+            ? ($event->summary_en ?: ($event->description_en ?: null))
+            : (EventEvidence::text($event->summary_en, $source) ?? EventEvidence::text($event->description_en, $source));
+        // Untranslated, the listing's own words: never nothing when it has some.
+        $original = $translated === null && filled($event->description)
+            ? Str::limit((string) $event->description, 400)
+            : null;
 
         return [
             'id' => $event->id,
@@ -36,8 +46,7 @@ class EventOccurrencePresenter
             'title_original' => $event->title,
             'title_lang' => $event->source_lang,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
-            // The classifier's guess, so none when it wasn't sure.
-            'language' => $event->needs_review ? null : $event->language,
+            'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -48,11 +57,10 @@ class EventOccurrencePresenter
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
             // Hand-written (manual) tips are ours; the model's are checked again here.
-            'tip' => $event->source === 'manual' ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $event->title.' '.$event->description.' '.$event->price_text),
-            // Untranslated, the listing's own words: never nothing when it has some.
-            'summary' => $event->summary_en ?: ($event->description_en ?: (filled($event->description) ? Str::limit((string) $event->description, 400) : null)),
+            'tip' => $manual ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $source),
+            'summary' => $translated ?? $original,
             // The listing's language when the summary is its own words, not a translation.
-            'summary_lang' => ! $event->summary_en && ! $event->description_en && filled($event->description) ? ($event->source_lang ?: 'de') : null,
+            'summary_lang' => $original !== null ? ($event->source_lang ?: 'de') : null,
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
                 'name' => $venueName,
@@ -163,7 +171,11 @@ class EventOccurrencePresenter
         // its chips, whichever path flagged it.
         $chips = $event->needs_review
             ? []
-            : array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
+            : array_values(array_diff(is_array($event->chips) ? $event->chips : [], ['free']));
+        // The classifier's chips show only when the listing says so.
+        if ($event->source !== 'manual') {
+            $chips = EventEvidence::chips($chips, EventEvidence::source($event));
+        }
 
         if ($event->is_free || strtolower((string) $event->price_text) === 'free') {
             $chips[] = 'free';

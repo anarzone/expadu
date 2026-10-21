@@ -125,11 +125,20 @@ test.describe('Composer (universal prompt)', () => {
         await context
             .getByRole('button', { name: 'Use in my message' })
             .click();
+        // The conversation keeps earlier answers (this account's other runs, a
+        // retry's), so look for the guidance this Send adds, not the last one.
+        const guidance = page.locator('.composer-guidance');
+        const before = await guidance.count();
+        // The Send waits behind the page's deferred loads on a one-worker server.
+        const parsedResponse = page.waitForResponse('**/composer/parse');
         await page.getByRole('button', { name: 'Send request' }).click();
-        await expect(page.locator('.composer-guidance').last()).toBeVisible();
+        await parsedResponse;
+        await expect.poll(() => parsed).toBe(1);
+        await expect(guidance).toHaveCount(before + 1);
         await expect(
-            page.getByRole('link', { name: /open my paperwork case/i }).last(),
+            guidance
+                .nth(before)
+                .getByRole('link', { name: /open my paperwork case/i }),
         ).toBeVisible();
-        expect(parsed).toBe(1);
     });
 });
