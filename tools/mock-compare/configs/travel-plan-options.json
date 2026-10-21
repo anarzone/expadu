@@ -16,7 +16,7 @@
             }
         ],
         "init": [
-            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { position: static !important; max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
         ]
     },
     "app": {
@@ -24,14 +24,14 @@
         "wait": ".plan-option",
         "init": [
             "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'",
-            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { position: static !important; max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })"
         ],
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
         }
     },
-    "note": "Measuring aid, on both sides alike: the planner's own scrolling and its sticky bars (back row, Show the way / Add to plan) are made static, so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. Pairs run top of the page first: a screenshot of a tall element (results, an option) scrolls the page, and an element shot after that sits at another sub-pixel offset on each side.",
+    "note": "Measuring aid, on both sides alike: the planner itself (sticky, top 96px: beside the mock's long sample board it sits 8px lower at 1280 than beside the app's, as in travel-plan-rest), its own scrolling and its sticky bars (back row, Show the way / Add to plan) are made static, so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. Pairs run top of the page first: a screenshot of a tall element (results, an option) scrolls the page, and an element shot after that sits at another sub-pixel offset on each side.",
     "pairs": [
         {
             "name": "from field",
