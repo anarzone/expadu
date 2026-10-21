@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
+use App\Home\TodayDiscovery;
 use App\Home\TodayPaperwork;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Services\KvbApiService;
@@ -41,6 +42,9 @@ class HomeFeedController extends Controller
             // plan's urgent date and next step (TodayPaperwork).
             // Same group as the day, so the strip never pushes the day down later.
             'paperwork' => Inertia::defer(fn () => app(TodayPaperwork::class)->for($request->user()), 'day'),
+            // Discovery: tonight's events that fit around the plans, and the
+            // everyday places open near the next plan (TodayDiscovery).
+            'discovery' => Inertia::defer(fn () => app(TodayDiscovery::class)->for($request->user()), 'discovery'),
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
         ]);
     }
