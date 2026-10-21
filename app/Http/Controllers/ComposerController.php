@@ -368,6 +368,7 @@ class ComposerController extends Controller
             affinity: $affinity,
             rotationSeed: $this->rotationSeed($user, $constraints),
             llmRankWeights: $llmRankWeights,
+            moods: $constraints->moods,
         );
         $pinned = collect([
             ...$candidates->byIds($pins, $constraints->windowStart, $originLat, $originLng),
@@ -733,6 +734,7 @@ class ComposerController extends Controller
             pinnedIds: $pins,
             affinity: $this->planAffinity($profile, $plan->constraints->companions),
             rotationSeed: $this->rotationSeed($user, $plan->constraints),
+            moods: $plan->constraints->moods,
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);

@@ -51,6 +51,8 @@ final readonly class Candidate
         public bool $routable = true,
         // A recorded appointment of unknown length: typicalDurationMin is 0, never a guessed length.
         public bool $durationKnown = true,
+        /** @var list<string> verified vibe tags (VibeTag values, from spot_enrichments) */
+        public array $vibeTags = [],
     ) {}
 
     /** Earliest complete visit, retaining split and overnight source intervals. */
