@@ -4,6 +4,7 @@ import type { ActiveTrip } from '@/hooks/use-active-trip';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import { LineBadge } from './line-badge';
 import { vehicleOf, vehicleWord } from './line-look';
+import { stopName } from './stop-name';
 import '../../../css/travel.css';
 
 type Leg = ActiveTrip['journey']['legs'][number];
@@ -43,7 +44,7 @@ export function tripMoment(
 
     if (!transit) {
         return {
-            instruction: `${current.mode === 'bike' ? 'Ride' : 'Walk'} to ${current.to.name}`,
+            instruction: `${current.mode === 'bike' ? 'Ride' : 'Walk'} to ${stopName(current.to.name, trip.city)}`,
             leg:
                 legs.find(
                     (leg) =>
@@ -56,8 +57,8 @@ export function tripMoment(
 
     return {
         instruction: started
-            ? `On ${line} to ${current.to.name}`
-            : `${line} at ${current.depart_time} from ${current.from.name}`,
+            ? `On ${line} to ${stopName(current.to.name, trip.city)}`
+            : `${line} at ${current.depart_time} from ${stopName(current.from.name, trip.city)}`,
         leg: current,
     };
 }
