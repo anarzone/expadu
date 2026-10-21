@@ -45,7 +45,8 @@ class EventOccurrencePresenter
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
-            'tip' => EventTipGuard::grounded($event->tip_en, $event->title.' '.$event->description.' '.$event->price_text),
+            // Hand-written (manual) tips are ours; the model's are checked again here.
+            'tip' => $event->source === 'manual' ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $event->title.' '.$event->description.' '.$event->price_text),
             'summary' => $event->summary_en ?: ($event->description_en ?: null),
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
