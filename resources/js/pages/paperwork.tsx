@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
+import { useState } from 'react';
 import { TaskDetail } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
@@ -15,12 +16,17 @@ import {
 import type { Person, PlanEntry } from '@/components/paperwork/types';
 import AppLayout from '@/layouts/app-layout';
 import { usePageContext } from '@/lib/page-context';
+import { composer } from '@/routes';
+import { waitlist as joinWaitlist } from '@/routes/paperwork';
 import '../../css/paperwork.css';
+
+type CoverageWaitlist = 'unconfirmed' | 'confirmed' | null;
 
 interface Props {
     entry: PlanEntry;
     jurisdiction: string;
     people: Person[];
+    coverageWaitlist: CoverageWaitlist;
 }
 
 /** One search over tasks, dates, documents and Good to know; Escape or Clear empties it. */
@@ -107,7 +113,13 @@ function PersonPicker({ people }: { people: Person[] }) {
     );
 }
 
-function Workspace({ people }: { people: Person[] }) {
+function Workspace({
+    people,
+    coverageWaitlist,
+}: {
+    people: Person[];
+    coverageWaitlist: CoverageWaitlist;
+}) {
     const { plan, location, go, processByKey, openSheet, openSituation } =
         usePaperwork();
     const situationAllowed = plan.scopes.includes('view_facts');
@@ -189,7 +201,9 @@ function Workspace({ people }: { people: Person[] }) {
             </div>
             <InlineEditor />
             <div className="bureaucracy-view">
-                {location.view === 'paperwork' ? (
+                {plan.coverage.state === 'outside_coverage' ? (
+                    <OutsideCoverage waitlist={coverageWaitlist} />
+                ) : location.view === 'paperwork' ? (
                     <Documents />
                 ) : location.view === 'actions' ? (
                     <AllActions />
@@ -210,6 +224,62 @@ function Workspace({ people }: { people: Person[] }) {
             </div>
             <SheetDialog />
         </>
+    );
+}
+
+/**
+ * No reviewed guidance for the person's area (EXP-80): honest, with a way on.
+ * "Tell me when it's covered" puts the account on the city waitlist, which
+ * the person confirms by mail (App\Waitlist\CoverageWaitlist); the page then
+ * remembers where they stand.
+ */
+function OutsideCoverage({ waitlist }: { waitlist: CoverageWaitlist }) {
+    const [joining, setJoining] = useState(false);
+
+    return (
+        <section className="access-blank">
+            <h2>No reviewed guidance for your area yet.</h2>
+            <p>
+                Paperwork covers Cologne so far, and doesn’t guess for other
+                cities. Your answers stay.
+            </p>
+            <div className="actions">
+                {waitlist ? (
+                    <p className="coverage-notify" role="status">
+                        <Icon name="check" />
+                        <span>
+                            {waitlist === 'confirmed'
+                                ? 'We’ll email you when your area is covered.'
+                                : 'Check your inbox to confirm. Then we’ll email you when your area is covered.'}
+                        </span>
+                    </p>
+                ) : (
+                    <button
+                        type="button"
+                        className="button primary"
+                        disabled={joining}
+                        onClick={() =>
+                            router.post(
+                                joinWaitlist.url(),
+                                {},
+                                {
+                                    preserveScroll: true,
+                                    onStart: () => setJoining(true),
+                                    onFinish: () => setJoining(false),
+                                },
+                            )
+                        }
+                    >
+                        Tell me when it’s covered
+                    </button>
+                )}
+            </div>
+            <Link className="coverage-composer" href={composer()}>
+                <Icon name="spark" />
+                <span>Ask Composer about your move</span>
+                <Icon name="arrow" />
+            </Link>
+        </section>
     );
 }
 
@@ -237,7 +307,12 @@ function Unavailable({ state }: { state: PlanEntry['state'] }) {
     );
 }
 
-export default function Paperwork({ entry, jurisdiction, people }: Props) {
+export default function Paperwork({
+    entry,
+    jurisdiction,
+    people,
+    coverageWaitlist,
+}: Props) {
     return (
         <AppLayout>
             <Head title="Paperwork" />
@@ -248,7 +323,10 @@ export default function Paperwork({ entry, jurisdiction, people }: Props) {
                     plan={entry.plan}
                     jurisdiction={jurisdiction}
                 >
-                    <Workspace people={people} />
+                    <Workspace
+                        people={people}
+                        coverageWaitlist={coverageWaitlist}
+                    />
                 </PaperworkProvider>
             ) : (
                 <div className="paperwork-page">

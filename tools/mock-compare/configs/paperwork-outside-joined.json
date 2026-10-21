@@ -1,0 +1,86 @@
+{
+    "name": "paperwork-outside-joined",
+    "seed": "PAPERWORK_WAITLIST=unconfirmed PAPERWORK_ENTRY=outside E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkEntrySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.persona-preview, [data-preview-exit] { display: none !important; }'; document.head.append(s); });"
+        ],
+        "before": [
+            {
+                "click": ".review-tools > summary"
+            },
+            {
+                "click": "[data-preview-persona=\"outside\"]"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-case=\"notify-coverage\"]"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".access-blank",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password",
+            "sibling": "outside"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "screen",
+            "mock": ".access-blank",
+            "app": ".access-blank",
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "actions",
+            "mock": ".access-blank .actions",
+            "app": ".access-blank .actions",
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "notice",
+            "mock": ".coverage-notify",
+            "app": ".coverage-notify",
+            "contentDiffers": true,
+            "ignore": ["w", "h"],
+            "pixels": false
+        },
+        {
+            "name": "notice icon",
+            "mock": ".coverage-notify svg",
+            "app": ".coverage-notify svg",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "notice words",
+            "mock": ".coverage-notify span",
+            "app": ".coverage-notify span",
+            "contentDiffers": true,
+            "ignore": ["w", "h"],
+            "pixels": false
+        }
+    ],
+    "previewNote": "The mock shows these entry states as Review personas: its 'Previewing' banner and the preview-only 'My area is Cologne' button are review tools, so the mock side hides them (init) before anything is measured.",
+    "seedNote": "The same sibling, on the city waitlist and not yet confirmed, as right after 'Tell me when it's covered' (PAPERWORK_WAITLIST=unconfirmed); the mock taps its button.",
+    "contentNote": "The mock's notice ends 'Sample: nothing is sent.', which the app drops (EXP-80): the app's tap does send the confirmation mail. So the notice is shorter in the app (a line on phones, 147.5px on wider screens): the screen, the actions and the notice compare their place and styles, not their size or pixels, and the icon, centred beside it, its box but y. 'Ask Composer' is compared in paperwork-outside."
+}
