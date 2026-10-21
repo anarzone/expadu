@@ -6,12 +6,16 @@
    Composer (CO3) opens it by a place's id. */
 
 import { Link } from '@inertiajs/react';
+import { IconShare2 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { PlaceIcon } from '@/components/around-here/place-icon';
 import { cuisineNames, dietText } from '@/components/around-here/place-model';
 import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
+import { notNow } from '@/lib/not-now';
+import { shareItem, useCanShare } from '@/lib/share';
+import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import { timetable } from '@/routes';
 import { PlaceWay } from './place-way';
@@ -151,6 +155,7 @@ export function PlaceSheet({
     // The place whose details couldn't load, if it's the one asked for.
     const [failedFor, setFailedFor] = useState<number | null>(null);
     const [saved, setSaved] = useState(false);
+    useDwell('place_sheet', 'spot', place);
 
     useEffect(() => {
         if (place === null) {
@@ -183,6 +188,14 @@ export function PlaceSheet({
 
     const d = detail && detail.id === place ? detail : null;
     const failed = failedFor === place && !d;
+    const canShare = useCanShare();
+    const item = d
+        ? ({
+              surface: 'place_sheet',
+              item_type: 'spot',
+              item_id: d.id,
+          } as const)
+        : null;
 
     const save = () => {
         if (!d) {
@@ -209,6 +222,34 @@ export function PlaceSheet({
             onClose={onClose}
             className="place-sheet"
             title={d?.name ?? ''}
+            actions={
+                // The place has no page of its own: its map point, as
+                // "View on map" opens it.
+                canShare && d && item && d.lat !== null && d.lng !== null ? (
+                    <button
+                        type="button"
+                        className="ui-sheet-action"
+                        aria-label="Share"
+                        onClick={() =>
+                            shareItem(
+                                {
+                                    title: d.name,
+                                    text: [
+                                        d.name,
+                                        known(d.place_facts.contact.address),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(', '),
+                                    url: `https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lng}#map=17/${d.lat}/${d.lng}`,
+                                },
+                                item,
+                            )
+                        }
+                    >
+                        <IconShare2 stroke={1.7} />
+                    </button>
+                ) : null
+            }
         >
             {failed ? (
                 <p className="place-source">
@@ -222,6 +263,13 @@ export function PlaceSheet({
                     from={from}
                     saved={saved}
                     onSave={save}
+                    onNotNow={() => {
+                        if (item) {
+                            notNow(item);
+                        }
+
+                        onClose();
+                    }}
                 />
             ) : (
                 <p className="place-source" role="status">
@@ -245,12 +293,15 @@ function PlaceTabs({
     from,
     saved,
     onSave,
+    onNotNow,
 }: {
     detail: Detail;
     initial: Section;
     from: { name: string; lat: number; lng: number } | null;
     saved: boolean;
     onSave: () => void;
+    /** Hide it for a week (#210), with Undo. */
+    onNotNow: () => void;
 }) {
     const [section, setSection] = useState<Section>(initial);
     const visit = usePlanVisit(d.id, d.name, section === 'plan');
@@ -315,6 +366,13 @@ function PlaceTabs({
                             onClick={onSave}
                         >
                             {saved ? 'Saved' : 'Save for later'}
+                        </button>
+                        <button
+                            type="button"
+                            className="place-sheet-save place-sheet-not-now"
+                            onClick={onNotNow}
+                        >
+                            Not now
                         </button>
                         <button
                             type="button"

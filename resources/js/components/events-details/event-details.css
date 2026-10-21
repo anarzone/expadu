@@ -170,8 +170,9 @@
     -webkit-text-stroke: 1.5px var(--pp-text);
 }
 
-/* Close floats on the poster. */
-.ev-details .ui-sheet-close {
+/* Close floats on the poster, with Share before it. */
+.ev-details .ui-sheet-close,
+.ev-details .ui-sheet-action {
     position: absolute;
     z-index: 2;
     top: 11px;
@@ -184,11 +185,16 @@
     backdrop-filter: blur(10px);
 }
 
-.ev-details .ui-sheet-close:hover {
+.ev-details .ui-sheet-action {
+    right: 68px;
+}
+
+.ev-details .ui-sheet-close:hover,
+.ev-details .ui-sheet-action:hover {
     background: #ffffff47;
 }
 
-.ev-details:is(.pp--day, .pp--paper) .ui-sheet-close {
+.ev-details:is(.pp--day, .pp--paper) :is(.ui-sheet-close, .ui-sheet-action) {
     border-color: var(--evd-line);
     background: var(--evd-tile);
     color: var(--color-text);
@@ -599,6 +605,23 @@
 .evd-bell[aria-pressed='true'] {
     background: var(--evd-on);
     color: var(--evd-on-ink);
+}
+
+/* Not now: quiet, by the reminder; the main action keeps its width. */
+.evd-bar > .evd-not-now {
+    flex: 0 0 auto;
+    padding: 0 6px;
+    background: transparent;
+    color: var(--color-text-soft);
+    font-weight: 500;
+}
+
+/* Phones: the four don't fit one row, so the main action takes its own,
+   under the others. */
+@media (max-width: 700px) {
+    .evd-bar > .evd-plan {
+        flex-basis: 100%;
+    }
 }
 
 .evd-plan {

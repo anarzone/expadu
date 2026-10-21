@@ -19,6 +19,8 @@ import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { Icon } from '@/components/ui/icon';
 import { showToast } from '@/components/ui/toast';
 import AppLayout from '@/layouts/app-layout';
+import { isHidden, useHidden } from '@/lib/not-now';
+import { useImpressions } from '@/lib/signals';
 import { composer } from '@/routes';
 import '@/components/around-here/around-here.css';
 
@@ -43,9 +45,13 @@ export default function AroundHere({
     open,
     at,
     kinds,
-    places,
+    places: listed,
 }: Props) {
     const [selected, setSelected] = useState<number | null>(null);
+    const shown = useImpressions('places', 'spot');
+    // Less what was put away with Not now this week.
+    const hidden = useHidden();
+    const places = listed.filter((p) => !isHidden(hidden, 'spot', p.id));
     const [hovered, setHovered] = useState<number | null>(null);
     const [flyTo, setFlyTo] = useState<{ id: number; at: number } | null>(null);
     const [saved, setSaved] = useState<Record<number, boolean>>({});
@@ -127,9 +133,11 @@ export default function AroundHere({
         });
     };
 
-    const row = (place: AroundPlace) => (
+    // Its place in the list, counting from 1.
+    const row = (place: AroundPlace, position: number) => (
         <PlaceRow
             key={place.id}
+            ref={shown(place.id, position)}
             place={{ ...place, saved: isSaved(place) }}
             selected={selected === place.id}
             onOpen={() => {
@@ -220,13 +228,18 @@ export default function AroundHere({
                                     </button>
                                 </div>
                                 <div className="around-results">
-                                    {close.map(row)}
+                                    {close.map((place, i) => row(place, i + 1))}
                                     {further.length ? (
                                         <>
                                             <p className="around-further">
                                                 Further away
                                             </p>
-                                            {further.map(row)}
+                                            {further.map((place, i) =>
+                                                row(
+                                                    place,
+                                                    close.length + i + 1,
+                                                ),
+                                            )}
                                         </>
                                     ) : null}
                                 </div>
