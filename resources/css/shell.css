@@ -725,11 +725,14 @@ html {
         outline: 2px solid var(--color-focus);
         outline-offset: 3px;
     }
-    /* Scrolling down: the menu and Composer's button step away; moving
+    /* Scrolling down: the menu and Composer's button step away (the
+       shell's, or Composer's own on its page, as the mock's section-bar.css
+       has it), so Composer's text box can take the menu's place; moving
        into the menu with the keyboard keeps it. Out of the way while the
        keyboard is open, back as it closes. */
     body.menu-away .shell-nav:not(:focus-within),
     body.menu-away .shell-composer-round:not(:focus),
+    body.menu-away .composer-here:not(:focus),
     :root.keyboard-open :is(.shell-nav, .shell-composer-round) {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
