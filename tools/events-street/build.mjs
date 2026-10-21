@@ -7,7 +7,8 @@
    has to parse, style and paint all of it on every visit. Here each fixed
    part is drawn once, in Chromium (Playwright: the same engine the mock
    is tuned in), trimmed to what it covers and saved as WebP under
-   public/events/street/. What the hour changes stays out of the pictures:
+   public/images/events/street/ (not public/events/, which would shadow
+   the /events page). What the hour changes stays out of the pictures:
 
    - `image`: drawn as it is; the page sets only its opacity or brightness.
    - `mask`: a shape filled with one colour that follows the hour (the
@@ -46,7 +47,7 @@ import { chromium } from 'playwright';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const mock = join(root, 'prototype/dev/design/events-next/street-art.js');
-const out = join(root, 'public/events/street');
+const out = join(root, 'public/images/events/street');
 const manifest = join(
     root,
     'resources/js/components/events-street/street-layers.json',
@@ -600,7 +601,7 @@ for (const [name, layout] of Object.entries(layouts)) {
                     join(out, name, file),
                 ]);
                 const bytes = statSync(join(out, name, file)).size;
-                picture.into.files[scale] = `/events/street/${name}/${file}`;
+                picture.into.files[scale] = `/images/events/street/${name}/${file}`;
                 total[name][scale] = (total[name][scale] || 0) + bytes;
                 console.log(
                     `${name}/${file}`.padEnd(40),

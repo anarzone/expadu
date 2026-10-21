@@ -70,6 +70,10 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
+            // Each day's file is created by whoever logs first. A root-run
+            // `docker exec … artisan` made one www-data couldn't append to,
+            // and staging logged nothing for a day (Oct 2026).
+            'permission' => 0666,
             'replace_placeholders' => true,
         ],
 
