@@ -6,6 +6,15 @@
    workspace.css. Its body.travel-palette rules also apply inside the card
    (:is(), at the same weight). Needs labels.css. */
 
+/* Travel's own type wherever the cards sit (Events' Get there), so a host
+   page's base size doesn't reach them; on Travel it's the page's own. */
+.plan-checks,
+.plan-options {
+    font-family: Geist, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
 /* ---------- The way, step by step ---------- */
 .route-steps {
     list-style: none;
@@ -55,7 +64,9 @@
     height: 16px;
 }
 .route-step.transit .step-node {
-    background: var(--blue);
+    /* Travel's palette blue (--blue there); a host that tints --blue (the
+       Events sheet) keeps Travel's. */
+    background: var(--color-select-bg, var(--blue));
     color: var(--ink);
 }
 .route-step.arrive .step-node {
@@ -391,8 +402,12 @@
     flex-direction: column;
     gap: var(--space-8);
 }
-.plan-option-side .route-note {
+/* The note keeps its own size where a host styles paragraphs (the Events
+   sheet's). */
+.plan-option-side p.route-note {
     margin: 0;
+    font-size: var(--text-caption);
+    line-height: 1.5;
 }
 @media (max-width: 999px) {
     .plan-check-chips {

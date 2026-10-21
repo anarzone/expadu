@@ -28,7 +28,7 @@
         if (route.mode === 'walk') return 'On foot';
         const lines = route.legs.filter((leg) => leg.mode === 'transit');
         const first = lines[0]?.line || route.line;
-        return `${vehicleOf(first)} ${first}${
+        return `${vehicleOf(first, lines[0])} ${first}${
             route.changes
                 ? `, then ${
                       lines
@@ -178,6 +178,116 @@
     function checks(list, open) {
         return `<section class="plan-checks" aria-label="What we checked"><button type="button" class="plan-checks-toggle" data-action="checks" aria-expanded="${open}" aria-controls="plan-checks-detail"><strong>We checked today’s conditions</strong><span class="plan-check-chips tl-chips">${list.map((item) => L.chip(item.tone || (item.flag ? 'attention' : item.muted ? 'unsure' : 'calm'), item.icon || 'check', item.short)).join('')}</span><span class="plan-checks-more">${open ? 'Hide' : 'Details'}${icon('down')}</span></button><div id="plan-checks-detail" class="plan-checks-detail" ${open ? '' : 'hidden'}>${list.map((item) => `<p><strong>${safe(item.title)}</strong><span>${safe(item.text)}</span></p>`).join('')}</div></section>`;
     }
+    // The shared sample weather at a sample-day clock, or nothing.
+    const skies = {
+        clear: 'Clear',
+        partly: 'Partly cloudy',
+        cloudy: 'Cloudy',
+        showers: 'Showers',
+        rain: 'Rain',
+        mist: 'Mist',
+    };
+    function weather(date, time) {
+        const hours = root.ExpaduSampleWeather?.days?.[date];
+        const hour = hours?.[Number(time.slice(0, 2))];
+        if (!hour) return null;
+        const [sky, degrees, rain] = hour;
+        return { sky: skies[sky] || sky, degrees, rain, wet: rain >= 50 };
+    }
+    // Where a trip's times come from, under its steps.
+    const note = (trip) =>
+        trip.evening
+            ? 'Sample day · VRS timetable, scheduled times'
+            : trip.id === 'day'
+              ? 'Sample day · scheduled times'
+              : '7 Sep 2026 capture';
+    // What the planner checked for a trip, as the labels and words of the
+    // "We checked" card. The page gives what it knows: whether it's the
+    // sample day, its weather when you leave, the plans between now and
+    // the start, any sample condition (scenario), step-free asked for, and
+    // how it writes a date.
+    function facts(trip, ctx) {
+        const { day, weather, between } = ctx;
+        return [
+            {
+                short: 'Departures',
+                icon: day ? 'check' : 'offline',
+                tone: day ? 'calm' : 'unsure',
+                title: day ? 'Departures' : 'Departures, as captured',
+                text: trip.evening
+                    ? `Scheduled times from the VRS timetable for ${ctx.dateLabel(trip.date)}, captured 13 Oct`
+                    : day
+                    ? `Scheduled sample times for ${ctx.dateLabel(trip.date)}`
+                    : `Captured ${ctx.dateLabel(trip.date)} at ${trip.time}: that night’s times`,
+            },
+            {
+                short:
+                    ctx.scenario === 'cancelled' && day
+                        ? '1 notice'
+                        : day
+                          ? 'No notices'
+                          : 'Notices',
+                icon: ctx.scenario === 'cancelled' && day ? 'alert' : 'check',
+                tone:
+                    ctx.scenario === 'cancelled' && day
+                        ? 'conflict'
+                        : day
+                          ? 'calm'
+                          : 'unsure',
+                title: 'KVB notices',
+                text:
+                    ctx.scenario === 'cancelled' && day
+                        ? 'Tram 4 at 13:14 is cancelled (sample)'
+                        : day
+                          ? 'None in the sample day'
+                          : 'Only historical examples were captured; current notices aren’t known',
+                flag: ctx.scenario === 'cancelled' && day,
+            },
+            {
+                short: 'Weather',
+                icon: weather?.wet ? 'cloud' : 'sun',
+                title: 'Weather',
+                text: weather
+                    ? `${weather.sky}, ${weather.degrees}° when you leave · sample weather`
+                    : 'Not recorded for this trip',
+                muted: !weather,
+            },
+            {
+                short: 'My day',
+                title: 'My day',
+                text: trip.back
+                    ? `After ${trip.event}, which ends at ${trip.after}`
+                    : day
+                      ? between.length
+                          ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
+                          : `Nothing else before ${trip.start}`
+                      : 'Not part of your sample day',
+                muted: !day,
+            },
+            {
+                short:
+                    ctx.scenario === 'lift'
+                        ? 'Lift out of order'
+                        : 'Lifts unknown',
+                icon: ctx.scenario === 'lift' ? 'lift' : 'liftok',
+                tone:
+                    ctx.scenario === 'lift'
+                        ? 'conflict'
+                        : ctx.stepfree
+                          ? 'attention'
+                          : 'unsure',
+                title: 'Lifts on the way',
+                text:
+                    ctx.scenario === 'lift'
+                        ? 'A lift at Neumarkt is out of order (sample)'
+                        : ctx.stepfree
+                          ? 'Lift status isn’t in this preview, so we can’t promise step-free'
+                          : 'Not in this preview',
+                muted: ctx.scenario !== 'lift',
+                flag: ctx.stepfree || ctx.scenario === 'lift',
+            },
+        ];
+    }
     root.TravelPlanCard = {
         vehicleOf,
         optionTitle,
@@ -186,5 +296,8 @@
         steps,
         option,
         checks,
+        facts,
+        weather,
+        note,
     };
 })(globalThis);

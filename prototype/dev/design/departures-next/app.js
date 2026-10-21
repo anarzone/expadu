@@ -63,12 +63,7 @@ const minutesOf = (time) => {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
 };
-const sourceNote = (route) =>
-    tripOf(route).evening
-        ? 'Sample day · VRS timetable, scheduled times'
-        : tripOf(route).id === 'day'
-          ? 'Sample day · scheduled times'
-          : '7 Sep 2026 capture';
+const sourceNote = (route) => P.note(tripOf(route));
 const placeName = (name) => name.replace(/^Köln\s+/, '');
 // Stops that are also points in the place layer (connected/places.js
 // anchors), so a stop can open "Around here".
@@ -927,22 +922,8 @@ const L = window.TravelLabels;
 const P = window.TravelPlanCard;
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
-const skies = {
-    clear: 'Clear',
-    partly: 'Partly cloudy',
-    cloudy: 'Cloudy',
-    showers: 'Showers',
-    rain: 'Rain',
-    mist: 'Mist',
-};
 // The shared sample weather at a sample-day clock, or nothing.
-function sampleWeather(date, time) {
-    const hours = window.ExpaduSampleWeather?.days?.[date];
-    const hour = hours?.[Number(time.slice(0, 2))];
-    if (!hour) return null;
-    const [sky, degrees, rain] = hour;
-    return { sky: skies[sky] || sky, degrees, rain, wet: rain >= 50 };
-}
+const sampleWeather = (date, time) => P.weather(date, time);
 // The way to take to be somewhere by a time (owner, 9 Oct 2026): the
 // latest leave that still keeps the margin (10 min for an official
 // appointment, else 5), the earliest arrival breaking a tie; when none
@@ -1264,95 +1245,22 @@ function details(route) {
     const trip = tripOf(route);
     return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.evening ? 'Sample day, scheduled times from the VRS timetable.' : trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove from your plan' : 'Add to plan'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'In your plan' : 'Add to plan'}">${icon('plus')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
-// What the planner looked at for this trip, and what the preview has of it.
+// What the planner looked at for this trip (plan-card.js says it), from
+// Travel's state.
 function checks(tripId, trip, route) {
     const day = J.isSampleDay ? J.isSampleDay(tripId) : tripId === 'day';
-    const weather =
-        day && route ? sampleWeather(trip.date, route.depart) : null;
-    const between = day
-        ? dayPlaces().filter(
-              (place) => place.time > trip.time && place.time < trip.start,
-          )
-        : [];
-    return [
-        {
-            short: 'Departures',
-            icon: day ? 'check' : 'offline',
-            tone: day ? 'calm' : 'unsure',
-            title: day ? 'Departures' : 'Departures, as captured',
-            text: trip.evening
-                ? `Scheduled times from the VRS timetable for ${boardDateLabel(trip.date)}, captured 13 Oct`
-                : day
-                ? `Scheduled sample times for ${boardDateLabel(trip.date)}`
-                : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
-        },
-        {
-            short:
-                state.scenario === 'cancelled' && day
-                    ? '1 notice'
-                    : day
-                      ? 'No notices'
-                      : 'Notices',
-            icon: state.scenario === 'cancelled' && day ? 'alert' : 'check',
-            tone:
-                state.scenario === 'cancelled' && day
-                    ? 'conflict'
-                    : day
-                      ? 'calm'
-                      : 'unsure',
-            title: 'KVB notices',
-            text:
-                state.scenario === 'cancelled' && day
-                    ? 'Tram 4 at 13:14 is cancelled (sample)'
-                    : day
-                      ? 'None in the sample day'
-                      : 'Only historical examples were captured; current notices aren’t known',
-            flag: state.scenario === 'cancelled' && day,
-        },
-        {
-            short: 'Weather',
-            icon: weather?.wet ? 'cloud' : 'sun',
-            title: 'Weather',
-            text: weather
-                ? `${weather.sky}, ${weather.degrees}° when you leave · sample weather`
-                : 'Not recorded for this trip',
-            muted: !weather,
-        },
-        {
-            short: 'My day',
-            title: 'My day',
-            text: trip.back
-                ? `After ${trip.event}, which ends at ${trip.after}`
-                : day
-                  ? between.length
-                      ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
-                      : `Nothing else before ${trip.start}`
-                  : 'Not part of your sample day',
-            muted: !day,
-        },
-        {
-            short:
-                state.scenario === 'lift'
-                    ? 'Lift out of order'
-                    : 'Lifts unknown',
-            icon: state.scenario === 'lift' ? 'lift' : 'liftok',
-            tone:
-                state.scenario === 'lift'
-                    ? 'conflict'
-                    : state.stepfree
-                      ? 'attention'
-                      : 'unsure',
-            title: 'Lifts on the way',
-            text:
-                state.scenario === 'lift'
-                    ? 'A lift at Neumarkt is out of order (sample)'
-                    : state.stepfree
-                      ? 'Lift status isn’t in this preview, so we can’t promise step-free'
-                      : 'Not in this preview',
-            muted: state.scenario !== 'lift',
-            flag: state.stepfree || state.scenario === 'lift',
-        },
-    ];
+    return P.facts(trip, {
+        day,
+        weather: day && route ? sampleWeather(trip.date, route.depart) : null,
+        between: day
+            ? dayPlaces().filter(
+                  (place) => place.time > trip.time && place.time < trip.start,
+              )
+            : [],
+        scenario: state.scenario,
+        stepfree: state.stepfree,
+        dateLabel: boardDateLabel,
+    });
 }
 const checksMarkup = (list) => P.checks(list, state.checksOpen);
 const clockOf = (minutes) =>
