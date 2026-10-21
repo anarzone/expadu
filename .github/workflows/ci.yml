@@ -445,10 +445,17 @@ jobs:
             docker compose up -d --force-recreate
             sleep 5
             # Staging's compose replaces the image entrypoint (fix-nginx.sh), so
-            # nothing migrates on boot: migrate here, before the deploy-time
-            # catalogue steps (import, source check, release, dossiers), all run
-            # as www-data so the log files they create stay writable by the app.
+            # nothing migrates or caches on boot: migrate and build the framework
+            # caches here (as the image's entrypoint does on prod), before the
+            # deploy-time catalogue steps (import, source check, release, dossiers),
+            # all run as www-data so the files they write stay writable by the app.
             docker exec -u www-data staging-app php artisan migrate --force
+            docker exec -u www-data staging-app php artisan config:cache
+            docker exec -u www-data staging-app php artisan route:cache
+            docker exec -u www-data staging-app php artisan view:cache
+            docker exec -u www-data staging-app php artisan event:cache || echo "event:cache failed; events are discovered at runtime"
+            docker exec -u www-data staging-app php artisan filament:optimize || echo "filament:optimize failed; panels resolve at runtime"
+            docker exec -u www-data staging-app php artisan schedule:clear-cache || echo "Could not clear schedule locks"
             docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --retire-missing
             docker exec -u www-data staging-app php artisan bureaucracy:verify-sources
             docker exec -u www-data staging-app php artisan bureaucracy:compile-catalogue --deploy

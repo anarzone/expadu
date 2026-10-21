@@ -54,10 +54,10 @@ class Event extends Model
     }
 
     /**
-     * What any consumer (UI or composer) is allowed to see. Curation is
-     * a filter, not a feed: relevance-approved events, plus unscored
-     * legacy rows ONLY when the old curation heuristic vouched for them
-     * — an unscored museum-programme dump must never flood the feed.
+     * What any consumer (UI or composer) is allowed to see: active events that
+     * pass the ingest quality bar or were curated by hand. The AI relevance
+     * score only orders events; it never hides one (owner, 21 Oct 2026), since
+     * it hid about 98% of real listings.
      *
      * @param  Builder<Event>  $query
      */
@@ -65,18 +65,8 @@ class Event extends Model
     {
         $query->where('status', 'active')
             ->where(fn (Builder $q) => $q
-                // AI relevance, once scored, is authoritative.
-                ->where('relevance', '>=', config('events.relevance_threshold', 0.5))
-                // Until then (relevance is null on every scraped event), fall
-                // back to the enrichment quality_score — which IS populated on
-                // ingest — or a manual curate. Without this the gate read a
-                // column nothing fills and the feed collapsed to the handful of
-                // hand-curated events.
-                ->orWhere(fn (Builder $fallback) => $fallback
-                    ->whereNull('relevance')
-                    ->where(fn (Builder $unscored) => $unscored
-                        ->where('quality_score', '>=', config('events.quality_threshold', 0.5))
-                        ->orWhere('is_curated', true))));
+                ->where('quality_score', '>=', config('events.quality_threshold', 0.5))
+                ->orWhere('is_curated', true));
     }
 
     /**

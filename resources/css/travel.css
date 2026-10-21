@@ -275,6 +275,45 @@
     stroke: currentColor;
     stroke-width: 2;
 }
+/* A KVB notice (design session, 21 Oct 2026): "KVB's notice ↗", a quiet
+   text link as Journey details is, and the chip in front of KVB's own
+   (German) words, which keep to their one line. */
+.kvb-notice-link {
+    align-self: center;
+    padding-block: 4px;
+    color: var(--color-select-text);
+    font-size: var(--text-small);
+    font-weight: 400;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.kvb-notice-link:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+.kvb-german-chip {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+/* In a banner's title it sits on its own row, above KVB's title. */
+.tl-banner strong > .kvb-german-chip {
+    display: flex;
+    width: fit-content;
+    margin: 0 0 4px;
+}
+/* Its own line, under a banner's title and line. */
+.kvb-notice-link.is-own-line {
+    display: block;
+    width: fit-content;
+    padding-block: 2px 0;
+}
+.tl-banner p .kvb-notice-line {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .tl-banner.is-conflict {
     background: var(--color-conflict-bg);
     box-shadow: inset 4px 0 0 var(--color-conflict-text);
@@ -761,6 +800,7 @@
     position: relative;
     display: grid;
     place-items: center;
+    flex: none;
     width: 52px;
     height: 52px;
     color: var(--trip-tone);

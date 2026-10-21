@@ -101,14 +101,15 @@ test('a confident classification stores every AI field once', function () {
 });
 
 test('low confidence drops the chips and flags review', function () {
-    fakeClassifier(classification(['confidence' => 0.5, 'chips' => ['English-friendly']]));
-    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null]);
+    fakeClassifier(classification(['confidence' => 0.5, 'chips' => ['English-friendly'], 'category' => 'party']));
+    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null, 'category' => 'culture']);
 
     (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
 
     $event->refresh();
     expect($event->needs_review)->toBeTrue();
     expect($event->chips)->toBe([]); // unsure chip dropped, never guessed
+    expect($event->category)->toBe('culture'); // the source's category, not the unsure guess
     expect($event->summary_en)->not->toBeNull(); // translation still kept
 });
 

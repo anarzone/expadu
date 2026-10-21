@@ -306,6 +306,7 @@ export function TaskDetail() {
         canEdit,
         jurisdiction,
         toast,
+        openSituation,
     } = usePaperwork();
     const process = processByKey(location.process);
 
@@ -346,6 +347,13 @@ export function TaskDetail() {
     const visa = plan.timeline.find(
         (t) => t.kind === 'document_expiry' && t.document === 'visa',
     );
+    // The visa's expiry is one of your answers: edited in place, as on the
+    // overview, by whoever may see and change them.
+    const expiryFact =
+        canEdit && plan.scopes.includes('view_facts') && visa?.fact_key
+            ? visa.fact_key
+            : null;
+    const expiryUrgent = (soon(visa?.date)?.days ?? Infinity) <= 1;
 
     const start = () =>
         run(
@@ -558,12 +566,45 @@ export function TaskDetail() {
                             (d) => d.anchor_fact === 'visa_expires_at',
                         ),
                     ) ? (
-                        <div className="process-resource-static">
-                            <Icon name="calendar" />
-                            <span>
-                                Visa expiry<small>{when(visa.date)}</small>
-                            </span>
-                        </div>
+                        expiryFact ? (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    openSituation({ key: expiryFact })
+                                }
+                            >
+                                <Icon name="calendar" />
+                                <span>
+                                    Visa expiry
+                                    <small
+                                        className={
+                                            expiryUrgent
+                                                ? 'is-urgent'
+                                                : undefined
+                                        }
+                                    >
+                                        {when(visa.date)}
+                                    </small>
+                                </span>
+                                <Icon name="pencil" />
+                            </button>
+                        ) : (
+                            <div className="process-resource-static">
+                                <Icon name="calendar" />
+                                <span>
+                                    Visa expiry
+                                    <small
+                                        className={
+                                            expiryUrgent
+                                                ? 'is-urgent'
+                                                : undefined
+                                        }
+                                    >
+                                        {when(visa.date)}
+                                    </small>
+                                </span>
+                            </div>
+                        )
                     ) : null}
                 </section>
             </div>

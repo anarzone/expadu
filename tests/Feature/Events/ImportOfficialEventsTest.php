@@ -122,7 +122,7 @@ test('media capture failures never discard an official event', function () {
         ->and(MediaAsset::query()->count())->toBe(0);
 });
 
-test('common single-time syntax gets a conservative default duration', function () {
+test('common single-time syntax keeps its start and no made-up end', function () {
     app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
 
     Http::fake([
@@ -141,7 +141,7 @@ test('common single-time syntax gets a conservative default duration', function 
 
     $event = Event::where('source_uid', '40570')->sole();
     expect($event->starts_at->format('H:i'))->toBe('11:00')
-        ->and($event->ends_at?->format('H:i'))->toBe('13:00');
+        ->and($event->ends_at)->toBeNull();
 });
 
 test('explicit clock ranges without Uhr retain their source times and event identity', function (string $time, string $start, string $end) {
@@ -377,4 +377,19 @@ test('multi-day rows without daily hours are marked uncertain for Composer exclu
     ])]])]);
     $this->artisan('events:import-official')->assertSuccessful();
     expect(Event::where('source', 'stadt-koeln.de')->sole()->tags)->toContain('multi-day-uncertain');
+});
+
+test('a single listed time keeps no end, also across days', function () {
+    app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
+    Http::fake(['www.stadt-koeln.de/*' => Http::response(['success' => true, 'items' => [officialEvent([
+        'uhrzeit' => '19 Uhr', 'beginndatum' => '2026-07-18', 'endedatum' => '2026-07-20', 'latitude' => null, 'longitude' => null,
+    ])]])]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+    $event = Event::where('source', 'stadt-koeln.de')->sole();
+
+    expect($event->starts_at->format('Y-m-d H:i'))->toBe('2026-07-18 19:00')
+        ->and($event->ends_at)->toBeNull()
+        ->and($event->recurrence)->toBe('FREQ=DAILY')
+        ->and($event->recurrence_until?->format('Y-m-d'))->toBe('2026-07-20');
 });

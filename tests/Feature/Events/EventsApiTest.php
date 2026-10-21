@@ -35,6 +35,7 @@ test('today window returns chronological occurrences with server-built meta', fu
     $venue = makeVenue();
     Event::factory()->create([
         'title' => 'Sprachabend', 'title_en' => 'Language night',
+        'description' => 'Deutsch und Englisch sprechen bei einem Getränk.',
         'starts_at' => '2026-06-12 19:00:00', 'ends_at' => '2026-06-12 22:00:00',
         'recurrence' => null,
         'category' => 'language_exchange', 'chips' => ['English-friendly'],
@@ -415,7 +416,7 @@ test('an unreviewed legacy place photo never richens an event card', function ()
 
 test('the free chip shows only when the price fields say free', function () {
     $presenter = app(EventOccurrencePresenter::class);
-    $guessed = Event::factory()->make(['chips' => ['free', 'solo-OK'], 'is_free' => false, 'price_text' => null]);
+    $guessed = Event::factory()->make(['chips' => ['free', 'solo-OK'], 'is_free' => false, 'price_text' => null, 'description' => 'Gern auch allein kommen.']);
     $free = Event::factory()->make(['chips' => [], 'is_free' => true]);
 
     expect($presenter->chips($guessed))->toBe(['solo-OK'])

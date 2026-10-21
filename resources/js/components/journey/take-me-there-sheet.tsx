@@ -25,6 +25,9 @@ import {
 } from '@/components/journey/journey-schedule-picker';
 import type { JourneyPlanningMode } from '@/components/journey/journey-schedule-picker';
 import { BottomSheet } from '@/components/sheets/bottom-sheet';
+import { InGermanChip, KvbNoticeLink } from '@/components/travel/kvb-notice';
+import { noticeWords } from '@/components/travel/nearby/types';
+import type { NoticeBrief } from '@/components/travel/nearby/types';
 import {
     Dialog,
     DialogClose,
@@ -55,7 +58,14 @@ export type JourneyResponse = {
     from: { name: string; lat: number; lng: number };
     to: { name: string };
     ticket: FareAdvice | null;
-    disruptions: Array<{ title: string; severity: string; lines: string[] }>;
+    disruptions: Array<{
+        title: string;
+        severity: string;
+        lines: string[];
+        brief?: NoticeBrief | null;
+        details?: string | null;
+        url?: string | null;
+    }>;
 };
 
 /** Journey-aware Rheinlandtarif advice — mirrors App\Transit\Dto\FareAdvice. */
@@ -448,6 +458,28 @@ function walkMinutes(journey: Journey): number {
     return journey.legs
         .filter((leg) => leg.mode === 'walk')
         .reduce((total, leg) => total + leg.duration_min, 0);
+}
+
+/** The way's KVB notice: its English brief, else KVB's own (German) words, and KVB's page. */
+function NoticeLine({
+    notice,
+}: {
+    notice: JourneyResponse['disruptions'][number];
+}) {
+    const { headline, text, lang } = noticeWords(notice);
+    const german = lang === 'de';
+
+    return (
+        <span className="min-w-0">
+            {german ? (
+                <InGermanChip fromKvb={!!notice.url} className="mb-1" />
+            ) : null}
+            <span className="block" lang={german ? 'de' : undefined}>
+                {text ? `${headline.replace(/\.$/, '')}. ${text}` : headline}
+            </span>
+            {notice.url ? <KvbNoticeLink url={notice.url} /> : null}
+        </span>
+    );
 }
 
 export function TakeMeThereSheet({
@@ -848,7 +880,7 @@ export function TakeMeThereSheet({
                                         stroke={ICON_STROKE}
                                         className="mt-px shrink-0"
                                     />
-                                    <span>{data!.disruptions[0].title}</span>
+                                    <NoticeLine notice={data!.disruptions[0]} />
                                 </div>
                             )}
                     </>

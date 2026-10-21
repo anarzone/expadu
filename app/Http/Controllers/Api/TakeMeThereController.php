@@ -82,7 +82,8 @@ class TakeMeThereController extends Controller
         ]);
 
         $user = $request->user();
-        app(SignalRecorder::class)->getThere($user, $request->input('get_there'));
+        // Only the sheet's own request body carries a Get there tap; never a query string.
+        app(SignalRecorder::class)->getThere($user, $request->json('get_there'));
 
         if (isset($validated['from_lat'], $validated['from_lng'])) {
             // An explicit origin (the Places list's resolved From, or an "I'm
@@ -195,8 +196,11 @@ class TakeMeThereController extends Controller
                 'title' => $d['title'] ?? '',
                 'severity' => $d['severity'] ?? 'minor',
                 'lines' => $d['affected_lines'] ?? [],
-                // KVB's notice in plain English, when one is written.
+                // KVB's notice in plain English, when one is written; else its
+                // own words (German), and its page either way.
                 'brief' => $d['brief'] ?? null,
+                'details' => ($d['description'] ?? '') !== '' ? $d['description'] : null,
+                'url' => $d['url'] ?? null,
             ])
             ->values()
             ->all();

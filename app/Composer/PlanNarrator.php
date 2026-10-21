@@ -29,16 +29,26 @@ class PlanNarrator
             $parts[] = '⭐ landmark';
         }
 
-        if (! $candidate->outdoor && $rain) {
+        // Only a place mapped as indoor or covered beats the rain; a category
+        // that's usually indoors isn't a fact about this place.
+        if ($rain && self::mappedIndoor($candidate)) {
             $parts[] = 'indoor — beats the rain';
         }
 
+        // Between stops the minutes are a straight-line estimate, never a route:
+        // said as one, and on foot only where the estimate is a walk.
         if ($previous !== null && $slot->travelMinFromPrevious > 0) {
             $sameArea = $previous->candidate->veedel !== null
                 && $previous->candidate->veedel === $candidate->veedel;
-            $parts[] = $sameArea
-                ? "🚶 {$slot->travelMinFromPrevious} min · same area"
-                : "🚶 {$slot->travelMinFromPrevious} min away";
+            $onFoot = TravelEstimator::walks((new TravelEstimator)->haversineKm(
+                $previous->candidate->lat, $previous->candidate->lng, $candidate->lat, $candidate->lng,
+            ));
+            $about = "about {$slot->travelMinFromPrevious} min";
+            $parts[] = match (true) {
+                $onFoot && $sameArea => "{$about} on foot · same area",
+                $onFoot => "{$about} on foot",
+                default => "{$about} away",
+            };
         }
 
         if ($candidate->type === 'spot' && (($candidate->placeFacts['hours']['status'] ?? null) === 'unknown' || $candidate->hoursAssumed)) {
@@ -52,6 +62,20 @@ class PlanNarrator
         }
 
         return implode(' · ', $parts);
+    }
+
+    /** The place's own facts say indoor or covered (OSM indoor=yes, covered=yes). */
+    private static function mappedIndoor(Candidate $candidate): bool
+    {
+        $practical = $candidate->placeFacts['practical'] ?? [];
+
+        foreach (['indoor', 'covered'] as $key) {
+            if (($practical[$key]['status'] ?? null) === 'known' && in_array(strtolower((string) ($practical[$key]['value'] ?? '')), ['yes', 'true', '1'], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PLATFORM_NOT_KNOWN, sourceLabel } from '@/components/ui/state-notice';
 import { cn } from '@/lib/utils';
 import type { JourneyLeg } from '@/types/transit';
+import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleOf, vehicleWord } from '../line-look';
@@ -87,7 +88,34 @@ export function PlanChecks({ checks }: { checks: Check[] }) {
                 {checks.map((check) => (
                     <p key={check.title}>
                         <strong>{check.title}</strong>
-                        <span>{check.text}</span>
+                        {check.notices ? (
+                            check.notices.map((notice, i) => (
+                                <span key={i} className="plan-check-notice">
+                                    {notice.lang === 'de' ? (
+                                        <InGermanChip
+                                            fromKvb={notice.url !== null}
+                                        />
+                                    ) : null}
+                                    <span
+                                        lang={
+                                            notice.lang === 'de'
+                                                ? 'de'
+                                                : undefined
+                                        }
+                                    >
+                                        {notice.words}
+                                    </span>
+                                    {notice.url ? (
+                                        <>
+                                            {' '}
+                                            <KvbNoticeLink url={notice.url} />
+                                        </>
+                                    ) : null}
+                                </span>
+                            ))
+                        ) : (
+                            <span>{check.text}</span>
+                        )}
                     </p>
                 ))}
             </div>

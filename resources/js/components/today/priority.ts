@@ -4,7 +4,8 @@ import type { DayProjection } from '@/types/day';
 /*
  * What Today puts first (the mock's priority() in brief/content.js): plans
  * still ahead lead; with none, a first visit leads with the city's help
- * and the way into Paperwork, and any other free day with ideas.
+ * and the way into Paperwork, and any other free day with ideas, or with
+ * the city's help when there are none left.
  */
 
 export type Lead = 'agenda' | 'essentials' | 'discovery';
@@ -54,7 +55,11 @@ export const PHONE_ORDER: Record<Lead, Block[]> = {
     ],
 };
 
-const leadOf = (day: DayProjection | undefined, firstVisit: boolean): Lead => {
+const leadOf = (
+    day: DayProjection | undefined,
+    firstVisit: boolean,
+    ideas: boolean | undefined,
+): Lead => {
     // Until the day loads, its place (Your day loading) leads.
     if (!day) {
         return firstVisit ? 'essentials' : 'agenda';
@@ -64,30 +69,34 @@ const leadOf = (day: DayProjection | undefined, firstVisit: boolean): Lead => {
         return 'agenda';
     }
 
-    return firstVisit ? 'essentials' : 'discovery';
+    // A free day opens with ideas. With none left (late in the evening), the
+    // city's help leads instead, as on a first visit, not an empty heading.
+    return firstVisit || ideas === false ? 'essentials' : 'discovery';
 };
 
 /**
- * The lead, steady while the page is read: it's set when the day loads and
- * when the person changes their plans (adds, removes or completes one),
- * never because the clock passed a plan's end or something was saved, so
- * the sections don't move under the reader (the mock's arrange() runs on
- * page actions, "never on a clock or save sync").
+ * The lead, steady while the page is read: it's set when the day loads, when
+ * the ideas load (whether there are any), and when the person changes their
+ * plans (adds, removes or completes one), never because the clock passed a
+ * plan's end or something was saved, so the sections don't move under the
+ * reader (the mock's arrange() runs on page actions, "never on a clock or
+ * save sync"). `ideas` is undefined until they load.
  */
 export function useSteadyLead(
     day: DayProjection | undefined,
     firstVisit: boolean,
+    ideas?: boolean,
 ): Lead {
     const key = day
-        ? day.items.map((item) => `${item.id}:${item.completed}`).join('|')
+        ? `${day.items.map((item) => `${item.id}:${item.completed}`).join('|')}#${ideas}`
         : null;
     const [steady, setSteady] = useState(() => ({
         key,
-        lead: leadOf(day, firstVisit),
+        lead: leadOf(day, firstVisit, ideas),
     }));
 
     if (steady.key !== key) {
-        const next = { key, lead: leadOf(day, firstVisit) };
+        const next = { key, lead: leadOf(day, firstVisit, ideas) };
         setSteady(next);
 
         return next.lead;

@@ -5,18 +5,23 @@ import {
 } from '@sentry/react';
 import type { ErrorInfo } from 'react';
 
+let started = false;
+
 /**
- * Lazy Sentry. app.tsx imports this module only after the app mounts, so
- * @sentry/react stays out of the critical path — and everything Sentry goes
- * through here, so there is one Sentry chunk. Named imports keep Replay,
- * Feedback and the rest of the SDK out of it.
+ * Lazy Sentry. app.tsx imports this module only once the page has loaded and
+ * the browser is idle, so @sentry/react stays out of the critical path — and
+ * everything Sentry goes through here, so there is one Sentry chunk. Named
+ * imports keep Replay, Feedback and the rest of the SDK out of it. Safe to
+ * call more than once: only the first call starts the SDK.
  */
 export function initSentry(): void {
     const dsn = import.meta.env.VITE_SENTRY_DSN_PUBLIC;
 
-    if (!dsn) {
+    if (!dsn || started) {
         return;
     }
+
+    started = true;
 
     init({
         dsn,
@@ -57,7 +62,9 @@ export function initSentry(): void {
     });
 }
 
-/** Report a render error caught by the app's error boundary. No-op until init ran. */
+/** Report a render error caught by the app's error boundary, starting Sentry
+    first when the error came before the idle init. */
 export function captureRenderError(error: Error, info: ErrorInfo): void {
+    initSentry();
     captureException(error, { extra: { componentStack: info.componentStack } });
 }

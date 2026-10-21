@@ -14,6 +14,8 @@ export type Slot = {
     end_at: string;
     start_time: string;
     end_time: string;
+    /** False for an event with no listed end: end_time is only the plan's length. */
+    end_listed?: boolean;
     swappable: boolean;
     travel_min_from_previous?: number;
     summary?: string | null;
@@ -30,6 +32,11 @@ export type Slot = {
     is_appointment?: boolean;
     closes_at?: string | null;
 };
+/** A slot's time as said: "13:00–14:00", or the start alone when its end isn't known or listed. */
+export const slotSpan = (slot: Slot) =>
+    slot.end_time && slot.end_listed !== false
+        ? `${slot.start_time}–${slot.end_time}`
+        : slot.start_time;
 export type Plan = {
     date: string;
     slots: Slot[];

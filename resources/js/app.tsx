@@ -3,7 +3,6 @@ import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/ui/toast';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { resolvePage } from '@/lib/resolve-page';
 import '../css/app.css';
 
@@ -23,7 +22,8 @@ class ErrorBoundary extends Component<
 
     componentDidCatch(error: Error, info: ErrorInfo) {
         // Through @/lib/sentry, the same lazy chunk initSentry loads — a
-        // separate import('@sentry/react') here pulled in the whole SDK.
+        // separate import('@sentry/react') here pulled in the whole SDK. It
+        // starts Sentry itself if the error comes before the idle init.
         import('@/lib/sentry')
             .then((m) => m.captureRenderError(error, info))
             .catch(() => {});
@@ -61,6 +61,24 @@ class ErrorBoundary extends Component<
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+/** Runs `task` after the window's load event, once the browser is idle.
+    Safari has no requestIdleCallback, so it waits a beat instead. */
+function afterLoadWhenIdle(task: () => void): void {
+    const schedule = () => {
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(task, { timeout: 4000 });
+        } else {
+            window.setTimeout(task, 1000);
+        }
+    };
+
+    if (document.readyState === 'complete') {
+        schedule();
+    } else {
+        window.addEventListener('load', schedule, { once: true });
+    }
+}
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: resolvePage,
@@ -88,9 +106,7 @@ createInertiaApp({
         const app = (
             <StrictMode>
                 <ErrorBoundary>
-                    <TooltipProvider delayDuration={0}>
-                        <App {...props} />
-                    </TooltipProvider>
+                    <App {...props} />
                 </ErrorBoundary>
             </StrictMode>
         );
@@ -104,10 +120,13 @@ createInertiaApp({
             rootEl.__inertiaRoot.render(app);
         }
 
-        // Load Sentry async — out of the critical render path. Guarded so a
-        // blocked chunk (ad blockers block "sentry-*.js") is a silent no-op,
+        // Load Sentry once the page has loaded and the browser is idle, so its
+        // ~40 KB stays out of the first render and the load itself. Guarded so
+        // a blocked chunk (ad blockers block "sentry-*.js") is a silent no-op,
         // never an unhandled rejection.
-        import('@/lib/sentry').then((m) => m.initSentry()).catch(() => {});
+        afterLoadWhenIdle(() => {
+            import('@/lib/sentry').then((m) => m.initSentry()).catch(() => {});
+        });
     },
     progress: {
         color: '#4B5563',

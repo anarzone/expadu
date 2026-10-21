@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Ai\LlmCalls;
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Support\EventTipGuard;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -150,7 +151,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
             'title_en' => (string) $input['title_en'],
             'description_en' => $descriptionEnglish,
             'summary_en' => (string) $input['summary_en'],
-            'tip_en' => $this->groundedTip($input['tip_en'] ?? null, $event->title.' '.$event->description.' '.$event->price_text),
+            'tip_en' => EventTipGuard::grounded($input['tip_en'] ?? null, $event->title.' '.$event->description.' '.$event->price_text),
         ];
     }
 
@@ -241,24 +242,5 @@ class AnthropicEventClassifier implements ClassifiesEvents
     private function escapeSourceText(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XML1, 'UTF-8');
-    }
-
-    /**
-     * A tip that hedges, or names a language the listing never mentions, is a
-     * guess dressed as a fact, so it isn't shown. The language estimate has
-     * its own field.
-     */
-    private function groundedTip(mixed $tip, string $source): ?string
-    {
-        $tip = is_string($tip) ? trim($tip) : '';
-        $languageWords = '/\b(german|english|deutsch\w*|englisch\w*|language|sprache|spoken|speak\w*)\b/iu';
-
-        if ($tip === ''
-            || preg_match('/\b(appears?|apparently|probably|likely|seems?|presumably|might|may well|perhaps|possibly|as far as)\b/i', $tip)
-            || (preg_match($languageWords, $tip) && ! preg_match($languageWords, $source))) {
-            return null;
-        }
-
-        return $tip;
     }
 }

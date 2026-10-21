@@ -53,6 +53,9 @@ final readonly class Candidate
         public bool $durationKnown = true,
         /** @var list<string> verified vibe tags (VibeTag values, from spot_enrichments) */
         public array $vibeTags = [],
+        // An event with no listed end: typicalDurationMin is the plan's own length to schedule
+        // around, never the event's time, so its end is never shown.
+        public bool $endListed = true,
     ) {}
 
     /** Earliest complete visit, retaining split and overnight source intervals. */

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
+import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { CardStrip, TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
@@ -692,8 +693,11 @@ export function NearbyView({
                 </div>
             ) : null}
             {station.notices.slice(0, 2).map((notice) => {
-                const { headline, text } = noticeWords(notice);
-                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${notice.source ? ` · ${notice.source}` : ''}`;
+                const { headline, text, lang } = noticeWords(notice);
+                const kvb = notice.source?.startsWith('kvb') ?? false;
+                // Every notice is KVB's; its feed's own name ("kvb-betriebslage") isn't one to show.
+                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${kvb ? ' · KVB' : ''}`;
+                const german = lang === 'de';
 
                 return (
                     <div key={notice.id} className="nearby-banner is-labelled">
@@ -705,9 +709,39 @@ export function NearbyView({
                                     : 'attention'
                             }
                             icon={<TravelIcon name="alert" />}
-                            title={headline}
+                            title={
+                                german ? (
+                                    <>
+                                        <InGermanChip fromKvb={kvb} />
+                                        <span lang="de">{headline}</span>
+                                    </>
+                                ) : (
+                                    headline
+                                )
+                            }
                         >
-                            {text ? `${text} · ${lines}` : lines}
+                            {/* KVB's own words keep to the line, after its lines; all of them are behind the link. */}
+                            {german ? (
+                                <span className="kvb-notice-line">
+                                    {lines}
+                                    {text ? (
+                                        <>
+                                            {' · '}
+                                            <span lang="de">{text}</span>
+                                        </>
+                                    ) : null}
+                                </span>
+                            ) : text ? (
+                                `${text} · ${lines}`
+                            ) : (
+                                lines
+                            )}
+                            {notice.url ? (
+                                <KvbNoticeLink
+                                    url={notice.url}
+                                    className="is-own-line"
+                                />
+                            ) : null}
                         </TravelBanner>
                     </div>
                 );

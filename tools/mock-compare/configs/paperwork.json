@@ -489,7 +489,8 @@
             "mock": ".case-footnote > button",
             "app": ".case-footnote > button",
             "ignore": ["x", "y"],
-            "ignoreReason": "Follows the footnote's own text, which differs (see footnote)."
+            "pixels": false,
+            "ignoreReason": "Follows the footnote's own text, which differs (see footnote), and the app's Ask a question beside it (#217) puts it on another subpixel, so its glyphs rasterise differently. Colour, size and weight are compared as styles."
         },
         {
             "name": "sources sheet",

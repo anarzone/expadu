@@ -26,6 +26,9 @@ class EventOccurrencePresenter
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
         $media = $this->selectMedia($event);
+        // The model's words show only with the listing's evidence; manual events are ours.
+        $manual = $event->source === 'manual';
+        $source = EventEvidence::source($event);
 
         return [
             'id' => $event->id,
@@ -35,7 +38,7 @@ class EventOccurrencePresenter
             'title_original' => $event->title,
             'title_lang' => $event->source_lang,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
-            'language' => $event->language,
+            'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -45,8 +48,11 @@ class EventOccurrencePresenter
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
-            'tip' => $event->tip_en,
-            'summary' => $event->summary_en ?: ($event->description_en ?: null),
+            // Hand-written (manual) tips are ours; the model's are checked again here.
+            'tip' => $manual ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $source),
+            'summary' => $manual
+                ? ($event->summary_en ?: ($event->description_en ?: null))
+                : (EventEvidence::text($event->summary_en, $source) ?? EventEvidence::text($event->description_en, $source)),
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
                 'name' => $venueName,
@@ -120,13 +126,14 @@ class EventOccurrencePresenter
 
     /**
      * A listing without a time is stored as its whole day (the official
-     * importer writes start of day to end of day), so posters print
-     * "Time not listed yet" instead of 00:00.
+     * importer writes start of day to end of day), or as midnight with no
+     * end (a date-only koeln.de listing), so posters print "Time not
+     * listed yet" instead of 00:00.
      */
     public function timeListed(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt): bool
     {
         return ! ($startsAt->format('H:i:s') === '00:00:00'
-            && $endsAt?->format('H:i:s') === '23:59:59');
+            && ($endsAt === null || $endsAt->format('H:i:s') === '23:59:59'));
     }
 
     /**
@@ -152,7 +159,11 @@ class EventOccurrencePresenter
         // "free" comes from the source's own price fields only. A stored
         // "free" chip from the classifier was a guess when the source said
         // nothing about the price.
-        $chips = array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
+        $chips = array_values(array_diff(is_array($event->chips) ? $event->chips : [], ['free']));
+        // The classifier's chips show only when the listing says so.
+        if ($event->source !== 'manual') {
+            $chips = EventEvidence::chips($chips, EventEvidence::source($event));
+        }
 
         if ($event->is_free || strtolower((string) $event->price_text) === 'free') {
             $chips[] = 'free';
