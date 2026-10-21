@@ -205,9 +205,11 @@
 
 .ev-details .ui-sheet-body {
     /* The bar follows the rows, as the mock's sticky bar does; a long page
-       scrolls under it. */
+       scrolls under it. Only down: the full-bleed Where row reaches past
+       the sides, as the mock's does, and the mock clips it. */
     flex: 0 1 auto;
     padding: 16px;
+    overflow-x: hidden;
 }
 
 .evd-body {
