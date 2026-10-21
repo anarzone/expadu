@@ -265,7 +265,7 @@ class NearbyStation
             'id' => (string) ($service['id'] ?? sha1($service['departure_at'])),
             'at' => $at->setTimezone('Europe/Berlin')->toIso8601String(),
             'time' => $at->setTimezone('Europe/Berlin')->format('H:i'),
-            'minutes' => max(0, (int) floor(($at->getTimestamp() - time()) / 60)),
+            'minutes' => max(0, (int) floor(($at->getTimestamp() - CarbonImmutable::now()->getTimestamp()) / 60)),
             'scheduled_at' => isset($service['scheduled_at']) ? CarbonImmutable::parse($service['scheduled_at'])->setTimezone('Europe/Berlin')->toIso8601String() : null,
             'delay' => (int) ($service['delay'] ?? 0),
             'cancelled' => (bool) ($service['cancelled'] ?? false),
