@@ -25,6 +25,10 @@ final class WriteFactAssertion
             User::query()->whereKey($actor->id)->lock('for no key update')->firstOrFail();
             $person = BureaucracyPerson::query()->whereKey($subject->id)->lockForUpdate()->firstOrFail();
             $this->access->authorize($actor, $person, AccessScope::EditFacts);
+            // Someone who may change answers but not see them never learns whether theirs
+            // matches the recorded one: their write always records, so the receipt and the
+            // revision read the same either way.
+            $blind = ! in_array(AccessScope::ViewFacts->value, $this->access->scopesFor($actor, $person), true);
             $case = BureaucracyCase::query()->where('person_id', $person->id)->where('status', 'active')->lockForUpdate()->firstOrFail();
             $prior = null;
             if ($correctsId !== null) {
@@ -57,7 +61,7 @@ final class WriteFactAssertion
             } else {
                 $current = $case->facts()->where('key', $key)->where('state', 'confirmed')->lockForUpdate()->get()->reject(FactSourceTrust::isSynthetic(...));
                 $prior = $current->firstWhere('id', $currentView['evidence'][$key]['fact_id'] ?? null) ?? $current->last();
-                if ($prior !== null && $prior->value === $normalized && ($prior->answer_state ?? 'value') === $answerState
+                if (! $blind && $prior !== null && $prior->value === $normalized && ($prior->answer_state ?? 'value') === $answerState
                     && ($currentView['states'][$key] ?? null) === $answerState
                     && ($currentView['evidence'][$key]['fact_id'] ?? null) === $prior->id
                     && $prior->effective_from?->toDateString() === $effectiveFrom
