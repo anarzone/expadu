@@ -168,8 +168,9 @@
             "name": "continuation",
             "mock": ".continue-composer",
             "app": ".continue-composer",
-            "ignore": ["y"],
-            "pixelThreshold": 0.001
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "Holds the wrap-up title (see continuation title), longer than the mock's request title: at 768 it takes two lines."
         },
         {
             "name": "continuation kind",
@@ -181,13 +182,17 @@
             "name": "continuation state",
             "mock": ".continue-state",
             "app": ".continue-state",
-            "ignore": ["y"]
+            "ignore": ["x", "y", "w"],
+            "contentDiffers": true,
+            "ignoreReason": "The owner's call (21 Oct 2026): Pick up wraps up what the conversation came to (\"Your Saturday plan · 1 stop\", \"Your plan\"), never the request's own words, which the mock still shows (\"Saturday with Maya\", \"Your conversation\")."
         },
         {
             "name": "continuation title",
             "mock": ".continue-summary h3",
             "app": ".continue-summary h3",
-            "ignore": ["y"]
+            "ignore": ["y", "w", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The owner's call (21 Oct 2026): Pick up wraps up what the conversation came to (\"Your Saturday plan · 1 stop\", \"Your plan\"), never the request's own words, which the mock still shows (\"Saturday with Maya\", \"Your conversation\")."
         },
         {
             "name": "Continue conversation",
