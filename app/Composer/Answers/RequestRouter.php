@@ -2,6 +2,7 @@
 
 namespace App\Composer\Answers;
 
+use App\Composer\HeuristicPromptParser;
 use Carbon\CarbonImmutable;
 
 /**
@@ -140,6 +141,11 @@ final class RequestRouter
             return ['kind' => 'proposal', 'date' => $date, 'appointment' => (bool) preg_match('/around (my|an?|the) .*appointment/u', $t)];
         }
 
+        // "Somewhere nearby to play football": the places listed for that activity.
+        if ($places = $this->places($t, $this->date($t, $context, $context->today) ?? $context->today)) {
+            return $places;
+        }
+
         // "Near my appointment" or "open now" means today unless a day is named.
         if ($nearby = $this->nearby($t, $this->date($t, $context, $context->today) ?? $context->today)) {
             return $nearby;
@@ -238,6 +244,22 @@ final class RequestRouter
     }
 
     /** @return array<string, mixed>|null */
+    /**
+     * A place to do an activity ("somewhere to play football", "where can I play
+     * basketball nearby?"), in the parser's own activity vocabulary.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function places(string $t, string $date): ?array
+    {
+        $wants = app(HeuristicPromptParser::class)->explicitPlaceRequirements($t);
+        if ($wants['activities'] === [] || ! preg_match('/\b(som(e)?where|where (can|could|do|should) (i|we)|find (me |us )?(a |some )?(place|spot|pitch|court)s?|places? to|a place|nearby|near (me|here|by)|close (by|to me)|around here)\b/u', $t)) {
+            return null;
+        }
+
+        return ['kind' => 'places', 'date' => $date, 'activities' => $wants['activities'], 'radius' => $wants['radius_km']];
+    }
+
     private function nearby(string $t, string $date): ?array
     {
         $place = $this->first(self::PLACES, $t);

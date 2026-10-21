@@ -2,6 +2,7 @@
 
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Composer\FeasibilityFilter;
 use App\Models\PlaceFactObservation;
 use App\Models\Spot;
 use App\Models\User;
@@ -204,7 +205,7 @@ it('keeps another observation effective after reconciling a withdrawn overlappin
         ->and(app(DestinationGrouping::class)->general(Spot::query())->whereKey($canonical->id)->exists())->toBeFalse();
 });
 
-it('invalidates an old activity review when its supporting source is withdrawn', function () {
+it('keeps a place out of activity plans once the source behind its public access is withdrawn', function () {
     $spot = withdrawalSpot(['category' => 'pitch', 'name' => 'Bolzplatz', 'is_recommendable' => false, 'tags' => ['sport' => 'soccer']]);
     $source = withdrawalObservation($spot, ['payload' => ['name' => null, 'access' => ['raw' => 'yes'], 'practical' => ['sport' => 'soccer']]]);
     $review = app(ReviewPlaceFacts::class);
@@ -212,7 +213,11 @@ it('invalidates an old activity review when its supporting source is withdrawn',
     $review->apply($spot->id, $changes, $review->preview($spot->id, $changes)['fingerprint'], 'https://example.test/reviewed-football-access', 'reviewer');
     expect(app(DestinationGrouping::class)->eligible(Spot::query(), true)->whereKey($spot->id)->exists())->toBeTrue();
     withdrawSource($source);
-    expect(app(DestinationGrouping::class)->eligible(Spot::query(), true)->whereKey($spot->id)->exists())->toBeFalse()
+    // Without the source, public access is no longer known: no football plan can use it.
+    $football = Constraints::fromArray(['window_start' => '2026-09-28T14:00:00+02:00', 'window_end' => '2026-09-28T18:00:00+02:00',
+        'categories' => ['pitch'], 'activities' => ['soccer']]);
+    $candidate = app(CandidateRepository::class)->byIds(["spot:{$spot->id}"], CarbonImmutable::parse('2026-09-28 14:00', 'Europe/Berlin'))[0] ?? null;
+    expect($candidate === null || ! app(FeasibilityFilter::class)->matchesDiscovery($football, $candidate))->toBeTrue()
         ->and($spot->factCorrections()->count())->toBe(1);
 });
 

@@ -868,3 +868,20 @@
         margin: 6px 0 0 calc(var(--composer-column-left) + 6px);
     }
 }
+
+/* "What's on": Events' own posters in the answer, at the approved answer's sizes
+   (composer-studio .event-poster): two to a row, or a row to swipe on a phone. */
+.composer-page .event-posters > .pp {
+    width: auto;
+    height: 380px;
+}
+@media (max-width: 700px) {
+    .composer-page .event-posters > .pp {
+        flex: 0 0 84%;
+        height: 340px;
+        scroll-snap-align: start;
+    }
+    .composer-page .event-posters > .pp:only-child {
+        flex-basis: 100%;
+    }
+}

@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "created": "2026-10-21",
  "requests": [
   {
@@ -4153,6 +4153,883 @@
    "expect": {
     "allow_empty": true,
     "no_invented": true
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_whats_on",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "What’s on tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_what_up_tonight",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "what up tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_beer_tonite",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "where can i get a beer tonite",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "categories_any": [
+     "bar"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_football",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "I need somwhere nearby to play football, can u find me?",
+   "expect": {
+    "categories_any": [
+     "pitch",
+     "sports_centre"
+    ],
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_hoops",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "wanna shoot some hoops later",
+   "expect": {
+    "categories_any": [
+     "basketball"
+    ],
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_coffee_walk",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "coffe and a walk this arvo",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "park"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_bored",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "im bored, any ideas??",
+   "expect": {
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_fun_rn",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "anything fun to do rn",
+   "expect": {
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_cheap_eat",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "sth cheap 2 eat near me",
+   "expect": {
+    "categories_any": [
+     "restaurant",
+     "fast_food",
+     "cafe"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_museum_food",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "museum then food pls",
+   "expect": {
+    "categories_any": [
+     "museum"
+    ],
+    "ends_with_any": [
+     "restaurant",
+     "fast_food",
+     "cafe",
+     "bar"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_park_nearby",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "is there a park nearby?",
+   "expect": {
+    "categories_any": [
+     "park"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_brunch_tmrw",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "brunch tmrw?",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "restaurant",
+     "bakery"
+    ]
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_rainy_indoors",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "rain",
+   "text": "rainy day stuff 2 do indoors",
+   "expect": {
+    "indoor_min_share": 0.6
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_drinks_dancing",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "lets go out tonight, drinks n dancing",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true
+   }
+  },
+  {
+   "id": "solo_newcomer.casual_swim_gym",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "gym or swimming tmrw morning",
+   "expect": {
+    "categories_any": [
+     "swimming",
+     "sports_centre"
+    ]
+   }
+  },
+  {
+   "id": "school_family.casual_whats_on",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "What’s on tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "kid_safe": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "school_family.casual_what_up_tonight",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "what up tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "kid_safe": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "school_family.casual_football",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "I need somwhere nearby to play football, can u find me?",
+   "expect": {
+    "categories_any": [
+     "pitch",
+     "sports_centre"
+    ],
+    "kid_safe": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "school_family.casual_hoops",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "wanna shoot some hoops later",
+   "expect": {
+    "categories_any": [
+     "basketball"
+    ],
+    "kid_safe": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "school_family.casual_coffee_walk",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "coffe and a walk this arvo",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "park"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_bored",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "im bored, any ideas??",
+   "expect": {
+    "min_slots": 1,
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_fun_rn",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "anything fun to do rn",
+   "expect": {
+    "min_slots": 1,
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_cheap_eat",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "sth cheap 2 eat near me",
+   "expect": {
+    "categories_any": [
+     "restaurant",
+     "fast_food",
+     "cafe"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_museum_food",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "museum then food pls",
+   "expect": {
+    "categories_any": [
+     "museum"
+    ],
+    "ends_with_any": [
+     "restaurant",
+     "fast_food",
+     "cafe",
+     "bar"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_park_nearby",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "is there a park nearby?",
+   "expect": {
+    "categories_any": [
+     "park"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_brunch_tmrw",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "brunch tmrw?",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "restaurant",
+     "bakery"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_rainy_indoors",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "rain",
+   "text": "rainy day stuff 2 do indoors",
+   "expect": {
+    "indoor_min_share": 0.6,
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "school_family.casual_kids_sunday",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-08T09:30:00+01:00",
+   "weather": "dry",
+   "text": "plan smth chill for sunday w the kids",
+   "expect": {
+    "kid_safe": true,
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "school_family.casual_swim_gym",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "gym or swimming tmrw morning",
+   "expect": {
+    "categories_any": [
+     "swimming",
+     "sports_centre"
+    ],
+    "kid_safe": true
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_whats_on",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "What’s on tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_what_up_tonight",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "what up tonight?",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_beer_tonite",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "where can i get a beer tonite",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true,
+    "categories_any": [
+     "bar"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_football",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "I need somwhere nearby to play football, can u find me?",
+   "expect": {
+    "categories_any": [
+     "pitch",
+     "sports_centre"
+    ],
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_hoops",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "wanna shoot some hoops later",
+   "expect": {
+    "categories_any": [
+     "basketball"
+    ],
+    "routed": "answer"
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_coffee_walk",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "coffe and a walk this arvo",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "park"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_bored",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "im bored, any ideas??",
+   "expect": {
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_fun_rn",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "anything fun to do rn",
+   "expect": {
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_cheap_eat",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "sth cheap 2 eat near me",
+   "expect": {
+    "categories_any": [
+     "restaurant",
+     "fast_food",
+     "cafe"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_museum_food",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "museum then food pls",
+   "expect": {
+    "categories_any": [
+     "museum"
+    ],
+    "ends_with_any": [
+     "restaurant",
+     "fast_food",
+     "cafe",
+     "bar"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_park_nearby",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "dry",
+   "text": "is there a park nearby?",
+   "expect": {
+    "categories_any": [
+     "park"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_brunch_tmrw",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "brunch tmrw?",
+   "expect": {
+    "categories_any": [
+     "cafe",
+     "restaurant",
+     "bakery"
+    ]
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_rainy_indoors",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:30:00+01:00",
+   "weather": "rain",
+   "text": "rainy day stuff 2 do indoors",
+   "expect": {
+    "indoor_min_share": 0.6
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_drinks_dancing",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T22:30:00+01:00",
+   "weather": "dry",
+   "text": "lets go out tonight, drinks n dancing",
+   "expect": {
+    "same_day": true,
+    "allow_empty": true
+   }
+  },
+  {
+   "id": "outskirts_no_home.casual_swim_gym",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:30:00+01:00",
+   "weather": "dry",
+   "text": "gym or swimming tmrw morning",
+   "expect": {
+    "categories_any": [
+     "swimming",
+     "sports_centre"
+    ]
    }
   }
  ]

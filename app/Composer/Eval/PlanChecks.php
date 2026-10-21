@@ -117,6 +117,9 @@ final class PlanChecks
                 'no_errands' => array_intersect($categories, self::ERRANDS) === [],
                 'max_leg_min' => max(array_map(fn (array $s): int => (int) ($s['travel_min_from_previous'] ?? 0), $slots)) <= $want,
                 'ends_with_any' => in_array(end($categories), $want, true) || in_array(end($coarse), $want, true),
+                // A plan is one day: no stop may end on the next day.
+                'same_day' => collect($slots)->every(fn (array $s): bool => isset($s['start_at'], $s['end_at'])
+                    && CarbonImmutable::parse($s['end_at'])->toDateString() === CarbonImmutable::parse($slots[0]['start_at'])->toDateString()),
                 'max_window_min' => $constraints !== null && isset($constraints['window_start'], $constraints['window_end'])
                     && CarbonImmutable::parse($constraints['window_start'])->diffInMinutes(CarbonImmutable::parse($constraints['window_end'])) <= $want,
                 default => null,

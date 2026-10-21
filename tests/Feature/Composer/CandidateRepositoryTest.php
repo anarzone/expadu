@@ -188,7 +188,8 @@ test('an explicit activity request keeps its generic micro facilities', function
         categories: ['pitch'],
     );
 
-    expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints), 'id'))->not->toContain("spot:{$genericPitch->id}");
+    // Its OSM sport and public access qualify it without a review (owner, 21 Oct 2026).
+    expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints), 'id'))->toContain("spot:{$genericPitch->id}");
     $review = app(ReviewPlaceFacts::class);
     $changes = ['activity_discovery' => true];
     $preview = $review->preview($genericPitch->id, $changes);

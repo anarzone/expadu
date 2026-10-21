@@ -20,6 +20,14 @@ class VrsRealtimeService
 {
     private const FEED_KEY = 'vrs_gtfsrt_trip_updates_v2';
 
+    /** Seconds a fetched feed is kept, here and in the cache. */
+    private const FEED_SECONDS = 30;
+
+    /** @var array<string, array<string, mixed>>|null the feed, as last read */
+    private ?array $feed = null;
+
+    private int $feedReadAt = 0;
+
     /**
      * Get real-time updates indexed by trip_id.
      *
@@ -37,21 +45,30 @@ class VrsRealtimeService
             return [];
         }
 
-        // Read once per request (it is consulted per departure row). When it
-        // has expired, one worker refetches; the others wait for its copy.
-        $updates = Cache::memo()->get(self::FEED_KEY);
-        if (is_array($updates)) {
-            return $updates;
+        // It's consulted per departure row, so it's kept here once read (the
+        // cache's memo kept a miss, and every row then took the fetch lock and
+        // unserialized the whole feed again). When it has expired, one worker
+        // refetches; the others wait for its copy.
+        if ($this->feed !== null && now()->timestamp - $this->feedReadAt < self::FEED_SECONDS) {
+            return $this->feed;
         }
 
-        try {
-            return Cache::lock('vrs_gtfsrt:fetch', 15)->block(
-                10,
-                fn () => Cache::remember(self::FEED_KEY, 30, fn () => $this->fetchAndParse()),
-            );
-        } catch (LockTimeoutException) {
-            return [];
+        $updates = Cache::get(self::FEED_KEY);
+        if (! is_array($updates)) {
+            try {
+                $updates = Cache::lock('vrs_gtfsrt:fetch', 15)->block(
+                    10,
+                    fn () => Cache::remember(self::FEED_KEY, self::FEED_SECONDS, fn () => $this->fetchAndParse()),
+                );
+            } catch (LockTimeoutException) {
+                return [];
+            }
         }
+
+        $this->feed = $updates;
+        $this->feedReadAt = now()->timestamp;
+
+        return $updates;
     }
 
     /**

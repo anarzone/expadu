@@ -54,23 +54,14 @@ test('nearer paid candidates cannot starve a farther verified free candidate', f
         ->toBe(["spot:{$free->id}"]);
 });
 
-test('unnamed facilities require explicit auditable qualification and remain out of general discovery', function () {
-    $qualified = activityPitch(['name' => 'Bolzplatz', 'is_recommendable' => false]);
-    $unreviewed = activityPitch(['name' => 'Bolzplatz', 'is_recommendable' => false]);
-    $review = app(ReviewPlaceFacts::class);
-    $changes = ['activity_discovery' => true];
-    $preview = $review->preview($qualified->id, $changes);
-    $review->apply($qualified->id, $changes, $preview['fingerprint'], 'Source geometry and soccer capability checked for this public facility.', 'readiness-test');
+test('unnamed facilities qualify for an activity on OSM evidence and stay out of general discovery', function () {
+    // Owner, 21 Oct 2026: evidence decides, no manual review.
+    $public = activityPitch(['name' => 'Bolzplatz', 'is_recommendable' => false]);
+    $private = activityPitch(['name' => 'Bolzplatz', 'is_recommendable' => false, 'tags' => ['sport' => 'soccer', 'access' => 'private'], 'lat' => 50.9502]);
     $repository = app(CandidateRepository::class);
-    expect(array_column($repository->candidatesFor(activityWindow(), 50.95, 6.95), 'id'))->toBe(["spot:{$qualified->id}"])
+    expect(array_column($repository->candidatesFor(activityWindow(), 50.95, 6.95), 'id'))->toBe(["spot:{$public->id}"])
         ->and(array_column($repository->candidatesFor(activityWindow(['activities' => [], 'categories' => []]), 50.95, 6.95), 'id'))->toBe([])
-        ->and(array_column($repository->byIds(["spot:{$qualified->id}"], CarbonImmutable::now()), 'id'))->toBe(["spot:{$qualified->id}"])
-        ->and($qualified->fresh()->is_recommendable)->toBeFalse();
-    $changes = ['activity_discovery' => false];
-    $preview = $review->preview($qualified->id, $changes);
-    $review->apply($qualified->id, $changes, $preview['fingerprint'], 'Qualification withdrawn after the facility review was reconsidered.', 'readiness-test');
-    expect($repository->candidatesFor(activityWindow(), 50.95, 6.95))->toBe([])
-        ->and($repository->byIds(["spot:{$qualified->id}"], CarbonImmutable::now()))->toBe([]);
+        ->and($public->fresh()->is_recommendable)->toBeFalse();
 });
 
 test('activity constraints survive serialization and category adjustments', function () {
@@ -92,16 +83,10 @@ test('an activity alone finds a reviewed grouped facility and preserves its dest
         ->and($candidates[0]->destinationGroupId)->toBe("spot:{$parent->id}");
 });
 
-test('a facility qualification becomes stale when its source snapshot changes', function () {
-    $this->travelTo(CarbonImmutable::parse('2026-09-28 10:00', 'Europe/Berlin'));
+test('a facility stops qualifying once its source says it is private', function () {
     $place = activityPitch(['is_recommendable' => false]);
-    $review = app(ReviewPlaceFacts::class);
-    $changes = ['activity_discovery' => true];
-    $preview = $review->preview($place->id, $changes);
-    $review->apply($place->id, $changes, $preview['fingerprint'], 'Reviewed current public soccer source and exact geometry.', 'readiness-test');
     expect(app(CandidateRepository::class)->candidatesFor(activityWindow(), 50.95, 6.95))->toHaveCount(1);
-    $this->travel(1)->seconds();
-    $place->update(['name' => 'Source changed name']);
+    $place->update(['tags' => ['sport' => 'soccer', 'access' => 'private']]);
     expect(app(CandidateRepository::class)->candidatesFor(activityWindow(), 50.95, 6.95))->toBe([]);
 });
 
@@ -192,7 +177,7 @@ test('a mixed broad and fine request qualifies only the explicitly selected faci
     expect(array_column(app(CandidateRepository::class)->candidatesFor($constraints, 50.95, 6.95), 'id'))->toBe(['spot:'.$places['playground']->id]);
 });
 
-test('a later access review invalidates qualification until a fresh public review', function () {
+test('a later access review overrides the OSM evidence until it is withdrawn', function () {
     $place = activityPitch(['is_recommendable' => false]);
     $review = app(ReviewPlaceFacts::class);
     $changes = ['activity_discovery' => true];
@@ -205,10 +190,8 @@ test('a later access review invalidates qualification until a fresh public revie
     $review->apply($place->id, ['access' => 'unknown'], $preview['fingerprint'], 'Later evidence no longer confirms public access to this facility.', 'other-reviewer');
     expect($repository->candidatesFor($constraints, 50.95, 6.95))->toBe([])
         ->and($repository->byIds(['spot:'.$place->id], CarbonImmutable::now()))->toBe([]);
+    // Withdrawing that review leaves the OSM evidence (sport, public access), which decides again.
     $preview = $review->preview($place->id, ['access' => null]);
     $review->apply($place->id, ['access' => null], $preview['fingerprint'], 'Withdraw the access review while keeping its audit history.', 'other-reviewer');
-    expect($repository->candidatesFor($constraints, 50.95, 6.95))->toBe([]);
-    $preview = $review->preview($place->id, $changes);
-    $review->apply($place->id, $changes, $preview['fingerprint'], 'Rechecked current source and public access after the access review.', 'readiness-test');
     expect(array_column($repository->candidatesFor($constraints, 50.95, 6.95), 'id'))->toBe(['spot:'.$place->id]);
 });

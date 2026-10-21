@@ -26,6 +26,8 @@ import { composer, events } from '@/routes';
 export type DiscoveryEvent = PosterSource & {
     id: number;
     layout: 'poster' | 'compact';
+    /** Tomorrow's listing, after the evening's last start. */
+    day?: 'tomorrow';
     category_label: string;
     venue: { name: string | null; veedel: string | null };
 };
@@ -41,7 +43,7 @@ export type DiscoveryPlace = {
 };
 
 export type TodayDiscovery = {
-    part: 'morning' | 'afternoon' | 'evening';
+    part: 'morning' | 'afternoon' | 'evening' | 'tomorrow';
     events: DiscoveryEvent[];
     around: {
         anchor: {
@@ -84,12 +86,19 @@ const distance = (km: number) =>
         ? `${Math.max(50, Math.round(km * 20) * 50)} m`
         : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 
+/** "Tomorrow · " before a time of tomorrow's listing. */
+const dayPrefix = (event: DiscoveryEvent) =>
+    event.day === 'tomorrow' ? 'Tomorrow · ' : '';
+
 const timeRange = (event: DiscoveryEvent) => {
     const poster = posterEvent(event);
 
-    return poster.start
-        ? `${poster.start}–${poster.end ?? 'end not listed'}`
-        : 'Time not listed';
+    return (
+        dayPrefix(event) +
+        (poster.start
+            ? `${poster.start}–${poster.end ?? 'end not listed'}`
+            : 'Time not listed')
+    );
 };
 
 function useSaves() {
@@ -133,7 +142,9 @@ export function Discovery({
                 {free ? (
                     <div className="discovery-title-group">
                         <h2 id="discovery-title">
-                            Ideas for this {discovery.part}
+                            {discovery.part === 'tomorrow'
+                                ? 'Ideas for tomorrow'
+                                : `Ideas for this ${discovery.part}`}
                         </h2>
                         <p>
                             {/* The weather's own icon, or none: never a guess. */}
@@ -174,7 +185,7 @@ export function Discovery({
                 </div>
             )}
             {compact.length > 0 && (
-                <div className="compact-events" aria-label="More events today">
+                <div className="compact-events" aria-label="More events">
                     {compact.map((event) => (
                         <CompactEvent
                             key={`${event.id}|${event.occurrence_start}`}
@@ -284,6 +295,7 @@ function CompactEvent({
                     </strong>
                     <small>
                         <time dateTime={event.occurrence_start}>
+                            {dayPrefix(event)}
                             {poster.start ?? 'Time not listed'}
                         </time>
                         {poster.area ? ` · ${poster.area}` : ''}

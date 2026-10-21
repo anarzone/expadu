@@ -24,10 +24,15 @@ use Illuminate\Support\Facades\DB;
 final class Answers
 {
     /** The kinds this class answers (and, for a journey, only the appointment's: handles()). */
-    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey'];
+    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey', 'event', 'places'];
 
     /** Questions about your own day, trip and records, answered even when the words read as a plan. */
     private const ABOUT_YOUR_DAY = ['next', 'checklist', 'journey', 'onway'];
+
+    /** What the listings answer, whatever the parser made of it: "What's on tonight?" lists
+     *  tonight's events, and "somewhere to play football" the places for it, rather than
+     *  becoming a plan (owner's staging test, 21 Oct 2026). */
+    private const LISTINGS = ['event', 'places'];
 
     /** The four everyday requests (app.js `everyday`). */
     private const EVERYDAY = [
@@ -55,6 +60,8 @@ final class Answers
         private RecordedAppointmentsBetween $appointments,
         private AccountPlanEntry $plans,
         private TripAnswers $trips,
+        private EventAnswers $events,
+        private PlaceAnswers $places,
     ) {}
 
     /**
@@ -74,7 +81,7 @@ final class Answers
 
         return in_array($kind, self::KINDS, true)
             && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment')
-            && ($intent !== PromptIntent::PlanDay || in_array($kind, self::ABOUT_YOUR_DAY, true))
+            && ($intent !== PromptIntent::PlanDay || in_array($kind, [...self::ABOUT_YOUR_DAY, ...self::LISTINGS], true))
             && (! in_array($kind, ['clarify', 'unavailable'], true) || $intent === PromptIntent::Unknown)
             && ! ($kind === 'unavailable' && ($request['topic'] ?? null) === 'listing');
     }
@@ -121,10 +128,12 @@ final class Answers
         return match ($request['kind']) {
             'help' => $this->reply('I can help you plan a day, find events and places, check a journey, and point you to reviewed paperwork information.',
                 suggestions: self::EVERYDAY),
+            // Said plainly, with no heading (owner, 21 Oct 2026). The page lists the person's
+            // own starters; with none, these everyday ones.
             'clarify' => $again
-                ? $this->reply('It can do these:', 'clarify', 'That’s outside what I know too.', options: true)
+                ? $this->reply('That’s outside what I know too. It can do these:', 'clarify', suggestions: self::EVERYDAY, options: true)
                 : $this->reply('“'.(mb_strlen($text) > 40 ? mb_substr($text, 0, 39).'…' : $text).'” isn’t something Composer knows. It can do these:',
-                    'clarify', 'I can’t answer that here yet.', options: true),
+                    'clarify', suggestions: self::EVERYDAY, options: true),
             'next' => $this->next($user, $request, $plans, $now),
             'checklist' => $this->checklist($user, $now),
             'access' => $this->access($request, $now),
@@ -135,6 +144,8 @@ final class Answers
                     'unavailable', suggestions: [self::EVERYDAY[0], self::EVERYDAY[2]]),
             'onway' => $this->trips->onTheWay($user, (string) ($request['ask'] ?? 'next'), $now),
             'journey' => $this->journey($user, $request, $now),
+            'event' => $this->events->whatsOn($request, $now),
+            'places' => $this->places->near($user, $request, $now),
             default => null,
         };
     }

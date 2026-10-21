@@ -107,9 +107,19 @@ const listWords = (words: string[]) =>
         ? words.join('')
         : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
 
+/** The classifier's own codes, in words; any other code by its name. */
+const LANGUAGE_WORDS: Record<string, string> = {
+    none_needed: 'None needed',
+    mixed: 'Mixed languages',
+};
+
 const languageName = (code: string | null | undefined) => {
     if (!code) {
         return null;
+    }
+
+    if (code in LANGUAGE_WORDS) {
+        return LANGUAGE_WORDS[code];
     }
 
     try {
@@ -502,7 +512,16 @@ function Body({
                         !o.summary && 'is-unknown',
                     )}
                 >
-                    {o.summary ?? 'The listing has no description.'}
+                    {o.summary && o.summary_lang ? (
+                        <>
+                            <small className="evd-original">
+                                Original ({languageName(o.summary_lang)})
+                            </small>
+                            <span lang={o.summary_lang}>{o.summary}</span>
+                        </>
+                    ) : (
+                        (o.summary ?? 'The listing has no description.')
+                    )}
                 </p>
                 <details className="evd-source">
                     <summary>

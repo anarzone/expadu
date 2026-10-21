@@ -13,7 +13,11 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { timetable } from '@/routes';
 import type { Journey } from '@/types/transit';
+import { EventAnswer } from './event-answer';
+import type { AnsweredEvent } from './event-answer';
 import type { Panel } from './frame';
+import { PlaceAnswer } from './place-answer';
+import type { AnsweredPlace } from './place-answer';
 import type { Message } from './types';
 
 /*
@@ -70,6 +74,8 @@ export type AnswerMessage = Message & {
     record?: Checklist;
     facts?: Fact[];
     trip?: TripAnswer;
+    events?: AnsweredEvent[];
+    places?: AnsweredPlace[];
 };
 
 /** Whether a message is one of these answers (the server marks them with their request's kind). */
@@ -145,6 +151,8 @@ export function AnswerBody({
     starters,
     onAsk,
     onPanel,
+    planned,
+    onAddEvent,
 }: {
     message: AnswerMessage;
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
@@ -152,6 +160,9 @@ export function AnswerBody({
     starters: AnswerStarter[];
     onAsk: (prompt: string) => void;
     onPanel: (panel: Panel) => void;
+    /** Whether a listed event is in its day's plan already. */
+    planned: (event: AnsweredEvent) => boolean;
+    onAddEvent: (event: AnsweredEvent) => void;
 }) {
     const record = message.kind === 'checklist' ? message.record : undefined;
     const trip = message.kind === 'trip' ? message.trip : undefined;
@@ -159,6 +170,9 @@ export function AnswerBody({
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
         : 0;
+    // "It can do these:" lists the person's own starters; with none, the
+    // reply's everyday suggestions instead.
+    const showOptions = latest && !!message.options && starters.length > 0;
 
     return (
         <>
@@ -167,6 +181,16 @@ export function AnswerBody({
             )}
             {/* Your checklist and the trip lead with their block; the explanation follows it. */}
             {!record && !trip && paragraph}
+            {message.kind === 'event' && !!message.events?.length && (
+                <EventAnswer
+                    events={message.events}
+                    planned={planned}
+                    onAdd={onAddEvent}
+                />
+            )}
+            {message.kind === 'places' && !!message.places?.length && (
+                <PlaceAnswer places={message.places} />
+            )}
             {trip && (
                 <>
                     <TripWay trip={trip} />
@@ -239,7 +263,7 @@ export function AnswerBody({
                     ))}
                 </dl>
             )}
-            {latest && message.options && starters.length > 0 && (
+            {showOptions && (
                 <div className="answer-options">
                     {starters.map((starter) => (
                         <button
@@ -260,7 +284,7 @@ export function AnswerBody({
                     ))}
                 </div>
             )}
-            {latest && !!message.suggestions?.length && (
+            {latest && !showOptions && !!message.suggestions?.length && (
                 <div className="reply-suggestions">
                     {message.suggestions.map((suggestion) =>
                         suggestion.href ? (
