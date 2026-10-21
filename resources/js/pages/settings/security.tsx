@@ -42,7 +42,7 @@ export default function Security({
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
 
     return (
-        <AppLayout rightPanel={null}>
+        <AppLayout>
             <Head title="Security settings" />
 
             <h1 className="sr-only">Security settings</h1>
@@ -148,7 +148,7 @@ export default function Security({
                                         leave="transition ease-in-out"
                                         leaveTo="opacity-0"
                                     >
-                                        <p className="text-sm text-neutral-600">
+                                        <p className="text-sm text-text-soft">
                                             Saved
                                         </p>
                                     </Transition>
@@ -167,7 +167,7 @@ export default function Security({
                         />
                         {twoFactorEnabled ? (
                             <div className="flex flex-col items-start justify-start space-y-4">
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-text-muted">
                                     You will be prompted for a secure, random
                                     pin during login, which you can retrieve
                                     from the TOTP-supported application on your
@@ -196,7 +196,7 @@ export default function Security({
                             </div>
                         ) : (
                             <div className="flex flex-col items-start justify-start space-y-4">
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-text-muted">
                                     When you enable two-factor authentication,
                                     you will be prompted for a secure pin during
                                     login. This pin can be retrieved from a

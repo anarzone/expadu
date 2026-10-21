@@ -36,12 +36,12 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
-        <div className="px-4 py-6">
+        <div className="py-6">
             <div className="relative">
                 <button
                     onClick={() => router.visit('/dashboard')}
                     aria-label="Close settings"
-                    className="absolute top-0 right-0 flex size-11 cursor-pointer items-center justify-center rounded-full text-[#6B6860] transition-colors hover:bg-[#EFEDE7] dark:text-[#AAA89F] dark:hover:bg-[#2A2920]"
+                    className="absolute top-0 right-0 flex size-11 cursor-pointer items-center justify-center rounded-full text-text-soft transition-colors hover:bg-bg-hover"
                 >
                     <IconX size={18} stroke={ICON_STROKE} />
                 </button>
@@ -66,7 +66,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 className={cn(
                                     'min-h-11 w-auto shrink-0 justify-start lg:w-full',
                                     {
-                                        'bg-muted': isCurrentOrParentUrl(
+                                        'bg-bg-quiet': isCurrentOrParentUrl(
                                             item.href,
                                         ),
                                     },

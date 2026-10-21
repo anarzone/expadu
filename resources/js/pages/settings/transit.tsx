@@ -61,7 +61,7 @@ export default function TransitSettings() {
     }
 
     return (
-        <AppLayout rightPanel={null}>
+        <AppLayout>
             <Head title="Transit settings" />
 
             <h1 className="sr-only">Transit &amp; tickets</h1>
@@ -90,15 +90,12 @@ export default function TransitSettings() {
                         />
                     </ToggleCard>
                     {error && (
-                        <p role="alert" className="text-sm text-destructive">
+                        <p role="alert" className="text-sm text-conflict-text">
                             {error}
                         </p>
                     )}
                     {saving && (
-                        <p
-                            role="status"
-                            className="text-sm text-muted-foreground"
-                        >
+                        <p role="status" className="text-sm text-text-muted">
                             Saving…
                         </p>
                     )}
