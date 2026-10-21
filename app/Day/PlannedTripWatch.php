@@ -248,7 +248,8 @@ class PlannedTripWatch
                 continue;
             }
             if (array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $lines) !== []) {
-                return (string) $notice['title'];
+                // KVB's notice in plain English when one is written, else its own title.
+                return (string) ($notice['brief']['headline'] ?? $notice['title']);
             }
         }
 
