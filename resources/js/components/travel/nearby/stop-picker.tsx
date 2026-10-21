@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { lineLook } from '../line-look';
 import { TravelIcon } from '../travel-icon';
+import { closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
 
 type Choice = { name: string; kind: string; lines: string[] };
@@ -81,7 +82,7 @@ export function StopPicker({
             name: current.name,
             kind:
                 current.kind === 'closest'
-                    ? `Closest${current.walk_min ? ` · ${current.walk_min} min walk` : ''}`
+                    ? `${closestWords(current)}${current.walk_min ? ` · ${current.walk_min} min walk` : ''}`
                     : 'Shown now',
             lines: current.lines.map((l) => l.line),
         },

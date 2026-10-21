@@ -38,6 +38,50 @@ final class RecordedAppointmentsBetween
      */
     public function for(User $user, CarbonImmutable $from, CarbonImmutable $to): array
     {
+        $titles = null;
+        $rows = [];
+        foreach ($this->recorded($user) as $appointment) {
+            $start = CarbonImmutable::parse($appointment['starts_at']);
+            if ($start->lessThan($from) || ! $start->lessThan($to)) {
+                continue;
+            }
+            $titles ??= $this->catalogue->processTitles();
+            $rows[] = ['appointment_id' => $appointment['appointment_id'], 'process_id' => $appointment['process_id'],
+                'occurrence_key' => $appointment['occurrence_key'],
+                'process_title' => $titles[$appointment['definition_id']] ?? null,
+                'starts_at' => $appointment['starts_at'], 'timezone' => $appointment['timezone'],
+                'duration_minutes' => $appointment['duration_minutes'], 'location' => $appointment['location']];
+        }
+        usort($rows, fn (array $one, array $two): int => CarbonImmutable::parse($one['starts_at'])->getTimestamp() <=> CarbonImmutable::parse($two['starts_at'])->getTimestamp());
+
+        return $rows;
+    }
+
+    /**
+     * Every appointment the account holder recorded, in any window. Your day and Coming up
+     * (or Composer's day around) each ask for their own window in the same request; within a
+     * read-only request nothing can change them, so they're read once (as AccountHolderPlan
+     * memoises the plan). The memo lives on the request object; writes and console commands
+     * always read afresh.
+     *
+     * @return list<array{appointment_id: string, process_id: int, definition_id: string, occurrence_key: string, starts_at: string, timezone: string, duration_minutes: ?int, location: ?array<string, mixed>}>
+     */
+    private function recorded(User $user): array
+    {
+        if (! app()->bound('request') || request()->route() === null || ! request()->isMethodSafe()) {
+            return $this->read($user);
+        }
+        $key = 'bureaucracy.recorded_appointments.'.$user->id;
+        if (! request()->attributes->has($key)) {
+            request()->attributes->set($key, $this->read($user));
+        }
+
+        return request()->attributes->get($key);
+    }
+
+    /** @return list<array{appointment_id: string, process_id: int, definition_id: string, occurrence_key: string, starts_at: string, timezone: string, duration_minutes: ?int, location: ?array<string, mixed>}> */
+    private function read(User $user): array
+    {
         $person = $this->plans->person($user);
         if ($person === null || ! $this->access->allows($user, $person, AccessScope::ViewPlan)) {
             return [];
@@ -55,7 +99,6 @@ final class RecordedAppointmentsBetween
         }
 
         $timeline = new BuildTimeline;
-        $titles = null;
         $rows = [];
         $events = BureaucracyProcessEvent::query()->whereIn('process_id', $processes->keys())->orderBy('id')
             ->get(['id', 'process_id', 'type', 'payload', 'corrects_event_id'])->groupBy('process_id');
@@ -63,19 +106,12 @@ final class RecordedAppointmentsBetween
             $active = (new ProcessHistory)->active($reports->map(fn (BureaucracyProcessEvent $event): array => ['id' => $event->id,
                 'type' => $event->type, 'payload' => $event->payload, 'corrects_event_id' => $event->corrects_event_id])->all());
             foreach ($timeline->appointments($active) as $appointment) {
-                $start = CarbonImmutable::parse($appointment['starts_at']);
-                if ($start->lessThan($from) || ! $start->lessThan($to)) {
-                    continue;
-                }
-                $titles ??= $this->catalogue->processTitles();
                 $rows[] = ['appointment_id' => $appointment['appointment_id'], 'process_id' => $processId,
-                    'occurrence_key' => $processes[$processId]->occurrence_key,
-                    'process_title' => $titles[$processes[$processId]->definition_id] ?? null,
+                    'definition_id' => $processes[$processId]->definition_id, 'occurrence_key' => $processes[$processId]->occurrence_key,
                     'starts_at' => $appointment['starts_at'], 'timezone' => $appointment['timezone'],
                     'duration_minutes' => $appointment['duration_minutes'], 'location' => $appointment['location']];
             }
         }
-        usort($rows, fn (array $one, array $two): int => CarbonImmutable::parse($one['starts_at'])->getTimestamp() <=> CarbonImmutable::parse($two['starts_at'])->getTimestamp());
 
         return $rows;
     }

@@ -2,8 +2,10 @@
  * A line's look, as Travel draws it everywhere (Today, Events, Composer too;
  * owner, 18 Oct 2026: trips look like Travel everywhere). KVB line colours,
  * darkened where white text needs 4.5:1 (owner-approved, Travel directions
- * canvas, 9 Oct 2026). Unlisted lines fall back to the travel colour, buses
- * to grey. Mirrors prototype/dev/design/departures-next/labels.js.
+ * canvas, 9 Oct 2026), and white text on every line (owner, 22 Oct 2026):
+ * 12's light green stays below 4.5:1 with it, by his choice. Unlisted lines
+ * fall back to the travel colour, buses to grey. Mirrors
+ * prototype/dev/design/departures-next/labels.js, but for 12's ink.
  */
 
 export type VehicleKind = 'tram' | 'bus' | 'rail' | 'ferry';
@@ -28,8 +30,6 @@ const COLOURS: Record<string, string> = {
     16: '#0074AD',
     18: '#0074AD',
 };
-
-const DARK_INK = new Set(['12']);
 
 const TRAVEL = '#00768B';
 const BUS = '#4A4A4A';
@@ -60,7 +60,7 @@ export function lineLook(
     return {
         colour,
         tint: tintOf(colour),
-        ink: DARK_INK.has(String(line)) ? '#1D2A05' : '#FFFFFF',
+        ink: '#FFFFFF',
         bus,
     };
 }

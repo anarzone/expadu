@@ -11,6 +11,7 @@ import {
     useState,
     useSyncExternalStore,
 } from 'react';
+import type { PosterFit } from '@/components/posters/poster-art';
 import type { PosterEvent } from '@/components/posters/poster-model';
 import { berlinClock, berlinDate } from '@/components/posters/poster-model';
 import type { StreetLayoutName } from './street-layout';
@@ -79,12 +80,14 @@ export function EventsStreet({
     forecast?: DayForecast | null;
     /** The day's listings on the wall (after the page's filters). */
     wall: StreetListing[];
-    /** The column holds the whole day and stays put while you filter. */
+    /** The column holds tonight's posters, one per hour from 18:00, and
+        stays put while you filter. */
     column: StreetListing[];
     poster: (
         listing: StreetListing,
         where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
+        fit?: PosterFit,
     ) => ReactNode;
 }) {
     const [story, setStory] = useState<Story | null>(null);
@@ -347,8 +350,8 @@ export function EventsStreet({
                         onColumnPos={setColumnPos}
                         phonePage={phonePage}
                         onPhonePage={setPhonePage}
-                        poster={(item, where, style) =>
-                            poster(item, where, style)
+                        poster={(item, where, style, fit) =>
+                            poster(item, where, style, fit)
                         }
                         onMore={(hour) => openStory(hour)}
                         chip={

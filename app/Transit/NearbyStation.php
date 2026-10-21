@@ -5,6 +5,7 @@ namespace App\Transit;
 use App\Composer\TravelEstimator;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
+use App\Services\LocationContext;
 use App\Services\TimetableService;
 use Carbon\CarbonImmutable;
 
@@ -35,6 +36,36 @@ class NearbyStation
         private readonly DisruptionService $disruptions,
         private readonly TravelEstimator $distance,
     ) {}
+
+    /**
+     * The station closest to where the person is, said as honestly as we
+     * know it: "Closest" only from a fix of the last few minutes; from an
+     * older one it's near their last location (`located`), with no walk
+     * time worked out from somewhere they may have left.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function closestTo(LocationContext $location): ?array
+    {
+        if (! $location->hasOrigin()) {
+            return null;
+        }
+        $station = $this->closest((float) $location->lat, (float) $location->lng);
+        if ($station === null) {
+            return null;
+        }
+        $fresh = $location->isFresh();
+
+        return [
+            ...$station,
+            'walk_min' => $fresh ? $station['walk_min'] : null,
+            'located' => [
+                'fresh' => $fresh,
+                'source' => $location->source->value,
+                'at' => $location->at === null ? null : CarbonImmutable::createFromTimestamp($location->at, config('app.timezone'))->toIso8601String(),
+            ],
+        ];
+    }
 
     /**
      * The closest station to a point, with the walk to its nearest point.

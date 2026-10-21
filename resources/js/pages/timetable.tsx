@@ -4,6 +4,7 @@ import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { MyDay } from '@/components/travel/day/my-day';
 import type { DayWeather } from '@/components/travel/day/my-day';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
+import { closestNow } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { NextTripCard } from '@/components/travel/next-trip-card';
 import {
@@ -84,7 +85,9 @@ const viewOf = (url: string): View => {
     return params.get('view') === 'journey' ||
         params.has('to_lat') ||
         params.has('to_name') ||
-        params.has('to')
+        params.has('to') ||
+        params.has('context') ||
+        params.has('event')
         ? 'journey'
         : 'stop';
 };
@@ -541,7 +544,7 @@ export default function Timetable() {
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}
-                    nearName={shown?.kind === 'closest' ? shown.name : null}
+                    nearName={shown && closestNow(shown) ? shown.name : null}
                     clock={todayLabel}
                     desktop={desktop}
                     hidden={

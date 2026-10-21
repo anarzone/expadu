@@ -7,21 +7,38 @@ use App\Services\GtfsRailStations;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class RefreshGtfs extends Command
 {
-    protected $signature = 'gtfs:refresh';
+    protected $signature = 'gtfs:refresh {--force : Import even when VRS has not published a new feed}';
 
-    protected $description = 'Download and re-import GTFS static timetable data from VRS';
+    protected $description = 'Download and re-import GTFS static timetable data from VRS when it has published a new feed';
+
+    /** The feed version last imported: etag, last_modified (as VRS sent them) and imported_at. */
+    public const VERSION_KEY = 'gtfs:feed_version';
 
     public function handle(): int
     {
+        // VRS republishes several times a week, and each publication renames
+        // trips; realtime only names the newest. Daily, but only when changed.
+        $published = self::publishedVersion();
+        $imported = Cache::get(self::VERSION_KEY);
+        if (! $this->option('force') && $published !== null && self::sameVersion($published, $imported)) {
+            $this->info('VRS has not published a new timetable since the last import; nothing to do.');
+
+            return self::SUCCESS;
+        }
+
         $this->info('Refreshing GTFS timetable data from VRS...');
 
         try {
-            // Run the existing import command
-            $exitCode = Artisan::call('gtfs:import', [], $this->output);
+            // Run the existing import command. A run killed part-way (a deploy
+            // recreating the container) leaves the live tables as they were;
+            // the version below is stored only after success, so the next run
+            // tries again.
+            $exitCode = Artisan::call('gtfs:import', ['--url' => ImportGtfsData::FEED_URL], $this->output);
 
             if ($exitCode !== 0) {
                 $this->error('GTFS import failed');
@@ -46,6 +63,16 @@ class RefreshGtfs extends Command
                 ]);
             }
 
+            try {
+                Cache::forever(self::VERSION_KEY, [
+                    'etag' => $published['etag'] ?? null,
+                    'last_modified' => $published['last_modified'] ?? null,
+                    'imported_at' => now()->toIso8601String(),
+                ]);
+            } catch (\Throwable $exception) {
+                Log::warning('gtfs:refresh — could not record the imported feed version', ['error' => $exception->getMessage()]);
+            }
+
             $this->info('GTFS refresh complete');
             Log::info('gtfs:refresh — timetable data refreshed successfully');
 
@@ -56,5 +83,39 @@ class RefreshGtfs extends Command
 
             return self::FAILURE;
         }
+    }
+
+    /**
+     * What VRS publishes now, from a HEAD request; null when it can't be told
+     * (the import then runs, as before).
+     *
+     * @return array{etag: ?string, last_modified: ?string}|null
+     */
+    public static function publishedVersion(): ?array
+    {
+        try {
+            $response = Http::timeout(20)->head(ImportGtfsData::FEED_URL);
+        } catch (\Throwable) {
+            return null;
+        }
+        if (! $response->successful()) {
+            return null;
+        }
+        $version = ['etag' => $response->header('ETag') ?: null, 'last_modified' => $response->header('Last-Modified') ?: null];
+
+        return $version['etag'] === null && $version['last_modified'] === null ? null : $version;
+    }
+
+    /** @param  array{etag: ?string, last_modified: ?string}  $published */
+    public static function sameVersion(array $published, mixed $imported): bool
+    {
+        if (! is_array($imported)) {
+            return false;
+        }
+        if ($published['etag'] !== null && ($imported['etag'] ?? null) !== null) {
+            return $published['etag'] === $imported['etag'];
+        }
+
+        return $published['last_modified'] !== null && $published['last_modified'] === ($imported['last_modified'] ?? null);
     }
 }

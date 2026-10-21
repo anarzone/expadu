@@ -48,6 +48,8 @@ export type StationArea = {
 export type Station = {
     name: string;
     kind: 'closest' | 'picked';
+    /** How the closest station was found: from a fix of the last few minutes (fresh), or from where you last were. */
+    located?: { fresh: boolean; source: string; at: string | null } | null;
     station: number | null;
     lat: number | null;
     lng: number | null;
@@ -86,6 +88,38 @@ export type FavouriteStop = {
     lng: number | null;
     lines: string[];
 };
+
+/** Whether a closest station is closest to where you are now. */
+export const closestNow = (station: Pick<Station, 'kind' | 'located'>) =>
+    station.kind === 'closest' && station.located?.fresh !== false;
+
+/**
+ * How a closest station was found, in words: "Closest" from a fix of the
+ * last few minutes, else near where you last were, and how long ago
+ * (nothing fake: owner, 21 Oct 2026).
+ */
+export function closestWords(
+    station: Pick<Station, 'kind' | 'located'>,
+    now: number = Date.now(),
+): string | null {
+    if (station.kind !== 'closest') {
+        return null;
+    }
+
+    if (closestNow(station)) {
+        return 'Closest';
+    }
+
+    const at = station.located?.at ? Date.parse(station.located.at) : NaN;
+
+    if (!Number.isFinite(at)) {
+        return 'Near your last location';
+    }
+
+    const minutes = Math.max(1, Math.round((now - at) / 60_000));
+
+    return `Near your last location · ${minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} h`} ago`;
+}
 
 /**
  * KVB's notice in plain English (App\Transit\NoticeBriefWriter), when one

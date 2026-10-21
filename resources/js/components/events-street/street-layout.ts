@@ -212,17 +212,21 @@ export function drum<T>(list: T[], pos: number, layout: StreetLayoutName) {
     const r3 = (v: number) => Math.round(v * 1000) / 1000;
     const N = Math.max(1, list.length);
     const slices: DrumSlice<T>[] = [];
+    // A drag turns it between posters: the faces follow the nearest one,
+    // and one more face either side comes into view.
+    const at = Math.round(pos);
+    const reach = c.reach + (at === pos ? 0 : 1);
 
     if (list.length) {
         for (let j = 0; j < F; j++) {
-            const m = (((j - pos) % F) + F) % F;
+            const m = (((j - at) % F) + F) % F;
             const d = m > F / 2 ? m - F : m;
 
-            if (Math.abs(d) > c.reach) {
+            if (Math.abs(d) > reach) {
                 continue;
             }
 
-            const item = list[(((pos + d) % N) + N) % N];
+            const item = list[(((at + d) % N) + N) % N];
 
             for (let k = 0; k < S; k++) {
                 const a = j * A + (k + 0.5 - S / 2) * (A / S);
