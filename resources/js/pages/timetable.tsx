@@ -1,5 +1,11 @@
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { MyDay } from '@/components/travel/day/my-day';
 import type { DayWeather } from '@/components/travel/day/my-day';
@@ -93,22 +99,25 @@ const viewOf = (url: string): View => {
 };
 
 /** Plan a trip's panel sits beside Nearby from 1000px (hub.css). */
+const DESKTOP = '(min-width: 1000px)';
+
+/**
+ * Whether it's the desktop layout. Server-rendered as a phone, then the first
+ * render after hydration says what the screen is: a client-only first value
+ * left the server's `hidden` on Plan a trip, and the desktop's left column
+ * stayed blank (React doesn't patch attributes while hydrating).
+ */
 function useDesktop(): boolean {
-    const [desktop, setDesktop] = useState(
-        () =>
-            typeof window !== 'undefined' &&
-            window.matchMedia('(min-width: 1000px)').matches,
+    return useSyncExternalStore(
+        (onChange) => {
+            const query = window.matchMedia(DESKTOP);
+            query.addEventListener('change', onChange);
+
+            return () => query.removeEventListener('change', onChange);
+        },
+        () => window.matchMedia(DESKTOP).matches,
+        () => false,
     );
-
-    useEffect(() => {
-        const query = window.matchMedia('(min-width: 1000px)');
-        const update = () => setDesktop(query.matches);
-        query.addEventListener('change', update);
-
-        return () => query.removeEventListener('change', update);
-    }, []);
-
-    return desktop;
 }
 
 /** The clock, to the minute. */
