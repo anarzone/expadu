@@ -18,10 +18,13 @@ beforeEach(function () {
 
 function handoffUrl(Event $event, ?string $start = null): string
 {
+    $at = CarbonImmutable::parse($start ?? $event->starts_at)->setTimezone('Europe/Berlin');
+
     return '/timetable?'.http_build_query([
-        'view' => 'journey',
-        'event' => $event->id,
-        'start' => $start ?? CarbonImmutable::parse($event->starts_at)->toIso8601String(),
+        'to' => 'Stadtgarten',
+        'context' => $event->id,
+        'date' => $at->format('Y-m-d'),
+        'arrive' => $at->format('H:i'),
     ]);
 }
 
@@ -56,6 +59,31 @@ test('Plan a trip finds a visible, current occurrence by its id and start, and n
     $this->actingAs($this->user)->get(handoffUrl($over))
         ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
 
-    $this->actingAs($this->user)->get('/timetable?view=journey&event=999999&start=2026-10-21T20:00:00%2B02:00')
+    $this->actingAs($this->user)->get('/timetable?to=Stadtgarten&context=999999&date=2026-10-21&arrive=20%3A00')
         ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
+
+    // The older link (`event`, `start`) is gone with Events' own (#290).
+    $this->actingAs($this->user)->get('/timetable?'.http_build_query(['view' => 'journey', 'event' => $tonight->id, 'start' => '2026-10-21T20:00:00+02:00']))
+        ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
+});
+
+test('Events\' link (venue, event id, local day and start) finds the same occurrence, and nothing for any other start', function () {
+    $tonight = Event::factory()->create([
+        'title' => 'Jazz night', 'venue_id' => $this->venue->id,
+        'starts_at' => CarbonImmutable::parse('2026-10-21 20:00', 'Europe/Berlin'),
+        'ends_at' => CarbonImmutable::parse('2026-10-21 22:00', 'Europe/Berlin'),
+    ]);
+    $link = fn (array $query) => '/timetable?'.http_build_query(['to' => 'Stadtgarten', 'context' => $tonight->id, ...$query]);
+
+    $this->actingAs($this->user)->get($link(['date' => '2026-10-21', 'arrive' => '20:00']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('handoffEvent.id', $tonight->id)
+            ->where('handoffEvent.place', 'Stadtgarten')
+            ->where('handoffEvent.start_time', '20:00'));
+
+    foreach ([['date' => '2026-10-21', 'arrive' => '19:00'], ['date' => '2026-10-22', 'arrive' => '20:00'], ['date' => '21.10.2026', 'arrive' => '20:00'], []] as $other) {
+        $this->actingAs($this->user)->get($link($other))
+            ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
+    }
 });

@@ -15,6 +15,7 @@ import EventReminderController from '@/actions/App/Http/Controllers/Api/EventRem
 import ComposerController from '@/actions/App/Http/Controllers/ComposerController';
 import { api } from '@/components/composer/types';
 import type { EventOccurrence } from '@/components/events/types';
+import type { WayPlace } from '@/components/get-there/ways';
 import { PosterArt } from '@/components/posters/poster-art';
 import type { PosterEvent } from '@/components/posters/poster-model';
 import {
@@ -191,6 +192,7 @@ export function EventDetails({
     saved,
     onSave,
     onClose,
+    starts = [],
 }: {
     /** The listing shown; null closes the page. */
     listing: DetailsListing | null;
@@ -207,6 +209,8 @@ export function EventDetails({
     saved: boolean;
     onSave: () => void;
     onClose: () => void;
+    /** Get there's starts: Home, Work and starred stops, real ones. */
+    starts?: WayPlace[];
 }) {
     // The page keeps what it showed while it slides away.
     const [shown, setShown] = useState(listing);
@@ -248,6 +252,37 @@ export function EventDetails({
         });
     };
 
+    // Share sits by the category, clear of the poster art's loop.
+    const share =
+        canShare && l ? (
+            <button
+                type="button"
+                className="evd-share"
+                aria-label="Share"
+                onClick={() =>
+                    shareItem(
+                        {
+                            title: l.poster.title,
+                            url: `${location.origin}/events?${new URLSearchParams(
+                                {
+                                    date,
+                                    event: String(l.occurrence.id),
+                                    start: l.occurrence.occurrence_start,
+                                },
+                            )}`,
+                        },
+                        {
+                            surface: 'event_sheet',
+                            item_type: 'event',
+                            item_id: l.occurrence.id,
+                        },
+                    )
+                }
+            >
+                <IconShare2 stroke={1.7} />
+            </button>
+        ) : null;
+
     return (
         <Sheet
             open={!!listing}
@@ -257,37 +292,6 @@ export function EventDetails({
                 `pp--${posterInk(l?.poster.start)}`,
                 way && 'is-way',
             )}
-            actions={
-                canShare && l ? (
-                    <button
-                        type="button"
-                        className="ui-sheet-action"
-                        aria-label="Share"
-                        onClick={() =>
-                            shareItem(
-                                {
-                                    title: l.poster.title,
-                                    url: `${location.origin}/events?${new URLSearchParams(
-                                        {
-                                            date,
-                                            event: String(l.occurrence.id),
-                                            start: l.occurrence
-                                                .occurrence_start,
-                                        },
-                                    )}`,
-                                },
-                                {
-                                    surface: 'event_sheet',
-                                    item_type: 'event',
-                                    item_id: l.occurrence.id,
-                                },
-                            )
-                        }
-                    >
-                        <IconShare2 stroke={1.7} />
-                    </button>
-                ) : null
-            }
             title={
                 l ? (
                     <>
@@ -329,22 +333,14 @@ export function EventDetails({
                         </strong>
                     </>
                 ) : (
-                    <Head poster={l.poster} today={today} />
+                    <Head poster={l.poster} today={today} share={share} />
                 )
             }
             footer={
                 l && date >= today ? (
                     way ? (
                         <div className="evd-bar">
-                            <Link
-                                className="evd-plan"
-                                href={`/timetable?${new URLSearchParams({
-                                    view: 'journey',
-                                    event: String(l.occurrence.id),
-                                    start: l.occurrence.occurrence_start,
-                                    ...(when === 'back' ? { back: '1' } : {}),
-                                })}`}
-                            >
+                            <Link className="evd-plan" href={travelUrl(l)}>
                                 <Icon name="route" variant="line" />
                                 Open in Travel
                             </Link>
@@ -381,6 +377,7 @@ export function EventDetails({
                         onWhen={setWhen}
                         initialMode={mode}
                         day={day}
+                        starts={starts}
                     />
                 </Suspense>
             ) : (
@@ -399,16 +396,36 @@ export function EventDetails({
 }
 
 /** The poster at the top: its art, category, date tape and start. */
-function Head({ poster, today }: { poster: PosterEvent; today: string }) {
+/** Where the listing came from, in plain words: a site by its name, the
+    city's own listing as such, and our own entries with no label. */
+const sourceName = (source: string | null | undefined): string | null =>
+    !source || source === 'manual'
+        ? null
+        : source === 'stadt-koeln.de'
+          ? 'City listing'
+          : source;
+
+function Head({
+    poster,
+    today,
+    share,
+}: {
+    poster: PosterEvent;
+    today: string;
+    share?: ReactNode;
+}) {
     const category = posterCategory(poster.category);
 
     return (
         <>
             <PosterArt event={poster} variant="cover" className="evd-art" />
             <span className="evd-shade" aria-hidden="true" />
-            <span className="evd-chip">
-                <Icon name={category.icon} variant="line" />
-                {category.label}
+            <span className="evd-top">
+                <span className="evd-chip">
+                    <Icon name={category.icon} variant="line" />
+                    {category.label}
+                </span>
+                {share}
             </span>
             <span className="pp-tape evd-tape">
                 {posterTape(poster, today)}
@@ -441,6 +458,7 @@ function Body({
     onWay?: () => void;
 }) {
     const { poster, occurrence: o } = listing;
+    const source = sourceName(o.source);
     const km = start ? kmBetween(start, o.venue) : null;
     const past = date < today;
     const listed = o.time_listed !== false;
@@ -534,7 +552,7 @@ function Body({
                         <span>
                             <Icon name="info" variant="line" />
                             Listing details
-                            {o.source ? <small>{o.source}</small> : null}
+                            {source ? <small>{source}</small> : null}
                         </span>
                         <Icon name="down" variant="line" />
                     </summary>
@@ -548,10 +566,10 @@ function Body({
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
-                                        {o.source ?? 'The listing'}
+                                        {source ?? 'The listing'}
                                     </a>
                                 ) : (
-                                    (o.source ?? 'Not listed')
+                                    (source ?? 'Not listed')
                                 )}
                             </dd>
                         </div>
@@ -661,6 +679,23 @@ function Body({
             </div>
         </div>
     );
+}
+
+/**
+ * Open in Travel (the mock's event-sheet.js, agreed with Travel): the way
+ * to the venue, there by the start. Travel finds the event by its id
+ * (`context`), so no point goes in the address; `to` names the venue while
+ * it loads. Without a listed time, Travel plans leaving now.
+ */
+function travelUrl(listing: DetailsListing): string {
+    const venue = listing.poster.venue ?? listing.occurrence.venue.name;
+
+    return `/timetable?${new URLSearchParams({
+        ...(venue ? { to: venue } : {}),
+        context: String(listing.occurrence.id),
+        ...(listing.poster.date ? { date: listing.poster.date } : {}),
+        ...(listing.poster.start ? { arrive: listing.poster.start } : {}),
+    })}`;
 }
 
 /** The bar: Save, a reminder before it starts, and Add to plan. */

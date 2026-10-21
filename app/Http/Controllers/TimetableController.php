@@ -42,7 +42,7 @@ class TimetableController extends Controller
                     return $picked;
                 }
                 // Never a saved home or the city centre: no location, no station.
-                $closest = $location->hasOrigin() ? $nearby->closest((float) $location->lat, (float) $location->lng) : null;
+                $closest = $nearby->closestTo($location);
                 if ($closest !== null) {
                     // Debug trail for "wrong station" reports: the station, its
                     // lines and why it was chosen, without where the person was.
@@ -56,10 +56,11 @@ class TimetableController extends Controller
                 return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
             }, 'station'),
             'stop' => $stop,
-            // Events' "Get there": the occurrence by its id and public start,
-            // resolved here so its place never sits in the address.
-            'handoffEvent' => fn () => $request->filled('event')
-                ? app(EventHandoff::class)->for($request->query('event'), $request->query('start'), CarbonImmutable::now())
+            // Events' "Open in Travel": the occurrence by its id and local start
+            // (`context`, `date`, `arrive`), resolved here so its place never
+            // sits in the address.
+            'handoffEvent' => fn () => $request->filled('context')
+                ? app(EventHandoff::class)->forLocal($request->query('context'), $request->query('date'), $request->query('arrive'), CarbonImmutable::now())
                 : null,
             // A place's "Get there": the place by its id, resolved here too.
             'handoffPlace' => fn () => $request->filled('place')

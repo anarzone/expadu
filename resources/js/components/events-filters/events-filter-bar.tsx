@@ -127,6 +127,36 @@ export function EventsFilterBar({
     onMode: (mode: TravelMode) => void;
 }) {
     const chosenCategory = categories.find((c) => c.value === filters.category);
+    // The category row scrolls; an edge fades where more chips wait.
+    const categoryRow = useRef<HTMLDivElement>(null);
+    const [more, setMore] = useState({ before: false, after: false });
+
+    useEffect(() => {
+        const node = categoryRow.current;
+
+        if (!node) {
+            return;
+        }
+
+        const measure = () => {
+            const before = node.scrollLeft > 2;
+            const after =
+                node.scrollLeft + node.clientWidth < node.scrollWidth - 2;
+            setMore((was) =>
+                was.before === before && was.after === after
+                    ? was
+                    : { before, after },
+            );
+        };
+        const resized = new ResizeObserver(measure);
+        resized.observe(node);
+        node.addEventListener('scroll', measure, { passive: true });
+
+        return () => {
+            resized.disconnect();
+            node.removeEventListener('scroll', measure);
+        };
+    }, [categories.length]);
     const canClosest = !!from?.point;
     // The pickers line up with the row's edges, as the mock's panels do.
     const row = useRef<HTMLElement>(null);
@@ -291,9 +321,12 @@ export function EventsFilterBar({
             </div>
 
             <div
+                ref={categoryRow}
                 className="evf-categories evf-wide-only"
                 role="group"
                 aria-label="Event categories"
+                data-more-before={more.before || undefined}
+                data-more-after={more.after || undefined}
             >
                 <button
                     type="button"

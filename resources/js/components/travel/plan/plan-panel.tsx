@@ -13,6 +13,7 @@ import type { FavouriteStop } from '../nearby/types';
 import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
 import type { TripFor } from '../trip/trip-model';
+import type { LocateError } from '../use-travel-location';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
 import {
@@ -22,6 +23,7 @@ import {
     berlinNow,
     checksFor,
     isPublicPlace,
+    EVENT_MARGIN_MIN,
     marginOf,
     rankOptions,
     scheduleSummary,
@@ -182,6 +184,25 @@ type PlanPanelProps = {
     onAbout: (label: string | null) => void;
     onLocate: () => void;
     locating: boolean;
+    /** Why the last "Use my location" didn't work. */
+    locateError?: LocateError | null;
+};
+
+/** Why From couldn't be where you are, and what to do instead. */
+const fromLocateText: Record<LocateError, string> = {
+    off: 'Location sharing is off. Type where you’re starting, or turn it on in Settings.',
+    unsupported:
+        'Location isn’t available on this device. Type where you’re starting.',
+    blocked:
+        'Location is blocked for this site. Allow it from the address bar, or type where you’re starting.',
+    unavailable:
+        'Your device couldn’t find a location. Type where you’re starting.',
+    imprecise:
+        'That location isn’t precise enough. Type where you’re starting.',
+    unsaved:
+        'Your location couldn’t be used. Try again, or type where you’re starting.',
+    timeout:
+        'Locating took too long. Try again, or type where you’re starting.',
 };
 
 export function PlanPanel({
@@ -204,6 +225,7 @@ export function PlanPanel({
     onAbout,
     onLocate,
     locating,
+    locateError = null,
 }: PlanPanelProps) {
     const today = berlinToday();
     const [from, setFrom] = useState<FieldValue>(EMPTY);
@@ -219,6 +241,9 @@ export function PlanPanel({
     const [sort, setSort] = useState<SortKey>('arrival');
     const [choicesOpen, setChoicesOpen] = useState(false);
     const [results, setResults] = useState(false);
+    // "Use my location" from From: asked here, so its answer is said here.
+    const [relocated, setRelocated] = useState(false);
+    const relocating = useRef(false);
     const [status, setStatus] = useState<Status>({ kind: 'idle' });
     const [selected, setSelected] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -257,14 +282,23 @@ export function PlanPanel({
     const fromLabel = from.place?.name ?? (from.text.trim() || 'your location');
 
     // An event handed over by Events stays in the address by its id and
-    // start while its venue is where you go (or, for the way back, where
-    // you start); never by its coordinates.
+    // local start (`context`, `date`, `arrive`) while its venue is where you
+    // go (or, for the way back, where you start); never by its coordinates.
     const eventRef = useRef<{
         id: string;
         start: string;
+        date: string;
+        time: string;
         back: boolean;
         lat: number;
         lng: number;
+    } | null>(null);
+    // Open in Travel lands on the way: once its plan is in, the chosen way opens.
+    const showWhenPlanned = useRef(false);
+    // The event's start, to be there a little before it (not on the dot).
+    const [eventStart, setEventStart] = useState<{
+        date: string;
+        time: string;
     } | null>(null);
     // My day's hand-offs: from a plan on your day (`after=` its id) and back
     // to where you are now (`to=here`), never by their coordinates.
@@ -387,8 +421,9 @@ export function PlanPanel({
                 toPlace.lng === handed.lng;
 
             if (byEvent) {
-                shown.set('event', ev!.id);
-                shown.set('start', ev!.start);
+                shown.set('context', ev!.id);
+                shown.set('date', ev!.date);
+                shown.set('arrive', ev!.time);
             }
 
             if (activity) {
@@ -506,10 +541,11 @@ export function PlanPanel({
         const toKey = q.get('to');
         const name = (q.get('to_name') ?? toKey)?.trim().slice(0, 120);
 
-        // Events' "Get there": there by its start, or (back=1) from it after
-        // it ends, to Home when you have one. An event the server didn't
-        // find (hidden, unknown, over) opens nothing.
-        if (q.get('event')) {
+        // Events' "Open in Travel": there by its start, or (back=1) from it
+        // after it ends, to Home when you have one. An event the server
+        // didn't find (hidden, unknown, over) opens nothing, unless the link
+        // names its venue (`to`): then that's where you go.
+        if (q.get('context') && (handoffEvent || !toKey)) {
             opened.current = true;
 
             if (!handoffEvent) {
@@ -529,6 +565,8 @@ export function PlanPanel({
             eventRef.current = {
                 id: String(handoffEvent.id),
                 start: handoffEvent.start,
+                date: day,
+                time: handoffEvent.start_time,
                 back,
                 lat: venue.lat,
                 lng: venue.lng,
@@ -548,6 +586,8 @@ export function PlanPanel({
                 setSchedule('arrive');
                 setDate(day);
                 setTime(handoffEvent.start_time);
+                showWhenPlanned.current = true;
+                setEventStart({ date: day, time: handoffEvent.start_time });
                 void plan({
                     to: venue,
                     from: null,
@@ -848,10 +888,41 @@ export function PlanPanel({
             target
                 ? { at: target.start_at, margin: marginOf(target) }
                 : schedule === 'arrive'
-                  ? { at: berlinInstant(date, time), margin: 0 }
+                  ? {
+                        at: berlinInstant(date, time),
+                        margin:
+                            eventStart?.date === date &&
+                            eventStart.time === time
+                                ? EVENT_MARGIN_MIN
+                                : 0,
+                    }
                   : null,
-        [target, schedule, date, time],
+        [target, schedule, date, time, eventStart],
     );
+    // From becomes where the device is now: the fix goes to the server as
+    // "I'm here", so an empty From plans from it. A shown answer is planned
+    // again from there once the fix is in.
+    const useMyLocation = () => {
+        setFrom(EMPTY);
+        setRelocated(true);
+        relocating.current = true;
+        onLocate();
+    };
+
+    useEffect(() => {
+        if (!relocating.current || locating) {
+            return;
+        }
+
+        relocating.current = false;
+
+        if (!locateError && results && (to.place || to.text.trim())) {
+            void plan({ from: null });
+        }
+        // Once, when locating ends.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [locating]);
+
     const ranked = useMemo(
         () => rankOptions(options, sort, prefs, deadline),
         [options, sort, prefs, deadline],
@@ -966,6 +1037,11 @@ export function PlanPanel({
     // "Show the way": the trip page with this way, before you start.
     const showTheWay = (option: PlanOption) => {
         const journey = option.journey;
+        // An event's start is when you're there by, as a plan's is.
+        const eventStart =
+            eventRef.current && !eventRef.current.back
+                ? eventRef.current
+                : null;
         const first = journey.legs[0];
         const last = journey.legs.at(-1);
         const place = picked?.title ?? to.place?.name ?? to.text;
@@ -996,8 +1072,8 @@ export function PlanPanel({
                     ? (day?.items.find((item) => item.id === target.id)
                           ?.location?.label ?? null)
                     : null,
-                start: target?.start_time ?? null,
-                startAt: target?.start_at ?? null,
+                start: target?.start_time ?? eventStart?.time ?? null,
+                startAt: target?.start_at ?? eventStart?.start ?? null,
                 official: target?.official ?? false,
                 kind: target?.kind ?? null,
             },
@@ -1005,6 +1081,17 @@ export function PlanPanel({
             addToPlan: target ? addToPlan : null,
         });
     };
+
+    // Open in Travel: the event's plan is in, so its chosen way opens (none
+    // found leaves the answer showing, which says so).
+    useEffect(() => {
+        if (showWhenPlanned.current && status.kind === 'done' && chosen) {
+            showWhenPlanned.current = false;
+            showTheWay(chosen);
+        }
+        // Once, when the event's answer arrives.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status.kind, chosen]);
 
     const addToPlan = async (): Promise<boolean> => {
         if (!chosen || !target || saving) {
@@ -1319,6 +1406,13 @@ export function PlanPanel({
                                 setPicked(null);
                             }}
                             toRef={toField}
+                            onUseLocation={useMyLocation}
+                            locating={locating}
+                            locateNote={
+                                relocated && locateError
+                                    ? fromLocateText[locateError]
+                                    : null
+                            }
                         />
                         <button
                             type="button"

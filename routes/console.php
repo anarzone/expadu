@@ -114,7 +114,12 @@ Schedule::command('media:revalidate --limit=200')->hourly()->withoutOverlapping(
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
 
 // GTFS static timetable refresh — VRS updates weekly
-Schedule::command('gtfs:refresh')->weeklyOn(1, '03:00')->withoutOverlapping()->runInBackground();
+// VRS republishes several times a week, and realtime names only the newest
+// trips: check daily, import only when a new feed is out. A run a deploy kills
+// blocks the next for at most 2 hours, and leaves the live tables untouched.
+Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer()->runInBackground();
+// Realtime trips that the timetable doesn't know, or a published feed left unimported → Sentry.
+Schedule::command('gtfs:health')->dailyAt('09:00')->withoutOverlapping(30)->onOneServer();
 
 Schedule::command('model:prune')->dailyAt('03:45')->withoutOverlapping()->runInBackground();
 // Failed jobs are kept a week for debugging, then dropped.

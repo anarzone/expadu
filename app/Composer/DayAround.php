@@ -18,7 +18,8 @@ use Carbon\CarbonImmutable;
 final class DayAround
 {
     /** "Tonight" starts here (Europe/Berlin), or now if later. */
-    private const EVENING = '18:00';
+    /** When "tonight" starts, for the day row and Composer's answer alike. */
+    public const EVENING = '18:00';
 
     /** How far "near your appointment" reaches, in metres. */
     private const NEAR = 1000;

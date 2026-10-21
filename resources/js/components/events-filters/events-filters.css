@@ -181,11 +181,28 @@
     background: var(--color-select-bg);
 }
 /* Narrower desktops: the categories drop their icons so the search keeps
-   its room. */
+   its room, as the mock's wall does (1000–1399px). */
 @media (min-width: 1000px) and (max-width: 1399px) {
     .evf-categories svg {
         display: none;
     }
+}
+/* More chips than room: the row scrolls, and the edge where more wait
+   fades, so a chip is never just cut off. */
+.evf-categories[data-more-after] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+}
+.evf-categories[data-more-before] {
+    mask-image: linear-gradient(to right, transparent, #000 48px);
+}
+.evf-categories[data-more-before][data-more-after] {
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 48px,
+        #000 calc(100% - 48px),
+        transparent
+    );
 }
 
 /* ---------- Pickers: Category, Area, starting point, Sort ---------- */

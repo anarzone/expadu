@@ -39,7 +39,7 @@ class HomeFeedController extends Controller
                 }
                 $location = $locations->context($request->user(), $request);
 
-                return $location->hasOrigin() ? $nearby->closest((float) $location->lat, (float) $location->lng) : null;
+                return $nearby->closestTo($location);
             }, 'station'),
             'stop' => $stop,
             // The deadline strip and the Paperwork panel: the reviewed v2

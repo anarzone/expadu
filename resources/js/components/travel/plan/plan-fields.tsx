@@ -94,6 +94,11 @@ type PlanFieldsProps = {
     /** Rest: one line ("Where to?") until you start. */
     onStart?: () => void;
     toRef?: React.Ref<HTMLInputElement>;
+    /** The blue circle and the list's first row: start from where the device says you are. */
+    onUseLocation?: () => void;
+    locating?: boolean;
+    /** Why that didn't work, in words. */
+    locateNote?: string | null;
 };
 
 export function PlanFields({
@@ -107,6 +112,9 @@ export function PlanFields({
     onSwap,
     onStart,
     toRef,
+    onUseLocation,
+    locating = false,
+    locateNote = null,
 }: PlanFieldsProps) {
     const listId = useId();
     const [open, setOpen] = useState<'from' | 'to' | null>(null);
@@ -178,6 +186,11 @@ export function PlanFields({
         setOpen(null);
     };
 
+    const useLocation = () => {
+        setOpen(null);
+        onUseLocation?.();
+    };
+
     const ready = loaded === `${open}:${query.trim()}`;
     const field = (role: 'from' | 'to') => ({
         role: 'combobox' as const,
@@ -208,7 +221,23 @@ export function PlanFields({
     return (
         <div className="journey-fields" ref={box}>
             <div className="field from-field">
-                <span className="field-symbol origin-dot" aria-hidden="true" />
+                {onUseLocation ? (
+                    <button
+                        type="button"
+                        className="field-symbol from-locate"
+                        aria-label="Use my location"
+                        aria-busy={locating}
+                        disabled={locating}
+                        onClick={useLocation}
+                    >
+                        <span className="origin-dot" aria-hidden="true" />
+                    </button>
+                ) : (
+                    <span
+                        className="field-symbol origin-dot"
+                        aria-hidden="true"
+                    />
+                )}
                 <label htmlFor="from">
                     From
                     {fromNote && !from.text ? (
@@ -294,7 +323,12 @@ export function PlanFields({
                 className="suggestions"
                 role="dialog"
                 aria-label="Suggested locations"
-                hidden={!open || (!items.length && !ready)}
+                hidden={
+                    !open ||
+                    (!items.length &&
+                        !ready &&
+                        !(open === 'from' && onUseLocation))
+                }
                 onKeyDown={(event) => {
                     const buttons = [
                         ...(box.current?.querySelectorAll<HTMLButtonElement>(
@@ -326,6 +360,22 @@ export function PlanFields({
                     }
                 }}
             >
+                {open === 'from' && onUseLocation ? (
+                    <button
+                        type="button"
+                        className="is-here"
+                        disabled={locating}
+                        onClick={useLocation}
+                    >
+                        <TravelIcon name="locate" />
+                        <span className="suggestion-copy">
+                            <strong>
+                                {locating ? 'Locating…' : 'Your location'}
+                            </strong>
+                            <small>From where this device is now</small>
+                        </span>
+                    </button>
+                ) : null}
                 {items.length ? (
                     items.map((item) => (
                         <button
@@ -351,6 +401,11 @@ export function PlanFields({
                     </p>
                 )}
             </div>
+            {locateNote ? (
+                <p className="from-locate-note" role="status">
+                    {locateNote}
+                </p>
+            ) : null}
         </div>
     );
 }

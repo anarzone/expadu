@@ -275,6 +275,31 @@
     border-radius: var(--radius-round);
     margin-left: 2px;
 }
+/* The circle asks where you are (owner, 22 Oct 2026): a ~40px target round
+   the 12px ring, which fills while locating. */
+:where(.travel-page) .from-locate {
+    /* Above the field's label, which covers the field to focus it. */
+    position: relative;
+    z-index: 1;
+    margin: -14px -14px -14px -12px;
+    padding: 14px 14px 14px 12px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+:where(.travel-page) .from-locate:active .origin-dot {
+    scale: 0.85;
+}
+:where(.travel-page) .from-locate[aria-busy='true'] .origin-dot {
+    background: rgb(66, 123, 138);
+}
+:where(.travel-page) .from-locate-note {
+    /* In line with the fields' text, under them. */
+    margin: 0;
+    padding: 2px 14px 12px 38px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
 :where(.travel-page) .to-field .field-symbol {
     color: var(--action);
 }

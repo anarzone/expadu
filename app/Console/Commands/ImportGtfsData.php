@@ -14,7 +14,10 @@ class ImportGtfsData extends Command
     /**
      * @var string
      */
-    protected $signature = 'gtfs:import {--url=https://download.vrsinfo.de/gtfs/GTFS_VRS_mit_SPNV.zip}';
+    /** VRS's published static timetable, with rail. */
+    public const FEED_URL = 'https://download.vrsinfo.de/gtfs/GTFS_VRS_mit_SPNV.zip';
+
+    protected $signature = 'gtfs:import {--url='.self::FEED_URL.'}';
 
     /**
      * @var string
