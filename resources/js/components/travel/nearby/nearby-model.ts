@@ -56,7 +56,8 @@ export type NearbyView = {
 const byLine = (a: string, b: string) =>
     a.localeCompare(b, undefined, { numeric: true });
 
-const modeOf = (line: StationLine) => (line.mode === 'bus' ? 'bus' : 'tram');
+const modeOf = (line: StationLine): 'bus' | 'tram' =>
+    line.mode === 'bus' ? 'bus' : 'tram';
 
 export const looksOf = (line: StationLine): LineLook =>
     lineLook(line.line, line.mode === 'bus' ? 'bus' : line.mode);
@@ -98,7 +99,9 @@ export function nearbyView(
         d.mins <= f.win &&
         (!f.delayed || d.delayMin > 0) &&
         (!f.via.length || f.via.includes(firstVia(d)));
-    const soonest = (dirs: ShownDir[]) => Math.min(...dirs.map((d) => d.mins));
+    // By the departure's own time: a paused board's past times stay in order.
+    const leaves = (d: ShownDir) => Date.parse(d.next?.at ?? '') || 0;
+    const soonest = (dirs: ShownDir[]) => Math.min(...dirs.map(leaves));
     const total = station.lines.reduce(
         (n, l) => n + l.dirs.filter((d) => d.next).length,
         0,
@@ -117,7 +120,7 @@ export function nearbyView(
                             (d): d is ShownDir => d !== null && !d.cancelled,
                         )
                         .filter(dirOk)
-                        .sort((a, b) => a.mins - b.mins),
+                        .sort((a, b) => leaves(a) - leaves(b)),
                     pinned: pinned.includes(l.line),
                 }))
                 .filter((l) => l.shown.length)
@@ -188,4 +191,49 @@ export function whenOf(dir: ShownDir): { big: string; unit: string } {
         : dir.mins >= 60
           ? { big: dir.clock, unit: '' }
           : { big: String(dir.mins), unit: 'min' };
+}
+
+/** A wait this long or longer after the departures shown is "a while". */
+export const LONG_WAIT_MIN = 20;
+
+/**
+ * Late at night (the mock's "Last trams for a while"): every direction shown
+ * that has a later run waits LONG_WAIT_MIN or more for it after the next
+ * one. The gaps come from the board's own times; null otherwise.
+ */
+export function longWait(
+    view: NearbyView,
+): { low: number; high: number; mode: 'tram' | 'bus' | 'mixed' } | null {
+    const dirs = view.areas.flatMap((area) =>
+        area.cards.flatMap((card) =>
+            card.shown.map((dir) => ({ dir, mode: modeOf(card) })),
+        ),
+    );
+    const gaps = dirs.flatMap(({ dir, mode }) => {
+        const later = dir.later[0];
+
+        return dir.next && later
+            ? [
+                  {
+                      mode,
+                      gap: Math.round(
+                          (Date.parse(later.at) - Date.parse(dir.next.at)) /
+                              60_000,
+                      ),
+                  },
+              ]
+            : [];
+    });
+
+    if (!gaps.length || gaps.some(({ gap }) => gap < LONG_WAIT_MIN)) {
+        return null;
+    }
+
+    const modes = new Set(gaps.map(({ mode }) => mode));
+
+    return {
+        low: Math.min(...gaps.map(({ gap }) => gap)),
+        high: Math.max(...gaps.map(({ gap }) => gap)),
+        mode: modes.size > 1 ? 'mixed' : [...modes][0],
+    };
 }

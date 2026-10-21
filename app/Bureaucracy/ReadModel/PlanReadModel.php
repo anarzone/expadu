@@ -117,13 +117,21 @@ final class PlanReadModel
                 'provider_version' => ProcessingPurpose::FactExtraction->providerVersion(), 'ai_available' => ProcessingPurpose::FactExtraction->available(),
                 'sharing_notice' => config('bureaucracy_family.sharing_notice_version'), 'next_boundary' => $nextTime]);
 
+            // A confirmed EU citizen with no residence work open: Paperwork says no residence
+            // task applies (the mock's noResidenceTask). It tells of an answer, so only someone
+            // who may see the answers gets it; for anyone else it is null, not false.
+            $notes = ['no_residence_task' => in_array(AccessScope::ViewFacts->value, $scopes, true)
+                ? ($facts['values']['citizenship_group'] ?? null) === 'eu' && ($facts['states']['citizenship_group'] ?? 'value') === 'value'
+                    && ! collect($processes)->contains(fn (array $process): bool => ! $process['is_closed'] && ($process['topic'] ?? null) === 'residence')
+                : null];
+
             $plan = ['schema_version' => 'bureaucracy.plan.1', 'person_id' => $person->id, 'jurisdiction' => $jurisdiction,
                 'assessment_revision' => $revision, 'evaluated_at' => $input->at->toIso8601String(), 'next_reassessment_at' => $nextTime,
                 'overview' => ['next_actions' => array_slice($next, 0, 3), 'question' => $question['question'], 'remaining_action_count' => max(0, count($next) - 3)],
                 'questions' => $question, 'actions' => $next, 'processes' => $processes, 'history' => $history,
                 'history_count' => count($history) + count(array_filter($processes, fn ($process) => $process['is_closed'])),
                 'topics' => $this->topics($assessment['processes'], $processes, $history), 'guidance' => $guidance,
-                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes,
+                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes, 'notes' => $notes,
                 'ai' => ['available' => in_array(AccessScope::RequestAi->value, $scopes, true) && in_array(AccessScope::EditFacts->value, $scopes, true)
                     && ProcessingPurpose::FactExtraction->available(), 'consent_scope' => 'single_request', 'confirmation_required' => true]];
             $attention = app(PlanAttention::class)->for($plan, includeUndated: true);

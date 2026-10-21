@@ -389,6 +389,8 @@ export interface Plan {
         | { available: false; reason: string }
         | { requirements: Requirement[]; evidence: EvidenceItem[] };
     scopes: string[];
+    /** Notes from the person's own answers; null for a viewer who may not see them. */
+    notes: { no_residence_task: boolean | null };
     attention: AttentionRow[];
     coming_up: AttentionRow[];
 }

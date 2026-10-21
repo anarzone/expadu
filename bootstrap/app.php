@@ -9,6 +9,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
 use App\Http\Middleware\StartSessionKeepingPrivateQueries;
 use App\Support\MockClock;
+use App\Support\MockScenario;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -64,7 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Innermost, so session and CSRF cookies keep the real clock.
             LocalMockClock::class,
         ]);
-        $middleware->encryptCookies(except: [MockClock::COOKIE]);
+        $middleware->encryptCookies(except: [MockClock::COOKIE, MockScenario::COOKIE]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // These are JSON commands even when Accept is missing/spoofed. A

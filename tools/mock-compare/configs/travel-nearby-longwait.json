@@ -1,0 +1,253 @@
+{
+    "name": "travel-nearby-longwait",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=longwait",
+        "wait": "#nearby .nearby-strip",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
+        ]
+    },
+    "app": {
+        "url": "/timetable?stop=Merkenich%20Mitte",
+        "wait": "#departures .nearby-strip",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
+        ],
+        "cookies": {
+            "mock_clock": "2026-09-07T23:15:00%2B02:00",
+            "mock_scenario": "longwait"
+        }
+    },
+    "pairs": [
+        {
+            "name": "banner",
+            "mock": "#departures .nearby-banner .tl-banner",
+            "app": "#departures .nearby-banner .tl-banner"
+        },
+        {
+            "name": "banner title",
+            "mock": "#departures .nearby-banner .tl-banner strong",
+            "app": "#departures .nearby-banner .tl-banner strong"
+        },
+        {
+            "name": "banner text",
+            "mock": "#departures .nearby-banner .tl-banner p > span",
+            "app": "#departures .nearby-banner .tl-banner p > span"
+        },
+        {
+            "name": "phone bar",
+            "mock": ".travel-phone-bar",
+            "app": ".travel-phone-bar",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Where to?",
+            "mock": ".travel-phone-bar .where-to",
+            "app": ".travel-phone-bar .where-to",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "station bar",
+            "mock": ".nearby-bar",
+            "app": ".nearby-bar",
+            "ignore": ["h"],
+            "contentDiffers": true,
+            "reason": "The mock labels its capture \"Recorded Sun 4 Oct, 22:19\" in the uncertain chip. The app shows the same captured board (MockSample\\SampleTimetable, under the mock clock) as the board it would read live, so \"Live times\" in the calm chip. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so the bar is 30px lower in the mock."
+        },
+        {
+            "name": "station button",
+            "mock": ".nearby-stop",
+            "app": ".nearby-stop",
+            "ignore": ["h", "w"],
+            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9). At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so it is 30px taller in the mock. The mock labels its capture \"Also captured\" and \"Recorded Mon 7 Sept, 23:15\"; the app says \"1 boarding area\" and \"Scheduled · not live\" for the timetable it reads.",
+            "contentDiffers": true
+        },
+        {
+            "name": "station name",
+            "mock": ".nearby-stop-name",
+            "app": ".nearby-stop-name",
+            "ignore": ["w"],
+            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9)."
+        },
+        {
+            "name": "closest chip",
+            "mock": ".nearby-bar .tl-chip",
+            "app": ".nearby-bar .tl-chip",
+            "index": 0,
+            "ignore": ["w"],
+            "reason": "The mock labels its capture \"Also captured\" and \"Recorded Mon 7 Sept, 23:15\"; the app says \"1 boarding area\" and \"Scheduled · not live\" for the timetable it reads."
+        },
+        {
+            "name": "times chip",
+            "mock": ".nearby-bar .tl-chip",
+            "app": ".nearby-bar .tl-chip",
+            "index": 1,
+            "ignore": [
+                "w",
+                "x",
+                "y",
+                "background-color",
+                "border-bottom-width",
+                "border-left-width",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "padding-bottom",
+                "padding-top"
+            ],
+            "reason": "The mock labels its capture \"Recorded Sun 4 Oct, 22:19\" in the uncertain chip. The app shows the same captured board (MockSample\\SampleTimetable, under the mock clock) as the board it would read live, so \"Live times\" in the calm chip. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row."
+        },
+        {
+            "name": "favourite star",
+            "mock": ".nearby-star",
+            "app": ".nearby-star",
+            "ignore": ["x", "y"],
+            "reason": "Same box and styles; the map switch (call #9) puts the mock's star at another x, and at 390 the mock's bar wraps (see station bar), so its edge anti-aliasing differs by a few pixels.",
+            "pixels": false
+        },
+        {
+            "name": "filters",
+            "mock": ".nearby-chips",
+            "app": ".nearby-chips",
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "filter: type",
+            "mock": ".nearby-chips .nearby-chip",
+            "app": ".nearby-chips .nearby-chip",
+            "index": 0,
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "filter: lines",
+            "mock": ".nearby-chips .nearby-chip",
+            "app": ".nearby-chips .nearby-chip",
+            "index": 1,
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "departures count",
+            "mock": ".nearby-count",
+            "app": ".nearby-count",
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "boarding area",
+            "mock": ".nearby-area",
+            "app": ".nearby-area",
+            "ignore": ["h", "y"],
+            "contentDiffers": true,
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the area is 32px taller in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "area head",
+            "mock": ".nearby-area-head",
+            "app": ".nearby-area-head",
+            "ignore": ["h", "y"],
+            "reason": "The mock's \"Show on the map\" (call #9) wraps the head on phones.",
+            "contentDiffers": true
+        },
+        {
+            "name": "area badges",
+            "mock": ".nearby-area-head .nearby-badges",
+            "app": ".nearby-area-head .nearby-badges",
+            "ignore": ["x", "y"],
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's head lays the badges out after its map link, 36px further in. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "area badge",
+            "mock": ".nearby-area-head .nearby-badges > *",
+            "app": ".nearby-area-head .nearby-badges > *",
+            "ignore": ["x", "y"],
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's head lays the badges out after its map link, 36px further in. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
+        },
+        {
+            "name": "platform chip",
+            "mock": ".nearby-area-head .tl-chip",
+            "app": ".nearby-area-head .tl-chip",
+            "contentDiffers": true,
+            "ignore": [
+                "background-color",
+                "border-bottom-color",
+                "border-bottom-style",
+                "border-bottom-width",
+                "border-left-color",
+                "border-left-style",
+                "border-left-width",
+                "border-right-color",
+                "border-right-style",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "color",
+                "padding-bottom",
+                "padding-top",
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "Where to stand: the mock shows OSM platforms; the app says \"Platform not known\" until the data pipeline (call #9)."
+        },
+        {
+            "name": "line strip",
+            "mock": ".nearby-strip",
+            "app": ".nearby-strip",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
+        },
+        {
+            "name": "strip badge",
+            "mock": ".nearby-strip .strip-badge",
+            "app": ".nearby-strip .strip-badge",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
+        },
+        {
+            "name": "strip destination",
+            "mock": ".nearby-strip .strip-dest",
+            "app": ".nearby-strip .strip-dest",
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
+        },
+        {
+            "name": "strip track",
+            "mock": ".nearby-strip .strip-track",
+            "app": ".nearby-strip .strip-track",
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset. Moved by the wrapped station bar on phones (see Then strip), it lands on another sub-pixel offset.",
+            "pixels": false
+        },
+        {
+            "name": "strip time",
+            "mock": ".nearby-strip .nearby-time",
+            "app": ".nearby-strip .nearby-time",
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset. The app greys timetable times (not live), as everywhere; the mock's capture shows them dark. The times are the same (11 and 8 min).",
+            "contentDiffers": true
+        },
+        {
+            "name": "Then strip",
+            "mock": "#departures .nearby-strip .tl-strip",
+            "app": "#departures .nearby-strip .tl-strip",
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer capture label (see closest chip) wraps the station bar, so the board sits 30px lower in the mock."
+        }
+    ],
+    "clock": "2026-09-07T23:15:00+02:00",
+    "note": "Late at night, a long wait (the mock's ?scenario=longwait): Merkenich Mitte's timetable read at 23:15 on 7 Sept (MockSample\\SampleTimetable), at that moment."
+}

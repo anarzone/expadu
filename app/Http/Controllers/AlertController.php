@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Alerts\AlertClassifier;
 use App\Bureaucracy\GuidancePublication;
 use App\Models\Alert;
+use App\Models\CityNews;
+use App\Models\NoticeBrief;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,8 +31,10 @@ class AlertController extends Controller
             ->limit(80)
             ->get();
 
+        $briefs = $this->briefs($alerts);
+
         return Inertia::render('alerts', [
-            'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert))->all(),
+            'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert, $briefs[$alert->group_key] ?? null))->all(),
             'unreadCount' => $request->user()->alerts()
                 ->publishable()
                 ->whereNull('dismissed_at')
@@ -44,7 +49,7 @@ class AlertController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function present(Alert $alert): array
+    private function present(Alert $alert, ?NoticeBrief $brief = null): array
     {
         $subtype = $alert->subtype;
         $severity = $alert->severity ?: 'info';
@@ -59,8 +64,10 @@ class AlertController extends Controller
             'severity' => $withdrawn ? 'info' : $severity,
             'source' => $withdrawn ? 'Expadu' : AlertClassifier::source($subtype),
             'action_label' => $withdrawn ? 'Review your current plan' : ($alert->deep_link ? AlertClassifier::actionLabel($subtype) : null),
-            'title' => $withdrawn ? 'Saved guidance needs review' : $alert->title,
-            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.' : (string) $alert->body,
+            // A KVB notice's English brief, when one is written, says what the
+            // card's own words can't; its impact line is never shown.
+            'title' => $withdrawn ? 'Saved guidance needs review' : ($brief?->headline ?: $alert->title),
+            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.' : ($brief?->body ?: (string) $alert->body),
             'deep_link' => $withdrawn ? '/bureaucracy' : $alert->deep_link,
             'guidance_status' => $withdrawn ? 'review_required' : null,
             'read' => $alert->read_at !== null,
@@ -70,6 +77,36 @@ class AlertController extends Controller
             // >1 when the same subject recurred while this card stayed live.
             'occurrences' => (int) ($alert->occurrence_count ?? 1),
         ];
+    }
+
+    /**
+     * The English briefs (App\Transit\NoticeBriefWriter) of the KVB notices
+     * behind these transit cards, keyed by the card's group (disruption:news_<id>).
+     * Read live, so a brief written after the card appeared still shows.
+     *
+     * @param  Collection<int, Alert>  $alerts
+     * @return array<string, NoticeBrief>
+     */
+    private function briefs(Collection $alerts): array
+    {
+        $ids = $alerts
+            ->where('subtype', 'transit_disruption')
+            ->map(fn (Alert $alert) => preg_match('/^disruption:news_(\d+)$/', (string) $alert->group_key, $m) === 1 ? (int) $m[1] : null)
+            ->filter()
+            ->unique()
+            ->values();
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $hashes = CityNews::query()->whereKey($ids)->get(['id', 'title', 'summary'])
+            ->mapWithKeys(fn (CityNews $notice) => [$notice->id => NoticeBrief::hashFor((string) $notice->title, $notice->summary)]);
+        $briefs = NoticeBrief::query()->where('locale', 'en')->whereIn('input_hash', $hashes->values())->get()->keyBy('input_hash');
+
+        return $hashes
+            ->filter(fn (string $hash) => $briefs->has($hash))
+            ->mapWithKeys(fn (string $hash, int $id) => ["disruption:news_{$id}" => $briefs->get($hash)])
+            ->all();
     }
 
     public function markRead(Request $request, Alert $alert): JsonResponse|RedirectResponse
