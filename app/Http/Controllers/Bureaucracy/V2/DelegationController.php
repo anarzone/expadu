@@ -12,6 +12,7 @@ use App\Models\BureaucracyAccessGrant;
 use App\Models\BureaucracyInvitation;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyWorkspace;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,9 +26,14 @@ class DelegationController extends Controller
         $manages = $this->access->canManage($request->user(), $person);
         $grants = $person->grants()->when(! $manages, fn ($query) => $query->where('grantee_user_id', $request->user()->id))->orderByDesc('id')->get();
         abort_if(! $manages && $grants->isEmpty(), 404);
+        // Who each grant is for, by their account's name, and only for someone who manages the
+        // record: they invited that person, who accepted. Never an email, masked or not: the
+        // account that accepted may not be the address that was invited.
+        $names = $manages ? User::query()->whereIn('id', $grants->pluck('grantee_user_id')->unique())->pluck('name', 'id') : collect();
 
         return response()->json(['grants' => $grants->map(fn ($grant) => [
             'id' => $grant->id, 'scopes' => $grant->scopes,
+            'name' => $names[$grant->grantee_user_id] ?? null,
             'is_my_access' => $grant->grantee_user_id === $request->user()->id,
             'accepted_at' => $grant->accepted_at->toIso8601String(),
             'expires_at' => $grant->expires_at->toIso8601String(),
