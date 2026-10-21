@@ -20,7 +20,7 @@ beforeEach(function () {
     $this->travelTo('2026-09-08 12:00:00');
     config()->set('services.llm.base_url', 'https://processor.example.test');
     config()->set('services.llm.model', 'synthetic-parser');
-    config()->set('services.llm.driver', 'openai');
+    config()->set('services.llm.driver', 'anthropic');
     config()->set('services.llm.key', 'synthetic-key');
     config()->set('services.llm.processor_name', 'Synthetic processor');
     config()->set('services.llm.processor_privacy_url', 'https://processor.example.test/privacy');
@@ -253,4 +253,25 @@ test('withdrawal between reservation and dispatch prevents the transport from st
     expect(app(ExternalProcessingGate::class)->send($permit, $purpose, $context, consentTransport()))->toBeNull()
         ->and($withdrawn)->toBeTrue();
     Http::assertNothingSent();
+});
+
+test('a consent given for the old DeepSeek processor sends nothing once the processor is Claude', function () {
+    $purpose = ProcessingPurpose::ComposerParse;
+    $context = ['text' => 'PRIVATE-PROMPT'];
+    $deepSeek = ['base_url' => 'https://api.deepseek.com', 'model' => 'deepseek-chat', 'processor_name' => 'DeepSeek', 'processor_privacy_url' => 'https://www.deepseek.com/privacy'];
+    $claude = ['base_url' => 'https://api.anthropic.com', 'model' => 'claude-haiku-5-5', 'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://www.anthropic.com/legal/privacy'];
+    $user = User::factory()->create();
+    $store = app(ProcessingConsentStore::class);
+    $gate = app(ExternalProcessingGate::class);
+
+    config()->set('services.llm', [...config('services.llm'), ...$deepSeek]);
+    $oldPermit = $store->grant($user, $purpose, $context, processingAcceptance($purpose));
+    config()->set('services.llm', [...config('services.llm'), ...$claude]);
+
+    expect($gate->send($oldPermit, $purpose, $context, consentTransport()))->toBeNull();
+    Http::assertNothingSent();
+
+    // Consent given again, naming Claude, is what lets a request through.
+    $newPermit = $store->grant($user, $purpose, $context, processingAcceptance($purpose));
+    expect($gate->send($newPermit, $purpose, $context, consentTransport()))->not->toBeNull();
 });

@@ -18,8 +18,10 @@ the section below says where the code has moved on (checked 2026-10-18).
   default (`COMPOSER_LLM_ENABLED`). So "the LLM never picks venues" in §1
   describes the June design, not the code.
 - **The parser is heuristic by default.** `LLM_DRIVER=heuristic` runs
-  `HeuristicPromptParser`. `OpenAiCompatiblePromptParser` (DeepSeek or OpenAI)
-  is opt-in. The Anthropic parser was removed.
+  `HeuristicPromptParser`. `LLM_DRIVER=anthropic` turns on
+  `AnthropicPromptParser` (Claude Haiku 5.5; the owner moved every AI path to
+  Claude on 21 Oct 2026, replacing the DeepSeek driver), with the heuristic as
+  its fallback. Sections below that still name DeepSeek describe the June plan.
 - **Travel uses real minutes for the first leg.** `MatrixTravelEstimator`
   takes real one-to-many minutes for the leg from the origin, and falls back
   to the haversine `TravelEstimator` for hops between stops.
