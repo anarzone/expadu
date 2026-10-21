@@ -17,10 +17,12 @@ export function ItemPreview({
     slot,
     children,
     onFull,
+    className = 'composer-preview-trigger',
 }: {
     slot: Slot;
     children: ReactNode;
     onFull: (detail: ItemDetails) => void;
+    className?: string;
 }) {
     const id = useId();
     const popover = useRef<HTMLDivElement>(null);
@@ -112,7 +114,7 @@ export function ItemPreview({
         <>
             <button
                 ref={trigger}
-                className="composer-preview-trigger"
+                className={className}
                 aria-haspopup="dialog"
                 aria-controls={id}
                 aria-expanded={open}

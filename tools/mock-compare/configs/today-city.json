@@ -136,6 +136,6 @@
             "pixels": false
         }
     ],
-    "subpixelNote": "y is set aside: on wider screens City help sits under the Paperwork panel, which is taller than the mock's (the engine's next step wraps to two lines), and on phones the order comes in TD5. At those offsets the text sits at other fractions of a pixel, so those pixels are not compared; boxes and styles are exact.",
+    "subpixelNote": "y is set aside: on wider screens City help sits under the Paperwork panel, which is taller than the mock's (the engine's next step wraps to two lines), and on phones Today's mock header is 2px shorter (see today-everyday's phoneNote). At those offsets the text sits at other fractions of a pixel, so those pixels are not compared; boxes and styles are exact.",
     "weatherNote": "Weather is filled by a queued job; on a database without a worker the seed's fetchSync fills it once."
 }

@@ -1,0 +1,751 @@
+{
+    "name": "composer",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/composer-studio/",
+        "wait": "#studio-form",
+        "screenshotStyle": "#shell, #shell * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/composer",
+        "wait": "#studio-form",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "your day",
+            "mock": "aside.composer-day",
+            "app": "aside.composer-day",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match."
+        },
+        {
+            "name": "your day head",
+            "mock": ".composer-day-head",
+            "app": ".composer-day-head",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "your day mark",
+            "mock": ".composer-day-head .composer-mark",
+            "app": ".composer-day-head .composer-mark",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "back",
+            "mock": ".composer-day-head .composer-minimize",
+            "app": ".composer-day-head .composer-minimize",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "your day title",
+            "mock": "#composer-day-title",
+            "app": "#composer-day-title",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "your day note",
+            "mock": ".composer-day-note",
+            "app": ".composer-day-note",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match."
+        },
+        {
+            "name": "day items",
+            "mock": ".day-items",
+            "app": ".day-items",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match."
+        },
+        {
+            "name": "day item trip",
+            "mock": ".day-item",
+            "app": ".day-item",
+            "index": 0,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item trip tile",
+            "mock": ".day-item .day-item-tile",
+            "app": ".day-item .day-item-tile",
+            "index": 0,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item appointment",
+            "mock": ".day-item",
+            "app": ".day-item",
+            "index": 1,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item appointment tile",
+            "mock": ".day-item .day-item-tile",
+            "app": ".day-item .day-item-tile",
+            "index": 1,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item deadline",
+            "mock": ".day-item",
+            "app": ".day-item",
+            "index": 2,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item deadline tile",
+            "mock": ".day-item .day-item-tile",
+            "app": ".day-item .day-item-tile",
+            "index": 2,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day item nearby",
+            "mock": ".day-item",
+            "app": ".day-item",
+            "index": 3,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ],
+            "contentDiffers": true,
+            "ignore": [
+                "w"
+            ],
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\")."
+        },
+        {
+            "name": "day item tonight",
+            "mock": ".day-item",
+            "app": ".day-item",
+            "index": 4,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match."
+        },
+        {
+            "name": "coming up",
+            "mock": ".day-later",
+            "app": ".day-later",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "coming up row",
+            "mock": ".day-later button",
+            "app": ".day-later button",
+            "index": 0,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day tools",
+            "mock": ".day-tools",
+            "app": ".day-tools",
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "day tool My Plans",
+            "mock": ".day-tools button",
+            "app": ".day-tools button",
+            "index": 0,
+            "widths": [
+                1280,
+                1440,
+                1512
+            ]
+        },
+        {
+            "name": "heading row",
+            "mock": ".composer-heading",
+            "app": ".composer-heading",
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "heading mark",
+            "mock": ".composer-heading .composer-mark",
+            "app": ".composer-heading .composer-mark",
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "heading back",
+            "mock": ".composer-heading .composer-minimize",
+            "app": ".composer-heading .composer-minimize",
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "day row",
+            "mock": ".composer-day-row",
+            "app": ".composer-day-row",
+            "widths": [
+                360,
+                390,
+                768
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match."
+        },
+        {
+            "name": "day chip trip",
+            "mock": ".day-chip",
+            "app": ".day-chip",
+            "index": 0,
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "day chip appointment",
+            "mock": ".day-chip",
+            "app": ".day-chip",
+            "index": 1,
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "day chip deadline",
+            "mock": ".day-chip",
+            "app": ".day-chip",
+            "index": 2,
+            "widths": [
+                360,
+                390,
+                768
+            ]
+        },
+        {
+            "name": "day chip nearby",
+            "mock": ".day-chip",
+            "app": ".day-chip",
+            "index": 3,
+            "widths": [
+                360,
+                390,
+                768
+            ],
+            "contentDiffers": true,
+            "ignore": [
+                "w"
+            ],
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\")."
+        },
+        {
+            "name": "day chip tonight",
+            "mock": ".day-chip",
+            "app": ".day-chip",
+            "index": 4,
+            "widths": [
+                360,
+                390,
+                768
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match. It follows the Nearby chip, whose wording is shorter (see day chip nearby).",
+            "ignore": [
+                "x",
+                "w"
+            ]
+        },
+        {
+            "name": "welcome",
+            "mock": ".studio-welcome",
+            "app": ".studio-welcome",
+            "contentDiffers": true,
+            "ignore": [
+                "h"
+            ],
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match. On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+        },
+        {
+            "name": "welcome title",
+            "mock": ".studio-welcome h1",
+            "app": ".studio-welcome h1"
+        },
+        {
+            "name": "welcome text",
+            "mock": ".studio-welcome > p",
+            "app": ".studio-welcome > p"
+        },
+        {
+            "name": "starter cards",
+            "mock": ".starter-cards",
+            "app": ".starter-cards",
+            "contentDiffers": true,
+            "ignore": [
+                "h"
+            ],
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match. On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+        },
+        {
+            "name": "starter Travel",
+            "mock": ".starter-card.starter-travel",
+            "app": ".starter-card.starter-travel"
+        },
+        {
+            "name": "starter Paperwork",
+            "mock": ".starter-card.starter-paperwork",
+            "app": ".starter-card.starter-paperwork"
+        },
+        {
+            "name": "starter Events",
+            "mock": ".starter-card.starter-events",
+            "app": ".starter-card.starter-events",
+            "contentDiffers": true,
+            "ignoreReason": "The mock labels its fictional day (\"Sample day.\", \"sample programme\", \"2 sample events\"); the app's day is the person's own, so those words aren't there. Boxes and styles still match. On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower.",
+            "ignore": [
+                "h"
+            ]
+        },
+        {
+            "name": "starter Events stamp",
+            "mock": ".starter-events .starter-stamp",
+            "app": ".starter-events .starter-stamp"
+        },
+        {
+            "name": "starter Nearby",
+            "mock": ".starter-card.starter-nearby",
+            "app": ".starter-card.starter-nearby",
+            "ignore": [
+                "h"
+            ],
+            "contentDiffers": true,
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\"). On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+        },
+        {
+            "name": "starter tag",
+            "mock": ".starter-card .starter-tag",
+            "app": ".starter-card .starter-tag",
+            "index": 0
+        },
+        {
+            "name": "starter chips",
+            "mock": ".starter-chips",
+            "app": ".starter-chips",
+            "ignore": [
+                "y"
+            ],
+            "ignoreReason": "On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+        },
+        {
+            "name": "starter chip",
+            "mock": ".starter-chip",
+            "app": ".starter-chip",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "ignoreReason": "On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+        },
+        {
+            "name": "input band",
+            "mock": ".studio-input-wrap",
+            "app": ".studio-input-wrap"
+        },
+        {
+            "name": "form",
+            "mock": "#studio-form",
+            "app": "#studio-form"
+        },
+        {
+            "name": "field",
+            "mock": ".studio-field",
+            "app": ".studio-field"
+        },
+        {
+            "name": "text box",
+            "mock": "#studio-request",
+            "app": "#studio-request"
+        },
+        {
+            "name": "tools",
+            "mock": ".composer-tools",
+            "app": ".composer-tools"
+        },
+        {
+            "name": "plus",
+            "mock": "details.composer-actions > summary",
+            "app": "details.composer-actions > summary"
+        },
+        {
+            "name": "send",
+            "mock": "button.send",
+            "app": "button.send"
+        },
+        {
+            "name": "round button",
+            "mock": "button.composer-here",
+            "app": "button.composer-here",
+            "widths": [
+                360,
+                390
+            ]
+        },
+        {
+            "name": "My Plans panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "mockBefore": [
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu [data-nav=\"plans\"]"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "#workspace-panel [data-date=\"2026-10-02\"]"
+                },
+                {
+                    "wait": 200
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu button:has-text(\"My Plans\")"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "#workspace-panel [data-date=\"2026-10-02\"]"
+                },
+                {
+                    "wait": 200
+                }
+            ]
+        },
+        {
+            "name": "panel top",
+            "mock": "#workspace-panel .panel-top",
+            "app": "#workspace-panel .panel-top"
+        },
+        {
+            "name": "panel back",
+            "mock": ".panel-top button",
+            "app": ".panel-top button"
+        },
+        {
+            "name": "panel title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "plans heading",
+            "mock": ".plans-heading",
+            "app": ".plans-heading"
+        },
+        {
+            "name": "week",
+            "mock": ".day-selector",
+            "app": ".day-selector"
+        },
+        {
+            "name": "week back",
+            "mock": ".day-selector .date-step",
+            "app": ".day-selector .date-step"
+        },
+        {
+            "name": "day chosen",
+            "mock": ".days button[aria-pressed=\"true\"]",
+            "app": ".days button[aria-pressed=\"true\"]"
+        },
+        {
+            "name": "day today",
+            "mock": ".days button.is-today",
+            "app": ".days button.is-today"
+        },
+        {
+            "name": "date line",
+            "mock": ".plans-date-line",
+            "app": ".plans-date-line"
+        },
+        {
+            "name": "date line title",
+            "mock": ".plans-date-line h2",
+            "app": ".plans-date-line h2"
+        },
+        {
+            "name": "date jump",
+            "mock": ".date-jump",
+            "app": ".date-jump"
+        },
+        {
+            "name": "empty day",
+            "mock": ".empty-day",
+            "app": ".empty-day"
+        },
+        {
+            "name": "empty day title",
+            "mock": ".empty-day h2",
+            "app": ".empty-day h2"
+        },
+        {
+            "name": "plan this day",
+            "mock": ".empty-day .studio-button",
+            "app": ".empty-day .studio-button"
+        },
+        {
+            "name": "choose saved",
+            "mock": ".empty-day a.plain-button",
+            "app": ".empty-day a.plain-button"
+        },
+        {
+            "name": "Saved ideas panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "before": [
+                {
+                    "click": ".empty-day a.plain-button"
+                },
+                {
+                    "wait": 5000
+                }
+            ]
+        },
+        {
+            "name": "saved back",
+            "mock": ".panel-top button",
+            "app": ".panel-top button"
+        },
+        {
+            "name": "saved title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "saved heading",
+            "mock": ".plans-heading",
+            "app": ".plans-heading"
+        },
+        {
+            "name": "saved count",
+            "mock": ".collection-total",
+            "app": ".collection-total"
+        },
+        {
+            "name": "saved empty",
+            "mock": ".saved-empty",
+            "app": ".saved-empty"
+        },
+        {
+            "name": "see what's on",
+            "mock": ".saved-empty .studio-button",
+            "app": ".saved-empty .studio-button"
+        },
+        {
+            "name": "History panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu [data-nav=\"history\"]"
+                },
+                {
+                    "wait": 400
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu button:has-text(\"History\")"
+                },
+                {
+                    "wait": 400
+                }
+            ]
+        },
+        {
+            "name": "history title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "history intro",
+            "mock": ".history-intro",
+            "app": ".history-intro",
+            "index": 0
+        },
+        {
+            "name": "history section",
+            "mock": ".history-section",
+            "app": ".history-section",
+            "index": 0
+        },
+        {
+            "name": "delete confirm",
+            "mock": ".studio-detail-dialog",
+            "app": ".studio-detail-dialog",
+            "mockBefore": [
+                {
+                    "click": "[data-action=\"delete-history\"]"
+                },
+                {
+                    "wait": 500
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": "#workspace-panel button:has-text(\"Delete conversation history\")"
+                },
+                {
+                    "wait": 500
+                }
+            ]
+        },
+        {
+            "name": "delete confirm title",
+            "mock": ".studio-detail-dialog > header h2",
+            "app": ".studio-detail-dialog > header h2"
+        },
+        {
+            "name": "delete confirm close",
+            "mock": ".studio-detail-dialog [data-detail-close]",
+            "app": ".studio-detail-dialog [data-detail-close]"
+        },
+        {
+            "name": "delete confirm text",
+            "mock": ".studio-detail-dialog .detail-body > p",
+            "app": ".studio-detail-dialog .detail-body > p"
+        },
+        {
+            "name": "delete confirm actions",
+            "mock": ".studio-detail-dialog .detail-actions",
+            "app": ".studio-detail-dialog .detail-actions"
+        },
+        {
+            "name": "keep it",
+            "mock": ".studio-detail-dialog .detail-actions .plain-button",
+            "app": ".studio-detail-dialog .detail-actions .plain-button"
+        },
+        {
+            "name": "delete history",
+            "mock": ".studio-detail-dialog .detail-actions .studio-button",
+            "app": ".studio-detail-dialog .detail-actions .studio-button"
+        }
+    ]
+}

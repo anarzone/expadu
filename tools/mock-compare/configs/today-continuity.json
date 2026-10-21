@@ -1,0 +1,217 @@
+{
+    "name": "today-continuity",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TodaySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".deadline-strip",
+        "init": [
+            "try{localStorage.setItem('expadu-connected-design-v1', \"{\\\"version\\\":1,\\\"draft\\\":[],\\\"saved\\\":null,\\\"prompt\\\":\\\"\\\",\\\"brief\\\":{\\\"date\\\":\\\"\\\",\\\"from\\\":\\\"\\\",\\\"mode\\\":\\\"transit\\\",\\\"budget\\\":\\\"\\\",\\\"notes\\\":\\\"\\\"},\\\"reminders\\\":[],\\\"revision\\\":0,\\\"savedIdeas\\\":[{\\\"id\\\":\\\"saved-bau\\\",\\\"type\\\":\\\"place\\\",\\\"title\\\":\\\"Bau\\\",\\\"label\\\":\\\"Café\\\",\\\"area\\\":\\\"Mülheim\\\",\\\"kind\\\":\\\"cafe\\\"},{\\\"id\\\":\\\"today-review-cinema\\\",\\\"type\\\":\\\"event\\\",\\\"title\\\":\\\"Cinema under the stars\\\",\\\"date\\\":\\\"2026-09-30\\\",\\\"start\\\":\\\"20:00\\\",\\\"end\\\":\\\"22:00\\\",\\\"venue\\\":\\\"Stadtgarten\\\",\\\"area\\\":\\\"Neustadt-Nord\\\",\\\"category\\\":\\\"culture\\\"}]}\");localStorage.setItem('expadu-composer-studio-v1', \"{\\\"conversation\\\":{\\\"currentId\\\":\\\"c1\\\",\\\"chapters\\\":[{\\\"id\\\":\\\"c1\\\",\\\"title\\\":\\\"Saturday with Maya\\\",\\\"startedAt\\\":\\\"2026-09-30T11:00:00+02:00\\\",\\\"entries\\\":[{\\\"role\\\":\\\"user\\\",\\\"text\\\":\\\"Plan Saturday with Maya: something outdoors, then dinner.\\\"}]}]}}\");}catch(e){}"
+        ]
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".deadline-strip",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "around heading",
+            "mock": ".around-heading h3",
+            "app": ".around-heading h3",
+            "ignore": ["y"]
+        },
+        {
+            "name": "around source",
+            "mock": ".around-heading small",
+            "app": ".around-heading small",
+            "ignore": ["y"]
+        },
+        {
+            "name": "around context",
+            "mock": ".around-context",
+            "app": ".around-context",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea near the plan",
+            "mock": ".around-item",
+            "app": ".around-item",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea mark",
+            "mock": ".around-symbol",
+            "app": ".around-symbol",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea title",
+            "mock": ".around-open strong",
+            "app": ".around-open strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea meta",
+            "mock": ".around-open small",
+            "app": ".around-open small",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea plan",
+            "mock": ".around-item > .icon-button",
+            "app": ".around-item > .icon-button",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved",
+            "mock": ".saved-ideas",
+            "app": ".saved-ideas",
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "saved heading",
+            "mock": ".saved-ideas h2",
+            "app": ".saved-ideas h2",
+            "ignore": ["y"]
+        },
+        {
+            "name": "View all",
+            "mock": ".saved-all",
+            "app": ".saved-all",
+            "ignore": ["y"]
+        },
+        {
+            "name": "first saved",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "second saved",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 1
+        },
+        {
+            "name": "saved monogram",
+            "mock": ".saved-monogram",
+            "app": ".saved-monogram",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "saved meta",
+            "mock": ".saved-idea small",
+            "app": ".saved-idea small",
+            "ignore": ["y", "w"],
+            "index": 0,
+            "contentDiffers": true
+        },
+        {
+            "name": "saved plan",
+            "mock": ".saved-idea .icon-button",
+            "app": ".saved-idea .icon-button",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "coming up",
+            "mock": ".coming-up > summary",
+            "app": ".coming-up > summary",
+            "ignore": ["y"]
+        },
+        {
+            "name": "first upcoming",
+            "mock": ".upcoming-plan",
+            "app": ".upcoming-plan",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "upcoming date",
+            "mock": ".upcoming-date",
+            "app": ".upcoming-date",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "upcoming copy",
+            "mock": ".upcoming-copy",
+            "app": ".upcoming-copy",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "upcoming time",
+            "mock": ".upcoming-plan time",
+            "app": ".upcoming-plan time",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "Plan tomorrow",
+            "mock": ".plan-tomorrow",
+            "app": ".plan-tomorrow",
+            "ignore": ["y"]
+        },
+        {
+            "name": "continuation",
+            "mock": ".continue-composer",
+            "app": ".continue-composer",
+            "ignore": ["y"],
+            "pixelThreshold": 0.001
+        },
+        {
+            "name": "continuation kind",
+            "mock": ".continue-kind",
+            "app": ".continue-kind",
+            "ignore": ["y"]
+        },
+        {
+            "name": "continuation state",
+            "mock": ".continue-state",
+            "app": ".continue-state",
+            "ignore": ["y"]
+        },
+        {
+            "name": "continuation title",
+            "mock": ".continue-summary h3",
+            "app": ".continue-summary h3",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Continue conversation",
+            "mock": ".continue-actions .outline-action",
+            "app": ".continue-actions .outline-action",
+            "ignore": ["y"],
+            "pixelThreshold": 0.001
+        },
+        {
+            "name": "History",
+            "mock": ".continue-actions .text-action",
+            "app": ".continue-actions .text-action",
+            "ignore": ["y"],
+            "index": 0
+        },
+        {
+            "name": "My plans",
+            "mock": ".continue-actions .text-action",
+            "app": ".continue-actions .text-action",
+            "ignore": ["y"],
+            "index": 1
+        }
+    ],
+    "seedNote": "The mock keeps saved ideas and Composer's conversation in its own store; its side seeds them before load (Bau, then Cinema under the stars, and 'Saturday with Maya'), as MockSample\\TodaySeeder seeds the app account.",
+    "ignoreNote": "y: the around-plan block above them is shorter in the app, which leaves out 'More nearby on the map' until Around here exists (AH1) and credits OpenStreetMap without the mock's 'sample export of 7 Oct 2026', so these sections sit higher. Phones are measured in today-phone.",
+    "antialiasNote": "The conversation card and its button may differ in a few anti-aliased edge pixels (0.02% at most), as they sit at other fractions of a pixel below the around block; 0.1% is allowed there."
+}

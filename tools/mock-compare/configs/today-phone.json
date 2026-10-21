@@ -1,0 +1,270 @@
+{
+    "name": "today-phone",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TodaySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".deadline-strip",
+        "init": [
+            "try{localStorage.setItem('expadu-connected-design-v1', \"{\\\"version\\\":1,\\\"draft\\\":[],\\\"saved\\\":null,\\\"prompt\\\":\\\"\\\",\\\"brief\\\":{\\\"date\\\":\\\"\\\",\\\"from\\\":\\\"\\\",\\\"mode\\\":\\\"transit\\\",\\\"budget\\\":\\\"\\\",\\\"notes\\\":\\\"\\\"},\\\"reminders\\\":[],\\\"revision\\\":0,\\\"savedIdeas\\\":[{\\\"id\\\":\\\"saved-bau\\\",\\\"type\\\":\\\"place\\\",\\\"title\\\":\\\"Bau\\\",\\\"label\\\":\\\"Café\\\",\\\"area\\\":\\\"Mülheim\\\",\\\"kind\\\":\\\"cafe\\\"},{\\\"id\\\":\\\"today-review-cinema\\\",\\\"type\\\":\\\"event\\\",\\\"title\\\":\\\"Cinema under the stars\\\",\\\"date\\\":\\\"2026-09-30\\\",\\\"start\\\":\\\"20:00\\\",\\\"end\\\":\\\"22:00\\\",\\\"venue\\\":\\\"Stadtgarten\\\",\\\"area\\\":\\\"Neustadt-Nord\\\",\\\"category\\\":\\\"culture\\\"}]}\");localStorage.setItem('expadu-composer-studio-v1', \"{\\\"conversation\\\":{\\\"currentId\\\":\\\"c1\\\",\\\"chapters\\\":[{\\\"id\\\":\\\"c1\\\",\\\"title\\\":\\\"Saturday with Maya\\\",\\\"startedAt\\\":\\\"2026-09-30T11:00:00+02:00\\\",\\\"entries\\\":[{\\\"role\\\":\\\"user\\\",\\\"text\\\":\\\"Plan Saturday with Maya: something outdoors, then dinner.\\\"}]}]}}\");}catch(e){}"
+        ],
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".deadline-strip",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "essentials",
+            "mock": ".practical-surface",
+            "app": ".practical-surface",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "pixels": false
+        },
+        {
+            "name": "city help",
+            "mock": ".city-help",
+            "app": ".city-help",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "pixels": false
+        },
+        {
+            "name": "city help heading",
+            "mock": "#city-help-title",
+            "app": "#city-help-title",
+            "ignore": ["y"],
+            "pixelThreshold": 0.03
+        },
+        {
+            "name": "forecast",
+            "mock": ".forecast-strip",
+            "app": ".forecast-strip",
+            "contentDiffers": true,
+            "ignore": ["y"]
+        },
+        {
+            "name": "departures",
+            "mock": ".departure-board > summary",
+            "app": ".departure-board > summary",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork",
+            "mock": ".practical-personal",
+            "app": ".practical-personal",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork panel",
+            "mock": ".paperwork-panel",
+            "app": ".paperwork-panel",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork title",
+            "mock": "#paperwork-title",
+            "app": "#paperwork-title",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork focus",
+            "mock": ".paperwork-focus",
+            "app": ".paperwork-focus",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork focus title",
+            "mock": ".paperwork-focus h3",
+            "app": ".paperwork-focus h3",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork focus line",
+            "mock": ".paperwork-focus p",
+            "app": ".paperwork-focus p",
+            "ignore": ["y"]
+        },
+        {
+            "name": "paperwork progress",
+            "mock": ".document-progress",
+            "app": ".document-progress",
+            "ignore": ["y"]
+        },
+        {
+            "name": "progress count",
+            "mock": ".document-progress strong",
+            "app": ".document-progress strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "progress word",
+            "mock": ".document-progress > span",
+            "app": ".document-progress > span",
+            "ignore": ["y"]
+        },
+        {
+            "name": "around",
+            "mock": ".around-plan",
+            "app": ".around-plan",
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "discovery",
+            "mock": ".discovery",
+            "app": ".discovery",
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "discovery heading",
+            "mock": ".discovery-heading h2",
+            "app": ".discovery-heading h2",
+            "ignore": ["y"]
+        },
+        {
+            "name": "first poster",
+            "mock": ".event-card",
+            "app": ".event-card",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "continuation",
+            "mock": ".continue-composer",
+            "app": ".continue-composer",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "continuation (pixels)",
+            "mock": ".continue-composer",
+            "app": ".continue-composer",
+            "ignore": ["y"],
+            "widths": [390]
+        },
+        {
+            "name": "saved",
+            "mock": ".saved-ideas",
+            "app": ".saved-ideas",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "saved (pixels)",
+            "mock": ".saved-ideas",
+            "app": ".saved-ideas",
+            "ignore": ["y"],
+            "widths": [390]
+        },
+        {
+            "name": "saved title",
+            "mock": ".saved-title",
+            "app": ".saved-title",
+            "ignore": ["y"],
+            "index": 0,
+            "pixels": false
+        },
+        {
+            "name": "saved title (pixels)",
+            "mock": ".saved-title",
+            "app": ".saved-title",
+            "ignore": ["y"],
+            "index": 0,
+            "widths": [390]
+        },
+        {
+            "name": "second saved",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 1,
+            "pixels": false
+        },
+        {
+            "name": "second saved (pixels)",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 1,
+            "widths": [390]
+        },
+        {
+            "name": "first saved",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 0,
+            "pixels": false
+        },
+        {
+            "name": "first saved (pixels)",
+            "mock": ".saved-idea",
+            "app": ".saved-idea",
+            "ignore": ["y"],
+            "index": 0,
+            "widths": [390]
+        },
+        {
+            "name": "saved heading",
+            "mock": ".saved-ideas h2",
+            "app": ".saved-ideas h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "saved heading (pixels)",
+            "mock": ".saved-ideas h2",
+            "app": ".saved-ideas h2",
+            "ignore": ["y"],
+            "widths": [390]
+        },
+        {
+            "name": "coming up",
+            "mock": ".coming-up",
+            "app": ".coming-up",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "coming up (pixels)",
+            "mock": ".coming-up",
+            "app": ".coming-up",
+            "ignore": ["y"],
+            "widths": [390]
+        },
+        {
+            "name": "city links",
+            "mock": ".continue-support",
+            "app": ".continue-support",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "city links (pixels)",
+            "mock": ".continue-support",
+            "app": ".continue-support",
+            "ignore": ["y"],
+            "widths": [390]
+        }
+    ],
+    "seedNote": "The mock keeps saved ideas and Composer's conversation in its own store; its side seeds them before load (Bau, then Cinema under the stars, and 'Saturday with Maya'), as MockSample\\TodaySeeder seeds the app account.",
+    "orderNote": "This config measures each section in a phone's one column (the mock's priority() and arrange()). The order itself is the same on both sides for the everyday, quiet, busy and first-visit days, with reading (DOM) and visual order agreeing; the PR lists it.",
+    "phoneNote": "y is set aside for 2px: Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (design session, item 12). Below the fold the mock also scrolls inside #page-scroll, so y there is set aside too.",
+    "contentNote": "City help's forecast and departures are live (see today-city), so the essentials and City help compare box and styles. 'Also in Mülheim' is shorter in the app, which leaves out 'More nearby on the map' until Around here exists (AH1) and credits OpenStreetMap without the mock's 'sample export of 7 Oct 2026'; discovery is shorter, without the mock's compact samples (Chess & coffee, the riverside walk).",
+    "subpixelNote": "The sections below those two sit at other fractions of a pixel at 360 (the two differ by 306.8px there), so their pixels are compared at 390, where the difference is whole.",
+    "headingNote": "The City help heading's box and styles are exact and both sides load the same Geist files, but the anti-aliasing of one glyph (the 'd' of 'today') differs by 33 pixels; 3% is allowed there. Cause not found.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
+}

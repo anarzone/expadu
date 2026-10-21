@@ -37,10 +37,13 @@ the same config at its own servers.
 The report lands in `storage/mock-compare/<name>/report.md` with one image per pair and width
 (mock · app · diff). Exit code 1 means something differs.
 
-Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config) and
+Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config, except
+for a `login` with `"own": true`, which always signs in as its own account, e.g. an unverified one) and
 the session is cached per port and account in `storage/mock-compare/.session-<port>-<account>.json`, so
 repeated runs don't trip the login rate limit. Sign-in sends the side's `cookies` too, so a page loaded
-while signing in already has the mock's clock; the cached session keeps none of them.
+while signing in already has the mock's clock; the cached session keeps none of them. A config that needs
+an untouched account sets `"sibling"` in its `login`: it signs in as `<name>+<sibling>@…` of that
+account instead, which its seed makes.
 
 ## Config
 
@@ -120,7 +123,9 @@ On your machine (`APP_ENV=local` only):
   the app side's `init`, with the same moment as `clock`:
   `"init": ["document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"]`
   or, so the very first request carries it too, from the side's `cookies`:
-  `"cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }`.
+  `"cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }`. Use `cookies` when the page's first
+  response depends on the day (Events works out a past day from it); `init` is enough where the
+  day's data is deferred, as on Today.
 - **Sample day:** `php artisan mock:sample-day {everyday|busy|quiet|travel} --email=<account>` writes
   the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
   `seed`; run that first.
@@ -143,6 +148,14 @@ On your machine (`APP_ENV=local` only):
   Around here reads the same places) and its two evening
   events (`E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\EventsSeeder'`, Events' seeder). Both are local only.
+- **Saved ideas and a conversation:** `today-continuity` needs both sides seeded. The mock keeps them
+  in its own store, which the config's mock `init` fills before load. The app gets the same from
+  `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\TodaySeeder'`
+  (after PlacesSeeder and EventsSeeder); `today-phone` measures a phone's one column with the same
+  seed. `today-first-visit` needs an account with nothing on it, so it signs in as your account's
+  sibling (`<name>+first-visit@…`): `mock:sample-day first-visit --email=<account>` makes it when
+  missing, with no plans at all, and never clears your account. It stops with a message if the
+  sibling has picked up a plan, a save, a conversation or a Paperwork record.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your

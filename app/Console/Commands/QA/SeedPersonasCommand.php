@@ -125,8 +125,8 @@ class SeedPersonasCommand extends Command
     }
 
     /**
-     * Upsert the admin account that unlocks /bureaucracy/demo and the
-     * Filament /admin panel on staging.
+     * Upsert the admin account that unlocks the QA tools and the Filament
+     * /admin panel on staging.
      */
     private function seedAdmin(string $password): User
     {

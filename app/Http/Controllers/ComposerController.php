@@ -12,10 +12,12 @@ use App\Composer\Constraints;
 use App\Composer\Contracts\EstimatesTravel;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
+use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
 use App\Composer\OpenAiCompatiblePromptParser;
+use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
 use App\Composer\PlanNarrator;
@@ -29,6 +31,7 @@ use App\Composer\Swapper;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
+use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Http\Requests\ParseComposerPromptRequest;
@@ -70,6 +73,9 @@ use Inertia\Response;
  */
 class ComposerController extends Controller
 {
+    /** How long a page's hand-off waits for Composer to open, in seconds. */
+    private const ENTRY_TTL = 300;
+
     public function __construct(private ActivePlanStore $plans) {}
 
     private ?array $forecastCache = null;
@@ -91,8 +97,14 @@ class ComposerController extends Controller
 
         return Inertia::render('composer', [
             'workspace' => app(WorkspaceStore::class)->read($request->user()),
+            // Your day: the shared day projection (plans, appointments, when to leave for
+            // the next) and what the person's Paperwork record has coming up. Deferred
+            // together, so the frame paints first.
+            'day' => DayProjection::deferred($request),
+            'paperwork' => Inertia::defer(fn () => app(PaperworkGlance::class)->for($request->user()), 'day'),
+            'around' => Inertia::defer(fn () => app(DayAround::class)->for($request->user()), 'day'),
             // What a page handed over by POST (see entry()); present once.
-            'entry' => $request->session()->get('composer.entry'),
+            'entry' => fn () => $this->takeEntry($request),
             'prompt' => $request->query('prompt'),
             'planDate' => $request->query('plan'),
             'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
@@ -120,9 +132,28 @@ class ComposerController extends Controller
     }
 
     /**
+     * The hand-off from entry(), removed as it is read. Words left waiting longer than a
+     * few minutes (the visit never arrived) are dropped rather than shown later.
+     *
+     * @return array{prompt: string, about: ?string}|null
+     */
+    private function takeEntry(Request $request): ?array
+    {
+        $entry = $request->session()->pull('composer.entry');
+
+        if (! is_array($entry) || now()->getTimestamp() - (int) ($entry['at'] ?? 0) > self::ENTRY_TTL) {
+            return null;
+        }
+
+        return ['prompt' => (string) $entry['prompt'], 'about' => $entry['about'] ?? null];
+    }
+
+    /**
      * What a page hands Composer (the tray's words and the page they came
-     * from) arrives by POST and waits in a one-time session flash, never in
-     * the URL, so it stays out of browser history and access logs.
+     * from) arrives by POST and waits in the session, never in the URL, so it
+     * stays out of browser history and access logs. Composer's own page takes
+     * it, once (takeEntry()); a flash would go to whichever request came next,
+     * such as one the previous page still had in flight.
      */
     public function entry(Request $request): RedirectResponse
     {
@@ -131,7 +162,11 @@ class ComposerController extends Controller
             'about' => ['nullable', 'string', 'max:160'],
             'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
         ]);
-        $request->session()->flash('composer.entry', ['prompt' => trim($validated['prompt']), 'about' => $validated['about'] ?? null]);
+        $request->session()->put('composer.entry', [
+            'prompt' => trim($validated['prompt']),
+            'about' => $validated['about'] ?? null,
+            'at' => now()->getTimestamp(),
+        ]);
 
         return redirect()->route('composer', array_filter(['panel' => $validated['panel'] ?? null]));
     }
