@@ -155,8 +155,13 @@ export function CityHelp({
     );
 }
 
-/** Whether a station's times are live, recorded or the timetable's. */
+/** Whether a station's times are live, recorded, the timetable's or missing. */
 function captureLabel(station: Station): string {
+    // The board's feed failed: Travel's own words, never the timetable's.
+    if (station.time_basis === 'unavailable') {
+        return 'Times unavailable right now';
+    }
+
     if (station.is_stale || station.time_basis === 'stale') {
         return sourceLabel({
             source: 'recorded',
@@ -284,7 +289,7 @@ function DepartureBoard({
                                     );
                                 })}
                             </LineStrips>
-                        ) : (
+                        ) : station.time_basis === 'unavailable' ? null : (
                             <p className="board-empty">
                                 No departures in the next half hour.
                             </p>
