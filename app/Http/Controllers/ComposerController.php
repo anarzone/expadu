@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Ai\LlmRollout;
 use App\Composer\ActivePlanStore;
+use App\Composer\Answers\Answers;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
@@ -24,6 +25,7 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
+use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -188,7 +190,7 @@ class ComposerController extends Controller
      * verified answer, or search), plus `source` so a degraded parse is
      * framed honestly. The parser never picks venues or answers questions.
      */
-    public function parse(ParseComposerPromptRequest $request, ParsesPrompt $parser, ProfileEngine $profiles): JsonResponse
+    public function parse(ParseComposerPromptRequest $request, ParsesPrompt $parser, ProfileEngine $profiles, Answers $answers): JsonResponse
     {
         $validated = $request->validated();
         $profile = $profiles->build($request->user());
@@ -203,8 +205,15 @@ class ComposerController extends Controller
             CarbonImmutable::now('Europe/Berlin'),
             $permit,
         );
+        // Which kind of answer the request wants (the approved Composer's order), and
+        // whether Composer answers it itself (the `answer` command) rather than planning.
+        $routed = $answers->route($request->user(), $validated['text'], CarbonImmutable::now('Europe/Berlin'),
+            app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
+        $answered = in_array($routed['kind'], Answers::KINDS, true)
+            && ! ($routed['kind'] === 'clarify' && $parsed->intent === PromptIntent::PlanDay)
+            && ! ($routed['kind'] === 'unavailable' && ($routed['topic'] ?? null) === 'listing');
 
-        return response()->json($parsed->toArray());
+        return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }
 
     public function compose(
