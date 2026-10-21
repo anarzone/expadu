@@ -65,10 +65,16 @@ class TravelEstimator implements EstimatesTravel
             TransportMode::Walk => max(1, (int) ceil($km / self::WALK_KMH * 60)),
             TransportMode::Bike => max(1, (int) ceil($km / self::BIKE_KMH * 60)),
             // transit / unset → the composer's distance-tiered model (unchanged).
-            default => $km <= self::WALK_MAX_KM
+            default => self::walks($km)
                 ? max(1, (int) ceil($km / self::WALK_KMH * 60))
                 : self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60),
         };
+    }
+
+    /** Whether the distance-tiered model walks this far (rather than taking transit). */
+    public static function walks(float $km): bool
+    {
+        return $km <= self::WALK_MAX_KM;
     }
 
     public function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
