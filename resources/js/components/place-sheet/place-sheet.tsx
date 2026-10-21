@@ -5,6 +5,7 @@
    Get there (Travel's ways to it). Around here opens it from a row;
    Composer (CO3) opens it by a place's id. */
 
+import { Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { PlaceIcon } from '@/components/around-here/place-icon';
 import { cuisineNames, dietText } from '@/components/around-here/place-model';
@@ -12,6 +13,7 @@ import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { timetable } from '@/routes';
 import { PlaceWay } from './place-way';
 import { PlanVisitFooter, PlanVisitPanel, usePlanVisit } from './plan-visit';
 import './place-sheet.css';
@@ -43,6 +45,8 @@ type Detail = {
     lng: number | null;
     kind_icon: string;
     feedback_state: string | null;
+    /** Whether it can be recommended and planned to (active, open to all). */
+    recommendation_status?: 'available' | 'unavailable';
     hours_at?:
         | { state: 'open'; until: string }
         | { state: 'closed'; opens?: string; today?: boolean }
@@ -292,7 +296,7 @@ function PlaceTabs({
                     {section === 'plan' ? (
                         <PlanVisitPanel visit={visit} />
                     ) : section === 'way' && point ? (
-                        <PlaceWay to={point} from={from} />
+                        <PlaceWay to={point} from={from} spotId={d.id} />
                     ) : (
                         <About detail={d} />
                     )}
@@ -319,6 +323,19 @@ function PlaceTabs({
                         >
                             Plan a visit
                         </button>
+                    </div>
+                ) : d.recommendation_status === 'available' ? (
+                    // The mock's Open planner: Plan a trip with this place as
+                    // where you go, handed over by its id (#180).
+                    <div className="place-sheet-footer is-end">
+                        <Link
+                            className="place-sheet-primary"
+                            href={timetable.url({
+                                query: { view: 'journey', place: d.id },
+                            })}
+                        >
+                            Open planner
+                        </Link>
                     </div>
                 ) : null}
             </div>

@@ -108,7 +108,7 @@ export const fields: Record<string, FieldCopy> = {
     },
     health_coverage_confirmed: {
         label: 'Health insurance',
-        icon: 'check',
+        icon: 'health',
         options: { true: 'Confirmed with my insurer', false: 'Not yet' },
     },
     tax_id_available: {
@@ -185,7 +185,43 @@ export const fields: Record<string, FieldCopy> = {
 };
 
 /** The order the summary lists answers in: who you are, your move, your papers, then the rest. */
-export const order = Object.keys(fields);
+// The order Your situation lists answers in: the registry's, as the mock has it
+// (bureaucracy-next/registry.js), then any field it doesn't name.
+const registryOrder = [
+    'citizenship_group',
+    'arrival_planned',
+    'current_residence_title',
+    'visa_expires_at',
+    'residence_title_expires_at',
+    'purpose',
+    'entry_mode',
+    'arrival_date',
+    'moved_in_at',
+    'case_goal',
+    'permit_track',
+    'registration_status',
+    'housing_provider_confirmation',
+    'health_coverage_confirmed',
+    'residence_card_expires_at',
+    'german_level',
+    'weekly_work_hours',
+    'blue_card_qualifying_months',
+    'livelihood_secured',
+    'housing_sufficient',
+    'legal_social_knowledge_proved',
+    'tax_id_available',
+    'bank_account_help_needed',
+    'family_residence_permit_held_since',
+    'marital_household_continues',
+    'sponsor',
+    'sponsor_current_title',
+    'sponsor_title_at_entry',
+];
+
+export const order = [
+    ...registryOrder,
+    ...Object.keys(fields).filter((key) => !registryOrder.includes(key)),
+];
 
 export function fieldLabel(key: string): string {
     return fields[key]?.label ?? key.replace(/_/g, ' ');

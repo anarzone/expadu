@@ -65,144 +65,9 @@
     background: var(--composer-soft);
     color: var(--composer-ink);
 }
-.composer-plan {
-    border: 1px solid var(--composer-line, #dce7e9);
-    border-radius: 22px;
-    background: var(--composer-paper, var(--card));
-    overflow: clip;
-}
-.composer-plan-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 17px 20px;
-    border-bottom: 1px solid var(--composer-line, #dce7e9);
-}
-.composer-eyebrow {
-    font-size: 11px;
-    color: var(--composer-muted, #647c84);
-}
-.composer-plan h2 {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.4px;
-    margin-top: 5px;
-}
-.composer-timeline {
-    padding: 20px;
-}
-.composer-timeline li {
-    display: grid;
-    grid-template-columns: 48px 30px minmax(0, 1fr);
-    gap: 11px;
-    position: relative;
-    padding-bottom: 20px;
-}
-.composer-timeline li:last-child {
-    padding-bottom: 0;
-}
-.composer-slot-time {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
-    padding-top: 3px;
-}
-.composer-slot-time strong {
-    font-weight: 600;
-}
-.composer-slot-time span {
-    color: var(--composer-muted, #647c84);
-    font-size: 11px;
-}
-.composer-slot-marker {
-    display: grid;
-    place-content: center;
-    border-radius: 10px;
-    width: 30px;
-    height: 32px;
-    background: #e8f3ee;
-    color: #437562;
-}
-.composer-slot-marker.is-event {
-    background: #f1edf8;
-    color: #79619d;
-}
-.composer-timeline li:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 73px;
-    top: 40px;
-    bottom: 8px;
-    border-left: 1px dashed #c7dadc;
-}
-.composer-slot-body h3 {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-}
-.composer-slot-body p {
-    font-size: 12px;
-    color: var(--composer-muted, #647c84);
-    margin-top: 4px;
-}
-.composer-fixed {
-    display: block;
-    font-size: 10px;
-    margin-bottom: 3px;
-    color: #8260a3;
-}
-.composer-slot-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 15px;
-    margin-top: 4px;
-}
-.composer-slot-actions button {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    color: var(--composer-blue, #356774);
-    min-height: 40px;
-}
-.composer-slot-actions button:hover,
 .composer-text-button:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
-}
-.composer-feasibility {
-    border-top: 1px dashed var(--composer-line, #dce7e9);
-    padding: 13px 20px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    color: var(--composer-muted, #647c84);
-    font-size: 11px;
-    line-height: 1.6;
-}
-.composer-feasibility svg {
-    flex: none;
-    margin-top: 1px;
-}
-.composer-feasibility small {
-    display: block;
-    font-size: 10px;
-}
-.composer-plan-footer {
-    background: var(--composer-bg, #f4f9fa);
-    padding: 12px 18px;
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.composer-plan-footer > .composer-text-button:last-child {
-    margin-left: auto;
 }
 .composer-primary {
     display: inline-flex;
@@ -228,13 +93,6 @@
     color: var(--composer-blue, #356774);
     font-size: 12px;
     text-align: left;
-}
-.composer-green {
-    color: #3b7a60;
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    font-size: 11px;
 }
 .composer-plan-links {
     display: flex;
@@ -268,9 +126,6 @@
     margin-left: auto;
     font-size: 10px;
     color: var(--composer-muted);
-}
-.composer-plan-reference .composer-plan {
-    margin: 7px 0;
 }
 /* A change's rows, old → new, under its reply. */
 .composer-change-rows {
@@ -820,42 +675,6 @@
     }
 }
 @media (max-width: 640px) {
-    .composer-plan-heading {
-        padding: 14px;
-    }
-    .composer-plan h2 {
-        font-size: 17px;
-    }
-    .composer-timeline {
-        padding: 16px 13px;
-    }
-    .composer-timeline li {
-        grid-template-columns: 40px 27px minmax(0, 1fr);
-        gap: 9px;
-    }
-    .composer-timeline li:not(:last-child)::after {
-        left: 62px;
-    }
-    .composer-slot-marker {
-        width: 27px;
-        height: 30px;
-    }
-    .composer-slot-body h3 {
-        font-size: 15px;
-    }
-    .composer-slot-actions {
-        gap: 0 12px;
-    }
-    .composer-slot-actions button {
-        font-size: 11px;
-    }
-    .composer-plan-footer {
-        padding: 11px 13px;
-        gap: 8px 12px;
-    }
-    .composer-feasibility {
-        padding: 11px 13px;
-    }
     .composer-panel {
         border-radius: 0;
         padding: 20px 16px;
@@ -925,12 +744,6 @@
     min-height: 32px;
     text-decoration: underline;
     text-underline-offset: 3px;
-}
-.composer-origin-label {
-    display: block;
-    margin-top: 7px;
-    font-size: 11px;
-    color: var(--composer-muted);
 }
 
 /* Department selections remain visible until the user chooses an action. */

@@ -24,9 +24,12 @@ const MODES: [WayMode, string][] = [
 export function PlaceWay({
     to,
     from: start,
+    spotId,
 }: {
     to: WayPlace;
     from: WayPlace | null;
+    /** The place the Get there tap was for, as the journey request's tag. */
+    spotId: number;
 }) {
     const from = useFrom(start);
     const [mode, setMode] = useState<WayMode>('transit');
@@ -58,6 +61,7 @@ export function PlaceWay({
     const { status, answer, ways, retry } = useWays({
         from: from.place,
         to,
+        getThere: { item: `spot:${spotId}`, surface: 'place_sheet' },
     });
     const shown = ways[mode];
     const pickedId = picked[0] === answer ? picked[1] : '';

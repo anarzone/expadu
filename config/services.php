@@ -129,7 +129,7 @@ return [
         'key' => env('LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('LLM_PROCESSOR_NAME', 'Anthropic PBC'),
         'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'prompt_version' => '2026-10-21.parser.claude.1',
+        'prompt_version' => '2026-10-21.parser.claude.2',
     ],
 
     'bureaucracy_llm' => [
@@ -143,6 +143,24 @@ return [
         'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
         'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.1'),
         'daily_limit' => (int) env('BUREAUCRACY_LLM_DAILY_LIMIT', 20),
+    ],
+
+    /*
+     * Paperwork's analyser: answers a case question only from source-checked
+     * cards, behind the same per-request consent gate as fact extraction. Off
+     * by default; without it the endpoint returns the related cards only.
+     */
+    'paperwork_analyser' => [
+        'enabled' => env('PAPERWORK_ANALYSER_ENABLED', false),
+        'base_url' => env('PAPERWORK_ANALYSER_BASE_URL', 'https://api.anthropic.com'),
+        'model' => env('PAPERWORK_ANALYSER_MODEL', 'claude-haiku-5-5'),
+        'effort' => env('PAPERWORK_ANALYSER_EFFORT', 'low'),
+        'key' => env('PAPERWORK_ANALYSER_KEY') ?: env('ANTHROPIC_API_KEY'),
+        'processor_name' => env('PAPERWORK_ANALYSER_PROCESSOR_NAME', 'Anthropic PBC'),
+        'processor_privacy_url' => env('PAPERWORK_ANALYSER_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
+        'timeout' => (int) env('PAPERWORK_ANALYSER_TIMEOUT', 15),
+        'prompt_version' => env('PAPERWORK_ANALYSER_PROMPT_VERSION', '2026-10-21.analyser.1'),
+        'daily_limit' => (int) env('PAPERWORK_ANALYSER_DAILY_LIMIT', 20),
     ],
 
     'motis' => [

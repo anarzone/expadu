@@ -1,0 +1,130 @@
+{
+    "name": "paperwork-starter",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid, .situation-welcome",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".review-tools > summary"
+            },
+            {
+                "click": "[data-preview-persona=\"fresh\"]"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".situation-welcome",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "s3-fresh2@expadu.test",
+            "password": "e2e-password",
+            "own": true
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "seed": "php artisan tinker --execute='$u = App\\Models\\User::firstOrCreate([\"email\" => \"s3-fresh2@expadu.test\"], [\"name\" => \"Fresh start\", \"password\" => bcrypt(\"e2e-password\")]); $u->forceFill([\"email_verified_at\" => now(), \"onboarded_at\" => now(), \"city\" => \"cologne\", \"situation\" => \"non_eu_employee\"])->save(); app(App\\Bureaucracy\\People\\EnsureAccountHolder::class)->dossier($u);'",
+    "note": "PW7's welcome for a person with no confirmed answers yet (the mock's \"Fresh start\" persona), above their overview. The app side signs in as a local account with a ready plan and no answers (see seed: the e-mail is this config's own).",
+    "pairs": [
+        {
+            "name": "welcome",
+            "mock": ".situation-welcome",
+            "app": ".situation-welcome",
+            "ignore": [
+                "y",
+                "h"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs. \"Start in Composer\" is left out until Composer can host the questions (session 2, 21 Oct), as PW4's bar is, so the start box ends after \"Get started\". Its pixels differ where the mock draws that button.",
+            "pixels": false
+        },
+        {
+            "name": "copy",
+            "mock": ".situation-welcome .situation-welcome-copy",
+            "app": ".situation-welcome .situation-welcome-copy",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "emblem",
+            "mock": ".situation-welcome .situation-emblem",
+            "app": ".situation-welcome .situation-emblem",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "heading",
+            "mock": ".situation-welcome h2",
+            "app": ".situation-welcome h2",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "lead",
+            "mock": ".situation-welcome .situation-welcome-copy > p",
+            "app": ".situation-welcome .situation-welcome-copy > p",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "benefits",
+            "mock": ".situation-welcome .situation-benefits",
+            "app": ".situation-welcome .situation-benefits",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "start",
+            "mock": ".situation-welcome .situation-start",
+            "app": ".situation-welcome .situation-start",
+            "ignore": [
+                "y",
+                "h"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs. \"Start in Composer\" is left out until Composer can host the questions (session 2, 21 Oct), as PW4's bar is, so the start box ends after \"Get started\". Its pixels differ where the mock draws that button.",
+            "pixels": false
+        },
+        {
+            "name": "start line",
+            "mock": ".situation-welcome .situation-start > p",
+            "app": ".situation-welcome .situation-start > p",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        },
+        {
+            "name": "Get started",
+            "mock": ".situation-welcome .situation-start .orientation-primary",
+            "app": ".situation-welcome .situation-start .orientation-primary",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock picks its \"Fresh start\" persona from its review tools, which stay open above the page, so the welcome sits lower there; the app's sits under its tabs."
+        }
+    ]
+}
