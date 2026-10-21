@@ -10,7 +10,7 @@ import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
 import { StopPicker } from './stop-picker';
-import { noticeWords } from './types';
+import { closestNow, closestWords, noticeWords } from './types';
 import type { FavouriteStop, Station } from './types';
 import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
@@ -636,8 +636,13 @@ export function NearbyView({
     // KVB's own boarding areas; a line KVB doesn't list isn't one of them.
     const areaCount = station.areas.filter((a) => a.places.length).length;
     const areasText = `${areaCount} boarding area${areaCount === 1 ? '' : 's'}`;
-    const placesKind =
-        station.kind === 'closest' ? `Closest · ${areasText}` : areasText;
+    // Near where you last were, the label says that (and when) on its one line.
+    const how = closestWords(station);
+    const placesKind = !how
+        ? areasText
+        : closestNow(station)
+          ? `${how} · ${areasText}`
+          : how;
 
     const stepNote = !filters.stepfree
         ? null

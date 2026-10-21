@@ -77,7 +77,7 @@ class UserLocationService
                 $label = $request->input('from_label');
                 $label = is_string($label) && $label !== '' ? $label : 'Your location';
 
-                return new LocationContext($lat, $lng, LocationSource::Live, $label);
+                return new LocationContext($lat, $lng, LocationSource::Live, $label, now()->timestamp);
             }
         }
 
@@ -108,11 +108,11 @@ class UserLocationService
         $confirmed = $this->getConfirmedLocation($user->id);
         $ping = $this->getLastRedisPing($user->id);
         if ($confirmed && (! $ping || $confirmed['at'] >= $ping['at'])) {
-            return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location');
+            return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location', $confirmed['at'] ?: null);
         }
 
         if ($ping) {
-            return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location');
+            return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location', $ping['at'] ?: null);
         }
 
         if ($fallbackArea !== null && $fallbackArea !== '') {

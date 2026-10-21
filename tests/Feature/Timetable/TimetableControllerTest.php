@@ -86,7 +86,7 @@ test('Nearby never uses a saved home or city centre when no location is known', 
         'lat' => 50.9484,
         'lng' => 6.9599,
     ]);
-    $this->mock(NearbyStation::class, function ($mock) {
+    $this->partialMock(NearbyStation::class, function ($mock) {
         $mock->shouldReceive('closest')->never();
         $mock->shouldReceive('named')->never();
     });
@@ -100,8 +100,8 @@ test('Nearby never uses a saved home or city centre when no location is known', 
 });
 
 test('the debug trail names the station and why, never where the person was', function () {
-    $this->mock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
-        'name' => 'Neumarkt', 'kind' => 'closest', 'source' => 'trias_rt',
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+        'name' => 'Neumarkt', 'kind' => 'closest', 'source' => 'trias_rt', 'walk_min' => 3,
         'lines' => [['line' => '1', 'mode' => 'tram', 'area' => 'neumarkt-1-7-9', 'dirs' => []]],
     ]));
 
@@ -120,4 +120,32 @@ test('the debug trail names the station and why, never where the person was', fu
     expect($entry)->toMatchArray(['page' => 'timetable', 'stop' => 'Neumarkt', 'lines' => ['1'], 'location_source' => 'confirmed', 'lat' => null, 'lng' => null]);
 
     Redis::del("departure_debug:{$user->id}", "confirmed_location:{$user->id}");
+});
+
+test('the closest station is "closest" only from a fix of the last few minutes; from an older one it says where you last were', function () {
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+        'name' => 'Merkenich Mitte', 'kind' => 'closest', 'source' => 'gtfs_static', 'walk_min' => 4, 'lines' => [],
+    ]));
+    $this->travelTo(now()->startOfMinute());
+    $user = User::factory()->onboarded()->create();
+    $confirmedAt = fn (int $minutesAgo) => Redis::setex("confirmed_location:{$user->id}", 7200, json_encode([
+        'lat' => 51.0089, 'lng' => 6.9476, 'name' => 'Merkenich', 'at' => now()->subMinutes($minutesAgo)->timestamp,
+    ]));
+
+    $confirmedAt(3);
+    $this->actingAs($user)->get(route('timetable'))->assertInertia(fn ($page) => $page
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->where('station.located.fresh', true)
+            ->where('station.located.source', 'confirmed')
+            ->where('station.walk_min', 4)));
+
+    $confirmedAt(120);
+    $this->actingAs($user)->get(route('timetable'))->assertInertia(fn ($page) => $page
+        ->loadDeferredProps(fn ($reload) => $reload
+            ->where('station.name', 'Merkenich Mitte')
+            ->where('station.located.fresh', false)
+            ->where('station.located.at', now()->subMinutes(120)->toIso8601String())
+            ->where('station.walk_min', null)));
+
+    Redis::del("confirmed_location:{$user->id}");
 });

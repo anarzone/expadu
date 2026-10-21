@@ -42,7 +42,7 @@ class TimetableController extends Controller
                     return $picked;
                 }
                 // Never a saved home or the city centre: no location, no station.
-                $closest = $location->hasOrigin() ? $nearby->closest((float) $location->lat, (float) $location->lng) : null;
+                $closest = $nearby->closestTo($location);
                 if ($closest !== null) {
                     // Debug trail for "wrong station" reports: the station, its
                     // lines and why it was chosen, without where the person was.
