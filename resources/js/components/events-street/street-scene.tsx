@@ -13,7 +13,8 @@ import type {
     PointerEvent,
     ReactNode,
 } from 'react';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
+import type { PosterFit, TitleStepName } from '@/components/posters/poster-art';
 import manifest from './street-layers.json';
 import type { Bay, Slotted, StreetLayoutName } from './street-layout';
 import { drum, hourLabel, phonePages, STREET, wallBays } from './street-layout';
@@ -158,6 +159,7 @@ export type StreetSceneProps<T> = {
         item: T,
         where: 'wall' | 'column',
         style?: CSSProperties,
+        fit?: PosterFit,
     ) => ReactNode;
     /** The weather chip (EV2b); nothing when there's no weather to show. */
     chip?: ReactNode;
@@ -195,6 +197,22 @@ export default function StreetScene<T>({
     const swipe = useRef<{ y: number; at: number } | null>(null);
     const wheelAt = useRef(0);
     const swiped = useRef(false);
+    // A drag on the column turns it (the mock's down/move): the press, how
+    // far it has turned, and the click it swallows once it moved.
+    const colPress = useRef<{
+        x: number;
+        id: number;
+        moved: boolean;
+        perPoster: number;
+    } | null>(null);
+    const [colDrag, setColDrag] = useState(0);
+    const colDragNow = useRef(0);
+    const swallowClick = useRef(false);
+    // Each face's middle slice measures its poster's title; the others
+    // take that step, so a poster's lines meet at the slices' seams.
+    const [titleSteps, setTitleSteps] = useState<Record<string, TitleStepName>>(
+        {},
+    );
     const tilt = useRef<{ card: HTMLElement | null; frame: number }>({
         card: null,
         frame: 0,
@@ -389,8 +407,21 @@ export default function StreetScene<T>({
     const N = column.length;
     const pos = N ? ((columnPos % N) + N) % N : 0;
     // The drum turns on from where it is (not back round to the first
-    // poster), so its turn eases from face to face.
-    const strip = drum(column, columnPos, layout);
+    // poster), so its turn eases from face to face; a drag turns it with
+    // the finger, in posters.
+    const strip = drum(column, columnPos + colDrag, layout);
+    const columnFit = (item: T, slice: number): PosterFit => {
+        const key = itemKey?.(item) ?? String(column.indexOf(item));
+
+        return slice === Math.floor(c.col.slices / 2)
+            ? {
+                  onTitleStep: (step) =>
+                      setTitleSteps((all) =>
+                          all[key] === step ? all : { ...all, [key]: step },
+                      ),
+              }
+            : { titleStep: titleSteps[key] ?? 'normal' };
+    };
     const toPoster = (i: number) => {
         let step = (((i - pos) % N) + N) % N;
 
@@ -802,7 +833,7 @@ export default function StreetScene<T>({
                 />
             </div>
 
-            {/* The poster column */}
+            {/* The poster column: a drag anywhere on it turns it */}
             <div
                 className="st-column"
                 style={{
@@ -810,6 +841,94 @@ export default function StreetScene<T>({
                     top: c.col.top,
                     width: 300 * c.col.scale,
                     height: 740 * c.col.scale,
+                }}
+                onPointerDown={(e) => {
+                    if (
+                        N < 2 ||
+                        (e.pointerType === 'mouse' && e.button !== 0)
+                    ) {
+                        return;
+                    }
+
+                    const face = e.currentTarget
+                        .querySelector('.st-drum')
+                        ?.getBoundingClientRect().width;
+                    colPress.current = {
+                        x: e.clientX,
+                        id: e.pointerId,
+                        moved: false,
+                        perPoster: face ? (face * c.col.pitch) / c.col.win : 1,
+                    };
+                }}
+                onPointerMove={(e) => {
+                    const press = colPress.current;
+
+                    if (!press || press.id !== e.pointerId) {
+                        return;
+                    }
+
+                    const dx = e.clientX - press.x;
+
+                    if (!press.moved && Math.abs(dx) < 6) {
+                        return;
+                    }
+
+                    if (!press.moved) {
+                        press.moved = true;
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        onColumnHold?.(true);
+                    }
+
+                    // It follows the finger; two posters either way it
+                    // starts to resist.
+                    let turn = -dx / press.perPoster;
+
+                    if (Math.abs(turn) > 2) {
+                        turn = Math.sign(turn) * (2 + (Math.abs(turn) - 2) / 3);
+                    }
+
+                    colDragNow.current = turn;
+                    setColDrag(turn);
+                }}
+                onPointerUp={(e) => {
+                    const press = colPress.current;
+
+                    if (!press || press.id !== e.pointerId) {
+                        return;
+                    }
+
+                    colPress.current = null;
+
+                    if (!press.moved) {
+                        return;
+                    }
+
+                    // It settles on the nearest poster; a short flick still
+                    // turns one.
+                    const turn = colDragNow.current;
+                    const steps =
+                        Math.abs(turn) > 0.15 && Math.abs(turn) < 0.5
+                            ? Math.sign(turn)
+                            : Math.round(turn);
+                    colDragNow.current = 0;
+                    setColDrag(0);
+                    onColumnPos?.(columnPos + steps);
+                    onColumnHold?.(false);
+                    // The click that ends a drag opens nothing.
+                    swallowClick.current = true;
+                }}
+                onPointerCancel={() => {
+                    colPress.current = null;
+                    colDragNow.current = 0;
+                    setColDrag(0);
+                    onColumnHold?.(false);
+                }}
+                onClickCapture={(e) => {
+                    if (swallowClick.current) {
+                        swallowClick.current = false;
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
                 }}
             >
                 <div
@@ -829,7 +948,11 @@ export default function StreetScene<T>({
                     >
                         <div
                             className="st-drum-turn"
-                            style={{ width: c.col.win, transform: strip.style }}
+                            style={{
+                                width: c.col.win,
+                                transform: strip.style,
+                                transition: colDrag ? 'none' : undefined,
+                            }}
                         >
                             {strip.slices.map((s) => (
                                 <div
@@ -857,10 +980,15 @@ export default function StreetScene<T>({
                                             width: c.col.pw,
                                         }}
                                     >
-                                        {poster(s.item, 'column', {
-                                            width: c.col.pw,
-                                            height: c.col.ph,
-                                        })}
+                                        {poster(
+                                            s.item,
+                                            'column',
+                                            {
+                                                width: c.col.pw,
+                                                height: c.col.ph,
+                                            },
+                                            columnFit(s.item, s.slice),
+                                        )}
                                     </div>
                                 </div>
                             ))}
