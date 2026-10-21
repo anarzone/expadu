@@ -111,8 +111,10 @@ test('the feedback action is validated', function () {
         ->assertStatus(422);
 });
 
-test('more-like-this feeds IntentWeights for that category and veedel', function () {
+test('more-like-this feeds IntentWeights for that category and veedel, with the opt-in', function () {
     $user = feedbackUser();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $user = $user->fresh();
     $spot = Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 
     $this->actingAs($user)->postJson("/api/places/{$spot->id}/feedback", ['action' => 'more_like_this'])->assertOk();
@@ -120,4 +122,14 @@ test('more-like-this feeds IntentWeights for that category and veedel', function
     $weights = app(IntentWeights::class)->for($user);
     expect($weights)->toHaveKey('museum|Ehrenfeld')
         ->and($weights['museum|Ehrenfeld'])->toBeGreaterThan(0.0);
+});
+
+test('without the personalisation opt-in, feedback leaves the ranking weights alone', function () {
+    $user = feedbackUser();
+    $spot = Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
+
+    $this->actingAs($user)->postJson("/api/places/{$spot->id}/feedback", ['action' => 'more_like_this'])->assertOk();
+
+    expect(app(IntentWeights::class)->for($user->fresh()))->toBe([])
+        ->and(app(IntentWeights::class)->preferenceVector($user->fresh()))->toBe(['category_intent' => [], 'category_dislikes' => []]);
 });

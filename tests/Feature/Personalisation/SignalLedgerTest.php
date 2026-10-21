@@ -1,8 +1,13 @@
 <?php
 
+use App\Composer\ActivePlanStore;
+use App\Composer\AppointmentRepository;
+use App\Composer\Constraints;
+use App\Composer\TasteSignals;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\User;
+use App\Models\UserEvent;
 use App\Models\UserSignal;
 use App\Personalisation\Affinities;
 use App\Personalisation\AffinityAggregator;
@@ -284,4 +289,32 @@ test('ledger rows past 90 days are pruned', function () {
 
 test('the nightly aggregate command runs', function () {
     $this->artisan('signals:aggregate')->assertSuccessful();
+});
+
+test('keeping the composed plan records each stop as kept unedited, only with the opt-in', function (bool $on, int $rows) {
+    $user = optedIn($on);
+    $spot = Spot::factory()->create(['category' => 'cafe', 'veedel' => 'Ehrenfeld']);
+    $constraints = ['window_start' => now()->toIso8601String(), 'window_end' => now()->addHours(4)->toIso8601String(), 'companions' => null];
+    app(ActivePlanStore::class)->save($user, [
+        'slots' => [['id' => "spot:{$spot->id}", 'type' => 'spot', 'category' => 'cafe', 'veedel' => 'Ehrenfeld']],
+        'constraints' => $constraints,
+        'appointment_revision' => app(AppointmentRepository::class)->revision($user, Constraints::fromArray($constraints)),
+    ]);
+
+    $this->actingAs($user)->postJson('/composer/keep')->assertOk()->assertJson(['kept' => true]);
+
+    expect(ledger($user)->where('action', 'plan_kept_unedited'))->toHaveCount($rows);
+})->with(['opted in' => [true, 1], 'not opted in' => [false, 0]]);
+
+test('keeping with no composed plan is a 404', function () {
+    $this->actingAs(optedIn())->postJson('/composer/keep')->assertNotFound();
+});
+
+test('taste signals are not written without the opt-in', function () {
+    $user = optedIn(false);
+    $event = Event::factory()->create();
+
+    app(TasteSignals::class)->eventSaved($user, $event);
+
+    expect(UserEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
 });

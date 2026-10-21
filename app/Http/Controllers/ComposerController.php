@@ -778,6 +778,22 @@ class ComposerController extends Controller
     }
 
     /** Un-pin the Today plan (the dismiss control on the home card). */
+    /**
+     * The person keeps the composed plan as it is: each stop counts as kept
+     * unedited (personalisation, with the opt-in). A plan with swaps or
+     * exclusions is not "unedited" and records nothing.
+     */
+    public function keep(Request $request): JsonResponse
+    {
+        $stored = $this->plans->get($request->user());
+        if (! is_array($stored)) {
+            return response()->json(['message' => 'There is no plan to keep.'], 404);
+        }
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: false);
+
+        return response()->json(['kept' => true]);
+    }
+
     public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
     {
         $today->forget($request->user());

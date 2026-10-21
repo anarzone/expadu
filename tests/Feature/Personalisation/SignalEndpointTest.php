@@ -80,3 +80,20 @@ test('the endpoint needs a signed-in person and carries its own throttle', funct
 
     expect(Route::getRoutes()->getByName('api.signals')->gatherMiddleware())->toContain('throttle:signals');
 });
+
+test('"Not now" from the client hides the place for a week, and a share counts', function () {
+    $user = signalUser(true);
+    $spot = Spot::factory()->create();
+    $event = Event::factory()->create();
+
+    $this->actingAs($user)->postJson('/api/signals', ['signals' => [
+        ['action' => 'not_now', 'surface' => 'today', 'item_type' => 'spot', 'item_id' => $spot->id],
+        ['action' => 'shared', 'surface' => 'event_sheet', 'item_type' => 'event', 'item_id' => $event->id],
+    ]])->assertStatus(202);
+
+    $hide = DB::table('user_place_negatives')->where('subject_key', Pseudonym::for($user))->where('item_id', $spot->id)->first();
+    expect(DB::table('user_signals')->where('subject_key', Pseudonym::for($user))->pluck('action')->sort()->values()->all())->toBe(['not_now', 'shared'])
+        ->and($hide)->not->toBeNull()
+        ->and(now()->addDays(6)->lessThan($hide->hidden_until))->toBeTrue()
+        ->and(now()->addDays(8)->greaterThan($hide->hidden_until))->toBeTrue();
+});
