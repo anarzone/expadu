@@ -35,6 +35,10 @@ class IntentWeights
      */
     public function for(User $user): array
     {
+        // Without the personalisation opt-in, plans rank the same for everyone.
+        if (! $user->personalises()) {
+            return [];
+        }
         $rows = DB::table('user_events')
             ->where('user_id', $user->id)
             ->whereIn('event_type', array_keys(self::SIGNAL_WEIGHTS))
@@ -76,6 +80,9 @@ class IntentWeights
      */
     public function preferenceVector(User $user): array
     {
+        if (! $user->personalises()) {
+            return ['category_intent' => [], 'category_dislikes' => []];
+        }
         $totals = [];
         $rows = DB::table('user_events')
             ->where('user_id', $user->id)

@@ -342,40 +342,7 @@ body.travel-palette .option-foot {
     flex-wrap: wrap;
     gap: 4px 8px;
 }
-body.travel-palette .details-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 6px 0;
-    color: var(--teal);
-    font-size: var(--text-small);
-    font-weight: var(--weight-medium);
-}
-body.travel-palette .details-toggle svg {
-    height: 14px;
-    width: 14px;
-    transition: rotate 220ms var(--ease);
-}
-body.travel-palette .details-toggle[aria-expanded='true'] svg {
-    rotate: 180deg;
-}
-body.travel-palette .route-disclosure {
-    display: grid;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transition:
-        grid-template-rows 220ms var(--ease),
-        opacity 180ms ease;
-}
-body.travel-palette .route-disclosure[aria-hidden='false'] {
-    grid-template-rows: 1fr;
-    opacity: 1;
-}
-body.travel-palette .route-disclosure-inner {
-    overflow: hidden;
-    min-height: 0;
-}
+
 body.travel-palette .inline-itinerary {
     border-radius: var(--radius-md);
     padding: 14px 16px;
@@ -572,27 +539,17 @@ body.travel-palette #journey-popover[data-kind^='board-filter-'] #popover-body {
     }
 }
 @media (hover: hover) {
-    body.travel-palette .details-toggle:hover {
-        color: var(--ink);
-    }
     body.travel-palette .view-switch button:hover {
         background: transparent;
         color: var(--teal);
     }
 }
-body.travel-palette .details-toggle:active {
-    opacity: 0.65;
-}
+
 @media (prefers-reduced-motion: reduce) {
     body.travel-palette .leg-connection {
         animation: none;
     }
-    body.travel-palette
-        :is(
-            .route-disclosure,
-            .details-toggle svg,
-            .view-switch button::after
-        ) {
+    body.travel-palette .view-switch button::after {
         transition: none;
     }
 }

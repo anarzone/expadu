@@ -1,6 +1,6 @@
 {
     "name": "today-details",
-    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -24,9 +24,9 @@
     "app": {
         "url": "/dashboard",
         "wait": ".day-panel:not([aria-busy])",
-        "init": [
-            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
-        ],
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"

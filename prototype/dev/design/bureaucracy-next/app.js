@@ -207,6 +207,10 @@
     };
     const button = (text, action, cls = 'secondary') =>
         `<button type="button" class="button ${cls}" data-case="${action}">${text}</button>`;
+    // Your record's actions. Stopping its processing is one tap: the record
+    // says so, and Resume undoes it (owner, 21 Oct 2026).
+    const recordActions = () =>
+        `<div class="record-actions" data-record-actions>${state.paused ? '<p class="record-paused"><strong>Processing stopped.</strong> Paperwork keeps your record but doesn’t use it until you resume.</p>' : ''}<div class="actions">${button('Download a copy', 'record-export')}${state.paused ? button('Resume processing', 'record-resume') : button('Stop processing', 'record-pause')}${button('Delete your record', 'record-erase')}</div></div>`;
     // Review: a read-only preview of a persona's plan, like the app's QA
     // preview. Your own plan is kept aside, untouched, until you go back.
     const personas = [
@@ -1891,7 +1895,7 @@
                               )
                               .join('')
                         : '<p class="muted">Nobody yet.</p>'
-                }</section><form class="sharing-invite" data-sharing-invite><h3>Invite someone</h3><p class="muted">They always see your plan. Choose what else:</p>${check('view_facts', 'See your answers')}${check('edit_facts', 'Change your answers')}${check('manage_process', 'Update your progress')}${check('manage_evidence', 'Mark your documents', true)}<div class="actions"><button class="button primary" type="submit">Create invitation</button></div></form><div data-sharing-result></div><section class="sharing-grants"><h3>Your record</h3><p class="muted">Download a copy of everything Paperwork keeps about you, stop its processing, or delete it.</p><div class="actions">${button('Download a copy', 'record-export')}${button('Delete your record', 'record-erase')}</div></section>`,
+                }</section><form class="sharing-invite" data-sharing-invite><h3>Invite someone</h3><p class="muted">They always see your plan. Choose what else:</p>${check('view_facts', 'See your answers')}${check('edit_facts', 'Change your answers')}${check('manage_process', 'Update your progress')}${check('manage_evidence', 'Mark your documents', true)}<div class="actions"><button class="button primary" type="submit">Create invitation</button></div></form><div data-sharing-result></div><section class="sharing-grants"><h3>Your record</h3><p class="muted">Download a copy of everything Paperwork keeps about you, stop its processing, or delete it.</p>${recordActions()}</section>`,
             );
             return;
         }
@@ -1901,6 +1905,24 @@
                 action === 'record-export'
                     ? 'Sample: in the app this downloads a copy of your record.'
                     : 'Sample: in the app you confirm first, then your record is erased. Nothing is deleted here.',
+            );
+            return;
+        }
+        // A sample: the app stops and resumes processing (GDPR Art. 18).
+        if (action === 'record-pause' || action === 'record-resume') {
+            state.paused = action === 'record-pause';
+            save();
+            const host = document.querySelector('[data-record-actions]');
+            if (host) host.outerHTML = recordActions();
+            document
+                .querySelector(
+                    `[data-case="${state.paused ? 'record-resume' : 'record-pause'}"]`,
+                )
+                ?.focus({ preventScroll: true });
+            U.toast(
+                state.paused
+                    ? 'Sample: in the app Paperwork stops using your record now. Nothing is deleted.'
+                    : 'Sample: in the app Paperwork uses your record again now.',
             );
             return;
         }
