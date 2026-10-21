@@ -496,8 +496,8 @@ type Starter = {
     stamp?: string;
 };
 
-/** The welcome's cards, only for what the day has (mock: `starters()`). */
-function starters(
+/** The welcome's cards, only for what the day has (mock: `starters()`). A clarify offers them too. */
+export function starters(
     day: DayProjection | undefined,
     paperwork: PaperworkGlance | undefined,
     around: DayAround | undefined,

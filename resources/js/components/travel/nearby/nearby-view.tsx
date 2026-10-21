@@ -80,6 +80,8 @@ type NearbyViewProps = {
     onPickStop: (name: string | null) => void;
     onToggleFavourite: (name: string, on: boolean) => void;
     favouriteBusy?: boolean;
+    /** The person's saved step-free need: Step-free starts on. */
+    stepFreeNeed?: boolean;
 };
 
 export function NearbyView({
@@ -88,9 +90,14 @@ export function NearbyView({
     onPickStop,
     onToggleFavourite,
     favouriteBusy = false,
+    stepFreeNeed = false,
 }: NearbyViewProps) {
     const now = useClock();
-    const [filters, setFilters] = useState<NearbyFilters>(filterDefaults);
+    // Their own need starts Step-free on; Clear filters still clears it.
+    const [filters, setFilters] = useState<NearbyFilters>(() => ({
+        ...filterDefaults(),
+        stepfree: stepFreeNeed,
+    }));
     const [panel, setPanel] = useState<Panel>('');
     const [stopsOpen, setStopsOpen] = useState(false);
     const [picked, setOpenLine] = useState('');

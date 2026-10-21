@@ -21,6 +21,10 @@ const topics: Record<string, { icon: IconName; tone: string }> = {
     education: { icon: 'book', tone: 'green' },
 };
 
+/** A task's bare icon, where the mock draws it without the tile (the documents view's task links). */
+export const topicIcon = (topic: string | null | undefined): IconName =>
+    topics[topic ?? '']?.icon ?? 'document';
+
 export function TopicIcon({
     topic,
     tone,

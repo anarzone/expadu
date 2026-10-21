@@ -4,7 +4,7 @@ import {
     placeMapPoint,
     placeRoutingPoint,
     placePracticalDetails,
-} from '../../resources/js/components/places/place-evidence.ts';
+} from '../../resources/js/components/place-shared/place-evidence.ts';
 
 const place = {
     id: 17,

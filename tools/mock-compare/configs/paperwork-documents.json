@@ -1,0 +1,316 @@
+{
+    "name": "paperwork-documents",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/?view=paperwork",
+        "wait": ".paperwork-groups",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/bureaucracy?view=paperwork",
+        "wait": ".paperwork-groups",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "note": "Paperwork's documents view (PW3) as it opens: the task and status chips, each task's documents with its \"N/M ready\" count, the English name with the German term, and the lines under them. The same sample record and clock as paperwork.json (MockSample\\PaperworkSeeder).",
+    "pairs": [
+        {
+            "name": "view tabs",
+            "mock": ".case-tabs",
+            "app": ".case-tabs"
+        },
+        {
+            "name": "tab Documents (pressed)",
+            "mock": ".case-tabs button",
+            "app": ".case-tabs button",
+            "index": 1
+        },
+        {
+            "name": "filters",
+            "mock": ".paperwork-filters",
+            "app": ".paperwork-filters"
+        },
+        {
+            "name": "task chips",
+            "mock": ".paperwork-filters .case-chips",
+            "app": ".paperwork-filters .case-chips",
+            "index": 0
+        },
+        {
+            "name": "task chip: all",
+            "mock": ".paperwork-filters .case-chips button",
+            "app": ".paperwork-filters .case-chips button",
+            "index": 0
+        },
+        {
+            "name": "task chip: first task",
+            "mock": ".paperwork-filters .case-chips button",
+            "app": ".paperwork-filters .case-chips button",
+            "index": 1
+        },
+        {
+            "name": "task chip count",
+            "mock": ".paperwork-filters .case-chips button span",
+            "app": ".paperwork-filters .case-chips button span",
+            "index": 0
+        },
+        {
+            "name": "status chips",
+            "mock": ".paperwork-filters .case-chips",
+            "app": ".paperwork-filters .case-chips",
+            "index": 1
+        },
+        {
+            "name": "status chip: any",
+            "mock": ".paperwork-filters .case-chips:nth-child(2) button",
+            "app": ".paperwork-filters .case-chips:nth-child(2) button",
+            "index": 0
+        },
+        {
+            "name": "status chip: still to get",
+            "mock": ".paperwork-filters .case-chips:nth-child(2) button",
+            "app": ".paperwork-filters .case-chips:nth-child(2) button",
+            "index": 1
+        },
+        {
+            "name": "status chip: you have it",
+            "mock": ".paperwork-filters .case-chips:nth-child(2) button",
+            "app": ".paperwork-filters .case-chips:nth-child(2) button",
+            "index": 2
+        },
+        {
+            "name": "status chip: ready",
+            "mock": ".paperwork-filters .case-chips:nth-child(2) button",
+            "app": ".paperwork-filters .case-chips:nth-child(2) button",
+            "index": 3
+        },
+        {
+            "name": "groups",
+            "mock": ".paperwork-groups",
+            "app": ".paperwork-groups"
+        },
+        {
+            "name": "group 1",
+            "mock": ".paperwork-group",
+            "app": ".paperwork-group",
+            "index": 0
+        },
+        {
+            "name": "group 1 head",
+            "mock": ".paperwork-group .case-section-head",
+            "app": ".paperwork-group .case-section-head",
+            "index": 0
+        },
+        {
+            "name": "group 1 task link",
+            "mock": ".paperwork-group .paper-process-link",
+            "app": ".paperwork-group .paper-process-link",
+            "index": 0
+        },
+        {
+            "name": "group 1 name",
+            "mock": ".paperwork-group .paper-process-link h3",
+            "app": ".paperwork-group .paper-process-link h3",
+            "index": 0
+        },
+        {
+            "name": "group 1 count",
+            "mock": ".paperwork-group .paper-count",
+            "app": ".paperwork-group .paper-count",
+            "index": 0
+        },
+        {
+            "name": "group 2",
+            "mock": ".paperwork-group",
+            "app": ".paperwork-group",
+            "index": 1
+        },
+        {
+            "name": "group 2 head",
+            "mock": ".paperwork-group .case-section-head",
+            "app": ".paperwork-group .case-section-head",
+            "index": 1
+        },
+        {
+            "name": "group 2 task link",
+            "mock": ".paperwork-group .paper-process-link",
+            "app": ".paperwork-group .paper-process-link",
+            "index": 1
+        },
+        {
+            "name": "group 2 name",
+            "mock": ".paperwork-group .paper-process-link h3",
+            "app": ".paperwork-group .paper-process-link h3",
+            "index": 1
+        },
+        {
+            "name": "group 2 count",
+            "mock": ".paperwork-group .paper-count",
+            "app": ".paperwork-group .paper-count",
+            "index": 1
+        },
+        {
+            "name": "group 3",
+            "mock": ".paperwork-group",
+            "app": ".paperwork-group",
+            "index": 2
+        },
+        {
+            "name": "group 3 head",
+            "mock": ".paperwork-group .case-section-head",
+            "app": ".paperwork-group .case-section-head",
+            "index": 2
+        },
+        {
+            "name": "group 3 task link",
+            "mock": ".paperwork-group .paper-process-link",
+            "app": ".paperwork-group .paper-process-link",
+            "index": 2
+        },
+        {
+            "name": "group 3 name",
+            "mock": ".paperwork-group .paper-process-link h3",
+            "app": ".paperwork-group .paper-process-link h3",
+            "index": 2
+        },
+        {
+            "name": "group 3 count",
+            "mock": ".paperwork-group .paper-count",
+            "app": ".paperwork-group .paper-count",
+            "index": 2
+        },
+        {
+            "name": "row 1",
+            "mock": ".document-row",
+            "app": ".document-row",
+            "index": 0
+        },
+        {
+            "name": "row 1 symbol",
+            "mock": ".document-row .document-symbol",
+            "app": ".document-row .document-symbol",
+            "index": 0
+        },
+        {
+            "name": "row 1 name",
+            "mock": ".document-row summary strong",
+            "app": ".document-row summary strong",
+            "index": 0
+        },
+        {
+            "name": "row 1 status",
+            "mock": ".document-row summary > span > small:last-child",
+            "app": ".document-row summary > span > small:last-child",
+            "index": 0
+        },
+        {
+            "name": "row 2",
+            "mock": ".document-row",
+            "app": ".document-row",
+            "index": 1
+        },
+        {
+            "name": "row 2 symbol",
+            "mock": ".document-row .document-symbol",
+            "app": ".document-row .document-symbol",
+            "index": 1
+        },
+        {
+            "name": "row 2 name",
+            "mock": ".document-row summary strong",
+            "app": ".document-row summary strong",
+            "index": 1
+        },
+        {
+            "name": "row 2 status",
+            "mock": ".document-row summary > span > small:last-child",
+            "app": ".document-row summary > span > small:last-child",
+            "index": 1
+        },
+        {
+            "name": "row 3",
+            "mock": ".document-row",
+            "app": ".document-row",
+            "index": 2
+        },
+        {
+            "name": "row 3 symbol",
+            "mock": ".document-row .document-symbol",
+            "app": ".document-row .document-symbol",
+            "index": 2
+        },
+        {
+            "name": "row 3 name",
+            "mock": ".document-row summary strong",
+            "app": ".document-row summary strong",
+            "index": 2
+        },
+        {
+            "name": "row 3 status",
+            "mock": ".document-row summary > span > small:last-child",
+            "app": ".document-row summary > span > small:last-child",
+            "index": 2
+        },
+        {
+            "name": "row 4",
+            "mock": ".document-row",
+            "app": ".document-row",
+            "index": 3
+        },
+        {
+            "name": "row 4 symbol",
+            "mock": ".document-row .document-symbol",
+            "app": ".document-row .document-symbol",
+            "index": 3
+        },
+        {
+            "name": "row 4 name",
+            "mock": ".document-row summary strong",
+            "app": ".document-row summary strong",
+            "index": 3
+        },
+        {
+            "name": "row 4 status",
+            "mock": ".document-row summary > span > small:last-child",
+            "app": ".document-row summary > span > small:last-child",
+            "index": 3
+        },
+        {
+            "name": "term line",
+            "mock": ".document-row .document-term",
+            "app": ".document-row .document-term",
+            "index": 0
+        },
+        {
+            "name": "no documents line",
+            "mock": ".paperwork-none",
+            "app": ".paperwork-none"
+        },
+        {
+            "name": "ready note",
+            "mock": ".date-separation",
+            "app": ".date-separation",
+            "index": 0
+        },
+        {
+            "name": "not available note",
+            "mock": ".date-separation",
+            "app": ".date-separation",
+            "index": 1
+        }
+    ]
+}

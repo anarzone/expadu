@@ -12,6 +12,7 @@ use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use App\Transit\EventHandoff;
 use App\Transit\NearbyStation;
+use App\Transit\PlaceHandoff;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -60,7 +61,15 @@ class TimetableController extends Controller
             'handoffEvent' => fn () => $request->filled('event')
                 ? app(EventHandoff::class)->for($request->query('event'), $request->query('start'), CarbonImmutable::now())
                 : null,
+            // A place's "Get there": the place by its id, resolved here too.
+            'handoffPlace' => fn () => $request->filled('place')
+                ? app(PlaceHandoff::class)->for($request->query('place'))
+                : null,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
+            // The person's own step-free need: Plan a trip and Nearby start
+            // with Step-free on. Hidden from the user's serialisation, so it's
+            // only ever read here, for them.
+            'stepFreeNeed' => fn () => (bool) $request->user()->needs_step_free,
             // Your next thing and My day: the shared server-side day projection.
             'day' => DayProjection::deferred($request),
             // My day's forecast for the rest of today, by the hour.

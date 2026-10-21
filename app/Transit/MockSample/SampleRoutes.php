@@ -3,6 +3,7 @@
 namespace App\Transit\MockSample;
 
 use App\Support\MockClock;
+use App\Support\MockScenario;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -17,6 +18,8 @@ use Carbon\CarbonImmutable;
  * day, so without these they couldn't be compared:
  * - the Blue Card appointment's trip (prototype/dev/design/connected/sample-day.js):
  *   Tram 4 from Neumarkt at 13:14 or 13:24 to Wiener Platz, scheduled times;
+ *   the 13:14 cancelled, on live times, in the mock's "Your tram is cancelled"
+ *   (MockScenario);
  * - the evening events' ways from Mülheim and Neumarkt (SampleEveningWays):
  *   there by the start, leaving now, and back after the event, with the
  *   direct walk and bike, each leg with its captured shape.
@@ -181,12 +184,16 @@ final class SampleRoutes implements RouteService
         $wiener = new Place('Köln Mülheim Wiener Platz', new GeoPoint(...self::WIENER_PLATZ), kind: 'stop');
         $end = new Place('', $to);
         $minutes = fn (string $a, string $b) => (int) $at($a)->diffInMinutes($at($b));
+        // The mock's "Your tram is cancelled": the 13:14 is, which only live
+        // times can say, so that situation's times read as live.
+        $live = MockScenario::is('cancelled');
 
         return new Journey(
             legs: [
                 new Leg('walk', $start, $neumarkt, $at($leave), $at($board), $minutes($leave, $board)),
                 new Leg('tram', $neumarkt, $wiener, $at($board), $at($alight), $minutes($board, $alight), '4', 'Schlebusch',
-                    lineColor: '#A01E5A', scheduledDepartAt: $at($board), scheduledArriveAt: $at($alight)),
+                    lineColor: '#A01E5A', scheduledDepartAt: $at($board), scheduledArriveAt: $at($alight),
+                    delayMin: $live ? 0 : null, realtime: $live, cancelled: $live && $board === '13:14'),
                 new Leg('walk', $wiener, $end, $at($alight), $at($there), $minutes($alight, $there)),
             ],
             departAt: $at($leave),

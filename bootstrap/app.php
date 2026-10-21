@@ -7,6 +7,7 @@ use App\Http\Middleware\PerfTrackMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
+use App\Http\Middleware\StartSessionKeepingPrivateQueries;
 use App\Support\MockClock;
 use App\Support\MockScenario;
 use Illuminate\Auth\AuthenticationException;
@@ -16,6 +17,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Sentry\Laravel\Integration;
@@ -43,6 +45,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // off the guest-only auth screens instead of redirecting silently.
         $middleware->alias([
             'guest' => RedirectIfAuthenticated::class,
+        ]);
+
+        // A page whose query says where someone will be is remembered in
+        // the session without it (Around here: KeepQueryPrivate).
+        $middleware->web(replace: [
+            StartSession::class => StartSessionKeepingPrivateQueries::class,
         ]);
 
         $middleware->web(append: [
