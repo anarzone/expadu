@@ -248,6 +248,37 @@ export function EventDetails({
         });
     };
 
+    // Share sits by the category, clear of the poster art's loop.
+    const share =
+        canShare && l ? (
+            <button
+                type="button"
+                className="evd-share"
+                aria-label="Share"
+                onClick={() =>
+                    shareItem(
+                        {
+                            title: l.poster.title,
+                            url: `${location.origin}/events?${new URLSearchParams(
+                                {
+                                    date,
+                                    event: String(l.occurrence.id),
+                                    start: l.occurrence.occurrence_start,
+                                },
+                            )}`,
+                        },
+                        {
+                            surface: 'event_sheet',
+                            item_type: 'event',
+                            item_id: l.occurrence.id,
+                        },
+                    )
+                }
+            >
+                <IconShare2 stroke={1.7} />
+            </button>
+        ) : null;
+
     return (
         <Sheet
             open={!!listing}
@@ -257,37 +288,6 @@ export function EventDetails({
                 `pp--${posterInk(l?.poster.start)}`,
                 way && 'is-way',
             )}
-            actions={
-                canShare && l ? (
-                    <button
-                        type="button"
-                        className="ui-sheet-action"
-                        aria-label="Share"
-                        onClick={() =>
-                            shareItem(
-                                {
-                                    title: l.poster.title,
-                                    url: `${location.origin}/events?${new URLSearchParams(
-                                        {
-                                            date,
-                                            event: String(l.occurrence.id),
-                                            start: l.occurrence
-                                                .occurrence_start,
-                                        },
-                                    )}`,
-                                },
-                                {
-                                    surface: 'event_sheet',
-                                    item_type: 'event',
-                                    item_id: l.occurrence.id,
-                                },
-                            )
-                        }
-                    >
-                        <IconShare2 stroke={1.7} />
-                    </button>
-                ) : null
-            }
             title={
                 l ? (
                     <>
@@ -329,7 +329,7 @@ export function EventDetails({
                         </strong>
                     </>
                 ) : (
-                    <Head poster={l.poster} today={today} />
+                    <Head poster={l.poster} today={today} share={share} />
                 )
             }
             footer={
@@ -399,16 +399,36 @@ export function EventDetails({
 }
 
 /** The poster at the top: its art, category, date tape and start. */
-function Head({ poster, today }: { poster: PosterEvent; today: string }) {
+/** Where the listing came from, in plain words: a site by its name, the
+    city's own listing as such, and our own entries with no label. */
+const sourceName = (source: string | null | undefined): string | null =>
+    !source || source === 'manual'
+        ? null
+        : source === 'stadt-koeln.de'
+          ? 'City listing'
+          : source;
+
+function Head({
+    poster,
+    today,
+    share,
+}: {
+    poster: PosterEvent;
+    today: string;
+    share?: ReactNode;
+}) {
     const category = posterCategory(poster.category);
 
     return (
         <>
             <PosterArt event={poster} variant="cover" className="evd-art" />
             <span className="evd-shade" aria-hidden="true" />
-            <span className="evd-chip">
-                <Icon name={category.icon} variant="line" />
-                {category.label}
+            <span className="evd-top">
+                <span className="evd-chip">
+                    <Icon name={category.icon} variant="line" />
+                    {category.label}
+                </span>
+                {share}
             </span>
             <span className="pp-tape evd-tape">
                 {posterTape(poster, today)}
@@ -441,6 +461,7 @@ function Body({
     onWay?: () => void;
 }) {
     const { poster, occurrence: o } = listing;
+    const source = sourceName(o.source);
     const km = start ? kmBetween(start, o.venue) : null;
     const past = date < today;
     const listed = o.time_listed !== false;
@@ -534,7 +555,7 @@ function Body({
                         <span>
                             <Icon name="info" variant="line" />
                             Listing details
-                            {o.source ? <small>{o.source}</small> : null}
+                            {source ? <small>{source}</small> : null}
                         </span>
                         <Icon name="down" variant="line" />
                     </summary>
@@ -548,10 +569,10 @@ function Body({
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
-                                        {o.source ?? 'The listing'}
+                                        {source ?? 'The listing'}
                                     </a>
                                 ) : (
-                                    (o.source ?? 'Not listed')
+                                    (source ?? 'Not listed')
                                 )}
                             </dd>
                         </div>

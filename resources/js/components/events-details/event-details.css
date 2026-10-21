@@ -99,11 +99,21 @@
     background: linear-gradient(180deg, #fff8e600 20%, #fff8e6e6 100%);
 }
 
-.ev-details .evd-chip {
+/* The category, and Share beside it: on the left, clear of the poster
+   art's loop at the right. */
+.ev-details .evd-top {
     position: absolute;
     z-index: 1;
-    top: 20px;
+    top: 14px;
     left: 24px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    /* Share's height, so the chip sits in the same place without it. */
+    min-height: 44px;
+}
+
+.ev-details .evd-chip {
     display: inline-flex;
     gap: 6px;
     align-items: center;
@@ -170,9 +180,9 @@
     -webkit-text-stroke: 1.5px var(--pp-text);
 }
 
-/* Close floats on the poster, with Share before it. */
+/* Close floats on the poster; Share is a glass button like it. */
 .ev-details .ui-sheet-close,
-.ev-details .ui-sheet-action {
+.ev-details .evd-share {
     position: absolute;
     z-index: 2;
     top: 11px;
@@ -185,16 +195,28 @@
     backdrop-filter: blur(10px);
 }
 
-.ev-details .ui-sheet-action {
-    right: 68px;
+.ev-details .evd-share {
+    position: static;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-round);
+    cursor: pointer;
+}
+
+.ev-details .evd-share svg {
+    width: 20px;
+    height: 20px;
 }
 
 .ev-details .ui-sheet-close:hover,
-.ev-details .ui-sheet-action:hover {
+.ev-details .evd-share:hover {
     background: #ffffff47;
 }
 
-.ev-details:is(.pp--day, .pp--paper) :is(.ui-sheet-close, .ui-sheet-action) {
+.ev-details:is(.pp--day, .pp--paper) :is(.ui-sheet-close, .evd-share) {
     border-color: var(--evd-line);
     background: var(--evd-tile);
     color: var(--color-text);
@@ -690,9 +712,12 @@
         padding: 54px 20px 8px;
     }
 
-    .ev-details .evd-chip {
-        top: 21px;
+    .ev-details .evd-top {
+        top: 14px;
         left: 20px;
+    }
+
+    .ev-details .evd-chip {
         height: 30px;
     }
 
