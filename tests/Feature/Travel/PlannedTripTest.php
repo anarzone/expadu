@@ -3,6 +3,7 @@
 use App\Day\DayProjection;
 use App\Models\CityNews;
 use App\Models\ComposerWorkspace;
+use App\Models\NoticeBrief;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Notifications\PlannedTripChangeOfPlan;
@@ -393,6 +394,29 @@ test('a KVB notice for its line counts only when published after the way was pic
     $notice('Linie 4: Störung zwischen Neumarkt und Wiener Platz', '12:55');
     $this->artisan('travel:watch-planned-trips')->assertSuccessful();
     Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body'] === 'KVB notice for tram 4: Linie 4: Störung zwischen Neumarkt und Wiener Platz');
+});
+
+test('a KVB notice with an English brief says its headline and what it means', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48')];
+    watchedTrip($this->user);
+    $notice = CityNews::query()->create([
+        'title' => 'Linie 4: Störung', 'summary' => 'Zwischen Neumarkt und Wiener Platz kommt es zu Verspätungen.', 'source' => 'kvb-betriebslage',
+        'source_url' => 'https://www.kvb.koeln/fahrtinfo/betriebslage/#'.md5('4_Störung'), 'category' => 'transit',
+        'affected_lines' => ['4'], 'severity' => 'major', 'published_at' => CarbonImmutable::parse(PLANNED_DAY.' 12:55', 'Europe/Berlin'),
+        'created_at' => CarbonImmutable::parse(PLANNED_DAY.' 12:55', 'Europe/Berlin'), 'expires_at' => CarbonImmutable::parse(PLANNED_DAY.' 15:00', 'Europe/Berlin'),
+    ]);
+    NoticeBrief::query()->create([
+        'input_hash' => NoticeBrief::hashFor($notice->title, $notice->summary), 'locale' => 'en',
+        'headline' => 'Line 4 is delayed.', 'body' => 'Trams run late between Neumarkt and Wiener Platz.',
+        'impact' => 'delays', 'model' => 'test', 'prompt_version' => 'test',
+    ]);
+
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+
+    Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body']
+        === 'KVB notice for tram 4: Line 4 is delayed. Trams run late between Neumarkt and Wiener Platz.');
 });
 
 /** A drier way: a minute to the bus, two from it, there 13:45. */

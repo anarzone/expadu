@@ -71,6 +71,10 @@ export type Station = {
         source: string | null;
         since: string | null;
         brief?: NoticeBrief | null;
+        /** KVB's own text (German), for when there's no brief. */
+        details?: string | null;
+        /** KVB's page for the notice; null when it isn't KVB's. */
+        url?: string | null;
     }[];
     /** A `?stop=` name KVB doesn't know: the closest station shows instead. */
     unknown_stop?: string | null;
@@ -94,11 +98,19 @@ export type NoticeBrief = {
     impact?: string | null;
 };
 
-/** A notice's words: the brief's headline and text, else KVB's own title. */
+/**
+ * A notice's words: the brief's headline and text (English), else KVB's own
+ * title and text, said in German as they are (`lang` marks which).
+ */
 export const noticeWords = (notice: {
     title: string;
     brief?: NoticeBrief | null;
-}): { headline: string; text: string | null } =>
+    details?: string | null;
+}): { headline: string; text: string | null; lang: 'en' | 'de' } =>
     notice.brief
-        ? { headline: notice.brief.headline, text: notice.brief.text }
-        : { headline: notice.title, text: null };
+        ? {
+              headline: notice.brief.headline,
+              text: notice.brief.text,
+              lang: 'en',
+          }
+        : { headline: notice.title, text: notice.details ?? null, lang: 'de' };

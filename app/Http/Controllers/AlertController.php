@@ -7,6 +7,7 @@ use App\Bureaucracy\GuidancePublication;
 use App\Models\Alert;
 use App\Models\CityNews;
 use App\Models\NoticeBrief;
+use App\Services\DisruptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,10 +32,10 @@ class AlertController extends Controller
             ->limit(80)
             ->get();
 
-        $briefs = $this->briefs($alerts);
+        $notices = $this->notices($alerts);
 
         return Inertia::render('alerts', [
-            'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert, $briefs[$alert->group_key] ?? null))->all(),
+            'alerts' => $alerts->map(fn (Alert $alert) => $this->present($alert, $notices[$alert->group_key] ?? null))->all(),
             'unreadCount' => $request->user()->alerts()
                 ->publishable()
                 ->whereNull('dismissed_at')
@@ -49,7 +50,10 @@ class AlertController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function present(Alert $alert, ?NoticeBrief $brief = null): array
+    /**
+     * @param  array{brief: ?NoticeBrief, title: string, details: ?string, url: ?string}|null  $notice
+     */
+    private function present(Alert $alert, ?array $notice = null): array
     {
         $subtype = $alert->subtype;
         $severity = $alert->severity ?: 'info';
@@ -64,10 +68,13 @@ class AlertController extends Controller
             'severity' => $withdrawn ? 'info' : $severity,
             'source' => $withdrawn ? 'Expadu' : AlertClassifier::source($subtype),
             'action_label' => $withdrawn ? 'Review your current plan' : ($alert->deep_link ? AlertClassifier::actionLabel($subtype) : null),
-            // A KVB notice's English brief, when one is written, says what the
-            // card's own words can't; its impact line is never shown.
-            'title' => $withdrawn ? 'Saved guidance needs review' : ($brief?->headline ?: $alert->title),
-            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.' : ($brief?->body ?: (string) $alert->body),
+            // A KVB notice's card says it in the English brief when one is
+            // written, else in KVB's own words (German); its page is one tap
+            // away either way. The brief's impact line is never shown.
+            'title' => $withdrawn ? 'Saved guidance needs review' : ($notice === null ? $alert->title : ($notice['brief']?->headline ?: $notice['title'])),
+            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.'
+                : ($notice === null ? (string) $alert->body : ($notice['brief'] !== null ? ($notice['brief']->body ?: (string) $alert->body) : ($notice['details'] ?? ''))),
+            'notice' => $withdrawn || $notice === null ? null : ['lang' => $notice['brief'] !== null ? 'en' : 'de', 'url' => $notice['url']],
             'deep_link' => $withdrawn ? '/bureaucracy' : $alert->deep_link,
             'guidance_status' => $withdrawn ? 'review_required' : null,
             'read' => $alert->read_at !== null,
@@ -80,14 +87,15 @@ class AlertController extends Controller
     }
 
     /**
-     * The English briefs (App\Transit\NoticeBriefWriter) of the KVB notices
-     * behind these transit cards, keyed by the card's group (disruption:news_<id>).
+     * The KVB notices behind these transit cards, keyed by the card's group
+     * (disruption:news_<id>): KVB's own title and text, its page, and the
+     * English brief (App\Transit\NoticeBriefWriter) when one is written.
      * Read live, so a brief written after the card appeared still shows.
      *
      * @param  Collection<int, Alert>  $alerts
-     * @return array<string, NoticeBrief>
+     * @return array<string, array{brief: ?NoticeBrief, title: string, details: ?string, url: ?string}>
      */
-    private function briefs(Collection $alerts): array
+    private function notices(Collection $alerts): array
     {
         $ids = $alerts
             ->where('subtype', 'transit_disruption')
@@ -99,13 +107,17 @@ class AlertController extends Controller
             return [];
         }
 
-        $hashes = CityNews::query()->whereKey($ids)->get(['id', 'title', 'summary'])
-            ->mapWithKeys(fn (CityNews $notice) => [$notice->id => NoticeBrief::hashFor((string) $notice->title, $notice->summary)]);
+        $notices = CityNews::query()->whereKey($ids)->get(['id', 'title', 'summary', 'source_url']);
+        $hashes = $notices->mapWithKeys(fn (CityNews $notice) => [$notice->id => NoticeBrief::hashFor((string) $notice->title, $notice->summary)]);
         $briefs = NoticeBrief::query()->where('locale', 'en')->whereIn('input_hash', $hashes->values())->get()->keyBy('input_hash');
 
-        return $hashes
-            ->filter(fn (string $hash) => $briefs->has($hash))
-            ->mapWithKeys(fn (string $hash, int $id) => ["disruption:news_{$id}" => $briefs->get($hash)])
+        return $notices
+            ->mapWithKeys(fn (CityNews $notice) => ["disruption:news_{$notice->id}" => [
+                'brief' => $briefs->get($hashes[$notice->id]),
+                'title' => (string) $notice->title,
+                'details' => ($notice->summary ?? '') !== '' ? $notice->summary : null,
+                'url' => DisruptionService::kvbPage($notice->source_url),
+            ]])
             ->all();
     }
 

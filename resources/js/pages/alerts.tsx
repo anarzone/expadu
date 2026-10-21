@@ -14,6 +14,7 @@ import {
 } from '@tabler/icons-react';
 import type { ComponentType, ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
+import { InGermanChip, KvbNoticeLink } from '@/components/travel/kvb-notice';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
 import { writeJson } from '@/lib/reliable-write';
@@ -32,6 +33,8 @@ type Alert = {
     read: boolean;
     created_at: string;
     occurrences: number;
+    /** A KVB notice's card: its words' language and KVB's page for it. */
+    notice: { lang: 'en' | 'de'; url: string | null } | null;
 };
 
 /** Severity → left border + icon-tile tint (the design's sev-* classes). */
@@ -114,6 +117,8 @@ function AlertCard({
 }) {
     const Icon = CATEGORY_ICON[alert.category];
     const sev = SEVERITY[alert.severity];
+    // No English brief yet: KVB's own words, said in German as they are.
+    const german = alert.notice?.lang === 'de';
 
     return (
         <div
@@ -125,8 +130,17 @@ function AlertCard({
                 <Icon size={19} stroke={ICON_STROKE} />
             </span>
             <div className="min-w-0 flex-1 pr-5">
+                {german ? (
+                    <InGermanChip
+                        fromKvb={!!alert.notice?.url}
+                        className="mb-1.5"
+                    />
+                ) : null}
                 <div className="flex items-start gap-2">
-                    <span className="text-[14.5px] leading-[1.3] font-semibold">
+                    <span
+                        className="text-[14.5px] leading-[1.3] font-semibold"
+                        lang={german ? 'de' : undefined}
+                    >
                         {alert.title}
                     </span>
                     {!alert.read && (
@@ -134,10 +148,19 @@ function AlertCard({
                     )}
                 </div>
                 {alert.body && (
-                    <p className="mt-1.5 text-[13px] leading-[1.55] text-text-soft">
+                    <p
+                        className="mt-1.5 text-[13px] leading-[1.55] text-text-soft"
+                        lang={german ? 'de' : undefined}
+                    >
                         {alert.body}
                     </p>
                 )}
+                {alert.notice?.url ? (
+                    <KvbNoticeLink
+                        url={alert.notice.url}
+                        className="mt-1 inline-block"
+                    />
+                ) : null}
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[10px] tracking-[0.05em] text-text-muted uppercase">
                         {alert.source}

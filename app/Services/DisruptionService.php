@@ -83,10 +83,25 @@ class DisruptionService
                     'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
                     'estimated_end' => $n->expires_at?->toIso8601String(),
                     'source' => $n->source,
+                    // KVB's own page for it: the German source, one tap from the brief.
+                    'url' => self::kvbPage($n->source_url),
                     'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact] : null,
                 ];
             })
             ->all();
+    }
+
+    /**
+     * KVB's page a notice was read from; null for anyone else's (a city press
+     * release is not "KVB's notice"). The scraper's `#…` anchors only keep its
+     * rows apart; the page itself has no such element.
+     */
+    public static function kvbPage(?string $url): ?string
+    {
+        $page = $url === null ? '' : strtok($url, '#');
+        $host = is_string($page) && str_starts_with($page, 'https://') ? parse_url($page, PHP_URL_HOST) : null;
+
+        return is_string($host) && preg_match('/(^|\.)kvb\.(koeln|de)$/', $host) === 1 ? $page : null;
     }
 
     /**
