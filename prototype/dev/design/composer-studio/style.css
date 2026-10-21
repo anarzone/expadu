@@ -149,6 +149,21 @@
         color-mix(in srgb, var(--color-bg-canvas) 92%, transparent) 38%
     );
 }
+/* The AI disclosure: the box's helper text, 6px under it, inside the
+   box's edges (owner, 21 Oct 2026). */
+.composer-ai-notice {
+    width: calc(100% - 12px);
+    max-width: 818px;
+    margin: 6px auto 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.45;
+}
+.composer-ai-notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
 #studio-form {
     max-width: 830px;
     margin: auto;

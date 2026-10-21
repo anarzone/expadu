@@ -5,6 +5,7 @@ use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
 use App\Bureaucracy\Evidence\RecordEvidence;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\Processes\ReconcileProcesses;
+use App\Models\ActiveTrip;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -82,4 +83,46 @@ test('🔒 answering changes no plan', function () {
 
     $after = $this->getJson('/composer/workspace')->json();
     expect($after['plans'])->toBe($before['plans'])->and($after['changes'])->toBe($before['changes']);
+});
+
+/** A trip under way (Travel's "I'm on my way"): a walk, tram 4, and the walk there. */
+function tripUnderWay(User $user): void
+{
+    $at = fn (int $minutes) => now('Europe/Berlin')->addMinutes($minutes);
+    $leg = fn (string $mode, ?string $line, string $from, string $to, int $start, int $end) => [
+        'mode' => $mode, 'line' => $line, 'headsign' => $line ? 'Köln Schlebusch' : null,
+        'from' => ['name' => $from, 'lat' => 50.93, 'lng' => 6.94], 'to' => ['name' => $to, 'lat' => 50.96, 'lng' => 7.0],
+        'depart_at' => $at($start)->toIso8601String(), 'arrive_at' => $at($end)->toIso8601String(),
+        'depart_time' => $at($start)->format('H:i'), 'arrive_time' => $at($end)->format('H:i'), 'duration_min' => $end - $start,
+    ];
+    ActiveTrip::query()->create([
+        'user_id' => $user->id,
+        'journey' => ['mode' => 'transit', 'depart_at' => $at(0)->toIso8601String(), 'arrive_at' => $at(38)->toIso8601String(),
+            'depart_time' => $at(0)->format('H:i'), 'arrive_time' => $at(38)->format('H:i'), 'duration_min' => 38, 'transfers' => 0, 'legs' => [
+                $leg('walk', null, 'Your location', 'Köln Neumarkt', 0, 4),
+                $leg('tram', '4', 'Köln Neumarkt', 'Köln Mülheim Wiener Platz', 4, 32),
+                $leg('walk', null, 'Köln Mülheim Wiener Platz', 'Private destination', 32, 38),
+            ]],
+        'destination' => ['name' => 'Private destination', 'lat' => 50.96, 'lng' => 7.0],
+        'target' => ['id' => 'appointment:1', 'title' => 'Private appointment', 'label' => 'Mülheim', 'kind' => 'appointment',
+            'official' => true, 'start_at' => $at(50)->toIso8601String()],
+        'started_at' => $at(0),
+    ]);
+}
+
+test('🔒 on the way, Composer answers from the asker\'s own trip, never another account\'s', function () {
+    $traveller = User::factory()->onboarded()->create();
+    tripUnderWay($traveller);
+
+    $this->actingAs($traveller);
+    $reply = askComposer($this, 'Where do I get off?');
+    expect($reply)->kind->toBe('trip')->request->toBe('onway')
+        ->title->toBe('Get off at Mülheim Wiener Platz at '.now('Europe/Berlin')->addMinutes(32)->format('H:i').'.')
+        ->and($reply['trip'])->link->toBe('trip')
+        ->and($reply['trip']['for']['place'])->toBe('Private appointment');
+
+    // Someone else asking the same has no trip under way: nothing of the traveller's comes back.
+    $this->actingAs(User::factory()->onboarded()->create());
+    $other = json_encode(askComposer($this, 'Where do I get off?'));
+    expect($other)->not->toContain('Private appointment')->not->toContain('Wiener Platz')->not->toContain('"trip"');
 });

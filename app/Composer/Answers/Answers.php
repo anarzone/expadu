@@ -23,11 +23,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class Answers
 {
-    /** The kinds this class answers. */
-    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable'];
+    /** The kinds this class answers (and, for a journey, only the appointment's: handles()). */
+    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey'];
 
-    /** Questions about your own day and records, answered even when the words read as a plan. */
-    private const ABOUT_YOUR_DAY = ['next', 'checklist'];
+    /** Questions about your own day, trip and records, answered even when the words read as a plan. */
+    private const ABOUT_YOUR_DAY = ['next', 'checklist', 'journey', 'onway'];
 
     /** The four everyday requests (app.js `everyday`). */
     private const EVERYDAY = [
@@ -54,12 +54,15 @@ final class Answers
         private RequestRouter $router,
         private RecordedAppointmentsBetween $appointments,
         private AccountPlanEntry $plans,
+        private TripAnswers $trips,
     ) {}
 
     /**
      * Whether Composer answers this request itself, given what the prompt parser made of it.
-     * A plan the parser understood is planned: only questions about your own day and
-     * records answer instead. "I can't answer that" and "the listings can't vouch for it"
+     * A plan the parser understood is planned: only questions about your own day, trip and
+     * records answer instead. A journey only when it's the appointment's ("When should I
+     * leave for my 14:00?", "Is my tram on time?"); other journeys keep the page's reply
+     * until their part of CO3. "I can't answer that" and "the listings can't vouch for it"
      * come only when nothing else understood the request; a search the parser reads goes
      * to the search. A preference about a listing is the places' to answer.
      *
@@ -70,6 +73,7 @@ final class Answers
         $kind = $request['kind'];
 
         return in_array($kind, self::KINDS, true)
+            && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment')
             && ($intent !== PromptIntent::PlanDay || in_array($kind, self::ABOUT_YOUR_DAY, true))
             && (! in_array($kind, ['clarify', 'unavailable'], true) || $intent === PromptIntent::Unknown)
             && ! ($kind === 'unavailable' && ($request['topic'] ?? null) === 'listing');
@@ -129,8 +133,28 @@ final class Answers
             'unavailable' => ($request['topic'] ?? null) === 'listing' ? null
                 : $this->reply('The listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
                     'unavailable', suggestions: [self::EVERYDAY[0], self::EVERYDAY[2]]),
+            'onway' => $this->trips->onTheWay($user, (string) ($request['ask'] ?? 'next'), $now),
+            'journey' => $this->journey($user, $request, $now),
             default => null,
         };
+    }
+
+    /**
+     * The appointment's trip (app.js): on your way to it, the trip you're on answers;
+     * before you set off, when to leave.
+     *
+     * @param  array<string, mixed>  $request
+     */
+    private function journey(User $user, array $request, CarbonImmutable $now): ?array
+    {
+        if (($request['to'] ?? null) !== 'appointment') {
+            return null;
+        }
+        $start = $this->context($user, $now, null)->appointmentStart;
+
+        return $this->trips->onWayTo($user, $start)
+            ? $this->trips->onTheWay($user, ($request['status'] ?? false) ? 'status' : 'leave', $now)
+            : $this->trips->appointment($user, $request, $now, $start);
     }
 
     /**

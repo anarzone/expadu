@@ -1,6 +1,18 @@
 import { Link } from '@inertiajs/react';
+import { travelDestinationParams } from '@/components/departures/travel-request';
+import { LineBadge } from '@/components/travel/line-badge';
+import { vehicleOf } from '@/components/travel/line-look';
+import {
+    lookOf,
+    tripSteps,
+    wayRows,
+} from '@/components/travel/trip/trip-model';
+import type { TripFor } from '@/components/travel/trip/trip-model';
+import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
+import { timetable } from '@/routes';
+import type { Journey } from '@/types/transit';
 import type { Panel } from './frame';
 import type { Message } from './types';
 
@@ -37,6 +49,19 @@ type Checklist = {
 
 type Fact = { label: string; value: string; known: boolean };
 
+/** A trip the answer is about (App\Composer\Answers\TripAnswers): its journey, and where it leads. */
+type TripAnswer = {
+    journey: Journey;
+    for: TripFor;
+    city: string | null;
+    /** On the way: when the answer was given, so the way starts where you were. */
+    at?: string;
+    /** Travel's Plan a trip to the plan, or the trip under way. */
+    link: 'plan' | 'trip';
+    label: string;
+    basis: 'live' | 'scheduled';
+};
+
 export type AnswerMessage = Message & {
     request?: string;
     title?: string;
@@ -44,11 +69,75 @@ export type AnswerMessage = Message & {
     options?: boolean;
     record?: Checklist;
     facts?: Fact[];
+    trip?: TripAnswer;
 };
 
 /** Whether a message is one of these answers (the server marks them with their request's kind). */
 export const isAnswer = (message: Message): message is AnswerMessage =>
     (message as AnswerMessage).request !== undefined;
+
+/** Travel's Plan a trip to the plan, there by its start, as Today links it (routeTo); or the trip under way. */
+function tripHref(trip: TripAnswer): string {
+    const end = trip.journey.legs.at(-1)?.to;
+
+    if (trip.link === 'trip' || !end) {
+        return trip.link === 'trip'
+            ? `${timetable.url()}?view=route`
+            : timetable.url();
+    }
+
+    return `${timetable.url()}?${new URLSearchParams(
+        travelDestinationParams({
+            name: trip.for.label ?? trip.for.place,
+            lat: end.lat,
+            lng: end.lng,
+            arriveBy: trip.for.startAt ?? undefined,
+            backLabel: trip.for.place,
+        }),
+    )}`;
+}
+
+/**
+ * The way as Travel's trip draws it (trip-model.ts, way.tsx), so a trip reads the same
+ * wherever it shows. On the way, it starts from where you were when you asked.
+ */
+function TripWay({ trip }: { trip: TripAnswer }) {
+    const steps = tripSteps(trip.journey, trip.for, trip.city);
+    const at = trip.at ? Date.parse(trip.at) : null;
+    const step =
+        at === null
+            ? null
+            : steps.reduce(
+                  (found, s, index) => (s.at <= at ? index : found),
+                  0,
+              );
+    const { rows, legs, current } = wayRows(steps, trip.for, trip.city, step);
+    const from = step === null ? 0 : Math.max(0, current);
+
+    return (
+        <section className="answer-way" aria-label="Your way">
+            <h4 className="nav-way-title">Your way</h4>
+            <Way
+                rows={rows.slice(from).map((row, index) => {
+                    const leg = legs[from + index];
+
+                    return leg
+                        ? {
+                              ...row,
+                              badge: (
+                                  <LineBadge
+                                      line={leg.line ?? ''}
+                                      kind={vehicleOf(leg.mode)}
+                                      look={lookOf(leg)}
+                                  />
+                              ),
+                          }
+                        : row;
+                })}
+            />
+        </section>
+    );
+}
 
 export function AnswerBody({
     message,
@@ -65,6 +154,7 @@ export function AnswerBody({
     onPanel: (panel: Panel) => void;
 }) {
     const record = message.kind === 'checklist' ? message.record : undefined;
+    const trip = message.kind === 'trip' ? message.trip : undefined;
     const paragraph = message.text ? <p>{message.text}</p> : null;
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
@@ -75,8 +165,25 @@ export function AnswerBody({
             {message.title && (
                 <h3 className="chat-answer-title">{message.title}</h3>
             )}
-            {/* Your checklist leads with its block; the explanation follows it. */}
-            {!record && paragraph}
+            {/* Your checklist and the trip lead with their block; the explanation follows it. */}
+            {!record && !trip && paragraph}
+            {trip && (
+                <>
+                    <TripWay trip={trip} />
+                    {paragraph}
+                    <div className="answer-actions">
+                        <Link className="answer-button" href={tripHref(trip)}>
+                            {trip.label}
+                            <Icon name="arrow" variant="line" />
+                        </Link>
+                        <span>
+                            {trip.basis === 'live'
+                                ? 'Live times.'
+                                : 'Scheduled times, not live.'}
+                        </span>
+                    </div>
+                </>
+            )}
             {record && (
                 <>
                     <Link
