@@ -84,7 +84,9 @@ const viewOf = (url: string): View => {
     return params.get('view') === 'journey' ||
         params.has('to_lat') ||
         params.has('to_name') ||
-        params.has('to')
+        params.has('to') ||
+        params.has('context') ||
+        params.has('event')
         ? 'journey'
         : 'stop';
 };
