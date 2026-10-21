@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+import { openComposerTray } from '@/components/shell/composer-tray';
 import { commands } from './api';
 import { AppointmentEditor, ProgressEditor, SubmissionEditor } from './editors';
 import {
@@ -6,6 +8,7 @@ import {
     factLabels,
     formatDate,
     lower,
+    soon,
     stepKinds,
     stepStatusLabels,
     when,
@@ -151,6 +154,15 @@ function StepContent({ process, step }: { process: Process; step: Step }) {
                             Read official information
                         </a>
                     ) : null}
+                    {/* Composer, about this task (its page context). */}
+                    <button
+                        type="button"
+                        className="step-help"
+                        onClick={openComposerTray}
+                    >
+                        <Icon name="spark" />
+                        Help with this step
+                    </button>
                 </div>
                 {papers && open && step.status !== 'completed' ? (
                     <div className="step-document-preview">
@@ -244,6 +256,44 @@ function StepContent({ process, step }: { process: Process; step: Step }) {
     );
 }
 
+/**
+ * A task's status beside its name in the page's header (the mock's
+ * case-title-status): the state badge, and the pencil that updates progress
+ * once the task is tracked.
+ */
+export function TaskTitleStatus({ processKey }: { processKey: string }) {
+    const { processByKey, openEditor, canEdit } = usePaperwork();
+    const process = processByKey(processKey);
+
+    if (!process) {
+        return null;
+    }
+
+    return (
+        <span className="case-title-status">
+            <Badge
+                text={stateLabel(process)}
+                kind={workflowTone(process.state.workflow)}
+            />
+            {process.id !== null && !process.is_closed && canEdit ? (
+                <button
+                    type="button"
+                    className="icon-button"
+                    onClick={() =>
+                        openEditor({
+                            title: 'Update progress',
+                            body: <ProgressEditor processKey={processKey} />,
+                        })
+                    }
+                    aria-label="Update progress"
+                >
+                    <Icon name="pencil" />
+                </button>
+            ) : null}
+        </span>
+    );
+}
+
 export function TaskDetail() {
     const {
         plan,
@@ -334,33 +384,9 @@ export function TaskDetail() {
 
     return (
         <>
-            <div className="process-detail-heading">
-                <BackToOverview />
-                <div>
-                    <h2 className="sr-only" id="view-heading" tabIndex={-1}>
-                        {process.title} progress
-                    </h2>
-                    <Badge
-                        text={stateLabel(process)}
-                        kind={workflowTone(process.state.workflow)}
-                    />
-                </div>
-                {tracked && canEdit ? (
-                    <button
-                        type="button"
-                        className="icon-button"
-                        onClick={() =>
-                            openEditor({
-                                title: 'Update progress',
-                                body: <ProgressEditor processKey={key} />,
-                            })
-                        }
-                        aria-label="Update progress"
-                    >
-                        <Icon name="pencil" />
-                    </button>
-                ) : null}
-            </div>
+            <h2 className="sr-only" id="view-heading" tabIndex={-1}>
+                {process.title} progress
+            </h2>
             {process.id === null && canEdit ? (
                 <section className="proposal-banner">
                     <div>
@@ -589,6 +615,18 @@ export function TaskDetail() {
                                     </small>
                                 ) : null}
                             </div>
+                            {/* A recorded appointment is in the person's day already; on its
+                                day the way there is Today. */}
+                            {soon(appointment.starts_at?.slice(0, 10))?.days ===
+                            0 ? (
+                                <Link
+                                    className="button secondary"
+                                    href="/dashboard"
+                                >
+                                    <Icon name="calendar" />
+                                    On Today
+                                </Link>
+                            ) : null}
                         </div>
                     ) : (
                         <div className="appointment-empty">
