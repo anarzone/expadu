@@ -98,8 +98,9 @@ test('an inactive or erased account person cannot be silently recreated', functi
     $person = $withDossier ? app(EnsureAccountHolder::class)->dossier($user)->person : app(EnsureAccountHolder::class)->person($user);
     $person->update(['record_status' => $state]);
     $before = $person->fresh()->getRawOriginal();
+    // A record its holder deleted says so (owner, 21 Oct 2026); an inactive one is unavailable.
     $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
-        ->assertJsonPath('state', 'record_unavailable')->assertJsonPath('plan', null);
+        ->assertJsonPath('state', $state === 'erased' ? 'erased' : 'record_unavailable')->assertJsonPath('plan', null);
     expect($person->fresh()->getRawOriginal())->toBe($before)
         ->and(BureaucracyPerson::query()->count())->toBe(1)
         ->and($person->dossier()->exists())->toBe($withDossier);

@@ -14,7 +14,11 @@ import {
     SourcesBody,
 } from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
-import { Sharing } from '@/components/paperwork/sharing';
+import {
+    ErasedRecord,
+    Sharing,
+    StoppedRecord,
+} from '@/components/paperwork/sharing';
 import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
@@ -367,6 +371,8 @@ export default function Paperwork({
     people,
     coverageWaitlist,
 }: Props) {
+    const self = people.find((p) => p.is_self);
+
     return (
         <AppLayout>
             <Head title="Paperwork" />
@@ -385,7 +391,13 @@ export default function Paperwork({
             ) : (
                 <div className="paperwork-page">
                     <h1 className="sr-only">Paperwork</h1>
-                    <Unavailable state={entry.state} />
+                    {entry.state === 'processing_stopped' && self ? (
+                        <StoppedRecord personId={self.id} />
+                    ) : entry.state === 'erased' ? (
+                        <ErasedRecord />
+                    ) : (
+                        <Unavailable state={entry.state} />
+                    )}
                 </div>
             )}
         </AppLayout>

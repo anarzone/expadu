@@ -8,9 +8,22 @@ use App\Models\BureaucracyPerson;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
 use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class PersonAccess
 {
+    public const STOPPED = 'Processing is stopped. Resume it to change your plan.';
+
+    /** What may still happen while processing is stopped: each only reads, ends or takes processing away. */
+    private const WHILE_STOPPED = [
+        'bureaucracy.v2.people.processing-restriction',
+        'bureaucracy.v2.people.processing.withdraw',
+        'bureaucracy.v2.people.export',
+        'bureaucracy.v2.people.destroy',
+        'bureaucracy.v2.grants.revoke',
+        'bureaucracy.v2.invitations.cancel',
+    ];
+
     public function allows(User $actor, BureaucracyPerson $person, AccessScope $scope): bool
     {
         return in_array($scope->value, $this->scopesFor($actor, $person), true);
@@ -26,6 +39,11 @@ final class PersonAccess
         if ($current->account_user_id === $actor->id) {
             return AccessScope::values();
         }
+        // Showing a record to someone it's shared with is processing too: while it's
+        // stopped they have no access. Their grant stays and works again on resume.
+        if ($current->processing_stopped_at !== null) {
+            return [];
+        }
 
         return BureaucracyAccessGrant::query()->where('person_id', $current->id)->where('grantee_user_id', $actor->id)
             ->whereNull('revoked_at')->where('expires_at', '>', now()->utc())->get()
@@ -37,6 +55,20 @@ final class PersonAccess
     {
         if (! $this->allows($actor, $person, $scope)) {
             throw new AuthorizationException;
+        }
+        $this->refuseChangesWhileStopped($person);
+    }
+
+    /**
+     * While processing is stopped (Art. 18) the record is read-only: any change would be
+     * processed. Reading it, downloading it, deleting it, resuming and removing someone's
+     * access don't come through here, and still work.
+     */
+    private function refuseChangesWhileStopped(BureaucracyPerson $person): void
+    {
+        if (app()->bound('request') && ! request()->isMethodSafe() && ! request()->routeIs(...self::WHILE_STOPPED)
+            && BureaucracyPerson::query()->whereKey($person->id)->whereNotNull('processing_stopped_at')->exists()) {
+            throw new ConflictHttpException(self::STOPPED);
         }
     }
 
