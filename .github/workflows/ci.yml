@@ -4,7 +4,9 @@ on:
   push:
     branches: [main, staging]
   pull_request:
-    branches: [main, staging]
+    # The launch branch too: its PRs get the same lint, tests and browser specs as a
+    # release, on GitHub's machines. Deploy jobs still run only for main and staging.
+    branches: [main, staging, 'launch/**']
   workflow_dispatch:
 
 jobs:
