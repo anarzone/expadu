@@ -4,9 +4,11 @@
    sits after the person's day, what the listing says and what it doesn't,
    and a bar with Save, a reminder and Add to plan. Facts the listing
    doesn't carry read "Not listed"; nothing is inferred. On a phone it's
-   the whole screen and a drag down on the poster closes it. */
+   the whole screen and a drag down on the poster closes it. Where opens
+   Get there inside the page, with Back (get-there.tsx). */
 
-import { useEffect, useRef, useState } from 'react';
+import { Link } from '@inertiajs/react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import EventReminderController from '@/actions/App/Http/Controllers/Api/EventReminderController';
 import ComposerController from '@/actions/App/Http/Controllers/ComposerController';
@@ -22,18 +24,30 @@ import {
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
+import { kmBetween } from '@/lib/geo';
+import type { DayProjection } from '@/types/day';
+import type { WayMode, WayStart, WayWhen } from './get-there';
 import { addToPlan, candidateFor, inPlan, readPlan, undoChange } from './plan';
 import type { Workspace } from './plan';
 import './event-details.css';
+
+// With Travel's styles and the map, only once someone asks for the way.
+const GetThere = lazy(() => import('./get-there'));
 
 export type DetailsListing = {
     key: string;
     poster: PosterEvent;
     occurrence: EventOccurrence;
-    km: number | null;
 };
 
-type Appointment = { title: string; end: string };
+type Point = { lat: number; lng: number };
+
+type Appointment = {
+    title: string;
+    end: string;
+    /** Where it is, when the person recorded a place on the map. */
+    place: (Point & { name: string }) | null;
+};
 
 const dayLabel = (date: string, weekday: 'short' | 'long' = 'short') =>
     new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
@@ -107,15 +121,18 @@ function Row({
     value,
     sub,
     className = '',
+    open,
 }: {
     icon: IconName;
     label: string;
     value: ReactNode;
     sub?: ReactNode;
     className?: string;
+    /** A row that opens a page of its own: its name, and how. */
+    open?: { label: string; onOpen: () => void };
 }) {
-    return (
-        <div className={`evd-row ${className}`.trim()}>
+    const inside = (
+        <>
             <span className="evd-row-icon">
                 <Icon name={icon} variant="line" />
             </span>
@@ -124,8 +141,44 @@ function Row({
                 <span className="evd-row-value">{value}</span>
                 {sub ? <span className="evd-row-sub">{sub}</span> : null}
             </span>
-        </div>
+        </>
     );
+
+    return open ? (
+        <button
+            type="button"
+            className={`evd-row ${className}`.trim()}
+            aria-label={open.label}
+            onClick={open.onOpen}
+        >
+            {inside}
+            <Icon name="arrow" variant="line" />
+        </button>
+    ) : (
+        <div className={`evd-row ${className}`.trim()}>{inside}</div>
+    );
+}
+
+/** Where you'd set off: the From you chose, otherwise the place of the
+    appointment your day ends with before it starts (the mock's
+    startingPoint()), saying so under From. */
+function startFor(
+    poster: PosterEvent,
+    from: (Point & { name: string }) | null,
+    appointment: Appointment | null,
+): WayStart | null {
+    if (from) {
+        return { ...from, note: null };
+    }
+
+    const before = appointment?.place;
+
+    return before && poster.start && appointment.end <= poster.start
+        ? {
+              ...before,
+              note: `After ${appointment.title}, which ends at ${appointment.end}`,
+          }
+        : null;
 }
 
 export function EventDetails({
@@ -134,6 +187,8 @@ export function EventDetails({
     today,
     from,
     appointment,
+    mode,
+    day,
     saved,
     onSave,
     onClose,
@@ -143,27 +198,57 @@ export function EventDetails({
     /** The day shown (every listing on the page is on it). */
     date: string;
     today: string;
-    /** The starting point's name, for "From … · 2.0 km away". */
-    from: string | null;
+    /** The starting point the page names, for "From … · 2.0 km away". */
+    from: (Point & { name: string }) | null;
     appointment: Appointment | null;
+    /** How the person travels, for Get there's first way. */
+    mode: WayMode;
+    /** The day shown, as Travel reads it, once Get there asks for it. */
+    day: DayProjection | null | undefined;
     saved: boolean;
     onSave: () => void;
     onClose: () => void;
 }) {
     // The page keeps what it showed while it slides away.
     const [shown, setShown] = useState(listing);
+    // The details, or Get there inside them; by the start at first.
+    const [page, setPage] = useState<'about' | 'way'>('about');
+    const [when, setWhen] = useState<WayWhen>('arrive');
 
     if (listing && listing !== shown) {
         setShown(listing);
+
+        // Another listing opens on its details, by its start.
+        if (listing.key !== shown?.key) {
+            setPage('about');
+            setWhen('arrive');
+        }
     }
 
     const l = listing ?? shown;
+    // A day gone by has no way there to plan.
+    const way = page === 'way' && !!l && date >= today;
+    const start = l ? startFor(l.poster, from, appointment) : null;
+    const back = useRef<HTMLButtonElement>(null);
+    const go = (next: 'about' | 'way') => {
+        setPage(next);
+        // Each page starts at its top, with Back or Where in reach.
+        requestAnimationFrame(() => {
+            document
+                .querySelector('.ev-details .ui-sheet-body')
+                ?.scrollTo(0, 0);
+            (next === 'way'
+                ? back.current
+                : document.querySelector<HTMLElement>('.ev-details .evd-where')
+            )?.focus({ preventScroll: true });
+        });
+    };
 
     return (
         <Sheet
             open={!!listing}
             onClose={onClose}
-            className={`ev-details pp--${posterInk(l?.poster.start)}`}
+            className={`ev-details pp--${posterInk(l?.poster.start)}${way ? 'is-way' : ''}`}
             title={
                 l ? (
                     <span lang={l.poster.titleLang ?? undefined}>
@@ -173,28 +258,79 @@ export function EventDetails({
                     ''
                 )
             }
-            description={l ? <Head poster={l.poster} today={today} /> : null}
+            description={
+                !l ? null : way ? (
+                    <>
+                        <button
+                            ref={back}
+                            type="button"
+                            className="event-back"
+                            onClick={() => go('about')}
+                        >
+                            <Icon name="back" variant="line" />
+                            <span>Back</span>
+                        </button>
+                        <strong className="event-subhead-title">
+                            Get there
+                        </strong>
+                    </>
+                ) : (
+                    <Head poster={l.poster} today={today} />
+                )
+            }
             footer={
                 l && date >= today ? (
-                    <Actions
-                        key={l.key}
-                        listing={l}
-                        date={date}
-                        saved={saved}
-                        onSave={onSave}
-                    />
+                    way ? (
+                        <div className="evd-bar">
+                            <Link
+                                className="evd-plan"
+                                href={`/timetable?${new URLSearchParams({
+                                    view: 'journey',
+                                    event: String(l.occurrence.id),
+                                    start: l.occurrence.occurrence_start,
+                                    ...(when === 'back' ? { back: '1' } : {}),
+                                })}`}
+                            >
+                                <Icon name="route" variant="line" />
+                                Open in Travel
+                            </Link>
+                        </div>
+                    ) : (
+                        <Actions
+                            key={l.key}
+                            listing={l}
+                            date={date}
+                            saved={saved}
+                            onSave={onSave}
+                        />
+                    )
                 ) : null
             }
         >
-            {l ? (
+            {!l ? null : way ? (
+                <Suspense fallback={null}>
+                    <GetThere
+                        key={l.key}
+                        occurrence={l.occurrence}
+                        title={l.poster.title}
+                        date={date}
+                        start={start}
+                        when={when}
+                        onWhen={setWhen}
+                        initialMode={mode}
+                        day={day}
+                    />
+                </Suspense>
+            ) : (
                 <Body
                     listing={l}
                     date={date}
                     today={today}
-                    from={from}
+                    start={start}
                     appointment={appointment}
+                    onWay={date >= today ? () => go('way') : undefined}
                 />
-            ) : null}
+            )}
         </Sheet>
     );
 }
@@ -225,16 +361,21 @@ function Body({
     listing,
     date,
     today,
-    from,
+    start,
     appointment,
+    onWay,
 }: {
     listing: DetailsListing;
     date: string;
     today: string;
-    from: string | null;
+    /** Where you'd set off (Get there's From). */
+    start: WayStart | null;
     appointment: Appointment | null;
+    /** Opens Get there; a day gone by has none. */
+    onWay?: () => void;
 }) {
-    const { poster, occurrence: o, km } = listing;
+    const { poster, occurrence: o } = listing;
+    const km = start ? kmBetween(start, o.venue) : null;
     const past = date < today;
     const listed = o.time_listed !== false;
     const times =
@@ -366,6 +507,14 @@ function Body({
                     icon="pin"
                     label="Where"
                     className="evd-where"
+                    open={
+                        onWay
+                            ? {
+                                  label: `Get there: ${o.venue.name ?? 'the venue'}`,
+                                  onOpen: onWay,
+                              }
+                            : undefined
+                    }
                     value={
                         <>
                             {o.venue.name ?? 'Venue not listed'}
@@ -378,10 +527,10 @@ function Body({
                         </>
                     }
                     sub={
-                        from && km !== null ? (
+                        start && km !== null ? (
                             <span className="evd-where-go">
                                 <Icon name="route" variant="line" />
-                                From {from} ·{' '}
+                                From {start.name} ·{' '}
                                 {km < 1
                                     ? `${Math.round(km * 1000)} m`
                                     : `${km.toFixed(1)} km`}{' '}

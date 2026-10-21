@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Day\Contracts\RecordedAppointments;
+use App\Day\DayProjection;
 use App\Enums\EventCategory;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
@@ -56,6 +57,12 @@ class EventController extends Controller
             'starting_point' => $from,
             'saved_places' => $points->savedPlaces($request->user()),
             'appointment' => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
+            // The day shown, as Travel reads it: what Get there checks a way
+            // against ("My day"). Only when Get there asks for it; a past day
+            // has nothing to plan.
+            'day' => $day->lessThan($today->startOfDay())
+                ? null
+                : Inertia::optional(fn () => app(DayProjection::class)->for($request->user(), $day->toDateString(), $request)),
             'catalogue' => $this->catalogue(),
             'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
@@ -115,26 +122,31 @@ class EventController extends Controller
     /**
      * The person's own last appointment today that has an end (recorded in
      * Paperwork, or planned in their day), for the details' "For you" (how an
-     * event sits after it). Only what they recorded; nothing when none.
+     * event sits after it) and Get there's start (where it is, when they
+     * recorded a place on the map). Only what they recorded; nothing when none.
      *
-     * @return array{title: string, end: string}|null
+     * @return array{title: string, end: string, place: array{name: string, lat: float, lng: float}|null}|null
      */
     private function appointment(Request $request, CarbonImmutable $today): ?array
     {
         $user = $request->user();
+        $place = fn (?string $name, mixed $lat, mixed $lng) => $name !== null && $name !== '' && is_numeric($lat) && is_numeric($lng)
+            ? ['name' => $name, 'lat' => (float) $lat, 'lng' => (float) $lng]
+            : null;
         $recorded = collect(app(RecordedAppointments::class)->between($user, $today->startOfDay(), $today->endOfDay()))
             ->filter(fn ($item) => $item->endAt !== null)
-            ->map(fn ($item) => ['title' => $item->title, 'end' => $item->endAt]);
+            ->map(fn ($item) => ['title' => $item->title, 'end' => $item->endAt, 'place' => $place($item->locationLabel, $item->lat, $item->lng)]);
         // An official appointment the person planned their day around (as
         // DayProjection reads plans): it carries its end.
         $planned = collect(ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state['plans'][$today->toDateString()]['slots'] ?? [])
             ->filter(fn (array $slot) => ($slot['type'] ?? null) === 'appointment' && is_string($slot['end_at'] ?? null) && is_string($slot['name'] ?? null))
-            ->map(fn (array $slot) => ['title' => $slot['name'], 'end' => CarbonImmutable::parse($slot['end_at'])]);
+            ->map(fn (array $slot) => ['title' => $slot['name'], 'end' => CarbonImmutable::parse($slot['end_at']), 'place' => $place(is_string($slot['location'] ?? null) ? $slot['location'] : null, $slot['lat'] ?? null, $slot['lng'] ?? null)]);
         $last = $recorded->merge($planned)->sortBy(fn (array $a) => $a['end'])->last();
 
         return $last === null ? null : [
             'title' => $last['title'],
             'end' => $last['end']->setTimezone('Europe/Berlin')->format('H:i'),
+            'place' => $last['place'],
         ];
     }
 

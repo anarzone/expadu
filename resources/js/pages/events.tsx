@@ -39,8 +39,10 @@ import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
 import { showToast } from '@/components/ui/toast';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import AppLayout from '@/layouts/app-layout';
+import { kmBetween } from '@/lib/geo';
 import { usePageContext } from '@/lib/page-context';
 import type { Auth } from '@/types';
+import type { DayProjection } from '@/types/day';
 import '@/components/events-street/events-page.css';
 
 type Props = {
@@ -58,8 +60,15 @@ type Props = {
     starting_point: PlacePoint | null;
     /** The person's own Home and Work, when saved. */
     saved_places: PlacePoint[];
-    /** Today's last recorded appointment, for the details' "For you". */
-    appointment: { title: string; end: string } | null;
+    /** Today's last recorded appointment, for the details' "For you" and
+        Get there's start (its place, when the person recorded one). */
+    appointment: {
+        title: string;
+        end: string;
+        place: { name: string; lat: number; lng: number } | null;
+    } | null;
+    /** The day shown, as Travel reads it: only once Get there asks. */
+    day?: DayProjection | null;
     /** The categories and areas the listings have on any day, for the
         filters (the mock's catalogue). */
     catalogue: { categories: string[]; areas: string[] };
@@ -102,25 +111,6 @@ const longDate = (date: string) =>
         timeZone: 'UTC',
     });
 
-/** Kilometres in a straight line. */
-function km(
-    a: { lat: number; lng: number },
-    b: { lat: number | null; lng: number | null },
-): number | null {
-    if (b.lat === null || b.lng === null) {
-        return null;
-    }
-
-    const rad = Math.PI / 180;
-    const dLat = (b.lat - a.lat) * rad;
-    const dLng = (b.lng - a.lng) * rad;
-    const h =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
-
-    return 12742 * Math.asin(Math.sqrt(h));
-}
-
 /* What the listing or the venue's record says: the venue's recorded
    setting, or a listing that says it's outdoors or open-air. Never more. */
 const outdoor = (o: EventOccurrence) =>
@@ -143,6 +133,7 @@ export default function Events({
     starting_point,
     saved_places,
     appointment,
+    day: dayPlan,
     catalogue,
     next_listed,
 }: Props) {
@@ -240,7 +231,7 @@ export default function Events({
         key: occurrenceKey(occurrence),
         poster: { ...posterEvent(occurrence), id: occurrenceKey(occurrence) },
         occurrence,
-        km: point ? km(point, occurrence.venue) : null,
+        km: point ? kmBetween(point, occurrence.venue) : null,
     }));
     const wall = day
         .filter((l) => matches(l.occurrence, current, l.key, saved.keys))
@@ -542,8 +533,14 @@ export default function Events({
                 listing={opened}
                 date={date}
                 today={today}
-                from={shownFrom?.point ? shownFrom.name : null}
+                from={
+                    shownFrom?.point
+                        ? { name: shownFrom.name, ...shownFrom.point }
+                        : null
+                }
                 appointment={appointment}
+                mode={mode}
+                day={dayPlan}
                 saved={opened ? saved.keys.has(opened.key) : false}
                 onSave={() => opened && toggleSave(opened)}
                 onClose={() => showDetail(null)}
