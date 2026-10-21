@@ -1,0 +1,247 @@
+/* A place as Around here lists it, and what its row says about it (the
+   mock's connected/places.js: hours, distance and the facts a listing
+   records). A fact the listing doesn't record is null and isn't shown;
+   nothing is guessed. */
+
+export type PlaceIconName =
+    | 'pharmacy'
+    | 'cafe'
+    | 'bakery'
+    | 'grocery'
+    | 'playground'
+    | 'park'
+    | 'nature'
+    | 'library'
+    | 'restaurant'
+    | 'fastfood'
+    | 'culture';
+
+export type ListedHours =
+    | { state: 'open'; until: string }
+    | { state: 'closed'; opens: string }
+    | { state: 'closed'; today: boolean }
+    | { state: 'unknown' };
+
+export type AroundPlace = {
+    id: number;
+    name: string;
+    kind: string;
+    icon: PlaceIconName | '';
+    label: string;
+    veedel: string | null;
+    lat: number;
+    lng: number;
+    km: number;
+    /** A park or a wood is measured to its middle. */
+    area: boolean;
+    hours: ListedHours;
+    wheelchair: string | null;
+    outdoor_seating: string | null;
+    cuisine: string | null;
+    diets: { vegetarian?: string; vegan?: string };
+    internet_access: string | null;
+    saved: boolean;
+};
+
+export type AroundKind = { id: string; label: string };
+
+/** Places to eat, whose rows say outdoor seating and diets. */
+const EATING = ['cafe', 'restaurant', 'fastfood', 'bakery'];
+
+/** "Open until 18:30", "Opens at 15:00", "Closed for the day", "Hours not
+    listed": what the listing says at the time, never a live check. */
+export function hoursText(hours: ListedHours): string {
+    if (hours.state === 'open') {
+        return `Open until ${['24:00', '00:00'].includes(hours.until) ? 'midnight' : hours.until}`;
+    }
+
+    if (hours.state === 'unknown') {
+        return 'Hours not listed';
+    }
+
+    if ('opens' in hours) {
+        return `Opens at ${hours.opens}`;
+    }
+
+    return hours.today ? 'Closed for the day' : 'Closed today';
+}
+
+/** "50 m", "about 600 m" for the middle of an area, "1.4 km", "12 km". */
+export function distanceText(place: Pick<AroundPlace, 'km' | 'area'>): string {
+    const text =
+        place.km < 1
+            ? `${Math.max(50, Math.round(place.km * 20) * 50)} m`
+            : `${place.km < 10 ? place.km.toFixed(1) : Math.round(place.km)} km`;
+
+    return place.area ? `about ${text}` : text;
+}
+
+const WHEELCHAIR: Record<string, string> = {
+    yes: 'Step-free access',
+    limited: 'Partly step-free',
+    no: 'Not step-free',
+};
+
+export const wheelchairText = (value: string | null) =>
+    value ? (WHEELCHAIR[value] ?? value) : '';
+
+/** Outdoor seating only when recorded as there ("yes", "garden"…). */
+export function outdoorSeating(place: AroundPlace): boolean {
+    const value = place.outdoor_seating?.toLowerCase();
+
+    return EATING.includes(place.icon) && !!value && value !== 'no';
+}
+
+const DIET_WORD = { vegetarian: 'vegetarian', vegan: 'vegan' } as const;
+
+/** One short chip: "Vegetarian & vegan options", "Vegan only". */
+export function dietChip(place: AroundPlace): string {
+    if (!EATING.includes(place.icon)) {
+        return '';
+    }
+
+    const capital = (text: string) =>
+        text.replace(/^./, (c) => c.toUpperCase());
+    const options = (Object.keys(DIET_WORD) as (keyof typeof DIET_WORD)[])
+        .map((key) => {
+            const word = DIET_WORD[key];
+
+            return (
+                (
+                    {
+                        yes: `${capital(word)} options`,
+                        only: `${capital(word)} only`,
+                        limited: `Some ${word} options`,
+                    } as Record<string, string>
+                )[place.diets[key] ?? ''] ?? null
+            );
+        })
+        .filter((text): text is string => !!text);
+
+    if (
+        options.length > 1 &&
+        options.every((text) => text.endsWith(' options')) &&
+        options.every((text) => !text.startsWith('Some'))
+    ) {
+        return `${options
+            .map((text, i) =>
+                i
+                    ? text.replace(/ options$/, '').toLowerCase()
+                    : text.replace(/ options$/, ''),
+            )
+            .join(' & ')} options`;
+    }
+
+    return options[0] ?? '';
+}
+
+/** A library's Wi-Fi or public computers, when recorded. */
+export function libraryNet(place: AroundPlace): string {
+    if (place.icon !== 'library') {
+        return '';
+    }
+
+    return (
+        (
+            {
+                wlan: 'Wi-Fi',
+                yes: 'Wi-Fi',
+                terminal: 'Public computers',
+            } as Record<string, string>
+        )[place.internet_access ?? ''] ?? ''
+    );
+}
+
+const CUISINE: Record<string, string> = {
+    bagel: 'Bagels',
+    breakfast: 'Breakfast',
+    burger: 'Burgers',
+    cake: 'Cake',
+    coffee_shop: 'Coffee',
+    crepe: 'Crêpes',
+    friture: 'Chips',
+    ice_cream: 'Ice cream',
+    kebab: 'Kebab',
+    italian_pizza: 'Pizza',
+    noodle: 'Noodles',
+    sandwich: 'Sandwiches',
+    seafood: 'Seafood',
+    steak_house: 'Steak',
+};
+
+/** A listing's cuisine values in words: "Ice cream · Coffee" ('' when none). */
+export function cuisineNames(raw: string | null): string {
+    return (raw ?? '')
+        .split(';')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean)
+        .map(
+            (value) =>
+                CUISINE[value] ??
+                value.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()),
+        )
+        .filter((name, i, all) => all.indexOf(name) === i)
+        .slice(0, 3)
+        .join(' · ');
+}
+
+/** What a listing records about diets, "Vegetarian options · No vegan
+    options" (the sheet lists the noes too). */
+export function dietText(diets: {
+    vegetarian?: string | null;
+    vegan?: string | null;
+}): string {
+    return (['vegetarian', 'vegan'] as const)
+        .map((word) => {
+            const value = diets[word];
+            const name = word.replace(/^./, (c) => c.toUpperCase());
+
+            return (
+                (
+                    {
+                        yes: `${name} options`,
+                        only: `${name} only`,
+                        limited: `Some ${word} options`,
+                        no: `No ${word} options`,
+                    } as Record<string, string>
+                )[value ?? ''] ?? null
+            );
+        })
+        .filter(Boolean)
+        .join(' · ');
+}
+
+/** "Italian · Pizza" for a restaurant or fast food; "Cuisine not listed". */
+export function cuisineText(place: AroundPlace): {
+    text: string;
+    known: boolean;
+} | null {
+    if (!['restaurant', 'fastfood'].includes(place.icon)) {
+        return null;
+    }
+
+    const names = cuisineNames(place.cuisine);
+
+    return names
+        ? { text: names, known: true }
+        : { text: 'Cuisine not listed', known: false };
+}
+
+/** What the count calls these places: "3 pharmacies within 2 km". */
+export function countNoun(
+    kind: string,
+    kinds: AroundKind[],
+    one: boolean,
+): string {
+    const many =
+        kind === 'green'
+            ? 'green spaces'
+            : kind === 'fastfood'
+              ? 'fast food places'
+              : kind
+                ? (kinds.find((k) => k.id === kind)?.label.toLowerCase() ??
+                  'places')
+                : 'places';
+
+    return one ? many.replace(/ies$/, 'y').replace(/s$/, '') : many;
+}

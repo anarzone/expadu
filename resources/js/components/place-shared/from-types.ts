@@ -1,5 +1,5 @@
 /* The From search's two shapes, kept for Composer after Places' old page
-   went (they were in components/places/from-bar.tsx, unchanged). */
+   went (they were in the old Places page's from-bar.tsx, unchanged). */
 
 export type SavedPlace = {
     id: number;

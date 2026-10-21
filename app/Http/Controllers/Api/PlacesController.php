@@ -12,11 +12,13 @@ use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Places\DestinationGrouping;
+use App\Places\OpenNearby;
 use App\Places\PlaceFacts;
 use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -94,6 +96,15 @@ class PlacesController extends Controller
         $spot->travel_min = $travelOption['minutes'] ?? null;
         $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
         app(PlaceFacts::class)->attach(collect([$spot]));
+        // The place sheet's "Today": what the listed hours say at a time
+        // today (HH:MM, now by default). A time only, never a place.
+        $time = $request->query('at');
+        $spot->hours_at = OpenNearby::hoursAt(
+            app(PlaceFacts::class)->resolve($spot)['hours'],
+            is_string($time) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time) === 1
+                ? CarbonImmutable::parse(CarbonImmutable::now('Europe/Berlin')->toDateString().' '.$time, 'Europe/Berlin')
+                : CarbonImmutable::now('Europe/Berlin'),
+        );
         app(TasteSignals::class)->spotViewed($request->user(), $spot);
 
         return new PlaceResource($spot);

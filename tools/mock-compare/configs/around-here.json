@@ -1,0 +1,165 @@
+{
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\"",
+    "mock": {
+        "url": "/dev/design/around-here/?kind=pharmacy&near=wiener-platz&time=14:30",
+        "wait": ".nearby-place"
+    },
+    "app": {
+        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "wait": ".nearby-place",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "screenshotStyle": ".fixed.right-4.bottom-24 { visibility: hidden !important; }",
+        "screenshotStyleReason": "The local QA persona button floats over the page's bottom right; it isn't part of the page, so it is hidden while elements are shot."
+    },
+    "name": "around-here",
+    "pairs": [
+        {
+            "name": "head",
+            "mock": ".around-head",
+            "app": ".around-head",
+            "contentDiffers": true,
+            "reason": "It holds the listed-hours line: The mock says its places are samples (\u201cSample places \u00b7 listed hours for\u2026\u201d); the app\u2019s are the catalogue\u2019s own, so it says \u201cListed hours for\u2026\u201d. Its box and styles are compared."
+        },
+        {
+            "name": "back",
+            "mock": ".around-back",
+            "app": ".around-back"
+        },
+        {
+            "name": "title",
+            "mock": ".around-head h1",
+            "app": ".around-head h1"
+        },
+        {
+            "name": "listed hours",
+            "mock": ".around-head p",
+            "app": ".around-head p",
+            "contentDiffers": true,
+            "reason": "The mock says its places are samples (\u201cSample places \u00b7 listed hours for\u2026\u201d); the app\u2019s are the catalogue\u2019s own, so it says \u201cListed hours for\u2026\u201d. Its box and styles are compared.",
+            "ignore": ["w"]
+        },
+        {
+            "name": "kinds",
+            "mock": ".around-filters",
+            "app": ".around-filters"
+        },
+        {
+            "name": "All",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 0
+        },
+        {
+            "name": "Pharmacies (on)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 1
+        },
+        {
+            "name": "Caf\u00e9s",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 2
+        },
+        {
+            "name": "Parks & nature",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 6
+        },
+        {
+            "name": "list head",
+            "mock": ".around-list-head",
+            "app": ".around-list-head"
+        },
+        {
+            "name": "count",
+            "mock": ".around-count",
+            "app": ".around-count"
+        },
+        {
+            "name": "Open at",
+            "mock": ".around-open-toggle",
+            "app": ".around-open-toggle"
+        },
+        {
+            "name": "Eck-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 0
+        },
+        {
+            "name": "Einhorn-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 1
+        },
+        {
+            "name": "Br\u00fccken-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 2
+        },
+        {
+            "name": "first: icon",
+            "mock": ".nearby-place .place-map-snippet",
+            "app": ".nearby-place .place-map-snippet"
+        },
+        {
+            "name": "first: name",
+            "mock": ".nearby-place .nearby-place-copy strong",
+            "app": ".nearby-place .nearby-place-copy strong"
+        },
+        {
+            "name": "first: where",
+            "mock": ".nearby-place .nearby-place-copy small",
+            "app": ".nearby-place .nearby-place-copy small"
+        },
+        {
+            "name": "first: hours",
+            "mock": ".nearby-place .place-hours",
+            "app": ".nearby-place .place-hours"
+        },
+        {
+            "name": "first: step-free",
+            "mock": ".nearby-place .place-access",
+            "app": ".nearby-place .place-access"
+        },
+        {
+            "name": "first: save",
+            "mock": ".nearby-place .nearby-place-save",
+            "app": ".nearby-place .nearby-place-save"
+        },
+        {
+            "name": "credit",
+            "mock": ".around-list .place-map-credit",
+            "app": ".around-list .place-map-credit"
+        },
+        {
+            "name": "map",
+            "mock": ".around-map",
+            "app": ".around-map",
+            "pixels": false,
+            "reason": "Its box and frame are compared; the tiles come live from OpenFreeMap and the markers are compared one by one."
+        },
+        {
+            "name": "map: here",
+            "mock": ".around-here-marker",
+            "app": ".around-here-marker"
+        },
+        {
+            "name": "map: a place",
+            "mock": ".around-marker",
+            "app": ".around-marker"
+        }
+    ]
+}

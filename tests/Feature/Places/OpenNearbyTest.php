@@ -94,6 +94,20 @@ test('given a person, places they marked not interested or been are left out', f
         ->and($open->listed(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), ['bakery'])->pluck('name')->all())->toHaveCount(4);
 });
 
+test('setting aside a place by another record of it leaves the place out too', function () {
+    $me = User::factory()->create();
+    $place = openNearbySpot('Bakery', 'Mo-Su 06:00-18:30');
+    $alias = openNearbySpot('Bakery (older record)', 'Mo-Su 06:00-18:30', 0.0001);
+    $alias->forceFill(['canonical_spot_id' => $place->id])->save();
+    SpotFeedback::factory()->for($me)->for($alias)->notInterested()->create();
+
+    $open = app(OpenNearby::class);
+
+    expect($open->around(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), for: $me)->pluck('id')->all())->not->toContain($place->id)
+        ->and($open->listed(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), ['bakery'], for: $me)->pluck('id')->all())->not->toContain($place->id)
+        ->and($open->listed(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), ['bakery'])->pluck('id')->all())->toContain($place->id);
+});
+
 test('🔒 the point and the time are only read: nothing is written, cached or logged', function () {
     openNearbySpot('Near bakery', 'Mo-Su 06:00-18:30');
     $me = User::factory()->create();

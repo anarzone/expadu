@@ -3,64 +3,6 @@ import type { Workspace } from '../../resources/js/components/composer/types';
 
 test.use({ serviceWorkers: 'block' });
 
-test('expanded catalogue filters stay in the compact row and request their server category', async ({
-    page,
-}) => {
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(error.message));
-    await page.route('**/api/places?**', (route) =>
-        route.fulfill({
-            json: {
-                data: [],
-                meta: { total: 0, current_page: 1, last_page: 1 },
-                nearby_included: false,
-                origin: { source: 'area', label: 'Ehrenfeld' },
-            },
-        }),
-    );
-    await page.goto('/explore');
-
-    for (const label of [
-        'Food & drink',
-        'Shopping',
-        'Local services',
-        'Health',
-        'Community',
-        'Places to stay',
-        'Fitness',
-    ]) {
-        await expect(
-            page.getByRole('button', { name: new RegExp(label) }),
-        ).toHaveCount(1);
-    }
-
-    const shopping = page.getByRole('button', { name: /Shopping/ });
-    const filtered = page.waitForRequest(
-        (request) =>
-            new URL(request.url()).searchParams.get('category') === 'shopping',
-    );
-    await shopping.click();
-    await filtered;
-    await expect(shopping).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByText(/No shopping listed in/)).toBeVisible();
-    const cleared = page.waitForRequest(
-        (request) =>
-            new URL(request.url()).pathname === '/api/places' &&
-            !new URL(request.url()).searchParams.has('category'),
-    );
-    await page
-        .getByRole('button', { name: 'Show all places', exact: true })
-        .click();
-    await cleared;
-    await expect(shopping).toHaveAttribute('aria-pressed', 'false');
-    expect(
-        await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-    ).toBe(true);
-    expect(errors).toEqual([]);
-});
-
 test('saved unavailable items keep their name and time with a review note in Today and Composer', async ({
     page,
 }) => {
