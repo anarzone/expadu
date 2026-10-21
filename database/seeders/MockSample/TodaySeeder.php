@@ -37,7 +37,9 @@ class TodaySeeder extends Seeder
         $user = User::query()->where('email', (string) env('E2E_EMAIL', 'e2e@expadu.test'))->firstOrFail();
         $bau = Spot::query()->where('source', 'osm')->where('source_id', 'node/1593180033')->firstOrFail();
         $cinema = Event::query()->where('source_uid', 'mock:today-review-cinema')->firstOrFail();
-        $start = CarbonImmutable::parse('2026-09-30 20:00', 'Europe/Berlin');
+        // In UTC: a where binds the time without its offset, so a Berlin
+        // time would miss the saved row and insert it again.
+        $start = CarbonImmutable::parse('2026-09-30 20:00', 'Europe/Berlin')->utc();
 
         // Saved in this order, so the cinema is the newer of the two.
         $feedback = SpotFeedback::query()->updateOrCreate(['user_id' => $user->id, 'spot_id' => $bau->id], ['state' => 'saved']);
