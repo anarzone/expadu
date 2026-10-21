@@ -1,4 +1,4 @@
-import { Deferred, Head, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
@@ -19,6 +19,7 @@ import { PHONE_ORDER, useSteadyLead } from '@/components/today/priority';
 import type { Block } from '@/components/today/priority';
 import { SavedForLater } from '@/components/today/saved';
 import type { TodaySavedData } from '@/components/today/saved';
+import { useDayLoad } from '@/components/today/use-day-load';
 import { useDayRefresh } from '@/components/today/use-day-refresh';
 import { TodayWelcome } from '@/components/today/welcome';
 import { YourDay } from '@/components/today/your-day';
@@ -26,6 +27,7 @@ import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { LoadingLines, useDelayedLoading } from '@/components/ui/loading';
 import { usePhone } from '@/hooks/use-phone';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import '../../css/today.css';
 
@@ -79,6 +81,7 @@ export default function Today() {
     );
 
     useDayRefresh(day);
+    const dayLoad = useDayLoad(day !== undefined);
 
     // Paperwork's next step, or with no record yet its way in ("Settling
     // in?"). City help comes first where the essentials lead and on phones
@@ -92,14 +95,13 @@ export default function Today() {
         (welcome || paperwork !== undefined) && <SettlingIn />
     );
     const blocks: Record<Block, ReactNode> = {
-        agenda: (
-            <Deferred data="day" fallback={<DayLoading />}>
-                {day ? (
-                    <YourDay day={day} paperwork={paperwork?.processes} />
-                ) : (
-                    <DayLoading />
-                )}
-            </Deferred>
+        // Straight from the prop, not <Deferred>: that drops back to its
+        // fallback whenever `day` is re-read, and stays there if the re-read
+        // fails. A day on screen stays while it refreshes.
+        agenda: day ? (
+            <YourDay day={day} paperwork={paperwork?.processes} />
+        ) : (
+            <DayLoading failed={dayLoad.failed} onRetry={dayLoad.retry} />
         ),
         essentials: (
             <div className="practical-surface">
@@ -196,16 +198,45 @@ export default function Today() {
     );
 }
 
-/** Your day's place while it loads: nothing for 140ms, then quiet lines. */
-function DayLoading() {
-    const late = useDelayedLoading(true);
+/**
+ * Your day's place while it loads: nothing for 140ms, then quiet lines. If
+ * it can't load, it says so and offers to try again.
+ */
+function DayLoading({
+    failed,
+    onRetry,
+}: {
+    failed: boolean;
+    onRetry: () => void;
+}) {
+    const late = useDelayedLoading(!failed);
 
     return (
-        <section className="day-panel" aria-busy="true">
+        <section
+            className={cn('day-panel', failed && 'has-no-plans')}
+            aria-busy={!failed || undefined}
+        >
             <div className="day-heading">
                 <h2>Your day</h2>
             </div>
-            {late && <LoadingLines lines={3} label="Loading your day" />}
+            {failed ? (
+                <>
+                    <div className="day-empty" role="status">
+                        <strong>Your day didn’t load.</strong>
+                    </div>
+                    <div className="day-actions">
+                        <button
+                            type="button"
+                            className="text-action"
+                            onClick={onRetry}
+                        >
+                            Try again
+                        </button>
+                    </div>
+                </>
+            ) : (
+                late && <LoadingLines lines={3} label="Loading your day" />
+            )}
         </section>
     );
 }
