@@ -27,7 +27,8 @@ final class TodayDiscovery
         'bakery' => [SpotCategory::Bakery],
         'cafe' => [SpotCategory::Cafe],
         'pharmacy' => [SpotCategory::Pharmacy],
-        'grocery' => [SpotCategory::Supermarket, SpotCategory::Convenience, SpotCategory::Drugstore],
+        // Obst & Gemüse counts as groceries, as on Around here.
+        'grocery' => [SpotCategory::Supermarket, SpotCategory::Convenience, SpotCategory::Drugstore, SpotCategory::Greengrocer],
     ];
 
     public function __construct(
