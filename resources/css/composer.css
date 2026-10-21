@@ -844,3 +844,27 @@
     margin: -10px -6px -10px -8px;
     border-radius: 50%;
 }
+
+/* The AI disclosure (owner, 21 Oct 2026; the mock's style.css and approved.css): the
+   box's helper text, 6px under it, inside the box's edges. Beside Your day it takes the
+   conversation's column, as the box does, so it never sits over Your day. */
+.composer-page .composer-ai-notice {
+    width: calc(100% - 12px);
+    max-width: 818px;
+    margin: 6px auto 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.45;
+}
+.composer-page .composer-ai-notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+@media (min-width: 1000px) {
+    .composer-page.has-composer-day:not(.has-panel) .composer-ai-notice {
+        width: calc(var(--composer-column) - 12px);
+        max-width: none;
+        margin: 6px 0 0 calc(var(--composer-column-left) + 6px);
+    }
+}
