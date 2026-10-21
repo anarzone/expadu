@@ -5,12 +5,11 @@ namespace App\Profile;
 use App\Enums\Situation;
 
 /**
- * Deterministic situation→category affinity — the home feed's lead ranking
- * signal and the composer's kid-friendliness source. No ML: the user's
- * situation (plus a couple of life-event attributes and how recently they
- * arrived) decides which kinds of places matter, so a family, a student and a
- * freelancer see genuinely different feeds even before any behaviour is
- * learned. Shared by DiscoveryFeed (home) and PlanScorer (composer).
+ * Deterministic situation→category affinity: a ranking signal and the
+ * kid-friendliness source. No ML: the user's situation (plus a couple of
+ * life-event attributes and how recently they arrived) decides which kinds of
+ * places matter, so a family, a student and a freelancer get genuinely
+ * different suggestions even before any behaviour is learned.
  */
 class CategoryAffinity
 {
