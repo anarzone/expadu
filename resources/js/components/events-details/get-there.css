@@ -519,6 +519,22 @@
     margin-top: 12px;
 }
 
+/* Travel's icons are stroked, as Travel's page draws every icon; at the
+   mock's widths here (the line set's 1.7, its chips and badges 2). */
+.ev-details .gt svg {
+    display: block;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ev-details .gt :is(.tl-chip, .tl-line) svg {
+    stroke-width: 2;
+}
+
 /* What Travel checked: one card, its chips on their own row (Travel on a
    phone, the width this page has). */
 .ev-details .plan-checks {

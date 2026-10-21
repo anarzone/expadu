@@ -17,6 +17,7 @@ import { findPlace } from '@/components/travel/plan/plan-fields';
 import {
     berlinNow,
     checksFor,
+    marginOf,
     rankOptions,
 } from '@/components/travel/plan/plan-model';
 import type {
@@ -138,6 +139,18 @@ export default function GetThere({
         place?.lat === start.lat &&
         place?.lng === start.lng;
 
+    // The event is what the way leads to: by its start, with its margin.
+    const target: PlanTarget | null = back
+        ? null
+        : {
+              id: `event:${o.id}`,
+              title,
+              kind: 'event',
+              start_at: o.occurrence_start,
+              start_time: startTime,
+              official: false,
+          };
+
     // "My day" in what was checked: the day shown, asked for once.
     useEffect(() => {
         if (day === undefined) {
@@ -166,7 +179,11 @@ export default function GetThere({
         };
 
         if (when === 'arrive') {
-            body.depart_at = o.occurrence_start;
+            // There by the start with Travel's margin for it, as the mock's
+            // walk is: five minutes early for an event.
+            body.depart_at = new Date(
+                Date.parse(o.occurrence_start) - marginOf(target!) * 60_000,
+            ).toISOString();
             body.arrive_by = '1';
         } else if (back) {
             body.depart_at = o.occurrence_end!;
@@ -241,17 +258,6 @@ export default function GetThere({
     );
     const shown = ways[mode];
     const chosen = shown.find((x) => x.id === picked) ?? shown[0] ?? null;
-    // The event is what the way leads to: by its start, with its margin.
-    const target: PlanTarget | null = back
-        ? null
-        : {
-              id: `event:${o.id}`,
-              title,
-              kind: 'event',
-              start_at: o.occurrence_start,
-              start_time: startTime,
-              official: false,
-          };
 
     // Each way's chip: how long it takes, for the time chosen.
     const minutesOf = (m: WayMode) => ways[m][0]?.journey.duration_min ?? null;
