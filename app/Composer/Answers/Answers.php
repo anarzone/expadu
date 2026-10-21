@@ -24,10 +24,15 @@ use Illuminate\Support\Facades\DB;
 final class Answers
 {
     /** The kinds this class answers (and, for a journey, only the appointment's: handles()). */
-    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey'];
+    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey', 'event', 'places'];
 
     /** Questions about your own day, trip and records, answered even when the words read as a plan. */
     private const ABOUT_YOUR_DAY = ['next', 'checklist', 'journey', 'onway'];
+
+    /** What the listings answer, whatever the parser made of it: "What's on tonight?" lists
+     *  tonight's events, and "somewhere to play football" the places for it, rather than
+     *  becoming a plan (owner's staging test, 21 Oct 2026). */
+    private const LISTINGS = ['event', 'places'];
 
     /** The four everyday requests (app.js `everyday`). */
     private const EVERYDAY = [
@@ -55,6 +60,8 @@ final class Answers
         private RecordedAppointmentsBetween $appointments,
         private AccountPlanEntry $plans,
         private TripAnswers $trips,
+        private EventAnswers $events,
+        private PlaceAnswers $places,
     ) {}
 
     /**
@@ -74,7 +81,7 @@ final class Answers
 
         return in_array($kind, self::KINDS, true)
             && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment')
-            && ($intent !== PromptIntent::PlanDay || in_array($kind, self::ABOUT_YOUR_DAY, true))
+            && ($intent !== PromptIntent::PlanDay || in_array($kind, [...self::ABOUT_YOUR_DAY, ...self::LISTINGS], true))
             && (! in_array($kind, ['clarify', 'unavailable'], true) || $intent === PromptIntent::Unknown)
             && ! ($kind === 'unavailable' && ($request['topic'] ?? null) === 'listing');
     }
@@ -137,6 +144,8 @@ final class Answers
                     'unavailable', suggestions: [self::EVERYDAY[0], self::EVERYDAY[2]]),
             'onway' => $this->trips->onTheWay($user, (string) ($request['ask'] ?? 'next'), $now),
             'journey' => $this->journey($user, $request, $now),
+            'event' => $this->events->whatsOn($request, $now),
+            'places' => $this->places->near($user, $request, $now),
             default => null,
         };
     }

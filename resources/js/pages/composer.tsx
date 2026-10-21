@@ -813,6 +813,26 @@ export default function ComposerPage({
                                             )}
                                             onAsk={ask}
                                             onPanel={openCollection}
+                                            planned={(event) =>
+                                                !!workspace.plans[
+                                                    event.date
+                                                ]?.slots.some(
+                                                    (slot) =>
+                                                        slot.id ===
+                                                        event.candidate,
+                                                )
+                                            }
+                                            onAddEvent={(event) =>
+                                                void command({
+                                                    action: 'add',
+                                                    candidate: event.candidate,
+                                                    date: event.date,
+                                                }).then(
+                                                    (added) =>
+                                                        added &&
+                                                        scrollBottom(true),
+                                                )
+                                            }
                                         />
                                     ) : (
                                         message.text && <p>{message.text}</p>
