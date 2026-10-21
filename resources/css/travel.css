@@ -5,6 +5,19 @@
    trip and a departure look the same on every page (owner, 18 Oct 2026).
    Imported by the components themselves; tokens come from app.css. */
 
+/* A Travel icon draws Travel's line wherever it's used (Today's Leave now,
+   Events' Get there, Composer), not a host page's `svg` rule: the same as
+   the page's own base (departures-next/style.css `svg`). A class, so a host
+   page's bare `svg` rules don't reach it; the parts' own rules (fills,
+   heavier strokes, sizes) are more specific and still win. */
+.travel-icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 /* Travel's icons are line drawings (departures-next/style.css `svg`); the
    parts' own rules set their sizes. :where keeps this the weakest rule. */
 :where(
