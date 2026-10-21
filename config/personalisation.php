@@ -69,4 +69,27 @@ return [
     // without the field (e.g. no weather reading) only count towards "all".
     'contexts' => ['week', 'companions', 'weather'],
 
+    // The nightly taste profile (taste:profiles). Code buckets the decayed
+    // affinities into facts; Haiku only words them. Scores are the same
+    // decayed points as above (one trip taken ≈ 5).
+    'taste_profile' => [
+        // Fewer taste signals than this (or no liked category) gets no profile.
+        'min_signals' => 5,
+        // "strong": at least this score and this share of the top score.
+        'strong_min' => 5.0,
+        'strong_share' => 0.5,
+        // "some": at least this score.
+        'some_min' => 1.0,
+        // "avoid": at or below this score (one recent "not for me" is −4).
+        'avoid_max' => -2.0,
+        'categories' => 5,
+        'veedels' => 3,
+        'avoid' => 3,
+        // Dayparts holding at least this share of the positive daypart score.
+        'daypart_share' => 0.25,
+        'dayparts' => 2,
+        // Weekend vs weekday activity per day; a lean needs this ratio.
+        'week_lean_ratio' => 1.5,
+    ],
+
 ];

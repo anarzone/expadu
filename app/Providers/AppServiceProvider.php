@@ -259,6 +259,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
         // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.
         RateLimiter::for('signals', fn (Request $request): Limit => Limit::perMinute(12)->by('signals:'.$userOrIp($request)));
+        RateLimiter::for('taste-profile', fn (Request $request): Limit => Limit::perMinute(30)->by('taste-profile:'.$userOrIp($request)));
         RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));

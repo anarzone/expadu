@@ -170,6 +170,7 @@ final class SignalRecorder
         DB::table('user_signals')->where('subject_key', $subject)->delete();
         DB::table('user_affinities')->where('subject_key', $subject)->delete();
         DB::table('user_place_negatives')->where('subject_key', $subject)->delete();
+        DB::table('taste_profiles')->where('subject_key', $subject)->delete();
     }
 
     /**
