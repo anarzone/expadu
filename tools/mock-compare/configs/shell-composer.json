@@ -87,8 +87,7 @@
         {
             "name": "send",
             "mock": "#composer-tray .compose-button",
-            "app": ".composer-tray .composer-tray-send",
-            "ignore": ["x", "w"]
+            "app": ".composer-tray .composer-tray-send"
         },
         {
             "name": "actions (open)",
@@ -201,7 +200,6 @@
     "frostNote": "The tray is frosted: it blurs whatever page lies behind it, and the two pages differ. For pixel shots both sides draw it on the same solid surface (screenshotStyle), so the shots compare the tray, not the page behind; its computed background and blur are still compared.",
     "aboutNote": "The About line's words are each page's own (the mock: 'Paperwork · EU Blue Card'; the app: 'Your paperwork'), so its width, the remove button's x and that button's sub-pixel place differ: the button compares box (but x) and styles.",
     "menuNote": "From 768 the tray sits under the header, and there the app opens the actions menu downward onto the page; the mock opens it upward, off the top of the screen (at 1440 its first rows sit at y -108). Reported to the coordinator as a mock defect. Until it's decided, the menu's y is set aside there and, with its rows off-screen in the mock, its pixels. The open + button's shot there also takes in the mock's menu shadow above it, so its pixels are set aside too.",
-    "sendNote": "The mock's send button is 48 wide (shell-review.css min-width: 48px over composer-controls' 44px), which with its 4px content-box padding would draw its orange fill as a 40x36 oval once you type. The app keeps the 44px round button. Reported to the coordinator; x and w set aside.",
     "trayNote": "The tray holds the About line, whose words are each page's own, so its pixels are content; box and styles are compared.",
     "pixelThreshold": 0.0005,
     "thresholdNote": "0.05% of a shot may differ: the menu's rounded corners show a few pixels of what lies behind them.",

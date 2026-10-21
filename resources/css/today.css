@@ -616,7 +616,6 @@ a.plan-link:hover {
    .paperwork-panel) ─────────────────────────────────────────────────── */
 .paperwork-panel .section-head {
     align-items: start;
-    margin: 0;
 }
 .section-tools {
     display: flex;
@@ -736,9 +735,11 @@ a.plan-link:hover {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    align-self: start;
     justify-content: space-between;
     gap: 6px 12px;
+}
+.city-help > .section-head {
+    align-self: start;
     margin: 6px 0 0;
 }
 .section-head h2 {
@@ -972,8 +973,13 @@ a.plan-link:hover {
 .continue-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
+    gap: 10px;
+}
+/* The city links' head reads on one baseline (brief/cohesion.css). */
+.city-source-section .continue-head {
+    align-items: baseline;
     gap: 4px 12px;
 }
 .continue-head h3 {
@@ -1028,6 +1034,21 @@ a.plan-link:hover {
     padding: 8px 16px;
     background: linear-gradient(var(--color-bg-quiet), transparent);
 }
+/* A hairline above Coming up and the city's links, as above discovery
+   (the mock's cohesion.css). */
+:is(.coming-up, .continue-support)::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
 .coming-up > summary {
     display: flex;
     align-items: center;
@@ -1054,7 +1075,8 @@ a.plan-link:hover {
     height: 22px;
     transition: transform var(--duration-base) var(--ease-settle);
 }
-.coming-up:not([open]) > summary svg {
+/* The down mark turns up while it's open, as the mock's does. */
+.coming-up[open] > summary svg {
     transform: rotate(180deg);
 }
 .upcoming-plans {
@@ -1118,6 +1140,7 @@ a.plan-link:hover {
 .upcoming-plan time {
     color: var(--color-text-soft);
     font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
 }
 .plan-tomorrow {
     display: inline-flex;
@@ -1139,13 +1162,16 @@ a.plan-link:hover {
     background: var(--color-action-tint);
 }
 
-/* ── Phones: one column, in the order the day needs (TD5) ───────────── */
+/* ── Phones: one column, in the order the day needs (the page renders the
+   sections straight into the canvas there, without the two columns) ── */
 @media (max-width: 700px) {
     .daily-canvas {
         display: flex;
         flex-direction: column;
         align-items: stretch;
     }
+    /* The server renders the two columns; until the page hydrates, a phone
+       reads them as one. */
     .day-area,
     .next-area {
         display: contents;
@@ -1169,6 +1195,87 @@ a.plan-link:hover {
     }
     .status-row .ui-pill {
         font-size: var(--text-micro);
+    }
+    .practical-surface {
+        border-radius: 0;
+    }
+    .continue-support {
+        gap: 16px;
+    }
+
+    /* Paperwork's next step is one quiet row under City help: a small
+       label, the step, and the count without its ring (the mock's
+       priorities.css and hierarchy.css). */
+    .practical-personal {
+        margin-top: 6px;
+    }
+    .paperwork-panel:not(.paperwork-optional) {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: center;
+        column-gap: 6px;
+        padding-top: 8px;
+    }
+    .paperwork-panel:not(.paperwork-optional)::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border),
+            transparent
+        );
+    }
+    .paperwork-panel:not(.paperwork-optional) > .section-head,
+    .paperwork-panel:not(.paperwork-optional) .section-tools {
+        display: contents;
+    }
+    .paperwork-panel:not(.paperwork-optional) .section-head h2 {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-medium);
+        line-height: 1.3;
+    }
+    .paperwork-panel .record-label,
+    .paperwork-followups {
+        display: none;
+    }
+    .paperwork-focus {
+        min-height: 54px;
+        margin: 0;
+        padding: 4px 0;
+        border-radius: var(--radius-sm);
+    }
+    .paperwork-copy h3 {
+        margin: 0 0 4px;
+        font-size: var(--text-section);
+        letter-spacing: -0.3px;
+    }
+    .paperwork-copy p {
+        font-size: var(--text-caption);
+    }
+    .document-progress {
+        flex: 0 0 auto;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-paper-text);
+    }
+    .document-progress::before {
+        content: none;
+    }
+    .document-progress strong {
+        font-size: var(--text-section);
+        line-height: 1.2;
+    }
+    .document-progress small {
+        font-size: var(--text-caption);
+        line-height: 1.2;
     }
 }
 
@@ -1389,6 +1496,8 @@ a.plan-link:hover {
     align-items: center;
     gap: 12px;
     min-width: 0;
+    /* The mock's are buttons, with a button's own padding. */
+    padding: 1px 6px;
     border-radius: var(--radius-md);
     text-align: left;
     text-decoration: none;
@@ -1429,6 +1538,7 @@ a.plan-link:hover {
     min-width: 44px;
     height: 44px;
     min-height: 44px;
+    padding: 1px 6px;
     border-radius: var(--radius-round);
 }
 :is(.compact-plan, .around-item > .icon-button) {
@@ -1480,12 +1590,28 @@ a.plan-link:hover {
     gap: 10px;
     min-width: 0;
     min-height: 64px;
+    padding: 1px 6px;
     border-radius: var(--radius-md);
     text-align: left;
     text-decoration: none;
 }
 .around-open > span:last-child {
     min-width: 0;
+}
+/* A saved place's mark (it has no poster). */
+.around-symbol {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.around-symbol svg {
+    width: 22px;
+    height: 22px;
 }
 .around-open strong {
     display: block;
@@ -1583,8 +1709,24 @@ a.plan-link:hover {
     }
 }
 @media (max-width: 700px) {
-    .discovery::before {
+    :is(.discovery, .coming-up, .continue-support)::before {
         inset-inline: 16px;
+    }
+    /* On a phone the city's help follows the day, under a hairline too
+       (the mock's hierarchy.css). */
+    .practical-surface::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 16px;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--color-border) 16%,
+            var(--color-border) 84%,
+            transparent
+        );
     }
     .discovery-heading h2 {
         font-size: var(--text-section);
@@ -1633,17 +1775,312 @@ a.plan-link:hover {
     }
 }
 
-/* Leave now is Travel's card; on Today it takes Today's page look, as the
-   mock's page gives it (connected/style.css): every small line in the
-   soft text colour, the start button at the page's 16px, and its line
-   icons at the page's 1.7px stroke. */
-.today-workspace .trip-line small:not(.trip-ring *) {
+/* ── Saved for later (the mock's .saved-ideas: today-next/style.css). ── */
+.saved-ideas {
+    position: relative;
+    padding: 14px 22px;
+}
+.saved-ideas::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 14%,
+        var(--color-border) 85%,
+        transparent
+    );
+}
+.saved-ideas h2 {
+    font-size: var(--text-body);
+    line-height: 1.3;
+}
+.saved-all {
+    display: inline-flex;
+    text-align: center;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--color-action-text);
+    font-size: var(--text-caption);
+    text-decoration: none;
+}
+.saved-all span {
+    color: var(--color-text-muted);
+}
+.saved-idea {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 54px;
+    margin-top: 10px;
+}
+.saved-idea + .saved-idea {
+    margin-top: 6px;
+}
+.saved-idea .saved-title {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 4px 0;
+    text-align: left;
+    text-decoration: none;
+}
+.saved-title > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.saved-monogram {
+    display: grid;
+    flex: 0 0 40px;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-saved-bg);
+    color: var(--color-saved-ink);
+    font-weight: var(--weight-semibold);
+}
+.saved-monogram svg,
+.saved-idea .icon-button svg {
+    width: 22px;
+    height: 22px;
+}
+.saved-idea small {
+    display: block;
+    margin-top: 2px;
     color: var(--color-text-soft);
+    font-size: var(--text-caption);
 }
-.today-workspace .next-trip-go {
-    font-size: 16px;
+.saved-idea .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* The mock's are buttons, with a button's own padding. */
+    padding: 1px 6px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-round);
+    color: var(--color-action-text);
+}
+
+/* ── Pick up where you left off (the mock's .column-continuation:
+   today-next/style.css, brief/cohesion.css, hierarchy.css). ─────────── */
+.column-continuation {
+    position: relative;
+    margin: 0;
+    min-width: 0;
+}
+.column-continuation::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
+.continue-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 20px 22px;
+    border-radius: 0 0 0 var(--radius-xl);
+}
+.continue-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-nav-teal);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.continue-kind svg {
+    width: 20px;
+    height: 20px;
+}
+.continue-state {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.continue-summary h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
     line-height: 1.25;
+    letter-spacing: -0.7px;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
-.today-workspace :is(.trip-plan, .next-trip-go) svg {
-    stroke-width: 1.7px;
+.continue-actions > a {
+    text-align: center;
+}
+.continue-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding-top: 4px;
+}
+.continue-actions .outline-action {
+    padding: 10px 14px;
+    border-color: var(--color-outline-quiet);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-control);
+}
+.continue-actions .text-action {
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 700px) {
+    .saved-ideas {
+        padding: 16px;
+    }
+    .column-continuation::before {
+        inset-inline: 16px;
+    }
+    .continue-composer {
+        padding: 18px 16px;
+        border-radius: 0;
+    }
+}
+
+/* ── The first visit (the mock's .today-welcome and .paperwork-optional:
+   brief/priorities.css). ─────────────────────────────────────────────── */
+.today-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+    padding: 20px 24px;
+    border-radius: var(--radius-xl);
+    background: var(--color-welcome-bg);
+}
+.today-welcome > div:first-child {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+}
+.welcome-symbol {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: var(--color-welcome-mark);
+}
+.today-welcome h2 {
+    margin: 0 0 4px;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+    letter-spacing: -0.4px;
+}
+.today-welcome p {
+    margin: 0;
+    color: var(--color-welcome-text);
+    font-size: var(--text-control);
+}
+.welcome-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.welcome-choices > * {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: var(--color-welcome-ink);
+    font: inherit;
+    font-size: var(--text-control);
+    text-decoration: none;
+    cursor: pointer;
+}
+.welcome-symbol svg {
+    width: 23px;
+    height: 23px;
+}
+.welcome-choices svg {
+    width: 22px;
+    height: 22px;
+}
+.welcome-choices svg {
+    color: var(--color-welcome-icon);
+}
+/* On a first visit City help and the way into Paperwork lead the day's
+   column, one under the other. */
+.day-area > .practical-surface {
+    grid-template-columns: minmax(0, 1fr);
+}
+.paperwork-optional a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+}
+.paperwork-optional svg {
+    width: 24px;
+    height: 22px;
+    color: var(--color-paper-text);
+}
+.paperwork-optional strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.paperwork-optional small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+}
+
+@media (max-width: 700px) {
+    .today-welcome {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px;
+    }
+    .today-welcome h2 {
+        font-size: var(--text-title-sm);
+    }
+    .welcome-choices {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .welcome-choices > * {
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: var(--text-small);
+    }
+    .welcome-choices > :last-child {
+        grid-column: 1 / -1;
+    }
 }

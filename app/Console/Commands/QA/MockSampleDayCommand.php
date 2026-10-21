@@ -4,6 +4,7 @@ namespace App\Console\Commands\QA;
 
 use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
+use App\Home\FirstVisit;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -23,24 +24,28 @@ use Illuminate\Support\Str;
  *   busy      and a language class and Meet Maya after it
  *   quiet     nothing on the day (and no Paperwork seed)
  *   travel    the two evening events as plans (Travel's mock)
+ *   first-visit  nothing at all, not even Coming up (Today's welcome), on
+ *             the account's own first-visit sibling: <name>+first-visit@…,
+ *             made when missing, so the account's saves, conversations and
+ *             Paperwork record stay as they are and nothing is cleared
  *
- * Every view also keeps Coming up (1 and 3 October). It replaces only those
+ * Every other view also keeps Coming up (1 and 3 October). It replaces only those
  * three dates; the account's other plans stay. Pair it with the
  * `mock_clock` cookie (App\Support\MockClock).
  */
 class MockSampleDayCommand extends Command
 {
     protected $signature = 'mock:sample-day
-        {view=everyday : everyday, busy, quiet or travel}
+        {view=everyday : everyday, busy, quiet, travel or first-visit}
         {--email= : The account (default: the E2E account); created when missing}';
 
     protected $description = 'Local only: the mock\'s sample day (30 Sept 2026) in an account\'s plans, for tools/mock-compare';
 
-    private const VIEWS = ['everyday', 'busy', 'quiet', 'travel'];
+    private const VIEWS = ['everyday', 'busy', 'quiet', 'travel', 'first-visit'];
 
     private const DATES = ['2026-09-30', '2026-10-01', '2026-10-03'];
 
-    public function handle(WorkspaceStore $store): int
+    public function handle(WorkspaceStore $store, FirstVisit $visit): int
     {
         if (! app()->environment('local')) {
             $this->error('Refusing: the sample day is for local mock comparisons only.');
@@ -57,7 +62,21 @@ class MockSampleDayCommand extends Command
         }
 
         $email = (string) ($this->option('email') ?: env('E2E_EMAIL', 'e2e@expadu.test'));
+
+        // A first visit needs an account with nothing on it; the compared
+        // account has the other configs' data, so it gets a sibling that
+        // tools/mock-compare signs in as (login.sibling).
+        if ($view === 'first-visit' && ! str_contains(Str::before($email, '@'), '+first-visit')) {
+            $email = Str::before($email, '@').'+first-visit@'.Str::after($email, '@');
+        }
+
         $user = User::query()->where('email', $email)->first() ?? $this->account($email);
+
+        if ($view === 'first-visit' && ! $visit->for($user)) {
+            $this->error("{$email} isn't a first visit any more: it has a plan, a save, a conversation or a Paperwork record. Compare as another account.");
+
+            return self::FAILURE;
+        }
 
         if (! ComposerWorkspace::query()->where('user_id', $user->id)->exists()) {
             $store->command($user, ['revision' => 0, 'action' => 'fresh']);
@@ -120,6 +139,10 @@ class MockSampleDayCommand extends Command
     /** @return array<string, list<array<string, mixed>>> */
     private function plans(string $view): array
     {
+        if ($view === 'first-visit') {
+            return [];
+        }
+
         $day = '2026-09-30';
         $plans = [
             '2026-10-01' => [$this->personal('mock:next-class', 'Language class', 'Ehrenfeld', 50.9497, 6.9187, '2026-10-01', '18:00', '19:00')],
