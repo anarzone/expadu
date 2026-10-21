@@ -396,6 +396,17 @@ export interface Plan {
 }
 
 export interface PlanEntry {
-    state: 'ready' | 'record_unavailable' | 'setup_required';
+    /**
+     * processing_stopped: the holder stopped Paperwork using the record (Art. 18), so
+     * there's no plan; erased: the holder deleted it (session 2's server states).
+     */
+    state:
+        | 'ready'
+        | 'record_unavailable'
+        | 'setup_required'
+        | 'processing_stopped'
+        | 'erased';
     plan: Plan | null;
+    stopped_at?: string | null;
+    erased_at?: string | null;
 }

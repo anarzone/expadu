@@ -1,8 +1,11 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { clsx } from 'clsx';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
+import { Icon } from './icons';
 import { usePaperwork } from './state';
 
 /** A person's access to this plan (GET people/{person}/sharing). */
@@ -15,6 +18,13 @@ interface Grant {
     accepted_at: string;
     expires_at: string;
     revoked_at: string | null;
+}
+
+/** What the record's actions need from where they sit: a sheet and a toast. */
+interface RecordUi {
+    openSheet: (sheet: { title: string; body: ReactNode }) => void;
+    closeSheet: () => void;
+    toast: (message: string) => void;
 }
 
 const scopeLabels: Record<string, string> = {
@@ -30,18 +40,14 @@ const base = '/bureaucracy/v2';
 /**
  * Share your plan (the mock's bureaucracy-next "sharing" editor): who sees
  * what now, with Remove access, and the record itself, to download, to stop
- * or resume its processing (GDPR Art. 18), or to delete. Invite someone waits
- * for EXP-79 and the design (how an invitation travels, its email field and
- * the accept screen), so it isn't here yet.
+ * its processing (GDPR Art. 18), or to delete. Invite someone waits for
+ * EXP-79 and the design (how an invitation travels, its email field and the
+ * accept screen), so it isn't here yet.
  */
 export function Sharing({ personId }: { personId: number }) {
     const { toast, openSheet, closeSheet } = usePaperwork();
     const [grants, setGrants] = useState<Grant[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [downloading, setDownloading] = useState(false);
-    // Whether the record's processing is stopped; null until it's read.
-    const [stopped, setStopped] = useState<boolean | null>(null);
-    const [switching, setSwitching] = useState(false);
 
     useEffect(() => {
         read<{ grants: Grant[] }>(`${base}/people/${personId}/sharing`)
@@ -56,41 +62,7 @@ export function Sharing({ personId }: { personId: number }) {
                 ),
             )
             .catch((e: Error) => setError(e.message));
-        read<{ stopped: boolean }>(`${base}/people/${personId}/restriction`)
-            .then((data) => setStopped(data.stopped))
-            .catch((e: Error) => setError(e.message));
     }, [personId]);
-
-    /** Stop or resume: one tap, said on the record, undone by the other. */
-    async function setProcessing(stop: boolean) {
-        setSwitching(true);
-        setError(null);
-
-        try {
-            await send(
-                stop ? 'POST' : 'DELETE',
-                `${base}/people/${personId}/restriction`,
-                {},
-            );
-            setStopped(stop);
-            toast(
-                stop
-                    ? 'Paperwork stops using your record now. Nothing is deleted.'
-                    : 'Paperwork uses your record again.',
-            );
-            requestAnimationFrame(() =>
-                document
-                    .querySelector<HTMLButtonElement>(
-                        '[data-record-processing]',
-                    )
-                    ?.focus({ preventScroll: true }),
-            );
-        } catch (e) {
-            setError((e as Error).message);
-        } finally {
-            setSwitching(false);
-        }
-    }
 
     async function remove(grant: Grant) {
         try {
@@ -100,48 +72,6 @@ export function Sharing({ personId }: { personId: number }) {
         } catch (e) {
             setError((e as Error).message);
         }
-    }
-
-    async function download() {
-        setDownloading(true);
-        const response = await fetch(`${base}/people/${personId}/export`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf(),
-            },
-        }).catch(() => null);
-        setDownloading(false);
-
-        if (response?.status === 423) {
-            openSheet({
-                title: 'Confirm it’s you',
-                body: (
-                    <ConfirmItsYou
-                        onConfirmed={() => {
-                            closeSheet();
-                            void download();
-                        }}
-                    />
-                ),
-            });
-
-            return;
-        }
-
-        if (!response?.ok) {
-            setError('We couldn’t prepare your copy. Try again in a moment.');
-
-            return;
-        }
-
-        save(
-            await response.blob(),
-            filename(response.headers.get('Content-Disposition')),
-        );
-        toast('Your copy is downloading.');
     }
 
     return (
@@ -196,52 +126,241 @@ export function Sharing({ personId }: { personId: number }) {
                     Download a copy of everything Paperwork keeps about you,
                     stop its processing, or delete it.
                 </p>
-                <div className="record-actions">
-                    {stopped ? (
-                        <p className="record-paused" role="status">
-                            <strong>Processing stopped.</strong> Paperwork keeps
-                            your record but doesn’t use it until you resume.
-                        </p>
-                    ) : null}
-                    <div className="actions">
-                        <button
-                            type="button"
-                            className="button secondary"
-                            disabled={downloading}
-                            onClick={() => void download()}
-                        >
-                            Download a copy
-                        </button>
-                        <button
-                            type="button"
-                            className="button secondary"
-                            data-record-processing
-                            disabled={stopped === null || switching}
-                            onClick={() => void setProcessing(!stopped)}
-                        >
-                            {stopped ? 'Resume processing' : 'Stop processing'}
-                        </button>
-                        <button
-                            type="button"
-                            className="button secondary"
-                            onClick={() =>
-                                openSheet({
-                                    title: 'Delete your record?',
-                                    body: (
-                                        <DeleteRecord
-                                            personId={personId}
-                                            onKeep={closeSheet}
-                                        />
-                                    ),
-                                })
-                            }
-                        >
-                            Delete your record
-                        </button>
-                    </div>
-                </div>
+                <RecordActions
+                    personId={personId}
+                    stopped={false}
+                    ui={{ openSheet, closeSheet, toast }}
+                />
             </section>
         </>
+    );
+}
+
+/**
+ * A record whose processing is stopped (entry state 'processing_stopped'):
+ * there's no plan to show, since nothing uses the record (Art. 18), so the
+ * page says so and keeps the record's own actions. Outside the plan's
+ * workspace it brings its own sheet and toast.
+ */
+export function StoppedRecord({ personId }: { personId: number }) {
+    const [sheet, setSheet] = useState<{
+        title: string;
+        body: ReactNode;
+    } | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
+    const timer = useRef<number | null>(null);
+    const toast = useCallback((text: string) => {
+        setMessage(text);
+
+        if (timer.current) {
+            window.clearTimeout(timer.current);
+        }
+
+        timer.current = window.setTimeout(() => setMessage(null), 4200);
+    }, []);
+
+    return (
+        <>
+            <section className="access-blank">
+                <h2>Processing stopped.</h2>
+                <p>
+                    Paperwork keeps your record but doesn’t use it until you
+                    resume. You can still download a copy or delete it.
+                </p>
+                <RecordActions
+                    personId={personId}
+                    stopped
+                    ui={{
+                        openSheet: setSheet,
+                        closeSheet: () => setSheet(null),
+                        toast,
+                    }}
+                />
+            </section>
+            <LocalSheet sheet={sheet} onClose={() => setSheet(null)} />
+            <div
+                className={clsx('toast', message && 'show')}
+                role="status"
+                aria-live="polite"
+            >
+                {message}
+            </div>
+        </>
+    );
+}
+
+/** A record its holder deleted (entry state 'erased'): said plainly, no "contact us". */
+export function ErasedRecord() {
+    return (
+        <section className="access-blank">
+            <h2>Your Paperwork record is deleted.</h2>
+            <p>Everything Paperwork kept about you is gone.</p>
+        </section>
+    );
+}
+
+/**
+ * Your record's actions (mock #209): Download a copy, Stop or Resume
+ * processing, Delete your record. Stopping is one tap and Resume undoes it
+ * (owner, 21 Oct 2026); either way the page reloads its entry, which says
+ * whether there's a plan to show.
+ */
+function RecordActions({
+    personId,
+    stopped,
+    ui,
+}: {
+    personId: number;
+    stopped: boolean;
+    ui: RecordUi;
+}) {
+    const [downloading, setDownloading] = useState(false);
+    const [switching, setSwitching] = useState(false);
+    const [now, setNow] = useState(stopped);
+    const [error, setError] = useState<string | null>(null);
+
+    async function setProcessing(stop: boolean) {
+        if (switching) {
+            return;
+        }
+
+        setSwitching(true);
+        setError(null);
+
+        try {
+            await send(
+                'PUT',
+                `${base}/people/${personId}/processing-restriction`,
+                { stopped: stop },
+            );
+        } catch (e) {
+            setError((e as Error).message);
+            setSwitching(false);
+
+            return;
+        }
+
+        setNow(stop);
+        setSwitching(false);
+        ui.toast(
+            stop
+                ? 'Paperwork stops using your record now. Nothing is deleted.'
+                : 'Paperwork uses your record again.',
+        );
+        // The entry says whether there's still a plan to show; the switch keeps focus.
+        router.reload({
+            only: ['entry'],
+            onFinish: () =>
+                document
+                    .querySelector<HTMLButtonElement>(
+                        '[data-record-processing]',
+                    )
+                    ?.focus({ preventScroll: true }),
+        });
+    }
+
+    async function download() {
+        setDownloading(true);
+        setError(null);
+        const response = await fetch(`${base}/people/${personId}/export`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrf(),
+            },
+        }).catch(() => null);
+        setDownloading(false);
+
+        if (response?.status === 423) {
+            ui.openSheet({
+                title: 'Confirm it’s you',
+                body: (
+                    <ConfirmItsYou
+                        onConfirmed={() => {
+                            ui.closeSheet();
+                            void download();
+                        }}
+                    />
+                ),
+            });
+
+            return;
+        }
+
+        if (!response?.ok) {
+            setError('We couldn’t prepare your copy. Try again in a moment.');
+
+            return;
+        }
+
+        save(
+            await response.blob(),
+            filename(response.headers.get('Content-Disposition')),
+        );
+        ui.toast('Your copy is downloading.');
+    }
+
+    return (
+        <div className="record-actions">
+            {now ? (
+                <p className="record-paused" role="status">
+                    <strong>Processing stopped.</strong> Paperwork keeps your
+                    record but doesn’t use it until you resume.
+                </p>
+            ) : null}
+            {error ? (
+                <p className="case-inline-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+            <div className="actions">
+                <button
+                    type="button"
+                    className="button secondary"
+                    disabled={downloading}
+                    onClick={() => void download()}
+                >
+                    Download a copy
+                </button>
+                <button
+                    type="button"
+                    className="button secondary"
+                    data-record-processing
+                    aria-busy={switching || undefined}
+                    onClick={() => void setProcessing(!now)}
+                >
+                    {now ? 'Resume processing' : 'Stop processing'}
+                </button>
+                <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() =>
+                        ui.openSheet({
+                            title: 'Delete your record?',
+                            body: (
+                                <DeleteRecord
+                                    personId={personId}
+                                    onKeep={ui.closeSheet}
+                                    onErased={() => {
+                                        ui.closeSheet();
+                                        ui.toast(
+                                            'Your Paperwork record is deleted.',
+                                        );
+                                        router.visit('/bureaucracy', {
+                                            replace: true,
+                                        });
+                                    }}
+                                />
+                            ),
+                        })
+                    }
+                >
+                    Delete your record
+                </button>
+            </div>
+        </div>
     );
 }
 
@@ -253,11 +372,12 @@ export function Sharing({ personId }: { personId: number }) {
 function DeleteRecord({
     personId,
     onKeep,
+    onErased,
 }: {
     personId: number;
     onKeep: () => void;
+    onErased: () => void;
 }) {
-    const { closeSheet, toast } = usePaperwork();
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -284,9 +404,7 @@ function DeleteRecord({
             return;
         }
 
-        closeSheet();
-        toast('Your Paperwork record is deleted.');
-        router.visit('/bureaucracy', { replace: true });
+        onErased();
     }
 
     if (confirming) {
@@ -325,6 +443,55 @@ function DeleteRecord({
                 </button>
             </div>
         </div>
+    );
+}
+
+/** The workspace's sheet (editors.tsx SheetDialog), for the stopped page that has none. */
+function LocalSheet({
+    sheet,
+    onClose,
+}: {
+    sheet: { title: string; body: ReactNode } | null;
+    onClose: () => void;
+}) {
+    const ref = useRef<HTMLDialogElement>(null);
+
+    useEffect(() => {
+        const dialog = ref.current;
+
+        if (sheet && dialog && !dialog.open) {
+            dialog.showModal();
+        }
+
+        if (!sheet && dialog?.open) {
+            dialog.close();
+        }
+    }, [sheet]);
+
+    return (
+        <dialog
+            ref={ref}
+            className="detail-dialog"
+            onClose={onClose}
+            aria-labelledby="record-sheet-title"
+        >
+            {sheet ? (
+                <>
+                    <div className="dialog-head">
+                        <h2 id="record-sheet-title">{sheet.title}</h2>
+                        <button
+                            type="button"
+                            className="icon-button"
+                            onClick={onClose}
+                            aria-label="Close"
+                        >
+                            <Icon name="close" />
+                        </button>
+                    </div>
+                    <div id="dialog-body">{sheet.body}</div>
+                </>
+            ) : null}
+        </dialog>
     );
 }
 
