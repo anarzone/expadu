@@ -2,7 +2,6 @@
 
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
-use App\Enums\SpotCategory;
 use App\Http\Resources\PlaceResource;
 use App\Models\MediaAsset;
 use App\Models\PlaceFactCorrection;
@@ -32,23 +31,6 @@ beforeEach(function () {
         'lng' => 6.921,
     ]);
     $this->actingAs($this->user);
-});
-
-test('places page offers every supported catalogue filter from the server', function () {
-    $this->get('/explore?category=shopping')->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('places')
-            ->where('filters.category', 'shopping')
-            ->where('categories', function ($options): bool {
-                $options = collect($options);
-
-                expect($options->pluck('id')->all())->toEqualCanonicalizing(SpotCategory::placesCoarse())
-                    ->and($options->firstWhere('id', 'shopping')['label'])->toBe('Shopping')
-                    ->and($options->firstWhere('id', 'services')['label'])->toBe('Local services')
-                    ->and($options->firstWhere('id', 'health')['label'])->toBe('Health');
-
-                return $options->every(fn ($option) => filled($option['emoji']));
-            }));
 });
 
 test('lists leisure places with the full contract shape', function () {

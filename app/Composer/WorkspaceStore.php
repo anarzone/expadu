@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Composer\Answers\Answers;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Places\PlaceIdentity;
@@ -20,6 +21,15 @@ class WorkspaceStore
 {
     /** Undo stays available for this many of the newest changes. */
     public const CHANGE_LIMIT = 50;
+
+    /** The page's general replies, by kind. */
+    private const REPLIES = [
+        'bureaucracy' => 'For paperwork, use our reviewed guidance. Composer does not generate legal answers.',
+        'find' => 'Browse places and events below. Pick a date before adding something to your plan.',
+        'journey' => 'Choose a place below to check a journey from your current location.',
+        'unknown' => 'I can help you plan a day and find places, events or reviewed paperwork guidance. Try “plan tomorrow afternoon”, or use the controls below.',
+        'failed' => 'I could not finish that request. Your plan is unchanged. You can retry your message.',
+    ];
 
     public function __construct(private CandidateRepository $catalogue, private WorkspaceUpgrade $upgrade) {}
 
@@ -86,19 +96,33 @@ class WorkspaceStore
 
                 return null;
             case 'reply':
-                $replies = [
-                    'bureaucracy' => 'For paperwork, use our reviewed guidance. Composer does not generate legal answers.',
-                    'find' => 'Browse places and events below. Pick a date before adding something to your plan.',
-                    'journey' => 'Choose a place below to check a journey from your current location.',
-                    'unknown' => 'I can help you plan a day and find places, events or reviewed paperwork guidance. Try “plan tomorrow afternoon”, or use the controls below.',
-                    'failed' => 'I could not finish that request. Your plan is unchanged. You can retry your message.',
-                ];
                 $conversation = collect($s['conversations'])->firstWhere('id', $s['active']);
                 $query = collect($conversation['messages'])->last(fn ($message) => $message['role'] === 'user')['text'] ?? '';
-                $this->message($s, 'assistant', $replies[$input['kind']], ['kind' => $input['kind'], 'query' => $query]);
+                $this->message($s, 'assistant', self::REPLIES[$input['kind']], ['kind' => $input['kind'], 'query' => $query]);
                 if (in_array($input['kind'], ['bureaucracy', 'unknown'])) {
                     $s['focus'] = null;
                 }
+
+                return null;
+            case 'answer':
+                // The answer to the person's last request, worked out here from what they
+                // wrote (never text the page sends), and changing no plan.
+                $messages = collect(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? []);
+                $asked = $messages->last(fn ($message) => $message['role'] === 'user');
+                $this->require($asked !== null, 'not_found', 'Ask something first.');
+                $answers = app(Answers::class);
+                $now = CarbonImmutable::now('Europe/Berlin');
+                $request = $answers->route($user, $asked['text'], $now, $s['focus']);
+                $again = ($messages->last(fn ($message) => $message['role'] === 'assistant')['kind'] ?? null) === 'clarify';
+                $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now, $again);
+                if ($reply === null) {
+                    // Not one it answers yet: the page's own reply for the kind (no checklist is a paperwork question).
+                    $kind = in_array($request['kind'], ['checklist', 'bureaucracy'], true) ? 'bureaucracy' : 'unknown';
+                    $this->message($s, 'assistant', self::REPLIES[$kind], ['kind' => $kind, 'query' => $asked['text']]);
+                } else {
+                    $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
+                }
+                $s['focus'] = null;
 
                 return null;
             case 'proposal':

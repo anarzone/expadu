@@ -23,7 +23,7 @@ import {
     eventTime,
 } from '@/components/events/event-presentation';
 import type { EventOccurrence } from '@/components/events/types';
-import { MiniMap } from '@/components/places/mini-map';
+import { MiniMap } from '@/components/place-shared/mini-map';
 import { ICON_STROKE } from '@/constants/icons';
 import { composer } from '@/routes';
 

@@ -1,0 +1,332 @@
+/* One place's sheet (the mock's connected/place-sheet.css and its
+   detail-dialog): on a laptop a 560px dialog, on a phone a sheet from the
+   bottom. The hero and the tabs stay; the part shown scrolls above its own
+   footer. */
+
+.ui-sheet.place-sheet {
+    width: min(560px, calc(100vw - 32px));
+    height: min(700px, calc(100dvh - 48px));
+    max-height: none;
+    /* The mock's shared dialog: white, not the page's cream, with a line. */
+    border: 1px solid var(--color-border);
+    background: #fff;
+    box-shadow: none;
+}
+
+@media (min-width: 701px) {
+    .ui-sheet.place-sheet {
+        inset-inline: 0;
+        margin: auto;
+    }
+}
+
+@media (max-width: 700px) {
+    .ui-sheet.place-sheet {
+        width: 100%;
+        height: min(700px, calc(100dvh - 40px));
+        margin: auto 0 0;
+        border-bottom: 0;
+    }
+}
+
+.place-sheet .ui-sheet-head {
+    padding: 12px 20px 8px;
+}
+
+/* A drag down still closes it on a phone; the mock draws no handle. */
+.place-sheet .ui-sheet-head::before {
+    content: none;
+}
+
+.place-sheet .ui-sheet-head h2 {
+    line-height: 1.2;
+    letter-spacing: -0.7px;
+}
+
+.place-sheet .ui-sheet-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* Loading, or a place that couldn't open. */
+.place-sheet .ui-sheet-body > .place-source {
+    margin: 10px 20px;
+}
+
+.place-sheet-hero {
+    display: flex;
+    flex: none;
+    gap: 6px 10px;
+    align-items: center;
+    min-height: 44px;
+    margin: 0 20px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.place-sheet-hero strong {
+    font-weight: var(--weight-regular);
+}
+
+.place-sheet-hero a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-left: auto;
+    color: var(--color-action);
+    font-size: var(--text-caption);
+    text-decoration: none;
+}
+
+/* About, Plan a visit, Get there. */
+.place-sheet-tabs {
+    display: flex;
+    flex: none;
+    gap: 3px;
+    margin: 14px 20px 0;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-canvas);
+}
+
+.place-sheet-tabs button {
+    display: flex;
+    flex: 1;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    height: 40px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.place-sheet-tabs button[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    box-shadow: inset 0 -2px var(--color-field-focus);
+    font-weight: var(--weight-semibold);
+}
+
+.place-sheet-panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.place-sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 12px;
+    padding: 20px 20px 12px;
+}
+
+/* Planning and the way: a cream canvas under the tabs. */
+.place-sheet-panel:is(.is-plan, .is-way) {
+    margin-top: 12px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    background: var(--color-bg-canvas);
+}
+
+.place-sheet-panel.is-plan .place-sheet-scroll {
+    padding-top: 16px;
+}
+
+.place-sheet-panel.is-way .place-sheet-scroll {
+    padding-block: 12px;
+}
+
+.place-facts {
+    display: grid;
+    margin: 0 0 12px;
+}
+
+.place-facts > div {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    padding: 9px 2px;
+    border: 0 none;
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-small);
+}
+
+.place-facts > div:first-child {
+    border-top: 1px solid var(--color-border);
+}
+
+.place-facts dt {
+    flex: none;
+    color: var(--color-text-soft);
+}
+
+.place-facts dd {
+    margin: 0;
+    font-weight: var(--weight-medium);
+    text-align: right;
+}
+
+.place-facts dd.is-unknown {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+
+.place-facts a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.place-week {
+    margin: 0 0 12px;
+    font-size: var(--text-small);
+}
+
+.place-week summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+}
+
+.place-week dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    margin: 0 0 4px;
+}
+
+.place-week dl > div {
+    display: contents;
+}
+
+.place-week dt {
+    color: var(--color-text-soft);
+}
+
+.place-week dd {
+    margin: 0;
+}
+
+.place-source {
+    margin: 10px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.place-source a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.place-sheet-footer {
+    display: flex;
+    flex: none;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    /* The mock's light glass finish, in its own row. */
+    background: rgb(255 255 255 / 78%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    backdrop-filter: blur(16px) saturate(120%);
+}
+
+/* On the cream canvas, the mock's paler glass. */
+.place-sheet-panel:is(.is-plan, .is-way) .place-sheet-footer {
+    background: rgb(246 250 251 / 78%);
+}
+
+.place-sheet-footer.is-end {
+    justify-content: flex-end;
+}
+
+.place-sheet-save {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 4px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: #fffdf8;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    line-height: 1.25;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.place-sheet-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+
+/* The part's one main action: Plan a visit, Add to plan, Back to place. */
+.place-sheet-primary {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    line-height: 1.25;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.place-sheet-primary:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* A phone: the mock's 16px sides, and a shorter head. */
+@media (max-width: 700px) {
+    .place-sheet .ui-sheet-head {
+        padding: 8px 16px;
+    }
+
+    .place-sheet-hero {
+        margin: 0 16px;
+    }
+
+    .place-sheet-tabs {
+        margin: 12px 16px 0;
+    }
+
+    .place-sheet-scroll {
+        padding: 18px 16px 12px;
+    }
+
+    .place-sheet .ui-sheet-body > .place-source {
+        margin-inline: 16px;
+    }
+
+    .place-sheet-footer {
+        padding: 8px 16px;
+    }
+}

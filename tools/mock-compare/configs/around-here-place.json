@@ -1,0 +1,155 @@
+{
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\"",
+    "mock": {
+        "url": "/dev/design/around-here/?kind=pharmacy&near=wiener-platz&time=14:30",
+        "wait": ".nearby-place",
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 1500
+            }
+        ]
+    },
+    "app": {
+        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "wait": ".nearby-place",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 2500
+            }
+        ],
+        "screenshotStyle": ".fixed.right-4.bottom-24 { visibility: hidden !important; }",
+        "screenshotStyleReason": "The local QA persona button floats over the page's bottom right; it isn't part of the page, so it is hidden while elements are shot."
+    },
+    "name": "around-here-place",
+    "pairs": [
+        {
+            "name": "sheet",
+            "mock": "#shared-dialog",
+            "app": "dialog.place-sheet",
+            "pixels": false,
+            "reason": "The page behind shows through at its corners. Its box and styles are compared."
+        },
+        {
+            "name": "title",
+            "mock": "#dialog-title",
+            "app": "dialog.place-sheet .ui-sheet-head h2"
+        },
+        {
+            "name": "close",
+            "mock": "#shared-dialog .dialog-head .icon-button",
+            "app": "dialog.place-sheet .ui-sheet-close"
+        },
+        {
+            "name": "kind and area",
+            "mock": ".place-sheet-hero > div",
+            "app": ".place-sheet-hero"
+        },
+        {
+            "name": "kind",
+            "mock": ".place-sheet-hero > div > span",
+            "app": ".place-sheet-hero > span"
+        },
+        {
+            "name": "area",
+            "mock": ".place-sheet-hero strong",
+            "app": ".place-sheet-hero strong"
+        },
+        {
+            "name": "View on map",
+            "mock": ".place-sheet-hero a",
+            "app": ".place-sheet-hero a"
+        },
+        {
+            "name": "tabs",
+            "mock": ".place-sheet-tabs",
+            "app": ".place-sheet-tabs"
+        },
+        {
+            "name": "About (on)",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 0
+        },
+        {
+            "name": "Plan a visit tab",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 1
+        },
+        {
+            "name": "Get there tab",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 2
+        },
+        {
+            "name": "Today",
+            "mock": "dl.place-facts > div",
+            "app": "dl.place-facts > div",
+            "index": 0
+        },
+        {
+            "name": "Address",
+            "mock": "dl.place-facts > div",
+            "app": "dl.place-facts > div",
+            "index": 1
+        },
+        {
+            "name": "Wheelchair",
+            "mock": "dl.place-facts > div",
+            "app": "dl.place-facts > div",
+            "index": 2
+        },
+        {
+            "name": "Website",
+            "mock": "dl.place-facts > div",
+            "app": "dl.place-facts > div",
+            "index": 3
+        },
+        {
+            "name": "Phone",
+            "mock": "dl.place-facts > div",
+            "app": "dl.place-facts > div",
+            "index": 4
+        },
+        {
+            "name": "All listed hours",
+            "mock": "details.place-week summary",
+            "app": "details.place-week summary"
+        },
+        {
+            "name": "source",
+            "mock": "p.place-source",
+            "app": "p.place-source",
+            "ignore": ["h"],
+            "contentDiffers": true,
+            "reason": "The app\u2019s sample places record no date their hours were observed, so the source line leaves \u201c, observed \u2026\u201d out, and it\u2019s a line shorter."
+        },
+        {
+            "name": "Save for later",
+            "mock": ".place-sheet-footer .button.secondary",
+            "app": ".place-sheet-save"
+        },
+        {
+            "name": "Plan a visit",
+            "mock": ".place-sheet-footer .button.primary",
+            "app": ".place-sheet-footer .place-sheet-primary"
+        }
+    ]
+}

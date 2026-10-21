@@ -1,0 +1,386 @@
+{
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\"",
+    "mock": {
+        "url": "/dev/design/around-here/?kind=pharmacy&near=wiener-platz&time=14:30",
+        "wait": ".nearby-place"
+    },
+    "app": {
+        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "wait": ".nearby-place",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "screenshotStyle": ".fixed.right-4.bottom-24 { visibility: hidden !important; }",
+        "screenshotStyleReason": "The local QA persona button floats over the page's bottom right; it isn't part of the page, so it is hidden while elements are shot."
+    },
+    "name": "around-here",
+    "pairs": [
+        {
+            "name": "head",
+            "mock": ".around-head",
+            "app": ".around-head",
+            "contentDiffers": true,
+            "reason": "It holds the listed-hours line: The mock says its places are samples (\u201cSample places \u00b7 listed hours for\u2026\u201d); the app\u2019s are the catalogue\u2019s own, so it says \u201cListed hours for\u2026\u201d. Its box and styles are compared. Its height follows those words: at 360 the mock\u2019s wraps to two lines.",
+            "ignore": ["h"]
+        },
+        {
+            "name": "back",
+            "mock": ".around-back",
+            "app": ".around-back"
+        },
+        {
+            "name": "title",
+            "mock": ".around-head h1",
+            "app": ".around-head h1"
+        },
+        {
+            "name": "listed hours",
+            "mock": ".around-head p",
+            "app": ".around-head p",
+            "contentDiffers": true,
+            "reason": "The mock says its places are samples (\u201cSample places \u00b7 listed hours for\u2026\u201d); the app\u2019s are the catalogue\u2019s own, so it says \u201cListed hours for\u2026\u201d. Its box and styles are compared. Its height follows those words: at 360 the mock\u2019s wraps to two lines.",
+            "ignore": ["w", "h"]
+        },
+        {
+            "name": "kinds",
+            "mock": ".around-filters",
+            "app": ".around-filters",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "kinds (360)",
+            "mock": ".around-filters",
+            "app": ".around-filters",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "All",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 0,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "All (360)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Pharmacies (on)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 1,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Pharmacies (on) (360)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 1,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Caf\u00e9s",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 2,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Caf\u00e9s (360)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 2,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Parks & nature",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 6,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Parks & nature (360)",
+            "mock": ".around-filters button",
+            "app": ".around-filters button",
+            "index": 6,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "list head",
+            "mock": ".around-list-head",
+            "app": ".around-list-head",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "list head (360)",
+            "mock": ".around-list-head",
+            "app": ".around-list-head",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "count",
+            "mock": ".around-count",
+            "app": ".around-count",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "count (360)",
+            "mock": ".around-count",
+            "app": ".around-count",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "Open at",
+            "mock": ".around-open-toggle",
+            "app": ".around-open-toggle",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Open at (360)",
+            "mock": ".around-open-toggle",
+            "app": ".around-open-toggle",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Eck-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 0,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Eck-Apotheke (360)",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Einhorn-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 1,
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Einhorn-Apotheke (360)",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 1,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "Br\u00fccken-Apotheke",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 2,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Br\u00fccken-Apotheke (390)",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 2,
+            "widths": [390],
+            "pixels": false,
+            "reason": "At 390 the shell\u2019s floating menu lies over this row, and the mock\u2019s Around here draws that menu without Composer\u2019s tray, which the app\u2019s shell has on every page (design session). Its box and styles are compared here, and its pixels at 768 and up."
+        },
+        {
+            "name": "Br\u00fccken-Apotheke (360)",
+            "mock": ".nearby-place",
+            "app": ".nearby-place",
+            "index": 2,
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: at 360 the shell\u2019s floating menu lies over this row, and the mock\u2019s Around here draws that menu without Composer\u2019s tray (design session). They\u2019re compared at every other width."
+        },
+        {
+            "name": "first: icon",
+            "mock": ".nearby-place .place-map-snippet",
+            "app": ".nearby-place .place-map-snippet",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: icon (360)",
+            "mock": ".nearby-place .place-map-snippet",
+            "app": ".nearby-place .place-map-snippet",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "first: name",
+            "mock": ".nearby-place .nearby-place-copy strong",
+            "app": ".nearby-place .nearby-place-copy strong",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: name (360)",
+            "mock": ".nearby-place .nearby-place-copy strong",
+            "app": ".nearby-place .nearby-place-copy strong",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "first: where",
+            "mock": ".nearby-place .nearby-place-copy small",
+            "app": ".nearby-place .nearby-place-copy small",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: where (360)",
+            "mock": ".nearby-place .nearby-place-copy small",
+            "app": ".nearby-place .nearby-place-copy small",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "first: hours",
+            "mock": ".nearby-place .place-hours",
+            "app": ".nearby-place .place-hours",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: hours (360)",
+            "mock": ".nearby-place .place-hours",
+            "app": ".nearby-place .place-hours",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "first: step-free",
+            "mock": ".nearby-place .place-access",
+            "app": ".nearby-place .place-access",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: step-free (360)",
+            "mock": ".nearby-place .place-access",
+            "app": ".nearby-place .place-access",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "first: save",
+            "mock": ".nearby-place .nearby-place-save",
+            "app": ".nearby-place .nearby-place-save",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first: save (360)",
+            "mock": ".nearby-place .nearby-place-save",
+            "app": ".nearby-place .nearby-place-save",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the 19.5px lands on a half pixel, so its text and icons antialias differently. They\u2019re compared at every other width."
+        },
+        {
+            "name": "credit",
+            "mock": ".around-list .place-map-credit",
+            "app": ".around-list .place-map-credit",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "credit (360)",
+            "mock": ".around-list .place-map-credit",
+            "app": ".around-list .place-map-credit",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width."
+        },
+        {
+            "name": "map",
+            "mock": ".around-map",
+            "app": ".around-map",
+            "pixels": false,
+            "reason": "Its box and frame are compared; the tiles come live from OpenFreeMap and the markers are compared one by one.",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "map (360)",
+            "mock": ".around-map",
+            "app": ".around-map",
+            "pixels": false,
+            "reason": "Its box and frame are compared; the tiles come live from OpenFreeMap and the markers are compared one by one. At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width.",
+            "widths": [360],
+            "ignore": ["y"]
+        },
+        {
+            "name": "map: here",
+            "mock": ".around-here-marker",
+            "app": ".around-here-marker",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "map: here (360)",
+            "mock": ".around-here-marker",
+            "app": ".around-here-marker",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the marker sits on live map tiles, which the shift moves under it. They\u2019re compared at every other width."
+        },
+        {
+            "name": "map: a place",
+            "mock": ".around-marker",
+            "app": ".around-marker",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "map: a place (360)",
+            "mock": ".around-marker",
+            "app": ".around-marker",
+            "widths": [360],
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "At 360 the mock\u2019s sample line (\u201cSample places \u00b7 listed hours for\u2026\u201d) wraps to two lines and the app\u2019s real one (\u201cListed hours for\u2026\u201d) fits on one, so from the kinds down everything sits 19.5px higher in the app. Its x, width, height and styles are compared here, and its y at every other width. Its pixels too: the marker sits on live map tiles, which the shift moves under it. They\u2019re compared at every other width."
+        }
+    ]
+}

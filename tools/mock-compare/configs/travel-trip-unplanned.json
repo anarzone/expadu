@@ -1,0 +1,125 @@
+{
+    "name": "travel-trip-unplanned",
+    "seed": "php artisan mock:sample-day travel --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=unplanned",
+        "wait": "#next-trip .trip-line-row"
+    },
+    "app": {
+        "url": "/up",
+        "wait": "#departures > .trip-line .trip-line-row",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00",
+            "mock_scenario": "unplanned"
+        },
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); if (day.active_trip) await fetch('/api/trip/end', { method: 'POST', headers, credentials: 'same-origin' }); for (const item of day.items || []) { if (item.planned) await fetch('/api/travel/planned-trips/' + item.planned.id, { method: 'DELETE', headers, credentials: 'same-origin' }); } } finally { location.replace('/timetable'); } })(); }"
+        ]
+    },
+    "note": "The mock's \"Nothing planned yet\" (?scenario=unplanned) against the app's card for a plan it can't route, put on record (coordinator, 21 Oct 2026). The mock's \"Nothing planned yet\" is a plan with no way picked; the app works out the way itself, so it has no such state. Its nearest is the card for a plan it can't route (MockSample\\SampleRoutes finds no way for the sample trip under the local mock_scenario cookie): the same title, calendar ring and \"Plan the way\", and the reason chip. Each width starts with no trip running and, as in the mock, no way picked: the app side opens /up, ends any trip and removes the day's planned way through the app's own API (as travel-plan-saved does), then opens Travel.",
+    "pairs": [
+        {
+            "name": "card",
+            "mock": "#departures > .trip-line",
+            "app": "#departures > .trip-line",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower. Its pixels differ by the chip's words and icon (see chip).",
+            "pixels": false
+        },
+        {
+            "name": "card row",
+            "mock": "#departures > .trip-line .trip-line-row",
+            "app": "#departures > .trip-line .trip-line-row",
+            "ignore": [
+                "h"
+            ],
+            "pixels": false,
+            "reason": "The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower. The reason the app has no way (\"No route found\", the info icon) where the mock says \"No way picked yet\" (the calendar icon): the app works out the way itself, so the mock's not-yet-picked state has no app counterpart."
+        },
+        {
+            "name": "ring",
+            "mock": "#departures > .trip-line .trip-ring",
+            "app": "#departures > .trip-line .trip-ring",
+            "ignore": [
+                "w",
+                "y"
+            ],
+            "reason": "The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower. Beside it the ring is drawn narrower."
+        },
+        {
+            "name": "title",
+            "mock": "#departures > .trip-line .trip-title strong",
+            "app": "#departures > .trip-line .trip-title strong",
+            "ignore": [
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower. The title moves with the ring."
+        },
+        {
+            "name": "plan and time",
+            "mock": "#departures > .trip-line .trip-title span",
+            "app": "#departures > .trip-line .trip-title span",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower."
+        },
+        {
+            "name": "flags",
+            "mock": "#departures > .trip-line .trip-flags",
+            "app": "#departures > .trip-line .trip-flags",
+            "contentDiffers": true,
+            "ignore": [
+                "w",
+                "y"
+            ],
+            "pixels": false,
+            "reason": "The reason the app has no way (\"No route found\", the info icon) where the mock says \"No way picked yet\" (the calendar icon): the app works out the way itself, so the mock's not-yet-picked state has no app counterpart. The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower."
+        },
+        {
+            "name": "chip",
+            "mock": "#departures > .trip-line .trip-flags .tl-chip",
+            "app": "#departures > .trip-line .trip-flags .tl-chip",
+            "contentDiffers": true,
+            "ignore": [
+                "w",
+                "y"
+            ],
+            "pixels": false,
+            "reason": "The reason the app has no way (\"No route found\", the info icon) where the mock says \"No way picked yet\" (the calendar icon): the app works out the way itself, so the mock's not-yet-picked state has no app counterpart. The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower."
+        },
+        {
+            "name": "Plan the way",
+            "mock": "#departures > .trip-line .next-trip-go",
+            "app": "#departures > .trip-line .next-trip-go",
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Same button; below the card row (see plan and time), moved, it lands on another sub-pixel offset. The mock's line adds the stop you'd get off at from its sample way (\"14:00 · Mülheim · Mülheim Wiener Platz\"); the app found no way, so it knows only the plan's time and place (\"14:00 · Mülheim\"). The mock's longer line takes a second line on narrower screens, so its card row is taller and what sits in it is centred lower."
+        }
+    ]
+}

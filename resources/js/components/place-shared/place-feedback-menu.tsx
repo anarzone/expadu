@@ -1,0 +1,208 @@
+import {
+    IconDots,
+    IconSparkles,
+    IconBookmark,
+    IconBookmarkFilled,
+    IconMapPinCheck,
+    IconEyeOff,
+    IconThumbUp,
+    IconThumbUpFilled,
+    IconThumbDown,
+    IconThumbDownFilled,
+} from '@tabler/icons-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ICON_STROKE } from '@/constants/icons';
+import type {
+    FeedbackAction,
+    FeedbackRating,
+    FeedbackState,
+} from '@/hooks/use-feedback';
+
+/**
+ * The social "⋯" feedback menu of a place's detail (PlaceFeedbackBar).
+ * Leads with "More like this" — a forward-looking signal that
+ * needs no visit — then Save / Been / Not interested. The caller wires
+ * onAction to useFeedback; this component is purely presentational.
+ */
+export function PlaceFeedbackMenu({
+    state,
+    onAction,
+    variant = 'inline',
+    label,
+    hideBeen = false,
+}: {
+    state: FeedbackState | null;
+    onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
+    /** overlay = light-on-dark button for image corners; inline = bordered. */
+    variant?: 'inline' | 'overlay';
+    label?: string;
+    /** Hide "Been here" when a sibling rating control already owns it. */
+    hideBeen?: boolean;
+}) {
+    const saved = state === 'saved';
+    const been = state === 'been';
+
+    const trigger =
+        variant === 'overlay'
+            ? 'flex size-[26px] items-center justify-center rounded-full bg-black/45 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/65'
+            : 'flex size-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary';
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                aria-label={label ? `Feedback for ${label}` : 'Place feedback'}
+                onClick={(e) => e.stopPropagation()}
+                className={trigger}
+            >
+                <IconDots size={16} stroke={ICON_STROKE} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align={variant === 'overlay' ? 'start' : 'end'}
+                onClick={(e) => e.stopPropagation()}
+                className="w-52"
+            >
+                <DropdownMenuItem onSelect={() => onAction('more_like_this')}>
+                    <IconSparkles stroke={ICON_STROKE} />
+                    More like this
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                    onSelect={() => onAction(saved ? 'clear' : 'saved')}
+                >
+                    {saved ? (
+                        <IconBookmarkFilled />
+                    ) : (
+                        <IconBookmark stroke={ICON_STROKE} />
+                    )}
+                    {saved ? 'Saved' : 'Save for later'}
+                </DropdownMenuItem>
+                {!hideBeen && (
+                    <DropdownMenuItem
+                        onSelect={() => onAction(been ? 'clear' : 'been')}
+                    >
+                        <IconMapPinCheck stroke={ICON_STROKE} />
+                        {been ? 'Visited' : 'Been here'}
+                    </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                    className="text-danger focus:text-danger"
+                    onSelect={() => onAction('not_interested')}
+                >
+                    <IconEyeOff stroke={ICON_STROKE} />
+                    Not interested
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+/**
+ * Compact feedback control for the detail modal. Two clearly separate axes —
+ * never conflated:
+ *   1. "Been here?" is a single VISITED toggle (the success pill). It only
+ *      records the fact of a visit; no opinion is implied.
+ *   2. "How was it?" — a 👍/👎 rating — appears ONLY after the place is marked
+ *      visited, the way Maps / Foursquare / Beli reveal rating post-visit. A
+ *      thumb is always about quality, never "were you here", which is exactly
+ *      the misread we're fixing.
+ */
+export function PlaceFeedbackBar({
+    state,
+    rating,
+    onAction,
+    label,
+}: {
+    state: FeedbackState | null;
+    rating: FeedbackRating | null;
+    onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
+    label?: string;
+}) {
+    const been = state === 'been';
+    const liked = been && rating === 'up';
+    const disliked = been && rating === 'down';
+
+    return (
+        <div className="mt-4 rounded-[10px] border border-border bg-secondary/40 px-3 py-2.5">
+            {/* Axis 1 — the visited fact, as its own toggle. */}
+            <div className="flex items-center gap-2">
+                <span className="text-[13px] font-medium text-muted-foreground">
+                    {been ? 'You’ve been here' : 'Been here?'}
+                </span>
+                <div className="ml-auto flex items-center gap-1.5">
+                    <button
+                        onClick={() => onAction(been ? 'clear' : 'been')}
+                        aria-pressed={been}
+                        aria-label={
+                            been ? 'Visited — tap to undo' : 'Mark as visited'
+                        }
+                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+                            been
+                                ? 'bg-success-soft text-success hover:bg-success-soft/70'
+                                : 'border border-border font-medium text-muted-foreground hover:border-primary hover:text-primary'
+                        }`}
+                    >
+                        <IconMapPinCheck size={14} stroke={ICON_STROKE} />
+                        {been ? 'Visited' : 'I’ve been'}
+                    </button>
+                    <PlaceFeedbackMenu
+                        state={state}
+                        onAction={onAction}
+                        label={label}
+                        hideBeen
+                    />
+                </div>
+            </div>
+
+            {/* Axis 2 — quality rating, revealed only once visited. */}
+            {been && (
+                <div className="mt-2.5 flex items-center gap-2 border-t border-border/60 pt-2.5">
+                    <span className="text-[13px] font-medium text-muted-foreground">
+                        How was it?
+                    </span>
+                    <div className="ml-auto flex items-center gap-1.5">
+                        <button
+                            onClick={() => onAction('been', 'up')}
+                            aria-pressed={liked}
+                            aria-label="Loved it"
+                            className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                                liked
+                                    ? 'border-transparent bg-success-soft text-success'
+                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                            }`}
+                        >
+                            {liked ? (
+                                <IconThumbUpFilled size={15} />
+                            ) : (
+                                <IconThumbUp size={15} stroke={ICON_STROKE} />
+                            )}
+                            Loved it
+                        </button>
+                        <button
+                            onClick={() => onAction('been', 'down')}
+                            aria-pressed={disliked}
+                            aria-label="Not for me"
+                            className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                                disliked
+                                    ? 'border-transparent bg-danger-soft text-danger'
+                                    : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                            }`}
+                        >
+                            {disliked ? (
+                                <IconThumbDownFilled size={15} />
+                            ) : (
+                                <IconThumbDown size={15} stroke={ICON_STROKE} />
+                            )}
+                            Not for me
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
