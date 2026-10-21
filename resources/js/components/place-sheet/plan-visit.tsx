@@ -176,10 +176,8 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
     if (added) {
         return (
             <div className="place-added" role="status" tabIndex={-1}>
-                <h3>Room made for {place.name}.</h3>
-                <p>
-                    {shortDay(added.date)} · {added.start}–{added.end}
-                </p>
+                <h3>{`Room made for ${place.name}.`}</h3>
+                <p>{`${shortDay(added.date)} · ${added.start}–${added.end}`}</p>
                 <p>Added to your plan.</p>
                 {error ? (
                     <p className="selection-error" role="alert">
@@ -238,7 +236,7 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                                         visit.setTimes({ start, end })
                                     }
                                 >
-                                    {start}–{end}
+                                    {`${start}–${end}`}
                                 </button>
                             ))}
                         </div>
@@ -286,10 +284,9 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                 <details>
                     <summary>
                         <span>
-                            Your day{' '}
+                            {'Your day '}
                             <small>
-                                {items.length}{' '}
-                                {items.length === 1 ? 'activity' : 'activities'}
+                                {`${items.length} ${items.length === 1 ? 'activity' : 'activities'}`}
                             </small>
                         </span>
                         <Icon name="down" variant="line" />
@@ -307,7 +304,7 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                                             className="visit-day-gap"
                                         >
                                             <span>
-                                                {duration(row.gap)} free
+                                                {`${duration(row.gap)} free`}
                                             </span>
                                         </li>
                                     ) : (
@@ -355,10 +352,7 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                                                         </div>
                                                         {row.overlaps.length ? (
                                                             <small className="visit-day-overlap">
-                                                                Overlaps{' '}
-                                                                {row.overlaps.join(
-                                                                    ', ',
-                                                                )}
+                                                                {`Overlaps ${row.overlaps.join(', ')}`}
                                                             </small>
                                                         ) : null}
                                                     </div>

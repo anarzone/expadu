@@ -61,6 +61,13 @@ export function TimeField({
     const popup = useRef<HTMLDivElement>(null);
     const popupId = useId();
     const shown = typing ? draft : value;
+    // Where the wheels go: inside the dialog the field sits in (a modal
+    // Sheet makes everything outside it inert), else the page.
+    const [host, setHost] = useState<Element | null>(null);
+    const show = () => {
+        setHost(field.current?.closest('dialog') ?? document.body);
+        setOpen(true);
+    };
 
     const close = (refocus = true) => {
         setOpen(false);
@@ -151,7 +158,7 @@ export function TimeField({
                 value={shown}
                 onClick={() => {
                     if (!typing) {
-                        setOpen(true);
+                        show();
                     }
                 }}
                 onDoubleClick={() => {
@@ -166,7 +173,7 @@ export function TimeField({
                         (event.key === 'ArrowDown' || event.key === 'ArrowUp')
                     ) {
                         event.preventDefault();
-                        setOpen(true);
+                        show();
                     }
                 }}
                 onChange={(event) => {
@@ -244,7 +251,7 @@ export function TimeField({
                             </button>
                         </div>
                     </div>,
-                    document.body,
+                    host ?? document.body,
                 )}
         </>
     );

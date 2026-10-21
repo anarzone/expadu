@@ -241,7 +241,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 20px;
+    /* The mock's light glass finish, in its own row. */
     background: rgb(255 255 255 / 78%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    backdrop-filter: blur(16px) saturate(120%);
 }
 
 /* On the cream canvas, the mock's paler glass. */

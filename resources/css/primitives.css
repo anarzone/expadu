@@ -540,7 +540,6 @@
 .ui-date-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
     width: 100%;
     min-height: 44px;
     padding: 8px 12px;
@@ -556,12 +555,6 @@
 }
 .ui-date-toggle[aria-expanded='true'] {
     border-color: var(--color-focus);
-}
-.ui-date-toggle svg {
-    width: 16px;
-    height: 16px;
-    margin-left: auto;
-    color: var(--color-text-soft);
 }
 .ui-calendar {
     width: 100%;
