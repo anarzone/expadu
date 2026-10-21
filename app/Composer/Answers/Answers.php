@@ -121,11 +121,12 @@ final class Answers
         return match ($request['kind']) {
             'help' => $this->reply('I can help you plan a day, find events and places, check a journey, and point you to reviewed paperwork information.',
                 suggestions: self::EVERYDAY),
-            // The page lists the person's own starters; with none, these everyday ones.
+            // Said plainly, with no heading (owner, 21 Oct 2026). The page lists the person's
+            // own starters; with none, these everyday ones.
             'clarify' => $again
-                ? $this->reply('It can do these:', 'clarify', 'That’s outside what I know too.', self::EVERYDAY, options: true)
+                ? $this->reply('That’s outside what I know too. It can do these:', 'clarify', suggestions: self::EVERYDAY, options: true)
                 : $this->reply('“'.(mb_strlen($text) > 40 ? mb_substr($text, 0, 39).'…' : $text).'” isn’t something Composer knows. It can do these:',
-                    'clarify', 'I can’t answer that here yet.', self::EVERYDAY, options: true),
+                    'clarify', suggestions: self::EVERYDAY, options: true),
             'next' => $this->next($user, $request, $plans, $now),
             'checklist' => $this->checklist($user, $now),
             'access' => $this->access($request, $now),
