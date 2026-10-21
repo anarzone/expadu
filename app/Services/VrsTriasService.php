@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Log;
  */
 class VrsTriasService
 {
+    /** Failures in a row that make an outage rather than a blip. */
+    private const OUTAGE_FAILURES = 3;
+
+    /** Seconds TRIAS is skipped after one failure. */
+    private const BLIP_SECONDS = 30;
+
+    /** Seconds TRIAS is skipped in an outage. */
+    private const OUTAGE_SECONDS = 300;
+
     /**
      * Get real-time departures from a stop using TRIAS StopEventRequest.
      *
@@ -999,7 +1008,7 @@ class VrsTriasService
             }
 
             // Success — mark as healthy
-            Cache::put('trias_healthy', true, 120);
+            $this->markTriasUp();
 
             return $response->body();
         } catch (\Throwable $e) {
@@ -1011,7 +1020,7 @@ class VrsTriasService
     }
 
     /**
-     * POST several TRIAS requests at once. Any failure trips the same 30 s
+     * POST several TRIAS requests at once. Any failure trips the same
      * breaker post() uses.
      *
      * @param  array<string, string>  $xmlByKey
@@ -1053,18 +1062,32 @@ class VrsTriasService
         if ($error !== null) {
             $this->markTriasDown(round((microtime(true) - $start) * 1000), $error);
         } else {
-            Cache::put('trias_healthy', true, 120);
+            $this->markTriasUp();
         }
 
         return $out;
     }
 
+    /**
+     * Skip TRIAS after a failure, so no board waits on its timeout: for 30 s
+     * after one (a blip), for five minutes once three in a row say it's down.
+     * Boards meanwhile answer from the timetable with GTFS-RT delays at once.
+     */
     private function markTriasDown(float $durationMs, string $error): void
     {
-        // Skip TRIAS for 30s after a failure — prevents timeout cascades
-        Cache::put('trias_down', true, 30);
+        $failures = (int) Cache::get('trias_failures', 0) + 1;
+        Cache::put('trias_failures', $failures, now()->addMinutes(30));
+        $skip = $failures >= self::OUTAGE_FAILURES ? self::OUTAGE_SECONDS : self::BLIP_SECONDS;
+        Cache::put('trias_down', true, $skip);
 
-        Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs]);
+        Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs, 'failures' => $failures, 'skip_s' => $skip]);
+    }
+
+    /** A TRIAS answer: healthy again, and the failure count starts over. */
+    private function markTriasUp(): void
+    {
+        Cache::put('trias_healthy', true, 120);
+        Cache::forget('trias_failures');
     }
 
     /**
