@@ -1,12 +1,13 @@
 /* Composer — ported from the approved prototype (prototype/dev/design/composer-studio)
-   by a script, in the mock's own order, scoped to .composer-page so it cannot reach other
-   pages. Tokens come from resources/css/app.css (F1); the shell (header, menu) is the app
-   shell's. Regenerate rather than edit the ported part by hand. */
+   by tools/composer-css/port.py, in the mock's own order, scoped to .composer-page so it
+   cannot reach other pages. Tokens come from resources/css/app.css (F1); the shell (header,
+   menu) is the app shell's. Regenerate rather than edit the ported part by hand. */
 
 /* The prototype leaves some things to the browser's defaults, which the app's base reset
    changes: a button's padding (1px 6px), an icon's flow (inline, on the baseline) and a
-   border's style and colour (none, and the text's colour, until a rule sets them). Give them back in the base layer: every
-   rule below and every utility class still wins. */
+   border's style and colour (none, and the text's colour, until a rule sets them) and a
+   heading's bold. Give them back in the base layer: every rule below and every utility
+   class still wins. */
 @layer base {
     .composer-page button {
         padding: 1px 6px;
@@ -20,6 +21,9 @@
     .composer-page ::after {
         border-style: none;
         border-color: currentColor;
+    }
+    .composer-page :is(h1, h2, h3, h4, h5, h6) {
+        font-weight: bold;
     }
 }
 
@@ -7494,46 +7498,7 @@
     }
 
     /* ── The conversation ────────────────────────────────────────────────── */
-    &.composer-page .chat-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        max-width: 800px;
-        margin: 8px auto 0;
-        border-bottom: 1px solid var(--color-border);
-    }
-    &.composer-page .chat-bar[hidden] {
-        display: none;
-    }
-    &.composer-page .chat-bar p {
-        margin: 0;
-        color: var(--color-text-soft);
-        font-size: var(--text-caption);
-        line-height: 1.45;
-    }
-    &.composer-page .chat-bar button {
-        display: inline-flex;
-        align-items: center;
-        min-height: 44px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: var(--color-text);
-        font: inherit;
-        font-size: var(--text-control);
-        font-weight: var(--weight-semibold);
-        white-space: nowrap;
-        cursor: pointer;
-    }
-    &.composer-page .chat-bar button:hover {
-        text-decoration: underline;
-        text-underline-offset: 3px;
-    }
-    &.composer-page .chat-bar + .chat-feed {
-        margin-top: 36px;
-    }
-    &.composer-page .chat-bar[hidden] + .chat-feed {
+    &.composer-page .composer-day-row + .chat-feed {
         margin-top: 0;
     }
     .chat-entry {
@@ -7684,12 +7649,6 @@
             padding: 0 14px;
             font-size: var(--text-small);
         }
-        &.composer-page .chat-bar p {
-            font-size: var(--text-micro);
-        }
-        &.composer-page .chat-bar + .chat-feed {
-            margin-top: 28px;
-        }
         .chat-entry {
             margin-bottom: 28px;
         }
@@ -7713,8 +7672,7 @@
         }
     }
     @media (prefers-reduced-motion: reduce) {
-        &.composer-page
-            :is(.starter-chip, .chat-bar button, .nearby-answer-card) {
+        &.composer-page :is(.starter-chip, .nearby-answer-card) {
             transition: none;
         }
     }
@@ -7743,6 +7701,12 @@
         &#composer-page #studio-request {
             font-size: var(--text-section) !important;
         }
+    }
+
+    /* ── Travel's way in an answer: the page's type, as the mock's way.css leaves it ── */
+    & .answer-way .nav-way {
+        font-size: inherit;
+        line-height: inherit;
     }
 }
 

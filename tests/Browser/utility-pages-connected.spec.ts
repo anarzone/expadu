@@ -73,6 +73,6 @@ test('Paperwork has one page heading and an Overview / Documents switch', async 
     ).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Documents', exact: true }).click();
     await expect(
-        page.getByRole('heading', { name: 'Your paperwork', exact: true }),
+        page.getByRole('heading', { name: 'Your documents', exact: true }),
     ).toBeVisible();
 });

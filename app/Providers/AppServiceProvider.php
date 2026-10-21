@@ -2,14 +2,14 @@
 
 namespace App\Providers;
 
+use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
 use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
-use App\Bureaucracy\Ai\DeepSeekCaseFactExtractor;
 use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Composer\AnthropicCandidateRanker;
+use App\Composer\AnthropicPromptParser;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
 use App\Composer\HeuristicPromptParser;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
@@ -27,6 +27,7 @@ use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
 use App\Models\User;
 use App\Observers\BureaucracyAccountObserver;
+use App\Observers\PersonalisationAccountObserver;
 use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
@@ -66,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                 return $app->make(UnavailableCaseFactExtractor::class);
             }
 
-            return $app->make(DeepSeekCaseFactExtractor::class);
+            return $app->make(AnthropicCaseFactExtractor::class);
         });
 
         $this->app->singleton(
@@ -77,14 +78,14 @@ class AppServiceProvider extends ServiceProvider
         // Inertia SSR with a short timeout instead of Laravel's 30 s default.
         $this->app->singleton(Gateway::class, SsrGateway::class);
 
-        // The composer parser: heuristic by default (no key), the
-        // OpenAI-compatible driver once a provider key is configured. The
-        // driver always wraps the heuristic as its degradation path.
+        // The composer parser: heuristic by default, Claude once the anthropic
+        // driver and a key are configured. Claude always wraps the heuristic
+        // as its degradation path.
         $this->app->bind(ParsesPrompt::class, function ($app) {
             $heuristic = $app->make(HeuristicPromptParser::class);
 
             if (ProcessingPurpose::ComposerParse->available()) {
-                return new OpenAiCompatiblePromptParser($heuristic);
+                return new AnthropicPromptParser($heuristic);
             }
 
             return $heuristic;
@@ -138,6 +139,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         User::observe(BureaucracyAccountObserver::class);
+        User::observe(PersonalisationAccountObserver::class);
 
         // CreateAlertFromNotification is registered by listener discovery.
         Event::listen(NotificationSent::class, RecordReservedPushSent::class);
@@ -228,6 +230,15 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('social', fn (Request $request): Limit => Limit::perMinute(20)
             ->by('social:'.$request->ip()));
 
+        // Emailed confirmation codes (EmailConfirmation): a few per account,
+        // ten a day (each send is five more tries), and a cap per address so
+        // one machine can't mail many inboxes.
+        RateLimiter::for('email-confirmation', fn (Request $request): array => [
+            Limit::perMinutes(10, 3)->by('email-confirmation:user:'.$request->user()?->getAuthIdentifier()),
+            Limit::perDay(10)->by('email-confirmation:user-day:'.$request->user()?->getAuthIdentifier()),
+            Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
+        ]);
+
         // User-generated public content (reviews) — the classic spam target,
         // stacked under app-writes with a much tighter budget.
         RateLimiter::for('ugc', fn (Request $request): Limit => Limit::perMinute(10)
@@ -243,8 +254,12 @@ class AppServiceProvider extends ServiceProvider
         $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
         RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
         RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
+        RateLimiter::for('bureaucracy-ask', fn (Request $request): Limit => Limit::perMinute(10)->by($bureaucracyKey('ask', $request)));
         RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.
+        RateLimiter::for('signals', fn (Request $request): Limit => Limit::perMinute(12)->by('signals:'.$userOrIp($request)));
+        RateLimiter::for('taste-profile', fn (Request $request): Limit => Limit::perMinute(30)->by('taste-profile:'.$userOrIp($request)));
         RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));

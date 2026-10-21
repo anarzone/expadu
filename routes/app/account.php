@@ -9,8 +9,11 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\LocationConfirmController;
+use App\Http\Controllers\Api\SignalController;
+use App\Http\Controllers\Api\TasteProfileController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
+use App\Http\Controllers\EmailConfirmationController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OnboardingController;
@@ -23,6 +26,14 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::post('api/track', TrackEventController::class)->name('api.track');
+// Personalisation ledger: impressions and detail views only (opt-in; dropped otherwise).
+Route::post('api/signals', SignalController::class)->middleware('throttle:signals')->name('api.signals');
+// The person's taste profile: read, edit or delete it (opt-in only).
+Route::middleware('throttle:taste-profile')->controller(TasteProfileController::class)->group(function () {
+    Route::get('api/taste-profile', 'show')->name('api.taste-profile.show');
+    Route::put('api/taste-profile', 'update')->name('api.taste-profile.update');
+    Route::delete('api/taste-profile', 'destroy')->name('api.taste-profile.destroy');
+});
 Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 
@@ -30,10 +41,12 @@ Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboardi
 Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 Route::post('onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
 
-// Card showcase — dev-only reference for ContentCard variants
-if (! app()->environment('production')) {
-    Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
-}
+// Confirm it's you with an emailed code, where password.confirm asks an
+// account that has no password (EXP-174).
+Route::post('user/confirm-email/code', [EmailConfirmationController::class, 'send'])
+    ->middleware('throttle:email-confirmation')->name('email-confirmation.send');
+Route::post('user/confirm-email', [EmailConfirmationController::class, 'confirm'])
+    ->middleware('throttle:10,1')->name('email-confirmation.confirm');
 
 // The shared primitives (components/ui), for checking against the mock —
 // local + staging only, like the design-system reference below.

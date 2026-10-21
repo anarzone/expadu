@@ -1,0 +1,80 @@
+{
+    "name": "paperwork-sharing-stopped",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && PAPERWORK_PROCESSING=stopped E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSharingSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".person-picker > summary"
+            },
+            {
+                "wait": 300
+            },
+            {
+                "click": ".person-menu [data-case=\"sharing\"]"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-case=\"record-pause\"]"
+            },
+            {
+                "wait": 800
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".access-blank",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "seedNote": "PaperworkSeeder's sample with its processing stopped (PAPERWORK_PROCESSING=stopped), so the app opens on the stopped page (entry state processing_stopped, session 2's server). The mock stops its sample from Share your plan first, since it keeps that in the browser; it then draws the same page (#209, 65ddf176).",
+    "pairs": [
+        {
+            "name": "stopped page",
+            "mock": ".access-blank",
+            "app": ".access-blank"
+        },
+        {
+            "name": "heading",
+            "mock": ".access-blank h2",
+            "app": ".access-blank h2"
+        },
+        {
+            "name": "line",
+            "mock": ".access-blank > p",
+            "app": ".access-blank > p"
+        },
+        {
+            "name": "Download a copy",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 0
+        },
+        {
+            "name": "Resume processing",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 1
+        },
+        {
+            "name": "Delete your record",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 2
+        }
+    ],
+    "mockNote": "Your record's Stop / Resume processing is #209's (owner, 21 Oct); compare it against a mock with #209 merged."
+}

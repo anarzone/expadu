@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import {
     createContext,
@@ -42,8 +42,17 @@ const filters: ActionFilter[] = [
     'completed',
 ];
 
-function fromUrl(): Location {
-    const q = new URLSearchParams(window.location.search);
+/** The query of a URL or path ("/bureaucracy?view=paperwork" or "?view=paperwork"). */
+const queryOf = (url: string) =>
+    new URLSearchParams(url.includes('?') ? url.slice(url.indexOf('?')) : '');
+
+/**
+ * Where the page is, from a URL: the Inertia page's while rendering, so the
+ * server (which has no window) and the browser render the same view; the
+ * browser's own on back and forward.
+ */
+function fromUrl(url: string): Location {
+    const q = queryOf(url);
     const view = q.get('view') as View | null;
     const filter = q.get('filter') as ActionFilter | null;
 
@@ -112,6 +121,8 @@ interface Editor {
 export interface SituationRequest {
     key?: string;
     question?: Question;
+    /** The starter run of a person with no answers yet (PW7). */
+    starter?: boolean;
 }
 
 interface PaperworkContextValue {
@@ -167,17 +178,27 @@ export function PaperworkProvider({
     jurisdiction: string;
     children: ReactNode;
 }) {
-    const [location, setLocationState] = useState<Location>(() => fromUrl());
+    const page = usePage();
+    const [location, setLocationState] = useState<Location>(() =>
+        fromUrl(page.url),
+    );
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [sheet, setSheet] = useState<Sheet | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
-    const [situation, setSituation] = useState<SituationRequest | null>(null);
+    // `?guide=details` opens Your situation (Today's "Your situation" link), for
+    // someone who may see the answers.
+    const [situation, setSituation] = useState<SituationRequest | null>(() =>
+        queryOf(page.url).get('guide') === 'details' &&
+        plan.scopes.includes('view_facts')
+            ? {}
+            : null,
+    );
     const timer = useRef<number | null>(null);
 
     useEffect(() => {
         const onPop = () => {
-            setLocationState(fromUrl());
+            setLocationState(fromUrl(window.location.search));
             setEditor(null);
             setSituation(null);
         };
@@ -304,7 +325,15 @@ export function PaperworkProvider({
                 setEditor(null);
                 setSituation(request);
             },
-            closeSituation: () => setSituation(null),
+            closeSituation: () => {
+                setSituation(null);
+                const url = new URL(window.location.href);
+
+                if (url.searchParams.has('guide')) {
+                    url.searchParams.delete('guide');
+                    window.history.replaceState({}, '', url.toString());
+                }
+            },
             refresh,
             processByKey: (key) =>
                 key ? all.find((p) => p.occurrence_key === key) : undefined,

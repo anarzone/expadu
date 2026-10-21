@@ -442,6 +442,21 @@ enum SpotCategory: string
         ));
     }
 
+    /**
+     * Everyday errands: places people need, not places to spend an afternoon.
+     * Listed in Places and Around here, but a leisure plan includes one only
+     * when the request asks for it.
+     *
+     * @return list<string>
+     */
+    public static function errands(): array
+    {
+        return array_map(fn (self $category) => $category->value, [
+            self::Pharmacy, self::Drugstore, self::Supermarket, self::Convenience,
+            self::Greengrocer, self::Kiosk, self::Butcher,
+        ]);
+    }
+
     /** Coarse selectors accepted by every Places/Composer consumer. */
     public static function placesCoarse(): array
     {

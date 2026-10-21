@@ -24,7 +24,9 @@ use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
 use App\Models\User;
 use App\Privacy\ProcessingPurpose;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class PlanReadModel
 {
@@ -36,6 +38,14 @@ final class PlanReadModel
     /** Single authorised scalar projection. Reads never create offers, facts or process records. */
     public function for(User $actor, BureaucracyPerson $person, string $jurisdiction): array
     {
+        // A record whose processing is stopped (Art. 18) is kept, not assessed. Only its
+        // holder learns why; to anyone else it isn't there.
+        if (BureaucracyPerson::query()->whereKey($person->id)->whereNotNull('processing_stopped_at')->exists()) {
+            throw $this->access->scopesFor($actor, $person) === []
+                ? new AuthorizationException
+                : new ConflictHttpException(PersonAccess::STOPPED);
+        }
+
         return DB::transaction(function () use ($actor, $person, $jurisdiction): array {
             $input = $this->inputs->for($actor, $person, $jurisdiction);
             $person = $person->fresh();

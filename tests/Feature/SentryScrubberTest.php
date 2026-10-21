@@ -96,6 +96,17 @@ test('bureaucracy onboarding and composer request bodies are never sent to error
     expect(SentryScrubber::scrub($event)->getRequest()['data'])->toBe('[redacted]');
 })->with(['/onboarding', '/composer/parse', '/api/composer/parse']);
 
+test('🔒 an emailed confirmation code never reaches error reporting, nor does deleting the account with one', function (string $path) {
+    $event = Event::createEvent();
+    $event->setRequest([
+        'url' => 'https://app.expadu.test'.$path,
+        'method' => 'POST',
+        'data' => ['code' => '123456'],
+    ]);
+
+    expect(SentryScrubber::scrub($event)->getRequest()['data'])->toBe('[redacted]');
+})->with(['/user/confirm-email', '/user/confirm-email/code', '/settings/profile']);
+
 test('a failed scrub does not send the original private event', function () {
     Auth::shouldReceive('id')->andThrow(new RuntimeException('Auth context unavailable'));
     $event = Event::createEvent();

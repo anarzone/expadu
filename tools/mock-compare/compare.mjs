@@ -218,12 +218,26 @@ const sessions = {};
 
 async function steps(page, list) {
     for (const step of list ?? []) {
+        if (step.fill) {
+            await page
+                .locator(step.fill)
+                .first()
+                .fill(step.value ?? '');
+        }
+
         if (step.click) {
             await page.locator(step.click).first().click();
         }
 
         if (step.key) {
             await page.keyboard.press(step.key);
+        }
+
+        if (step.waitFor) {
+            await page
+                .locator(step.waitFor)
+                .first()
+                .waitFor({ state: 'visible', timeout: 60000 });
         }
 
         if (step.wait) {
@@ -252,7 +266,11 @@ async function open(browser, sideName, width) {
     await addSideCookies(context, side);
     const page = await context.newPage();
 
-    if (cfg.clock) {
+    // A frozen clock by default. `clockRuns` starts it at that moment and lets it run, for
+    // pages that wait on elapsed time (the mock's answers "think" before they appear).
+    if (cfg.clock && cfg.clockRuns) {
+        await page.clock.install({ time: new Date(cfg.clock) });
+    } else if (cfg.clock) {
         await page.clock.setFixedTime(new Date(cfg.clock));
     }
 

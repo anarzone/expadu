@@ -1,0 +1,169 @@
+{
+    "name": "paperwork-sharing",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSharingSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "seedNote": "PaperworkSeeder's sample record, shared with Alex (the account's sibling <name>+alex@…) for Your plan and Your documents since 12 Sept 2026, as the mock's sample grant (MockSample\\PaperworkSharingSeeder).",
+    "menuNote": "The mock leaves its person menu open over the panel after Share your plan; the app closes it, as choosing a menu item does. The mock side closes it (a second click on its summary) before the panel is measured.",
+    "heldNote": "Invite someone is held until EXP-79 and the design settle the invitation's email field, how it travels and the accept screen (coordinator, 21 Oct 2026), so the app has no invitation form between Shared now and Your record. Everything below it sits higher in the app: those pairs set y aside, and the panel's height and pixels with them.",
+    "pairs": [
+        {
+            "name": "Share your plan (menu)",
+            "before": [
+                {
+                    "click": ".person-picker > summary"
+                },
+                {
+                    "wait": 300
+                }
+            ],
+            "mock": ".person-menu [data-case=\"sharing\"]",
+            "app": ".person-menu button:last-child",
+            "ignore": [
+                "y"
+            ],
+            "reason": "The mock's sample roster lists Alex (shared adult) and Sam (dependent) above it; the compared account sees only its own plan, so the entry sits two rows higher."
+        },
+        {
+            "name": "panel",
+            "before": [
+                {
+                    "click": ".person-menu button:last-child"
+                },
+                {
+                    "wait": 800
+                }
+            ],
+            "mockBefore": [
+                {
+                    "click": ".person-menu [data-case=\"sharing\"]"
+                },
+                {
+                    "click": ".person-picker > summary"
+                },
+                {
+                    "wait": 800
+                }
+            ],
+            "mock": "#case-editor .case-inline",
+            "app": "#case-editor .case-inline",
+            "ignore": [
+                "h"
+            ],
+            "pixels": false,
+            "reason": "Held: Invite someone isn't in the app yet (heldNote), so the panel is shorter."
+        },
+        {
+            "name": "title",
+            "mock": "#case-editor .case-section-head h2",
+            "app": "#case-editor .case-section-head h2"
+        },
+        {
+            "name": "close",
+            "mock": "#case-editor .case-section-head .icon-button",
+            "app": "#case-editor .case-section-head .icon-button"
+        },
+        {
+            "name": "intro",
+            "mock": "#case-editor .case-inline > p.muted",
+            "app": "#case-editor .case-inline > p.muted"
+        },
+        {
+            "name": "Shared now",
+            "mock": ".sharing-grants h3",
+            "app": ".sharing-grants h3",
+            "index": 0
+        },
+        {
+            "name": "grant",
+            "mock": ".sharing-grant",
+            "app": ".sharing-grant"
+        },
+        {
+            "name": "grant name",
+            "mock": ".sharing-grant strong",
+            "app": ".sharing-grant strong"
+        },
+        {
+            "name": "grant access",
+            "mock": ".sharing-grant small",
+            "app": ".sharing-grant small"
+        },
+        {
+            "name": "Remove access",
+            "mock": ".sharing-grant .plain-button",
+            "app": ".sharing-grant .plain-button"
+        },
+        {
+            "name": "Your record",
+            "mock": ".sharing-grants h3",
+            "app": ".sharing-grants h3",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote). It lands on another fraction of a pixel, which moves the text's anti-aliasing; its box and styles match."
+        },
+        {
+            "name": "record text",
+            "mock": ".sharing-grants p.muted",
+            "app": ".sharing-grants p.muted",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Held: below where Invite someone would be (heldNote)."
+        },
+        {
+            "name": "Download a copy",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote). It lands on another fraction of a pixel, which moves the border's anti-aliasing; its box and styles match."
+        },
+        {
+            "name": "Stop processing",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote). It lands on another fraction of a pixel, which moves the border's anti-aliasing; its box and styles match."
+        },
+        {
+            "name": "Delete your record",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 2,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote). It lands on another fraction of a pixel, which moves the text's anti-aliasing; its box and styles match."
+        }
+    ],
+    "mockNote": "Your record's Stop / Resume processing is #209's (owner, 21 Oct); compare it against a mock with #209 merged."
+}

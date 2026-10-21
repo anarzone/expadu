@@ -62,17 +62,16 @@ test('a candidate must carry a non-null typed value', function () {
 test('the forced tool schema exposes only outcome and the authorized canonical value type', function (string $factKey, array $expectedValueSchema) {
     $definition = (new FactRegistry)->definition($factKey);
     $tool = (new CaseFactToolSchema)->for($definition);
-    $function = $tool['function'];
-    $parameters = $function['parameters'];
-    $variants = $parameters['properties']['result']['anyOf'];
+    $schema = $tool['input_schema'];
+    $variants = $schema['properties']['result']['anyOf'];
     $candidate = $variants[0];
 
-    expect($tool['type'])->toBe('function')
-        ->and($function['name'])->toBe('extract_authorized_fact')
-        ->and($function['strict'])->toBeTrue()
-        ->and(array_keys($parameters['properties']))->toBe(['result'])
-        ->and($parameters['required'])->toBe(['result'])
-        ->and($parameters['additionalProperties'])->toBeFalse()
+    expect(array_keys($tool))->toBe(['name', 'description', 'strict', 'input_schema'])
+        ->and($tool['name'])->toBe('extract_authorized_fact')
+        ->and($tool['strict'])->toBeTrue()
+        ->and(array_keys($schema['properties']))->toBe(['result'])
+        ->and($schema['required'])->toBe(['result'])
+        ->and($schema['additionalProperties'])->toBeFalse()
         ->and($candidate['properties']['value'])->toBe($expectedValueSchema)
         ->and($candidate['required'])->toBe(['outcome', 'value'])
         ->and($candidate['additionalProperties'])->toBeFalse()
@@ -82,8 +81,8 @@ test('the forced tool schema exposes only outcome and the authorized canonical v
         ->and($variants[2]['additionalProperties'])->toBeFalse();
 })->with([
     'enum' => ['german_level', ['type' => 'string', 'enum' => ['none', 'a1', 'a2', 'b1', 'b2', 'c1', 'c2']]],
-    'date' => ['residence_title_expires_at', ['type' => 'string', 'pattern' => '^\\d{4}-\\d{2}-\\d{2}$']],
-    'integer' => ['weekly_work_hours', ['type' => 'integer', 'minimum' => 0]],
+    'date' => ['residence_title_expires_at', ['type' => 'string', 'format' => 'date']],
+    'integer' => ['weekly_work_hours', ['type' => 'integer']],
     'boolean' => ['marital_household_continues', ['type' => 'boolean']],
 ]);
 

@@ -1,13 +1,25 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
-import { useState } from 'react';
-import { TaskDetail } from '@/components/paperwork/detail';
+import { useRef, useState } from 'react';
+import { AskBody } from '@/components/paperwork/ask';
+import { TaskDetail, TaskTitleStatus } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
 import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
-import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
+import {
+    AllActions,
+    BackToOverview,
+    History,
+    SourcesBody,
+} from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
+import {
+    ErasedRecord,
+    Sharing,
+    StoppedRecord,
+} from '@/components/paperwork/sharing';
+import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
     searchable,
@@ -65,14 +77,15 @@ function SearchField() {
     );
 }
 
-/** Whose plan: your own, or someone who shared theirs with you. */
+/** Whose plan: your own, or someone who shared theirs with you; and sharing your own. */
 function PersonPicker({ people }: { people: Person[] }) {
-    const { plan } = usePaperwork();
+    const { plan, openEditor } = usePaperwork();
+    const menu = useRef<HTMLDetailsElement>(null);
     const current = people.find((p) => p.id === plan.person_id);
     const name = (p: Person | undefined) => (!p || p.is_self ? 'You' : p.label);
 
     return (
-        <details className="person-picker">
+        <details className="person-picker" ref={menu}>
             <summary aria-label={`Whose plan: ${name(current)}`}>
                 <span className="person-name">{name(current)}</span>
                 <Icon name="down" />
@@ -108,6 +121,24 @@ function PersonPicker({ people }: { people: Person[] }) {
                         </button>
                     );
                 })}
+                {current?.is_self ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            menu.current?.removeAttribute('open');
+                            openEditor({
+                                title: 'Share your plan',
+                                body: <Sharing personId={plan.person_id} />,
+                            });
+                        }}
+                    >
+                        <Icon name="people" />
+                        <span>
+                            Share your plan
+                            <small>Choose who sees what</small>
+                        </span>
+                    </button>
+                ) : null}
             </div>
         </details>
     );
@@ -122,6 +153,10 @@ function Workspace({
 }) {
     const { plan, location, go, processByKey, openSheet, openSituation } =
         usePaperwork();
+    // No answers yet on your own plan: the starter path's welcome leads (PW7).
+    const fresh = useFreshStart(
+        people.find((p) => p.id === plan.person_id)?.is_self ?? false,
+    );
     const situationAllowed = plan.scopes.includes('view_facts');
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
@@ -150,6 +185,12 @@ function Workspace({
 
     return (
         <>
+            {/* A task's page leads with the way back, then its name with its status. */}
+            {titled ? (
+                <div className="case-back">
+                    <BackToOverview />
+                </div>
+            ) : null}
             <div
                 className={clsx(
                     'case-top',
@@ -160,6 +201,9 @@ function Workspace({
                 <h1 tabIndex={-1} className={titled ? undefined : 'sr-only'}>
                     {heading}
                 </h1>
+                {process ? (
+                    <TaskTitleStatus processKey={process.occurrence_key} />
+                ) : null}
                 {titled ? null : (
                     <div className="case-tabs" aria-label="Paperwork views">
                         <button
@@ -212,7 +256,10 @@ function Workspace({
                 ) : location.view === 'detail' ? (
                     <TaskDetail />
                 ) : (
-                    <Overview onCoverage={coverage} />
+                    <>
+                        {fresh ? <StarterWelcome /> : null}
+                        <Overview onCoverage={coverage} />
+                    </>
                 )}
             </div>
             <div className="case-footnote">
@@ -220,6 +267,17 @@ function Workspace({
                 <span>Your progress is your own record</span>
                 <button type="button" onClick={coverage}>
                     Where this comes from
+                </button>
+                <button
+                    type="button"
+                    onClick={() =>
+                        openSheet({
+                            title: 'Ask about your paperwork',
+                            body: <AskBody />,
+                        })
+                    }
+                >
+                    Ask a question
                 </button>
             </div>
             <SheetDialog />
@@ -313,6 +371,8 @@ export default function Paperwork({
     people,
     coverageWaitlist,
 }: Props) {
+    const self = people.find((p) => p.is_self);
+
     return (
         <AppLayout>
             <Head title="Paperwork" />
@@ -331,7 +391,13 @@ export default function Paperwork({
             ) : (
                 <div className="paperwork-page">
                     <h1 className="sr-only">Paperwork</h1>
-                    <Unavailable state={entry.state} />
+                    {entry.state === 'processing_stopped' && self ? (
+                        <StoppedRecord personId={self.id} />
+                    ) : entry.state === 'erased' ? (
+                        <ErasedRecord />
+                    ) : (
+                        <Unavailable state={entry.state} />
+                    )}
                 </div>
             )}
         </AppLayout>

@@ -1,0 +1,216 @@
+{
+    "name": "composer-answers-onway",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> MOCK_TRIP=started php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> COMPOSER_ANSWERS=onway php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerAnswersSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "clockRuns": true,
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/composer-studio/",
+        "wait": "#studio-form",
+        "screenshotStyle": "#shell, #shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }",
+        "init": [
+            "localStorage.setItem('expadu.journey-preview.v1', JSON.stringify({\"version\": 1, \"routeId\": \"day-1314\", \"step\": 0, \"title\": \"EU Blue Card appointment\", \"instruction\": \"Walk to Neumarkt\", \"mode\": \"transit\", \"condition\": \"normal\", \"arrive\": \"13:48\", \"vehicle\": \"tram\", \"line\": \"4\", \"steps\": [{\"time\": \"13:10\", \"mode\": \"walk\", \"title\": \"Walk to Neumarkt\", \"detail\": \"4 min on foot\", \"place\": \"Neumarkt\"}, {\"time\": \"13:14\", \"mode\": \"transit\", \"title\": \"Board line 4\", \"detail\": \"Towards Schlebusch\", \"place\": \"Neumarkt\"}, {\"time\": \"13:42\", \"mode\": \"alight\", \"title\": \"Get off at Mülheim Wiener Platz\", \"detail\": \"Your stop\", \"place\": \"Mülheim Wiener Platz\"}, {\"time\": \"13:42\", \"mode\": \"walk\", \"title\": \"Walk to your appointment\", \"detail\": \"6 min on foot\", \"place\": \"Mülheim Wiener Platz\"}, {\"time\": \"13:48\", \"mode\": \"arrive\", \"title\": \"EU Blue Card appointment\", \"detail\": \"Starts at 14:00\", \"place\": \"Mülheim Wiener Platz\"}]}))",
+            "document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => { const bar = document.querySelector('.chat-bar'); if (bar && !bar.hidden) bar.hidden = true; }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] }));",
+            "document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => document.querySelectorAll('.chat-entry p, .answer-actions span').forEach((n) => { const t = n.textContent.replace('Scheduled sample times, not live.', 'Scheduled times, not live.').replace('This preview has no live times, so', 'There are no live times for it, so'); if (t !== n.textContent) n.textContent = t; })).observe(document.body, { subtree: true, childList: true }));"
+        ]
+    },
+    "app": {
+        "url": "/composer",
+        "wait": "article.chat-entry.chat-assistant >> nth=3",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "stop answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 0,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "Where do I get off?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=0"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The way is Travel's own rows (trip-model.ts wayRows), which keep “towards Schlebusch” on the ride and the place on the end (“Starts at 14:00 · Mülheim”), as Travel's trip and the mock's own appointment answer (composer-answers-trip.json, matching) show them; the mock's on-the-way rows (app.js wayLeft) drop both. A trip reads the same wherever it shows (owner, 18 Oct 2026). On phones the ride row's longer text wraps one more line, so the answer is 19.5px taller. Every pair also ignores y: see yReason."
+        },
+        {
+            "name": "stop title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 0,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason."
+        },
+        {
+            "name": "stop note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 0,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason. On phones the way above it is a line taller (Travel's longer ride row), which puts the note on a half pixel, so its text anti-aliases differently; the threshold allows that and still catches a changed sentence.",
+            "pixelThreshold": 0.12
+        },
+        {
+            "name": "arrive answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 1,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "When will I get there?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=1"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The way is Travel's own rows (trip-model.ts wayRows), which keep “towards Schlebusch” on the ride and the place on the end (“Starts at 14:00 · Mülheim”), as Travel's trip and the mock's own appointment answer (composer-answers-trip.json, matching) show them; the mock's on-the-way rows (app.js wayLeft) drop both. A trip reads the same wherever it shows (owner, 18 Oct 2026). On phones the ride row's longer text wraps one more line, so the answer is 19.5px taller. Every pair also ignores y: see yReason."
+        },
+        {
+            "name": "arrive title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 1,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason."
+        },
+        {
+            "name": "arrive note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 1,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason. On phones the way above it is a line taller (Travel's longer ride row), which puts the note on a half pixel, so its text anti-aliases differently; the threshold allows that and still catches a changed sentence.",
+            "pixelThreshold": 0.12
+        },
+        {
+            "name": "next answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 2,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "What’s next?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=2"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The way is Travel's own rows (trip-model.ts wayRows), which keep “towards Schlebusch” on the ride and the place on the end (“Starts at 14:00 · Mülheim”), as Travel's trip and the mock's own appointment answer (composer-answers-trip.json, matching) show them; the mock's on-the-way rows (app.js wayLeft) drop both. A trip reads the same wherever it shows (owner, 18 Oct 2026). On phones the ride row's longer text wraps one more line, so the answer is 19.5px taller. Every pair also ignores y: see yReason."
+        },
+        {
+            "name": "next title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 2,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason."
+        },
+        {
+            "name": "next note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 2,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason. On phones the way above it is a line taller (Travel's longer ride row), which puts the note on a half pixel, so its text anti-aliases differently; the threshold allows that and still catches a changed sentence.",
+            "pixelThreshold": 0.12
+        },
+        {
+            "name": "status answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 3,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "Is my tram on time?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=3"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The way is Travel's own rows (trip-model.ts wayRows), which keep “towards Schlebusch” on the ride and the place on the end (“Starts at 14:00 · Mülheim”), as Travel's trip and the mock's own appointment answer (composer-answers-trip.json, matching) show them; the mock's on-the-way rows (app.js wayLeft) drop both. A trip reads the same wherever it shows (owner, 18 Oct 2026). On phones the ride row's longer text wraps one more line, so the answer is 19.5px taller. Every pair also ignores y: see yReason."
+        },
+        {
+            "name": "status title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 3,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason."
+        },
+        {
+            "name": "status note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 3,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason. On phones the way above it is a line taller (Travel's longer ride row), which puts the note on a half pixel, so its text anti-aliases differently; the threshold allows that and still catches a changed sentence.",
+            "pixelThreshold": 0.12
+        },
+        {
+            "name": "way",
+            "mock": ".answer-way",
+            "app": ".answer-way",
+            "index": 0,
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "ignoreReason": "The way is Travel's own rows (trip-model.ts wayRows), which keep “towards Schlebusch” on the ride and the place on the end (“Starts at 14:00 · Mülheim”), as Travel's trip and the mock's own appointment answer (composer-answers-trip.json, matching) show them; the mock's on-the-way rows (app.js wayLeft) drop both. A trip reads the same wherever it shows (owner, 18 Oct 2026). Every pair also ignores y: see yReason."
+        },
+        {
+            "name": "back to the trip",
+            "mock": ".answer-actions",
+            "app": ".answer-actions",
+            "index": 0,
+            "ignore": ["y"],
+            "ignoreReason": "See yReason. On phones the way above it is a line taller (Travel's longer ride row), which puts the link on a half pixel; the threshold allows the anti-aliasing and still catches a changed label.",
+            "pixelThreshold": 0.12
+        }
+    ],
+    "screenshotStyleReason": "The text box band is fixed over the conversation on both sides, so it is hidden only while answers are shot, as are each side's header and its floating Composer button.",
+    "mockInitReason": "The trip under way is the one the mock's Travel writes when “I’m on my way” is tapped at 13:10 (departures-next/?scenario=scheduled, .next-trip-go: the sample's 13:14), set before the page loads; the app's is MockSample\\TravelSeeder's MOCK_TRIP=started, the same 13:14 started at 13:10. The mock's sample-only bar stays hidden, and its two sample phrases (“Scheduled sample times”, “This preview has no live times”) read as the app says them, as in composer-answers-trip.json.",
+    "yReason": "While a trip is under way both pages show Travel's on-your-way bar above Composer (components/travel/on-your-way-bar.tsx, session 3's): the mock's sits in the page's flow, the app's lies over the heading, so the conversation starts 8px apart. Raised with session 3; the answers are compared where they stand."
+}

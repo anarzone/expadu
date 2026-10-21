@@ -6,6 +6,7 @@
 */
 
 use App\Http\Controllers\Bureaucracy\V2\AccountPlanController;
+use App\Http\Controllers\Bureaucracy\V2\CaseQuestionController;
 use App\Http\Controllers\Bureaucracy\V2\DelegationController;
 use App\Http\Controllers\Bureaucracy\V2\DependentAuthorityController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Bureaucracy\V2\PeopleController;
 use App\Http\Controllers\Bureaucracy\V2\PersonDataController;
 use App\Http\Controllers\Bureaucracy\V2\PersonFactController;
 use App\Http\Controllers\Bureaucracy\V2\PersonPlanController;
+use App\Http\Controllers\Bureaucracy\V2\PersonRestrictionController;
 use App\Http\Controllers\Bureaucracy\V2\ProcessController;
 use App\Http\Controllers\Bureaucracy\V2\QuestionSessionController;
 use App\Http\Controllers\Bureaucracy\V2\RelationshipController;
@@ -64,6 +66,8 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::post('people/{person}/facts/{fact}/corrections', [PersonFactController::class, 'correct'])->whereNumber('fact')->name('facts.correct');
     Route::get('people/{person}/question-preview', [QuestionSessionController::class, 'preview'])->name('questions.preview');
     Route::get('people/{person}/plan', PersonPlanController::class)->name('people.plan');
+    // Answers a case question only from source-checked cards; the question stays in the body.
+    Route::post('people/{person}/ask', CaseQuestionController::class)->middleware('throttle:bureaucracy-ask')->name('people.ask');
     Route::post('people/{person}/processes', [ProcessController::class, 'start'])->name('processes.start');
     Route::post('people/{person}/question-sessions', [QuestionSessionController::class, 'store'])->name('question-sessions.store');
     Route::post('question-sessions/{session}/next', [QuestionSessionController::class, 'next'])->name('question-sessions.next');
@@ -74,6 +78,8 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::post('question-sessions/{session}/candidates/{candidate}/confirm', [FactExtractionController::class, 'confirm'])->whereUuid('candidate')->name('questions.confirm-extraction');
     Route::delete('question-sessions/{session}/candidates/{candidate}', [FactExtractionController::class, 'reject'])->whereUuid('candidate')->name('questions.reject-extraction');
     Route::delete('people/{person}/processing', [FactExtractionController::class, 'withdraw'])->name('people.processing.withdraw');
+    // Stop / Resume processing (GDPR Art. 18): the record holder's own switch.
+    Route::put('people/{person}/processing-restriction', [PersonRestrictionController::class, 'update'])->middleware('throttle:10,1')->name('people.processing-restriction');
     Route::get('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'show'])->name('onboarding.draft.show');
     Route::put('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'update'])->name('onboarding.draft.update');
     Route::delete('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'destroy'])->name('onboarding.draft.destroy');

@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\SpotCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
+use App\Places\AroundKinds;
 use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -75,6 +76,10 @@ class PlaceResource extends JsonResource
             'feedback_rating' => $this->feedback_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
             'place_facts' => $this->placeFacts($placeFacts),
+            // The place sheet (Around here): its kind's icon, and what its
+            // listed hours say at the time asked (OpenNearby::hoursAt).
+            'kind_icon' => AroundKinds::icon($fine?->value ?? ''),
+            'hours_at' => $this->whenHas('hours_at'),
         ];
     }
 

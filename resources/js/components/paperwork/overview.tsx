@@ -505,14 +505,17 @@ function QuestionCard() {
     const q = plan.questions;
     const editable = plan.scopes.includes('edit_facts');
 
-    const act = async (command: () => Promise<unknown>, done: string) => {
+    const act = async (command: () => Promise<unknown>, done?: string) => {
         setPending(true);
         setError(null);
 
         try {
             await command();
             await refresh();
-            toast(done);
+
+            if (done) {
+                toast(done);
+            }
         } catch (e) {
             if (e instanceof CommandError && e.status === 409) {
                 await refresh();
@@ -554,7 +557,6 @@ function QuestionCard() {
                                     session,
                                     !q.remaining_information_count,
                                 ),
-                            'Questions are back on.',
                         )
                     }
                 >
@@ -564,9 +566,17 @@ function QuestionCard() {
         );
     }
 
-    const question = q.question;
+    // A question this viewer can't act on isn't offered (e.g. a conflict for
+    // someone who may change the answers but not see them).
+    const question =
+        q.question?.action?.available === false ? null : q.question;
 
-    if (!question || !['answer', 'resolve_conflict'].includes(question.kind)) {
+    if (
+        !question ||
+        !['answer', 'resolve_conflict', 'review_relationship'].includes(
+            question.kind,
+        )
+    ) {
         if (!q.deferred.length || !session) {
             return null;
         }
@@ -583,10 +593,7 @@ function QuestionCard() {
                     type="button"
                     disabled={pending}
                     onClick={() =>
-                        void act(
-                            () => commands.resumeQuestions(session, true),
-                            'Skipped questions are back.',
-                        )
+                        void act(() => commands.resumeQuestions(session, true))
                     }
                 >
                     Answer when ready
@@ -599,6 +606,38 @@ function QuestionCard() {
         (p) => p.definition_id === question.process_ids?.[0],
     );
     const conflict = question.kind === 'resolve_conflict';
+
+    // Your answer differs from your spouse's own record: only yours can change here.
+    if (question.kind === 'review_relationship') {
+        return (
+            <section className="question-card" aria-label="One question">
+                <div>
+                    {task?.title ? (
+                        <span className="question-context">
+                            For your {task.title} process
+                        </span>
+                    ) : null}
+                    <h2>{question.question}</h2>
+                    <p className="question-why">
+                        What you told us differs from your spouse’s own record.
+                        Only your answer can change here.
+                    </p>
+                </div>
+                <div className="actions">
+                    <button
+                        type="button"
+                        className="button secondary"
+                        onClick={() =>
+                            openSituation({ key: question.fact_key })
+                        }
+                    >
+                        Review details
+                    </button>
+                </div>
+            </section>
+        );
+    }
+
     const unknown = () =>
         act(async () => {
             const offer = await offerFor(plan, jurisdiction, question);
@@ -652,7 +691,7 @@ function QuestionCard() {
                           ? 'Enter date'
                           : 'Answer'}
                 </button>
-                {!conflict ? (
+                {!conflict && question.can_answer_unknown !== false ? (
                     <button
                         type="button"
                         className="button secondary"
@@ -662,14 +701,16 @@ function QuestionCard() {
                         I don’t know
                     </button>
                 ) : null}
-                <button
-                    type="button"
-                    className="plain-button question-skip"
-                    disabled={pending}
-                    onClick={() => void skip()}
-                >
-                    Skip for now
-                </button>
+                {question.can_skip !== false ? (
+                    <button
+                        type="button"
+                        className="plain-button question-skip"
+                        disabled={pending}
+                        onClick={() => void skip()}
+                    >
+                        Skip for now
+                    </button>
+                ) : null}
             </div>
             {error ? (
                 <p className="orientation-error" role="alert">
@@ -887,7 +928,7 @@ function AfterYouArrive({ cards }: { cards: PlanGuidance[] }) {
 }
 
 /** "3 matches for …", or an honest nothing with a way back. */
-function SearchLine({ hits }: { hits: number }) {
+export function SearchLine({ hits }: { hits: number }) {
     const { location, setLocation } = usePaperwork();
     const q = location.q.trim();
 

@@ -36,12 +36,15 @@ final class AccountHolderPlan
     }
 
     /**
-     * The account holder's own person, while their email is verified and their dossier is
-     * active; never a family member's. Every read of "your own Paperwork" starts here.
+     * The account holder's own person, while their email is verified, their dossier is
+     * active and they haven't stopped its processing (Art. 18: Paperwork keeps the record
+     * but doesn't use it); never a family member's. Every read of "your own Paperwork"
+     * starts here: the plan, Today, Your day, Composer, reminders, alerts and reassessment.
      */
     public function person(User $user): ?BureaucracyPerson
     {
         $person = BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')
+            ->whereNull('processing_stopped_at')
             ->whereHas('dossier', fn ($query) => $query->where('status', 'active'))->first();
         if ($person === null || ! User::query()->whereKey($user->id)->whereNotNull('email_verified_at')->exists()) {
             return null;

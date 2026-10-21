@@ -8,6 +8,7 @@
    Get there inside the page, with Back (get-there.tsx). */
 
 import { Link } from '@inertiajs/react';
+import { IconShare2 } from '@tabler/icons-react';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import EventReminderController from '@/actions/App/Http/Controllers/Api/EventReminderController';
@@ -25,11 +26,21 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { kmBetween } from '@/lib/geo';
+import { notNow } from '@/lib/not-now';
+import {
+    addToPlan,
+    candidateFor,
+    inPlan,
+    readPlan,
+    undoChange,
+} from '@/lib/plan-workspace';
+import type { Workspace } from '@/lib/plan-workspace';
+import { shareItem, useCanShare } from '@/lib/share';
+import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import type { WayMode, WayStart, WayWhen } from './get-there';
-import { addToPlan, candidateFor, inPlan, readPlan, undoChange } from './plan';
-import type { Workspace } from './plan';
+
 import './event-details.css';
 
 // With Travel's styles and the map, only once someone asks for the way.
@@ -212,6 +223,7 @@ export function EventDetails({
 }) {
     // The page keeps what it showed while it slides away.
     const [shown, setShown] = useState(listing);
+    useDwell('event_sheet', 'event', listing?.occurrence.id ?? null);
     // The details, or Get there inside them; by the start at first.
     const [page, setPage] = useState<'about' | 'way'>('about');
     const [when, setWhen] = useState<WayWhen>('arrive');
@@ -231,6 +243,7 @@ export function EventDetails({
     const way = page === 'way' && !!l && date >= today;
     const start = l ? startFor(l.poster, from, appointment) : null;
     const back = useRef<HTMLButtonElement>(null);
+    const canShare = useCanShare();
     const go = (next: 'about' | 'way') => {
         setPage(next);
         // Each page starts at its top, with Back or Where in reach.
@@ -254,6 +267,37 @@ export function EventDetails({
                 `pp--${posterInk(l?.poster.start)}`,
                 way && 'is-way',
             )}
+            actions={
+                canShare && l ? (
+                    <button
+                        type="button"
+                        className="ui-sheet-action"
+                        aria-label="Share"
+                        onClick={() =>
+                            shareItem(
+                                {
+                                    title: l.poster.title,
+                                    url: `${location.origin}/events?${new URLSearchParams(
+                                        {
+                                            date,
+                                            event: String(l.occurrence.id),
+                                            start: l.occurrence
+                                                .occurrence_start,
+                                        },
+                                    )}`,
+                                },
+                                {
+                                    surface: 'event_sheet',
+                                    item_type: 'event',
+                                    item_id: l.occurrence.id,
+                                },
+                            )
+                        }
+                    >
+                        <IconShare2 stroke={1.7} />
+                    </button>
+                ) : null
+            }
             title={
                 l ? (
                     <span lang={l.poster.titleLang ?? undefined}>
@@ -307,6 +351,14 @@ export function EventDetails({
                             date={date}
                             saved={saved}
                             onSave={onSave}
+                            onNotNow={() => {
+                                notNow({
+                                    surface: 'event_sheet',
+                                    item_type: 'event',
+                                    item_id: l.occurrence.id,
+                                });
+                                onClose();
+                            }}
                         />
                     )
                 ) : null
@@ -592,11 +644,14 @@ function Actions({
     date,
     saved,
     onSave,
+    onNotNow,
 }: {
     listing: DetailsListing;
     date: string;
     saved: boolean;
     onSave: () => void;
+    /** Hide it for a week (#210), with Undo. */
+    onNotNow: () => void;
 }) {
     const { poster, occurrence: o } = listing;
     const candidate = candidateFor(o);
@@ -663,7 +718,7 @@ function Actions({
 
         try {
             const { workspace: next, change } = await addToPlan(
-                o,
+                candidateFor(o),
                 date,
                 workspace.revision,
             );
@@ -751,6 +806,9 @@ function Actions({
                 onClick={remind}
             >
                 <Icon name="bell" variant="line" />
+            </button>
+            <button type="button" className="evd-not-now" onClick={onNotNow}>
+                Not now
             </button>
             {planned || !listed ? (
                 <a

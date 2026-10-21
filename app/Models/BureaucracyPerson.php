@@ -21,7 +21,7 @@ class BureaucracyPerson extends Model
 
     protected function casts(): array
     {
-        return ['display_label' => 'encrypted', 'record_version' => 'integer', 'erased_at' => 'immutable_datetime'];
+        return ['display_label' => 'encrypted', 'record_version' => 'integer', 'erased_at' => 'immutable_datetime', 'processing_stopped_at' => 'immutable_datetime'];
     }
 
     public function workspace(): BelongsTo

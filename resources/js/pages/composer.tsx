@@ -12,6 +12,7 @@ import { clsx } from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import {
     compose,
+    keep,
     parse,
 } from '@/actions/App/Http/Controllers/ComposerController';
 import {
@@ -19,6 +20,12 @@ import {
     event as selectedEvent,
     update,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import {
+    AiNoticeLine,
+    aiPermit,
+    useAiNotice,
+} from '@/components/composer/ai-notice';
+import { AnswerBody, isAnswer } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
     readComposerEntry,
@@ -37,6 +44,7 @@ import {
     Welcome,
     YourDay,
     dayFacts,
+    starters,
     useComposerFrame,
     useComposerOrigin,
 } from '@/components/composer/frame';
@@ -66,8 +74,8 @@ import { EventRichDetail } from '@/components/events/event-rich-detail';
 import type { EventOccurrence } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import type { SavedPlace } from '@/components/places/from-bar';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import type { SavedPlace } from '@/components/place-shared/from-types';
+import { PlaceDetailModal } from '@/components/place-shared/place-detail-modal';
 import {
     Dialog,
     DialogContent,
@@ -132,6 +140,7 @@ export default function ComposerPage({
     const page = usePage();
     const userId = page.props.auth.user.id;
     const [workspace, setWorkspace] = useState(initial);
+    const aiNotice = useAiNotice();
     const stateRef = useRef(initial);
     const receivedUrl = useRef('');
     const [entry, setEntry] = useState<ComposerEntry | null>(() =>
@@ -208,6 +217,10 @@ export default function ComposerPage({
         ? (workspace.plans[workspace.focus] ?? null)
         : null;
     const activePlan = focused;
+    // The latest reply is the one that offers next steps.
+    const latestReplyId = conversation.messages.findLast(
+        (message) => message.role === 'assistant',
+    )?.id;
     const latestPlanMessage = [...conversation.messages]
         .reverse()
         .find((item) => item.kind === 'plan' && item.date === workspace.focus);
@@ -215,6 +228,24 @@ export default function ComposerPage({
     const latestUndo = workspace.changes
         .filter((change) => change.date === focused?.date && change.undoable)
         .at(-1);
+    // "Keep this plan" (#210): the latest composed plan, kept as it came, teaches
+    // personalisation. Only the newest "Planned …" change offers it.
+    const latestPlanned = conversation.messages.findLast(
+        (message) =>
+            message.kind === 'change' &&
+            workspace.changes
+                .find((change) => change.id === message.change_id)
+                ?.label.startsWith('Planned '),
+    )?.id;
+    const [kept, setKept] = useState<string | null>(null);
+    const keepPlan = async (messageId: string) => {
+        try {
+            await api(keep.url(), {});
+            setKept(messageId);
+        } catch {
+            // Nothing to keep any more (a newer plan, or none): the button stays.
+        }
+    };
     const changeById = (id?: string) =>
         workspace.changes.find((change) => change.id === id);
 
@@ -450,12 +481,28 @@ export default function ComposerPage({
                     );
                 }
             } else {
-                const parsed = await api<{
+                type Parsed = {
                     intent: string;
                     constraints: Record<string, unknown> | null;
-                }>(parse.url(), { text });
+                    kind: string;
+                    answer: boolean;
+                };
+                // Read with the AI service under the line's say-so; if that's refused (an
+                // outdated notice, the service off), the request is read without it.
+                const parsed = await api<Parsed>(parse.url(), {
+                    text,
+                    ...aiPermit(aiNotice),
+                }).catch((error: unknown) =>
+                    aiNotice
+                        ? api<Parsed>(parse.url(), { text })
+                        : Promise.reject(error),
+                );
 
-                if (parsed.intent === 'plan_day' && parsed.constraints) {
+                if (parsed.answer) {
+                    // Composer answers it from your day and records (the server works
+                    // out what you asked from your own words).
+                    await sendCommand({ action: 'answer' });
+                } else if (parsed.intent === 'plan_day' && parsed.constraints) {
                     setBusy('Putting your day together…');
                     const result = await api<{
                         handoff_token: string;
@@ -706,16 +753,6 @@ export default function ComposerPage({
                                 onAsk={ask}
                             />
                         )}
-                        {conversation.messages.length > 0 && (
-                            <p className="composer-conversation-date">
-                                {new Date(
-                                    conversation.created_at,
-                                ).toLocaleDateString('en-GB', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                })}
-                            </p>
-                        )}
                         {conversation.messages.map((message) => {
                             const live =
                                 message.id === latestPlanMessage?.id &&
@@ -724,27 +761,56 @@ export default function ComposerPage({
                             return (
                                 <article
                                     key={message.id}
-                                    className={`composer-message ${message.role === 'user' ? 'is-user' : ''}`}
+                                    className={clsx(
+                                        'chat-entry',
+                                        message.role === 'user'
+                                            ? 'chat-user'
+                                            : 'chat-assistant',
+                                        message.kind === 'plan' && 'chat-plan',
+                                    )}
+                                    data-chat-entry={message.id}
                                     id={
                                         live
                                             ? 'composer-current-plan'
                                             : undefined
                                     }
                                 >
-                                    <div className="composer-speaker">
-                                        {message.role === 'assistant' && (
-                                            <IconSparkles size={16} />
+                                    <span className="chat-speaker">
+                                        {message.role === 'user' ? (
+                                            'You'
+                                        ) : (
+                                            <>
+                                                <Icon
+                                                    name="spark"
+                                                    variant="line"
+                                                />
+                                                Composer
+                                            </>
                                         )}
-                                        {message.role === 'user'
-                                            ? 'You'
-                                            : 'Composer'}
-                                    </div>
-                                    {message.text && <p>{message.text}</p>}
+                                    </span>
+                                    {isAnswer(message) ? (
+                                        <AnswerBody
+                                            message={message}
+                                            latest={
+                                                message.id === latestReplyId
+                                            }
+                                            starters={starters(
+                                                day,
+                                                paperwork,
+                                                around,
+                                            )}
+                                            onAsk={ask}
+                                            onPanel={openCollection}
+                                        />
+                                    ) : (
+                                        message.text && <p>{message.text}</p>
+                                    )}
                                     {message.kind === 'plan' &&
                                         (live ? (
                                             <>
                                                 <PlanCard
                                                     plan={focused!}
+                                                    changes={workspace.changes}
                                                     busy={!!busy}
                                                     command={command}
                                                     swap={startSwap}
@@ -850,6 +916,24 @@ export default function ComposerPage({
                                                     Undo
                                                 </button>
                                             )}
+                                            {message.id === latestPlanned && (
+                                                <button
+                                                    className="composer-text-button"
+                                                    disabled={
+                                                        !!busy ||
+                                                        kept === message.id
+                                                    }
+                                                    onClick={() =>
+                                                        void keepPlan(
+                                                            message.id,
+                                                        )
+                                                    }
+                                                >
+                                                    {kept === message.id
+                                                        ? 'Kept'
+                                                        : 'Keep this plan'}
+                                                </button>
+                                            )}
                                         </>
                                     )}
                                     {message.kind === 'earlier_draft' &&
@@ -921,8 +1005,8 @@ export default function ComposerPage({
                             );
                         })}
                         {pendingText && (
-                            <article className="composer-message is-user">
-                                <div className="composer-speaker">You</div>
+                            <article className="chat-entry chat-user">
+                                <span className="chat-speaker">You</span>
                                 <p>{pendingText}</p>
                             </article>
                         )}
@@ -1332,6 +1416,7 @@ export default function ComposerPage({
                                 </button>
                             </div>
                         </form>
+                        {aiNotice && <AiNoticeLine notice={aiNotice} />}
                     </div>
                 </div>
                 {/* Phones: Composer's round button, where you are (focuses the box). */}

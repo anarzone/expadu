@@ -141,9 +141,10 @@ const minutes = (iso: string) => Date.parse(iso) / 60_000;
 /**
  * The options in the order you'd pick them: what matters to you moves the
  * ones that suit it up, then the chosen sort. Asked to be there by a time,
- * the first is the latest way that still leaves the margin (the mock's
- * "Best for you"), then the tight ones, then the late ones. Nothing is
- * hidden.
+ * the first is the latest way that still leaves the margin, the earliest
+ * there breaking a tie (the mock's "Best for you", and My day's rule of
+ * 9 Oct 2026); then the tight ones, most room first; then the late ones,
+ * the earliest there first. Nothing is hidden.
  */
 export function rankOptions(
     options: PlanOption[],
@@ -186,9 +187,15 @@ export function rankOptions(
             return order;
         }
 
-        // Among the ways that fit, the latest to leave comes first.
-        if (sort === 'arrival' && by !== null && fit(a) === 0) {
-            return minutes(b.journey.depart_at) - minutes(a.journey.depart_at);
+        if (sort === 'arrival' && by !== null) {
+            const leave =
+                minutes(b.journey.depart_at) - minutes(a.journey.depart_at);
+            const there =
+                minutes(a.journey.arrive_at) - minutes(b.journey.arrive_at);
+
+            // Among the ways that fit, the latest to leave, then the earliest
+            // there; tight or late, the earliest there, then the latest to leave.
+            return fit(a) === 0 ? leave || there : there || leave;
         }
 
         return (

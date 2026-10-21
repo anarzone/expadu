@@ -15,6 +15,8 @@ type SheetProps = {
     title: ReactNode;
     /** A line under the title. */
     description?: ReactNode;
+    /** Icon buttons before the close (`ui-sheet-action`, 44px), e.g. Share. */
+    actions?: ReactNode;
     /** Actions pinned under the content. */
     footer?: ReactNode;
     children: ReactNode;
@@ -33,6 +35,7 @@ export function Sheet({
     onClose,
     title,
     description,
+    actions,
     footer,
     children,
     className,
@@ -223,6 +226,7 @@ export function Sheet({
                     <h2 id={titleId}>{title}</h2>
                     {description && <p id={descriptionId}>{description}</p>}
                 </div>
+                {actions}
                 <button
                     type="button"
                     className="ui-sheet-close"

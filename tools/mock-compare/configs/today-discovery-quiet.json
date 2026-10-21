@@ -10,9 +10,9 @@
     "app": {
         "url": "/dashboard",
         "wait": ".deadline-strip",
-        "init": [
-            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
-        ],
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"

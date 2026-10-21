@@ -437,13 +437,18 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # A failing step fails the job; without it the catalogue steps hit
+            # missing tables and the deploy still showed green.
+            set -e
             cd /data/staging
             docker compose pull
             docker compose up -d --force-recreate
             sleep 5
-            # The entrypoint migrates before PHP-FPM starts; these are the
-            # deploy-time catalogue steps (import, source check, release, dossiers),
-            # run as www-data so the log files they create stay writable by the app.
+            # Staging's compose replaces the image entrypoint (fix-nginx.sh), so
+            # nothing migrates on boot: migrate here, before the deploy-time
+            # catalogue steps (import, source check, release, dossiers), all run
+            # as www-data so the log files they create stay writable by the app.
+            docker exec -u www-data staging-app php artisan migrate --force
             docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --retire-missing
             docker exec -u www-data staging-app php artisan bureaucracy:verify-sources
             docker exec -u www-data staging-app php artisan bureaucracy:compile-catalogue --deploy

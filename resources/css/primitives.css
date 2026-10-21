@@ -58,7 +58,8 @@
     color: var(--color-text-soft);
     font-size: var(--text-body);
 }
-.ui-sheet-close {
+.ui-sheet-close,
+.ui-sheet-action {
     display: grid;
     flex: none;
     place-items: center;
@@ -72,10 +73,20 @@
     color: var(--color-text);
     cursor: pointer;
 }
-.ui-sheet-close:hover {
+.ui-sheet-close:hover,
+.ui-sheet-action:hover {
     background: var(--color-bg-quiet);
 }
-.ui-sheet-close svg {
+/* Actions sit together at the end, the close last. */
+.ui-sheet-head > div + .ui-sheet-action {
+    margin-left: auto;
+}
+.ui-sheet-action + .ui-sheet-action,
+.ui-sheet-action + .ui-sheet-close {
+    margin-left: -16px;
+}
+.ui-sheet-close svg,
+.ui-sheet-action svg {
     width: 23px;
     height: 23px;
 }
