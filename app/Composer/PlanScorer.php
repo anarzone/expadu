@@ -27,6 +27,21 @@ class PlanScorer
         'daypart' => 15.0,         // the hour shapes the pick: lunch → food, evening → bar, daylight → park
         'rotation' => 8.0,         // deterministic day-to-day variety among near-equals
         'llm_rank' => 45.0,        // material taste judgment without erasing proximity/quality
+        'mood' => 25.0,            // the request's mood words met by a place's verified vibe tags
+    ];
+
+    /** Which verified vibe tags meet each mood word; a mood with none listed scores nothing. */
+    private const MOOD_TAGS = [
+        'quiet' => ['quiet', 'garden_or_park'],
+        'lively' => ['lively', 'late_night'],
+        'cosy' => ['cosy'],
+        'relaxed' => ['quiet', 'cosy', 'garden_or_park', 'waterside'],
+        'active' => ['kid_play'],
+        'romantic' => ['scenic_view', 'waterside', 'cosy'],
+        'cultural' => ['historic'],
+        'social' => ['lively'],
+        'scenic' => ['scenic_view', 'waterside'],
+        'local' => ['local_food'],
     ];
 
     public function __construct(
@@ -94,6 +109,9 @@ class PlanScorer
         // Situation + picked interests — the same signal the home feed leads on.
         $score += self::WEIGHTS['affinity'] * CategoryAffinity::score($candidate->category, $context->affinity);
 
+        // Mood words ("somewhere quiet") count only through a place's verified vibe tags.
+        $score += self::WEIGHTS['mood'] * $this->moodFit($candidate, $context->moods);
+
         // Time-of-day fit: lunch favours food, the evening favours bars and
         // viewpoints, daylight favours parks. Soft — feasibility (via real or
         // assumed hours) draws the hard line.
@@ -129,6 +147,22 @@ class PlanScorer
     }
 
     /** Stable hash of (seed, candidate) mapped to [0, 1] — same day, same order; new day, new order. */
+    /**
+     * The share of the request's moods this place meets, by its verified tags.
+     *
+     * @param  list<string>  $moods
+     */
+    private function moodFit(Candidate $candidate, array $moods): float
+    {
+        $scored = array_values(array_filter($moods, fn (string $mood): bool => (self::MOOD_TAGS[$mood] ?? []) !== []));
+        if ($scored === [] || $candidate->vibeTags === []) {
+            return 0.0;
+        }
+        $met = array_filter($scored, fn (string $mood): bool => array_intersect(self::MOOD_TAGS[$mood], $candidate->vibeTags) !== []);
+
+        return count($met) / count($scored);
+    }
+
     private function rotation(string $seed, string $candidateId): float
     {
         return (crc32("{$seed}|{$candidateId}") % 1000) / 999.0;
