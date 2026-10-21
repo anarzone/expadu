@@ -887,7 +887,7 @@ function AfterYouArrive({ cards }: { cards: PlanGuidance[] }) {
 }
 
 /** "3 matches for …", or an honest nothing with a way back. */
-function SearchLine({ hits }: { hits: number }) {
+export function SearchLine({ hits }: { hits: number }) {
     const { location, setLocation } = usePaperwork();
     const q = location.q.trim();
 

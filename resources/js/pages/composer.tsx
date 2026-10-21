@@ -68,8 +68,8 @@ import { EventRichDetail } from '@/components/events/event-rich-detail';
 import type { EventOccurrence } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import type { SavedPlace } from '@/components/places/from-bar';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import type { SavedPlace } from '@/components/place-shared/from-types';
+import { PlaceDetailModal } from '@/components/place-shared/place-detail-modal';
 import {
     Dialog,
     DialogContent,

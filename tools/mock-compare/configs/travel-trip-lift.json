@@ -1,0 +1,290 @@
+{
+    "name": "travel-trip-lift",
+    "seed": "php artisan mock:sample-day travel --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=lift",
+        "wait": "#next-trip .trip-line-row",
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/up",
+        "wait": "#departures > .trip-line .trip-line-row",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00",
+            "mock_scenario": "lift"
+        },
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ],
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); if (day.active_trip) await fetch('/api/trip/end', { method: 'POST', headers, credentials: 'same-origin' }); } finally { location.replace('/timetable'); } })(); }"
+        ]
+    },
+    "note": "A lift out of order at Neumarkt (the mock's ?scenario=lift) on the trip card, with the way open: MockSample\\SampleKvb under the local mock_scenario cookie; the card matches it to the way's stations by KVB station and distance (TripConditions::liftsOut, the same as Plan a trip). The app's line in the open way (\"A lift at Neumarkt is out of order; KVB doesn't say if it's on your way.\") has no counterpart in the mock's lift card. Each width starts with no trip running: the app side opens /up, ends any trip the account has through the app's own API, then opens Travel (as travel-plan-saved resets its planned way), so nothing a width leaves behind carries over.",
+    "pairs": [
+        {
+            "name": "card",
+            "mock": "#departures > .trip-line",
+            "app": "#departures > .trip-line",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "background-color",
+                "border-bottom-color",
+                "border-left-color",
+                "border-right-color",
+                "border-top-color"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need."
+        },
+        {
+            "name": "card row",
+            "mock": "#departures > .trip-line .trip-line-row",
+            "app": "#departures > .trip-line .trip-line-row",
+            "contentDiffers": true,
+            "ignore": [
+                "h"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need."
+        },
+        {
+            "name": "ring",
+            "mock": "#departures > .trip-line .trip-ring",
+            "app": "#departures > .trip-line .trip-ring",
+            "contentDiffers": true,
+            "ignore": [
+                "w",
+                "x",
+                "y",
+                "border-top-color",
+                "color"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need. So the ring counts down (\"now\") in the card's tone instead of \"!\".",
+            "pixels": false
+        },
+        {
+            "name": "title",
+            "mock": "#departures > .trip-line .trip-title strong",
+            "app": "#departures > .trip-line .trip-title strong",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need.",
+            "pixels": false
+        },
+        {
+            "name": "plan and time",
+            "mock": "#departures > .trip-line .trip-title span",
+            "app": "#departures > .trip-line .trip-title span",
+            "ignore": [
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "Under the title, which is one line in the app (see title). Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags).",
+            "pixels": false
+        },
+        {
+            "name": "flags",
+            "mock": "#departures > .trip-line .trip-flags",
+            "app": "#departures > .trip-line .trip-flags",
+            "contentDiffers": true,
+            "ignore": [
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "The sample's times are the timetable's, and the app says so first (\"Scheduled · not live\", as travel-leave-now compares with the mock's ?scenario=scheduled); the mock's lift situation doesn't combine with its scheduled one. Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags)."
+        },
+        {
+            "name": "lift chip",
+            "mock": "#departures > .trip-line .trip-flags .tl-chip",
+            "app": "#departures > .trip-line .trip-flags .tl-chip.is-conflict",
+            "ignore": [
+                "x",
+                "y"
+            ],
+            "reason": "The sample's times are the timetable's, and the app says so first (\"Scheduled · not live\", as travel-leave-now compares with the mock's ?scenario=scheduled); the mock's lift situation doesn't combine with its scheduled one. So the chip sits after it. Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags). Same chip and icon; moved, it lands on another sub-pixel offset.",
+            "pixels": false
+        },
+        {
+            "name": "facts",
+            "mock": "#departures > .trip-line .trip-facts",
+            "app": "#departures > .trip-line .trip-facts",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "w",
+                "y"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need. Three tiles (the ride, There, Spare) for the mock's two.",
+            "pixels": false
+        },
+        {
+            "name": "fact: the ride",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "w",
+                "y"
+            ],
+            "reason": "The mock names the platform from its OpenStreetMap close-up (\"Gleis 2 (platform) · underground\"); the app's platform data is deferred (plan call #9), so the boarding stop, as on the other cards. Wider in the mock, which shows two tiles (see facts).",
+            "pixels": false
+        },
+        {
+            "name": "ride badge",
+            "mock": "#departures > .trip-line .trip-fact .tl-line",
+            "app": "#departures > .trip-line .trip-fact .tl-line",
+            "ignore": [
+                "x",
+                "y"
+            ],
+            "reason": "Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags). Moved with its tile, it lands on another sub-pixel offset: same badge.",
+            "pixels": false
+        },
+        {
+            "name": "action",
+            "mock": "#departures > .trip-line .next-trip-go",
+            "app": "#departures > .trip-line .next-trip-go",
+            "contentDiffers": true,
+            "ignore": [
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need.",
+            "pixels": false
+        },
+        {
+            "name": "show the way toggle",
+            "mock": "#departures > .trip-line .trip-line-more",
+            "app": "#departures > .trip-line .trip-line-more",
+            "ignore": [
+                "x",
+                "y"
+            ],
+            "reason": "The card is shorter in the app (one-line title, no Step-free tile), so it sits higher. Its background is the card's tone (see card).",
+            "pixels": false
+        },
+        {
+            "name": "the way (open)",
+            "mock": "#departures > .trip-line .way-strip",
+            "app": "#departures > .trip-line .way-strip",
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Under the card, whose height follows from its own title and facts (see card); moved, it lands on another sub-pixel offset. Same way: 13:10 from the start, the 13:14 from Neumarkt, there 13:48."
+        },
+        {
+            "name": "way: start",
+            "mock": "#departures > .trip-line .way-node.is-start",
+            "app": "#departures > .trip-line .way-node.is-start",
+            "contentDiffers": true,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Under the card, whose height follows from its own title and facts (see card); moved, it lands on another sub-pixel offset. Same way: 13:10 from the start, the 13:14 from Neumarkt, there 13:48."
+        },
+        {
+            "name": "way: boarding stop",
+            "mock": "#departures > .trip-line .way-node.is-stop",
+            "app": "#departures > .trip-line .way-node.is-stop",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Under the card, whose height follows from its own title and facts (see card); moved, it lands on another sub-pixel offset. Same way: 13:10 from the start, the 13:14 from Neumarkt, there 13:48."
+        },
+        {
+            "name": "way: ride",
+            "mock": "#departures > .trip-line .way-ride",
+            "app": "#departures > .trip-line .way-ride",
+            "contentDiffers": true,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Under the card, whose height follows from its own title and facts (see card); moved, it lands on another sub-pixel offset. Same way: 13:10 from the start, the 13:14 from Neumarkt, there 13:48."
+        },
+        {
+            "name": "way: there",
+            "mock": "#departures > .trip-line .way-node.is-there",
+            "app": "#departures > .trip-line .way-node.is-there",
+            "contentDiffers": true,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Under the card, whose height follows from its own title and facts (see card); moved, it lands on another sub-pixel offset. Same way: 13:10 from the start, the 13:14 from Neumarkt, there 13:48."
+        },
+        {
+            "name": "other ways (open)",
+            "mock": "#departures > .trip-line .trip-line-others",
+            "app": "#departures > .trip-line .trip-line-others",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "y"
+            ],
+            "reason": "Other ways: the app lists the sample's other way as the router answers it; the mock's \"Bike or walk · Times aren't in the sample\" and \"Taxi\" rows are its sample's placeholders, not app copy. Below the app's lift line in the opened way, which the mock's lift card doesn't have (see the note)."
+        },
+        {
+            "name": "other ways heading",
+            "mock": "#departures > .trip-line .trip-line-others h3",
+            "app": "#departures > .trip-line .trip-line-others h3",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the app's lift line (see note). Moved, it lands on another sub-pixel offset.",
+            "pixels": false
+        },
+        {
+            "name": "compare link (open)",
+            "mock": "#departures > .trip-line .trip-line-others .text-action",
+            "app": "#departures > .trip-line .trip-line-others .text-action",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the other ways, one row fewer in the app (see other ways). Moved, it lands on another sub-pixel offset: same link.",
+            "pixels": false
+        }
+    ]
+}

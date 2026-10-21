@@ -1,4 +1,4 @@
-import type { PlaceEvidence } from '@/components/places/types';
+import type { PlaceEvidence } from '@/components/place-shared/types';
 
 export type Slot = {
     id: string;

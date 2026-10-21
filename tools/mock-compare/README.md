@@ -153,7 +153,8 @@ On your machine (`APP_ENV=local` only):
   mock picks the matching Review persona itself.
 - **Places and events:** Today's discovery compares against the mock's sample places around Wiener
   Platz (`php artisan db:seed --class='Database\Seeders\MockSample\PlacesSeeder'`, the mock's own
-  export of our 7 Oct catalogue; it adds missing places and never changes one) and its two evening
+  export of our 7 Oct catalogue; it adds missing places and missing facts, and never changes a value;
+  Around here reads the same places) and its two evening
   events (`E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\EventsSeeder'`, Events' seeder). Both are local only.
 - **Saved ideas and a conversation:** `today-continuity` needs both sides seeded. The mock keeps them

@@ -1,7 +1,7 @@
 import { ItemDetailShell } from '@/components/details/item-detail-shell';
-import { PlaceRichDetail } from '@/components/places/place-rich-detail';
-import type { NavigateTarget } from '@/components/places/place-rich-detail';
-import type { Place } from '@/components/places/types';
+import { PlaceRichDetail } from '@/components/place-shared/place-rich-detail';
+import type { NavigateTarget } from '@/components/place-shared/place-rich-detail';
+import type { Place } from '@/components/place-shared/types';
 import type {
     FeedbackAction,
     FeedbackRating,

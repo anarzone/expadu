@@ -1,6 +1,6 @@
 {
     "name": "today-paperwork",
-    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "contentNote": "Paperwork's own words where the mock's sample differs: 'Visa expires tomorrow' (the mock says 'D visa'), the engine's next step 'Prepare the evidence for your first Blue Card application' (the mock: 'Submit your Blue Card application' / 'Review your documents'), and 'Your records' without the mock's '· Sample'.",
@@ -12,9 +12,9 @@
     "app": {
         "url": "/dashboard",
         "wait": ".deadline-strip",
-        "init": [
-            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
-        ],
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
