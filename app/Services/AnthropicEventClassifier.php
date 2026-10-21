@@ -16,7 +16,8 @@ use RuntimeException;
  */
 class AnthropicEventClassifier implements ClassifiesEvents
 {
-    private const CHIPS = ['English-friendly', 'newcomers welcome', 'solo-OK', 'free'];
+    // No "free": that comes from the source's price fields (EventOccurrencePresenter).
+    private const CHIPS = ['English-friendly', 'newcomers welcome', 'solo-OK'];
 
     private const INLINE_DESCRIPTION_LIMIT = 6000;
 
@@ -57,11 +58,11 @@ class AnthropicEventClassifier implements ClassifiesEvents
             'title_en' => ['type' => 'string'],
             'summary_en' => [
                 'type' => 'string',
-                'description' => 'Max 2 sentences IN YOUR OWN WORDS — never copy the source text.',
+                'description' => 'Max 2 sentences IN YOUR OWN WORDS — never copy the source text. Only what the source states; no judgements it does not make.',
             ],
             'tip_en' => [
                 'type' => 'string',
-                'description' => 'Optional one-sentence "what to expect" for someone going alone.',
+                'description' => 'Optional. One practical sentence for someone going alone, using only facts the source states (when, where, booking, price; the language only when the source names it). Leave it out when the source gives nothing practical. Never guess who attends, which languages are spoken, how to pay, or how busy it gets, and never hedge ("appears", "probably"): if it is not stated, leave it out. The language a guest needs goes in the language field, not here.',
             ],
         ];
         $required = ['relevance', 'confidence', 'category', 'language', 'chips', 'title_en', 'summary_en'];
@@ -75,7 +76,9 @@ class AnthropicEventClassifier implements ClassifiesEvents
         $classificationDescription = $requiresChunkedTranslation
             ? mb_substr((string) $event->description, 0, self::INLINE_DESCRIPTION_LIMIT)
             : $event->description;
-        $maxTokens = min(4096, max(1200, 700 + (int) ceil(mb_strlen((string) $classificationDescription) / 3)));
+        // Haiku 5.5 counts the same text as ~30% more tokens than 4.5, and
+        // description_en echoes the whole source back in English.
+        $maxTokens = min(6144, max(1600, 900 + (int) ceil(mb_strlen((string) $classificationDescription) / 2.3)));
 
         $startedAt = hrtime(true);
         try {
@@ -89,6 +92,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 ->post('/v1/messages', [
                     'model' => config('services.anthropic.model'),
                     'max_tokens' => $maxTokens,
+                    'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
                     'tool_choice' => ['type' => 'tool', 'name' => 'classify_event'],
                     'tools' => [[
                         'name' => 'classify_event',
@@ -119,6 +123,8 @@ class AnthropicEventClassifier implements ClassifiesEvents
         }
         $this->recordCall('event_classifier', $startedAt, 'success', $response);
 
+        $this->assertCompleted($response);
+
         $input = collect($response->json('content', []))
             ->firstWhere('type', 'tool_use')['input'] ?? null;
 
@@ -144,7 +150,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
             'title_en' => (string) $input['title_en'],
             'description_en' => $descriptionEnglish,
             'summary_en' => (string) $input['summary_en'],
-            'tip_en' => isset($input['tip_en']) ? (string) $input['tip_en'] : null,
+            'tip_en' => $this->groundedTip($input['tip_en'] ?? null, $event->title.' '.$event->description.' '.$event->price_text),
         ];
     }
 
@@ -164,6 +170,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                         ->post('/v1/messages', [
                             'model' => config('services.anthropic.model'),
                             'max_tokens' => 4096,
+                            'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
                             'tool_choice' => ['type' => 'tool', 'name' => 'translate_description_chunk'],
                             'tools' => [[
                                 'name' => 'translate_description_chunk',
@@ -190,6 +197,8 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 }
                 $this->recordCall('event_translation', $startedAt, 'success', $response);
 
+                $this->assertCompleted($response);
+
                 $translation = collect($response->json('content', []))
                     ->firstWhere('type', 'tool_use')['input']['translation'] ?? null;
 
@@ -214,8 +223,42 @@ class AnthropicEventClassifier implements ClassifiesEvents
         );
     }
 
+    /**
+     * Haiku 5.5 can decline a request (HTTP 200, stop_reason "refusal") and
+     * has no server-side fallback; surface it apart from malformed output.
+     */
+    private function assertCompleted(Response $response): void
+    {
+        match ($response->json('stop_reason')) {
+            'refusal' => throw new ClassificationRefused(
+                'Classifier declined: '.($response->json('stop_details.category') ?? 'uncategorised'),
+            ),
+            'max_tokens' => throw new RuntimeException('Classifier output hit max_tokens'),
+            default => null,
+        };
+    }
+
     private function escapeSourceText(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XML1, 'UTF-8');
+    }
+
+    /**
+     * A tip that hedges, or names a language the listing never mentions, is a
+     * guess dressed as a fact, so it isn't shown. The language estimate has
+     * its own field.
+     */
+    private function groundedTip(mixed $tip, string $source): ?string
+    {
+        $tip = is_string($tip) ? trim($tip) : '';
+        $languageWords = '/\b(german|english|deutsch\w*|englisch\w*|language|sprache|spoken|speak\w*)\b/iu';
+
+        if ($tip === ''
+            || preg_match('/\b(appears?|apparently|probably|likely|seems?|presumably|might|may well|perhaps|possibly|as far as)\b/i', $tip)
+            || (preg_match($languageWords, $tip) && ! preg_match($languageWords, $source))) {
+            return null;
+        }
+
+        return $tip;
     }
 }

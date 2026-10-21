@@ -4,6 +4,7 @@ use App\Jobs\ProcessEventJob;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Venue;
+use App\Services\ClassificationRefused;
 use App\Services\ClassifiesEvents;
 use App\Services\VenueResolver;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,10 @@ function fakeClassifier(array $result): object
 
             if (($this->result['__throw'] ?? false) === true) {
                 throw new RuntimeException('Malformed classifier output');
+            }
+
+            if (($this->result['__refuse'] ?? false) === true) {
+                throw new ClassificationRefused('Classifier declined: general_harms');
             }
 
             return $this->result;
@@ -261,4 +266,21 @@ test('events:import-manual upserts the curated catalogue with recurring rules', 
     expect($exchange->relevance)->toBe(1.0);
     expect($exchange->venue->name)->toBe('Gilden im Zims');
     expect(Event::where('source', 'manual')->whereNotNull('recurrence')->count())->toBeGreaterThanOrEqual(2);
+});
+
+test('a refused event is parked for review and not re-billed until its source changes', function () {
+    $fake = fakeClassifier(['__refuse' => true]);
+    $event = Event::factory()->create(['title_en' => null, 'summary_en' => null, 'location_name' => null]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(1);
+    expect($event->refresh()->needs_review)->toBeTrue();
+    expect($event->title_en)->toBeNull();
+
+    $event->update(['title' => 'Changed source title']);
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(2);
 });

@@ -73,11 +73,12 @@ beforeEach(function () {
     config()->set('services.composer_llm', [
         'enabled' => true,
         'key' => 'test-key',
-        'model' => 'claude-sonnet-5-'.Str::uuid(),
+        'model' => 'claude-haiku-5-5-'.Str::uuid(),
         'timeout' => 8,
         'processor_name' => 'Synthetic processor',
         'processor_privacy_url' => 'https://processor.example.test/privacy',
         'prompt_version' => 'synthetic.1',
+        'effort' => 'low',
     ]);
 });
 
@@ -142,13 +143,27 @@ test('the request contains grounded candidate facts without user pii or origin c
     });
 });
 
-test('sonnet request disables thinking and forces the ranking tool', function () {
+test('the request disables thinking at an effort haiku 5.5 accepts and forces the ranking tool', function () {
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
 
     rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]);
 
     Http::assertSent(fn (Request $request): bool => $request['thinking'] === ['type' => 'disabled']
-        && $request['tool_choice'] === ['type' => 'tool', 'name' => 'rank_candidates']);
+        && in_array($request['output_config']['effort'], ['low', 'medium', 'high'], true)
+        && $request['tool_choice'] === ['type' => 'tool', 'name' => 'rank_candidates']
+        && ! array_intersect(['temperature', 'top_p', 'top_k'], array_keys($request->data())));
+});
+
+test('a refusal falls back to the deterministic planner and is not cached', function () {
+    Http::fake(['api.anthropic.com/*' => Http::response([
+        'stop_reason' => 'refusal',
+        'stop_details' => ['type' => 'refusal', 'category' => 'general_harms'],
+        'content' => [],
+    ])]);
+
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
+    Http::assertSentCount(2);
 });
 
 test('partial ordering and wrong stop contract fall back', function (array $response) {
