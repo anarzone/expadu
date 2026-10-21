@@ -109,15 +109,15 @@
 
     <div class="xv-wrap xv-hero__grid">
         <div class="xv-hero__copy">
-            <span class="xv-tag" data-reveal="up" style="transition-delay: 100ms"><svg class="xv-ico xv-ico--yellow" viewBox="0 0 24 24" aria-hidden="true">{!! $clock !!}</svg>Wednesday, 13:10 · Cologne</span>
+            <span class="xv-tag"><svg class="xv-ico xv-ico--yellow" viewBox="0 0 24 24" aria-hidden="true">{!! $clock !!}</svg>Wednesday, 13:10 · Cologne</span>
             <h1 class="xv-disp xv-h1">
-                <span class="xv-word" data-reveal="word" style="transition-delay: 250ms">Your</span>
-                <span class="xv-word" data-reveal="word" style="transition-delay: 420ms">new</span>
-                <span class="xv-word" data-reveal="word" style="transition-delay: 590ms">city,</span>
-                <span class="xv-word xv-underline" data-reveal="word" style="transition-delay: 850ms">joined up.<svg data-reveal="draw" aria-hidden="true" viewBox="0 0 300 30" preserveAspectRatio="none" style="transition-delay: 1400ms"><path class="r" d="M6 20 C 50 8, 90 26, 140 14 S 230 6, 294 16" stroke="#ff3902" stroke-width="9" fill="none" stroke-linecap="round"/></svg></span>
+                <span class="xv-word">Your</span>
+                <span class="xv-word">new</span>
+                <span class="xv-word">city,</span>
+                <span class="xv-word xv-underline">joined up.<svg data-reveal="draw" aria-hidden="true" viewBox="0 0 300 30" preserveAspectRatio="none" style="transition-delay: 1400ms"><path class="r" d="M6 20 C 50 8, 90 26, 140 14 S 230 6, 294 16" stroke="#ff3902" stroke-width="9" fill="none" stroke-linecap="round"/></svg></span>
             </h1>
-            <p class="xv-hero__lead" data-reveal="up" style="transition-delay: 1100ms"><strong>Expadu is the daily companion for expats, starting with Cologne.</strong> It knows your day: when to leave for the appointment, what to bring and something good for afterwards. In plain English, with paperwork linked to its official sources.</p>
-            <div class="xv-hero__ctas" data-reveal="up" style="transition-delay: 1300ms">
+            <p class="xv-hero__lead"><strong>Expadu is the daily companion for expats, starting with Cologne.</strong> It knows your day: when to leave for the appointment, what to bring and something good for afterwards. In plain English, with paperwork linked to its official sources.</p>
+            <div class="xv-hero__ctas">
                 @auth
                     <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="{{ route('dashboard') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @else

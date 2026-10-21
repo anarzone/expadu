@@ -2168,7 +2168,10 @@ body.xv-body {
  * Hidden states apply only while <html data-xv-anim="on"> is set. A tiny head
  * script sets it before first paint (no flash of content that then hides) and
  * removes it again if marketing-landing.ts hasn't started within 4 s, so the
- * page stays complete without JavaScript or IntersectionObserver. */
+ * page stays complete without JavaScript or IntersectionObserver. The hero's
+ * text is the page's LCP, so it carries no reveal and paints in place from
+ * the first frame; the hero's art and cards and everything below still
+ * reveal. */
 html[data-xv-anim='on'] .xv [data-reveal] {
     transition:
         opacity 1.1s var(--ease),
@@ -2214,14 +2217,6 @@ html[data-xv-anim='on'] .xv [data-reveal='draw'] path.r {
 }
 html[data-xv-anim='on'] .xv [data-reveal='draw']:not([data-in]) path.r {
     stroke-dashoffset: 2200;
-}
-/* The hero text is the page's LCP: it paints at full opacity from the
- * first frame and only slides into place. The phone and poster cards keep
- * their fade, so web-font swaps above them don't count as layout shifts.
- * Everything below the hero still fades in. */
-html[data-xv-anim='on'] .xv .xv-hero [data-reveal='up']:not([data-in]),
-html[data-xv-anim='on'] .xv .xv-hero [data-reveal='word']:not([data-in]) {
-    opacity: 1;
 }
 .xv svg [data-reveal] {
     transform-box: fill-box;

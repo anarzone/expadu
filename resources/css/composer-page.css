@@ -7721,29 +7721,6 @@
     }
 }
 
-@font-face {
-    font-family: Geist;
-    src: url('../assets/fonts/geist-400.woff2');
-}
-
-@font-face {
-    font-family: Geist;
-    src: url('../assets/fonts/geist-500.woff2');
-    font-weight: 500;
-}
-
-@font-face {
-    font-family: Geist;
-    src: url('../assets/fonts/geist-600.woff2');
-    font-weight: 600;
-}
-
-@font-face {
-    font-family: Geist;
-    src: url('../assets/fonts/geist-700.woff2');
-    font-weight: 700;
-}
-
 @keyframes confirm-in {
     from {
         transform: scale(0.85);
@@ -7768,7 +7745,9 @@
 
 @font-face {
     font-family: 'Festival Marker';
-    src: url('/fonts/events/PermanentMarker-Regular.ttf') format('truetype');
+    src:
+        url('/fonts/permanent-marker-400.woff2') format('woff2'),
+        url('/fonts/permanent-marker-400.ttf') format('truetype');
     font-weight: 400;
     font-display: swap;
 }

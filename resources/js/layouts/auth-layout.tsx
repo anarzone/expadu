@@ -1,6 +1,26 @@
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import './auth/account.css';
+
+/** The street behind the poster (account.css's .account-street) is the
+    page's largest paint: fetch it with the page, not once the CSS has
+    applied. Each file under the media query account.css shows it at, so
+    one matches and nothing loads twice. */
+const STREET = [
+    { href: '/images/account/street.webp', media: '(min-width: 900px)' },
+    {
+        href: '/images/account/street-strip-2400.webp',
+        media: '(max-width: 899px) and (resolution >= 1.85dppx)',
+    },
+    {
+        href: '/images/account/street-strip-1800.webp',
+        media: '(max-width: 899px) and (1.25dppx <= resolution < 1.85dppx)',
+    },
+    {
+        href: '/images/account/street-strip-1200.webp',
+        media: '(max-width: 899px) and (resolution < 1.25dppx)',
+    },
+];
 
 /*
  * Sign in and create an account "On the street" (the owner's choice A,
@@ -20,6 +40,19 @@ export default function AuthLayout({
 }) {
     return (
         <div className="account-page">
+            <Head>
+                {STREET.map(({ href, media }) => (
+                    <link
+                        key={href}
+                        rel="preload"
+                        as="image"
+                        type="image/webp"
+                        href={href}
+                        media={media}
+                        fetchPriority="high"
+                    />
+                ))}
+            </Head>
             <div className="account-street" aria-hidden="true" />
             <header className="account-top">
                 <span className="account-brand">
