@@ -212,6 +212,6 @@
         }
     ],
     "seedNote": "The mock keeps saved ideas and Composer's conversation in its own store; its side seeds them before load (Bau, then Cinema under the stars, and 'Saturday with Maya'), as MockSample\\TodaySeeder seeds the app account.",
-    "ignoreNote": "y: the around-plan block above them is shorter in the app, which leaves out 'More nearby on the map' until Around here exists (AH1) and credits OpenStreetMap without the mock's 'sample export of 7 Oct 2026', so these sections sit higher; phones wait for the phone order (TD5).",
+    "ignoreNote": "y: the around-plan block above them is shorter in the app, which leaves out 'More nearby on the map' until Around here exists (AH1) and credits OpenStreetMap without the mock's 'sample export of 7 Oct 2026', so these sections sit higher. Phones are measured in today-phone.",
     "antialiasNote": "The conversation card and its button may differ in a few anti-aliased edge pixels (0.02% at most), as they sit at other fractions of a pixel below the around block; 0.1% is allowed there."
 }

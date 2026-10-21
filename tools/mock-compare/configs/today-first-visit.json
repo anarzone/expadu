@@ -5,7 +5,8 @@
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
         "url": "/dev/design/today-next/brief/?view=first-visit",
-        "wait": ".today-welcome"
+        "wait": ".today-welcome",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/dashboard",
@@ -16,7 +17,8 @@
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        }
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
@@ -30,8 +32,7 @@
             "mock": ".today-welcome",
             "app": ".today-welcome",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "welcome mark",
@@ -44,8 +45,7 @@
             "mock": ".welcome-symbol",
             "app": ".welcome-symbol",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "welcome heading",
@@ -58,8 +58,7 @@
             "mock": ".today-welcome h2",
             "app": ".today-welcome h2",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "welcome line",
@@ -72,8 +71,7 @@
             "mock": ".today-welcome p",
             "app": ".today-welcome p",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Plan my day",
@@ -88,8 +86,7 @@
             "app": ".welcome-choices > *",
             "index": 0,
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Find a route",
@@ -104,8 +101,7 @@
             "app": ".welcome-choices > *",
             "index": 1,
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Help me settle in",
@@ -120,8 +116,7 @@
             "app": ".welcome-choices > *",
             "index": 2,
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Settling in?",
@@ -161,5 +156,6 @@
     ],
     "seedNote": "The mock's first visit has nothing planned, saved, asked or recorded; the app account is new (mock:sample-day first-visit creates it with no plans at all).",
     "ignoreNote": "y below the welcome: City help sits above 'Settling in?' and Your day, and its departures and forecast are live (see today-city), so what follows sits at another height and fraction of a pixel; boxes (but y) and styles are compared.",
-    "phoneNote": "Phones (360, 390): y waits for the phone order (TD5), as in the other Today configs."
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
 }

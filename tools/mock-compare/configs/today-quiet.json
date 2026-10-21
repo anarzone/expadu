@@ -5,7 +5,8 @@
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
         "url": "/dev/design/today-next/brief/?view=quiet",
-        "wait": ".day-panel"
+        "wait": ".day-panel",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/dashboard",
@@ -16,7 +17,8 @@
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        }
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
@@ -30,8 +32,7 @@
             "mock": ".day-heading h2",
             "app": ".day-heading h2",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "date",
@@ -76,8 +77,7 @@
             "mock": ".day-empty strong",
             "app": ".day-empty strong",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Add a plan",
@@ -90,8 +90,7 @@
             "mock": ".add-plan",
             "app": ".add-plan",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "Add a plan icon",
@@ -104,11 +103,11 @@
             "mock": ".add-plan svg",
             "app": ".add-plan svg",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared.",
-    "phoneNote": "Phone pairs don't compare pixels: with y set aside until the phone order (TD5), their text sits at other fractions of a pixel.",
-    "panelNote": "Your day panel's pixels take in the date line, whose words differ (see date), so on desktop the panel compares its box and styles only."
+    "ignoreNote": "From 768 px y is compared.",
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "panelNote": "Your day panel's pixels take in the date line, whose words differ (see date), so the panel compares its box and styles only.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
 }

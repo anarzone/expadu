@@ -120,7 +120,9 @@ On your machine (`APP_ENV=local` only):
   the app side's `init`, with the same moment as `clock`:
   `"init": ["document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"]`
   or, so the very first request carries it too, from the side's `cookies`:
-  `"cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }`.
+  `"cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }`. Use `cookies` when the page's first
+  response depends on the day (Events works out a past day from it); `init` is enough where the
+  day's data is deferred, as on Today.
 - **Sample day:** `php artisan mock:sample-day {everyday|busy|quiet|travel} --email=<account>` writes
   the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
   `seed`; run that first.
@@ -145,7 +147,8 @@ On your machine (`APP_ENV=local` only):
 - **Saved ideas and a conversation:** `today-continuity` needs both sides seeded. The mock keeps them
   in its own store, which the config's mock `init` fills before load. The app gets the same from
   `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\TodaySeeder'`
-  (after PlacesSeeder and EventsSeeder). `today-first-visit` wants a new account with nothing on it:
+  (after PlacesSeeder and EventsSeeder); `today-phone` measures a phone's one column with the same
+  seed. `today-first-visit` wants a new account with nothing on it:
   `mock:sample-day first-visit --email=<new account>` creates one with no plans at all.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server

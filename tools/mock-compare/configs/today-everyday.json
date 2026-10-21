@@ -5,7 +5,8 @@
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
         "url": "/dev/design/today-next/brief/?view=everyday",
-        "wait": ".day-panel"
+        "wait": ".day-panel",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/dashboard",
@@ -16,7 +17,8 @@
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        }
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
@@ -30,8 +32,7 @@
             "mock": ".day-heading h2",
             "app": ".day-heading h2",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "date",
@@ -61,8 +62,7 @@
             "mock": ".agenda-item .appointment-time",
             "app": ".agenda-item .appointment-time",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan title",
@@ -75,8 +75,7 @@
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan place",
@@ -89,8 +88,7 @@
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan status",
@@ -103,8 +101,7 @@
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan options",
@@ -117,8 +114,7 @@
             "mock": ".agenda-item .appointment-options summary",
             "app": ".agenda-item button.appointment-options",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "Leave now",
@@ -132,8 +128,8 @@
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
             "widths": [360, 390],
-            "ignore": ["y", "h"],
-            "pixels": false
+            "ignore": ["y"],
+            "pixelThreshold": 0.001
         },
         {
             "name": "Add a plan",
@@ -146,11 +142,11 @@
             "mock": ".add-plan",
             "app": ".add-plan",
             "widths": [360, 390],
-            "ignore": ["y"],
-            "pixels": false
+            "ignore": ["y"]
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere.",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
-    "cardNote": "Leave now is Travel's card unchanged (the mock carries Travel's type and ink on Today since 979f0bb6). The mock page's 1.7px svg stroke still reaches the card's two line icons, which Travel draws at 1.75px: up to 0.1% of the card's pixels may differ there (reported to the coordinator)."
+    "ignoreNote": "From 768 px y is compared everywhere.",
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "cardNote": "Leave now is Travel's card unchanged (the mock carries Travel's type and ink on Today since 979f0bb6). The mock page's 1.7px svg stroke still reaches the card's two line icons, which Travel draws at 1.75px: up to 0.1% of the card's pixels may differ there, on phones too (reported to the coordinator).",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
 }
