@@ -26,7 +26,7 @@ class PlannedTrip extends Model
     public const WATCH_FROM_MINUTES = 90;
 
     /** Changes of plan, mildest first: a worse one is pushed again, a milder one never. */
-    public const ALERTS = ['notice', 'late', 'cancelled'];
+    public const ALERTS = ['weather', 'notice', 'late', 'cancelled'];
 
     /**
      * Dates keep their offset on the way in: a way at 13:10 in Cologne is

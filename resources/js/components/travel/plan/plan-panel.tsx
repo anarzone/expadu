@@ -69,6 +69,21 @@ type Picked = {
     target: PlanTarget | null;
 };
 
+/** Events' "Get there": an occurrence the server found by id and start. */
+export type HandoffEvent = {
+    id: number;
+    start: string;
+    title: string;
+    place: string;
+    area: string | null;
+    lat: number;
+    lng: number;
+    start_at: string;
+    start_time: string;
+    end_at: string | null;
+    end_time: string | null;
+};
+
 /** The way "Show the way" hands to the trip page, before you start. */
 export type ShownWay = {
     journey: Journey;
@@ -131,6 +146,8 @@ function clockOf(value: string | null): { date: string; time: string } | null {
 type PlanPanelProps = {
     /** The page URL at load, for a hand-off. */
     url: string;
+    /** `?event=&start=`: the occurrence, as the server found it (else null). */
+    handoffEvent?: HandoffEvent | null;
     day: DayProjection | null | undefined;
     favouriteStops: FavouriteStop[];
     savedPlaces: SavedPlace[];
@@ -146,12 +163,15 @@ type PlanPanelProps = {
     onBoardStop: (name: string) => void;
     /** "Show the way": the trip page, before you start. */
     onShowTheWay: (way: ShownWay) => void;
+    /** What Composer's tray says this is about, once there's a journey. */
+    onAbout: (label: string | null) => void;
     onLocate: () => void;
     locating: boolean;
 };
 
 export function PlanPanel({
     url,
+    handoffEvent = null,
     day,
     favouriteStops,
     savedPlaces,
@@ -163,6 +183,7 @@ export function PlanPanel({
     onFold,
     onBoardStop,
     onShowTheWay,
+    onAbout,
     onLocate,
     locating,
 }: PlanPanelProps) {
@@ -213,6 +234,17 @@ export function PlanPanel({
 
     const summary = scheduleSummary(schedule, date, time, today);
     const fromLabel = from.place?.name ?? (from.text.trim() || 'your location');
+
+    // An event handed over by Events stays in the address by its id and
+    // start while its venue is where you go (or, for the way back, where
+    // you start); never by its coordinates.
+    const eventRef = useRef<{
+        id: string;
+        start: string;
+        back: boolean;
+        lat: number;
+        lng: number;
+    } | null>(null);
 
     /** Ask the router; the options come back ranked on the client. */
     const plan = useCallback(
@@ -303,9 +335,20 @@ export function PlanPanel({
                     ? overrides.activity
                     : (target?.id ?? null);
             const shown = new URLSearchParams({ view: 'journey' });
+            const ev = eventRef.current;
+            const venue = ev ? (ev.back ? fromPlace : toPlace) : null;
+            const byEvent =
+                !!ev && !!venue && venue.lat === ev.lat && venue.lng === ev.lng;
+
+            if (byEvent) {
+                shown.set('event', ev!.id);
+                shown.set('start', ev!.start);
+            }
 
             if (activity) {
                 shown.set('activity', activity);
+            } else if (byEvent && !ev!.back) {
+                // The event says where.
             } else if (toPlace.key) {
                 shown.set('to', toPlace.key);
             } else if (isPublicPlace(toPlace)) {
@@ -314,7 +357,9 @@ export function PlanPanel({
                 shown.set('to_lng', String(toPlace.lng));
             }
 
-            if (fromPlace?.key) {
+            if (byEvent && ev!.back) {
+                shown.set('back', '1');
+            } else if (fromPlace?.key) {
                 shown.set('from', fromPlace.key);
             } else if (isPublicPlace(fromPlace)) {
                 shown.set('from_name', fromPlace!.name);
@@ -408,6 +453,91 @@ export function PlanPanel({
         const activity = q.get('activity');
         const toKey = q.get('to');
         const name = (q.get('to_name') ?? toKey)?.trim().slice(0, 120);
+
+        // Events' "Get there": there by its start, or (back=1) from it after
+        // it ends, to Home when you have one. An event the server didn't
+        // find (hidden, unknown, over) opens nothing.
+        if (q.get('event')) {
+            opened.current = true;
+
+            if (!handoffEvent) {
+                return;
+            }
+
+            const back = q.get('back') === '1';
+            const venue: PlanPlace = {
+                name: handoffEvent.place,
+                detail: handoffEvent.area,
+                lat: handoffEvent.lat,
+                lng: handoffEvent.lng,
+                kind: 'place',
+            };
+            const home = savedPlaces.find((p) => p.category === 'home');
+            const day = handoffEvent.start_at.slice(0, 10);
+            eventRef.current = {
+                id: String(handoffEvent.id),
+                start: handoffEvent.start,
+                back,
+                lat: venue.lat,
+                lng: venue.lng,
+            };
+
+            if (!back) {
+                setPicked({
+                    title: handoffEvent.title,
+                    detail:
+                        [handoffEvent.place, handoffEvent.area]
+                            .filter(Boolean)
+                            .join(' · ') || null,
+                    target: null,
+                });
+                setTo({ text: venue.name, place: venue });
+                setFrom(EMPTY);
+                setSchedule('arrive');
+                setDate(day);
+                setTime(handoffEvent.start_time);
+                void plan({
+                    to: venue,
+                    from: null,
+                    schedule: 'arrive',
+                    date: day,
+                    time: handoffEvent.start_time,
+                    activity: null,
+                });
+
+                return;
+            }
+
+            const homePlace: PlanPlace | null = home
+                ? { name: home.name, lat: home.lat, lng: home.lng, key: 'home' }
+                : null;
+            const leaving = handoffEvent.end_at && handoffEvent.end_time;
+            setFrom({ text: venue.name, place: venue });
+            setTo(
+                homePlace ? { text: homePlace.name, place: homePlace } : EMPTY,
+            );
+            setSchedule(leaving ? 'depart' : 'now');
+
+            if (leaving) {
+                setDate(handoffEvent.end_at!.slice(0, 10));
+                setTime(handoffEvent.end_time!);
+            }
+
+            if (homePlace) {
+                void plan({
+                    to: homePlace,
+                    from: venue,
+                    schedule: leaving ? 'depart' : 'now',
+                    date: leaving
+                        ? handoffEvent.end_at!.slice(0, 10)
+                        : undefined,
+                    time: leaving ? handoffEvent.end_time! : undefined,
+                    activity: null,
+                });
+            }
+
+            return;
+        }
 
         if (!activity && !name) {
             opened.current = true;
@@ -574,6 +704,19 @@ export function PlanPanel({
     const chosen =
         shown.find((option) => option.id === selected) ?? shown[0] ?? null;
     const open = new Set(expanded);
+
+    // Composer's tray says what a request is about (page-context.js): the
+    // journey and the way picked, once there's one.
+    const fromText = from.text.trim() || 'Your location';
+    const toText = (picked?.title ?? to.text).trim();
+    const about =
+        results && toText
+            ? `Your journey · ${fromText} → ${toText}${chosen ? ` · ${optionLabel(chosen)}, leave ${chosen.journey.depart_time}, there ${chosen.journey.arrive_time}` : ''}`
+            : null;
+
+    useEffect(() => {
+        onAbout(about);
+    }, [about, onAbout]);
 
     // Desktop shows the chosen way's details until you fold them.
     if (desktop && !touched && chosen) {

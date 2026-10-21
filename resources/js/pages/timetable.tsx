@@ -10,6 +10,7 @@ import {
 } from '@/components/travel/on-your-way-bar';
 import { PlanPanel } from '@/components/travel/plan/plan-panel';
 import type {
+    HandoffEvent,
     PlanStage,
     SavedPlace,
     ShownWay,
@@ -28,6 +29,7 @@ import {
 } from '@/components/travel/use-travel-location';
 import type { ActiveTrip } from '@/hooks/use-active-trip';
 import AppLayout from '@/layouts/app-layout';
+import { usePageContext } from '@/lib/page-context';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -50,6 +52,7 @@ type PageProps = {
     favouriteStops?: FavouriteStop[];
     savedPlaces?: SavedPlace[];
     day?: DayProjection | null;
+    handoffEvent?: HandoffEvent | null;
 };
 
 function csrfToken(): string {
@@ -211,6 +214,9 @@ export default function Timetable() {
         [],
     );
     const desktop = useDesktop();
+    // Composer's tray: "About: Travel", or the journey Plan a trip has.
+    const [about, setAbout] = useState<string | null>(null);
+    usePageContext({ page: 'travel', label: about ?? 'Travel' });
     // A phone's Plan a trip is a focused screen: the shell's header row
     // steps aside (the section capsule stays), as the mock does.
     useShellHeaderAside(view === 'journey');
@@ -445,6 +451,7 @@ export default function Timetable() {
 
                 <PlanPanel
                     url={page.url}
+                    handoffEvent={page.props.handoffEvent ?? null}
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}
@@ -464,6 +471,7 @@ export default function Timetable() {
                         });
                     }}
                     onBoardStop={openBoardingStop}
+                    onAbout={setAbout}
                     onShowTheWay={(way) => {
                         setShownWay(way);
                         setView('route');
@@ -572,6 +580,7 @@ export default function Timetable() {
                                 icons={{
                                     clock: <TravelIcon name="clock" />,
                                     unsure: <TravelIcon name="info" />,
+                                    offline: <TravelIcon name="offline" />,
                                     timer: <TravelIcon name="timer" />,
                                 }}
                             />

@@ -645,7 +645,6 @@
     font: inherit;
     font-size: var(--text-title);
     font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
 }
 .ui-time-input:focus {
     outline: none;

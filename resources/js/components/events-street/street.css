@@ -12,7 +12,10 @@
     background: #e7dbc4;
     touch-action: pan-y;
     user-select: none;
-    contain: layout paint;
+    /* No containment, as the mock's street: paint containment snapped the
+       wall's posters to whole pixels, and layout containment made the scene
+       its own stacking context, so the hour rings drew over the weather
+       chip. Its overflow already clips. */
 }
 .st-scene--phone {
     border-radius: 24px;
@@ -315,7 +318,8 @@
     top: 250px;
     width: 40px;
     height: 80px;
-    padding: 0;
+    /* The browser's own button padding, as the mock leaves it. */
+    padding: 1px 6px;
     border: 0;
     background: none;
     cursor: pointer;

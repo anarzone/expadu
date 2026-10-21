@@ -1,6 +1,5 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { Icon } from '@/components/ui/icon';
 import type { PosterEvent } from './poster-model';
 import {
@@ -10,7 +9,6 @@ import {
     posterInk,
     posterTape,
     posterWear,
-    posterWeekday,
 } from './poster-model';
 import './poster-art.css';
 
@@ -58,10 +56,6 @@ export type PosterProps = {
     size?: 'wall' | 'column';
     /** "1.2 km", only when a starting point is known. */
     distance?: string;
-    /** The venue's step-free note, from its own listing. */
-    access?: string;
-    /** posterFit(): how it follows the person's recorded appointment. */
-    fit?: string;
     /** A later date in the same city series: no time or price yet. */
     listing?: { about?: string; sourceUrl?: string | null } | null;
     saved?: boolean;
@@ -71,11 +65,10 @@ export type PosterProps = {
     when?: 'now' | 'over' | null;
     /** On now / Over / Rain likely, beside the category. */
     flags?: ReactNode;
-    /** Tap opens the details page (`onOpen`), or turns the poster over. */
-    onOpen?: () => void;
+    /** A tap opens the details page (the mock's one step, 13 Oct). */
+    onOpen: () => void;
     onSave?: () => void;
     onPlan?: () => void;
-    onMore?: () => void;
     className?: string;
     style?: CSSProperties;
 };
@@ -145,25 +138,14 @@ function useTitleFit(title: string) {
     return [card, step] as const;
 }
 
-const fact = (label: string, value: string | null | undefined) => (
-    <div key={label}>
-        <dt>{label}</dt>
-        <dd className={value ? undefined : 'is-unknown'}>
-            {value || 'Not listed'}
-        </dd>
-    </div>
-);
-
-/** A poster with a front (the listing set in type) and a back (its facts
-    and actions). Past listings carry no Save or Plan; a listing without a
-    time can't be planned. */
+/** A poster: the listing set in type; a tap opens its details. Past
+    listings carry no Save or Plan; a listing without a time can't be
+    planned. */
 export function Poster({
     event,
     today,
     size = 'wall',
     distance = '',
-    access = '',
-    fit = '',
     listing = null,
     saved = false,
     stamp,
@@ -172,12 +154,10 @@ export function Poster({
     onOpen,
     onSave,
     onPlan,
-    onMore,
     className = '',
     style,
 }: PosterProps) {
     const [card, titleStep] = useTitleFit(event.title);
-    const [turned, setTurned] = useState(false);
 
     const ink = posterInk(event.start);
     const family = posterFamily(event.category, { outdoor: event.outdoor });
@@ -203,71 +183,18 @@ export function Poster({
         <span className="pp-translation">{event.titleEnglish}</span>
     ) : null;
 
-    // Turning keeps focus on the matching control: a paper turn in depth,
-    // folding to the edge, swapping faces and unfolding.
-    function turn() {
-        const node = card.current;
-        const toBack = !turned;
-        const swap = () => {
-            flushSync(() => setTurned(toBack));
-            node?.querySelector<HTMLElement>(
-                toBack ? '.pp-turn-back' : '.pp-open',
-            )?.focus({ preventScroll: true });
-        };
-        const reduce = window.matchMedia?.(
-            '(prefers-reduced-motion: reduce)',
-        ).matches;
-
-        if (reduce || !node?.animate) {
-            return swap();
-        }
-
-        node.animate(
-            [
-                { transform: 'perspective(1100px) rotateY(0)' },
-                { transform: 'perspective(1100px) rotateY(90deg) scale(1.03)' },
-            ],
-            { duration: 140, easing: 'cubic-bezier(.4,0,1,1)' },
-        ).onfinish = () => {
-            swap();
-            node.animate(
-                [
-                    {
-                        transform:
-                            'perspective(1100px) rotateY(-90deg) scale(1.03)',
-                    },
-                    { transform: 'perspective(1100px) rotateY(0)' },
-                ],
-                { duration: 180, easing: 'cubic-bezier(.22,1,.36,1)' },
-            );
-        };
-    }
-
-    function onKeyDown(e: KeyboardEvent) {
-        if (turned && e.key === 'Escape') {
-            e.stopPropagation();
-            turn();
-        }
-    }
-
-    const saveButton = (cls: string) =>
-        savable ? (
-            <button
-                className={cls}
-                type="button"
-                aria-pressed={saved}
-                aria-label={`${saved ? 'Unsave' : 'Save'} ${event.title}`}
-                title={saved ? 'Saved' : 'Save for later'}
-                onClick={onSave}
-            >
-                <Icon name="bookmark" variant="line" />
-            </button>
-        ) : null;
-
-    const when_ = event.date ? posterWeekday(event.date) : '';
-    const times = event.start
-        ? ` · ${event.start}${event.end ? `–${event.end}` : ''}${gone ? '' : ' · listed times'}`
-        : ' · time not listed yet';
+    const save = savable ? (
+        <button
+            className="pp-save"
+            type="button"
+            aria-pressed={saved}
+            aria-label={`${saved ? 'Unsave' : 'Save'} ${event.title}`}
+            title={saved ? 'Saved' : 'Save for later'}
+            onClick={onSave}
+        >
+            <Icon name="bookmark" variant="line" />
+        </button>
+    ) : null;
 
     return (
         <article
@@ -279,7 +206,6 @@ export function Poster({
                 `pp--${family}`,
                 gone && 'is-past',
                 listing && 'is-listing',
-                turned && 'is-turned',
                 className,
             )}
             data-poster={event.id}
@@ -288,16 +214,14 @@ export function Poster({
             data-when={when || undefined}
             data-title={titleStep}
             style={style}
-            onKeyDown={onKeyDown}
         >
-            <div className="pp-face pp-front" hidden={turned}>
+            <div className="pp-face pp-front">
                 <PosterArt event={event} />
                 <button
                     className="pp-open"
                     type="button"
-                    aria-expanded={onOpen ? undefined : turned}
-                    aria-label={`${label}. ${onOpen ? 'Open details' : 'Turn the poster over for details'}`}
-                    onClick={onOpen ?? turn}
+                    aria-label={`${label}. Open details`}
+                    onClick={onOpen}
                 >
                     <span className="pp-top">
                         <span className="pp-category">
@@ -321,7 +245,7 @@ export function Poster({
                         <span className="pp-price">{price}</span>
                     </span>
                 </button>
-                {saveButton('pp-save')}
+                {save}
                 {plannable ? (
                     <button
                         className="pp-plan"
@@ -334,101 +258,6 @@ export function Poster({
                     </button>
                 ) : null}
             </div>
-            {onOpen ? null : (
-                <div className="pp-face pp-back" hidden={!turned}>
-                    <div className="pp-back-head">
-                        <span className="pp-tape">{tape}</span>
-                        <span className="pp-back-note">Back of the poster</span>
-                        <button
-                            className="pp-turn-back"
-                            type="button"
-                            aria-label="Turn the poster back over"
-                            onClick={turn}
-                        >
-                            <Icon name="turn" variant="line" />
-                        </button>
-                    </div>
-                    <div className="pp-back-body">
-                        <strong className="pp-back-title" lang={titleLang}>
-                            {event.title}
-                        </strong>
-                        {english}
-                        <p className="pp-back-when">
-                            {when_}
-                            {times}
-                        </p>
-                        <p className="pp-back-where">
-                            {event.venue}
-                            {event.area ? `, ${event.area}` : ''}
-                            {distance ? ` · ${distance}` : ''}
-                        </p>
-                        {gone ? (
-                            <p className="pp-back-past">
-                                Already happened. You can read it, but not plan
-                                it.
-                            </p>
-                        ) : null}
-                        {listing ? (
-                            <p className="pp-back-past">
-                                {listing.about ||
-                                    'A later listing in the same series'}
-                                . Its time and price aren’t listed yet.
-                            </p>
-                        ) : null}
-                        {fit && plannable ? (
-                            <p className="pp-fit">
-                                <span aria-hidden="true" />
-                                {fit}
-                            </p>
-                        ) : null}
-                        <dl className="pp-facts">
-                            {fact('Admission', listing ? null : event.price)}
-                            {fact('When to arrive', null)}
-                            {fact('Language', event.language)}
-                            {fact('Who it’s for', null)}
-                            {fact(
-                                'Accessibility',
-                                event.accessibility || access,
-                            )}
-                        </dl>
-                    </div>
-                    <div className="pp-back-actions">
-                        {plannable ? (
-                            <button
-                                className="pp-back-plan"
-                                type="button"
-                                title="Add to plan"
-                                onClick={onPlan}
-                            >
-                                <Icon name="calendar-add" variant="line" />
-                                <span>Add to plan</span>
-                            </button>
-                        ) : null}
-                        {saveButton('pp-back-save')}
-                        {listing ? (
-                            listing.sourceUrl ? (
-                                <a
-                                    className="pp-back-more"
-                                    href={listing.sourceUrl}
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    City listing
-                                    <Icon name="arrow" variant="line" />
-                                </a>
-                            ) : null
-                        ) : onMore ? (
-                            <button
-                                className="pp-back-more"
-                                type="button"
-                                onClick={onMore}
-                            >
-                                More about it
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
-            )}
         </article>
     );
 }

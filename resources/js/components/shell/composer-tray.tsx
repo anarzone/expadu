@@ -263,7 +263,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                         title="Close Composer"
                         onClick={close}
                     >
-                        <Icon name="close" variant="line" />
+                        <span className="composer-tray-icon">
+                            <Icon name="close" variant="line" />
+                        </span>
                     </button>
                     {about && (
                         <div className="composer-tray-about">
@@ -308,7 +310,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                     aria-controls={menuId}
                                     onClick={() => setMenuOpen((on) => !on)}
                                 >
-                                    <Icon name="plus" variant="line" />
+                                    <span className="composer-tray-icon">
+                                        <Icon name="plus" variant="line" />
+                                    </span>
                                 </button>
                                 {menuOpen && (
                                     <div
@@ -327,10 +331,15 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                                     setOpen(false);
                                                 }}
                                             >
-                                                <Icon
-                                                    name={action.icon}
-                                                    variant="line"
-                                                />
+                                                <span
+                                                    className="composer-tray-icon"
+                                                    aria-hidden="true"
+                                                >
+                                                    <Icon
+                                                        name={action.icon}
+                                                        variant="line"
+                                                    />
+                                                </span>
                                                 {action.label}
                                             </Link>
                                         ))}

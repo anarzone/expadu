@@ -132,7 +132,7 @@ export function EventsStreet({
             const menu = document
                 .querySelector('.shell-nav')
                 ?.getBoundingClientRect();
-            setBox({
+            const next = {
                 width: node.clientWidth,
                 room: window.innerHeight - top - GAP,
                 menuTop:
@@ -140,12 +140,28 @@ export function EventsStreet({
                         ? menu.top + window.scrollY
                         : null,
                 top,
-            });
+            };
+            setBox((prev) =>
+                prev &&
+                prev.width === next.width &&
+                prev.room === next.room &&
+                prev.menuTop === next.menuTop &&
+                prev.top === next.top
+                    ? prev
+                    : next,
+            );
         };
 
         measure();
         const resized = new ResizeObserver(measure);
         resized.observe(node);
+
+        // A note above it (a past day's, whose way on arrives later) moves
+        // the street down without resizing it: the board around it grows.
+        if (node.parentElement) {
+            resized.observe(node.parentElement);
+        }
+
         window.addEventListener('resize', measure);
 
         return () => {
@@ -180,8 +196,8 @@ export function EventsStreet({
     }, [layout, forecast, box]);
 
     // The column turns to its next poster every 6s (the mock's tick), but
-    // not while you point at it, while one of its posters is turned over,
-    // while a story is open, or with reduced motion.
+    // not while you point at it, while a story or details are open, or
+    // with reduced motion.
     const turning =
         motion !== 'still' && column.length > 1 && !story && !waiting;
 
@@ -194,11 +210,7 @@ export function EventsStreet({
         }
 
         const timer = window.setInterval(() => {
-            const turned = host.current?.querySelector(
-                '.st-drum .pp.is-turned',
-            );
-
-            if (!columnHeld.current && !turned && !document.hidden) {
+            if (!columnHeld.current && !document.hidden) {
                 setColumnPos((p) => p + 1);
             }
         }, 6000);
@@ -297,7 +309,9 @@ export function EventsStreet({
                     className="ev-street-fit"
                     style={
                         {
-                            zoom: fit.zoom,
+                            // Applied to four places, as the mock's
+                            // street.js does; the sums keep the exact zoom.
+                            zoom: Number(fit.zoom.toFixed(4)),
                             width: fit.width,
                             height,
                             // The chip sits 20px (12px on a phone) in from

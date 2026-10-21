@@ -30,13 +30,24 @@ final class AccountHolderPlan
 
     private function assess(User $user): ?array
     {
+        $person = $this->person($user);
+
+        return $person === null ? null : $this->plans->for($user, $person, $this->jurisdiction($user));
+    }
+
+    /**
+     * The account holder's own person, while their email is verified and their dossier is
+     * active; never a family member's. Every read of "your own Paperwork" starts here.
+     */
+    public function person(User $user): ?BureaucracyPerson
+    {
         $person = BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')
             ->whereHas('dossier', fn ($query) => $query->where('status', 'active'))->first();
         if ($person === null || ! User::query()->whereKey($user->id)->whereNotNull('email_verified_at')->exists()) {
             return null;
         }
 
-        return $this->plans->for($user, $person, $this->jurisdiction($user));
+        return $person;
     }
 
     public function jurisdiction(User $user): string

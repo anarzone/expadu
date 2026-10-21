@@ -26,6 +26,7 @@ import type {
     StartingPoint,
     TravelMode,
 } from '@/components/events-filters/events-filter-bar';
+import { PastNote } from '@/components/events-filters/past-note';
 import {
     EventsStreet,
     useNowHour,
@@ -62,6 +63,8 @@ type Props = {
     /** The categories and areas the listings have on any day, for the
         filters (the mock's catalogue). */
     catalogue: { categories: string[]; areas: string[] };
+    /** On a past day, the first day from today with listings (deferred). */
+    next_listed?: string | null;
 };
 
 /** The open details, as the URL carries them (?event=&start=). */
@@ -126,16 +129,6 @@ const outdoor = (o: EventOccurrence) =>
         `${o.title_original ?? ''} ${o.title} ${o.summary ?? ''}`,
     );
 
-/** The venue's recorded step-free access, in words; nothing when unknown. */
-const stepFree = (value: string | null | undefined) =>
-    value === 'yes'
-        ? 'Wheelchair accessible'
-        : value === 'limited'
-          ? 'Partly wheelchair accessible'
-          : value === 'no'
-            ? 'Not wheelchair accessible'
-            : undefined;
-
 const distanceLabel = (value: number) =>
     value < 1 ? `${Math.round(value * 1000)} m` : `${value.toFixed(1)} km`;
 
@@ -151,6 +144,7 @@ export default function Events({
     saved_places,
     appointment,
     catalogue,
+    next_listed,
 }: Props) {
     const { props: shared, url } = usePage<{ auth: Auth }>();
     const { auth } = shared;
@@ -436,7 +430,6 @@ export default function Events({
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
                 }
-                access={stepFree(listing.occurrence.venue.wheelchair)}
                 when={state.when}
                 flags={state.flags}
                 saved={saved.keys.has(listing.key)}
@@ -490,6 +483,13 @@ export default function Events({
                         : `${wall.length || 'No'} events`}{' '}
                     on {longDate(date)}
                 </p>
+                {date < today && wall.length ? (
+                    <PastNote
+                        date={date}
+                        nextListed={next_listed}
+                        onDate={onDate}
+                    />
+                ) : null}
                 {empty ? (
                     <EmptyDay
                         date={date}

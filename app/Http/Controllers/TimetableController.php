@@ -9,7 +9,9 @@ use App\Models\UserPlace;
 use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
+use App\Transit\EventHandoff;
 use App\Transit\NearbyStation;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,6 +54,11 @@ class TimetableController extends Controller
                 return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
             }, 'station'),
             'stop' => $stop,
+            // Events' "Get there": the occurrence by its id and public start,
+            // resolved here so its place never sits in the address.
+            'handoffEvent' => fn () => $request->filled('event')
+                ? app(EventHandoff::class)->for($request->query('event'), $request->query('start'), CarbonImmutable::now())
+                : null,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             // Your next thing and My day: the shared server-side day projection.
             'day' => DayProjection::deferred($request),

@@ -5,7 +5,7 @@
     "height": 900,
     "tolerance": 0.5,
     "mock": {
-        "url": "/dev/design/departures-next/",
+        "url": "/dev/design/departures-next/?scenario=scheduled",
         "wait": "#next-trip .trip-line-row"
     },
     "app": {
@@ -19,89 +19,70 @@
             "password": "e2e-password"
         }
     },
+    "note": "The mock opens its timetable-only state (?scenario=scheduled), as the app is at the sample moment: \"Scheduled · not live\" over the facts.",
     "pairs": [
         {
             "name": "Leave now card",
             "mock": "#departures > .trip-line",
             "app": "#departures > .trip-line",
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "card row",
             "mock": "#departures > .trip-line .trip-line-row",
             "app": "#departures > .trip-line .trip-line-row",
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "ring",
             "mock": "#departures > .trip-line .trip-ring",
             "app": "#departures > .trip-line .trip-ring",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "ring time",
             "mock": "#departures > .trip-line .trip-ring strong",
             "app": "#departures > .trip-line .trip-ring strong",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "title",
             "mock": "#departures > .trip-line .trip-title strong",
             "app": "#departures > .trip-line .trip-title strong",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "plan and time",
             "mock": "#departures > .trip-line .trip-title span",
             "app": "#departures > .trip-line .trip-title span",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "facts",
             "mock": "#departures > .trip-line .trip-facts",
             "app": "#departures > .trip-line .trip-facts",
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "fact: the ride",
             "mock": "#departures > .trip-line .trip-fact",
             "app": "#departures > .trip-line .trip-fact",
             "index": 0,
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "fact: there",
             "mock": "#departures > .trip-line .trip-fact",
             "app": "#departures > .trip-line .trip-fact",
             "index": 1,
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "fact: spare",
             "mock": "#departures > .trip-line .trip-fact",
             "app": "#departures > .trip-line .trip-fact",
             "index": 2,
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "fact label",
@@ -130,25 +111,19 @@
             "name": "too-tight note",
             "mock": "#departures > .trip-line .trip-plan",
             "app": "#departures > .trip-line .trip-plan",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "I'm on my way",
             "mock": "#departures > .trip-line .next-trip-go",
             "app": "#departures > .trip-line .next-trip-go",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "show the way toggle",
             "mock": "#departures > .trip-line .trip-line-more",
             "app": "#departures > .trip-line .trip-line-more",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         }
     ]
 }
