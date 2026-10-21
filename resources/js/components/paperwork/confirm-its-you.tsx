@@ -1,9 +1,10 @@
 import { usePage } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { confirm, send } from '@/routes/email-confirmation';
+import { confirm, send as sendCode } from '@/routes/email-confirmation';
 import { store } from '@/routes/password/confirm';
 import type { Auth } from '@/types';
+import { send } from './api';
 
 /**
  * "Confirm it's you", asked in place when a record action answers 423
@@ -21,43 +22,20 @@ export function ConfirmItsYou({ onConfirmed }: { onConfirmed: () => void }) {
     );
 }
 
+/** Posts through Paperwork's own JSON command; null on success, else what to say. */
 async function post(
     url: string,
     body: Record<string, unknown> = {},
 ): Promise<string | null> {
-    const response = await fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
-        },
-        body: JSON.stringify(body),
-    }).catch(() => null);
+    try {
+        await send('POST', url, body);
 
-    if (!response) {
-        return 'We couldn’t reach the server. Check your connection and try again.';
-    }
-
-    if (response.ok) {
         return null;
+    } catch (e) {
+        return e instanceof Error
+            ? e.message
+            : 'Something went wrong on our side. Try again in a moment.';
     }
-
-    const data = (await response.json().catch(() => null)) as {
-        errors?: Record<string, string[]>;
-    } | null;
-
-    return (
-        (data?.errors ? Object.values(data.errors)[0]?.[0] : null) ??
-        (response.status === 429
-            ? 'Too many tries. Wait a minute and try again.'
-            : 'Something went wrong on our side. Try again in a moment.')
-    );
 }
 
 function WithPassword({ onConfirmed }: { onConfirmed: () => void }) {
@@ -126,7 +104,7 @@ function WithEmailCode({
 
     async function ask() {
         setBusy(true);
-        const failed = await post(send.url());
+        const failed = await post(sendCode.url());
         setBusy(false);
         setError(failed);
 
