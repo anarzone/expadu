@@ -1,5 +1,6 @@
 {
     "name": "travel-trip-lift-need",
+    "seed": "S=$(echo '<account>' | sed 's/@/+stepfree@/') && php artisan mock:sample-day travel --email=$S && E2E_EMAIL=$S php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=$S MOCK_STEP_FREE=1 php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [
         360,
@@ -24,7 +25,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/up",
         "wait": "#departures > .trip-line .trip-line-row",
         "login": {
             "email": "e2e@expadu.test",
@@ -42,9 +43,12 @@
             {
                 "wait": 400
             }
+        ],
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); if (day.active_trip) await fetch('/api/trip/end', { method: 'POST', headers, credentials: 'same-origin' }); } finally { location.replace('/timetable'); } })(); }"
         ]
     },
-    "note": "A lift out of order at Neumarkt (the mock's ?scenario=lift) on the trip card of someone who needs step-free ways (owner decision, 21 Oct 2026: a saved need), with the way open. The app side signs in as the account's `+stepfree` sibling: `php artisan mock:sample-day travel --email=<account+stepfree>`, then MockSample\\PaperworkSeeder and MockSample\\TravelSeeder with MOCK_STEP_FREE=1 for it. MockSample\\SampleKvb gives the lift under the local mock_scenario cookie. The app's line in the opened way (\"A lift at Neumarkt is out of order, and KVB doesn't say which platform it serves: this way may not be step-free.\") has no counterpart in the mock's lift card. travel-trip-lift compares the card for everyone else.",
+    "note": "A lift out of order at Neumarkt (the mock's ?scenario=lift) on the trip card of someone who needs step-free ways (owner decision, 21 Oct 2026: a saved need), with the way open. The app side signs in as the account's `+stepfree` sibling: `php artisan mock:sample-day travel --email=<account+stepfree>`, then MockSample\\PaperworkSeeder and MockSample\\TravelSeeder with MOCK_STEP_FREE=1 for it. MockSample\\SampleKvb gives the lift under the local mock_scenario cookie. The app's line in the opened way (\"A lift at Neumarkt is out of order, and KVB doesn't say which platform it serves: this way may not be step-free.\") has no counterpart in the mock's lift card. travel-trip-lift compares the card for everyone else. Each width starts with no trip running: the app side opens /up, ends any trip the account has through the app's own API, then opens Travel (as travel-plan-saved resets its planned way), so nothing a width leaves behind carries over.",
     "pairs": [
         {
             "name": "card",

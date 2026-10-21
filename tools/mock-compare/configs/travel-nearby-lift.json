@@ -1,5 +1,6 @@
 {
     "name": "travel-nearby-lift",
+    "seed": "S=$(echo '<account>' | sed 's/@/+stepfree@/') && php artisan mock:sample-day travel --email=$S && E2E_EMAIL=$S php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=$S MOCK_STEP_FREE=1 php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "widths": [
         360,
         390,

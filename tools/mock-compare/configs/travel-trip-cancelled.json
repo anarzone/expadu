@@ -1,5 +1,6 @@
 {
     "name": "travel-trip-cancelled",
+    "seed": "php artisan mock:sample-day travel --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [
         360,
@@ -24,7 +25,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/up",
         "wait": "#departures > .trip-line .trip-line-row",
         "login": {
             "email": "e2e@expadu.test",
@@ -41,9 +42,12 @@
             {
                 "wait": 400
             }
+        ],
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); if (day.active_trip) await fetch('/api/trip/end', { method: 'POST', headers, credentials: 'same-origin' }); } finally { location.replace('/timetable'); } })(); }"
         ]
     },
-    "note": "Your tram is cancelled (the mock's ?scenario=cancelled), with the way open: MockSample\\SampleRoutes marks the 13:14 cancelled on live times under the local mock_scenario cookie, so the card says \"13:14 cancelled\" and takes the 13:24.",
+    "note": "Your tram is cancelled (the mock's ?scenario=cancelled), with the way open: MockSample\\SampleRoutes marks the 13:14 cancelled on live times under the local mock_scenario cookie, so the card says \"13:14 cancelled\" and takes the 13:24. Each width starts with no trip running: the app side opens /up, ends any trip the account has through the app's own API, then opens Travel (as travel-plan-saved resets its planned way), so nothing a width leaves behind carries over.",
     "pairs": [
         {
             "name": "card",

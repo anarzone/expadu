@@ -1,5 +1,6 @@
 {
     "name": "travel-trip-missed",
+    "seed": "php artisan mock:sample-day travel --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:13:00+02:00",
     "widths": [
         360,
@@ -24,7 +25,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/up",
         "wait": "#departures > .trip-line .trip-line-row",
         "login": {
             "email": "e2e@expadu.test",
@@ -41,9 +42,12 @@
             {
                 "wait": 400
             }
+        ],
+        "init": [
+            "if (location.pathname === '/up') { (async () => { const xsrf = decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''); const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf, 'X-Requested-With': 'XMLHttpRequest' }; try { const day = await (await fetch('/api/day?date=2026-09-30', { headers, credentials: 'same-origin' })).json(); if (day.active_trip) await fetch('/api/trip/end', { method: 'POST', headers, credentials: 'same-origin' }); } finally { location.replace('/timetable'); } })(); }"
         ]
     },
-    "note": "You missed your tram (the mock's ?scenario=missed), with the way open, at 13:13: the app calls the 13:14 missed only once its leave time (13:10) is three minutes gone and your own fresh pings stayed at the start, with location sharing on (App\\Day\\StillAtStart). The mock shows it at 13:10; nothing on its card depends on the clock. MockSample\\SampleStillAtStart stands in for the pings under the local mock_scenario cookie; it reads and writes none. The app lists no other way here: the sample has two ways and the missed one is no longer one to take, so the mock's placeholder rows (Bike or walk, Taxi) have nothing to pair with.",
+    "note": "You missed your tram (the mock's ?scenario=missed), with the way open, at 13:13: the app calls the 13:14 missed only once its leave time (13:10) is three minutes gone and your own fresh pings stayed at the start, with location sharing on (App\\Day\\StillAtStart). The mock shows it at 13:10; nothing on its card depends on the clock. MockSample\\SampleStillAtStart stands in for the pings under the local mock_scenario cookie; it reads and writes none. The app lists no other way here: the sample has two ways and the missed one is no longer one to take, so the mock's placeholder rows (Bike or walk, Taxi) have nothing to pair with. Each width starts with no trip running: the app side opens /up, ends any trip the account has through the app's own API, then opens Travel (as travel-plan-saved resets its planned way), so nothing a width leaves behind carries over.",
     "pairs": [
         {
             "name": "card",

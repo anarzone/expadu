@@ -13,6 +13,7 @@ import {
 import { PlanPanel } from '@/components/travel/plan/plan-panel';
 import type {
     HandoffEvent,
+    HandoffPlace,
     PlanStage,
     SavedPlace,
     ShownWay,
@@ -56,6 +57,7 @@ type PageProps = {
     day?: DayProjection | null;
     dayWeather?: DayWeather | null;
     handoffEvent?: HandoffEvent | null;
+    handoffPlace?: HandoffPlace | null;
     stepFreeNeed?: boolean;
 };
 
@@ -534,6 +536,7 @@ export default function Timetable() {
                 <PlanPanel
                     url={page.url}
                     handoffEvent={page.props.handoffEvent ?? null}
+                    handoffPlace={page.props.handoffPlace ?? null}
                     stepFreeNeed={page.props.stepFreeNeed ?? false}
                     day={today}
                     favouriteStops={favouriteStops}
