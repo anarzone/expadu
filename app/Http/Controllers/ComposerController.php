@@ -57,6 +57,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -139,7 +140,7 @@ class ComposerController extends Controller
      */
     private function takeEntry(Request $request): ?array
     {
-        $entry = $request->session()->pull('composer.entry');
+        $entry = json_decode((string) Cache::pull($this->entryKey($request)), true);
 
         if (! is_array($entry) || now()->getTimestamp() - (int) ($entry['at'] ?? 0) > self::ENTRY_TTL) {
             return null;
@@ -149,11 +150,21 @@ class ComposerController extends Controller
     }
 
     /**
+     * Where a hand-off waits: for the person, beside their session rather than in it. Every
+     * request saves its whole session when it ends, so one the previous page still had in
+     * flight (Today's deferred props) would put back its older copy and drop the words.
+     */
+    private function entryKey(Request $request): string
+    {
+        return 'composer:entry:'.$request->user()->id;
+    }
+
+    /**
      * What a page hands Composer (the tray's words and the page they came
-     * from) arrives by POST and waits in the session, never in the URL, so it
-     * stays out of browser history and access logs. Composer's own page takes
-     * it, once (takeEntry()); a flash would go to whichever request came next,
-     * such as one the previous page still had in flight.
+     * from) arrives by POST and waits for the person (entryKey()), never in
+     * the URL, so it stays out of browser history and access logs. Composer's
+     * own page takes it, once (takeEntry()); a flash would go to whichever
+     * request came next, such as one the previous page still had in flight.
      */
     public function entry(Request $request): RedirectResponse
     {
@@ -162,11 +173,11 @@ class ComposerController extends Controller
             'about' => ['nullable', 'string', 'max:160'],
             'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
         ]);
-        $request->session()->put('composer.entry', [
+        Cache::put($this->entryKey($request), json_encode([
             'prompt' => trim($validated['prompt']),
             'about' => $validated['about'] ?? null,
             'at' => now()->getTimestamp(),
-        ]);
+        ]), self::ENTRY_TTL);
 
         return redirect()->route('composer', array_filter(['panel' => $validated['panel'] ?? null]));
     }
