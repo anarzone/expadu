@@ -18,6 +18,7 @@ use App\Personalisation\SignalRecorder;
 use App\Personalisation\SignalSurface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 function optedIn(bool $on = true): User
 {
@@ -253,6 +254,19 @@ test('"get there" counts only a tagged request, once a day', function () {
     $recorder->getThere($user, ['item' => "spot:{$spot->id}", 'surface' => 'places']);
 
     expect(ledger($user)->pluck('surface')->all())->toBe(['places']);
+});
+
+test('"get there" counts from the journey request body only, never its query string', function () {
+    Http::fake();
+    $user = optedIn();
+    $spot = Spot::factory()->create();
+    $tag = ['item' => "spot:{$spot->id}", 'surface' => 'place_sheet'];
+
+    $this->actingAs($user)->getJson('/api/journey?'.http_build_query(['to_lat' => 50.94, 'to_lng' => 6.95, 'get_there' => $tag]));
+    expect(ledger($user))->toBeEmpty();
+
+    $this->actingAs($user)->postJson('/api/journey/plan', ['to_lat' => 50.94, 'to_lng' => 6.95, 'get_there' => $tag]);
+    expect(ledger($user)->pluck('surface')->all())->toBe(['place_sheet']);
 });
 
 test('deleting the account deletes its ledger and aggregates', function () {

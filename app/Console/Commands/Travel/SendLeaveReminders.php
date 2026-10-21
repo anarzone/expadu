@@ -5,11 +5,15 @@ namespace App\Console\Commands\Travel;
 use App\Models\PlannedTrip;
 use App\Notifications\PlannedTripLeaveReminder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * "Remind me when to leave": once a minute, the planned ways leaving within
  * the next five minutes whose reminder is on and not sent yet. Each is
- * claimed before it's sent, so two runs never send it twice.
+ * claimed before it's sent, so two runs never send it twice; one that fails
+ * to send gives its claim back and is reported, and the next run (a minute
+ * on, still before the way leaves) tries it again.
  */
 class SendLeaveReminders extends Command
 {
@@ -22,6 +26,7 @@ class SendLeaveReminders extends Command
         // In UTC, as the timestamps are compared in the database.
         $now = now()->utc();
         $sent = 0;
+        $failed = 0;
 
         PlannedTrip::query()
             ->with('user')
@@ -29,15 +34,27 @@ class SendLeaveReminders extends Command
             ->whereNull('reminded_at')
             ->where('depart_at', '>', $now)
             ->where('depart_at', '<=', $now->copy()->addMinutes(PlannedTrip::REMIND_BEFORE_MINUTES))
-            ->each(function (PlannedTrip $trip) use ($now, &$sent): void {
+            ->each(function (PlannedTrip $trip) use ($now, &$sent, &$failed): void {
                 $claimed = PlannedTrip::query()->whereKey($trip->id)->whereNull('reminded_at')->update(['reminded_at' => $now]);
-                if ($claimed === 1 && $trip->user !== null) {
+                if ($claimed !== 1 || $trip->user === null) {
+                    return;
+                }
+                try {
                     $trip->user->notify(new PlannedTripLeaveReminder($trip));
                     $sent++;
+                } catch (Throwable $e) {
+                    // Not sent, so not marked sent.
+                    PlannedTrip::query()->whereKey($trip->id)->update(['reminded_at' => null]);
+                    $failed++;
+                    report($e);
                 }
             });
 
         $this->info("Sent {$sent} leave reminder(s).");
+
+        if ($sent > 0 || $failed > 0) {
+            Log::info('Leave reminders sent', ['sent' => $sent, 'failed' => $failed]);
+        }
 
         return self::SUCCESS;
     }

@@ -15,6 +15,9 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Notifications\Dispatcher;
+use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
 
@@ -441,4 +444,88 @@ test('rain on a long walk sends one Change of plan with a way that walks half as
     Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body']
         === 'Rain on your 10-min walk · this way walks 3: leave 13:16 for bus 150 at 13:17, there 13:45.');
     expect($trip->fresh()->alerted_kind)->toBe('weather');
+});
+
+test('a Change of plan goes only to someone who wants transit notifications', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', cancelled: true), watchedRide('13:24', '13:52', '13:20', '13:58')];
+    $trip = watchedTrip($this->user);
+    $this->user->notificationPreference()->updateOrCreate([], ['preferences' => ['transit' => false]]);
+
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+
+    Notification::assertNothingSentTo($this->user);
+    expect($trip->fresh()->alerted_kind)->toBeNull();
+});
+
+test('a trip whose Change of plan fails is reported and tried again; the others are still watched', function () {
+    Exceptions::fake();
+    Log::spy();
+    $routes = watchedRoutes();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', cancelled: true), watchedRide('13:24', '13:52', '13:20', '13:58')];
+    $failing = watchedTrip($this->user);
+    $other = User::factory()->onboarded()->create();
+    plannedTripDay($other);
+    $fine = watchedTrip($other);
+    $down = true;
+    $sent = [];
+    $this->mock(Dispatcher::class, function ($mock) use (&$down, &$sent): void {
+        $mock->shouldReceive('send')->andReturnUsing(function (User $to) use (&$down, &$sent): void {
+            if ($down && $to->is($this->user)) {
+                throw new RuntimeException('push service down');
+            }
+            $sent[] = $to->id;
+        });
+    });
+
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+
+    expect($sent)->toBe([$other->id])
+        ->and($fine->fresh()->alerted_kind)->toBe('cancelled')
+        ->and($failing->fresh()->alerted_kind)->toBeNull();
+    Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'push service down');
+    Log::shouldHaveReceived('info')->with('Changes of plan sent', ['sent' => 1, 'failed' => 1])->once();
+
+    $down = false;
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+
+    expect($sent)->toBe([$other->id, $this->user->id])
+        ->and($failing->fresh()->alerted_kind)->toBe('cancelled');
+});
+
+test('a leave reminder that fails to send stays unsent, goes on the next run, and what was sent is logged', function () {
+    Exceptions::fake();
+    Log::spy();
+    $trip = PlannedTrip::query()->create([
+        'user_id' => $this->user->id, 'date' => PLANNED_DAY, 'target_id' => 'blue-card', 'title' => 'Blue Card appointment',
+        'journey' => plannedTripJourney('13:14', '13:42', '13:10', '13:48'), 'remind' => true,
+        'depart_at' => CarbonImmutable::parse(PLANNED_DAY.' 13:10', 'Europe/Berlin'),
+        'arrive_at' => CarbonImmutable::parse(PLANNED_DAY.' 13:48', 'Europe/Berlin'),
+    ]);
+    $down = true;
+    $sent = 0;
+    $this->mock(Dispatcher::class, function ($mock) use (&$down, &$sent): void {
+        $mock->shouldReceive('send')->andReturnUsing(function () use (&$down, &$sent): void {
+            if ($down) {
+                throw new RuntimeException('push service down');
+            }
+            $sent++;
+        });
+    });
+
+    $this->travelTo(CarbonImmutable::parse(PLANNED_DAY.' 13:05', 'Europe/Berlin'));
+    $this->artisan('travel:send-leave-reminders')->assertSuccessful();
+
+    expect($trip->fresh()->reminded_at)->toBeNull()->and($sent)->toBe(0);
+    Exceptions::assertReported(RuntimeException::class);
+
+    $down = false;
+    $this->travelTo(CarbonImmutable::parse(PLANNED_DAY.' 13:06', 'Europe/Berlin'));
+    $this->artisan('travel:send-leave-reminders')->assertSuccessful();
+    $this->artisan('travel:send-leave-reminders')->assertSuccessful();
+
+    expect($trip->fresh()->reminded_at)->not->toBeNull()->and($sent)->toBe(1);
+    Log::shouldHaveReceived('info')->with('Leave reminders sent', ['sent' => 0, 'failed' => 1])->once();
+    Log::shouldHaveReceived('info')->with('Leave reminders sent', ['sent' => 1, 'failed' => 0])->once();
 });
