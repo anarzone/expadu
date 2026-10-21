@@ -33,8 +33,11 @@ test('chosen starting point is sent independently of the requested search area',
     });
     await page.goto('/composer');
     await page.reload();
-    await page.getByRole('button', { name: 'Composer actions' }).click();
-    await page.getByRole('menuitem', { name: /Starting point/ }).click();
+    await page.locator('summary[aria-label="Composer actions"]').click();
+    await page
+        .locator('.composer-actions-menu')
+        .getByRole('button', { name: /Starting point/ })
+        .click();
     await page
         .getByRole('textbox', { name: 'Search starting point' })
         .fill('Sülz');
@@ -43,9 +46,9 @@ test('chosen starting point is sent independently of the requested search area',
         .getByRole('button', { name: 'Sülz', exact: true })
         .click();
     await page
-        .getByRole('textbox', { name: 'Message Composer' })
+        .locator('#studio-request')
         .fill('Tomorrow afternoon in Ehrenfeld');
-    await page.getByRole('button', { name: 'Send message' }).click();
+    await page.getByRole('button', { name: 'Send request' }).click();
     await expect.poll(() => submitted).toBeDefined();
     expect(submitted).toMatchObject({
         lat: 50.92,

@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
+use App\Home\ComingUp;
+use App\Home\FirstVisit;
+use App\Home\TodayContinuation;
 use App\Home\TodayDiscovery;
 use App\Home\TodayPaperwork;
+use App\Home\TodaySaved;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
@@ -45,6 +49,14 @@ class HomeFeedController extends Controller
             // Discovery: tonight's events that fit around the plans, and the
             // everyday places open near the next plan (TodayDiscovery).
             'discovery' => Inertia::defer(fn () => app(TodayDiscovery::class)->for($request->user()), 'discovery'),
+            // Coming up: the next plans after today (ComingUp), with the day.
+            'comingUp' => Inertia::defer(fn () => app(ComingUp::class)->for($request->user()), 'day'),
+            // Saved for later (the one Saved collection) and the Composer
+            // conversation to pick up, both the person's own.
+            'saved' => Inertia::defer(fn () => app(TodaySaved::class)->for($request->user()), 'day'),
+            'continuation' => Inertia::defer(fn () => app(TodayContinuation::class)->for($request->user()), 'day'),
+            // Someone new: nothing planned, saved, asked or recorded yet.
+            'welcome' => fn () => app(FirstVisit::class)->for($request->user()),
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
         ]);
     }

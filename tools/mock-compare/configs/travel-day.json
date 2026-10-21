@@ -24,7 +24,7 @@
             "password": "e2e-password"
         }
     },
-    "note": "My day (?view=day). The mock opens its timetable-only state (?scenario=scheduled, as the app is at the sample moment) and then My day: its ?view=day gives way to ?scenario=, so a load script presses the phone bar's My day (it works at every width). Seed: mock:sample-day travel, MockSample\\PaperworkSeeder, MockSample\\TravelSeeder. The mock's sample weather (the head's chip, the free hours' list, the events' chips) has no counterpart here: there's no forecast for a past day, so those elements aren't paired and the rows after them carry y. A tall viewport keeps the whole river in view on both sides.",
+    "note": "My day (?view=day). The mock opens its timetable-only state (?scenario=scheduled, as the app is at the sample moment) and then My day: its ?view=day gives way to ?scenario=, so a load script presses the phone bar's My day (it works at every width). Seed: mock:sample-day travel, MockSample\\PaperworkSeeder, MockSample\\TravelSeeder; the sample forecast and the evening ways come from the local fixtures (MockSample\\SampleWeather, SampleRoutes) under the mock clock. What's left differs only in the mock's sample labels, the plans' own titles in the overlap choice, and the forecast's words. A tall viewport keeps the whole river in view on both sides.",
     "pairs": [
         {
             "name": "phone bar",
@@ -62,9 +62,9 @@
             "name": "day head",
             "mock": "#day-view .day-head",
             "app": "#day-view .day-head",
-            "contentDiffers": true,
             "ignore": ["h"],
-            "reason": "The mock's head also holds its sample weather (no forecast for a past day here); on phones that wraps to a second row."
+            "contentDiffers": true,
+            "reason": "The mock's sample labels: \"· sample day\" under Today and \"sample weather\" on its chip, which on phones wraps the chip to a second row."
         },
         {
             "name": "Today",
@@ -85,197 +85,199 @@
             "name": "river",
             "mock": "#day-view .day-river",
             "app": "#day-view .day-river",
+            "ignore": ["h", "y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones."
+            "reason": "Its height: on phones the mock's head is a row taller (see day head) and the app's overlap choice a row taller (see overlap); the mock's sample labels in its rows (see each)."
         },
         {
             "name": "now row",
             "mock": ".day-river > li.is-now",
             "app": ".day-river > li.is-now",
-            "contentDiffers": true,
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. Its caption says where \"now\" comes from: the mock's \"Your location is a sample\", the app's \"Where you said you are\" (the sample's confirmed location)."
+            "contentDiffers": true,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Its caption says where \"now\" comes from: the mock's \"Your location is a sample\", the app's \"Where you said you are\" (the sample's confirmed location)."
         },
         {
             "name": "now time",
             "mock": ".day-river > li.is-now > time",
             "app": ".day-river > li.is-now > time",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "now dot",
             "mock": ".day-river .day-dot.is-now",
             "app": ".day-river .day-dot.is-now",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "now title",
             "mock": ".day-river > li.is-now strong",
             "app": ".day-river > li.is-now strong",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "now caption",
             "mock": ".day-river > li.is-now small",
             "app": ".day-river > li.is-now small",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "w"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. Its words: see now row."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Its words: see now row."
         },
         {
             "name": "trip row",
             "mock": ".day-river > li.is-trip",
             "app": ".day-river > li.is-trip",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip time",
             "mock": ".day-river > li.is-trip > time",
             "app": ".day-river > li.is-trip > time",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip rail",
             "mock": ".day-river > li.is-trip .day-rail",
             "app": ".day-river > li.is-trip .day-rail",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip card",
             "mock": ".day-river .trip-line",
             "app": ".day-river .trip-line",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip ring",
             "mock": ".day-river .trip-ring",
             "app": ".day-river .trip-ring",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip title",
             "mock": ".day-river .trip-title",
             "app": ".day-river .trip-title",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "trip facts",
             "mock": ".day-river .trip-facts",
             "app": ".day-river .trip-facts",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "appointment row",
             "mock": ".day-river > li:nth-child(3)",
             "app": ".day-river > li:nth-child(3)",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "pixels": false,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "appointment time",
             "mock": ".day-river > li:nth-child(3) > time",
             "app": ".day-river > li:nth-child(3) > time",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "appointment dot",
             "mock": ".day-river .day-dot.is-plan",
             "app": ".day-river .day-dot.is-plan",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "appointment",
             "mock": ".day-river .day-plan",
             "app": ".day-river .day-plan",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "pixels": false,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "appointment title",
             "mock": ".day-river .day-plan strong",
             "app": ".day-river .day-plan strong",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "appointment place",
             "mock": ".day-river .day-plan > span",
             "app": ".day-river .day-plan > span",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "What to bring",
             "mock": ".day-river .day-paper",
             "app": ".day-river .day-paper",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "pixels": false,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "free row",
             "mock": ".day-river > li.is-free",
             "app": ".day-river > li.is-free",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. Its height: the mock lists four hours of sample weather; there's no forecast for a past day here."
+            "reason": "Its words: the mock's \"Weather along the way · sample\", and its 18:00 sky \"Showers\"; the forecast has no showers (its icon is rain), so the app says \"Rain\". On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "free time",
             "mock": ".day-river > li.is-free > time",
             "app": ".day-river > li.is-free > time",
-            "ignore": ["y", "h"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. Its height is the row's: the mock's lists four hours of sample weather (no forecast for a past day here)."
+            "ignore": ["y"],
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "free rail",
             "mock": ".day-river > li.is-free .day-rail",
             "app": ".day-river > li.is-free .day-rail",
-            "ignore": ["y", "h"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. Its height follows the row's (see free row)."
+            "ignore": ["y"],
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "hours free",
             "mock": ".day-river .day-free",
             "app": ".day-river .day-free",
             "ignore": ["y"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "free caption",
             "mock": ".day-river > li.is-free > div > small",
             "app": ".day-river > li.is-free > div > small",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "w"],
-            "reason": "Below the day's head, which on phones wraps the mock's sample weather (\"21° · clear until about 15:00 · sample weather\") onto a second row: there's no forecast for a past day here, so the app's head is one row shorter. The mock's \"Weather along the way · sample\" over its sample hours; the app's \"No forecast for these hours yet\"."
+            "reason": "The mock adds \"· sample\". On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "way row",
             "mock": ".day-river > li.is-later",
             "app": ".day-river > li.is-later",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). The way's times: the mock's capture (Leave 17:41 → there 18:14, line 18 then 133); routing has nothing for a past day here (\"Not checked: route times aren’t available right now.\"), which is one line on phones where the mock's wraps to two."
+            "reason": "The mock names its timetable's source (\"VRS timetable\"); the app says \"timetable\" and keeps cities' sources in data. On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "way time",
             "mock": ".day-river > li.is-later > time",
             "app": ".day-river > li.is-later > time",
-            "contentDiffers": true,
-            "ignore": ["y", "w", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). \"17:41\" in the mock, \"later\" here (no route for a past day). Its height is the row's (see way row)."
+            "ignore": ["y"],
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "way card",
@@ -290,7 +292,7 @@
             "mock": ".day-river > li.is-later .day-open strong",
             "app": ".day-river > li.is-later .day-open strong",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\")."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "way text",
@@ -305,16 +307,15 @@
             "mock": ".day-river > li.is-later .quiet-button",
             "app": ".day-river > li.is-later .quiet-button",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "first event row time",
             "mock": ".day-river > li:has(.day-event) > time",
             "app": ".day-river > li:has(.day-event) > time",
             "index": 0,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Its height is the row's: the mock's event carries a sample-forecast chip."
+            "ignore": ["y"],
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "event dot",
@@ -322,17 +323,16 @@
             "app": ".day-river .day-dot.is-event",
             "index": 0,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "first event",
             "mock": ".day-river .day-event",
             "app": ".day-river .day-event",
             "index": 0,
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Its height: the mock's sample-forecast chip (\"Showers likely · sample forecast\"); no forecast for a past day here."
+            "reason": "Its chip: the mock's \"Showers likely · sample forecast\", the app's \"Rain likely · forecast\" (the forecast has no showers; its icon is rain). On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "first event title",
@@ -340,7 +340,7 @@
             "app": ".day-river .day-event strong",
             "index": 0,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here."
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "first event place",
@@ -348,59 +348,58 @@
             "app": ".day-river .day-event > strong + span",
             "index": 0,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "overlap",
             "mock": ".day-river .day-overlap",
             "app": ".day-river .day-overlap",
+            "ignore": ["h", "y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Its buttons carry the plans' own titles (the mock shortens them), so on phones they wrap to two rows."
+            "reason": "The plans' own titles, \"Street culture night\" and \"Cinema under the stars\"; the mock shortens them to \"Street culture\" and \"Cinema\". On phones they wrap to two rows here. On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "overlap chip",
             "mock": ".day-river .day-overlap .tl-chip",
             "app": ".day-river .day-overlap .tl-chip",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "pixels": false,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "overlap question",
             "mock": ".day-river .day-overlap strong",
             "app": ".day-river .day-overlap strong",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "pixels": false,
+            "reason": "On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "first choice",
             "mock": ".day-river .day-overlap button",
             "app": ".day-river .day-overlap button",
             "index": 0,
+            "ignore": ["w", "y"],
             "contentDiffers": true,
-            "ignore": ["y", "w"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). The plan's own title, \"Street culture night\" (the mock's \"Street culture\")."
+            "reason": "The plans' own titles, \"Street culture night\" and \"Cinema under the stars\"; the mock shortens them to \"Street culture\" and \"Cinema\". On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "second choice",
             "mock": ".day-river .day-overlap button",
             "app": ".day-river .day-overlap button",
             "index": 1,
+            "ignore": ["w", "x", "y"],
             "contentDiffers": true,
-            "ignore": ["x", "y", "w"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). The plan's own title, \"Cinema under the stars\" (the mock's \"Cinema\"), after the first, wider one; on phones it wraps to its own row."
+            "reason": "The plans' own titles, \"Street culture night\" and \"Cinema under the stars\"; the mock shortens them to \"Street culture\" and \"Cinema\". After the first, wider one; on phones it wraps to its own row. On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "second event",
             "mock": ".day-river .day-event",
             "app": ".day-river .day-event",
             "index": 1,
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Its height: the mock's sample-forecast chip (\"Rain likely · sample forecast\")."
+            "reason": "Its chip: the mock's \"Rain likely · sample forecast\", the app's \"Rain likely · forecast\". On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "second event title",
@@ -408,7 +407,7 @@
             "app": ".day-river .day-event strong",
             "index": 1,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones."
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "second event place",
@@ -416,46 +415,44 @@
             "app": ".day-river .day-event > strong + span",
             "index": 1,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones."
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "home row",
             "mock": ".day-river > li.is-home",
             "app": ".day-river > li.is-home",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "pixels": false,
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "home time",
             "mock": ".day-river > li.is-home > time",
             "app": ".day-river > li.is-home > time",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "home dot",
             "mock": ".day-river .day-dot.is-home",
             "app": ".day-river .day-dot.is-home",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "Getting home",
             "mock": ".day-river > li.is-home .day-open",
             "app": ".day-river > li.is-home .day-open",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "pixels": false,
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "Getting home text",
             "mock": ".day-river > li.is-home .day-open small",
             "app": ".day-river > li.is-home .day-open small",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones."
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "Add home",
@@ -463,8 +460,7 @@
             "app": ".day-river .day-open-actions .quiet-button",
             "index": 0,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "Back to Neumarkt",
@@ -472,8 +468,8 @@
             "app": ".day-river .day-open-actions .quiet-button",
             "index": 1,
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "pixels": false,
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower. Moved by that, it lands on another sub-pixel offset, so its pixels aren't compared; box and styles are."
         },
         {
             "name": "choice made",
@@ -495,25 +491,24 @@
                     "wait": 300
                 }
             ],
+            "ignore": ["w", "y"],
             "contentDiffers": true,
-            "ignore": ["y", "w"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). The plan's own title (see first choice)."
+            "reason": "The plans' own titles, \"Street culture night\" and \"Cinema under the stars\"; the mock shortens them to \"Street culture\" and \"Cinema\". On phones, below the day's head: the mock's weather chip adds its \"sample weather\" label and wraps to a second row, where the app's (the same 21° · clear until about 15:00) fits beside \"Today\", so the rows under it sit 40.8px higher."
         },
         {
             "name": "skipped event",
             "mock": ".day-river .day-event.is-skipped",
             "app": ".day-river .day-event.is-skipped",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Its height: the mock's sample-forecast chip."
+            "reason": "Its chip: see second event. On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         },
         {
             "name": "Skipping this one",
             "mock": ".day-river .day-event.is-skipped small",
             "app": ".day-river .day-event.is-skipped small",
             "ignore": ["y"],
-            "reason": "Below the free hours, where the mock lists its sample weather by the hour; there's no forecast for a past day here, so the app's list is one line (\"No forecast for these hours yet\"). Also below the evening way, whose times the mock has from its capture (17:41, line 18 then 133) and routing can't give for a past day here. Also below the first event, which carries the mock's sample-forecast chip (\"Showers likely · sample forecast\"). Also below the overlap choice, whose buttons carry the plans' own titles here (the mock shortens them to \"Street culture\" / \"Cinema\"), so they wrap to two rows on phones. Pixels: after content that differs above it (the mock's sample weather; no forecast for a past day here), it lands on a different sub-pixel y (e.g. 1053.02 in the mock, 888.67 here at 360), so its edges and glyphs rasterise differently. Box and styles match.",
-            "pixels": false
+            "reason": "On phones, below the overlap choice, whose buttons carry the plans' own titles and wrap to two rows (see overlap), so these sit 9.2px lower."
         }
     ]
 }

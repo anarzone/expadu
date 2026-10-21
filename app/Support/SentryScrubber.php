@@ -84,6 +84,33 @@ class SentryScrubber
         return $event;
     }
 
+    /**
+     * The `before_send_transaction` gate: a performance trace carries its
+     * request too, so its URL loses the same parts an error's does.
+     */
+    public static function scrubTransaction(Event $event): ?Event
+    {
+        try {
+            $request = $event->getRequest();
+            if ($request !== []) {
+                $event->setRequest(self::redact($request));
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $event;
+    }
+
+    /**
+     * A URL without its query string, and without a reset link's token, which
+     * Fortify puts in the path (/reset-password/{token}).
+     */
+    private static function cleanUrl(string $url): string
+    {
+        return preg_replace('~/reset-password/[^/?#]+~', '/reset-password/'.self::REDACTED, explode('?', $url)[0]) ?? self::REDACTED;
+    }
+
     private static function removeVariables(?Stacktrace $stacktrace): void
     {
         foreach ($stacktrace?->getFrames() ?? [] as $frame) {
@@ -107,7 +134,7 @@ class SentryScrubber
                 continue;
             }
             if (is_string($key) && $key === 'url' && is_string($value)) {
-                $data[$key] = explode('?', $value)[0];
+                $data[$key] = self::cleanUrl($value);
 
                 continue;
             }

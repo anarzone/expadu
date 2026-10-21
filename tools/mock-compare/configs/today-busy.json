@@ -5,7 +5,8 @@
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
         "url": "/dev/design/today-next/brief/?view=busy",
-        "wait": ".day-panel"
+        "wait": ".day-panel",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/dashboard",
@@ -16,7 +17,8 @@
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        }
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
@@ -89,8 +91,7 @@
             "mock": ".agenda-item .appointment-time",
             "app": ".agenda-item .appointment-time",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan title",
@@ -110,8 +111,7 @@
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan place",
@@ -124,8 +124,7 @@
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan place @768",
@@ -145,8 +144,7 @@
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "plan status @768",
@@ -173,8 +171,7 @@
             "mock": ".agenda-item .appointment-options summary",
             "app": ".agenda-item button.appointment-options",
             "ignore": ["y"],
-            "widths": [360, 390],
-            "pixels": false
+            "widths": [360, 390]
         },
         {
             "name": "second plan time",
@@ -273,7 +270,8 @@
             "contentDiffers": true
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 1280 px the first plan compares y; the second and third plans and the trips between them sit below Leave now (2px shorter: see today-everyday's chipNote) and the mock's wrapping trip rows (see contentNote), so their y is aside. At 768 the mock's longer date line ('· Sample day · 3 plans') wraps to two lines and moves the plans down, so y is aside there too.",
+    "ignoreNote": "From 1280 px the first plan compares y; the second and third plans and the trips between them sit below Leave now (2px shorter: see today-everyday's chipNote) and the mock's wrapping trip rows (see contentNote), so their y is aside. At 768 the mock's longer date line ('· Sample day · 3 plans') wraps to two lines and moves the plans down, so y is aside there too.",
     "contentNote": "The mock's sample words are longer ('Wed 30 Sept · Sample day · 3 plans', 'Mülheim → Ehrenfeld · sample estimate') and wrap, so heading and trip rows differ in w/h; the trips between plans are live travel times (here 34 min, only 26 spare: tight), so their icon colour follows that status. Pairs below them sit at other sub-pixel offsets, so their pixels are not compared.",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel."
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
 }

@@ -9,6 +9,7 @@ import { TravelIcon } from '../travel-icon';
 import { filterDefaults, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
 import { StopPicker } from './stop-picker';
+import { noticeWords } from './types';
 import type { FavouriteStop, Station } from './types';
 import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
@@ -632,22 +633,27 @@ export function NearbyView({
                     </TravelBanner>
                 </div>
             ) : null}
-            {station.notices.slice(0, 2).map((notice) => (
-                <div key={notice.id} className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind={
-                            notice.severity === 'critical' ||
-                            notice.severity === 'major'
-                                ? 'conflict'
-                                : 'attention'
-                        }
-                        icon={<TravelIcon name="alert" />}
-                        title={notice.title}
-                    >
-                        {`Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${notice.source ? ` · ${notice.source}` : ''}`}
-                    </TravelBanner>
-                </div>
-            ))}
+            {station.notices.slice(0, 2).map((notice) => {
+                const { headline, text } = noticeWords(notice);
+                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${notice.source ? ` · ${notice.source}` : ''}`;
+
+                return (
+                    <div key={notice.id} className="nearby-banner is-labelled">
+                        <TravelBanner
+                            kind={
+                                notice.severity === 'critical' ||
+                                notice.severity === 'major'
+                                    ? 'conflict'
+                                    : 'attention'
+                            }
+                            icon={<TravelIcon name="alert" />}
+                            title={headline}
+                        >
+                            {text ? `${text} · ${lines}` : lines}
+                        </TravelBanner>
+                    </div>
+                );
+            })}
             <div className="nearby-bar">
                 <button
                     type="button"

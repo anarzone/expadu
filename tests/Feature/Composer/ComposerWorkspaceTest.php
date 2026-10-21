@@ -286,6 +286,21 @@ test('a page hands Composer its request by POST, once, never in the URL', functi
     $this->post('/composer/entry', ['prompt' => 'Hi', 'panel' => 'settings'])->assertSessionHasErrors('panel');
 });
 
+test('a hand-off waits for Composer itself, not the next request, and goes stale', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    // A request the previous page still had in flight doesn't take the words.
+    $this->post('/composer/entry', ['prompt' => 'Something near my appointment']);
+    $this->getJson('/composer/workspace')->assertOk();
+    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry.prompt', 'Something near my appointment'));
+    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', null));
+
+    // Words left waiting (the visit never came) aren't shown later.
+    $this->post('/composer/entry', ['prompt' => 'An old thought']);
+    $this->travel(6)->minutes();
+    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', null));
+});
+
 test('composer guidance excludes unpublished expired and unverified sources', function () {
     $attributes = [
         'title' => 'Reviewed fixture guide', 'description' => 'Reviewed fixture content.',

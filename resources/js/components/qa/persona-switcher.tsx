@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 
 /**
- * Admin-only floating toolbar for QA. Self-gating: the `qaSwitcher` shared prop is null
+ * Admin-only floating toolbar for QA. Self-gating: the `qaSwitcher` shared prop is false
  * for everyone but admins/local (see HandleInertiaRequests::share()), so it's safe to mount
  * on every page. Persona previews are read-only and live in the v2 API
  * (GET /bureaucracy/v2/preview/{persona}); the old page that showed them is gone.
  */
 export function PersonaSwitcher() {
     const { qaSwitcher } = usePage<{
-        qaSwitcher?: object | null;
+        qaSwitcher?: boolean;
     }>().props;
     const [open, setOpen] = useState(false);
 
