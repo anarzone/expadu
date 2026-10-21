@@ -9,6 +9,7 @@ use App\Models\UserPlace;
 use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
+use App\Services\WeatherService;
 use App\Transit\EventHandoff;
 use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
@@ -62,6 +63,8 @@ class TimetableController extends Controller
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             // Your next thing and My day: the shared server-side day projection.
             'day' => DayProjection::deferred($request),
+            // My day's forecast for the rest of today, by the hour.
+            'dayWeather' => Inertia::defer(fn () => self::dayWeather(app(WeatherService::class)), 'day'),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey
@@ -99,5 +102,35 @@ class TimetableController extends Controller
                 ])
                 ->all(),
         ]);
+    }
+
+    /**
+     * The city's forecast from this hour to the end of today; unavailable
+     * (no hours) when the forecast has none, never a guess.
+     *
+     * @return array{available: bool, hours: list<array{at: string, icon: ?string, condition: ?string, temperature: ?float, precip_probability: ?int}>}
+     */
+    private static function dayWeather(WeatherService $weather): array
+    {
+        $now = CarbonImmutable::now('Europe/Berlin');
+        $hours = [];
+        foreach ($weather->getDayForecast($now->format('Y-m-d'))['hours'] ?? [] as $hour) {
+            if (! is_string($hour['time'] ?? null)) {
+                continue;
+            }
+            $at = CarbonImmutable::parse($hour['time'])->setTimezone('Europe/Berlin');
+            if ($at->lessThan($now->startOfHour())) {
+                continue;
+            }
+            $hours[] = [
+                'at' => $at->toIso8601String(),
+                'icon' => $hour['icon'] ?? null,
+                'condition' => $hour['condition'] ?? null,
+                'temperature' => isset($hour['temperature']) ? (float) $hour['temperature'] : null,
+                'precip_probability' => isset($hour['precip_probability']) ? (int) $hour['precip_probability'] : null,
+            ];
+        }
+
+        return ['available' => $hours !== [], 'hours' => $hours];
     }
 }
