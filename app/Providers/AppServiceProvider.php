@@ -229,9 +229,11 @@ class AppServiceProvider extends ServiceProvider
             ->by('social:'.$request->ip()));
 
         // Emailed confirmation codes (EmailConfirmation): a few per account,
-        // and a cap per address so one machine can't mail many inboxes.
+        // ten a day (each send is five more tries), and a cap per address so
+        // one machine can't mail many inboxes.
         RateLimiter::for('email-confirmation', fn (Request $request): array => [
             Limit::perMinutes(10, 3)->by('email-confirmation:user:'.$request->user()?->getAuthIdentifier()),
+            Limit::perDay(10)->by('email-confirmation:user-day:'.$request->user()?->getAuthIdentifier()),
             Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
         ]);
 

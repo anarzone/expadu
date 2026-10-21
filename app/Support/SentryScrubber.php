@@ -42,8 +42,9 @@ class SentryScrubber
             $request = $event->getRequest();
             if ($request !== []) {
                 $path = parse_url((string) ($request['url'] ?? ''), PHP_URL_PATH) ?: '';
-                // Private answers, and the emailed confirmation codes.
-                if (preg_match('~/(?:bureaucracy|composer|onboarding|user/confirm-email)(?:/|$)~', $path)) {
+                // Private answers; the emailed confirmation codes, which the
+                // account's own deletion carries too.
+                if (preg_match('~/(?:bureaucracy|composer|onboarding|user/confirm-email|settings/profile)(?:/|$)~', $path)) {
                     $request['data'] = self::REDACTED;
                 }
                 $event->setRequest(self::redact($request));

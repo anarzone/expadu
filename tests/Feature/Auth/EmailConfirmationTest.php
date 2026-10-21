@@ -1,8 +1,10 @@
 <?php
 
+use App\Auth\EmailConfirmation;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Mail\ConfirmationCode;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
@@ -152,6 +154,43 @@ test('🔒 sending is throttled per account and per address', function () {
     }
     // 3 from the first account, then 20 an hour from one address.
     Mail::assertSent(ConfirmationCode::class, 20);
+});
+
+test('🔒 outside local, a mailer that delivers nothing sends no code and keeps none', function () {
+    $user = googleOnly();
+    $request = Request::create('/user/confirm-email/code', 'POST');
+    $request->setLaravelSession(app('session.store'));
+    app()->detectEnvironment(fn () => 'production');
+    config(['mail.default' => 'log']);
+
+    expect(app(EmailConfirmation::class)->send($request, $user))->toBeFalse();
+
+    Mail::assertNothingSent();
+    expect(Cache::get('email-confirmation:'.$user->id))->toBeNull()
+        ->and($request->session()->has('email_confirmation'))->toBeFalse();
+});
+
+test('🔒 a tries count that went missing comes back spent, not fresh', function () {
+    $user = googleOnly();
+    $this->actingAs($user);
+    $code = mailedCode($this);
+
+    Cache::forget('email-confirmation:'.$user->id.':tries');
+
+    $this->postJson(route('email-confirmation.confirm'), ['code' => $code])->assertUnprocessable();
+    expect(isConfirmed($this))->toBeFalse();
+});
+
+test('🔒 an account gets at most ten codes a day', function () {
+    $this->actingAs(googleOnly());
+    foreach (range(1, 4) as $window) {
+        foreach (range(1, 3) as $send) {
+            $this->postJson(route('email-confirmation.send'));
+        }
+        $this->travel(11)->minutes();
+    }
+
+    Mail::assertSent(ConfirmationCode::class, 10);
 });
 
 test('🔒 guests can\'t ask for or use a code', function () {

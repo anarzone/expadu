@@ -55,6 +55,11 @@ final class EmailConfirmation
         if (! self::applies($user)) {
             throw new RuntimeException('An account with a password confirms with its password.');
         }
+        if (! $this->canDeliver()) {
+            report(new RuntimeException('Confirmation codes can\'t be sent: the mailer delivers nothing.'));
+
+            return false;
+        }
 
         $code = str_pad((string) random_int(0, 999_999), 6, '0', STR_PAD_LEFT);
         $nonce = Str::random(40);
@@ -102,7 +107,9 @@ final class EmailConfirmation
         }
 
         // Counted before the comparison, atomically, so parallel guesses
-        // can't share one try.
+        // can't share one try. A count that went missing (evicted alone)
+        // comes back spent, never fresh, and keeps the code's expiry.
+        Cache::add($this->triesKey($user), self::MAX_TRIES, max(1, $entry['expires'] - now()->getTimestamp()));
         $tries = Cache::increment($this->triesKey($user));
         if ($tries === false || $tries > self::MAX_TRIES) {
             $this->forget($request, $user);
@@ -118,6 +125,22 @@ final class EmailConfirmation
         $request->session()->passwordConfirmed();
 
         return true;
+    }
+
+    /**
+     * Outside local and testing, a code goes out only through a mailer that
+     * delivers: a log or array mailer would write it in clear and reach
+     * nobody.
+     */
+    private function canDeliver(): bool
+    {
+        if (app()->environment('local', 'testing')) {
+            return true;
+        }
+
+        $transport = config('mail.mailers.'.config('mail.default').'.transport');
+
+        return ! in_array($transport, ['log', 'array'], true);
     }
 
     private function forget(Request $request, User $user): void
