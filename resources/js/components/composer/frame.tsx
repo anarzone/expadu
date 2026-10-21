@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import type { DayProjection } from '@/types/day';
 import { markLabel, marksFor } from './plan-card';
+import { slotSpan } from './types';
 import type { Plan, Workspace } from './types';
 
 /**
@@ -404,7 +405,7 @@ function planningFacts(plan: Plan, workspace: Workspace): DayFact[] {
             key: slot.id,
             tile: mark ? 'is-changed' : held ? 'is-paper' : '',
             icon: held ? 'calendar' : 'pin',
-            small: `${slot.start_time}–${slot.end_time} · ${what}`,
+            small: `${slotSpan(slot)} · ${what}`,
             strong: where ? `${slot.name}, ${where}` : slot.name,
             plan: plan.date,
             changed: !!mark,

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { TimeSheet } from '@/components/ui/time-sheet';
 import { cn } from '@/lib/utils';
-import { dateLabel } from './types';
+import { dateLabel, slotSpan } from './types';
 import type { Change, ChangeRow, Command, Plan, Slot } from './types';
 
 /*
@@ -38,12 +38,7 @@ export function marksFor(
     const latest = [...(changes ?? [])]
         .reverse()
         .find((change) => change.date === plan.date && !change.undone_at);
-    const now = new Map(
-        plan.slots.map((slot) => [
-            slot.id,
-            `${slot.start_time}–${slot.end_time}`,
-        ]),
-    );
+    const now = new Map(plan.slots.map((slot) => [slot.id, slotSpan(slot)]));
 
     return new Map(
         (latest?.rows ?? [])
@@ -63,7 +58,9 @@ export const markLabel = (row: ChangeRow) =>
 
 function fixedLabel(slot: Slot): string | null {
     if (slot.type === 'event') {
-        return 'Fixed event';
+        return slot.end_listed === false
+            ? 'Fixed event · end not listed'
+            : 'Fixed event';
     }
 
     if (slot.type === 'appointment') {
@@ -141,7 +138,9 @@ export function PlanCard({
                                 >
                                     <div className="timeline-time">
                                         <strong>{slot.start_time}</strong>
-                                        <span>{slot.end_time}</span>
+                                        {slot.end_listed !== false && (
+                                            <span>{slot.end_time}</span>
+                                        )}
                                     </div>
                                     <div className="timeline-node">
                                         <Icon

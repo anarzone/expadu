@@ -188,7 +188,8 @@ class DayProjection
             source: 'workspace',
             title: (string) ($slot['name'] ?? 'Your plan'),
             startAt: CarbonImmutable::parse($slot['start_at'])->setTimezone(self::TIMEZONE),
-            endAt: is_string($slot['end_at'] ?? null) ? CarbonImmutable::parse($slot['end_at'])->setTimezone(self::TIMEZONE) : null,
+            // An event with no listed end keeps none here: the plan's length isn't its time.
+            endAt: is_string($slot['end_at'] ?? null) && ($slot['end_listed'] ?? true) ? CarbonImmutable::parse($slot['end_at'])->setTimezone(self::TIMEZONE) : null,
             official: $type === 'appointment',
             locationLabel: $location ?? (is_string($slot['veedel'] ?? null) ? $slot['veedel'] : null),
             lat: $lat,

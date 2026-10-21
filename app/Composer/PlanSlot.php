@@ -45,6 +45,8 @@ final readonly class PlanSlot
             // Unknown appointment length: no end is drawn or assumed ("End time not known").
             'end_time' => $this->candidate->durationKnown ? $this->endAt->format('H:i') : null,
             'duration_known' => $this->candidate->durationKnown,
+            // An event with no listed end: end_time is the plan's length, so it isn't shown.
+            'end_listed' => $this->candidate->endListed,
             'travel_min_from_previous' => $this->travelMinFromPrevious,
             // Leg flags; Plan::toArray() sets them from the neighbouring slot.
             'travel_known' => true,
