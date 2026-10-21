@@ -228,6 +228,9 @@ test('it rejects all output shapes outside the strict tool contract', function (
 
     expect($result->outcome)->toBe('invalid')->and($result->hasValue)->toBeFalse();
 })->with([
+    // A complete-looking call is still rejected when the reply did not stop on it.
+    'cut off at max_tokens' => [['stop_reason' => 'max_tokens'] + extractionToolResponse(['outcome' => 'candidate', 'value' => 'b1'])],
+    'refused' => [['stop_reason' => 'refusal'] + extractionToolResponse(['outcome' => 'candidate', 'value' => 'b1'])],
     'prose without tool' => [extractionReply([
         ['type' => 'text', 'text' => 'The answer is B1.'],
     ])],

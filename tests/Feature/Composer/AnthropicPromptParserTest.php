@@ -256,3 +256,18 @@ test('a reply without a usable route_prompt tool call degrades to the heuristic'
     'non-object input' => [[['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => 'find']]],
     'missing input' => [[['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt']]],
 ]);
+
+test('a reply cut off at max_tokens falls back to the heuristic, even with a call in it', function () {
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'id' => 'msg_1', 'type' => 'message', 'role' => 'assistant', 'model' => 'claude-haiku-5-5',
+            'stop_reason' => 'max_tokens',
+            'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => ['intent' => 'find', 'query' => 'partial']]],
+            'usage' => ['input_tokens' => 120, 'output_tokens' => 600],
+        ]),
+    ]);
+
+    $parsed = parseWithConsent('Museum this afternoon', llmProfile(), CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
+
+    expect($parsed->source)->not->toBe('llm');
+});

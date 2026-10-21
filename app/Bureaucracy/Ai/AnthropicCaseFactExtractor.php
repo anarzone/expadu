@@ -84,7 +84,10 @@ final class AnthropicCaseFactExtractor implements ExtractsCaseFact
 
     private function parse(FactDefinition $definition, mixed $body, bool $subjectAware): CaseFactExtractionResult
     {
-        if (! is_array($body) || ! is_array($body['content'] ?? null) || ! array_is_list($body['content'])) {
+        // Only a reply that stopped on its tool call is complete: one cut off
+        // at max_tokens, or a refusal, can still carry a partial tool_use.
+        if (! is_array($body) || ($body['stop_reason'] ?? null) !== 'tool_use'
+            || ! is_array($body['content'] ?? null) || ! array_is_list($body['content'])) {
             return CaseFactExtractionResult::invalid();
         }
 

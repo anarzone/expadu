@@ -171,6 +171,11 @@ class AnthropicPromptParser implements ParsesPrompt
      */
     private function arguments(?array $body): array
     {
+        // A reply cut off at max_tokens, or a refusal, may hold a partial call.
+        if (data_get($body, 'stop_reason') !== 'tool_use') {
+            throw new \RuntimeException('LLM response did not stop on its tool call');
+        }
+
         $call = collect(data_get($body, 'content', []))
             ->first(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use' && ($block['name'] ?? null) === 'route_prompt');
         if (! is_array($call['input'] ?? null)) {
