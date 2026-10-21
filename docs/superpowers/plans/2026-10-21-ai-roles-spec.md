@@ -7,7 +7,7 @@
 - AI only rewrites, translates or ranks real data. It never invents times, reasons, prices, legal outcomes or legal figures. Figures come only from source text or source-checked card text.
 - Anything a deterministic rule can decide (a price, "cancelled", a delay in minutes) is decided in code, not by the model.
 - Every AI feature works without a key or with a failed call: the source text (or the rule-based result) shows instead.
-- Models: Claude Haiku 5.5 for high-volume rewriting and translation; Sonnet 5.5 or Opus 5.5 only where a role needs the reasoning.
+- Models: Claude Haiku 5.5 for every AI role. Owner, 21 Oct 2026: "Only haiku should be used for all places, no sonnet." `config/services.php` turns any non-Haiku `*_MODEL` setting back into Haiku.
 - One `ANTHROPIC_API_KEY` for every environment. Each call is logged in `llm_calls` (feature, model, tokens, latency, outcome, cost). No user data in prompts, logs or URLs unless the EU data decision (EXP-118) allows it.
 - Languages: English now; English and German later.
 
@@ -87,7 +87,7 @@ The solver core is code, with the LLM at the edges. One LLM call per plan by def
 | 3 | Retrieve | code | Replaces "nearest 12 per category". Candidates are open in the window, reachable (MOTIS travel time) and pass the hard filters. They are matched on tags and place descriptions, weighted by the user's affinities, a quality prior, and one or two exploration picks. About 150 candidates. |
 | 4 | Score | code | Today's weighted scorer, then a learned ranker once logs exist. |
 | 5 | Assemble | code (solver) | 3–5 plans that are all feasible: dwell time per kind, real travel legs, opening hours, event start times, meal and nap times, more indoor stops when rain is forecast, variety. Feasibility is owned here, never by the LLM. |
-| 6 | Judge | Sonnet 5.5, strict JSON | Picks and reorders among the plans, and may swap in an alternate. It sees the request, constraints, taste profile, plans and about 20 alternates, all as IDs plus facts. It returns IDs only, from a per-request allow-list, plus reason codes and one plain line per stop. It runs only when needed: mood words, a taste profile to weigh, or near-tied plans. |
+| 6 | Judge | Haiku 5.5, strict JSON | Picks and reorders among the plans, and may swap in an alternate. It sees the request, constraints, taste profile, plans and about 20 alternates, all as IDs plus facts. It returns IDs only, from a per-request allow-list, plus reason codes and one plain line per stop. It runs only when needed: mood words, a taste profile to weigh, or near-tied plans. |
 | 7 | Verify | code | Re-checks every swap against hours, travel and hard needs. On a violation: one repair prompt, then the solver's own plan. |
 | 8 | Hydrate | code | Names, times, hours, prices and travel come from the database, never from the model. "Why" chips are built from reason codes ("Open till 18:00 · 12 min, tram 13 · indoors"). A linter drops any model sentence that carries digits, €, weekdays or clock times. |
 | 9 | Refine | Haiku 5.5 | "Swap the museum" or "make it cheaper" becomes a typed change to the plan. The solver re-plans only the stops it touches and keeps the rest. |
@@ -96,11 +96,11 @@ The solver core is code, with the LLM at the edges. One LLM call per plan by def
 - **Evaluation:**
   - A set of about 200 Cologne requests across user types.
   - Release gates must be zero: unknown IDs, facts that don't match the database, infeasible plans.
-  - Opus 5.5 grades plans head-to-head, checked against our own labels.
+  - Plans are graded head-to-head against our own labels, with Haiku 5.5 as the grader where a model is needed.
   - Gate checks run before and after each slice.
 - **Cost:**
   - Understand: about $0.0003 per request.
-  - Judge: about $0.01–0.015 when it runs.
+  - Judge: about $0.001–0.002 on Haiku when it runs.
   - Enrichment: a one-off of a few dollars for about 12,000 places on the Batch API.
 - **Never AI:** places, times, opening hours, prices, travel minutes, legal facts, feasibility.
 
@@ -178,7 +178,7 @@ The solver core is code, with the LLM at the edges. One LLM call per plan by def
 | R2c | 2 | Understand v2: hard and soft constraints, mood words, edit operations (Haiku) | |
 | R2d | 2 | Place enrichment: descriptions and vibe tags with evidence (Haiku, Batch API) | |
 | R2e | 2 | Retrieve v2 and a solver that returns 3–5 feasible plans | |
-| R2f | 2 | Judge (Sonnet), verify and repair, hydrate, reason chips, number linter | |
+| R2f | 2 | Judge (Haiku), verify and repair, hydrate, reason chips, number linter | |
 | R2g | 2 | Refine: follow-up edits as typed plan changes | |
 | R2h | 2 | Paperwork analyser, grounded only in source-checked cards | |
 | R3a | 3 | Signal ledger, impressions with position, weights, decay, aggregates | |
