@@ -91,31 +91,30 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
     await expect(
         page.getByRole('button', { name: 'Undo', exact: true }).last(),
     ).toBeVisible();
+    // Edit time is two wheels (the mock's time sheet). Turning From carries
+    // Until along, and closing the sheet puts the new time straight in.
     await current.getByRole('button', { name: 'Edit time' }).last().click();
-    await current.getByRole('button', { name: 'From time 10:00' }).click();
-    const time = page.getByRole('dialog', { name: 'Choose from time' });
+    const time = page.getByRole('dialog', { name });
     await expect(time).toBeVisible();
+    const from = time.getByRole('listbox', { name: 'From' });
     await expect(
-        time.getByRole('listbox', { name: 'From hours' }),
-    ).toBeVisible();
+        from.getByRole('option', { name: '10:00', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
+    await from.press('ArrowDown');
     await expect(
-        time.getByRole('listbox', { name: 'From minutes' }),
-    ).toBeVisible();
-    await time
-        .getByRole('listbox', { name: 'From minutes' })
-        .press('ArrowDown');
-    await expect(
-        current.getByRole('button', { name: 'From time 10:01' }),
-    ).toBeVisible();
+        time
+            .getByRole('listbox', { name: 'Until' })
+            .getByRole('option', { name: '11:15', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Escape');
-    // Keeping the new time puts it straight in; the reply says it as it is now.
-    await current.getByRole('button', { name: 'Keep time' }).click();
+    await expect(time).not.toBeVisible();
+    // The reply says it as it is now; the card marks where it moved from.
     await expect(
-        page.getByText(`${name} is now 10:01–11:00.`, { exact: true }),
+        page.getByText(`${name} is now 10:15–11:15.`, { exact: true }),
     ).toBeVisible();
     await expect(
-        current.getByRole('button', { name: 'Apply changes' }),
-    ).toHaveCount(0);
+        current.getByText('Moved from 10:00–11:00', { exact: true }),
+    ).toBeVisible();
     await page.goto(`/composer?plan=${dateValue}`);
     await expect(
         page.locator('#composer-current-plan').getByText(name, { exact: true }),
