@@ -47,6 +47,9 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                // Which "confirm it's you" to offer: the password, or an
+                // emailed code (EXP-174). Nothing else about the password.
+                'has_password' => $request->user() !== null && $request->user()->password !== null,
             ],
             'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             // Admin-only QA tooling: the floating "become this persona"
