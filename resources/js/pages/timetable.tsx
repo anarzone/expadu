@@ -56,6 +56,7 @@ type PageProps = {
     day?: DayProjection | null;
     dayWeather?: DayWeather | null;
     handoffEvent?: HandoffEvent | null;
+    stepFreeNeed?: boolean;
 };
 
 function csrfToken(): string {
@@ -533,6 +534,7 @@ export default function Timetable() {
                 <PlanPanel
                     url={page.url}
                     handoffEvent={page.props.handoffEvent ?? null}
+                    stepFreeNeed={page.props.stepFreeNeed ?? false}
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}

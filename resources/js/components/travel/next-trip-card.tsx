@@ -295,97 +295,128 @@ export function NextTripCard({
     // The way it would have taken is gone (cancelled, or missed): the card
     // leads with the one to take instead.
     const gone = trip.gone?.ride ? trip.gone : null;
+    // A lift out at one of the way's stations, as KVB files it: which
+    // platform it serves isn't matched to the way. For someone who needs
+    // step-free ways (their own saved need, owner, 21 Oct 2026) that's no
+    // step-free way; for everyone else the chip says it and the card keeps
+    // its title and facts.
+    const liftStops = [
+        ...new Set((trip.lifts ?? []).map((l) => stopName(l.stop, trip.city))),
+    ];
+    const many = liftStops.length > 1;
+    const blocked =
+        !gone && !!ride && !!trip.step_free_need && !!liftStops.length;
+    const lift = !liftStops.length
+        ? null
+        : blocked
+          ? `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order, and KVB doesn’t say which platform ${many ? 'they serve' : 'it serves'}: this way may not be step-free.`
+          : `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order; KVB doesn’t say if ${many ? 'they’re' : 'it’s'} on your way.`;
     const tone: TripTone =
-        gone?.kind === 'cancelled'
+        gone?.kind === 'cancelled' || blocked
             ? 'conflict'
             : gone || minutes <= 0 || late || tight
               ? 'attention'
               : 'calm';
-    const ring: TripRingState = gone
-        ? { kind: 'alert' }
-        : { kind: 'trip', leaveIn: minutes };
+    const ring: TripRingState =
+        gone || blocked
+            ? { kind: 'alert' }
+            : { kind: 'trip', leaveIn: minutes };
     const title =
-        gone && ride
-            ? `Take the ${ride.depart_time}`
-            : minutes <= 0
-              ? 'Leave now'
-              : `Leave at ${trip.leave_time}`;
+        blocked && ride
+            ? `No step-free way to ${vehicleWord(vehicleOf(ride.mode)).toLowerCase()}\u00a0${ride.line ?? ''}`.trim()
+            : gone && ride
+              ? `Take the ${ride.depart_time}`
+              : minutes <= 0
+                ? 'Leave now'
+                : `Leave at ${trip.leave_time}`;
     const spare = trip.spare_min ?? 0;
 
-    const facts = [
-        ride ? (
-            <TripFact
-                key="ride"
-                label={
-                    <RideLabel
-                        line={ride.line ?? ''}
-                        look={rideLook(ride)}
-                        word={vehicleWord(vehicleOf(ride.mode))}
-                    />
-                }
-                value={ride.depart_time}
-                sub={stopName(ride.from.name, trip.city)}
-            />
-        ) : (
-            <TripFact
-                key="walk"
-                label={journey.mode === 'bike' ? 'Bike' : 'Walk'}
-                value={trip.leave_time}
-                sub={trip.from?.label ?? ''}
-            />
-        ),
-        <TripFact
-            key="there"
-            label="There"
-            value={trip.arrive_time}
-            sub={
-                trip.target.location ??
-                (ride ? stopName(ride.to.name, trip.city) : '')
-            }
-        />,
-        late ? (
-            <TripFact
-                key="late"
-                label="Late"
-                value={
-                    <>
-                        {trip.late_by_min}
-                        <span>&nbsp;min</span>
-                    </>
-                }
-                sub={`after ${trip.target.start_time}`}
-                tone="attention"
-            />
-        ) : (
-            <TripFact
-                key="spare"
-                label="Spare"
-                value={
-                    <>
-                        {spare}
-                        <span>&nbsp;min</span>
-                    </>
-                }
-                sub={`before ${trip.target.start_time}`}
-                tone={spare < trip.margin_min ? 'attention' : undefined}
-            />
-        ),
-    ];
+    const facts = blocked
+        ? [
+              <TripFact
+                  key="ride"
+                  label={
+                      <RideLabel
+                          line={ride!.line ?? ''}
+                          look={rideLook(ride!)}
+                          word={vehicleWord(vehicleOf(ride!.mode))}
+                      />
+                  }
+                  value={ride!.depart_time}
+                  sub={stopName(ride!.from.name, trip.city)}
+              />,
+              <TripFact
+                  key="stepfree"
+                  label="Step-free"
+                  value="No"
+                  sub="Lift out of order"
+                  tone="conflict"
+              />,
+          ]
+        : [
+              ride ? (
+                  <TripFact
+                      key="ride"
+                      label={
+                          <RideLabel
+                              line={ride.line ?? ''}
+                              look={rideLook(ride)}
+                              word={vehicleWord(vehicleOf(ride.mode))}
+                          />
+                      }
+                      value={ride.depart_time}
+                      sub={stopName(ride.from.name, trip.city)}
+                  />
+              ) : (
+                  <TripFact
+                      key="walk"
+                      label={journey.mode === 'bike' ? 'Bike' : 'Walk'}
+                      value={trip.leave_time}
+                      sub={trip.from?.label ?? ''}
+                  />
+              ),
+              <TripFact
+                  key="there"
+                  label="There"
+                  value={trip.arrive_time}
+                  sub={
+                      trip.target.location ??
+                      (ride ? stopName(ride.to.name, trip.city) : '')
+                  }
+              />,
+              late ? (
+                  <TripFact
+                      key="late"
+                      label="Late"
+                      value={
+                          <>
+                              {trip.late_by_min}
+                              <span>&nbsp;min</span>
+                          </>
+                      }
+                      sub={`after ${trip.target.start_time}`}
+                      tone="attention"
+                  />
+              ) : (
+                  <TripFact
+                      key="spare"
+                      label="Spare"
+                      value={
+                          <>
+                              {spare}
+                              <span>&nbsp;min</span>
+                          </>
+                      }
+                      sub={`before ${trip.target.start_time}`}
+                      tone={spare < trip.margin_min ? 'attention' : undefined}
+                  />
+              ),
+          ];
 
     const skipped =
-        trip.skipped?.ride && !gone
+        trip.skipped?.ride && !gone && !blocked
             ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
             : null;
-    // A lift out at one of the way's stations, as KVB files it: which
-    // platform it serves isn't matched to the way, and no step-free need is
-    // assumed, so the card keeps its title and facts; the chip says it, the
-    // way says just that.
-    const liftStops = [
-        ...new Set((trip.lifts ?? []).map((l) => stopName(l.stop, trip.city))),
-    ];
-    const lift = liftStops.length
-        ? `${liftStops.length > 1 ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${liftStops.length > 1 ? 'are' : 'is'} out of order; KVB doesn’t say if ${liftStops.length > 1 ? 'they’re' : 'it’s'} on your way.`
-        : null;
     // Why, with the way: how it's known.
     const goneNote =
         gone?.kind === 'cancelled'
@@ -440,6 +471,10 @@ export function NextTripCard({
     ) : going ? (
         <TripAction icon="route" href={tripHref}>
             Back to your trip
+        </TripAction>
+    ) : blocked && onPlan ? (
+        <TripAction icon="route" onClick={onPlan}>
+            Plan another way
         </TripAction>
     ) : onStart ? (
         <TripAction onClick={onStart} disabled={starting}>
