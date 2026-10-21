@@ -128,10 +128,8 @@ final class PlanChecks
 
     private function stepFree(array $slot): bool
     {
-        $access = $slot['place_facts']['access'] ?? null;
-        $wheelchair = is_array($access) ? ($access['wheelchair'] ?? $access['value'] ?? null) : null;
-
-        return in_array($wheelchair, ['yes', 'step_free', true], true);
+        // OSM's wheelchair=yes|designated, as the place's practical facts carry it.
+        return in_array($slot['place_facts']['practical']['wheelchair']['value'] ?? null, ['yes', 'designated'], true);
     }
 
     /**
