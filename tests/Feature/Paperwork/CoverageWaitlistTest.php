@@ -36,19 +36,36 @@ test('🔒 it signs up only the account itself: a submitted address is ignored',
     Mail::assertNotQueued(WaitlistConfirmation::class, fn (WaitlistConfirmation $mail) => $mail->hasTo('someone-else@example.com'));
 });
 
-test('🔒 a second tap keeps one row and re-sends only while unconfirmed; a confirmed address gets nothing more', function () {
+test('🔒 a second tap keeps one row and re-sends at most every ten minutes while unconfirmed; a confirmed address gets nothing more', function () {
     $user = outsideCologne();
 
     $this->actingAs($user)->post(route('paperwork.waitlist'));
     $this->actingAs($user)->post(route('paperwork.waitlist'));
     expect(WaitlistSignup::query()->count())->toBe(1);
+    Mail::assertQueued(WaitlistConfirmation::class, 1);
+
+    $this->travel(11)->minutes();
+    $this->actingAs($user)->post(route('paperwork.waitlist'));
+    $this->actingAs($user)->post(route('paperwork.waitlist'));
     Mail::assertQueued(WaitlistConfirmation::class, 2);
 
     WaitlistSignup::query()->sole()->forceFill(['confirmed_at' => now()])->save();
+    $this->travel(11)->minutes();
     $this->actingAs($user)->post(route('paperwork.waitlist'));
 
     Mail::assertQueued(WaitlistConfirmation::class, 2);
     expect(app(CoverageWaitlist::class)->state($user))->toBe('confirmed');
+});
+
+test('🔒 an unconfirmed signup from the website keeps its own city and source', function () {
+    $user = outsideCologne();
+    $website = WaitlistSignup::factory()->create(['email' => 'mover@example.com', 'city' => 'Bremen', 'source' => 'landing-footer']);
+    $website->forceFill(['updated_at' => now()->subHour()])->saveQuietly();
+
+    $this->actingAs($user)->post(route('paperwork.waitlist'));
+
+    expect(WaitlistSignup::query()->sole()->only(['city', 'source']))->toBe(['city' => 'Bremen', 'source' => 'landing-footer']);
+    Mail::assertQueued(WaitlistConfirmation::class, 1);
 });
 
 test('🔒 someone who confirmed on the website is already on the list: no mail, and the page says so', function () {
