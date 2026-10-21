@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { CategoryIllustration } from '@/components/places/category-illustration';
 import {
     FeedbackBadge,
     PlaceFeedbackMenu,
-} from '@/components/places/place-feedback-menu';
+} from '@/components/place-shared/place-feedback-menu';
+import { CategoryIllustration } from '@/components/places/category-illustration';
 import type {
     FeedbackAction,
     FeedbackRating,

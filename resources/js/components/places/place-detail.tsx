@@ -1,5 +1,5 @@
 import { IconClock, IconTrain } from '@tabler/icons-react';
-import type { Place } from '@/components/places/types';
+import type { Place } from '@/components/place-shared/types';
 import { ICON_STROKE } from '@/constants/icons';
 
 /**

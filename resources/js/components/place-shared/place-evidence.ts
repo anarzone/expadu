@@ -1,4 +1,4 @@
-import type { Place } from '@/components/places/types';
+import type { Place } from '@/components/place-shared/types';
 
 function point(
     lat: unknown,

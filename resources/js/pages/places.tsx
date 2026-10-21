@@ -23,6 +23,10 @@ import GeocodeSearchController from '@/actions/App/Http/Controllers/Api/GeocodeS
 import { api } from '@/components/composer/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
+import { PlaceDetailModal } from '@/components/place-shared/place-detail-modal';
+import { placeRoutingPoint } from '@/components/place-shared/place-evidence';
+import { FeedbackToast } from '@/components/place-shared/place-feedback-menu';
+import type { Place, VeedelOption } from '@/components/place-shared/types';
 import { categoryEmoji } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import type { CardChip } from '@/components/places/content-card';
@@ -30,11 +34,7 @@ import type {
     PlacesOrigin,
     TransportMode,
 } from '@/components/places/from-control';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
-import { placeRoutingPoint } from '@/components/places/place-evidence';
-import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { PlacesMap } from '@/components/places/places-map';
-import type { Place, VeedelOption } from '@/components/places/types';
 import { ICON_STROKE } from '@/constants/icons';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';

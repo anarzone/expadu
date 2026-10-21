@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { show as showPlace } from '@/actions/App/Http/Controllers/Api/PlacesController';
 import { event as showEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import type { EventOccurrence } from '@/components/events/types';
-import type { Place } from '@/components/places/types';
+import type { Place } from '@/components/place-shared/types';
 import { ComposerLoading } from './loading';
 import { api } from './types';
 import type { Slot } from './types';

@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react';
+import type { Place } from '@/components/place-shared/types';
 import { CategoryIllustration } from '@/components/places/category-illustration';
 import { ContentCard } from '@/components/places/content-card';
 import { PlaceDetail } from '@/components/places/place-detail';
-import type { Place } from '@/components/places/types';
 import AppLayout from '@/layouts/app-layout';
 
 const SAMPLE: Place = {

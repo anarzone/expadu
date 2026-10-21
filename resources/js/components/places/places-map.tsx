@@ -1,11 +1,11 @@
 import { IconCurrentLocation, IconMapPin, IconX } from '@tabler/icons-react';
 import type { LngLatBoundsLike, Map as MaplibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { placeMapPoint } from '@/components/place-shared/place-evidence';
+import type { Place } from '@/components/place-shared/types';
 import { ICON_STROKE } from '@/constants/icons';
 import { COLOGNE_CENTER, loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
-import { placeMapPoint } from './place-evidence';
-import type { Place } from './types';
 
 /**
  * The Places "map view" — the current result set as accent pins on the
