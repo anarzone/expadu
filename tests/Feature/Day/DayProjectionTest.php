@@ -501,3 +501,40 @@ test('one old ping is not enough to call a way missed', function () {
     $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
         ->assertJsonPath('next_trip.gone', null);
 });
+
+test('the step-free need is off unless the person turns it on', function () {
+    dayRoutes()->arriveBy = [ride('2026-10-19', '13:14', '13:42')];
+    $user = User::factory()->onboarded()->create();
+    confirmedDay($user, '2026-10-19', [personalSlot('personal:x', '2026-10-19', '14:00', '14:30', WIENER_PLATZ)]);
+
+    expect($user->fresh()->needs_step_free)->toBeFalse();
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
+        ->assertJsonPath('next_trip.step_free_need', false);
+    $this->actingAs($user)->get('/timetable')
+        ->assertInertia(fn ($page) => $page->where('stepFreeNeed', false));
+});
+
+test('one person\'s step-free need never shows for another', function () {
+    dayRoutes()->arriveBy = [ride('2026-10-19', '13:14', '13:42')];
+    $needs = User::factory()->onboarded()->create(['needs_step_free' => true]);
+    $other = User::factory()->onboarded()->create();
+    foreach ([$needs, $other] as $user) {
+        confirmedDay($user, '2026-10-19', [personalSlot('personal:x', '2026-10-19', '14:00', '14:30', WIENER_PLATZ)]);
+    }
+
+    $this->actingAs($needs)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
+        ->assertJsonPath('next_trip.step_free_need', true);
+    $this->actingAs($needs)->get('/timetable')
+        ->assertInertia(fn ($page) => $page->where('stepFreeNeed', true));
+
+    $this->actingAs($other)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
+        ->assertJsonPath('next_trip.step_free_need', false);
+    $this->actingAs($other)->get('/timetable')
+        ->assertInertia(fn ($page) => $page->where('stepFreeNeed', false));
+
+    // Never in a user's serialisation, so no page or API that lists people
+    // (their own shared auth.user included) carries it.
+    expect($needs->fresh()->toArray())->not->toHaveKey('needs_step_free');
+    $this->actingAs($needs)->get('/timetable')
+        ->assertInertia(fn ($page) => $page->missing('auth.user.needs_step_free'));
+});

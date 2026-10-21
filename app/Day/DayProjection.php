@@ -90,6 +90,9 @@ class DayProjection
                 // Lifts reported out at the way's stations, for the card's
                 // station-level "Lift out of order"; null while not known.
                 $nextTrip['lifts'] = $nextTrip['journey'] === null ? null : $this->conditions->liftsOut($nextTrip['journey']);
+                // Their own step-free need: a lift out on the way is then
+                // no step-free way, not just a station's notice.
+                $nextTrip['step_free_need'] = (bool) $user->needs_step_free;
             }
         }
 

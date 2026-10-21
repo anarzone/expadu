@@ -58,7 +58,7 @@
                 "border-right-color",
                 "border-top-color"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need."
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need."
         },
         {
             "name": "card row",
@@ -68,7 +68,7 @@
             "ignore": [
                 "h"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need."
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need."
         },
         {
             "name": "ring",
@@ -82,7 +82,7 @@
                 "border-top-color",
                 "color"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need. So the ring counts down (\"now\") in the card's tone instead of \"!\".",
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need. So the ring counts down (\"now\") in the card's tone instead of \"!\".",
             "pixels": false
         },
         {
@@ -96,7 +96,7 @@
                 "x",
                 "y"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need.",
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need.",
             "pixels": false
         },
         {
@@ -144,7 +144,7 @@
                 "w",
                 "y"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need. Three tiles (the ride, There, Spare) for the mock's two.",
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need. Three tiles (the ride, There, Spare) for the mock's two.",
             "pixels": false
         },
         {
@@ -169,7 +169,8 @@
                 "x",
                 "y"
             ],
-            "reason": "Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags)."
+            "reason": "Its place follows from the card's own title and facts (see card) and the \"Scheduled · not live\" chip before the lift's (see flags). Moved with its tile, it lands on another sub-pixel offset: same badge.",
+            "pixels": false
         },
         {
             "name": "action",
@@ -181,7 +182,7 @@
                 "x",
                 "y"
             ],
-            "reason": "No saved step-free need, so a lift out isn't taken as no way for you (owner question open, via the coordinator): the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" assume that need.",
+            "reason": "This is the card for someone without a saved step-free need (the default; owner decision, 21 Oct 2026): a lift out isn't taken as no way for them, so the app keeps the card's own title, ring, tone, facts and button, and shows the station's \"Lift out of order\" chip. The mock's \"No step-free way to tram 4\", Step-free: No tile and \"Plan another way\" are the card for someone with the need, compared 1:1 in travel-trip-lift-need.",
             "pixels": false
         },
         {

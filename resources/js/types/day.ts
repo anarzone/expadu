@@ -189,6 +189,8 @@ export type NextTrip = {
      * get off); null while KVB's lift feed isn't known.
      */
     lifts?: { label: string; stop: string; since: string | null }[] | null;
+    /** The person's own saved step-free need: a lift out is then no step-free way. */
+    step_free_need?: boolean;
     alternatives: (TripOption & { journey: Journey })[];
     /** Deep links when the router couldn't answer. */
     degraded?: { deep_links?: Record<string, string> } | null;
