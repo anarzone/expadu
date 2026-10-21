@@ -71,29 +71,18 @@ final class BuildTimeline
                     'provenance' => 'confirmed_fact', 'legal_effect' => 'not_assessed', 'fact_key' => $key, 'document' => $document];
             }
         }
-        $appointments = [];
         $withdrawn = [];
         usort($events, fn ($one, $two) => $one['id'] <=> $two['id']);
+        $latest = $this->latestAppointmentReports($events);
         foreach ($events as $event) {
-            $payload = $event['payload'];
-            if (in_array($event['type'], ['appointment_recorded', 'appointment_cancelled'], true)) {
-                $id = $payload['appointment_id'];
-                $appointments[$id] = $event;
-            }
             if ($event['type'] === 'submission_retracted') {
-                $withdrawn[$payload['event_id']] = true;
+                $withdrawn[$event['payload']['event_id']] = true;
             }
         }
         foreach ($events as $event) {
             $payload = $event['payload'];
-            if ($event['type'] === 'appointment_recorded' && ($appointments[$payload['appointment_id']]['id'] ?? null) === $event['id']) {
-                $location = $payload['location'] ?? null;
-                // Unknown duration and a text-only place stay unknown: null duration, routable false.
-                $rows[] = ['id' => 'appointment:'.$payload['appointment_id'], 'kind' => 'appointment', 'state' => 'recorded',
-                    ...$this->identity($event), 'appointment_id' => $payload['appointment_id'],
-                    'starts_at' => $payload['starts_at'], 'timezone' => $payload['timezone'], 'duration_minutes' => $payload['duration_minutes'] ?? null,
-                    'location' => $location, 'routable' => isset($location['lat'], $location['lng']),
-                    'precision' => 'instant', 'provenance' => 'user_report', 'legal_effect' => 'not_assessed'];
+            if ($this->standingAppointment($event, $latest)) {
+                $rows[] = $this->appointmentRow($event);
             }
             $submissionDate = $event['type'] === 'submission_recorded' && ! isset($withdrawn[$event['id']]) ? $this->date($payload['occurred_on'] ?? null, $timezone) : null;
             if ($submissionDate !== null && $submissionDate->toDateString() <= $today) {
@@ -104,6 +93,54 @@ final class BuildTimeline
         }
 
         return $rows;
+    }
+
+    /**
+     * The recorded appointments that stand, as the timeline shows them: each appointment's
+     * latest report, so a later cancellation removes it. The events are one process's active
+     * history (ProcessHistory::active, corrections applied). Narrow reads (Your day) use this
+     * rather than compiling the plan, so the two can't disagree.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function appointments(array $events): array
+    {
+        usort($events, fn ($one, $two) => $one['id'] <=> $two['id']);
+        $latest = $this->latestAppointmentReports($events);
+
+        return array_values(array_map($this->appointmentRow(...), array_filter($events, fn (array $event): bool => $this->standingAppointment($event, $latest))));
+    }
+
+    /** @return array<string, int> appointment id => the id of its latest recorded or cancelled report */
+    private function latestAppointmentReports(array $events): array
+    {
+        $latest = [];
+        foreach ($events as $event) {
+            if (in_array($event['type'], ['appointment_recorded', 'appointment_cancelled'], true)) {
+                $latest[$event['payload']['appointment_id']] = $event['id'];
+            }
+        }
+
+        return $latest;
+    }
+
+    /** @param  array<string, int>  $latest */
+    private function standingAppointment(array $event, array $latest): bool
+    {
+        return $event['type'] === 'appointment_recorded' && ($latest[$event['payload']['appointment_id']] ?? null) === $event['id'];
+    }
+
+    private function appointmentRow(array $event): array
+    {
+        $payload = $event['payload'];
+        $location = $payload['location'] ?? null;
+
+        // Unknown duration and a text-only place stay unknown: null duration, routable false.
+        return ['id' => 'appointment:'.$payload['appointment_id'], 'kind' => 'appointment', 'state' => 'recorded',
+            ...$this->identity($event), 'appointment_id' => $payload['appointment_id'],
+            'starts_at' => $payload['starts_at'], 'timezone' => $payload['timezone'], 'duration_minutes' => $payload['duration_minutes'] ?? null,
+            'location' => $location, 'routable' => isset($location['lat'], $location['lng']),
+            'precision' => 'instant', 'provenance' => 'user_report', 'legal_effect' => 'not_assessed'];
     }
 
     /**

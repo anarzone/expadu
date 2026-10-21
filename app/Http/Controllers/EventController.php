@@ -64,7 +64,29 @@ class EventController extends Controller
             // The street's sky and the rain warnings; the page draws a plain
             // sky until it arrives, and says so when there is none.
             'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
+            // A past day points on to the next day with listings.
+            'next_listed' => $day->lessThan($today->startOfDay())
+                ? Inertia::defer(fn () => $this->nextListed($today), 'notes')
+                : null,
         ]);
+    }
+
+    /**
+     * The first day from today with listings, within 60 days: the coming
+     * week first (nearly always enough), then the rest.
+     */
+    private function nextListed(CarbonImmutable $today): ?string
+    {
+        foreach ([[0, 6], [7, 59]] as [$from, $to]) {
+            $first = Event::occurringBetween($today->addDays($from)->startOfDay(), $today->addDays($to)->endOfDay())
+                ->min(fn (array $o) => $o['starts_at']->setTimezone('Europe/Berlin')->toDateString());
+
+            if (is_string($first)) {
+                return $first;
+            }
+        }
+
+        return null;
     }
 
     /**

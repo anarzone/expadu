@@ -10,6 +10,7 @@ import {
 } from '@/components/travel/on-your-way-bar';
 import { PlanPanel } from '@/components/travel/plan/plan-panel';
 import type {
+    HandoffEvent,
     PlanStage,
     SavedPlace,
     ShownWay,
@@ -51,6 +52,7 @@ type PageProps = {
     favouriteStops?: FavouriteStop[];
     savedPlaces?: SavedPlace[];
     day?: DayProjection | null;
+    handoffEvent?: HandoffEvent | null;
 };
 
 function csrfToken(): string {
@@ -449,6 +451,7 @@ export default function Timetable() {
 
                 <PlanPanel
                     url={page.url}
+                    handoffEvent={page.props.handoffEvent ?? null}
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}
