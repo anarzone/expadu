@@ -25,7 +25,6 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
-use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -209,9 +208,7 @@ class ComposerController extends Controller
         // whether Composer answers it itself (the `answer` command) rather than planning.
         $routed = $answers->route($request->user(), $validated['text'], CarbonImmutable::now('Europe/Berlin'),
             app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        $answered = in_array($routed['kind'], Answers::KINDS, true)
-            && ! ($routed['kind'] === 'clarify' && $parsed->intent === PromptIntent::PlanDay)
-            && ! ($routed['kind'] === 'unavailable' && ($routed['topic'] ?? null) === 'listing');
+        $answered = Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }

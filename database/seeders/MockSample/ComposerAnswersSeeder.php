@@ -13,7 +13,9 @@ use Illuminate\Database\Seeder;
  * Local only: the conversations tools/mock-compare/configs/composer-answers*.json compare.
  * On the mock's sample moment (Wednesday 30 September 2026, 13:10) it asks the requests
  * those configs ask the mock, and Composer answers each one through its own `message` and
- * `answer` commands, exactly as the page does. It starts from MockSample\ComposerSeeder's
+ * `answer` commands. The page sends `answer` only when parse() says Composer answers the
+ * request (Answers::handles, which defers to the prompt parser); asked directly, each answer
+ * shows as Composer draws it, whichever parser is on. It starts from MockSample\ComposerSeeder's
  * state (Events' sample, nothing saved, one new conversation).
  *
  *   E2E_EMAIL=you@expadu.test COMPOSER_ANSWERS=main php artisan db:seed --class='Database\Seeders\MockSample\ComposerAnswersSeeder'
