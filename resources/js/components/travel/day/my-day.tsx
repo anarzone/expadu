@@ -75,10 +75,6 @@ const routable = (item: DayItem) =>
 
 const placeOf = (item: DayItem) => item.location?.label ?? item.title;
 
-/** The stop, without the place's name it repeats ("Mülheim · Wiener Platz"). */
-const alightName = (stop: string, place: string) =>
-    stop.startsWith(`${place} `) ? stop.slice(place.length + 1) : stop;
-
 /** The device clock, each 30 s: "Now" moves on while the page stays open. */
 function useNow(): number {
     const [now, setNow] = useState(() => Date.now());
@@ -479,7 +475,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
         const until = item.end_time ? ` · until ${item.end_time}` : '';
         const stop =
             item.id === nextTrip?.target.id && alight
-                ? ` · ${alightName(stopName(alight.to.name, nextTrip.city), placeOf(item))}`
+                ? ` · ${stopName(alight.to.name, nextTrip.city)}`
                 : '';
 
         rows.push(

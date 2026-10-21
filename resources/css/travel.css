@@ -593,8 +593,17 @@
     border: 1.5px solid var(--color-border);
     border-radius: 22px;
     background: var(--color-bg-surface);
+    /* Travel's own type wherever the card sits (Today, My day), so a host
+       page's base size doesn't reach it. */
+    font-family: var(--font-sans);
+    font-size: var(--text-control);
     line-height: var(--leading-snug);
     transition: border-color 300ms var(--ease-standard);
+}
+/* Sub-lines keep the card's ink, as on Travel, not a host page's grey
+   small; the card's own soft lines say so below. */
+.trip-line small {
+    color: inherit;
 }
 .trip-line[hidden] {
     display: none;
@@ -1033,6 +1042,18 @@
     .trip-title strong {
         font-size: 17px;
     }
+    /* A long stop name (KVB's "Mülheim Wiener Platz") wraps under its
+       mark instead of running into the next one; the strip keeps room
+       for two lines and the time. */
+    .way-node.is-stop > span {
+        width: max-content;
+        max-width: 84px;
+        white-space: normal;
+        text-align: center;
+    }
+    .way-strip {
+        margin-bottom: 62px;
+    }
 }
 /* The card keeps one row only where the facts have room beside the
    title and the buttons (desktop's Nearby); below that, stacked: title,
@@ -1091,9 +1112,10 @@
     fill: currentColor;
 }
 /* Outside Travel the button is a link and Travel's .primary isn't there:
-   the same weight and no underline. */
+   the same weight, line height and no underline. */
 .trip-line .next-trip-go {
     font-weight: var(--weight-semibold);
+    line-height: 1.4;
     text-decoration: none;
 }
 
