@@ -56,7 +56,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             PerfTrackMiddleware::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // Capped: the HTML already carries every modulepreload tag, and a page
+            // with 40+ chunks pushed the Link header past nginx's 4k header buffer
+            // (502 "upstream sent too big header" on staging, 21 Oct).
+            AddLinkHeadersForPreloadedAssets::using(16),
             SetCacheHeaders::class,
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.
