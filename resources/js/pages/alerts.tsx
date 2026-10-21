@@ -36,8 +36,14 @@ type Alert = {
 
 /** Severity → left border + icon-tile tint (the design's sev-* classes). */
 const SEVERITY: Record<Alert['severity'], { border: string; icon: string }> = {
-    danger: { border: 'border-l-danger', icon: 'bg-danger-soft text-danger' },
-    warn: { border: 'border-l-warn', icon: 'bg-warn-soft text-warn' },
+    danger: {
+        border: 'border-l-danger',
+        icon: 'bg-conflict-bg text-conflict-text',
+    },
+    warn: {
+        border: 'border-l-warn',
+        icon: 'bg-attention-bg text-attention-text',
+    },
     info: { border: 'border-l-navy', icon: 'bg-navy-soft text-navy' },
     success: {
         border: 'border-l-success',
@@ -111,7 +117,7 @@ function AlertCard({
 
     return (
         <div
-            className={`group relative mb-2.5 flex gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-card p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
+            className={`group relative mb-2.5 flex gap-3.5 rounded-[14px] border border-l-[3px] border-border bg-bg-surface p-4 shadow-card transition-opacity ${sev.border} ${alert.read ? 'opacity-[0.62] shadow-none' : ''}`}
         >
             <span
                 className={`flex size-[38px] shrink-0 items-center justify-center rounded-[11px] ${sev.icon}`}
@@ -124,26 +130,28 @@ function AlertCard({
                         {alert.title}
                     </span>
                     {!alert.read && (
-                        <span className="mt-1.5 size-[7px] shrink-0 rounded-full bg-primary" />
+                        <span className="mt-1.5 size-[7px] shrink-0 rounded-full bg-action" />
                     )}
                 </div>
                 {alert.body && (
-                    <p className="mt-1.5 text-[13px] leading-[1.55] text-text-2">
+                    <p className="mt-1.5 text-[13px] leading-[1.55] text-text-soft">
                         {alert.body}
                     </p>
                 )}
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[10px] tracking-[0.05em] text-text-3 uppercase">
+                    <span className="font-mono text-[10px] tracking-[0.05em] text-text-muted uppercase">
                         {alert.source}
                     </span>
-                    <span className="text-[11px] text-text-3">·</span>
-                    <span className="font-mono text-[10.5px] text-text-3">
+                    <span className="text-[11px] text-text-muted">·</span>
+                    <span className="font-mono text-[10.5px] text-text-muted">
                         {timeAgo(alert.created_at)}
                     </span>
                     {alert.occurrences > 1 && (
                         <>
-                            <span className="text-[11px] text-text-3">·</span>
-                            <span className="font-mono text-[10.5px] text-text-3">
+                            <span className="text-[11px] text-text-muted">
+                                ·
+                            </span>
+                            <span className="font-mono text-[10.5px] text-text-muted">
                                 updated {alert.occurrences}×
                             </span>
                         </>
@@ -154,7 +162,7 @@ function AlertCard({
                         type="button"
                         disabled={pending}
                         onClick={() => onRead(alert.id)}
-                        className="mt-2 min-h-11 text-sm font-medium text-primary disabled:opacity-50"
+                        className="mt-2 min-h-11 text-sm font-medium text-action-text disabled:opacity-50"
                     >
                         Mark read
                     </button>
@@ -170,8 +178,8 @@ function AlertCard({
                             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-semibold transition-colors ${
                                 alert.lane === 'action' &&
                                 alert.severity === 'danger'
-                                    ? 'bg-primary text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)] hover:bg-primary/90'
-                                    : 'border border-border bg-card text-foreground hover:border-primary hover:text-primary'
+                                    ? 'bg-action text-white shadow-[0_2px_9px_rgba(255,57,2,0.26)] hover:bg-action/90'
+                                    : 'border border-border bg-bg-surface text-text hover:border-action hover:text-action-text'
                             }`}
                         >
                             {alert.action_label}
@@ -187,7 +195,7 @@ function AlertCard({
                 }}
                 disabled={pending}
                 aria-label={`Dismiss ${alert.title}`}
-                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-[7px] text-text-3 transition-colors hover:bg-surface-2 disabled:opacity-50"
+                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-[7px] text-text-muted transition-colors hover:bg-bg-quiet disabled:opacity-50"
             >
                 <IconX size={15} stroke={ICON_STROKE} />
             </button>
@@ -208,14 +216,14 @@ function Lane({
 }) {
     return (
         <>
-            <div className="mt-6 mb-3 flex items-center gap-2.5 font-mono text-[11px] font-medium tracking-[0.12em] text-text-3 uppercase">
+            <div className="mt-6 mb-3 flex items-center gap-2.5 font-mono text-[11px] font-medium tracking-[0.12em] text-text-muted uppercase">
                 {title}
                 {count !== undefined && (
                     <span
                         className={`rounded-full px-2 py-px text-[10.5px] font-bold ${
                             countTone === 'good'
                                 ? 'bg-success-soft text-success'
-                                : 'bg-danger-soft text-danger'
+                                : 'bg-conflict-bg text-conflict-text'
                         }`}
                     >
                         {count}
@@ -378,10 +386,7 @@ export default function Alerts() {
         laneAction.length + laneGood.length + lanePosted.length === 0;
 
     return (
-        <AppLayout
-            rightPanel={null}
-            breadcrumbs={[{ title: 'Alerts', href: '/alerts' }]}
-        >
+        <AppLayout>
             <Head title="Alerts" />
             <div className="mx-auto w-full max-w-[680px] px-1 pb-16">
                 {/* Header */}
@@ -390,7 +395,7 @@ export default function Alerts() {
                         <h1 className="font-display text-[30px] leading-tight font-medium tracking-[-0.02em]">
                             Alerts
                         </h1>
-                        <p className="mt-1.5 text-[13.5px] text-text-2">
+                        <p className="mt-1.5 text-[13.5px] text-text-soft">
                             {summary}
                         </p>
                     </div>
@@ -399,7 +404,7 @@ export default function Alerts() {
                             <button
                                 disabled={pending}
                                 onClick={markAll}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-[12.5px] font-semibold text-text-2 transition-colors hover:border-primary hover:text-primary"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg-surface px-3 py-2 text-[12.5px] font-semibold text-text-soft transition-colors hover:border-action hover:text-action-text"
                             >
                                 <IconChecks size={14} stroke={ICON_STROKE} />
                                 Mark all read
@@ -411,7 +416,7 @@ export default function Alerts() {
                             }
                             aria-label="Notification settings"
                             title="Notification settings"
-                            className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-text-2 transition-colors hover:border-primary hover:text-primary"
+                            className="flex size-9 items-center justify-center rounded-full border border-border bg-bg-surface text-text-soft transition-colors hover:border-action hover:text-action-text"
                         >
                             <IconSettings size={18} stroke={1.7} />
                         </button>
@@ -421,16 +426,13 @@ export default function Alerts() {
                 {error && (
                     <p
                         role="alert"
-                        className="mt-4 rounded-xl border border-destructive/20 p-3 text-sm text-destructive"
+                        className="mt-4 rounded-xl border border-conflict-text/20 p-3 text-sm text-conflict-text"
                     >
                         {error}
                     </p>
                 )}
                 {pending && (
-                    <p
-                        role="status"
-                        className="mt-2 text-sm text-muted-foreground"
-                    >
+                    <p role="status" className="mt-2 text-sm text-text-muted">
                         Saving…
                     </p>
                 )}
@@ -446,8 +448,8 @@ export default function Alerts() {
                                 onClick={() => setCat(c.id)}
                                 className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] transition-colors ${
                                     on
-                                        ? 'border-primary bg-primary-soft font-semibold text-primary'
-                                        : 'border-border bg-card font-medium text-text-2 hover:border-primary'
+                                        ? 'border-action bg-action-tint font-semibold text-action-text'
+                                        : 'border-border bg-bg-surface font-medium text-text-soft hover:border-action'
                                 }`}
                             >
                                 {c.label}
@@ -469,7 +471,7 @@ export default function Alerts() {
                         <div className="font-display text-[21px] font-medium">
                             You're all caught up
                         </div>
-                        <div className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-relaxed text-text-2">
+                        <div className="mx-auto mt-1.5 max-w-xs text-[13.5px] leading-relaxed text-text-soft">
                             {cat === 'all'
                                 ? 'Nothing needs you right now. We’ll ping you the moment something does.'
                                 : 'Switch the filter to see other alerts.'}
@@ -535,7 +537,7 @@ export default function Alerts() {
                     <>
                         <button
                             onClick={() => setShowRead((v) => !v)}
-                            className="mt-4 mb-2.5 flex w-full items-center justify-between rounded-[14px] border border-dashed border-border px-4 py-3 text-[13px] font-semibold text-text-2"
+                            className="mt-4 mb-2.5 flex w-full items-center justify-between rounded-[14px] border border-dashed border-border px-4 py-3 text-[13px] font-semibold text-text-soft"
                         >
                             <span>
                                 {readList.length} read{' '}
@@ -567,7 +569,7 @@ export default function Alerts() {
 
             {toast && (
                 <div className="fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 md:bottom-8">
-                    <div className="rounded-full border border-transparent bg-foreground px-4 py-2.5 text-[13px] font-medium text-background shadow-lg dark:border-border dark:bg-secondary dark:text-foreground">
+                    <div className="rounded-full border border-transparent bg-text px-4 py-2.5 text-[13px] font-medium text-bg-canvas shadow-lg">
                         {toast}
                     </div>
                 </div>

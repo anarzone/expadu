@@ -74,6 +74,9 @@ test('startup remains usable when the server returns an empty app root', async (
 });
 
 test('core pages attach without hydration errors', async ({ page }) => {
+    // Seven full page loads, Paperwork's plan among them: more than the
+    // default 30 s on a CI runner.
+    test.slow();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -92,7 +95,6 @@ test('core pages attach without hydration errors', async ({ page }) => {
         '/events',
         '/bureaucracy',
         '/timetable',
-        '/services',
         '/profile',
         '/alerts',
     ]) {

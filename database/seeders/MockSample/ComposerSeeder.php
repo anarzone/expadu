@@ -3,9 +3,12 @@
 namespace Database\Seeders\MockSample;
 
 use App\Composer\WorkspaceStore;
+use App\Enums\SpotFeedbackState;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
+use App\Models\EventBookmark;
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -24,7 +27,10 @@ use Illuminate\Database\Seeder;
  *    places, keyed alike, so whichever runs first makes it and the other leaves it be;
  *  - that account's conversation history, cleared to one new conversation started at the
  *    sample's moment, so Composer opens on its welcome and History lists it as the mock
- *    does ("New conversation · 30 Sept · 0 messages"); plans stay as they are.
+ *    does ("New conversation · 30 Sept · 0 messages"); plans stay as they are;
+ *  - nothing saved on that account (its event bookmarks and saved places, all that
+ *    App\Saved\SavedCollection reads), so Saved ideas is the mock's empty state. Another
+ *    page's sample can leave a save behind; a comparison that needs one adds it itself.
  *
  * The person's own day comes from MockSample\PaperworkSeeder (the appointment) and
  * `mock:sample-day` (plans).
@@ -65,6 +71,10 @@ class ComposerSeeder extends Seeder
             'is_active' => true, 'public_access_allowed' => true,
         ]);
 
+        // Saved ideas starts empty, as the mock's does.
+        EventBookmark::query()->where('user_id', $user->id)->delete();
+        SpotFeedback::query()->where('user_id', $user->id)->where('state', SpotFeedbackState::Saved)->delete();
+
         // The mock's history is one conversation from its sample day; on the sample clock,
         // so it is dated 30 September (just before the mock's 13:10).
         $moment = CarbonImmutable::parse('2026-09-30 13:00', 'Europe/Berlin');
@@ -79,6 +89,6 @@ class ComposerSeeder extends Seeder
             CarbonImmutable::setTestNow();
         }
 
-        $this->command?->info('The Composer sample is in place (Events\' sample, the pharmacy by Wiener Platz), with one new conversation.');
+        $this->command?->info('The Composer sample is in place (Events\' sample, the pharmacy by Wiener Platz), with one new conversation and nothing saved.');
     }
 }

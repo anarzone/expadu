@@ -1496,6 +1496,10 @@
         border-radius: var(--radius-xl);
         background: white;
     }
+    /* "Get started" is a link here, a button in the mock: centre it alike. */
+    .access-blank .actions .button {
+        text-align: center;
+    }
     .honest-empty p,
     .access-blank p {
         color: var(--muted);

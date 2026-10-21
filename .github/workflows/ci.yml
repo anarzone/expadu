@@ -261,6 +261,8 @@ jobs:
         run: |
           php artisan migrate --force --seed
           php artisan db:seed --force --class=E2ETestUserSeeder
+          # composer-workspace.spec plans a day from these test-only places.
+          php artisan db:seed --force --class=E2EComposerCatalogueSeeder
 
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
@@ -438,11 +440,12 @@ jobs:
             docker compose up -d --force-recreate
             sleep 5
             # The entrypoint migrates before PHP-FPM starts; these are the
-            # deploy-time catalogue steps (import, source check, release, dossiers).
-            docker exec staging-app php artisan bureaucracy:import-tasks --retire-missing
-            docker exec staging-app php artisan bureaucracy:verify-sources
-            docker exec staging-app php artisan bureaucracy:compile-catalogue --deploy
-            docker exec staging-app php artisan bureaucracy:migrate-dossiers --apply --all
+            # deploy-time catalogue steps (import, source check, release, dossiers),
+            # run as www-data so the log files they create stay writable by the app.
+            docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --retire-missing
+            docker exec -u www-data staging-app php artisan bureaucracy:verify-sources
+            docker exec -u www-data staging-app php artisan bureaucracy:compile-catalogue --deploy
+            docker exec -u www-data staging-app php artisan bureaucracy:migrate-dossiers --apply --all
             docker image prune -f
 
   deploy-production:
@@ -467,9 +470,10 @@ jobs:
             docker compose up -d app
             sleep 5
             # The entrypoint migrates before PHP-FPM starts; these are the
-            # deploy-time catalogue steps (import, source check, release, dossiers).
-            docker exec "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
-            docker exec "$APP_CONTAINER" php artisan bureaucracy:verify-sources
-            docker exec "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
-            docker exec "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all
+            # deploy-time catalogue steps (import, source check, release, dossiers),
+            # run as www-data so the log files they create stay writable by the app.
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:verify-sources
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
+            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all
             docker image prune -f

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Alert;
+use App\Models\CityNews;
+use App\Models\NoticeBrief;
 use App\Models\User;
 
 test('alerts page renders with alerts', function () {
@@ -29,6 +31,37 @@ test('each alert is enriched with the v4 lane / category / severity', function (
             ->where('alerts.0.lane', 'action')
             ->has('alerts.0.severity')
             ->has('alerts.0.source'));
+});
+
+test('a transit card shows its KVB notice\'s English brief, never the impact, and stays as it was without one', function () {
+    $user = User::factory()->onboarded()->create();
+    $notice = fn (string $line, string $title, string $details) => CityNews::query()->create([
+        'title' => $title, 'summary' => $details, 'source' => 'kvb-betriebslage',
+        'source_url' => 'https://www.kvb.koeln/fahrtinfo/betriebslage/#'.md5($title), 'category' => 'transit',
+        'relevance' => 'transit', 'affected_lines' => [$line], 'severity' => 'moderate',
+        'published_at' => now(), 'expires_at' => now()->addHours(2),
+    ]);
+    $briefed = $notice('13', 'Linie 13: Umleitung', 'Zwischen Sülzgürtel und Neusser Str. fahren die Bahnen eine Umleitung.');
+    $plain = $notice('4', 'Linie 4: Störung', 'Wegen eines Notarzteinsatzes kommt es zu Verspätungen.');
+    NoticeBrief::query()->create([
+        'input_hash' => NoticeBrief::hashFor($briefed->title, $briefed->summary), 'locale' => 'en',
+        'headline' => 'Line 13 is diverted', 'body' => 'Trams take a detour between Sülzgürtel and Neusser Str.',
+        'impact' => 'Allow ten extra minutes.', 'model' => 'test', 'prompt_version' => 'test',
+    ]);
+    foreach ([$briefed, $plain] as $i => $n) {
+        Alert::factory()->create([
+            'user_id' => $user->id, 'subtype' => 'transit_disruption', 'group_key' => "disruption:news_{$n->id}",
+            'title' => "Line {$n->affected_lines[0]} disrupted on your route", 'body' => 'See KVB for details.',
+            'updated_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    $alerts = collect($this->actingAs($user)->get(route('alerts'))->assertOk()->inertiaProps('alerts'))->keyBy('title');
+
+    expect($alerts->keys()->all())->toBe(['Line 13 is diverted', 'Line 4 disrupted on your route'])
+        ->and($alerts['Line 13 is diverted']['body'])->toBe('Trams take a detour between Sülzgürtel and Neusser Str.')
+        ->and($alerts['Line 4 disrupted on your route']['body'])->toBe('See KVB for details.')
+        ->and(json_encode($alerts->all()))->not->toContain('Allow ten extra minutes');
 });
 
 test('user can mark an alert as read', function () {

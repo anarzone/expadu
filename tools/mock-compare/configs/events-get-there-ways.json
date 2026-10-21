@@ -1,0 +1,156 @@
+{
+    "name": "events-get-there-ways",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1200
+            },
+            {
+                "click": ".event-where"
+            },
+            {
+                "wait": 4000
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".evd-where"
+            },
+            {
+                "wait": 5000
+            }
+        ],
+        "screenshotStyle": ".ev-details .ui-sheet-foot { visibility: hidden; }"
+    },
+    "pairs": [
+        {
+            "name": "best option",
+            "mock": "#shared-dialog .plan-option",
+            "app": ".ev-details .plan-option",
+            "ignore": ["y"],
+            "contentDiffers": true,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Travel\u2019s own card (PlanOptions): it says when the first ride leaves (\u201cat 17:44\u201d), draws Travel\u2019s own star and tram (departures-next/icons.js) where the Events mock draws its line set\u2019s, and words the weather \u201cDry on the way\u201d without the mock\u2019s \u201c(sample)\u201d label. The times, the line badges\u2019 colours and words, the chips and the reasons are compared one by one below."
+        },
+        {
+            "name": "best: Best for you (390)",
+            "mock": "#shared-dialog .plan-option .tl-chip.is-best",
+            "app": ".ev-details .plan-option .tl-chip.is-best",
+            "ignore": ["y"],
+            "widths": [390],
+            "contentDiffers": true,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Travel\u2019s own artwork for it (departures-next/icons.js: its star and its tram), where the Events mock draws its line set\u2019s; its box, styles and words are compared."
+        },
+        {
+            "name": "best: Best for you (other widths)",
+            "mock": "#shared-dialog .plan-option .tl-chip.is-best",
+            "app": ".ev-details .plan-option .tl-chip.is-best",
+            "ignore": ["y"],
+            "widths": [360, 768, 1280, 1440, 1512],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Scrolled into view lower by Travel\u2019s checks, its text falls on another fraction of a pixel at these widths and anti-aliases apart; at 390, where it lands on the mock\u2019s, its pixels are compared."
+        },
+        {
+            "name": "best: spare (390)",
+            "mock": "#shared-dialog .plan-option .plan-option-head > .tl-chip.is-calm",
+            "app": ".ev-details .plan-option .plan-option-head > .tl-chip.is-calm",
+            "ignore": ["y"],
+            "widths": [390],
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared."
+        },
+        {
+            "name": "best: spare (other widths)",
+            "mock": "#shared-dialog .plan-option .plan-option-head > .tl-chip.is-calm",
+            "app": ".ev-details .plan-option .plan-option-head > .tl-chip.is-calm",
+            "ignore": ["y"],
+            "widths": [360, 768, 1280, 1440, 1512],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Scrolled into view lower by Travel\u2019s checks, its text falls on another fraction of a pixel at these widths and anti-aliases apart; at 390, where it lands on the mock\u2019s, its pixels are compared."
+        },
+        {
+            "name": "best: first ride (390)",
+            "mock": "#shared-dialog .plan-option .tl-line",
+            "app": ".ev-details .plan-option .tl-line",
+            "ignore": ["y"],
+            "widths": [390],
+            "contentDiffers": true,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Travel\u2019s own artwork for it (departures-next/icons.js: its star and its tram), where the Events mock draws its line set\u2019s; its box, styles and words are compared."
+        },
+        {
+            "name": "best: first ride (other widths)",
+            "mock": "#shared-dialog .plan-option .tl-line",
+            "app": ".ev-details .plan-option .tl-line",
+            "ignore": ["y"],
+            "widths": [360, 768, 1280, 1440, 1512],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Scrolled into view lower by Travel\u2019s checks, its text falls on another fraction of a pixel at these widths and anti-aliases apart; at 390, where it lands on the mock\u2019s, its pixels are compared."
+        },
+        {
+            "name": "best: times (390)",
+            "mock": "#shared-dialog .plan-option .plan-option-times",
+            "app": ".ev-details .plan-option .plan-option-times",
+            "ignore": ["y"],
+            "widths": [390],
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared."
+        },
+        {
+            "name": "best: times (other widths)",
+            "mock": "#shared-dialog .plan-option .plan-option-times",
+            "app": ".ev-details .plan-option .plan-option-times",
+            "ignore": ["y"],
+            "widths": [360, 768, 1280, 1440, 1512],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Scrolled into view lower by Travel\u2019s checks, its text falls on another fraction of a pixel at these widths and anti-aliases apart; at 390, where it lands on the mock\u2019s, its pixels are compared."
+        },
+        {
+            "name": "best: radio",
+            "mock": "#shared-dialog .plan-option .plan-radio",
+            "app": ".ev-details .plan-option .plan-radio",
+            "ignore": ["y"],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Lower on the page, the radio\u2019s circle falls on another fraction of a pixel, so its anti-aliased edge differs; its box, border and colours are compared."
+        },
+        {
+            "name": "best: Journey details (390)",
+            "mock": "#shared-dialog .plan-option .details-toggle",
+            "app": ".ev-details .plan-option .details-toggle",
+            "ignore": ["y"],
+            "widths": [390],
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared."
+        },
+        {
+            "name": "best: Journey details (other widths)",
+            "mock": "#shared-dialog .plan-option .details-toggle",
+            "app": ".ev-details .plan-option .details-toggle",
+            "ignore": ["y"],
+            "widths": [360, 768, 1280, 1440, 1512],
+            "pixels": false,
+            "reason": "It sits lower by the height of what Travel checked (PlanChecks, \u201cWe checked today\u2019s conditions\u201d), which takes the place of the mock\u2019s one-line \u201cWe checked\u201d: Get there shows Travel\u2019s own pieces (owner, 18 Oct 2026: trips look like Travel everywhere; coordinator on EXP-155). Its x, width, height and styles are compared. Scrolled into view lower by Travel\u2019s checks, its text falls on another fraction of a pixel at these widths and anti-aliases apart; at 390, where it lands on the mock\u2019s, its pixels are compared."
+        }
+    ]
+}

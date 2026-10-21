@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
-import { TravelBanner, TravelChip } from '../labels';
+import { CardStrip, TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
 import { LineStrip, StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
-import { filterDefaults, nearbyView, whenOf } from './nearby-model';
+import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
 import { StopPicker } from './stop-picker';
 import { noticeWords } from './types';
@@ -104,6 +104,20 @@ export function NearbyView({
         [station, filters, pinned, now],
     );
     const stale = station.is_stale || station.time_basis === 'stale';
+    // Late at night: the next ones after these are a long way off.
+    const wait = stale ? null : longWait(v);
+    const waitWord =
+        wait?.mode === 'bus'
+            ? 'buses'
+            : wait?.mode === 'tram'
+              ? 'trams'
+              : 'departures';
+    // Paused: how long since the last reading, in whole clock minutes (it
+    // says "from 22:19", so 22:25 is 6 minutes).
+    const pausedFor = station.observed_at
+        ? Math.floor(now / 60_000) -
+          Math.floor(Date.parse(station.observed_at) / 60_000)
+        : 0;
     const runs = station.lines.flatMap((l) =>
         l.dirs.flatMap((d) => (d.next ? [d.next] : [])),
     );
@@ -378,6 +392,19 @@ export function NearbyView({
     })();
 
     const delayTag = (dir: ShownDir, long = false) => {
+        // A long wait: the open line says when the next one after comes.
+        if (wait) {
+            return long && dir.laterClocks.length ? (
+                <TravelChip
+                    kind="attention"
+                    icon={<TravelIcon name="moon" />}
+                    size="sm"
+                >
+                    {`Then ${dir.laterClocks[0]}`}
+                </TravelChip>
+            ) : null;
+        }
+
         if (stale || !dir.delayMin) {
             return null;
         }
@@ -396,8 +423,8 @@ export function NearbyView({
         );
     };
 
-    // A timetable or paused time leaving now shows its clock, quietly: "Now"
-    // is for a live departure.
+    // Paused times are the last ones read: their clocks. A timetable time
+    // leaving now shows its clock, quietly: "Now" is for a live departure.
     const time = (dir: ShownDir) => {
         const paused = stale || !dir.live;
         const when = whenOf(dir);
@@ -405,7 +432,7 @@ export function NearbyView({
         return (
             <StripTime
                 when={
-                    paused && when.big === 'now'
+                    stale || (paused && when.big === 'now')
                         ? { big: dir.clock, unit: '' }
                         : when
                 }
@@ -460,6 +487,19 @@ export function NearbyView({
                 first={end(first)}
                 second={end(second)}
                 empty={`Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not in the feed'}`}
+                extra={
+                    // A long wait is about the whole card: along its foot.
+                    wait && l.shown.some((d) => d.laterClocks.length) ? (
+                        <CardStrip
+                            kind="attention"
+                            icon={<TravelIcon name="moon" />}
+                        >
+                            {`Then ${l.shown
+                                .flatMap((d) => d.laterClocks.slice(0, 1))
+                                .join(' · ')}`}
+                        </CardStrip>
+                    ) : undefined
+                }
                 aria-pressed={false}
                 aria-label={label}
                 onClick={() => setOpenLine(l.line)}
@@ -618,8 +658,9 @@ export function NearbyView({
                         icon={<TravelIcon name="offline" />}
                         title="Live times paused"
                     >
-                        These are the last times we had, from{' '}
-                        {clockOf(station.observed_at)}.
+                        {pausedFor >= 1
+                            ? `No update for ${pausedFor} minute${pausedFor === 1 ? '' : 's'}, so these are the last times we had, from ${clockOf(station.observed_at)}.`
+                            : `These are the last times we had, from ${clockOf(station.observed_at)}.`}
                     </TravelBanner>
                 </div>
             ) : liftOut ? (
@@ -630,6 +671,16 @@ export function NearbyView({
                         title={`A lift at ${station.name} is out of order`}
                     >
                         {lifts.out.map((lift) => lift.label).join('; ')}
+                    </TravelBanner>
+                </div>
+            ) : wait ? (
+                <div className="nearby-banner is-labelled">
+                    <TravelBanner
+                        kind="attention"
+                        icon={<TravelIcon name="moon" />}
+                        title={`Last ${waitWord} for a while`}
+                    >
+                        {`After these, the next ${waitWord} come ${wait.low === wait.high ? wait.low : `${wait.low}–${wait.high}`}\u00a0min later.`}
                     </TravelBanner>
                 </div>
             ) : null}

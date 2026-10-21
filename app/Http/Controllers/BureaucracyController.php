@@ -7,6 +7,7 @@ use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Bureaucracy\ReadModel\PlanReadModel;
 use App\Models\BureaucracyPerson;
+use App\Waitlist\CoverageWaitlist;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -53,6 +54,9 @@ class BureaucracyController extends Controller
                 : $entry->for($actor),
             'jurisdiction' => $jurisdiction,
             'people' => $people,
+            // Outside Cologne: whether the person asked to be told, and confirmed by mail.
+            // Read only there, and only for the signed-in account's own address.
+            'coverageWaitlist' => fn () => $jurisdiction === 'outside_coverage' ? app(CoverageWaitlist::class)->state($actor) : null,
         ]);
     }
 }

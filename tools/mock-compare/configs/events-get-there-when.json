@@ -1,0 +1,101 @@
+{
+    "name": "events-get-there-when",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1200
+            },
+            {
+                "click": ".event-where"
+            },
+            {
+                "wait": 4000
+            },
+            {
+                "click": ".gt-time"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".evd-where"
+            },
+            {
+                "wait": 5000
+            },
+            {
+                "click": ".gt-time"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "menu",
+            "mock": "#shared-dialog .gt-menu",
+            "app": ".ev-details .gt-menu",
+            "contentDiffers": true,
+            "reason": "Leave now says the time it is (\u201cIt\u2019s 13:10 now\u201d); the mock calls it \u201c13:10, the sample day\u2019s clock\u201d, its own sample\u2019s words. The box, the other choices and the styles are compared."
+        },
+        {
+            "name": "menu date",
+            "mock": "#shared-dialog .gt-menu > small",
+            "app": ".ev-details .gt-menu > small"
+        },
+        {
+            "name": "by the start",
+            "mock": "#shared-dialog .gt-menu button",
+            "app": ".ev-details .gt-menu button",
+            "index": 0
+        },
+        {
+            "name": "leave now",
+            "mock": "#shared-dialog .gt-menu button",
+            "app": ".ev-details .gt-menu button",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "Leave now says the time it is (\u201cIt\u2019s 13:10 now\u201d); the mock calls it \u201c13:10, the sample day\u2019s clock\u201d, its own sample\u2019s words. The box, the other choices and the styles are compared."
+        },
+        {
+            "name": "way back",
+            "mock": "#shared-dialog .gt-menu button",
+            "app": ".ev-details .gt-menu button",
+            "index": 2
+        },
+        {
+            "name": "time, open",
+            "mock": "#shared-dialog .gt-time .gt-pill",
+            "app": ".ev-details .gt-time .gt-pill"
+        }
+    ]
+}
