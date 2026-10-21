@@ -18,6 +18,7 @@ import {
     ErasedRecord,
     RecordNotice,
     RecordNoticeToast,
+    WorkspaceNotice,
     Sharing,
     StoppedRecord,
 } from '@/components/paperwork/sharing';
@@ -391,7 +392,7 @@ export default function Paperwork({
                             people={people}
                             coverageWaitlist={coverageWaitlist}
                         />
-                        <RecordNoticeToast notice={notice} clear={setNotice} />
+                        <WorkspaceNotice notice={notice} clear={setNotice} />
                     </PaperworkProvider>
                 ) : (
                     <div className="paperwork-page">

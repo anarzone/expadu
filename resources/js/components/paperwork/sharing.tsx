@@ -1,14 +1,7 @@
 import { router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
-import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-} from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -161,17 +154,8 @@ export function StoppedRecord({ personId }: { personId: number }) {
         title: string;
         body: ReactNode;
     } | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
-    const timer = useRef<number | null>(null);
-    const toast = useCallback((text: string) => {
-        setMessage(text);
-
-        if (timer.current) {
-            window.clearTimeout(timer.current);
-        }
-
-        timer.current = window.setTimeout(() => setMessage(null), 4200);
-    }, []);
+    // The page's own toast (RecordNoticeToast), so the page has one.
+    const toast = useContext(RecordNotice);
 
     return (
         <>
@@ -192,13 +176,6 @@ export function StoppedRecord({ personId }: { personId: number }) {
                 />
             </section>
             <LocalSheet sheet={sheet} onClose={() => setSheet(null)} />
-            <div
-                className={clsx('toast', message && 'show')}
-                role="status"
-                aria-live="polite"
-            >
-                {message}
-            </div>
         </>
     );
 }
@@ -506,7 +483,10 @@ function LocalSheet({
     );
 }
 
-/** The page's carried record notice (RecordNotice), shown for a moment. */
+/**
+ * The page's carried record notice (RecordNotice), shown for a moment, where
+ * there's no plan's workspace (the stopped and deleted pages).
+ */
 export function RecordNoticeToast({
     notice,
     clear,
@@ -533,6 +513,26 @@ export function RecordNoticeToast({
             {notice}
         </div>
     );
+}
+
+/** The page's carried record notice in the workspace's own toast, so a view has one. */
+export function WorkspaceNotice({
+    notice,
+    clear,
+}: {
+    notice: string | null;
+    clear: (next: null) => void;
+}) {
+    const { toast } = usePaperwork();
+
+    useEffect(() => {
+        if (notice) {
+            toast(notice);
+            clear(null);
+        }
+    }, [notice, toast, clear]);
+
+    return null;
 }
 
 /** After the page changes: the record's switch if it's still there, else the page's heading. */
