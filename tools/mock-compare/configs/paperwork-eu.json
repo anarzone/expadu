@@ -1,0 +1,50 @@
+{
+    "name": "paperwork-eu",
+    "seed": "PAPERWORK_ENTRY=eu E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkEntrySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.persona-preview, [data-preview-exit] { display: none !important; }'; document.head.append(s); });"
+        ],
+        "before": [
+            {
+                "click": ".review-tools > summary"
+            },
+            {
+                "click": "[data-preview-persona=\"eu\"]"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password",
+            "sibling": "eu"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "no residence task",
+            "mock": ".process-grid-note",
+            "app": ".process-grid-note",
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "previewNote": "The mock shows these entry states as Review personas: its 'Previewing' banner and the preview-only 'My area is Cologne' button are review tools, so the mock side hides them (init) before anything is measured.",
+    "seedNote": "The app signs in as the sibling <name>+eu@…, with PaperworkSeeder's EU persona: the mock's six answers and no task started (MockSample\\PaperworkEntrySeeder). The plan then suggests the same three tasks as the mock, and no residence task.",
+    "overviewNote": "This config measures PW6's note only. The overview above it is PW2's (session 2): the mock's EU persona has 'Your situation' and a question card above the tasks, and its task cards carry a line the app's don't yet, so the note sits higher in the app (93.5px, and a line less on phones). Its box, words and styles are compared; its y and pixels wait for PW2."
+}

@@ -143,10 +143,10 @@ On your machine (`APP_ENV=local` only):
   (`PAPERWORK_SAMPLE=quiet` for `today-quiet`): the Blue Card appointment on the sample day is that
   record, not a plan of `mock:sample-day`'s.
 - **Paperwork's entry states:** `paperwork-setup`, `paperwork-unavailable`, `paperwork-outside` and
-  `paperwork-outside-joined` sign in as a sibling of your account (`<name>+setup@…`, `+unavailable`,
+  `paperwork-outside-joined` and `paperwork-eu` sign in as a sibling of your account (`<name>+setup@…`, `+unavailable`,
   `+outside`). `PAPERWORK_ENTRY=<entry> E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\PaperworkEntrySeeder'` puts it in that state (no record; the
-  sample record paused; the sample record outside the catalogue's cities), and
+  sample record paused; the sample record outside the catalogue's cities; for `eu`, PaperworkSeeder's EU persona, `PAPERWORK_SAMPLE=eu`), and
   `PAPERWORK_WAITLIST=unconfirmed` adds the outside sibling to the city waitlist as after the tap. The
   mock picks the matching Review persona itself.
 - **Places and events:** Today's discovery compares against the mock's sample places around Wiener

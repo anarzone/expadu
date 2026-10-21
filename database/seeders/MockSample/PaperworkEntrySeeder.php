@@ -19,6 +19,8 @@ use InvalidArgumentException;
  *   outside      PaperworkSeeder's sample record, living outside the
  *                catalogue's cities (Hamburg): no reviewed guidance there
  *   unavailable  PaperworkSeeder's sample record, paused (record unavailable)
+ *   eu           PaperworkSeeder's EU persona (PAPERWORK_SAMPLE=eu): no residence
+ *                task applies to its answers
  *
  *   PAPERWORK_ENTRY=outside E2E_EMAIL=you@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\PaperworkEntrySeeder'
  *
@@ -30,7 +32,7 @@ use InvalidArgumentException;
  */
 class PaperworkEntrySeeder extends Seeder
 {
-    private const ENTRIES = ['setup', 'outside', 'unavailable'];
+    private const ENTRIES = ['setup', 'outside', 'unavailable', 'eu'];
 
     public function run(): void
     {
@@ -59,7 +61,8 @@ class PaperworkEntrySeeder extends Seeder
             return;
         }
 
-        $this->withAccount($email, fn () => $this->call(PaperworkSeeder::class));
+        $this->withEnv(['E2E_EMAIL' => $email, 'PAPERWORK_SAMPLE' => $entry === 'eu' ? 'eu' : 'everyday'],
+            fn () => $this->call(PaperworkSeeder::class));
         $user->forceFill(['city' => $entry === 'outside' ? 'Hamburg' : 'cologne'])->save();
         BureaucracyPerson::query()->where('account_user_id', $user->id)
             ->update(['record_status' => $entry === 'unavailable' ? 'paused' : 'active']);
@@ -72,17 +75,27 @@ class PaperworkEntrySeeder extends Seeder
         $this->command?->info("{$email}'s Paperwork record: {$entry}.");
     }
 
-    /** Runs PaperworkSeeder, which reads E2E_EMAIL, for the sibling account. */
-    private function withAccount(string $email, callable $seed): void
+    /**
+     * Runs PaperworkSeeder, which reads its account and sample from the
+     * environment, for the sibling.
+     *
+     * @param  array<string, string>  $values
+     */
+    private function withEnv(array $values, callable $seed): void
     {
-        $before = getenv('E2E_EMAIL');
-        putenv("E2E_EMAIL={$email}");
-        $_ENV['E2E_EMAIL'] = $_SERVER['E2E_EMAIL'] = $email;
+        $before = [];
+        foreach ($values as $key => $value) {
+            $before[$key] = getenv($key);
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $_SERVER[$key] = $value;
+        }
         try {
             $seed();
         } finally {
-            $before === false ? putenv('E2E_EMAIL') : putenv("E2E_EMAIL={$before}");
-            $_ENV['E2E_EMAIL'] = $_SERVER['E2E_EMAIL'] = $before === false ? null : $before;
+            foreach ($before as $key => $value) {
+                $value === false ? putenv($key) : putenv("{$key}={$value}");
+                $_ENV[$key] = $_SERVER[$key] = $value === false ? null : $value;
+            }
         }
     }
 }
