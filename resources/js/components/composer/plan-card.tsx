@@ -30,6 +30,31 @@ const minutes = (time: string) =>
 
 const where = (slot: Slot) => slot.location || slot.veedel || '';
 
+/**
+ * A place's length is the plan's, never the place's: no listing gives how
+ * long a visit takes, so it's said as planned ("about 1¼ h planned").
+ */
+function planned(slot: Slot): string | null {
+    if (slot.type !== 'spot' || !slot.end_time) {
+        return null;
+    }
+
+    const length =
+        Math.round((minutes(slot.end_time) - minutes(slot.start_time)) / 15) *
+        15;
+
+    if (length <= 0) {
+        return null;
+    }
+
+    const hours = Math.floor(length / 60);
+    const part = ['', '¼', '½', '¾'][(length % 60) / 15];
+
+    return length < 60
+        ? `about ${length} min planned`
+        : `about ${hours}${part} h planned`;
+}
+
 /** The day's newest change, while its rows still describe the day. */
 export function marksFor(
     plan: Plan,
@@ -118,7 +143,12 @@ export function PlanCard({
                     <Icon name="calendar" variant="line" />
                     {dateLabel(plan.date)}
                 </span>
-                <small>In your plans</small>
+                <small>
+                    In your plans
+                    {/* A composed plan with no starting point was timed from the city centre. */}
+                    {plan.origin_label === null &&
+                        ' · times from the city centre'}
+                </small>
             </div>
             <section className="chat-live-plan" aria-label="Your plan">
                 <section className="timeline-paper">
@@ -165,11 +195,16 @@ export function PlanCard({
                                                 : slot.name}
                                         </h3>
                                         <p>
-                                            {where(slot) ||
-                                                slot.subtitle ||
-                                                (slot.type === 'personal'
-                                                    ? 'Personal appointment'
-                                                    : 'Location to be added')}
+                                            {[
+                                                where(slot) ||
+                                                    slot.subtitle ||
+                                                    (slot.type === 'personal'
+                                                        ? 'Personal appointment'
+                                                        : 'Location to be added'),
+                                                planned(slot),
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' · ')}
                                         </p>
                                         {slot.recommendation_status ===
                                         'unavailable' ? (

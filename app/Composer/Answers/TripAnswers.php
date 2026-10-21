@@ -268,6 +268,8 @@ final class TripAnswers
         return match ($mode) {
             'bus' => 'Bus',
             'rail', 'train' => 'Train',
+            'ferry' => 'Ferry',
+            // Cologne's Stadtbahn is reported as "subway": a tram.
             default => 'Tram',
         };
     }

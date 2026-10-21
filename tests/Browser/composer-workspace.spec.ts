@@ -79,9 +79,30 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
         await dateInput.fill(dateValue);
     }
 
-    await dialog
-        .getByRole('button', { name: 'Add to plan', exact: true })
-        .click();
+    // The person's own times: nothing is chosen for them, so Add waits for both.
+    const add = dialog.getByRole('button', {
+        name: 'Add to plan',
+        exact: true,
+    });
+    await expect(add).toBeDisabled();
+
+    for (const [label, value] of [
+        ['From', '10:00'],
+        ['Until', '11:00'],
+    ] as const) {
+        await dialog
+            .getByRole('button', { name: `${label} time not chosen` })
+            .click();
+        await page
+            .getByRole('dialog', { name: `Choose ${label.toLowerCase()} time` })
+            .getByRole('button', { name: 'Type a time' })
+            .click();
+        const typed = dialog.getByRole('textbox', { name: label, exact: true });
+        await typed.fill(value);
+        await typed.blur();
+    }
+
+    await add.click();
     await expect(dialog).not.toBeVisible();
     await expect(input).toHaveValue('Keep this unsent thought');
     const current = page.locator('#composer-current-plan');
