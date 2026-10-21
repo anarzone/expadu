@@ -8,7 +8,8 @@ import { stopName } from '@/components/travel/stop-name';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import type { DayProjection } from '@/types/day';
-import type { Workspace } from './types';
+import { markLabel, marksFor } from './plan-card';
+import type { Plan, Workspace } from './types';
 
 /**
  * Composer's frame (prototype/dev/design/composer-studio, app.js `heading()`, `dayPanel()`,
@@ -124,6 +125,7 @@ type Tile =
     | 'is-attention'
     | 'is-map'
     | 'is-events'
+    | 'is-changed'
     | '';
 
 export type DayFact = {
@@ -136,6 +138,8 @@ export type DayFact = {
     prompt?: string;
     href?: string;
     plan?: string;
+    /** Marked by the day's latest change. */
+    changed?: boolean;
 };
 
 const berlin = (iso: string, options: Intl.DateTimeFormatOptions) =>
@@ -316,7 +320,10 @@ function Fact({
     onAsk: (prompt: string) => void;
     onOpenPlan: (date: string) => void;
 }) {
-    const className = chip ? 'day-chip' : 'day-item';
+    const className = clsx(
+        chip ? 'day-chip' : 'day-item',
+        fact.changed && 'is-changed',
+    );
     const body = (
         <>
             <FactTile fact={fact} chip={chip} />
@@ -369,6 +376,42 @@ function comingUp(workspace: Workspace, today: string) {
 
 export type Panel = 'plans' | 'saved' | 'history';
 
+/** The day Composer is planning, when it isn't today (the mock's planningDay). */
+function planningDay(workspace: Workspace, today: string): Plan | null {
+    const plan = workspace.focus ? workspace.plans[workspace.focus] : null;
+
+    return plan && plan.date !== today && plan.slots.length > 0 ? plan : null;
+}
+
+const weekdayOf = (date: string) =>
+    berlin(`${date}T12:00:00Z`, { weekday: 'long' });
+
+/** The planned day's items, its latest change marked where it happened. */
+function planningFacts(plan: Plan, workspace: Workspace): DayFact[] {
+    const marks = marksFor(plan, workspace.changes);
+
+    return plan.slots.map((slot) => {
+        const mark = marks.get(slot.id);
+        const held = ['event', 'appointment', 'personal'].includes(slot.type);
+        const where = slot.location || slot.veedel || '';
+        const what = mark
+            ? mark.kind === 'moved'
+                ? `moved from ${(mark.from ?? '').split('–')[0]}`
+                : markLabel(mark).toLowerCase()
+            : 'in your plans';
+
+        return {
+            key: slot.id,
+            tile: mark ? 'is-changed' : held ? 'is-paper' : '',
+            icon: held ? 'calendar' : 'pin',
+            small: `${slot.start_time}–${slot.end_time} · ${what}`,
+            strong: where ? `${slot.name}, ${where}` : slot.name,
+            plan: plan.date,
+            changed: !!mark,
+        };
+    });
+}
+
 export function YourDay({
     day,
     facts,
@@ -384,8 +427,56 @@ export function YourDay({
     onOpenPlan: (date: string) => void;
     onPanel: (panel: Panel) => void;
 }) {
+    // While you plan another day, Your day is that day (owner, 18 Oct 2026,
+    // board 9); "Show today" goes back, "Show ‹weekday›" returns to it.
+    const [todayFor, setTodayFor] = useState<string | null>(null);
+
     if (!day) {
         return null;
+    }
+
+    const planning = planningDay(workspace, day.date);
+
+    if (planning && todayFor !== planning.date) {
+        return (
+            <aside
+                className="composer-day"
+                aria-labelledby="composer-day-title"
+            >
+                <div className="composer-day-head">
+                    <ComposerMark />
+                    <BackButton />
+                </div>
+                <h2 id="composer-day-title">
+                    {`Your ${weekdayOf(planning.date)}`}
+                </h2>
+                <p className="composer-day-note">
+                    {`${berlin(`${planning.date}T12:00:00Z`, {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                    })} · the day you’re planning. `}
+                    <button
+                        type="button"
+                        className="day-switch"
+                        onClick={() => setTodayFor(planning.date)}
+                    >
+                        Show today
+                    </button>
+                </p>
+                <div className="day-items">
+                    {planningFacts(planning, workspace).map((fact) => (
+                        <Fact
+                            key={fact.key}
+                            fact={fact}
+                            onAsk={onAsk}
+                            onOpenPlan={onOpenPlan}
+                        />
+                    ))}
+                </div>
+                <DayTools onPanel={onPanel} />
+            </aside>
+        );
     }
 
     const later = comingUp(workspace, day.date);
@@ -413,6 +504,18 @@ export function YourDay({
                     minute: '2-digit',
                     hourCycle: 'h23',
                 })}. Composer plans around this. Tap one to ask.`}
+                {planning ? (
+                    <>
+                        {' '}
+                        <button
+                            type="button"
+                            className="day-switch"
+                            onClick={() => setTodayFor(null)}
+                        >
+                            {`Show ${weekdayOf(planning.date)}`}
+                        </button>
+                    </>
+                ) : null}
             </p>
             {facts.length > 0 && (
                 <div className="day-items">
@@ -441,21 +544,27 @@ export function YourDay({
                     ))}
                 </div>
             )}
-            <nav className="day-tools" aria-label="Your Composer">
-                <button type="button" onClick={() => onPanel('plans')}>
-                    <Icon name="calendar" variant="line" />
-                    My Plans
-                </button>
-                <button type="button" onClick={() => onPanel('saved')}>
-                    <Icon name="bookmark" variant="line" />
-                    Saved
-                </button>
-                <button type="button" onClick={() => onPanel('history')}>
-                    <Icon name="clock" variant="line" />
-                    History
-                </button>
-            </nav>
+            <DayTools onPanel={onPanel} />
         </aside>
+    );
+}
+
+function DayTools({ onPanel }: { onPanel: (panel: Panel) => void }) {
+    return (
+        <nav className="day-tools" aria-label="Your Composer">
+            <button type="button" onClick={() => onPanel('plans')}>
+                <Icon name="calendar" variant="line" />
+                My Plans
+            </button>
+            <button type="button" onClick={() => onPanel('saved')}>
+                <Icon name="bookmark" variant="line" />
+                Saved
+            </button>
+            <button type="button" onClick={() => onPanel('history')}>
+                <Icon name="clock" variant="line" />
+                History
+            </button>
+        </nav>
     );
 }
 

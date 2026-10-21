@@ -231,6 +231,19 @@ class WeatherService
     }
 
     /**
+     * The current reading only if a fresh one is cached: never fetches and
+     * never queues a refresh, so callers on a write path pay nothing.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function cachedCurrent(float $lat = 50.9375, float $lng = 6.9603): ?array
+    {
+        $fresh = Cache::get("weather_fresh:{$lat}_{$lng}");
+
+        return is_array($fresh) && is_array($fresh['current'] ?? null) ? $fresh['current'] : null;
+    }
+
+    /**
      * Stale-while-revalidate read. Returns fresh cache if available; otherwise
      * returns stale cache and queues a background refresh; otherwise fetches
      * synchronously with fast-fail provider iteration.

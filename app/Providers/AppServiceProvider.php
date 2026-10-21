@@ -27,6 +27,7 @@ use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
 use App\Models\User;
 use App\Observers\BureaucracyAccountObserver;
+use App\Observers\PersonalisationAccountObserver;
 use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
@@ -138,6 +139,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         User::observe(BureaucracyAccountObserver::class);
+        User::observe(PersonalisationAccountObserver::class);
 
         // CreateAlertFromNotification is registered by listener discovery.
         Event::listen(NotificationSent::class, RecordReservedPushSent::class);
@@ -252,8 +254,11 @@ class AppServiceProvider extends ServiceProvider
         $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
         RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
         RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
+        RateLimiter::for('bureaucracy-ask', fn (Request $request): Limit => Limit::perMinute(10)->by($bureaucracyKey('ask', $request)));
         RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.
+        RateLimiter::for('signals', fn (Request $request): Limit => Limit::perMinute(12)->by('signals:'.$userOrIp($request)));
         RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));

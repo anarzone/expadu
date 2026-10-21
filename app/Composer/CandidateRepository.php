@@ -100,7 +100,10 @@ class CandidateRepository
         $query = $grouping->eligible(Spot::query(), $includeFacilities)
             ->when($constraints->activities === [] && $requestedFacilities !== [], fn ($query) => $query->where(fn ($where) => $where->where('spots.is_recommendable', true)->orWhereIn('spots.category', $requestedFacilities)))
             ->when(! $includeFacilities, fn ($query) => $query->where(fn ($where) => $where->whereNull('destination_spot_id')->orWhereIn('category', $requested)))
-            ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested));
+            ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested))
+            // A pharmacy or supermarket is an errand, not an afternoon out:
+            // only a request that names one brings it into the plan.
+            ->when($requested === [], fn ($query) => $query->whereNotIn('category', SpotCategory::errands()));
         $labels = implode('|', array_map(fn (string $label): string => preg_quote($label, '/'), self::GENERIC_MICRO_FACILITY_LABELS));
         $query->where(function ($where) use ($labels, $includeFacilities): void {
             $where->whereRaw('spots.name !~* ?', ['^('.$labels.')(?:\\s*·.*)?$']);
@@ -237,6 +240,7 @@ class CandidateRepository
             closedToday: $closedToday,
             hoursAssumed: $hoursAssumed,
             description: $spot->englishEnrichment?->summary,
+            vibeTags: $spot->englishEnrichment?->vibeTagNames() ?? [],
             tags: $this->textTags([
                 ...$tags,
                 ...collect($facts['negative_facts'])->mapWithKeys(fn (mixed $value, string $key): array => ["negative:{$key}" => $value])->all(),
