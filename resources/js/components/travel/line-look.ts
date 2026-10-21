@@ -6,7 +6,7 @@
  * to grey. Mirrors prototype/dev/design/departures-next/labels.js.
  */
 
-export type VehicleKind = 'tram' | 'bus' | 'rail';
+export type VehicleKind = 'tram' | 'bus' | 'rail' | 'ferry';
 
 export type LineLook = {
     /** The line's colour: the badge, the strip's track, the ride on a way. */
@@ -65,14 +65,21 @@ export function lineLook(
     };
 }
 
-/** The word for a vehicle: "Tram", "Bus", "Train". */
+/** The word for a vehicle: "Tram", "Bus", "Train", "Ferry". */
 export function vehicleWord(kind: VehicleKind): string {
-    return kind === 'bus' ? 'Bus' : kind === 'rail' ? 'Train' : 'Tram';
+    return kind === 'bus'
+        ? 'Bus'
+        : kind === 'rail'
+          ? 'Train'
+          : kind === 'ferry'
+            ? 'Ferry'
+            : 'Tram';
 }
 
 /**
  * The vehicle a leg or departure rides, from the feed's mode word. Cologne's
  * Stadtbahn runs underground downtown and is reported as "subway": a tram.
+ * A Rhine ferry is a ferry, never a tram.
  */
 export function vehicleOf(mode: string | null | undefined): VehicleKind {
     if (mode === 'bus') {
@@ -81,6 +88,10 @@ export function vehicleOf(mode: string | null | undefined): VehicleKind {
 
     if (mode === 'rail' || mode === 'train') {
         return 'rail';
+    }
+
+    if (mode === 'ferry') {
+        return 'ferry';
     }
 
     return 'tram';
