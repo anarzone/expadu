@@ -68,6 +68,8 @@ class ActiveTrip extends Model
             // The plan it's for, when it was started for one (its start, for "12 min spare").
             'target' => $this->target,
             'started_at' => $this->started_at?->toIso8601String(),
+            // Stop names carry the city ("Köln Neumarkt"); the bar shows them as the signs do.
+            'city' => config('geocoding.search_default.city'),
         ];
     }
 

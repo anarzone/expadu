@@ -40,6 +40,8 @@ export type ActiveTrip = {
     destination: TripPlace;
     target: TripTarget | null;
     started_at: string | null;
+    /** The city stop names carry ("Köln Neumarkt"), to show them as the signs do. */
+    city?: string | null;
 };
 
 const CSRF = () =>
