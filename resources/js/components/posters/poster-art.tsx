@@ -75,18 +75,38 @@ export type PosterProps = {
     onPlan?: () => void;
     className?: string;
     style?: CSSProperties;
-};
+} & PosterFit;
 
 const steps = [undefined, 'long', 'longer'] as const;
 type TitleStep = (typeof steps)[number];
+/** A title's size step, as one poster measured it. */
+export type TitleStepName = 'normal' | 'long' | 'longer';
+
+/** Copies of one poster drawn side by side (the column's drum slices) take
+    the step one of them measured, so their lines meet at the seams. */
+export type PosterFit = {
+    /** Use this step instead of measuring. */
+    titleStep?: TitleStepName;
+    /** Called with the step this poster settled on. */
+    onTitleStep?: (step: TitleStepName) => void;
+};
 
 /* Real titles run longer than the mock's (a third over 40 letters). A
    title that doesn't fit its poster (a word too wide, or lines that push
    the time and place off the paper) sets a step smaller, then two; the
    mock's own titles keep their size. Measured before paint, again when
    the poster's width changes or the poster face loads. */
-function useTitleFit(title: string) {
+function useTitleFit(
+    title: string,
+    forced?: TitleStepName,
+    onSettle?: (step: TitleStepName) => void,
+) {
     const card = useRef<HTMLElement>(null);
+    const settle = useRef(onSettle);
+
+    useLayoutEffect(() => {
+        settle.current = onSettle;
+    });
     const [round, setRound] = useState(0);
     const [fit, setFit] = useState<{ key: string; step: TitleStep }>({
         key: '',
@@ -99,7 +119,7 @@ function useTitleFit(title: string) {
         const open = card.current?.querySelector<HTMLElement>('.pp-open');
         const text = card.current?.querySelector<HTMLElement>('.pp-title');
 
-        if (!open || !text || open.offsetParent === null) {
+        if (forced || !open || !text || open.offsetParent === null) {
             return;
         }
 
@@ -111,8 +131,10 @@ function useTitleFit(title: string) {
         if (!fits && next) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- Measure-then-step before paint is what a layout effect is for; it settles in at most two passes.
             setFit({ key, step: next });
+        } else {
+            settle.current?.(step ?? 'normal');
         }
-    }, [key, step]);
+    }, [key, step, forced]);
 
     useEffect(() => {
         const node = card.current;
@@ -139,7 +161,10 @@ function useTitleFit(title: string) {
         return () => resized.disconnect();
     }, []);
 
-    return [card, step] as const;
+    return [
+        card,
+        forced ? (forced === 'normal' ? undefined : forced) : step,
+    ] as const;
 }
 
 /** A poster: the listing set in type; a tap opens its details. Past
@@ -161,8 +186,14 @@ export function Poster({
     onPlan,
     className = '',
     style,
+    titleStep: forcedStep,
+    onTitleStep,
 }: PosterProps) {
-    const [cardRef, titleStep] = useTitleFit(event.title);
+    const [cardRef, titleStep] = useTitleFit(
+        event.title,
+        forcedStep,
+        onTitleStep,
+    );
 
     const ink = posterInk(event.start);
     const family = posterFamily(event.category, { outdoor: event.outdoor });

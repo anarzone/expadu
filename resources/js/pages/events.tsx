@@ -35,6 +35,7 @@ import type { StreetListing } from '@/components/events-street/events-street';
 import { rainLikely } from '@/components/events-street/street-weather';
 import type { DayForecast } from '@/components/events-street/street-weather';
 import { Poster } from '@/components/posters/poster-art';
+import type { PosterFit } from '@/components/posters/poster-art';
 import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
 import { showToast } from '@/components/ui/toast';
 import { useSavedEvents } from '@/hooks/use-saved-events';
@@ -243,6 +244,24 @@ export default function Events({
             occurrence,
             km: point ? kmBetween(point, occurrence.venue) : null,
         }));
+    // The column rolls tonight's posters, one per hour from 18:00 (the
+    // mock's colList): each hour's first listing, so its dots are those.
+    const tonight = [18, 19, 20, 21]
+        .map(
+            (hour) =>
+                day
+                    .filter(
+                        (l) =>
+                            l.poster.start !== null &&
+                            parseInt(l.poster.start, 10) === hour,
+                    )
+                    .sort((a, b) =>
+                        a.occurrence.occurrence_start.localeCompare(
+                            b.occurrence.occurrence_start,
+                        ),
+                    )[0],
+        )
+        .filter((l): l is Listing => l !== undefined);
     const wall = day
         .filter((l) => matches(l.occurrence, current, l.key, saved.keys))
         .sort((a, b) => {
@@ -418,6 +437,7 @@ export default function Events({
         item: StreetListing,
         where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
+        fit?: PosterFit,
     ) => {
         const listing = item as Listing;
         const state = todayState(listing);
@@ -429,6 +449,7 @@ export default function Events({
 
         return (
             <Poster
+                {...fit}
                 ref={shown(listing.occurrence.id, position)}
                 event={listing.poster}
                 today={today}
@@ -538,7 +559,7 @@ export default function Events({
                         date={date}
                         today={today}
                         wall={wall}
-                        column={day}
+                        column={tonight}
                         poster={poster}
                         forecast={weather}
                         waiting={!!opened}
