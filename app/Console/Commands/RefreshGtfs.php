@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\GtfsDepartureService;
 use App\Services\GtfsRailStations;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -37,6 +38,8 @@ class RefreshGtfs extends Command
             try {
                 Cache::forget('gtfs_has_data');
                 Cache::forget(GtfsRailStations::CACHE_KEY);
+                // The stops looked up by name start over: their ids may have changed.
+                Cache::forever(GtfsDepartureService::GENERATION_KEY, now()->timestamp);
             } catch (\Throwable $exception) {
                 Log::warning('gtfs:refresh — cache invalidation failed after successful import', [
                     'error' => $exception->getMessage(),

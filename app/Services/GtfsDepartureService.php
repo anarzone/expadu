@@ -5,12 +5,16 @@ namespace App\Services;
 use App\Models\Gtfs\GtfsStop;
 use App\Transit\DepartureTime;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 class GtfsDepartureService
 {
+    /** Changes with each timetable import (gtfs:refresh), so lookups keyed by it start over. */
+    public const GENERATION_KEY = 'gtfs_generation';
+
     public function __construct(
         private readonly VrsRealtimeService $realtimeService,
         private readonly VrsTriasService $triasService,
@@ -190,9 +194,7 @@ class GtfsDepartureService
 
         return Cache::remember("gtfs_departures_v2_{$stopName}_{$limit}", $cacheTtl, function () use ($stopName, $limit, $hasRealtime) {
             // Find stops matching the name
-            $stops = GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
-                ->where('location_type', 0) // actual stops, not stations
-                ->get(['stop_id', 'stop_name', 'stop_lat', 'stop_lng'])->keyBy('stop_id');
+            $stops = $this->stopsNamed($stopName);
 
             if ($stops->isEmpty()) {
                 return $this->fallbackDepartures($stopName);
@@ -404,9 +406,7 @@ class GtfsDepartureService
         $cacheKey = 'gtfs_route_ctx_'.md5("{$stopName}|{$line}|{$destination}");
 
         return Cache::remember($cacheKey, 21600, function () use ($stopName, $line, $destination) {
-            $stopIds = GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
-                ->where('location_type', 0)
-                ->pluck('stop_id');
+            $stopIds = $this->stopsNamed($stopName)->pluck('stop_id');
 
             if ($stopIds->isEmpty()) {
                 return ['direction' => null, 'via' => []];
@@ -562,11 +562,39 @@ class GtfsDepartureService
         });
     }
 
+    /**
+     * The stops whose name contains this one (actual stops, not stations),
+     * keyed by stop_id. Read once an hour per name: a board asks per line.
+     *
+     * @return Collection<string, object{stop_id: string, stop_name: string, stop_lat: float|null, stop_lng: float|null}>
+     */
+    private function stopsNamed(string $stopName): Collection
+    {
+        $key = 'gtfs_stops_named:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.md5(mb_strtolower($stopName));
+        $rows = Cache::remember($key, 3600, fn () => GtfsStop::where('stop_name', 'ILIKE', "%{$stopName}%")
+            ->where('location_type', 0)
+            ->get(['stop_id', 'stop_name', 'stop_lat', 'stop_lng'])
+            ->map(fn (GtfsStop $stop) => $stop->only(['stop_id', 'stop_name', 'stop_lat', 'stop_lng']))
+            ->all());
+
+        return collect($rows)->map(fn (array $stop) => (object) $stop)->keyBy('stop_id');
+    }
+
+    /**
+     * Whether a timetable is loaded: remembered an hour once it is, but only a
+     * minute while it isn't, so an empty moment (before the first import)
+     * doesn't leave every board "unavailable" for the hour after.
+     */
     protected function hasGtfsData(): bool
     {
-        return Cache::remember('gtfs_has_data', 3600, function () {
-            return DB::table('gtfs_stops')->exists();
-        });
+        if (Cache::get('gtfs_has_data') === true) {
+            return true;
+        }
+
+        $has = DB::table('gtfs_stops')->exists();
+        Cache::put('gtfs_has_data', $has, $has ? 3600 : 60);
+
+        return $has;
     }
 
     protected function routeTypeLabel(int $type): string

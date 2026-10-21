@@ -1,9 +1,12 @@
 <?php
 
+use App\Services\DisruptionService;
 use App\Services\GtfsDepartureService;
 use App\Services\VrsRealtimeService;
 use App\Services\VrsTriasService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 function makeLiveResult(string $stop = 'Neumarkt', array $departures = [['line' => '12', 'direction' => 'Merkenich', 'departures' => [3, 13]]]): array
 {
@@ -196,4 +199,85 @@ it('survives intermittent TRIAS failures without showing static', function () {
     // All 10 should show live — failures served from fallback
     $sources = array_column($results, 'source');
     expect($sources)->each->toBe('trias_rt');
+});
+
+// ── While TRIAS is down: the timetable, fast ──
+
+it('keeps the GTFS-RT feed for a whole board, and reads it afresh after half a minute', function () {
+    config(['services.vrs.enabled' => true]);
+    Http::fake();
+    $feed = fn (int $delay) => ['t1' => ['trip_id' => 't1', 'route_id' => 'r16', 'cancelled' => false, 'observed_at' => null,
+        'stops' => ['s1' => ['delay' => $delay, 'skipped' => false]]]];
+    Cache::put('vrs_gtfsrt_trip_updates_v2', $feed(120), 30);
+    $realtime = app(VrsRealtimeService::class);
+
+    expect($realtime->getDelayForTripAtStop('t1', 's1')['delay'])->toBe(120);
+    // The rest of the board's departures read it from memory, not the cache.
+    Cache::forget('vrs_gtfsrt_trip_updates_v2');
+    foreach (range(1, 40) as $row) {
+        expect($realtime->getDelayForTripAtStop('t1', 's1')['delay'])->toBe(120);
+    }
+    Http::assertNothingSent();
+
+    $this->travel(31)->seconds();
+    Cache::put('vrs_gtfsrt_trip_updates_v2', $feed(300), 30);
+    expect($realtime->getDelayForTripAtStop('t1', 's1')['delay'])->toBe(300);
+});
+
+it('remembers a missing timetable for a minute, not the hour a loaded one keeps', function () {
+    $this->travelTo(now()->setDate(2026, 10, 21)->setTime(13, 0));
+    config(['services.vrs.enabled' => false]);
+    $this->mock(DisruptionService::class)->shouldReceive('getDisruptedLines')->andReturn([]);
+    $service = makeService();
+
+    expect($service->getStaticDepartures('Busy Square', 10)['source'])->toBe('unavailable');
+
+    DB::table('gtfs_stops')->insert(['stop_id' => 'busy-1', 'stop_name' => 'Busy Square', 'stop_lat' => 50.941, 'stop_lng' => 6.941, 'location_type' => 0]);
+    DB::table('gtfs_routes')->insert(['route_id' => 'r16', 'route_short_name' => '16', 'route_type' => 0]);
+    DB::table('gtfs_trips')->insert(['trip_id' => 't1', 'route_id' => 'r16', 'service_id' => 'daily', 'trip_headsign' => 'Bonn']);
+    DB::table('gtfs_stop_times')->insert(['trip_id' => 't1', 'stop_id' => 'busy-1', 'arrival_time' => '13:10:00', 'departure_time' => '13:10:00', 'stop_sequence' => 1]);
+    $this->travel(61)->seconds();
+
+    expect($service->getStaticDepartures('Busy Square', 11)['departures'][0]['line'])->toBe('16');
+});
+
+it('skips TRIAS for half a minute after one failure and five once three in a row say it is down', function () {
+    config(['services.vrs.enabled' => true, 'services.vrs.trias_url' => 'https://trias.test/v1/trias']);
+    $up = false;
+    $requests = 0;
+    Http::fake(function () use (&$up, &$requests) {
+        $requests++;
+
+        return $up ? Http::response('<Trias/>', 200) : Http::response('', 503);
+    });
+    $trias = app(VrsTriasService::class);
+    $asked = function () use (&$requests): int {
+        return $requests;
+    };
+
+    $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(1);
+    $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(1);
+
+    // A blip: back after 30 s, and two more failures make an outage.
+    $this->travel(31)->seconds();
+    $trias->getDepartures('Neumarkt');
+    $this->travel(31)->seconds();
+    $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(3);
+
+    $this->travel(31)->seconds();
+    $trias->getDepartures('Neumarkt');
+    $this->travel(4)->minutes();
+    $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(3);
+
+    // After five minutes it's asked again; an answer starts the count over.
+    $this->travel(31)->seconds();
+    $up = true;
+    $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(4)
+        ->and(Cache::get('trias_failures'))->toBeNull()
+        ->and(Cache::get('trias_down'))->toBeNull();
 });
