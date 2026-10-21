@@ -16,7 +16,8 @@
         "wait": ".account-mail",
         "login": {
             "email": "new.arrival@example.com",
-            "password": "check-email-password"
+            "password": "check-email-password",
+            "own": true
         }
     },
     "pairs": [

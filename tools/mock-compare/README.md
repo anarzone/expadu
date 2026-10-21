@@ -37,7 +37,8 @@ the same config at its own servers.
 The report lands in `storage/mock-compare/<name>/report.md` with one image per pair and width
 (mock · app · diff). Exit code 1 means something differs.
 
-Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config) and
+Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config, except
+for a `login` with `"own": true`, which always signs in as its own account, e.g. an unverified one) and
 the session is cached per port and account in `storage/mock-compare/.session-<port>-<account>.json`, so
 repeated runs don't trip the login rate limit. Sign-in sends the side's `cookies` too, so a page loaded
 while signing in already has the mock's clock; the cached session keeps none of them. A config that needs
