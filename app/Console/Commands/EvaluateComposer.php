@@ -137,9 +137,8 @@ class EvaluateComposer extends Command
         }
         $row['parse_ms'] = (int) ((hrtime(true) - $started) / 1e6);
         $row['parse'] = ['intent' => $parsed->intent->value, 'source' => $parsed->source, 'kind' => $routed['kind'], 'constraints' => $parsed->plan?->toArray()];
-        $answered = in_array($routed['kind'], Answers::KINDS, true)
-            && ! ($routed['kind'] === 'clarify' && $parsed->intent === PromptIntent::PlanDay)
-            && ! ($routed['kind'] === 'unavailable' && ($routed['topic'] ?? null) === 'listing');
+        // The same rule ComposerController::parse() applies.
+        $answered = Answers::handles($routed, $parsed->intent);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
         if ($row['routed'] !== 'compose') {
