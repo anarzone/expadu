@@ -9,6 +9,7 @@
 
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\LocationConfirmController;
+use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\MuteController;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::post('api/track', TrackEventController::class)->name('api.track');
+// Personalisation ledger: impressions and detail views only (opt-in; dropped otherwise).
+Route::post('api/signals', SignalController::class)->middleware('throttle:signals')->name('api.signals');
 Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 

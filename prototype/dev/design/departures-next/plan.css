@@ -258,93 +258,6 @@ body.travel-palette .plan-when button[aria-pressed='true'] {
     height: 14px;
 }
 
-/* ---------- Options: what we checked, best first ---------- */
-.plan-checks {
-    margin-bottom: var(--space-12);
-    border-block: 1px solid var(--color-border);
-}
-.plan-checks-toggle {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-8) var(--space-12);
-    width: 100%;
-    min-height: 56px;
-    padding: var(--space-8) 0;
-    border: 0;
-    background: none;
-    color: var(--color-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-.plan-check-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-.plan-check-chips:not(.tl-chips) span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 26px;
-    padding: 0 var(--space-8);
-    border-radius: var(--radius-pill);
-    background: var(--color-bg-quiet);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-semibold);
-}
-.plan-check-chips:not(.tl-chips) span::before {
-    content: '';
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-round);
-    background: currentColor;
-}
-.plan-check-chips .is-muted {
-    color: var(--color-text-soft);
-}
-.plan-check-chips .is-flag {
-    background: var(--color-attention-bg);
-    color: var(--color-attention-text);
-}
-.plan-checks-more {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-}
-.plan-checks-more svg {
-    width: 14px;
-    height: 14px;
-    transition: transform var(--duration-fast) var(--ease-standard);
-}
-.plan-checks-toggle[aria-expanded='true'] .plan-checks-more svg {
-    transform: rotate(180deg);
-}
-.plan-checks-detail {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 0 var(--space-24);
-    padding-bottom: var(--space-10);
-}
-.plan-checks-detail[hidden] {
-    display: none;
-}
-.plan-checks-detail p {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: var(--space-8) 0;
-    border-top: 1px solid var(--color-border);
-    line-height: var(--leading-snug);
-}
-.plan-checks-detail span {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
 .best-tag {
     align-self: flex-start;
     margin-bottom: var(--space-4);
@@ -511,7 +424,6 @@ body.travel-palette .primary.is-ink {
 
 @media (prefers-reduced-motion: reduce) {
     .plan-prefs button > span,
-    .plan-checks-more svg,
     .plan-switch,
     .plan-switch::after {
         transition: none;
@@ -585,88 +497,6 @@ body.travel-palette .find-routes[aria-disabled='true'] {
     color: var(--color-text-soft);
 }
 
-/* The options */
-.plan-options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-10);
-}
-.plan-option {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-xl);
-    background: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
-    transition:
-        border-color var(--duration-fast) var(--ease-standard),
-        background-color var(--duration-fast) var(--ease-standard);
-}
-.plan-option.is-on {
-    border-color: var(--color-text);
-    background: var(--color-bg-surface);
-    box-shadow: inset 0 0 0 0.5px var(--color-text);
-}
-.plan-option-pick {
-    display: grid;
-    grid-template-columns: 22px minmax(0, 1fr);
-    align-items: start;
-    gap: var(--space-12);
-    width: 100%;
-    padding: var(--space-14) var(--space-14) var(--space-4);
-    border: 0;
-    border-radius: var(--radius-xl);
-    background: none;
-    color: var(--color-text);
-    font: inherit;
-    text-align: left;
-    line-height: var(--leading-snug);
-    cursor: pointer;
-}
-.plan-option-pick:focus-visible {
-    outline: 2px solid var(--color-focus, var(--color-text));
-    outline-offset: 2px;
-}
-.plan-radio {
-    width: 22px;
-    height: 22px;
-    margin-top: 2px;
-    border: 2px solid var(--color-border-strong);
-    border-radius: var(--radius-round);
-    background: var(--color-bg-surface);
-    transition: border-width var(--duration-fast) var(--ease-standard);
-}
-.is-on .plan-radio {
-    border: 6px solid var(--color-text);
-}
-.plan-option-body {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-}
-.plan-option-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-8);
-    margin-bottom: 2px;
-}
-.plan-option-head .best-tag {
-    margin: 2px 0 0;
-}
-.plan-option-title {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-6);
-}
-.plan-option-title strong {
-    font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
-}
-.plan-option-at {
-    margin-left: 2px;
-    font-size: var(--text-control);
-    font-weight: var(--weight-semibold);
-}
 .plan-line {
     display: inline-grid;
     place-items: center;
@@ -688,34 +518,7 @@ body.travel-palette .find-routes[aria-disabled='true'] {
     width: 15px;
     height: 15px;
 }
-.plan-option-times {
-    font-size: var(--text-body);
-    font-variant-numeric: tabular-nums;
-}
-.plan-option-reasons {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    margin-top: 2px;
-    font-size: var(--text-small);
-}
-.plan-option-reasons > span {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-}
-.plan-option-reasons > span:not(:has(.plan-reason-icon))::before {
-    content: '';
-    flex: none;
-    width: 5px;
-    height: 5px;
-    border-radius: var(--radius-round);
-    background: currentColor;
-    transform: translateY(-2px);
-}
-.plan-option-reasons .is-warn {
-    color: var(--color-attention-text);
-}
+
 .plan-spare {
     padding: 2px var(--space-8);
     border-radius: var(--radius-pill);
@@ -728,35 +531,7 @@ body.travel-palette .find-routes[aria-disabled='true'] {
     background: var(--color-attention-bg);
     color: var(--color-attention-text);
 }
-body.travel-palette .plan-option > .details-toggle {
-    margin-left: 48px;
-    padding-block: 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    font-size: var(--text-small);
-    cursor: pointer;
-}
-.plan-option .route-disclosure-inner {
-    padding: 0 var(--space-14);
-}
-.plan-option-way {
-    display: grid;
-    gap: var(--space-12);
-    padding: var(--space-4) 0 var(--space-14);
-    border-top: 1px solid var(--color-border);
-}
-.plan-option-way .route-steps {
-    margin: var(--space-10) 0 0;
-}
-.plan-option-side {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-8);
-}
-.plan-option-side .route-note {
-    margin: 0;
-}
+
 .plan-save {
     width: 100%;
     min-height: 52px;
@@ -886,17 +661,7 @@ body.travel-palette .plan-option > .details-toggle {
     body.travel-palette #results .results-heading .icon-button {
         display: none;
     }
-    .plan-check-chips {
-        order: 2;
-        flex-basis: 100%;
-    }
-    .plan-checks {
-        margin-bottom: var(--space-12);
-        padding: 0 var(--space-14);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-xl);
-        background: var(--color-bg-surface);
-    }
+    
 }
 @media (max-width: 700px) {
     /* The header row steps aside; the section bar stays below. */
@@ -914,21 +679,7 @@ body.travel-palette .plan-option > .details-toggle {
         display: none;
     }
 }
-@media (min-width: 1000px) {
-    .plan-option-side {
-        padding-top: var(--space-4);
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .plan-option,
-    .plan-radio {
-        transition: none;
-    }
-}
-.plan-option-way .route-step {
-    min-height: 0;
-    padding: 6px 0 10px;
-}
+
 /* The tram's platform on its step; where to stand opens in place (owner
    chose B, canvas row 21, 15 Oct 2026). */
 .route-step .step-platform {
@@ -1052,52 +803,6 @@ body.travel-palette .plan-actions button.plan-save {
     }
 }
 
-/* Labels in Plan a trip (owner-approved 10 Oct 2026). */
-.plan-option-reasons {
-    gap: 4px;
-    margin-top: var(--space-6);
-}
-.plan-option-reasons .is-warn {
-    font-weight: var(--weight-semibold);
-}
-.plan-reason-icon {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-}
-.is-warn > .plan-reason-icon {
-    background: var(--color-attention);
-    color: var(--color-attention-text);
-}
-.plan-reason-icon svg {
-    width: 13px;
-    height: 13px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.2;
-}
-.plan-option-title {
-    gap: 4px;
-}
-.plan-option-head + .plan-option-title {
-    margin-top: 4px;
-}
-.plan-then svg {
-    display: block;
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: var(--color-text-soft);
-    stroke-width: 2.2;
-}
-.plan-option-times {
-    margin-top: 4px;
-}
 .other-ways-note {
     display: flex;
     flex-wrap: wrap;
