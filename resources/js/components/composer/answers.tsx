@@ -159,6 +159,9 @@ export function AnswerBody({
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
         : 0;
+    // "It can do these:" lists the person's own starters; with none, the
+    // reply's everyday suggestions instead.
+    const showOptions = latest && !!message.options && starters.length > 0;
 
     return (
         <>
@@ -239,7 +242,7 @@ export function AnswerBody({
                     ))}
                 </dl>
             )}
-            {latest && message.options && starters.length > 0 && (
+            {showOptions && (
                 <div className="answer-options">
                     {starters.map((starter) => (
                         <button
@@ -260,7 +263,7 @@ export function AnswerBody({
                     ))}
                 </div>
             )}
-            {latest && !!message.suggestions?.length && (
+            {latest && !showOptions && !!message.suggestions?.length && (
                 <div className="reply-suggestions">
                     {message.suggestions.map((suggestion) =>
                         suggestion.href ? (

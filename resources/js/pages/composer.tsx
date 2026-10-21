@@ -404,8 +404,13 @@ export default function ComposerPage({
         setInput('');
         scrollBottom(true);
 
+        // Once the message is in the conversation, Composer answers it even when the
+        // request fails: the reply says so, and the bar says why.
+        let asked = false;
+
         try {
             await sendCommand({ action: 'message', text });
+            asked = true;
             setPendingText('');
             const state = stateRef.current;
             const current = state.focus
@@ -546,6 +551,13 @@ export default function ComposerPage({
 
             scrollBottom(true);
         } catch (err) {
+            if (asked) {
+                await sendCommand({ action: 'reply', kind: 'failed' }).catch(
+                    () => undefined,
+                );
+                scrollBottom(true);
+            }
+
             setError(
                 err instanceof Error
                     ? err.message
