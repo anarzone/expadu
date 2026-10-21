@@ -304,12 +304,6 @@ function RecordActions({
 
     return (
         <div className="record-actions">
-            {now ? (
-                <p className="record-paused" role="status">
-                    <strong>Processing stopped.</strong> Paperwork keeps your
-                    record but doesn’t use it until you resume.
-                </p>
-            ) : null}
             {error ? (
                 <p className="case-inline-error" role="alert">
                     {error}
