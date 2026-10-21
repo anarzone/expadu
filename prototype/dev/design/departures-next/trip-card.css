@@ -36,6 +36,13 @@
 .trip-line small {
     color: inherit;
 }
+/* Travel's line icons, not a host page's stroke (Today's is 1.7). As
+   light as the page's own svg rule, so the badges' 2px still wins. */
+:where(.trip-line) svg {
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
 .trip-line[hidden] {
     display: none;
 }
