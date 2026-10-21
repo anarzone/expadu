@@ -9,6 +9,7 @@ use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
+use App\Transit\TripConditions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\DeferProp;
@@ -41,6 +42,7 @@ class DayProjection
         private readonly NextTrip $nextTrip,
         private readonly PlanLinks $links,
         private readonly UserLocationService $locations,
+        private readonly TripConditions $conditions,
     ) {}
 
     /** Today's projection as a deferred Inertia prop, for the pages that show it. */
@@ -83,7 +85,11 @@ class DayProjection
                     $this->origin($user, $request, $items, $target, $now),
                     $now,
                     $plannedFor($target)?->toJourney(),
+                    $user,
                 );
+                // Lifts reported out at the way's stations, for the card's
+                // station-level "Lift out of order"; null while not known.
+                $nextTrip['lifts'] = $nextTrip['journey'] === null ? null : $this->conditions->liftsOut($nextTrip['journey']);
             }
         }
 

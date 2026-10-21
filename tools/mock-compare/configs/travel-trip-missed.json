@@ -1,0 +1,260 @@
+{
+    "name": "travel-trip-missed",
+    "clock": "2026-09-30T13:13:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=missed",
+        "wait": "#next-trip .trip-line-row",
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": "#departures > .trip-line .trip-line-row",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:13:00%2B02:00",
+            "mock_scenario": "missed"
+        },
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "note": "You missed your tram (the mock's ?scenario=missed), with the way open, at 13:13: the app calls the 13:14 missed only once its leave time (13:10) is three minutes gone and your own fresh pings stayed at the start, with location sharing on (App\\Day\\StillAtStart). The mock shows it at 13:10; nothing on its card depends on the clock. MockSample\\SampleStillAtStart stands in for the pings under the local mock_scenario cookie; it reads and writes none. The app lists no other way here: the sample has two ways and the missed one is no longer one to take, so the mock's placeholder rows (Bike or walk, Taxi) have nothing to pair with.",
+    "pairs": [
+        {
+            "name": "card",
+            "mock": "#departures > .trip-line",
+            "app": "#departures > .trip-line",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The app lists no other way (see the note), so the opened card ends after the line under the way."
+        },
+        {
+            "name": "card row",
+            "mock": "#departures > .trip-line .trip-line-row",
+            "app": "#departures > .trip-line .trip-line-row",
+            "contentDiffers": true,
+            "pixels": false,
+            "ignore": [
+                "h"
+            ],
+            "reason": "The sample's times are the timetable's, and the app says so first (\"Scheduled · not live\", as travel-leave-now compares with the mock's ?scenario=scheduled); the mock's missed situation doesn't combine with its scheduled one. At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "ring",
+            "mock": "#departures > .trip-line .trip-ring",
+            "app": "#departures > .trip-line .trip-ring"
+        },
+        {
+            "name": "ring mark",
+            "mock": "#departures > .trip-line .trip-ring strong",
+            "app": "#departures > .trip-line .trip-ring strong"
+        },
+        {
+            "name": "title",
+            "mock": "#departures > .trip-line .trip-title strong",
+            "app": "#departures > .trip-line .trip-title strong"
+        },
+        {
+            "name": "plan and time",
+            "mock": "#departures > .trip-line .trip-title span",
+            "app": "#departures > .trip-line .trip-title span"
+        },
+        {
+            "name": "flags",
+            "mock": "#departures > .trip-line .trip-flags",
+            "app": "#departures > .trip-line .trip-flags",
+            "contentDiffers": true,
+            "ignore": [
+                "h",
+                "w",
+                "x"
+            ],
+            "reason": "The sample's times are the timetable's, and the app says so first (\"Scheduled · not live\", as travel-leave-now compares with the mock's ?scenario=scheduled); the mock's missed situation doesn't combine with its scheduled one. At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "missed chip",
+            "mock": "#departures > .trip-line .trip-flags .tl-chip",
+            "app": "#departures > .trip-line .trip-flags .tl-chip.is-attention",
+            "ignore": [
+                "x",
+                "y"
+            ],
+            "reason": "The sample's times are the timetable's, and the app says so first (\"Scheduled · not live\", as travel-leave-now compares with the mock's ?scenario=scheduled); the mock's missed situation doesn't combine with its scheduled one. So the chip sits after it. Same chip; beside it, it lands on another sub-pixel x. At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app.",
+            "pixels": false
+        },
+        {
+            "name": "facts",
+            "mock": "#departures > .trip-line .trip-facts",
+            "app": "#departures > .trip-line .trip-facts",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact: the ride",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact: there",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact: spare",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 2,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact label",
+            "mock": "#departures > .trip-line .trip-fact-label",
+            "app": "#departures > .trip-line .trip-fact-label",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact value",
+            "mock": "#departures > .trip-line .trip-fact strong",
+            "app": "#departures > .trip-line .trip-fact strong",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "fact sub",
+            "mock": "#departures > .trip-line .trip-fact small",
+            "app": "#departures > .trip-line .trip-fact small",
+            "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "ride badge",
+            "mock": "#departures > .trip-line .trip-fact .tl-line",
+            "app": "#departures > .trip-line .trip-fact .tl-line",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "I'm on my way",
+            "mock": "#departures > .trip-line .next-trip-go",
+            "app": "#departures > .trip-line .next-trip-go",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "show the way toggle",
+            "mock": "#departures > .trip-line .trip-line-more",
+            "app": "#departures > .trip-line .trip-line-more"
+        },
+        {
+            "name": "the way (open)",
+            "mock": "#departures > .trip-line .way-strip",
+            "app": "#departures > .trip-line .way-strip",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "way: start",
+            "mock": "#departures > .trip-line .way-node.is-start",
+            "app": "#departures > .trip-line .way-node.is-start",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "way: boarding stop",
+            "mock": "#departures > .trip-line .way-node.is-stop",
+            "app": "#departures > .trip-line .way-node.is-stop",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "way: ride",
+            "mock": "#departures > .trip-line .way-ride",
+            "app": "#departures > .trip-line .way-ride",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "way: there",
+            "mock": "#departures > .trip-line .way-node.is-there",
+            "app": "#departures > .trip-line .way-node.is-there",
+            "ignore": [
+                "y"
+            ],
+            "reason": "At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app."
+        },
+        {
+            "name": "why (open)",
+            "mock": "#departures > .trip-line .trip-line-note",
+            "app": "#departures > .trip-line .trip-line-note",
+            "contentDiffers": true,
+            "reason": "The mock's sample says \"(sample)\" after the time; the app names the time it had to leave for the 13:14 (13:10), as the mock does. At 360 the extra \"Scheduled · not live\" chip (see flags) wraps the flags onto a second row, so what follows sits 30px lower in the app.",
+            "ignore": [
+                "y"
+            ]
+        }
+    ]
+}
