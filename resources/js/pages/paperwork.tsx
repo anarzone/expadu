@@ -9,6 +9,7 @@ import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
 import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
+import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
     searchable,
@@ -123,6 +124,10 @@ function Workspace({
 }) {
     const { plan, location, go, processByKey, openSheet, openSituation } =
         usePaperwork();
+    // No answers yet on your own plan: the starter path's welcome leads (PW7).
+    const fresh = useFreshStart(
+        people.find((p) => p.id === plan.person_id)?.is_self ?? false,
+    );
     const situationAllowed = plan.scopes.includes('view_facts');
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
@@ -213,7 +218,10 @@ function Workspace({
                 ) : location.view === 'detail' ? (
                     <TaskDetail />
                 ) : (
-                    <Overview onCoverage={coverage} />
+                    <>
+                        {fresh ? <StarterWelcome /> : null}
+                        <Overview onCoverage={coverage} />
+                    </>
                 )}
             </div>
             <div className="case-footnote">

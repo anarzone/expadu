@@ -112,6 +112,8 @@ interface Editor {
 export interface SituationRequest {
     key?: string;
     question?: Question;
+    /** The starter run of a person with no answers yet (PW7). */
+    starter?: boolean;
 }
 
 interface PaperworkContextValue {
