@@ -1,6 +1,6 @@
 # Recommendation System
 
-Last updated: 2026-10-18 (rewritten for EXP-119)
+Last updated: 2026-10-21 (Today's discovery, EXP-170; rewritten for EXP-119)
 
 The 29 March version of this page described `RecommendationService`,
 `DiscoverySuggestionService`, `LocationPatternService`,
@@ -21,7 +21,7 @@ deterministic rankers, and they share no model:
 
 | Surface | Code | How it ranks |
 |---|---|---|
-| Today rails | `app/Home/DiscoveryFeed.php` | Situation, taste, appeal and proximity, minus rain. Each rail takes at most 2 places per category and at most 2 sit-down or work venues. Draws from a cached pool of up to 2,000 places. |
+| Today's discovery | `app/Home/TodayDiscovery.php`, `app/Places/OpenNearby.php` | No taste ranking. Tonight's listed events that are still to come and don't clash with a plan, soonest first: two posters, then three compact listings. Near the next plan with a place: your own saved idea in that area first, else an event listed there after it. Then up to three everyday places (bakery, café, pharmacy, grocery) whose listed hours say they're open when the plan ends, nearest first within 1 km. Nothing is cached. |
 | Events, "recommended" sort | `Api/EventsController`, `EventController` | LLM relevance first, then proximity. Not personalised. Today uses the default sort. |
 | Composer plans | `app/Composer/PlanScorer.php` | 13 weighted terms. The optional LLM ranker feeds `llm_rank` (weight 45, the largest term); see [composer-design.md](composer-design.md). |
 | Places list | `app/Services/NearbyPlaces.php` | Distance only. |
@@ -30,14 +30,11 @@ Every surface draws from the place catalogue in `app/Places/`
 (`PlaceFacts`, `PlaceIdentity`, `DestinationGrouping`). A place is offered only
 if the facts there say it may be publicly recommended.
 
-"New to you" in the Today rails means "outside your home areas", not "a place
-you haven't been to".
-
 ## Taste signals
 
 `app/Composer/IntentWeights.php` turns `user_events` rows from the last 90 days
 into category × Veedel counts. Every request recomputes them; nothing is stored
-as a profile. Both the Today rails and Composer read them.
+as a profile. Composer reads them; Today's discovery doesn't.
 
 It weights 11 signal types. Since the 6 October UI rewrite, only the four
 Places feedback signals still have a live emitter:

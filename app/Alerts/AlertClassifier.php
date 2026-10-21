@@ -9,7 +9,7 @@ use App\Enums\AlertType;
  * `subtype` (and, for the border, the ContextEngine severity), it derives the
  * dimensions the AlertsScreen design needs: the urgency lane, the category
  * filter bucket, the severity tone, a source caption, and the call-to-action
- * label. Pure + deterministic — mirrors RailCopy, no LLM, no DB.
+ * label. Pure and deterministic: no LLM, no DB.
  *
  * The mappings are transcribed from AlertsScreen.dc.html's worked examples
  * (Anmeldung overdue = bureau/action/danger, Line 7 = transit/action/warn,
