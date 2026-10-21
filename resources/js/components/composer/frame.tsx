@@ -245,7 +245,7 @@ export function dayFacts(
             strong:
                 deadline.kind === 'document_expiry'
                     ? deadline.document === 'visa'
-                        ? 'D visa expires'
+                        ? 'Visa expires'
                         : 'Document expires'
                     : (deadline.process ?? 'A date to aim for'),
             href: deadline.occurrence_key

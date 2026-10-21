@@ -189,7 +189,6 @@ export default function ComposerPage({
     const [savedFrom, setSavedFrom] = useState(() =>
         panel === 'saved' ? cameFrom : null,
     );
-    const [confirm, setConfirm] = useState<'history' | null>(null);
     const [detail, setDetail] = useState<ItemDetails | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
     const [appointmentName, setAppointmentName] = useState('');
@@ -1351,6 +1350,7 @@ export default function ComposerPage({
                         panel={collection}
                         workspace={workspace}
                         today={dayDate}
+                        todayPlanned={(day?.items.length ?? 0) > 0}
                         date={plansDate ?? activePlan?.date ?? dayDate}
                         busy={!!busy}
                         savedFrom={savedFrom}
@@ -1385,7 +1385,17 @@ export default function ComposerPage({
                                 scrollBottom(true);
                             }
                         }}
-                        onDeleteHistory={() => setConfirm('history')}
+                        onDeleteHistory={async () => {
+                            const deleted = await command({
+                                action: 'delete_history',
+                            });
+
+                            if (deleted) {
+                                setPanel(null);
+                            }
+
+                            return deleted;
+                        }}
                         onAdd={(slot) =>
                             command({
                                 action: 'add',
@@ -1565,44 +1575,6 @@ export default function ComposerPage({
                                 </button>
                             </form>
                         )}
-                    </div>
-                </DialogContent>
-            </Dialog>
-            <Dialog
-                open={confirm !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setConfirm(null);
-                    }
-                }}
-            >
-                <DialogContent className="composer-confirm">
-                    <DialogTitle>Delete conversation history?</DialogTitle>
-                    <DialogDescription>
-                        Your messages will be permanently deleted. Saved places
-                        and your plans will remain.
-                    </DialogDescription>
-                    <div>
-                        <button
-                            className="composer-text-button"
-                            onClick={() => setConfirm(null)}
-                        >
-                            Keep it
-                        </button>
-                        <button
-                            className="composer-primary"
-                            disabled={!!busy}
-                            onClick={async () => {
-                                if (
-                                    await command({ action: 'delete_history' })
-                                ) {
-                                    setConfirm(null);
-                                    setPanel(null);
-                                }
-                            }}
-                        >
-                            Delete history
-                        </button>
                     </div>
                 </DialogContent>
             </Dialog>

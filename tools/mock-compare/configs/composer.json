@@ -184,7 +184,7 @@
             "ignore": [
                 "w"
             ],
-            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\"). The mock's map picture doesn't load, so its tile is empty, where the app draws the pin the mock falls back to without a picture."
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\")."
         },
         {
             "name": "day item tonight",
@@ -330,7 +330,7 @@
             "ignore": [
                 "w"
             ],
-            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\"). The mock's map picture doesn't load, so its tile is empty, where the app draws the pin the mock falls back to without a picture."
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\")."
         },
         {
             "name": "day chip tonight",
@@ -412,7 +412,7 @@
                 "h"
             ],
             "contentDiffers": true,
-            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\"). The mock's map picture doesn't load, so its tile is empty, where the app draws the pin the mock falls back to without a picture. On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
+            "ignoreReason": "Near your appointment is the appointment's own recorded place (\"Mülheim\"); the mock's sample names its stop (\"Wiener Platz\"). On a phone the mock's longer sample wording (\"2 sample events from 18:30\", \"Around Wiener Platz, Mülheim\") wraps to a second line, so its second row of cards is taller and what follows starts lower."
         },
         {
             "name": "starter tag",
@@ -520,9 +520,7 @@
                 {
                     "wait": 200
                 }
-            ],
-            "pixels": false,
-            "ignoreReason": "The whole panel holds the week strip, whose dots differ (see week); its parts below are compared pixel for pixel."
+            ]
         },
         {
             "name": "panel top",
@@ -547,9 +545,7 @@
         {
             "name": "week",
             "mock": ".day-selector",
-            "app": ".day-selector",
-            "contentDiffers": true,
-            "ignoreReason": "Dots mark the days with a plan. The account has the sample day's coming plans (1 and 3 Oct), as Your day's Coming up shows; the mock's My Plans reads its own empty Composer state, so it draws none."
+            "app": ".day-selector"
         },
         {
             "name": "week back",
@@ -681,9 +677,7 @@
                 {
                     "wait": 400
                 }
-            ],
-            "pixels": false,
-            "ignoreReason": "Below the list, the mock's note describes the prototype itself (\"Sample responses · history stays in this browser\"); the app says where history really is, and offers Delete conversation history (a privacy control the mock leaves out; sent to the design session). The title, intro and conversation row above match pixel for pixel."
+            ]
         },
         {
             "name": "history title",
@@ -701,6 +695,57 @@
             "mock": ".history-section",
             "app": ".history-section",
             "index": 0
+        },
+        {
+            "name": "delete confirm",
+            "mock": ".studio-detail-dialog",
+            "app": ".studio-detail-dialog",
+            "mockBefore": [
+                {
+                    "click": "[data-action=\"delete-history\"]"
+                },
+                {
+                    "wait": 500
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": "#workspace-panel button:has-text(\"Delete conversation history\")"
+                },
+                {
+                    "wait": 500
+                }
+            ]
+        },
+        {
+            "name": "delete confirm title",
+            "mock": ".studio-detail-dialog > header h2",
+            "app": ".studio-detail-dialog > header h2"
+        },
+        {
+            "name": "delete confirm close",
+            "mock": ".studio-detail-dialog [data-detail-close]",
+            "app": ".studio-detail-dialog [data-detail-close]"
+        },
+        {
+            "name": "delete confirm text",
+            "mock": ".studio-detail-dialog .detail-body > p",
+            "app": ".studio-detail-dialog .detail-body > p"
+        },
+        {
+            "name": "delete confirm actions",
+            "mock": ".studio-detail-dialog .detail-actions",
+            "app": ".studio-detail-dialog .detail-actions"
+        },
+        {
+            "name": "keep it",
+            "mock": ".studio-detail-dialog .detail-actions .plain-button",
+            "app": ".studio-detail-dialog .detail-actions .plain-button"
+        },
+        {
+            "name": "delete history",
+            "mock": ".studio-detail-dialog .detail-actions .studio-button",
+            "app": ".studio-detail-dialog .detail-actions .studio-button"
         }
     ]
 }

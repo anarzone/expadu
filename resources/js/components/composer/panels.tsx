@@ -7,6 +7,7 @@ import type { SavedEvent } from '@/hooks/use-saved-events';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { events } from '@/routes';
 import { feedback } from '@/routes/api/places';
+import { DetailDialog } from './detail-dialog';
 import type { Panel } from './frame';
 import { ItemPreview } from './item-preview';
 import type { ItemDetails } from './item-preview';
@@ -79,6 +80,7 @@ export function WorkspacePanel({
     panel,
     workspace,
     today,
+    todayPlanned,
     date,
     busy,
     savedFrom,
@@ -97,6 +99,8 @@ export function WorkspacePanel({
     panel: Panel;
     workspace: Workspace;
     today: string;
+    /** Your day for today has something on it (the day projection). */
+    todayPlanned: boolean;
     date: string;
     busy: boolean;
     /** Saved ideas opened from another page's bookmark go back to that page. */
@@ -109,7 +113,7 @@ export function WorkspacePanel({
     onAppointment: (date: string) => void;
     onCancelDay: (date: string) => void;
     onResume: (id: string) => void;
-    onDeleteHistory: () => void;
+    onDeleteHistory: () => Promise<boolean>;
     onAdd: (slot: Slot) => Promise<boolean>;
     onFull: (detail: ItemDetails) => void;
 }) {
@@ -221,6 +225,7 @@ export function WorkspacePanel({
                     <MyPlans
                         workspace={workspace}
                         today={today}
+                        todayPlanned={todayPlanned}
                         date={date}
                         busy={busy}
                         onDate={onDate}
@@ -255,6 +260,7 @@ export function WorkspacePanel({
 function MyPlans({
     workspace,
     today,
+    todayPlanned,
     date,
     busy,
     onDate,
@@ -266,6 +272,7 @@ function MyPlans({
 }: {
     workspace: Workspace;
     today: string;
+    todayPlanned: boolean;
     date: string;
     busy: boolean;
     onDate: (date: string) => void;
@@ -276,6 +283,10 @@ function MyPlans({
     onCancelDay: (date: string) => void;
 }) {
     const plan = workspace.plans[date];
+    // A day with something planned: a Composer plan, or today's own day (a recorded
+    // Paperwork appointment is on it without being a Composer plan), as the mock marks it.
+    const planned = (day: string) =>
+        !!workspace.plans[day] || (day === today && todayPlanned);
 
     return (
         <>
@@ -312,13 +323,9 @@ function MyPlans({
                             </span>
                             <strong>{Number(day.slice(-2))}</strong>
                             <i
-                                className={
-                                    workspace.plans[day] ? 'has-plan' : ''
-                                }
+                                className={planned(day) ? 'has-plan' : ''}
                                 aria-label={
-                                    workspace.plans[day]
-                                        ? 'Has a plan'
-                                        : 'No plan'
+                                    planned(day) ? 'Has a plan' : 'No plan'
                                 }
                             />
                         </button>
@@ -763,8 +770,10 @@ function History({
     workspace: Workspace;
     busy: boolean;
     onResume: (id: string) => void;
-    onDelete: () => void;
+    onDelete: () => Promise<boolean>;
 }) {
+    const [confirming, setConfirming] = useState(false);
+
     return (
         <>
             <p className="history-intro">
@@ -806,11 +815,46 @@ function History({
                 type="button"
                 className="plain-button"
                 disabled={busy}
-                onClick={onDelete}
+                onClick={() => setConfirming(true)}
             >
                 <Icon name="trash" variant="line" />
                 Delete conversation history
             </button>
+            {/* Deleting history asks first: it's permanent, unlike cancelling a day
+                (owner, 21 Oct 2026). Keep it is the safe default. */}
+            {confirming && (
+                <DetailDialog
+                    title="Delete conversation history?"
+                    initialFocus=".plain-button"
+                    onClose={() => setConfirming(false)}
+                >
+                    <p>
+                        Your messages will be permanently deleted. Saved places
+                        and your plans will remain.
+                    </p>
+                    <div className="detail-actions">
+                        <button
+                            type="button"
+                            className="plain-button"
+                            onClick={() => setConfirming(false)}
+                        >
+                            Keep it
+                        </button>
+                        <button
+                            type="button"
+                            className="studio-button primary"
+                            disabled={busy}
+                            onClick={async () => {
+                                if (await onDelete()) {
+                                    setConfirming(false);
+                                }
+                            }}
+                        >
+                            Delete history
+                        </button>
+                    </div>
+                </DetailDialog>
+            )}
         </>
     );
 }

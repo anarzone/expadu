@@ -740,15 +740,6 @@
     padding: 12px;
     font-size: 16px;
 }
-.composer-confirm {
-    border-radius: 22px;
-    max-width: min(420px, calc(100vw - 24px));
-}
-.composer-confirm > div:last-child {
-    display: flex;
-    justify-content: flex-end;
-    gap: 20px;
-}
 .is-danger {
     color: #a93e29;
 }

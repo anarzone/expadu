@@ -4462,23 +4462,9 @@
         background: var(--color-bg-surface);
         color: var(--color-text-soft);
     }
-    /* Places stay photo-free: a map picture of the area. */
-    .starter-nearby img {
-        position: absolute;
-        z-index: -1;
-        inset: 0 0 0 auto;
-        width: 46%;
-        height: 100%;
-        object-fit: cover;
-        -webkit-mask-image: linear-gradient(90deg, transparent, #000 45%);
-        mask-image: linear-gradient(90deg, transparent, #000 45%);
-    }
     .starter-nearby .starter-tag {
         border: 1px solid var(--color-border);
         background: var(--color-bg-surface);
-    }
-    .starter-nearby :is(strong, small) {
-        max-width: 62%;
     }
     .starter-chips {
         display: flex;
@@ -4594,11 +4580,6 @@
     .day-item-tile.is-map {
         border: 1px solid var(--color-border);
         background: var(--color-bg-surface);
-    }
-    .day-item-tile.is-map img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
     }
 
     /* Desktop: Your day beside the conversation. */
@@ -4800,17 +4781,6 @@
             top: 10px;
             right: 10px;
             font-size: var(--text-small);
-        }
-        .starter-nearby img {
-            inset: auto 0 0 0;
-            width: 100%;
-            height: 56px;
-            opacity: 0.55;
-            -webkit-mask-image: linear-gradient(transparent, #000);
-            mask-image: linear-gradient(transparent, #000);
-        }
-        .starter-nearby :is(strong, small) {
-            max-width: none;
         }
         .starter-chips {
             flex-wrap: nowrap;
