@@ -7,8 +7,13 @@ export type TripConflict = {
 };
 
 export class TripConflictError extends TripRequestError {
-    constructor(public readonly trip: TripConflict) {
+    // A plain field, not a parameter property: Node runs this file with
+    // type stripping only (tests/Frontend), which can't rewrite one.
+    readonly trip: TripConflict;
+
+    constructor(trip: TripConflict) {
         super('You’re already on a trip. Replace it?');
+        this.trip = trip;
     }
 }
 

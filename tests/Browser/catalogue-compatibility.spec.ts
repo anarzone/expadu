@@ -61,7 +61,9 @@ test('expanded catalogue filters stay in the compact row and request their serve
     expect(errors).toEqual([]);
 });
 
-test('saved unavailable items keep their name and time with a review note in Today and Composer', async ({
+// Today reads its day on the server (DayProjection), and the approved Today shows no review
+// note on a saved item, so the note is Composer's to show.
+test('a saved unavailable item keeps its name and time with a review note in Composer', async ({
     page,
 }) => {
     const date = '2026-10-05';
@@ -76,9 +78,6 @@ test('saved unavailable items keep their name and time with a review note in Tod
         active: 'initial',
         focus: date,
         changes: [],
-        draft: null,
-        approval: 'routine',
-        versions: [],
         conversations: [
             {
                 id: 'initial',
@@ -121,22 +120,30 @@ test('saved unavailable items keep their name and time with a review note in Tod
     await page.route('**/composer/workspace', (route) =>
         route.fulfill({ json: workspace }),
     );
+    // Composer's page arrives by an Inertia visit (the header's Saved link), so its first
+    // props can carry the saved day.
+    await page.route(
+        (url) => url.pathname === '/composer',
+        async (route) => {
+            if (!route.request().headers()['x-inertia']) {
+                return route.continue();
+            }
+
+            const response = await route.fetch();
+            const payload = await response.json();
+            payload.props.workspace = workspace;
+            delete payload.deferredProps;
+            await route.fulfill({ response, json: payload });
+        },
+    );
     await page.goto('/dashboard');
-    await expect(
-        page.getByRole('heading', { name: 'Saved park visit' }),
-    ).toBeVisible();
-    await expect(page.getByText(notice, { exact: true })).toBeVisible();
-    await page.route('**/composer', async (route) => {
-        const response = await route.fetch();
-        const payload = await response.json();
-        payload.props.workspace = workspace;
-        delete payload.deferredProps;
-        await route.fulfill({ response, json: payload });
-    });
     await page
-        .getByRole('navigation', { name: 'Main navigation' })
-        .getByRole('link', { name: 'Composer', exact: true })
+        .getByRole('banner')
+        .getByRole('link', { name: 'Saved', exact: true })
         .click();
+    await expect(page.locator('#workspace-panel')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#workspace-panel')).toBeHidden();
     const plan = page.locator('#composer-current-plan');
     await expect(
         plan.getByText('Saved park visit', { exact: true }),
