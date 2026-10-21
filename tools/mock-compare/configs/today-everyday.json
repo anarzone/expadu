@@ -124,9 +124,7 @@
             "name": "Leave now",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
-            "widths": [768, 1280, 1440, 1512],
-            "ignore": ["h"],
-            "pixels": false
+            "widths": [768, 1280, 1440, 1512]
         },
         {
             "name": "Leave now (phone)",
@@ -140,8 +138,7 @@
             "name": "Add a plan",
             "mock": ".add-plan",
             "app": ".add-plan",
-            "widths": [768, 1280, 1440, 1512],
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
         },
         {
             "name": "Add a plan (phone)",
@@ -152,7 +149,6 @@
             "pixels": false
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere but Add a plan, which sits below Leave now (see chipNote).",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
-    "chipNote": "Leave now's 'Scheduled · not live' label is drawn at the default chip size in the mock (24px) and at Travel's small size in NextTripCard (22px), so the card is 2px shorter and Add a plan sits 2px higher. Session 3 is dropping the small size; then both exceptions go."
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere.",
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel."
 }

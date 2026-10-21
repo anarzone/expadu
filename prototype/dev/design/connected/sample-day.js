@@ -77,10 +77,10 @@
                 to: 'Mülheim',
                 line: '4',
                 // Line 4's Mülheim direction in the Neumarkt capture of
-                // 4 October; Wiener Platz is the appointment area Composer
-                // and the place layer use.
+                // 4 October. The stop is KVB's own name for it; Wiener Platz
+                // is the appointment area Composer and the place layer use.
                 towards: 'Schlebusch',
-                alightStop: 'Wiener Platz',
+                alightStop: 'Mülheim Wiener Platz',
                 depart: '13:24',
                 arrive: '13:52',
                 expectedDepart: '13:24',
@@ -105,12 +105,16 @@
                 title: 'EU Blue Card',
                 prepared: 1,
                 total: 5,
-                nextAction: 'Review your documents',
+                // The engine's next step and expiry label for this record, as
+                // the app shows them (MockSample\PaperworkSeeder).
+                nextAction:
+                    'Prepare the evidence for your first Blue Card application',
                 deadline: '2026-10-01',
-                deadlineLabel: 'D visa expires',
+                deadlineLabel: 'Visa expires',
                 deadlineAction:
-                    'Submit the Blue Card application before your D visa expires',
-                deadlineShort: 'Submit your Blue Card application',
+                    'Prepare the evidence for your first Blue Card application',
+                deadlineShort:
+                    'Prepare the evidence for your first Blue Card application',
                 submitted: false,
             },
         ],

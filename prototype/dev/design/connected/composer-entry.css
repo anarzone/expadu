@@ -102,6 +102,15 @@
         right: 10px;
         bottom: auto;
     }
+    /* Under the header the menu opens down, onto the page, not off the
+       top of the screen. */
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active
+        .today-control-menu {
+        top: calc(100% + 10px);
+        bottom: auto;
+    }
 }
 /* Tablets and laptops narrower than 1280px: the sections share the
    header's one row, so Composer keeps just its mark there (its name is its

@@ -24,7 +24,9 @@ class PaperworkAppointments implements RecordedAppointments
         if ($plan === null) {
             return [];
         }
-        $processes = array_column([...$plan['processes'] ?? [], ...$plan['history'] ?? []], 'title', 'id');
+        $all = [...$plan['processes'] ?? [], ...$plan['history'] ?? []];
+        $processes = array_column($all, 'title', 'id');
+        $keys = array_column($all, 'occurrence_key', 'id');
 
         $items = [];
         foreach ($plan['timeline'] ?? [] as $event) {
@@ -54,6 +56,7 @@ class PaperworkAppointments implements RecordedAppointments
                 lng: $routable ? (float) $location['lng'] : null,
                 fixed: true,
                 processId: isset($event['process_id']) ? (int) $event['process_id'] : null,
+                processKey: $keys[$event['process_id'] ?? ''] ?? null,
             );
         }
         usort($items, fn (DayItem $a, DayItem $b) => $a->startAt <=> $b->startAt);

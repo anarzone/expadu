@@ -1,0 +1,123 @@
+{
+    "name": "today-discovery-quiet",
+    "seed": "php artisan mock:sample-day quiet --email=<account> && PAPERWORK_SAMPLE=quiet E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=quiet",
+        "wait": ".deadline-strip"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".deadline-strip",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "ideas heading",
+            "mock": ".discovery-title-group h2",
+            "app": ".discovery-title-group h2",
+            "ignore": ["y", "w"],
+            "pixels": false
+        },
+        {
+            "name": "weather line",
+            "mock": ".discovery-title-group p",
+            "app": ".discovery-title-group p",
+            "ignore": ["y", "w", "h"],
+            "contentDiffers": true
+        },
+        {
+            "name": "sun",
+            "mock": ".discovery-title-group p svg",
+            "app": ".discovery-title-group p svg",
+            "ignore": ["y", "x"],
+            "pixels": false
+        },
+        {
+            "name": "forecast label",
+            "mock": ".discovery-title-group p small",
+            "app": ".discovery-title-group p small",
+            "ignore": ["y", "x", "w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "All events",
+            "mock": ".discovery-heading > a",
+            "app": ".discovery-heading > a",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "poster rail",
+            "mock": ".event-rail",
+            "app": ".event-rail",
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "first poster",
+            "mock": ".event-card",
+            "app": ".event-card",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "second poster",
+            "mock": ".event-card",
+            "app": ".event-card",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 1
+        },
+        {
+            "name": "poster title",
+            "mock": ".event-copy strong",
+            "app": ".event-copy strong",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster time",
+            "mock": ".event-copy small",
+            "app": ".event-copy small",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster venue",
+            "mock": ".event-copy small",
+            "app": ".event-copy small",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 1
+        },
+        {
+            "name": "poster save",
+            "mock": ".event-save",
+            "app": ".event-save",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster plan",
+            "mock": ".event-plan",
+            "app": ".event-plan",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        }
+    ],
+    "contentNote": "The weather line is the forecast's own words (the mock's sample: '21° and dry, good for being outside' with 'Sample forecast'; the app: the temperature and condition, 'Forecast'), so its width and wrap are content. The heading shares a grid with that line, so the mock's longer sentence also makes it wider.",
+    "subpixelNote": "Discovery sits under City help, whose departures and forecast are live (today-city), and the places sit under the mock's sample idea, so they land at other fractions of a pixel than the mock's: text rasterises differently. Boxes (but y) and styles are compared; the element shots look the same."
+}

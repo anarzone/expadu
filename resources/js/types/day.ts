@@ -63,6 +63,8 @@ export type DayItem = {
     available: boolean;
     /** A Paperwork appointment's process (its checklist: "What to bring"). */
     process_id: number | null;
+    /** Its occurrence on your plan: Paperwork opens What to bring by it. */
+    process_key?: string | null;
     /** The way picked for it in Plan a trip ("Add to plan"), when there is one. */
     planned?: PlannedTrip | null;
 };
