@@ -274,8 +274,13 @@ export function NextTripCard({
                 tone="calm"
                 ring={{ kind: 'unplanned' }}
                 title={trip.target.title}
+                // When and where, as the mock's "Nothing planned yet" card.
                 place={
-                    compact ? undefined : (trip.target.start_time ?? undefined)
+                    compact
+                        ? undefined
+                        : [trip.target.start_time, trip.target.location]
+                              .filter(Boolean)
+                              .join(' · ') || undefined
                 }
                 flags={
                     <TravelChip kind="unsure" icon={icons.unsure}>

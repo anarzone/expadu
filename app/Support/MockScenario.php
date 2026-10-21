@@ -9,15 +9,16 @@ use Illuminate\Http\Request;
  * machine only. tools/mock-compare sets the plain `mock_scenario` cookie
  * beside `mock_clock` so the sample fixtures (App\Transit\MockSample) answer
  * as the mock's situation does: a lift out, live times paused, a long wait,
- * a cancelled or missed tram. Only those fixtures read it, and only while
- * the mock clock is on; outside the local environment it means nothing.
+ * a cancelled or missed tram, no way for the day's plan. Only those
+ * fixtures read it, and only while the mock clock is on; outside the local
+ * environment it means nothing.
  */
 final class MockScenario
 {
     public const COOKIE = 'mock_scenario';
 
     /** The mock's situations that change what the app's data says. */
-    public const KNOWN = ['cancelled', 'missed', 'lift', 'stale', 'longwait'];
+    public const KNOWN = ['cancelled', 'missed', 'lift', 'stale', 'longwait', 'unplanned'];
 
     /** The situation this request asks for, when this machine allows one. */
     public static function current(?Request $request = null): ?string
