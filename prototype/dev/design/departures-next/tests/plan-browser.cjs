@@ -105,7 +105,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             await way.waitFor();
             assert.match(
                 await way.innerText(),
-                /To EU Blue Card appointment[\s\S]*Leave 13:10 · there 13:48[\s\S]*Walk to Köln Neumarkt[\s\S]*Board line 4[\s\S]*Get off at Wiener Platz/,
+                /To EU Blue Card appointment[\s\S]*Leave 13:10 · there 13:48[\s\S]*Walk to Köln Neumarkt[\s\S]*Board line 4[\s\S]*Get off at Mülheim Wiener Platz/,
             );
             assert.equal(
                 await way

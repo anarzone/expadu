@@ -23,7 +23,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     .locator('.route-summary .route-caption')
                     .first()
                     .innerText(),
-                'Line 4 · Neumarkt → Wiener Platz',
+                'Line 4 · Neumarkt → Mülheim Wiener Platz',
             );
             // Both lead with the 13:14; the planned 13:24 is too tight for
             // an official appointment (owner decision, 9 Oct 2026).
@@ -47,7 +47,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             assert.match(
                 await page.locator('#next-trip').innerText(),
                 width >= 1000
-                    ? /Neumarkt 13:14[\s\S]*Wiener Platz 13:42/
+                    ? /Neumarkt 13:14[\s\S]*Mülheim Wiener Platz 13:42/
                     : /13:14 from Neumarkt · there 13:48[\s\S]*12 min spare/,
             );
             // Phones open Plan a trip from “Where to?”; desktops from its tab.

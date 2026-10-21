@@ -45,7 +45,7 @@ OFFSET = timedelta(hours=2)  # Cologne on 30 September (CEST)
 # details' default) and Neumarkt (the Events page's distances, and Travel's
 # own start).
 ORIGINS = [
-    {'id': 'wiener-platz', 'name': 'Mülheim', 'stop': 'Wiener Platz', 'lat': 50.96103, 'lng': 7.0048,
+    {'id': 'wiener-platz', 'name': 'Mülheim', 'stop': 'Mülheim Wiener Platz', 'lat': 50.96103, 'lng': 7.0048,
      'names': ['Mülheim', 'Wiener Platz']},
     {'id': 'neumarkt', 'name': 'Neumarkt', 'stop': 'Neumarkt', 'lat': 50.93576, 'lng': 6.94811,
      'names': ['Neumarkt']},
