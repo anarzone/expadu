@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'emoji', 'name', 'address', 'lat', 'lng', 'sort_order', 'arrive_by', 'category', 'day_mode', 'active_days'])]
+#[Fillable(['user_id', 'emoji', 'name', 'address', 'lat', 'lng', 'located_from_address', 'sort_order', 'arrive_by', 'category', 'day_mode', 'active_days'])]
 class UserPlace extends Model
 {
     /** @use HasFactory<UserPlaceFactory> */
@@ -21,6 +21,7 @@ class UserPlace extends Model
         return [
             'lat' => 'float',
             'lng' => 'float',
+            'located_from_address' => 'boolean',
             'active_days' => 'array',
         ];
     }
