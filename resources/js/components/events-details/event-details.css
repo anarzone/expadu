@@ -272,6 +272,14 @@
     line-height: 1.55;
 }
 
+/* An untranslated summary says it's the listing's own words. */
+.evd-original {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
 .evd-description.is-unknown {
     color: var(--evd-sub);
 }

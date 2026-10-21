@@ -512,7 +512,16 @@ function Body({
                         !o.summary && 'is-unknown',
                     )}
                 >
-                    {o.summary ?? 'The listing has no description.'}
+                    {o.summary && o.summary_lang ? (
+                        <>
+                            <small className="evd-original">
+                                Original ({languageName(o.summary_lang)})
+                            </small>
+                            <span lang={o.summary_lang}>{o.summary}</span>
+                        </>
+                    ) : (
+                        (o.summary ?? 'The listing has no description.')
+                    )}
                 </p>
                 <details className="evd-source">
                     <summary>

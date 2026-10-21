@@ -20,6 +20,8 @@ export type EventOccurrence = {
     chips: string[];
     tip: string | null;
     summary: string | null;
+    /** Set when the summary is the listing's own words, untranslated (e.g. "de"). */
+    summary_lang?: string | null;
     price_text: string | null;
     venue: {
         name: string | null;

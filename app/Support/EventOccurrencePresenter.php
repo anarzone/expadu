@@ -50,6 +50,8 @@ class EventOccurrencePresenter
             'tip' => $event->tip_en,
             // Untranslated, the listing's own words: never nothing when it has some.
             'summary' => $event->summary_en ?: ($event->description_en ?: (filled($event->description) ? Str::limit((string) $event->description, 400) : null)),
+            // The listing's language when the summary is its own words, not a translation.
+            'summary_lang' => ! $event->summary_en && ! $event->description_en && filled($event->description) ? ($event->source_lang ?: 'de') : null,
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
                 'name' => $venueName,
