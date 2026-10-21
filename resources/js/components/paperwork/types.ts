@@ -313,6 +313,8 @@ export interface FactView {
         string,
         {
             fact_id: number;
+            /** Where the answer came from: 'onboarding' (setup), 'manual' (a question or an edit), … */
+            source?: string;
             effective_from: string | null;
             checked_at: string | null;
         }
