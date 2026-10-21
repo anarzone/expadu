@@ -61,6 +61,16 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
     ],
 
+    // KVB notices as short English briefs (App\Transit\NoticeBriefWriter).
+    // Public data only. Off without ANTHROPIC_API_KEY or with the switch.
+    'transit_briefs' => [
+        'enabled' => env('TRANSIT_BRIEFS_ENABLED', true),
+        'model' => env('TRANSIT_BRIEFS_MODEL', 'claude-haiku-5-5'),
+        'effort' => env('TRANSIT_BRIEFS_EFFORT', 'low'),
+        'daily_limit' => (int) env('TRANSIT_BRIEFS_DAILY_LIMIT', 300),
+        'prompt_version' => '2026-10-21',
+    ],
+
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
@@ -79,7 +89,10 @@ return [
      * model out rather than guess: unpriced calls record a null cost. Example:
      * 'claude-haiku-5-5' => ['input_per_mtok' => 0.0, 'output_per_mtok' => 0.0],
      */
-    'llm_pricing' => [],
+    'llm_pricing' => [
+        // Prompts up to 100K tokens; longer ones bill at $0.50 / $2.50.
+        'claude-haiku-5-5' => ['input_per_mtok' => 0.10, 'output_per_mtok' => 0.50],
+    ],
 
     /*
      * The composer's prompt parser. 'heuristic' (default) needs no key and

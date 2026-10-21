@@ -47,7 +47,7 @@ test('the appointment trip offers the planned tram and the earlier one, from the
     assert.equal(J.route('day-1314').legs[1].time, '13:14');
     assert.equal(J.route('day-1314').legs[1].detail, 'Towards Schlebusch');
     assert.equal(J.tripFor('Neumarkt', 'Mülheim'), 'day');
-    assert.equal(J.tripFor('Köln Neumarkt', 'Wiener Platz'), 'day');
+    assert.equal(J.tripFor('Köln Neumarkt', 'Köln Mülheim Wiener Platz'), 'day');
     assert.equal(J.tripFor('Neumarkt', 'Museum Ludwig'), 'capture');
     assert.equal(J.tripFor('Mülheim', 'Neumarkt'), null);
     const steps = J.tripSteps(J.route('day-1314'));

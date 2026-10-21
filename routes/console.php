@@ -42,6 +42,8 @@ Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:
 
 // Transit news feed (read by transit:check-disruptions on its next run)
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
+// English briefs for new or changed KVB notices (llm queue; cents a day)
+Schedule::command('transit:brief-notices')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 
 // Paperwork v2 upkeep: expire processing permits and interaction state, run
 // queued erasures and reassessments (reassessment reminders feed the bus).

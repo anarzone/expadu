@@ -36,6 +36,8 @@ final readonly class DayItem
         public ?string $subtitle = null,
         // A Paperwork appointment's process (its checklist: "What to bring").
         public ?int $processId = null,
+        // Its occurrence on the person's plan, which Paperwork opens by.
+        public ?string $processKey = null,
     ) {}
 
     public function routable(): bool
@@ -107,6 +109,7 @@ final readonly class DayItem
             'completable' => $this->completable,
             'available' => $this->available,
             'process_id' => $this->processId,
+            'process_key' => $this->processKey,
         ];
     }
 }
