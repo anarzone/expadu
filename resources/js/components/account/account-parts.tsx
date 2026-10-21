@@ -15,6 +15,7 @@ type FieldProps = {
     id: string;
     label: string;
     type?: string;
+    inputMode?: 'text' | 'numeric' | 'email';
     autoComplete: string;
     value: string;
     onChange?: (value: string) => void;
@@ -27,6 +28,7 @@ export function AccountField({
     id,
     label,
     type = 'text',
+    inputMode,
     autoComplete,
     value,
     onChange,
@@ -43,6 +45,7 @@ export function AccountField({
                     id={id}
                     name={id}
                     type={type}
+                    inputMode={inputMode}
                     autoComplete={autoComplete}
                     required
                     readOnly={readOnly}

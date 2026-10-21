@@ -42,7 +42,8 @@ class SentryScrubber
             $request = $event->getRequest();
             if ($request !== []) {
                 $path = parse_url((string) ($request['url'] ?? ''), PHP_URL_PATH) ?: '';
-                if (preg_match('~/(?:bureaucracy|composer|onboarding)(?:/|$)~', $path)) {
+                // Private answers, and the emailed confirmation codes.
+                if (preg_match('~/(?:bureaucracy|composer|onboarding|user/confirm-email)(?:/|$)~', $path)) {
                     $request['data'] = self::REDACTED;
                 }
                 $event->setRequest(self::redact($request));
