@@ -1,6 +1,8 @@
+import { IconLanguage } from '@tabler/icons-react';
 import type { CSSProperties, ReactNode, RefCallback } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
+import { languageName } from '@/lib/language-name';
 import type { PosterEvent } from './poster-model';
 import {
     isPast,
@@ -182,9 +184,24 @@ export function Poster({
         : event.price || 'Price not listed';
     const label = `${event.title}, ${tape}${event.start ? ` ${event.start}` : ''}`;
     const titleLang = event.titleLang ?? undefined;
-    const english = event.titleEnglish ? (
-        <span className="pp-translation">{event.titleEnglish}</span>
+    // English leads (owner, 21 Oct): the listing's own title is a small
+    // icon away, and an untranslated title says it's the original.
+    const original = event.titleOriginal ? (
+        <span
+            className="pp-original"
+            role="img"
+            aria-label={`Original title: ${event.titleOriginal}`}
+            title={`Original title: ${event.titleOriginal}`}
+        >
+            <IconLanguage stroke={1.8} aria-hidden="true" />
+        </span>
     ) : null;
+    const untranslated =
+        event.titleLang && event.titleLang !== 'en' ? (
+            <span className="pp-title-note">
+                Original ({languageName(event.titleLang)})
+            </span>
+        ) : null;
 
     const save = savable ? (
         <button
@@ -249,8 +266,9 @@ export function Poster({
                     <span className="pp-tape">{tape}</span>
                     <strong className="pp-title" lang={titleLang}>
                         {event.title}
+                        {original}
                     </strong>
-                    {english}
+                    {untranslated}
                     <span className="pp-bottom">
                         <span className="pp-time">{time}</span>
                         <span className="pp-meta">

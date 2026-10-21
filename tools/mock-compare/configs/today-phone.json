@@ -153,7 +153,9 @@
             "mock": ".continue-composer",
             "app": ".continue-composer",
             "ignore": ["y"],
-            "widths": [390]
+            "widths": [390],
+            "contentDiffers": true,
+            "ignoreReason": "The owner's call (21 Oct 2026): Pick up wraps up what the conversation came to (\"Your Saturday plan · 1 stop\"), not the request's words the mock shows. The box is still compared above."
         },
         {
             "name": "saved",

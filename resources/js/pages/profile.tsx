@@ -175,6 +175,11 @@ type ProfileStats = {
 // Page Component
 // ============================================================
 
+/** The save's own note when a typed address wasn't found on the map. */
+const notFoundNote = (page: { props: unknown }) =>
+    (page.props as { flash?: { status?: string | null } }).flash?.status ??
+    null;
+
 export default function Profile() {
     const {
         auth,
@@ -472,9 +477,12 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () => {
+                    onSuccess: (page) => {
                         setShowPlaceForm(false);
-                        showToast('✓ ' + placeName.trim() + ' updated');
+                        showToast(
+                            notFoundNote(page) ??
+                                '✓ ' + placeName.trim() + ' updated',
+                        );
                     },
                     onFinish: () => setPlaceSaving(false),
                     onError: (errors) => {
@@ -505,10 +513,13 @@ export default function Profile() {
                 {
                     preserveScroll: true,
                     preserveState: true,
-                    onSuccess: () => {
+                    onSuccess: (page) => {
                         setShowPlaceForm(false);
                         showToast(
-                            '✓ ' + placeName.trim() + ' added to your places',
+                            notFoundNote(page) ??
+                                '✓ ' +
+                                    placeName.trim() +
+                                    ' added to your places',
                         );
                     },
                     onFinish: () => setPlaceSaving(false),
@@ -917,6 +928,20 @@ export default function Profile() {
                                     >
                                         {p.addr}
                                     </div>
+                                    {p.addr &&
+                                    (p.lat === null || p.lng === null) ? (
+                                        <div
+                                            className="text-attention-text"
+                                            style={{
+                                                fontSize: 12,
+                                                marginTop: 2,
+                                            }}
+                                        >
+                                            Not on the map yet. Edit it and pick
+                                            a suggestion so trips can start
+                                            here.
+                                        </div>
+                                    ) : null}
                                 </div>
                                 <button
                                     onClick={() => openPlaceForm(p)}
@@ -1043,6 +1068,9 @@ export default function Profile() {
                                                     setPlaceAddr(
                                                         e.target.value,
                                                     );
+                                                    // A point picked before belongs to the old words.
+                                                    setPlaceLat(null);
+                                                    setPlaceLng(null);
                                                     setAddrHighlight(-1);
                                                     addrTimerRef.search(
                                                         e.target.value,
@@ -1196,6 +1224,14 @@ export default function Profile() {
                                             )}
                                         </button>
                                     </div>
+                                    {placeAddr.trim() &&
+                                    (placeLat === null || placeLng === null) ? (
+                                        <p className="mt-1 text-xs text-text-soft">
+                                            Pick a suggestion to pin it on the
+                                            map. Otherwise we’ll look the
+                                            address up when you save.
+                                        </p>
+                                    ) : null}
                                 </div>
                                 {/* Optional: Arrive by + Days — toggle buttons */}
                                 <div className="mb-2.5 flex gap-2">

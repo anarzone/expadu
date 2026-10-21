@@ -18,12 +18,23 @@ const VEHICLES = {
             <path d="M3 12h18M8 4v8m8-8v8M7 19v2m10-2v2M7 16h1m8 0h1" />
         </>
     ),
+    // The mock draws no ferry: a hull and its cabin, in the same line.
+    ferry: (
+        <>
+            <path d="M3 14h18l-2.5 5h-13z" />
+            <path d="M7 14V9h10v5M12 9V5" />
+        </>
+    ),
 };
 
 export function VehicleIcon({ kind }: { kind: VehicleKind }) {
     return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
-            {kind === 'bus' ? VEHICLES.bus : VEHICLES.train}
+            {kind === 'bus'
+                ? VEHICLES.bus
+                : kind === 'ferry'
+                  ? VEHICLES.ferry
+                  : VEHICLES.train}
         </svg>
     );
 }

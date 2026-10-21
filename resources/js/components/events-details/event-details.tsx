@@ -8,7 +8,7 @@
    Get there inside the page, with Back (get-there.tsx). */
 
 import { Link } from '@inertiajs/react';
-import { IconShare2 } from '@tabler/icons-react';
+import { IconLanguage, IconShare2 } from '@tabler/icons-react';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import EventReminderController from '@/actions/App/Http/Controllers/Api/EventReminderController';
@@ -26,6 +26,7 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { kmBetween } from '@/lib/geo';
+import { languageName } from '@/lib/language-name';
 import { notNow } from '@/lib/not-now';
 import {
     addToPlan,
@@ -106,30 +107,6 @@ const listWords = (words: string[]) =>
     words.length < 2
         ? words.join('')
         : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
-
-/** The classifier's own codes, in words; any other code by its name. */
-const LANGUAGE_WORDS: Record<string, string> = {
-    none_needed: 'None needed',
-    mixed: 'Mixed languages',
-};
-
-const languageName = (code: string | null | undefined) => {
-    if (!code) {
-        return null;
-    }
-
-    if (code in LANGUAGE_WORDS) {
-        return LANGUAGE_WORDS[code];
-    }
-
-    try {
-        return (
-            new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
-        );
-    } catch {
-        return code;
-    }
-};
 
 const STEP_FREE: Record<string, string> = {
     yes: 'Wheelchair accessible',
@@ -237,6 +214,8 @@ export function EventDetails({
     // The details, or Get there inside them; by the start at first.
     const [page, setPage] = useState<'about' | 'way'>('about');
     const [when, setWhen] = useState<WayWhen>('arrive');
+    // The listing's own title, behind the English one until asked for.
+    const [showOriginal, setShowOriginal] = useState(false);
 
     if (listing && listing !== shown) {
         setShown(listing);
@@ -245,6 +224,7 @@ export function EventDetails({
         if (listing.key !== shown?.key) {
             setPage('about');
             setWhen('arrive');
+            setShowOriginal(false);
         }
     }
 
@@ -310,9 +290,24 @@ export function EventDetails({
             }
             title={
                 l ? (
-                    <span lang={l.poster.titleLang ?? undefined}>
-                        {l.poster.title}
-                    </span>
+                    <>
+                        <span lang={l.poster.titleLang ?? undefined}>
+                            {l.poster.title}
+                        </span>
+                        {l.poster.titleOriginal ? (
+                            <button
+                                type="button"
+                                className="evd-original-toggle"
+                                aria-label="Original title"
+                                aria-expanded={showOriginal}
+                                aria-controls="evd-original-title"
+                                title={`Original title: ${l.poster.titleOriginal}`}
+                                onClick={() => setShowOriginal((on) => !on)}
+                            >
+                                <IconLanguage stroke={1.8} />
+                            </button>
+                        ) : null}
+                    </>
                 ) : (
                     ''
                 )
@@ -391,6 +386,7 @@ export function EventDetails({
             ) : (
                 <Body
                     listing={l}
+                    showOriginal={showOriginal}
                     date={date}
                     today={today}
                     start={start}
@@ -426,6 +422,7 @@ function Head({ poster, today }: { poster: PosterEvent; today: string }) {
 
 function Body({
     listing,
+    showOriginal,
     date,
     today,
     start,
@@ -433,6 +430,8 @@ function Body({
     onWay,
 }: {
     listing: DetailsListing;
+    /** The title button asked for the listing's own title. */
+    showOriginal: boolean;
     date: string;
     today: string;
     /** Where you'd set off (Get there's From). */
@@ -484,8 +483,6 @@ function Body({
               return words;
           })()
         : null;
-    const english =
-        o.title_original && o.title !== o.title_original ? o.title : null;
 
     return (
         <div className="evd-body">
@@ -500,10 +497,19 @@ function Body({
             ) : null}
             <section className="evd-about">
                 <h3 className="evd-label">About</h3>
-                {english ? (
+                {showOriginal && poster.titleOriginal ? (
+                    <p className="evd-translation" id="evd-original-title">
+                        <small>Original title</small>
+                        <span lang={o.title_lang ?? undefined}>
+                            {poster.titleOriginal}
+                        </span>
+                    </p>
+                ) : poster.titleLang && poster.titleLang !== 'en' ? (
                     <p className="evd-translation">
-                        <small>Title in English</small>
-                        <span>{english}</span>
+                        <small>
+                            Title not translated · Original (
+                            {languageName(poster.titleLang)})
+                        </small>
                     </p>
                 ) : null}
                 <p

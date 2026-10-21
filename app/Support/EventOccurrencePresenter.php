@@ -30,6 +30,9 @@ class EventOccurrencePresenter
         // The model's words show only with the listing's evidence; manual events are ours.
         $manual = $event->source === 'manual';
         $source = EventEvidence::source($event);
+        // The English title leads (owner, 21 Oct), only as checked against
+        // the listing; without one, the listing's own title.
+        $titleEnglish = $manual ? ($event->title_en ?: null) : EventEvidence::text($event->title_en, $source);
         $translated = $manual
             ? ($event->summary_en ?: ($event->description_en ?: null))
             : (EventEvidence::text($event->summary_en, $source) ?? EventEvidence::text($event->description_en, $source));
@@ -42,9 +45,10 @@ class EventOccurrencePresenter
             'id' => $event->id,
             'occurrence_start' => $startsAt->toIso8601String(),
             'occurrence_end' => $endsAt?->toIso8601String(),
-            'title' => $event->title_en ?: $event->title,
+            'title' => $titleEnglish ?? $event->title,
             'title_original' => $event->title,
             'title_lang' => $event->source_lang,
+            'title_translated' => $titleEnglish !== null,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
             'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
             'category' => $category->value,
