@@ -570,6 +570,7 @@ export default function Timetable() {
                     }}
                     onLocate={location.locate}
                     locating={location.locating}
+                    locateError={location.error}
                 />
 
                 {tripOpen ? (
