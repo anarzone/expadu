@@ -15,13 +15,21 @@ use Illuminate\Support\Collection;
 
 /**
  * Today's discovery (the mock's "A little Cologne" and "Also in ‹area›"),
- * from listings and the person's own saved ideas: tonight's events that are
- * still to come and fit around the person's plans, and the everyday places
- * whose listed hours say they're open near the next plan when it ends.
- * Nothing is sample or guessed; with nothing listed a block is simply absent.
+ * from listings and the person's own saved ideas: today's events still to
+ * come or still on that fit around the person's plans, then (after the
+ * evening's last start) tomorrow's, and the everyday places whose listed
+ * hours say they're open near the next plan when it ends. Nothing is sample
+ * or guessed; with nothing listed a block is simply absent.
  */
 final class TodayDiscovery
 {
+    /**
+     * A listing with no end (#257) stays as long as Events keeps it
+     * (ExpireEvents: four hours after its start). It shows by its start and
+     * "end not listed", never as on now.
+     */
+    private const NO_END_HOURS = 4;
+
     /** The kinds the mock looks for near a plan, one place each, in this order. */
     private const KINDS = [
         'bakery' => [SpotCategory::Bakery],
@@ -48,7 +56,8 @@ final class TodayDiscovery
             ->values();
 
         $events = $this->events($now, $active);
-        $around = $this->around($user, $now, $active, $events);
+        // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
+        $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])));
         $idea = $around['idea']['id'] ?? null;
         $ideaStart = $around['idea']['occurrence_start'] ?? null;
 
@@ -61,34 +70,39 @@ final class TodayDiscovery
             ->values()
             ->map(fn (array $event, int $index) => [...$event, 'layout' => $index < 2 ? 'poster' : 'compact']);
 
+        $onlyTomorrow = $listed->isNotEmpty() && $listed->every(fn (array $event) => isset($event['day']));
+
         return [
             // A free day's heading (Today decides it's free): "Ideas for
-            // this afternoon".
-            'part' => $now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening'),
+            // this afternoon", or "for tomorrow" when that's all there is.
+            'part' => $onlyTomorrow ? 'tomorrow' : ($now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening')),
             'events' => $listed->all(),
             'around' => $around,
         ];
     }
 
     /**
-     * Tonight's events still to come, soonest first: not ended, a fixed start
-     * not already passed, and not clashing with a plan that's still ahead.
+     * Today's events still to come or still on, soonest first, not clashing
+     * with a plan that's still ahead. A started event is on while its listed
+     * end is ahead; with no end listed, while Events keeps it (NO_END_HOURS).
+     * After the evening's last start, tomorrow's events follow, each marked
+     * `day: tomorrow` (owner, 21 Oct 2026).
      *
      * @param  Collection<int, DayItem>  $active
      * @return Collection<int, array<string, mixed>>
      */
     private function events(CarbonImmutable $now, Collection $active): Collection
     {
-        return Event::occurringBetween($now->startOfDay(), $now->endOfDay())
+        $today = Event::occurringBetween($now->startOfDay(), $now->endOfDay())
             ->filter(function (array $occurrence) use ($now, $active): bool {
                 /** @var CarbonImmutable $start */
                 $start = $occurrence['starts_at'];
                 $end = $occurrence['ends_at'];
-                if ($start->lessThan($now) && ($end === null || $end->lessThanOrEqualTo($now))) {
-                    return false;
-                }
-                if ($start->lessThan($now) && $this->presenter->timeListed($start, $end)) {
-                    return false;
+                if ($start->lessThan($now)) {
+                    $until = $end ?? ($this->presenter->timeListed($start, null) ? $start->addHours(self::NO_END_HOURS) : null);
+                    if ($until === null || $until->lessThanOrEqualTo($now)) {
+                        return false;
+                    }
                 }
 
                 return ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
@@ -97,6 +111,22 @@ final class TodayDiscovery
             ->sortBy(fn (array $occurrence) => $occurrence['starts_at']->getTimestamp())
             ->map(fn (array $occurrence) => $this->presenter->present($occurrence['event'], $occurrence['starts_at'], $occurrence['ends_at']))
             ->values();
+
+        if ($today->contains(fn (array $event) => CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($now))) {
+            return $today;
+        }
+
+        $tomorrow = $now->addDay();
+
+        // Today shows five at most, so only the first five are dressed.
+        return $today->concat(Event::occurringBetween($tomorrow->startOfDay(), $tomorrow->endOfDay())
+            ->sortBy(fn (array $occurrence) => $occurrence['starts_at']->getTimestamp())
+            ->take(5)
+            ->map(fn (array $occurrence) => [
+                ...$this->presenter->present($occurrence['event'], $occurrence['starts_at'], $occurrence['ends_at']),
+                'day' => 'tomorrow',
+            ])
+            ->values())->values();
     }
 
     /**
