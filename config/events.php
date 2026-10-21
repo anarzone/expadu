@@ -4,23 +4,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Relevance threshold
-    |--------------------------------------------------------------------------
-    | Events scored below this by the ingest classifier are hidden
-    | everywhere (UI and composer). Rows not yet scored (null) stay
-    | visible — legacy data keeps working until reprocessed.
-    */
-
-    'relevance_threshold' => env('EVENTS_RELEVANCE_THRESHOLD', 0.5),
-
-    /*
-    |--------------------------------------------------------------------------
     | Quality threshold
     |--------------------------------------------------------------------------
-    | Fallback bar for events the relevance classifier hasn't scored yet
-    | (relevance is null). The ingest enrichment pass sets quality_score on
-    | every event, so this keeps a real quality floor on the feed without
-    | waiting for the relevance pipeline.
+    | The floor for what the feed shows. The ingest enrichment pass sets
+    | quality_score on every event; curated events pass regardless. The AI
+    | relevance score only orders events, never hides them.
     */
 
     'quality_threshold' => env('EVENTS_QUALITY_THRESHOLD', 0.5),
