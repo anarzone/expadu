@@ -136,12 +136,13 @@ export function Discovery({
                             Ideas for this {discovery.part}
                         </h2>
                         <p>
-                            {weather?.available && (
+                            {/* The weather's own icon, or none: never a guess. */}
+                            {weather?.available && weather.icon ? (
                                 <Icon
                                     name={weatherIcon(weather.icon)}
                                     variant="line"
                                 />
-                            )}
+                            ) : null}
                             <span>
                                 {weather?.available &&
                                 weather.temperature !== undefined
