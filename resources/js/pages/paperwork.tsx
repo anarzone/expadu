@@ -16,6 +16,8 @@ import {
 import { Overview } from '@/components/paperwork/overview';
 import {
     ErasedRecord,
+    RecordNotice,
+    RecordNoticeToast,
     Sharing,
     StoppedRecord,
 } from '@/components/paperwork/sharing';
@@ -372,34 +374,41 @@ export default function Paperwork({
     coverageWaitlist,
 }: Props) {
     const self = people.find((p) => p.is_self);
+    const [notice, setNotice] = useState<string | null>(null);
 
     return (
         <AppLayout>
             <Head title="Paperwork" />
-            {entry.state === 'ready' && entry.plan ? (
-                // Another person's plan is another page: its views and search start fresh.
-                <PaperworkProvider
-                    key={entry.plan.person_id}
-                    plan={entry.plan}
-                    jurisdiction={jurisdiction}
-                >
-                    <Workspace
-                        people={people}
-                        coverageWaitlist={coverageWaitlist}
-                    />
-                </PaperworkProvider>
-            ) : (
-                <div className="paperwork-page">
-                    <h1 className="sr-only">Paperwork</h1>
-                    {entry.state === 'processing_stopped' && self ? (
-                        <StoppedRecord personId={self.id} />
-                    ) : entry.state === 'erased' ? (
-                        <ErasedRecord />
-                    ) : (
-                        <Unavailable state={entry.state} />
-                    )}
-                </div>
-            )}
+            <RecordNotice.Provider value={setNotice}>
+                {entry.state === 'ready' && entry.plan ? (
+                    // Another person's plan is another page: its views and search start fresh.
+                    <PaperworkProvider
+                        key={entry.plan.person_id}
+                        plan={entry.plan}
+                        jurisdiction={jurisdiction}
+                    >
+                        <Workspace
+                            people={people}
+                            coverageWaitlist={coverageWaitlist}
+                        />
+                        <RecordNoticeToast notice={notice} clear={setNotice} />
+                    </PaperworkProvider>
+                ) : (
+                    <div className="paperwork-page">
+                        <h1 className="sr-only" tabIndex={-1}>
+                            Paperwork
+                        </h1>
+                        {entry.state === 'processing_stopped' && self ? (
+                            <StoppedRecord personId={self.id} />
+                        ) : entry.state === 'erased' ? (
+                            <ErasedRecord />
+                        ) : (
+                            <Unavailable state={entry.state} />
+                        )}
+                        <RecordNoticeToast notice={notice} clear={setNotice} />
+                    </div>
+                )}
+            </RecordNotice.Provider>
         </AppLayout>
     );
 }

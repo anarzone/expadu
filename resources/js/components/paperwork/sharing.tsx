@@ -1,7 +1,14 @@
 import { router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -26,6 +33,13 @@ interface RecordUi {
     closeSheet: () => void;
     toast: (message: string) => void;
 }
+
+/**
+ * Stop, Resume and Delete change the page: the view they ran in goes, and its
+ * toast with it. The page keeps their notice across the change and the next
+ * view shows it (RecordNoticeToast).
+ */
+export const RecordNotice = createContext<(message: string) => void>(() => {});
 
 const scopeLabels: Record<string, string> = {
     view_plan: 'Your plan',
@@ -218,6 +232,7 @@ function RecordActions({
     const [switching, setSwitching] = useState(false);
     const [now, setNow] = useState(stopped);
     const [error, setError] = useState<string | null>(null);
+    const notice = useContext(RecordNotice);
 
     async function setProcessing(stop: boolean) {
         if (switching) {
@@ -242,20 +257,17 @@ function RecordActions({
 
         setNow(stop);
         setSwitching(false);
-        ui.toast(
-            stop
-                ? 'Paperwork stops using your record now. Nothing is deleted.'
-                : 'Paperwork uses your record again.',
-        );
-        // The entry says whether there's still a plan to show; the switch keeps focus.
+        // The entry says whether there's still a plan to show.
         router.reload({
             only: ['entry'],
-            onFinish: () =>
-                document
-                    .querySelector<HTMLButtonElement>(
-                        '[data-record-processing]',
-                    )
-                    ?.focus({ preventScroll: true }),
+            onFinish: () => {
+                notice(
+                    stop
+                        ? 'Paperwork stops using your record now. Nothing is deleted.'
+                        : 'Paperwork uses your record again.',
+                );
+                focusRecordView();
+            },
         });
     }
 
@@ -339,11 +351,16 @@ function RecordActions({
                                     onKeep={ui.closeSheet}
                                     onErased={() => {
                                         ui.closeSheet();
-                                        ui.toast(
-                                            'Your Paperwork record is deleted.',
-                                        );
                                         router.visit('/bureaucracy', {
                                             replace: true,
+                                            // Keeps the page, and the notice it carries.
+                                            preserveState: true,
+                                            onFinish: () => {
+                                                notice(
+                                                    'Your Paperwork record is deleted.',
+                                                );
+                                                focusRecordView();
+                                            },
                                         });
                                     }}
                                 />
@@ -487,6 +504,43 @@ function LocalSheet({
             ) : null}
         </dialog>
     );
+}
+
+/** The page's carried record notice (RecordNotice), shown for a moment. */
+export function RecordNoticeToast({
+    notice,
+    clear,
+}: {
+    notice: string | null;
+    clear: (next: null) => void;
+}) {
+    useEffect(() => {
+        if (!notice) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => clear(null), 4200);
+
+        return () => window.clearTimeout(timer);
+    }, [notice, clear]);
+
+    return (
+        <div
+            className={clsx('toast', notice && 'show')}
+            role="status"
+            aria-live="polite"
+        >
+            {notice}
+        </div>
+    );
+}
+
+/** After the page changes: the record's switch if it's still there, else the page's heading. */
+function focusRecordView() {
+    (
+        document.querySelector<HTMLElement>('[data-record-processing]') ??
+        document.querySelector<HTMLElement>('.paperwork-page h1')
+    )?.focus({ preventScroll: true });
 }
 
 /** The Cologne calendar day of a timestamp, as formatDate takes it (YYYY-MM-DD). */
