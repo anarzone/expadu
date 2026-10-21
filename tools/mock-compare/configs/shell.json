@@ -4,13 +4,14 @@
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
         "url": "/dev/design/events-next/?date=2026-09-30",
-        "wait": "header",
-        "screenshotStyle": "main, main * { visibility: hidden !important; }"
+        "wait": "header"
     },
     "app": {
         "url": "/events?date=2026-09-30",
         "wait": "header",
-        "screenshotStyle": "main, main * { visibility: hidden !important; }",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
@@ -144,6 +145,6 @@
         }
     ],
     "contentNote": "header and utilities hold the account's initial (the E2E user's 'E', the mock's 'A').",
-    "screenshotStyleReason": "The phone's tab bar floats over the page, so its corners show what Events draws behind it (with launch's latest Events changes, the app's street runs on behind the bar at 390 while the mock's ends above it). This config is about the shell, so each side's page is hidden while the shell's elements are shot; Events is compared in its own configs.",
-    "composerNote": "On phones the mock's round Composer button is a launcher inside its closed tray (#composer-tray), which carries the shadow; the app's is one element. The launcher pair compares all but the shadow, the circle pair the shadow, fill and radius."
+    "composerNote": "On phones the mock's round Composer button is a launcher inside its closed tray (#composer-tray), which carries the shadow; the app's is one element. The launcher pair compares all but the shadow, the circle pair the shadow, fill and radius.",
+    "clockNote": "The app side sends the mock clock as a cookie with its first request, so the server's day is the mock's too (an init script sets it only after that request, and Events would then treat 30 Sept as a past day, with its note above the street)."
 }
