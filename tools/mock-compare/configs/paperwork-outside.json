@@ -1,0 +1,125 @@
+{
+    "name": "paperwork-outside",
+    "seed": "PAPERWORK_ENTRY=outside E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkEntrySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.persona-preview, [data-preview-exit] { display: none !important; }'; document.head.append(s); });"
+        ],
+        "before": [
+            {
+                "click": ".review-tools > summary"
+            },
+            {
+                "click": "[data-preview-persona=\"outside\"]"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".access-blank",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password",
+            "sibling": "outside"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "views row",
+            "mock": ".case-top",
+            "app": ".case-top"
+        },
+        {
+            "name": "view tabs",
+            "mock": ".case-tabs",
+            "app": ".case-tabs"
+        },
+        {
+            "name": "tab Overview",
+            "mock": ".case-tabs button",
+            "app": ".case-tabs button",
+            "index": 0
+        },
+        {
+            "name": "tab Documents",
+            "mock": ".case-tabs button",
+            "app": ".case-tabs button",
+            "index": 1
+        },
+        {
+            "name": "plan picker",
+            "mock": "details.person-picker > summary",
+            "app": "details.person-picker > summary"
+        },
+        {
+            "name": "plan picker name",
+            "mock": ".person-picker .person-name",
+            "app": ".person-picker .person-name"
+        },
+        {
+            "name": "Your situation",
+            "mock": "button.case-details",
+            "app": "button.case-details"
+        },
+        {
+            "name": "screen",
+            "mock": ".access-blank",
+            "app": ".access-blank"
+        },
+        {
+            "name": "heading",
+            "mock": ".access-blank h2",
+            "app": ".access-blank h2"
+        },
+        {
+            "name": "line",
+            "mock": ".access-blank p",
+            "app": ".access-blank p"
+        },
+        {
+            "name": "actions",
+            "mock": ".access-blank .actions",
+            "app": ".access-blank .actions"
+        },
+        {
+            "name": "Tell me when it’s covered",
+            "mock": ".access-blank .button.primary",
+            "app": ".access-blank .button.primary"
+        },
+        {
+            "name": "Ask Composer",
+            "mock": ".coverage-composer",
+            "app": ".coverage-composer"
+        },
+        {
+            "name": "Ask Composer icon",
+            "mock": ".coverage-composer svg",
+            "app": ".coverage-composer svg",
+            "index": 0
+        },
+        {
+            "name": "Ask Composer words",
+            "mock": ".coverage-composer span",
+            "app": ".coverage-composer span"
+        },
+        {
+            "name": "Ask Composer arrow",
+            "mock": ".coverage-composer svg:last-child",
+            "app": ".coverage-composer svg:last-child"
+        }
+    ],
+    "previewNote": "The mock shows these entry states as Review personas: its 'Previewing' banner and the preview-only 'My area is Cologne' button are review tools, so the mock side hides them (init) before anything is measured.",
+    "seedNote": "The app signs in as the sibling <name>+outside@…: PaperworkSeeder's sample record, living in Hamburg, outside the catalogue's cities, and not yet on the city waitlist (MockSample\\PaperworkEntrySeeder)."
+}
