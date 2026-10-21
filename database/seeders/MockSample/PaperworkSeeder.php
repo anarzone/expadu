@@ -30,7 +30,8 @@ use RuntimeException;
  * Wednesday 30 September 2026, 13:10):
  *
  *  - the person's answers (model.js sampleFacts) and their D visa expiring on 1 October;
- *  - EU Blue Card: preparing, one document ready, the appointment today at 14:00 in Mülheim;
+ *  - EU Blue Card: preparing, the passport ready and the employment contract reported (not
+ *    yet checked), the appointment today at 14:00 in Mülheim;
  *  - Address registration: blocked, "A document is not ready", one document reported;
  *  - Health insurance: submitted on 24 September, waiting for a response;
  *  - Bank account: suggested, not started;
@@ -185,8 +186,10 @@ class PaperworkSeeder extends Seeder
         $this->event($user, $health, 'submission_recorded', ['occurred_on' => '2026-09-24']);
         $this->event($user, $health, 'waiting_reported', ['note' => 'Response pending']);
 
-        // EU Blue Card: one of its documents ready. Address registration: one reported, not yet ready.
+        // EU Blue Card: the passport ready and the employment contract reported, not yet
+        // checked (bureaucracy-next/model.js sample docs). Address registration: one reported.
         $this->document($user, $person, $blueCard, ready: true);
+        $this->document($user, $person, $blueCard, ready: false, nth: 2);
         $this->document($user, $person, $address, ready: false);
     }
 
@@ -244,10 +247,12 @@ class PaperworkSeeder extends Seeder
             (string) Str::uuid(), $current['review_token'] ?? null);
     }
 
-    private function document(User $user, BureaucracyPerson $person, BureaucracyProcess $process, bool $ready): void
+    /** Reports the process's nth required document as available, and confirms it for use when ready. */
+    private function document(User $user, BureaucracyPerson $person, BureaucracyProcess $process, bool $ready, int $nth = 0): void
     {
         $requirement = collect($this->plan($user, $person)['paperwork']['requirements'] ?? [])
-            ->first(fn (array $requirement) => $requirement['process_id'] === $process->id && $requirement['applicability'] === 'required');
+            ->filter(fn (array $requirement) => $requirement['process_id'] === $process->id && $requirement['applicability'] === 'required')
+            ->values()->get($nth);
 
         if ($requirement === null) {
             throw new RuntimeException("Process {$process->id} lists no required document.");
