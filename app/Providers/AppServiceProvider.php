@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
 use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
 use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
+use App\Bureaucracy\Facts\FactRegistry;
+use App\Bureaucracy\Questions\QuestionProtocol;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AnthropicPromptParser;
 use App\Composer\Contracts\ParsesPrompt;
@@ -74,6 +76,12 @@ class AppServiceProvider extends ServiceProvider
             RouteService::class,
             FailoverRouteService::class,
         );
+
+        // The fact schema and the question protocol are files in the repo:
+        // parse their YAML once per request, not once per service that needs
+        // them (about a dozen times for one Paperwork plan).
+        $this->app->singleton(FactRegistry::class);
+        $this->app->singleton(QuestionProtocol::class);
 
         // Inertia SSR with a short timeout instead of Laravel's 30 s default.
         $this->app->singleton(Gateway::class, SsrGateway::class);
