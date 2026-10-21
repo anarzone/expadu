@@ -1,10 +1,32 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { commands } from './api';
-import { readinessLabels } from './format';
-import { Icon, TopicIcon } from './icons';
+import { matches, readinessLabels } from './format';
+import { Icon, topicIcon } from './icons';
 import { SourcesBody } from './lists';
+import { SearchLine } from './overview';
 import { usePaperwork } from './state';
 import type { EvidenceItem, Process, Requirement } from './types';
+
+/** The status filter's groups: what you still need, what you have, what you checked. */
+type DocState = 'all' | 'missing' | 'have' | 'ready';
+
+const docGroups: [DocState, string][] = [
+    ['all', 'Any status'],
+    ['missing', 'Still to get'],
+    ['have', 'You have it'],
+    ['ready', 'Ready'],
+];
+
+const docGroup = (r: Requirement): Exclude<DocState, 'all'> =>
+    r.readiness === 'confirmed_for_use'
+        ? 'ready'
+        : r.readiness === 'missing'
+          ? 'missing'
+          : 'have';
+
+/** A document matches the search by its name or either term, English or German. */
+const termsOf = (r: Requirement) =>
+    r.terms.flatMap((t) => [t.english, t.german]);
 
 function TermLine({ terms }: { terms: Requirement['terms'] }) {
     if (!terms.length) {
@@ -92,6 +114,18 @@ function DocumentRow({
         ).then((refused) => refused && toast(refused));
     const evidence: EvidenceItem[] =
         'evidence' in plan.paperwork ? plan.paperwork.evidence : [];
+    // After an action its button changes, so the row stays open and its
+    // summary takes focus (the mock's two-step "I have this").
+    const keep = () => {
+        if (row.current) {
+            row.current.open = true;
+            row.current
+                .querySelector('summary')
+                ?.focus({ preventScroll: true });
+        }
+    };
+    const after = (refused: string | null) =>
+        refused ? toast(refused) : keep();
     const conditional = requirement.applicability !== 'required';
     const confirmed = requirement.readiness === 'confirmed_for_use';
     const started = process.id !== null;
@@ -122,7 +156,7 @@ function DocumentRow({
                     },
                 ),
             'You have it. Mark it ready after checking it for this task.',
-        ).then((refused) => refused && toast(refused));
+        ).then(after);
     };
 
     const confirm = () => {
@@ -145,7 +179,7 @@ function DocumentRow({
                     requirement.semantic_hash,
                 ),
             'Marked ready for this task. Nothing was sent.',
-        ).then((refused) => refused && toast(refused));
+        ).then(after);
     };
 
     const notReady = async () => {
@@ -187,6 +221,7 @@ function DocumentRow({
         }
 
         toast('Marked as not ready');
+        keep();
     };
 
     return (
@@ -208,12 +243,9 @@ function DocumentRow({
                 <Icon name="down" />
             </summary>
             <div className="document-actions">
+                {/* One string, as the mock draws it: split text shapes a pixel apart. */}
                 <p>
-                    {conditional
-                        ? 'Whether you need this depends on your situation. '
-                        : ''}
-                    You are updating your checklist for {process.title}. This is
-                    not an official document check.
+                    {`${conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${process.title}. This is not an official document check.`}
                 </p>
                 <ProducedLine link={requirement.produced_by} />
                 {canEdit ? (
@@ -247,7 +279,7 @@ function DocumentRow({
                                     onClick={confirm}
                                 >
                                     <Icon name="check" />
-                                    Ready for this task
+                                    Mark as ready
                                 </button>
                             ) : confirmed ? (
                                 <span className="document-confirmed">
@@ -255,15 +287,13 @@ function DocumentRow({
                                     Marked ready by you
                                 </span>
                             ) : null}
-                            {requirement.readiness !== 'missing' ? (
-                                <button
-                                    type="button"
-                                    className="plain-button"
-                                    onClick={notReady}
-                                >
-                                    Not ready yet
-                                </button>
-                            ) : null}
+                            <button
+                                type="button"
+                                className="plain-button"
+                                onClick={notReady}
+                            >
+                                I don’t have it
+                            </button>
                         </>
                     )
                 ) : null}
@@ -287,64 +317,161 @@ function DocumentRow({
 
 export function Documents() {
     const { plan, location, setLocation, requirements, go } = usePaperwork();
+    const [docState, setDocState] = useState<DocState>('all');
 
     if (!('requirements' in plan.paperwork)) {
         return (
-            <div className="honest-empty">
+            <section className="access-blank">
                 <h2 id="view-heading" tabIndex={-1}>
-                    Documents aren’t shared with you
+                    Documents aren’t shared with you.
                 </h2>
                 <p>
                     Ask the person whose plan this is for access to their
                     document checklist.
                 </p>
-            </div>
+            </section>
         );
     }
 
+    // Each task's documents that the search and the status filter keep.
+    const docsFor = (p: Process) =>
+        requirements.filter(
+            (r) =>
+                r.occurrence_key === p.occurrence_key &&
+                r.applicability !== 'not_required',
+        );
     const open = plan.processes.filter((p) => !p.is_closed);
-    const shown =
-        location.paperFilter === 'all'
-            ? open
-            : open.filter((p) => p.occurrence_key === location.paperFilter);
+    const listed = open.filter((p) => docsFor(p).length);
+    const unlisted = open.filter((p) => !docsFor(p).length);
+    const task = listed.some((p) => p.occurrence_key === location.paperFilter)
+        ? location.paperFilter
+        : 'all';
+    const found = (p: Process) =>
+        docsFor(p).filter((r) => matches(location.q, r.label, ...termsOf(r)));
+    const kept = (p: Process) =>
+        found(p).filter((r) => docState === 'all' || docGroup(r) === docState);
+    const inTask = listed.filter(
+        (p) => task === 'all' || p.occurrence_key === task,
+    );
+    const shown = inTask.filter((p) => kept(p).length);
+    const hits = inTask.reduce((n, p) => n + found(p).length, 0);
+    const query = location.q.trim();
+    const heading = (
+        <h2 className="sr-only" id="view-heading" tabIndex={-1}>
+            Your documents
+        </h2>
+    );
+
+    if (query && !hits) {
+        return (
+            <>
+                {heading}
+                <SearchLine hits={0} />
+            </>
+        );
+    }
+
+    const taskChips: [string, string, number][] = [
+        ['all', 'All tasks', listed.reduce((n, p) => n + found(p).length, 0)],
+        ...listed.map(
+            (p) =>
+                [p.occurrence_key, p.title, found(p).length] as [
+                    string,
+                    string,
+                    number,
+                ],
+        ),
+    ];
+    // Only the statuses that have something, and the row only when it
+    // leaves a choice.
+    const stateChips = docGroups
+        .map(
+            ([id, text]) =>
+                [
+                    id,
+                    text,
+                    inTask.reduce(
+                        (n, p) =>
+                            n +
+                            found(p).filter(
+                                (r) => id === 'all' || docGroup(r) === id,
+                            ).length,
+                        0,
+                    ),
+                ] as [DocState, string, number],
+        )
+        .filter(([id, , n]) => id === 'all' || n);
+    const one = listed.find((p) => p.occurrence_key === task);
 
     return (
         <>
-            <div className="paperwork-heading">
-                <div>
-                    <h2 id="view-heading" tabIndex={-1}>
-                        Your paperwork
-                    </h2>
-                    <p>Your document checklist. Nothing is uploaded or sent.</p>
-                </div>
-                <label className="paperwork-select">
-                    <span className="sr-only">Task</span>
-                    <select
-                        value={location.paperFilter}
-                        onChange={(e) =>
-                            setLocation({ paperFilter: e.target.value })
-                        }
-                        aria-label="Filter paperwork by task"
+            {one ? (
+                <button
+                    type="button"
+                    className="view-back"
+                    onClick={() =>
+                        go({ view: 'detail', process: one.occurrence_key })
+                    }
+                >
+                    <Icon name="back" />
+                    {one.title}
+                </button>
+            ) : null}
+            {heading}
+            <SearchLine hits={hits} />
+            <div className="paperwork-filters">
+                {listed.length > 1 ? (
+                    <div
+                        className="case-chips"
+                        role="group"
+                        aria-label="Show documents for"
                     >
-                        <option value="all">All tasks</option>
-                        {open.map((p) => (
-                            <option
-                                key={p.occurrence_key}
-                                value={p.occurrence_key}
+                        {taskChips.map(([id, text, n]) => (
+                            <button
+                                key={id}
+                                type="button"
+                                aria-pressed={task === id}
+                                onClick={() => setLocation({ paperFilter: id })}
                             >
-                                {p.title}
-                            </option>
+                                {text} <span>{n}</span>
+                            </button>
                         ))}
-                    </select>
-                </label>
+                    </div>
+                ) : null}
+                {stateChips.length > 2 ? (
+                    <div
+                        className="case-chips"
+                        role="group"
+                        aria-label="Show documents that are"
+                    >
+                        {stateChips.map(([id, text, n]) => (
+                            <button
+                                key={id}
+                                type="button"
+                                aria-pressed={docState === id}
+                                onClick={() => setDocState(id)}
+                            >
+                                {text} <span>{n}</span>
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
             </div>
+            {shown.length ? null : (
+                <div className="honest-empty">
+                    <h3>No documents with this status</h3>
+                    <button
+                        type="button"
+                        className="plain-button"
+                        onClick={() => setDocState('all')}
+                    >
+                        Show all documents
+                    </button>
+                </div>
+            )}
             <div className="paperwork-groups">
                 {shown.map((process) => {
-                    const docs = requirements.filter(
-                        (r) =>
-                            r.occurrence_key === process.occurrence_key &&
-                            r.applicability !== 'not_required',
-                    );
+                    const docs = docsFor(process);
 
                     return (
                         <section
@@ -362,51 +489,45 @@ export function Documents() {
                                         })
                                     }
                                 >
-                                    <TopicIcon topic={process.topic} />
+                                    <Icon name={topicIcon(process.topic)} />
                                     <h3>{process.title}</h3>
                                     <Icon name="arrow" />
                                 </button>
-                                <span>
-                                    {/* Only required documents can be marked ready, so only they count. */}
-                                    {
-                                        docs.filter(
-                                            (d) =>
-                                                d.applicability ===
-                                                    'required' &&
-                                                d.readiness ===
-                                                    'confirmed_for_use',
-                                        ).length
-                                    }
-                                    /
-                                    {
-                                        docs.filter(
-                                            (d) =>
-                                                d.applicability === 'required',
-                                        ).length
-                                    }
+                                {/* Only required documents can be marked ready, so only they count. */}
+                                <span className="paper-count">
+                                    {`${docs.filter((r) => r.readiness === 'confirmed_for_use').length}/${docs.filter((r) => r.applicability === 'required').length} ready`}
                                 </span>
                             </div>
-                            {docs.length ? (
-                                docs.map((r) => (
-                                    <DocumentRow
-                                        key={r.id}
-                                        process={process}
-                                        requirement={r}
-                                    />
-                                ))
-                            ) : (
-                                <p className="muted">
-                                    This task lists no documents.
-                                </p>
-                            )}
+                            {kept(process).map((r) => (
+                                <DocumentRow
+                                    key={r.id}
+                                    process={process}
+                                    requirement={r}
+                                />
+                            ))}
                         </section>
                     );
                 })}
             </div>
+            {unlisted.length &&
+            task === 'all' &&
+            !query &&
+            docState === 'all' ? (
+                <p className="paperwork-none">
+                    <Icon name="info" />
+                    No documents listed for{' '}
+                    {unlisted.map((p) => p.title).join(' or ')}.
+                </p>
+            ) : null}
             <p className="date-separation">
                 <Icon name="info" />
                 “Ready” means you have checked it for this task. No files are
                 uploaded or sent.
+            </p>
+            <p className="date-separation">
+                <Icon name="info" />
+                Uploading, scanning, translating and letter writing aren’t
+                available yet.
             </p>
         </>
     );
