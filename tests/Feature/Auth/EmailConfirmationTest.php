@@ -181,6 +181,22 @@ test('🔒 the confirm page goes back to where the person was going, on this sit
         ->assertRedirect(config('fortify.home'));
 });
 
+test('🔒 an account without a password deletes itself with the emailed code, and with nothing else', function () {
+    $user = googleOnly();
+    $this->actingAs($user);
+
+    $this->delete(route('profile.destroy'))->assertSessionHasErrors('code');
+    $this->delete(route('profile.destroy'), ['password' => ''])->assertSessionHasErrors('code');
+    $code = mailedCode($this);
+    $this->delete(route('profile.destroy'), ['code' => $code === '000000' ? '111111' : '000000'])->assertSessionHasErrors('code');
+    expect($user->fresh())->not->toBeNull();
+
+    $this->delete(route('profile.destroy'), ['code' => $code])->assertRedirect(route('login'));
+
+    expect($user->fresh())->toBeNull();
+    $this->assertGuest();
+});
+
 test('🔒 the shared props say only whether the account has a password', function () {
     $prop = fn (User $user) => $this->actingAs($user)->get(route('password.confirm'))->assertOk()->inertiaProps('auth');
 
