@@ -12,6 +12,7 @@ import { clsx } from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import {
     compose,
+    keep,
     parse,
 } from '@/actions/App/Http/Controllers/ComposerController';
 import {
@@ -221,6 +222,24 @@ export default function ComposerPage({
     const latestUndo = workspace.changes
         .filter((change) => change.date === focused?.date && change.undoable)
         .at(-1);
+    // "Keep this plan" (#210): the latest composed plan, kept as it came, teaches
+    // personalisation. Only the newest "Planned …" change offers it.
+    const latestPlanned = conversation.messages.findLast(
+        (message) =>
+            message.kind === 'change' &&
+            workspace.changes
+                .find((change) => change.id === message.change_id)
+                ?.label.startsWith('Planned '),
+    )?.id;
+    const [kept, setKept] = useState<string | null>(null);
+    const keepPlan = async (messageId: string) => {
+        try {
+            await api(keep.url(), {});
+            setKept(messageId);
+        } catch {
+            // Nothing to keep any more (a newer plan, or none): the button stays.
+        }
+    };
     const changeById = (id?: string) =>
         workspace.changes.find((change) => change.id === id);
 
@@ -879,6 +898,24 @@ export default function ComposerPage({
                                                     }
                                                 >
                                                     Undo
+                                                </button>
+                                            )}
+                                            {message.id === latestPlanned && (
+                                                <button
+                                                    className="composer-text-button"
+                                                    disabled={
+                                                        !!busy ||
+                                                        kept === message.id
+                                                    }
+                                                    onClick={() =>
+                                                        void keepPlan(
+                                                            message.id,
+                                                        )
+                                                    }
+                                                >
+                                                    {kept === message.id
+                                                        ? 'Kept'
+                                                        : 'Keep this plan'}
                                                 </button>
                                             )}
                                         </>
