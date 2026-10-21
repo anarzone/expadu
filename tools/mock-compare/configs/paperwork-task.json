@@ -2,7 +2,14 @@
     "name": "paperwork-task",
     "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
-    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
     "mock": {
         "url": "/dev/design/bureaucracy-next/",
         "wait": ".process-grid",
@@ -107,6 +114,24 @@
             "mock": ".process-resources > *",
             "app": ".process-resources > *",
             "index": 1,
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "visa expiry",
+            "mock": ".process-resources > :last-child",
+            "app": ".process-resources > :last-child",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the first step, which lacks Set aside time (plannerNote)."
+        },
+        {
+            "name": "visa expiry date",
+            "mock": ".process-resources > :last-child small",
+            "app": ".process-resources > :last-child small",
             "ignore": [
                 "y"
             ],

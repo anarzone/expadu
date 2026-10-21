@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Event;
+use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 
 function window(string $from, string $to): array
@@ -93,29 +94,28 @@ test('one-off events appear once and only inside their window', function () {
     expect(Event::occurringBetween($from, $to))->toHaveCount(0);
 });
 
-test('visibility honours relevance, then falls back to quality_score or curate', function () {
+test('visibility is the quality bar or a curate; AI relevance never hides an event', function () {
     $base = ['starts_at' => '2026-06-10 11:00:00', 'recurrence' => null];
 
     Event::factory()->create([...$base, 'status' => 'expired']);
     Event::factory()->create([...$base, 'status' => 'hidden']);
-    // A relevance score, once set, is authoritative — a low one hides even when
-    // the heuristic quality_score is high.
-    Event::factory()->create([...$base, 'relevance' => 0.2, 'quality_score' => 0.9]);
     // Unscored, low quality, uncurated (a raw scrape not yet enriched) — hidden.
     Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.1, 'is_curated' => false]);
 
-    $byRelevance = Event::factory()->create([...$base, 'relevance' => 0.9]);
-    // The real prod case: scraped (relevance null) but enriched above the bar.
+    // A low AI relevance only ranks it lower; it still shows.
+    $lowRelevance = Event::factory()->create([...$base, 'relevance' => 0.2, 'quality_score' => 0.9, 'is_curated' => false]);
     $byQuality = Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.8, 'is_curated' => false]);
     $byCurate = Event::factory()->create([...$base, 'relevance' => null, 'quality_score' => 0.0, 'is_curated' => true]);
+    $highRelevance = Event::factory()->create([...$base, 'relevance' => 0.9, 'quality_score' => 0.9]);
 
     [$from, $to] = window('2026-06-10 00:00', '2026-06-10 23:59');
     $ids = Event::occurringBetween($from, $to)->pluck('event.id')->all();
 
-    expect($ids)->toContain($byRelevance->id)
+    expect($ids)->toContain($lowRelevance->id)
         ->and($ids)->toContain($byQuality->id)
         ->and($ids)->toContain($byCurate->id)
-        ->and($ids)->toHaveCount(3);
+        ->and($ids)->toContain($highRelevance->id)
+        ->and($ids)->toHaveCount(4);
 });
 
 test('events:expire retires past one-offs and finished series, keeps open-ended ones', function () {
@@ -142,4 +142,21 @@ test('occurrences come back chronological across events', function () {
     $titles = Event::occurringBetween($from, $to)->pluck('event.title')->all();
 
     expect($titles)->toBe(['A', 'B']);
+});
+
+test('a stored tip that claims a language the listing never mentions is not shown', function () {
+    $event = Event::factory()->create([
+        'starts_at' => '2026-06-10 08:50:00', 'recurrence' => null, 'quality_score' => 0.9,
+        'title' => 'Rheinpark parkrun', 'description' => '5 km laufen, jeden Samstag.', 'price_text' => null,
+        'tip_en' => 'No German needed — just turn up by 8:50 with your parkrun barcode.',
+    ]);
+    $grounded = Event::factory()->create([
+        'starts_at' => '2026-06-10 10:00:00', 'recurrence' => null, 'quality_score' => 0.9,
+        'title' => 'Book club', 'description' => 'Wir lesen auf Englisch.', 'tip_en' => 'Bring the book; the talk is in English.',
+    ]);
+    $presenter = app(EventOccurrencePresenter::class);
+    $start = CarbonImmutable::parse('2026-06-10 08:50', 'Europe/Berlin');
+
+    expect($presenter->present($event, $start, null)['tip'])->toBeNull()
+        ->and($presenter->present($grounded, $start, null)['tip'])->toBe('Bring the book; the talk is in English.');
 });

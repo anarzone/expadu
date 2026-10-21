@@ -105,7 +105,8 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             'tip_en' => $result['tip_en'] ? mb_substr($result['tip_en'], 0, 300) : null,
             'language' => $result['language'],
             'chips' => $needsReview ? [] : $result['chips'],
-            'category' => (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value,
+            // Below the confidence floor the category stays the source's, like the chips.
+            'category' => $needsReview ? $event->category : (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value,
             'relevance' => $result['relevance'],
             'needs_review' => $needsReview,
             'classification_input_hash' => $inputHash,

@@ -47,7 +47,8 @@ class EventOccurrencePresenter
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
-            'tip' => $event->tip_en,
+            // Hand-written (manual) tips are ours; the model's are checked again here.
+            'tip' => $event->source === 'manual' ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $event->title.' '.$event->description.' '.$event->price_text),
             // Untranslated, the listing's own words: never nothing when it has some.
             'summary' => $event->summary_en ?: ($event->description_en ?: (filled($event->description) ? Str::limit((string) $event->description, 400) : null)),
             // The listing's language when the summary is its own words, not a translation.
@@ -125,13 +126,14 @@ class EventOccurrencePresenter
 
     /**
      * A listing without a time is stored as its whole day (the official
-     * importer writes start of day to end of day), so posters print
-     * "Time not listed yet" instead of 00:00.
+     * importer writes start of day to end of day), or as midnight with no
+     * end (a date-only koeln.de listing), so posters print "Time not
+     * listed yet" instead of 00:00.
      */
     public function timeListed(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt): bool
     {
         return ! ($startsAt->format('H:i:s') === '00:00:00'
-            && $endsAt?->format('H:i:s') === '23:59:59');
+            && ($endsAt === null || $endsAt->format('H:i:s') === '23:59:59'));
     }
 
     /**

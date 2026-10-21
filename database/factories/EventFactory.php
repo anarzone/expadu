@@ -23,8 +23,9 @@ class EventFactory extends Factory
             'max_attendees' => fake()->randomElement([null, 20, 30, 50]),
             'is_free' => fake()->boolean(70),
             'price' => null,
-            // Visible by default — curation tests override explicitly
+            // Visible by default (passes the quality bar); curation tests override explicitly
             'relevance' => 0.8,
+            'quality_score' => 0.8,
             'organiser_id' => User::factory(),
         ];
     }

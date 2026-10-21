@@ -47,7 +47,7 @@ test('delivery suppresses a saved reminder when its exact published occurrence i
 })->with([
     'source held' => [['status' => 'hidden', 'needs_review' => true]],
     'expired' => [['status' => 'expired']],
-    'no longer meets visibility gate' => [['relevance' => 0.1]],
+    'no longer meets visibility gate' => [['quality_score' => 0.1, 'is_curated' => false]],
     'one-off time moved' => [['starts_at' => '2026-06-12 12:00:00']],
     'recurring weekday moved' => [['starts_at' => '2026-06-05 11:30:00', 'recurrence' => 'FREQ=WEEKLY;BYDAY=SA']],
     'recurring series ended' => [['starts_at' => '2026-06-05 11:30:00', 'recurrence' => 'FREQ=WEEKLY;BYDAY=FR', 'recurrence_until' => '2026-06-11 00:00:00']],

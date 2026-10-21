@@ -150,8 +150,8 @@ class ImportOfficialEvents extends Command
         $sourceEndDate = $this->parseDate($record['endedatum'] ?? null);
         $isMultiDay = $sourceEndDate !== null && ! $startsAt->isSameDay($sourceEndDate);
         $scheduleIsClear = OfficialEventSchedule::isUnambiguous($record);
-        $recurrenceUntil = $isMultiDay ? $endsAt->copy()->endOfDay() : null;
-        if ($isMultiDay && filled($record['uhrzeit'] ?? null)) {
+        $recurrenceUntil = $isMultiDay ? $sourceEndDate->copy()->endOfDay() : null;
+        if ($isMultiDay && $endsAt !== null && filled($record['uhrzeit'] ?? null)) {
             $endsAt = $startsAt->copy()->setTime($endsAt->hour, $endsAt->minute);
         }
         $title = $this->cleanText($record['title'] ?? null);
@@ -172,7 +172,7 @@ class ImportOfficialEvents extends Command
             && ($event->title !== $title || $event->description !== $description);
         $classifierInputChanged = $event->exists && ($copyChanged
             || ! $event->starts_at?->equalTo($startsAt)
-            || ! $event->ends_at?->equalTo($endsAt)
+            || $event->ends_at?->toIso8601String() !== $endsAt?->toIso8601String()
             || $event->location_name !== $locationName
             || $event->address !== $address
             || $event->price_text !== $priceText);
@@ -337,12 +337,15 @@ class ImportOfficialEvents extends Command
         );
     }
 
-    /** @param array<string, mixed> $record
-     * @return array{Carbon, Carbon}
+    /** A listing's own times: an end only when it gives one, and no date made up.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array{Carbon, ?Carbon}
      */
     private function parseSchedule(array $record): array
     {
-        $startDate = $this->parseDate($record['beginndatum'] ?? null) ?? now()->startOfDay();
+        $startDate = $this->parseDate($record['beginndatum'] ?? null)
+            ?? throw new \InvalidArgumentException('No event date.');
         $endDate = $this->parseDate($record['endedatum'] ?? null) ?? $startDate->copy();
         $time = preg_replace('/\s+/u', ' ', trim((string) ($record['uhrzeit'] ?? '')));
 
@@ -367,7 +370,7 @@ class ImportOfficialEvents extends Command
             }
             $startsAt = $startDate->copy()->setTime((int) $match['h'], (int) (($match['m'] ?? '') ?: 0));
 
-            return [$startsAt, $startsAt->copy()->addHours(2)];
+            return [$startsAt, null];
         }
 
         return [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()];
