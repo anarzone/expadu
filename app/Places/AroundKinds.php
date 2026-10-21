@@ -17,7 +17,7 @@ final class AroundKinds
         'pharmacy' => ['Pharmacies', 'Pharmacy', [SpotCategory::Pharmacy]],
         'cafe' => ['Cafés', 'Café', [SpotCategory::Cafe]],
         'bakery' => ['Bakeries', 'Bakery', [SpotCategory::Bakery]],
-        'grocery' => ['Groceries', 'Groceries', [SpotCategory::Supermarket, SpotCategory::Convenience, SpotCategory::Drugstore]],
+        'grocery' => ['Groceries', 'Groceries', [SpotCategory::Supermarket, SpotCategory::Convenience, SpotCategory::Drugstore, SpotCategory::Greengrocer]],
         'playground' => ['Playgrounds', 'Playground', [SpotCategory::Playground]],
         'green' => ['Parks & nature', 'Green space', [SpotCategory::Park, SpotCategory::Lake, SpotCategory::Nature]],
         'library' => ['Libraries', 'Library', [SpotCategory::Library]],
