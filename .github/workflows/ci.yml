@@ -261,6 +261,8 @@ jobs:
         run: |
           php artisan migrate --force --seed
           php artisan db:seed --force --class=E2ETestUserSeeder
+          # composer-workspace.spec plans a day from these test-only places.
+          php artisan db:seed --force --class=E2EComposerCatalogueSeeder
 
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
