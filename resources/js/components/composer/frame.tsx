@@ -616,8 +616,21 @@ export function starters(
     const ride = trip?.journey?.legs.find(
         (leg) => leg.mode !== 'walk' && leg.line,
     );
+    // On your way, the Travel starter asks about the trip you're on.
+    const going = day?.active_trip?.journey;
+    const goingRide = going?.legs.find(
+        (leg) => leg.mode !== 'walk' && leg.mode !== 'bike' && leg.line,
+    );
 
-    if (trip && ride && trip.target.start_time) {
+    if (going && goingRide) {
+        cards.push({
+            key: 'travel',
+            tag: 'Travel',
+            icon: 'route',
+            prompt: 'How’s my trip going?',
+            detail: `There at ${going.arrive_time} · ${vehicleWord(vehicleOf(goingRide.mode)).toLowerCase()} ${goingRide.line}`,
+        });
+    } else if (trip && ride && trip.target.start_time) {
         const last = trip.journey!.legs[trip.journey!.legs.length - 1];
         cards.push({
             key: 'travel',
