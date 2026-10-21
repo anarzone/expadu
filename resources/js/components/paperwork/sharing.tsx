@@ -46,7 +46,14 @@ export function Sharing({ personId }: { personId: number }) {
     useEffect(() => {
         read<{ grants: Grant[] }>(`${base}/people/${personId}/sharing`)
             .then((data) =>
-                setGrants(data.grants.filter((grant) => !grant.revoked_at)),
+                // Current access only: not removed, not run out.
+                setGrants(
+                    data.grants.filter(
+                        (grant) =>
+                            !grant.revoked_at &&
+                            new Date(grant.expires_at) > new Date(),
+                    ),
+                ),
             )
             .catch((e: Error) => setError(e.message));
         read<{ stopped: boolean }>(`${base}/people/${personId}/restriction`)
