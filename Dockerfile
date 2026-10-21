@@ -1,6 +1,8 @@
 # ── Stage 1: PHP extension compiler ──────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS php-ext-build
 
+# PECL sometimes answers HTTP 500; phpredis's own GitHub release is the same
+# source, so the build falls back to it rather than failing the deploy.
 RUN apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         postgresql-dev \
@@ -22,7 +24,12 @@ RUN apk add --no-cache --virtual .build-deps \
         mbstring \
         opcache \
         calendar \
-    && pecl install redis \
+    && (pecl install redis \
+        || (docker-php-source extract \
+            && mkdir -p /usr/src/php/ext/redis \
+            && curl -fsSL https://github.com/phpredis/phpredis/archive/refs/tags/6.3.0.tar.gz \
+                | tar xz -C /usr/src/php/ext/redis --strip-components=1 \
+            && docker-php-ext-install redis)) \
     && docker-php-ext-enable redis \
     && apk del .build-deps
 
