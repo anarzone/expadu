@@ -166,13 +166,17 @@
             const ways = back ? trip.back : trip;
             const list = state.when === 'now' ? trip.now : ways.options;
             // Travel's trip and routes for the same journeys, as Plan a trip
-            // orders them: the earliest arrival first, and best.
+            // orders them: the earliest arrival first, with Best for you
+            // leading. By the start, that's the way Travel would take
+            // (wayFor; owner, 21 Oct 2026); now or back, the earliest.
             const tid = `evening-${back ? 'back-' : ''}${trip.id}`;
             const tt = TJ.trips[tid];
             const routes = TJ.routesOf(tid).filter((r) => r.when === state.when);
-            const transit = routes
+            const earliest = routes
                 .filter((r) => r.mode === 'transit')
                 .sort((a, b) => late(a.arrive) - late(b.arrive));
+            const best = state.when === 'arrive' ? P.wayFor(earliest, item.start, false) : earliest[0];
+            const transit = best ? [best, ...earliest.filter((r) => r !== best)] : earliest;
             const shown = mode === 'transit' ? transit : routes.filter((r) => r.mode === mode);
             if (!shown.some((r) => r.id === state.pick)) state.pick = shown[0]?.id || null;
             minutes(trip, transit[0]);
