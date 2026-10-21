@@ -41,8 +41,10 @@ class DisruptionService
     {
         return CityNews::query()
             ->where('category', 'transit')
-            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-            ->where('published_at', '>', now()->subDays(30))
+            // Open: a dated notice until its end, however long the works run;
+            // an undated one for 30 days from when it was published.
+            ->where(fn ($q) => $q->where('expires_at', '>', now())
+                ->orWhere(fn ($undated) => $undated->whereNull('expires_at')->where('published_at', '>', now()->subDays(30))))
             // Every open notice: a cap left most of KVB's list out, and the
             // ones that rotated back in were announced again as new.
             ->orderByRaw("case severity when 'critical' then 4 when 'major' then 3 when 'moderate' then 2 else 1 end desc")

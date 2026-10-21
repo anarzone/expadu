@@ -30,8 +30,13 @@ class ScrapeNews extends Command
         $created += $stadtCount;
         $this->info("stadt-koeln.de news: {$stadtCount}");
 
-        // Clean up expired news older than 30 days
-        $deleted = CityNews::where('published_at', '<', now()->subDays(30))->delete();
+        // Delete news a month after it ended. Dated notices go by their end
+        // (long works started months ago are still running); undated ones by
+        // when they were published. Deleting by start re-inserted every run.
+        $deleted = CityNews::query()->where(fn ($q) => $q
+            ->where(fn ($dated) => $dated->whereNotNull('expires_at')->where('expires_at', '<', now()->subDays(30)))
+            ->orWhere(fn ($undated) => $undated->whereNull('expires_at')->where('published_at', '<', now()->subDays(30))))
+            ->delete();
         if ($deleted > 0) {
             $this->info("Cleaned up {$deleted} old news items");
         }
@@ -175,7 +180,12 @@ class ScrapeNews extends Command
                 continue;
             }
 
-            $row->update(['summary' => $notice['details'] ?: $row->summary, 'published_at' => $now, 'expires_at' => $openUntil]);
+            // Back after a real gap (not a missed scrape) is a new disruption:
+            // it starts now, not when the old one did.
+            if ($row->expires_at !== null && $row->expires_at->lessThan($now->copy()->subHours(6))) {
+                $row->created_at = $now;
+            }
+            $row->fill(['summary' => $notice['details'] ?: $row->summary, 'published_at' => $now, 'expires_at' => $openUntil])->save();
             $kept[$row->id] = true;
         }
 
@@ -264,6 +274,14 @@ class ScrapeNews extends Command
             // Extract headings which contain disruption info
             preg_match_all('/<h[234][^>]*>(.*?)<\/h[234]>/si', $html, $headings);
 
+            // Open KVB news: what the page lists now keeps or updates its row,
+            // what it no longer lists has ended.
+            $open = CityNews::query()->where('source', 'kvb')
+                ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->get();
+            $seen = [];
+            $listed = 0;
+
             foreach ($headings[1] ?? [] as $raw) {
                 $title = trim(strip_tags(html_entity_decode($raw, ENT_QUOTES, 'UTF-8')));
 
@@ -285,37 +303,54 @@ class ScrapeNews extends Command
                 if (! preg_match('/Linie|Trennung|Sanierung|Sperrung|Umleitung|Einschränkung|Baustelle|Ersatz|Haltestelle|Stadtbahn|Bus\b|Bahn/i', $title)) {
                     continue;
                 }
+                $listed++;
 
-                $url = 'https://www.kvb.koeln/aktuelles/#'.md5($title);
+                // The item's own link is its stable id when the heading carries one;
+                // otherwise the heading, with list separators normalised.
+                $url = $this->aktuellesLink($raw) ?? 'https://www.kvb.koeln/aktuelles/#'.md5($title);
+                $dateRange = $this->parseDateRange($title);
+                $lines = $this->extractLines($title);
+                $attributes = [
+                    'title' => mb_substr($title, 0, 255),
+                    'summary' => $this->buildSummary($title, $lines),
+                    'affected_lines' => $lines ?: null,
+                    'severity' => $this->inferSeverity($title),
+                    'expires_at' => $dateRange['end'],
+                ];
 
-                if (CityNews::where('source_url', $url)->exists()) {
+                // KVB rewords headings ("Linien 1, 7, 9" → "Linien 1, 7 und 9"): the
+                // same notice, so its row takes the new wording. source_url stays,
+                // since it is unique and a closed row may hold the new one.
+                $row = $open->first(fn (CityNews $row): bool => $row->source_url === $url
+                    || self::aktuellesKey((string) $row->title) === self::aktuellesKey($title))
+                    // Listed again after it ended: the same row opens again.
+                    ?? CityNews::query()->where('source_url', $url)->first();
+                if ($row !== null) {
+                    $row->update($attributes);
+                    $seen[$row->id] = true;
+
                     continue;
                 }
 
-                // Parse date range (e.g., "28.03. - 13.04.2026: Trennung der Linien 1 + 9")
-                $dateRange = $this->parseDateRange($title);
-                $lines = $this->extractLines($title);
-                $severity = $this->inferSeverity($title);
-
-                CityNews::create([
-                    'title' => mb_substr($title, 0, 255),
-                    'summary' => $this->buildSummary($title, $lines),
+                $row = CityNews::create($attributes + [
                     'source' => 'kvb',
                     'source_url' => $url,
                     'category' => 'transit',
                     'relevance' => 'transit',
-                    'affected_lines' => $lines ?: null,
-                    'severity' => $severity,
                     // When the works start, never a date still ahead: a future
                     // published_at sorted the notice first and showed it early.
                     'published_at' => $dateRange['start']?->isPast() ? $dateRange['start'] : now(),
-                    'expires_at' => $dateRange['end'],
                 ]);
-
+                $seen[$row->id] = true;
                 $created++;
+            }
 
-                if ($created >= 15) {
-                    break;
+            // Only a page that listed something says what has ended: an error
+            // page or a new layout must not close every open notice.
+            if ($listed > 0) {
+                $ended = $open->reject(fn (CityNews $row): bool => isset($seen[$row->id]));
+                if ($ended->isNotEmpty()) {
+                    CityNews::query()->whereKey($ended->modelKeys())->update(['expires_at' => now()]);
                 }
             }
         } catch (\Exception $e) {
@@ -323,6 +358,29 @@ class ScrapeNews extends Command
         }
 
         return $created;
+    }
+
+    /** The item's own link inside a heading, made absolute; null when it has none. */
+    protected function aktuellesLink(string $headingHtml): ?string
+    {
+        if (! preg_match('/<a\s[^>]*href="([^"#][^"]*)"/i', $headingHtml, $m)) {
+            return null;
+        }
+        $href = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+
+        return str_starts_with($href, 'http') ? $href : 'https://www.kvb.koeln/'.ltrim($href, '/');
+    }
+
+    /**
+     * A KVB news heading's identity, whatever separators it lists lines with:
+     * "Linien 1, 7, 9", "Linien 1, 7 und 9" and "Linien 1 + 7 + 9" are one notice.
+     */
+    public static function aktuellesKey(string $title): string
+    {
+        $key = mb_strtolower($title);
+        $key = preg_replace('/\b(und|and)\b|[,+&]/u', ' ', $key);
+
+        return trim((string) preg_replace('/\s+/u', ' ', (string) $key));
     }
 
     /**
