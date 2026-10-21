@@ -305,7 +305,9 @@ test.describe('Paperwork', () => {
             'I’m not sure',
         );
         await panel.getByRole('button', { name: 'Confirm answer' }).click();
-        await expect(panel.getByText('Answer saved for you.')).toBeVisible();
+        await expect(
+            panel.getByText('Answer saved for this person.'),
+        ).toBeVisible();
     });
 
     test('Your situation lists answers; a correction compares old and new first', async ({
@@ -322,15 +324,17 @@ test.describe('Paperwork', () => {
             hasText: 'Purpose of stay',
         });
         await expect(purpose).toContainText('Employment');
-        await purpose.click();
-        await expect(
-            panel.getByRole('heading', { name: 'What changed?' }),
-        ).toBeVisible();
 
+        // Every answer's history sits under the answers, as in the mock.
         await panel.locator('.details-history summary').click();
         await expect(panel.locator('.details-history')).toContainText(
             'Confirmed: Employment',
         );
+
+        await purpose.click();
+        await expect(
+            panel.getByRole('heading', { name: 'What changed?' }),
+        ).toBeVisible();
 
         await panel
             .getByRole('button', { name: /Correct an earlier answer/ })
