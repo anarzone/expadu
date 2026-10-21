@@ -22,6 +22,7 @@ import {
     berlinNow,
     checksFor,
     isPublicPlace,
+    EVENT_MARGIN_MIN,
     marginOf,
     rankOptions,
     scheduleSummary,
@@ -270,6 +271,11 @@ export function PlanPanel({
     } | null>(null);
     // Open in Travel lands on the way: once its plan is in, the chosen way opens.
     const showWhenPlanned = useRef(false);
+    // The event's start, to be there a little before it (not on the dot).
+    const [eventStart, setEventStart] = useState<{
+        date: string;
+        time: string;
+    } | null>(null);
     // My day's hand-offs: from a plan on your day (`after=` its id) and back
     // to where you are now (`to=here`), never by their coordinates.
     const afterRef = useRef<{ id: string; lat: number; lng: number } | null>(
@@ -515,9 +521,7 @@ export function PlanPanel({
         // after it ends, to Home when you have one. An event the server
         // didn't find (hidden, unknown, over) opens nothing, unless the link
         // names its venue (`to`): then that's where you go.
-        const handed = q.get('context') ?? q.get('event');
-
-        if (handed && (handoffEvent || !q.get('context') || !toKey)) {
+        if (q.get('context') && (handoffEvent || !toKey)) {
             opened.current = true;
 
             if (!handoffEvent) {
@@ -559,6 +563,7 @@ export function PlanPanel({
                 setDate(day);
                 setTime(handoffEvent.start_time);
                 showWhenPlanned.current = true;
+                setEventStart({ date: day, time: handoffEvent.start_time });
                 void plan({
                     to: venue,
                     from: null,
@@ -859,9 +864,16 @@ export function PlanPanel({
             target
                 ? { at: target.start_at, margin: marginOf(target) }
                 : schedule === 'arrive'
-                  ? { at: berlinInstant(date, time), margin: 0 }
+                  ? {
+                        at: berlinInstant(date, time),
+                        margin:
+                            eventStart?.date === date &&
+                            eventStart.time === time
+                                ? EVENT_MARGIN_MIN
+                                : 0,
+                    }
                   : null,
-        [target, schedule, date, time],
+        [target, schedule, date, time, eventStart],
     );
     const ranked = useMemo(
         () => rankOptions(options, sort, prefs, deadline),
