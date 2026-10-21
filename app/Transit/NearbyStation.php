@@ -331,8 +331,11 @@ class NearbyStation
                 'lines' => array_values(array_map('strval', $d['affected_lines'] ?? [])),
                 'source' => $d['source'] ?? null,
                 'since' => $d['started_at'] ?? null,
-                // KVB's notice in plain English, when one is written.
+                // KVB's notice in plain English, when one is written; else its
+                // own words (German), and its page either way.
                 'brief' => $d['brief'] ?? null,
+                'details' => ($d['description'] ?? '') !== '' ? $d['description'] : null,
+                'url' => $d['url'] ?? null,
             ])
             ->values()
             ->all();

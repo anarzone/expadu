@@ -2697,6 +2697,15 @@
 :where(.travel-page) .nearby-banner.is-labelled p > span {
     font-size: var(--text-small);
 }
+/* A KVB notice's chip and link keep their own look (travel.css). */
+:where(.travel-page) .nearby-banner.is-labelled .kvb-german-chip {
+    font-size: 12.5px;
+}
+:where(.travel-page) .nearby-banner.is-labelled .kvb-german-chip span,
+:where(.travel-page) .nearby-banner.is-labelled .kvb-notice-link span {
+    color: inherit;
+    font-size: inherit;
+}
 :where(.travel-page) .nearby-stop .tl-chips {
     margin-top: 5px;
 }
@@ -3050,6 +3059,17 @@
 :where(.travel-page) .plan-checks-detail span {
     color: var(--color-text-soft);
     font-size: var(--text-small);
+}
+:where(.travel-page)
+    .plan-checks-detail
+    .plan-check-notice
+    + .plan-check-notice {
+    margin-top: var(--space-4);
+}
+/* The chip keeps its own colour and size inside the soft detail line. */
+:where(.travel-page) .plan-checks-detail .tl-chip span {
+    color: inherit;
+    font-size: inherit;
 }
 :where(.travel-page) .other-ways-note {
     margin-top: var(--space-12);
