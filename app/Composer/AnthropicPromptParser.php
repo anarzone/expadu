@@ -148,7 +148,12 @@ class AnthropicPromptParser implements ParsesPrompt
             $explicit = $this->fallback->explicitPlaceRequirements($text);
             $intent = PromptIntent::tryFrom((string) ($args['intent'] ?? '')) ?? PromptIntent::Find;
 
-            if ($intent === PromptIntent::PlanDay && isset($args['window_start'], $args['window_end'])) {
+            // A plan with no time named ("I want to play football") starts now.
+            if ($intent === PromptIntent::PlanDay && ! isset($args['window_start'], $args['window_end'])) {
+                $args['window_start'] = $now->toIso8601String();
+                $args['window_end'] = $now->addHours(4)->toIso8601String();
+            }
+            if ($intent === PromptIntent::PlanDay) {
                 $sequence = $this->normaliseCategories($args['sequence'] ?? []);
                 $sequence = count($sequence) >= 2 ? $sequence : [];
                 $moods = $this->allowedList($args['moods'] ?? [], Constraints::MOODS);
@@ -162,7 +167,8 @@ class AnthropicPromptParser implements ParsesPrompt
                         categories: array_values(array_unique([...$this->normaliseCategories($args['categories'] ?? []), ...$sequence])),
                         vibe: $this->vibe($moods),
                         moods: $moods,
-                        avoid: $this->normaliseCategories($args['avoid'] ?? []),
+                        // "Indoors" can rule out every outdoor type at once.
+                        avoid: array_slice($this->normaliseCategories($args['avoid'] ?? []), 0, 60),
                         sequence: $sequence,
                         needs: $this->allowedList($args['needs'] ?? [], Constraints::NEEDS),
                         companions: $this->allowedString($args['companions'] ?? null, ['alone', 'partner', 'friends', 'kids']),

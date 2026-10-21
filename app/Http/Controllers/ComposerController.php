@@ -247,7 +247,7 @@ class ComposerController extends Controller
             'constraints.vibe' => ['nullable', Rule::in(['chill', 'active'])],
             'constraints.moods' => ['array', 'max:5'],
             'constraints.moods.*' => ['string', Rule::in(Constraints::MOODS)],
-            'constraints.avoid' => ['array', 'max:10'],
+            'constraints.avoid' => ['array', 'max:60'],
             'constraints.avoid.*' => ['string', Rule::in($categories)],
             'constraints.sequence' => ['array', 'max:5'],
             'constraints.sequence.*' => ['string', Rule::in($categories)],

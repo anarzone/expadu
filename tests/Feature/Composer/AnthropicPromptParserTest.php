@@ -305,3 +305,14 @@ it('ignores a one-stop sequence', function () {
 
     expect(parseWithConsent('A park', llmProfile(), CarbonImmutable::parse('2026-10-24 10:00', 'Europe/Berlin'))->plan->sequence)->toBe([]);
 });
+
+it('plans from now when a plan names no time', function () {
+    fakeToolCall(['intent' => 'plan_day', 'categories' => ['pitch']]);
+    $now = CarbonImmutable::parse('2026-10-24 14:07', 'Europe/Berlin');
+
+    $plan = parseWithConsent('I want to play football somewhere public', llmProfile(), $now)->plan;
+
+    expect($plan)->not->toBeNull()
+        ->and($plan->windowStart->format('H:i'))->toBe('14:15')
+        ->and($plan->categories)->toBe(['pitch']);
+});
