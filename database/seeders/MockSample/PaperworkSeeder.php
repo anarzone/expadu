@@ -49,6 +49,9 @@ use RuntimeException;
  *
  * PAPERWORK_SAMPLE=quiet seeds the same record without the day's appointment, as the mock's
  * quiet day shows it (today-next/brief/?view=quiet); the default is everyday.
+ * PAPERWORK_SAMPLE=eu seeds the mock's EU persona instead (Review → EU citizen, settled in): an
+ * EU citizen who has arrived, with its answers only and no task started, so the plan suggests
+ * the everyday tasks and no residence task.
  *
  * IMPORTANT: never registered in DatabaseSeeder; it refuses to run outside local.
  */
@@ -65,7 +68,7 @@ class PaperworkSeeder extends Seeder
 
     private const JURISDICTION = 'de-nrw-cologne';
 
-    private const VARIANTS = ['everyday', 'quiet'];
+    private const VARIANTS = ['everyday', 'quiet', 'eu'];
 
     private const FACTS = [
         'arrival_planned' => false,
@@ -79,6 +82,16 @@ class PaperworkSeeder extends Seeder
         'bank_account_help_needed' => true,
         'tax_id_available' => true,
         'visa_expires_at' => '2026-10-01',
+    ];
+
+    /** The mock's EU persona (bureaucracy-next/situation.js eu()). */
+    private const EU_FACTS = [
+        'citizenship_group' => 'eu',
+        'arrival_planned' => false,
+        'registration_status' => 'not_registered',
+        'health_coverage_confirmed' => false,
+        'bank_account_help_needed' => true,
+        'tax_id_available' => true,
     ];
 
     public function run(): void
@@ -112,7 +125,9 @@ class PaperworkSeeder extends Seeder
         try {
             $this->artisan('bureaucracy:import-tasks');
             $this->publish();
-            $this->seed($user, withAppointment: $variant === 'everyday');
+            $variant === 'eu'
+                ? $this->answers($user, self::EU_FACTS)
+                : $this->seed($user, withAppointment: $variant === 'everyday');
         } finally {
             Carbon::setTestNow();
             CarbonImmutable::setTestNow();
@@ -146,15 +161,7 @@ class PaperworkSeeder extends Seeder
 
     private function seed(User $user, bool $withAppointment): void
     {
-        // A fresh record: the person, their dossier, answers, processes and documents.
-        BureaucracyPerson::query()->where('account_user_id', $user->id)->delete();
-
-        $case = app(EnsureAccountHolder::class)->dossier($user);
-        $person = $case->person;
-
-        foreach (self::FACTS as $key => $value) {
-            app(RecordFactChange::class)->execute($user, $person->fresh(), $key, $value, null, $case->fresh()->fact_version);
-        }
+        $person = $this->answers($user, self::FACTS);
 
         $blueCard = $this->start($user, $person, 'residence.blue_card.first');
         $address = $this->start($user, $person, 'address.registration');
@@ -184,6 +191,25 @@ class PaperworkSeeder extends Seeder
         $this->document($user, $person, $blueCard, ready: true);
         $this->document($user, $person, $blueCard, ready: false, nth: 2);
         $this->document($user, $person, $address, ready: false);
+    }
+
+    /**
+     * A fresh record (the person and their dossier) with these answers.
+     *
+     * @param  array<string, mixed>  $facts
+     */
+    private function answers(User $user, array $facts): BureaucracyPerson
+    {
+        BureaucracyPerson::query()->where('account_user_id', $user->id)->delete();
+
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        $person = $case->person;
+
+        foreach ($facts as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $person->fresh(), $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return $person;
     }
 
     /** @return array<string, mixed> */

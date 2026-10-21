@@ -2426,6 +2426,14 @@
     gap: var(--space-8);
     min-height: var(--touch-target);
 }
+:where(.travel-page) .nearby-area-warning {
+    margin: 0 0 var(--space-8);
+    padding: var(--space-8) var(--space-10);
+    border-radius: var(--radius-md);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
 :where(.travel-page) .nearby-cards {
     display: grid;
     grid-template-columns: repeat(2, minmax(0px, 1fr));
@@ -2633,6 +2641,23 @@
 :where(.travel-page) .nearby-banner[hidden] {
     display: none;
 }
+:where(.travel-page) .nearby-banner.is-conflict {
+    border-color: var(--color-conflict-border);
+    background: var(--color-conflict-bg);
+}
+:where(.travel-page) .nearby-banner.is-conflict > svg,
+:where(.travel-page) .nearby-banner.is-conflict span {
+    color: var(--color-conflict-text);
+}
+:where(.travel-page) .nearby-banner p {
+    display: flex;
+    flex-direction: column;
+    margin: 0px;
+}
+:where(.travel-page) .nearby-banner span {
+    color: var(--color-attention-text);
+    font-size: var(--text-small);
+}
 :where(.travel-page) .nearby {
     position: relative;
 }
@@ -2662,6 +2687,15 @@
     padding: 0px;
     border: 0px;
     background: none;
+}
+:where(.travel-page) .nearby-banner.is-labelled .tl-banner {
+    margin: 0px;
+}
+:where(.travel-page) .nearby-banner.is-labelled span {
+    font-size: inherit;
+}
+:where(.travel-page) .nearby-banner.is-labelled p > span {
+    font-size: var(--text-small);
 }
 :where(.travel-page) .nearby-stop .tl-chips {
     margin-top: 5px;
@@ -4417,6 +4451,76 @@
     .travel-page .journey-fields > .from-field,
     .travel-page .journey-fields > .swap {
         transition: none;
+    }
+}
+.travel-page .nearby-banner.is-labelled .tl-banner {
+    align-items: center;
+    gap: 18px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 22px;
+    background: var(--color-bg-surface);
+    box-shadow: none;
+}
+.travel-page .nearby-banner.is-labelled .tl-tile {
+    width: 52px;
+    height: 52px;
+    box-sizing: border-box;
+    border: 3px solid;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-soft);
+}
+.travel-page .nearby-banner.is-labelled .tl-tile svg {
+    width: 22px;
+    height: 22px;
+}
+.travel-page .nearby-banner.is-labelled .tl-banner strong {
+    font-size: 18px;
+}
+.travel-page .nearby-banner.is-labelled .tl-banner p > span {
+    margin-top: 3px;
+    color: var(--trip-ink);
+    font-size: 14px;
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-attention {
+    border-color: var(--trip-amber-edge);
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-attention .tl-tile {
+    color: var(--trip-amber);
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-conflict {
+    border-color: var(--color-conflict-border);
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-conflict .tl-tile {
+    color: var(--color-conflict-text);
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-unsure {
+    border: 1.5px dashed var(--color-border-strong);
+}
+.travel-page .nearby-banner.is-labelled .tl-banner.is-unsure .tl-tile {
+    border-style: dashed;
+}
+@media (max-width: 699px) {
+    .travel-page .nearby-banner.is-labelled .tl-banner {
+        gap: var(--space-12);
+        border-radius: 20px;
+    }
+}
+@media (max-width: 699px) {
+    .travel-page .nearby-banner.is-labelled .tl-tile {
+        width: 46px;
+        height: 46px;
+    }
+}
+@media (max-width: 699px) {
+    .travel-page .nearby-banner.is-labelled .tl-banner strong {
+        font-size: 16px;
+    }
+}
+@media (max-width: 699px) {
+    .travel-page .nearby-banner.is-labelled .tl-banner p > span {
+        font-size: 12.5px;
     }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -3,6 +3,9 @@
 namespace Database\Seeders\MockSample;
 
 use App\Models\Event;
+use App\Models\EventAttendee;
+use App\Models\EventBookmark;
+use App\Models\EventReminder;
 use App\Models\User;
 use App\Models\Venue;
 use Carbon\CarbonImmutable;
@@ -16,7 +19,10 @@ use Illuminate\Support\Facades\Cache;
  * 8 September programme it keeps as a past sample, connected/model.js), and
  * its sample weather (events-next/sample-weather.js) as that day's hours in
  * the cached forecast. The mock's categories become the app's own. The day's plans come from `mock:sample-day` and the moment from
- * the `mock_clock` cookie. Local only; never runs anywhere else. Seed a
+ * the `mock_clock` cookie. The account starts from the mock's state on these
+ * events: none saved, no reminder, not going, whatever seeded it before
+ * (Today's sample saves one); a config that needs one saved saves it in its
+ * own steps. Local only; never runs anywhere else. Seed a
  * comparison database of your own, never the shared one:
  *
  * DB_DATABASE=expadu_s4 php artisan db:seed --class="Database\Seeders\MockSample\EventsSeeder"
@@ -112,6 +118,12 @@ class EventsSeeder extends Seeder
                 'quality_score' => 1,
                 'relevance' => 1,
             ]);
+        }
+
+        // As the mock starts: nothing of the account's on the sample events.
+        $sample = Event::query()->where('source_uid', 'like', 'mock:%')->pluck('id');
+        foreach ([EventBookmark::class, EventReminder::class, EventAttendee::class] as $model) {
+            $model::query()->where('user_id', $user->id)->whereIn('event_id', $sample)->delete();
         }
 
         $this->weather();

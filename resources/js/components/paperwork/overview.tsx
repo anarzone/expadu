@@ -548,7 +548,12 @@ function QuestionCard() {
                     disabled={pending}
                     onClick={() =>
                         void act(
-                            () => commands.resumeQuestions(session, false),
+                            // When only skipped questions are left, keeping going means those.
+                            () =>
+                                commands.resumeQuestions(
+                                    session,
+                                    !q.remaining_information_count,
+                                ),
                             'Questions are back on.',
                         )
                     }
@@ -1049,6 +1054,14 @@ export function Overview({ onCoverage }: { onCoverage: () => void }) {
                         </div>
                     )}
                 </div>
+                {/* An EU citizen's plan has no residence task because none
+                    applies, not because something is missing: say so. The
+                    plan leaves it null for anyone who can't see the answers. */}
+                {plan.notes.no_residence_task === true ? (
+                    <p className="process-grid-note">
+                        No residence task applies to your answers.
+                    </p>
+                ) : null}
             </section>
         ) : null;
     const showDates = !searching || dates.length > 0;

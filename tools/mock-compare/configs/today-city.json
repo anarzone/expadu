@@ -1,8 +1,8 @@
 {
     "name": "today-city",
-    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && php artisan tinker --execute=\"app(App\\Services\\WeatherService::class)->fetchSync(50.9375, 6.9603);\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
-    "liveNote": "Live clock, as Travel's travel-nearby: departures and the forecast are today's real ones, so those pairs are content (box and styles still exact). On the live clock the account has no plans today, so the app's Check departures would stay folded; the init script opens it from 701px, as the mock's sample day (with plans) does.",
     "mock": {
         "url": "/dev/design/today-next/brief/?view=everyday",
         "wait": ".city-help"
@@ -10,18 +10,13 @@
     "app": {
         "url": "/dashboard",
         "wait": ".city-help",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        },
-        "before": [
-            {
-                "wait": 1500
-            }
-        ],
-        "init": [
-            "if (innerWidth >= 701) new MutationObserver(() => document.querySelectorAll('.departure-board:not([open])').forEach((d) => { d.open = true; })).observe(document, { subtree: true, childList: true })"
-        ]
+        }
     },
     "pairs": [
         {
@@ -83,14 +78,6 @@
             "widths": [768, 1280, 1440, 1512]
         },
         {
-            "name": "first line",
-            "mock": ".departure-strips .nearby-strip",
-            "app": ".departure-strips .nearby-strip",
-            "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "widths": [768, 1280, 1440, 1512]
-        },
-        {
             "name": "Full timetable",
             "mock": ".board-full",
             "app": ".board-full",
@@ -137,5 +124,6 @@
         }
     ],
     "subpixelNote": "y is set aside: on wider screens City help sits under the Paperwork panel, which is taller than the mock's (the engine's next step wraps to two lines), and on phones Today's mock header is 2px shorter (see today-everyday's phoneNote). At those offsets the text sits at other fractions of a pixel, so those pixels are not compared; boxes and styles are exact.",
-    "weatherNote": "Weather is filled by a queued job; on a database without a worker the seed's fetchSync fills it once."
+    "clockNote": "The mock's sample day at 13:10, with the clock sent as a cookie on the first request: SampleWeather gives the app the mock's forecast, so nothing here depends on the hour the config runs. The forecast's words still differ, since the mock hard-codes '21° 17:00 20°' (its own sample file says 19° at 17:00) and 'Sample forecast'.",
+    "departuresNote": "The board's first line isn't compared yet: at 13:10 on the sample day the app's board has no departure for Neumarkt (it reads the schedule, which no longer covers 30 Sept), while the mock shows its capture (4 → Schlebusch, 4 min). It comes back once the app has the sample day's departures under the mock clock, as SampleWeather gives its forecast (asked of session 3)."
 }

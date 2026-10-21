@@ -19,7 +19,10 @@
         },
         "init": [
             "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
-        ]
+        ],
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
     },
     "pairs": [
         {
@@ -38,15 +41,16 @@
             "name": "station bar",
             "mock": ".nearby-bar",
             "app": ".nearby-bar",
+            "ignore": ["h"],
             "contentDiffers": true,
-            "reason": "Holds the live/recorded times chip (live data) and, in the mock, the list | map switch (call #9)."
+            "reason": "The mock labels its capture \"Recorded Sun 4 Oct, 22:19\" in the uncertain chip. The app shows the same captured board (MockSample\\SampleTimetable, under the mock clock) as the board it would read live, so \"Live times\" in the calm chip. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so the bar is 30px lower in the mock."
         },
         {
             "name": "station button",
             "mock": ".nearby-stop",
             "app": ".nearby-stop",
-            "ignore": ["w"],
-            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9)."
+            "ignore": ["h", "w"],
+            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9). At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so it is 30px taller in the mock."
         },
         {
             "name": "station name",
@@ -66,92 +70,89 @@
             "mock": ".nearby-bar .tl-chip",
             "app": ".nearby-bar .tl-chip",
             "index": 1,
-            "contentDiffers": true,
             "ignore": [
+                "w",
+                "x",
+                "y",
                 "background-color",
-                "border-bottom-color",
-                "border-bottom-style",
                 "border-bottom-width",
-                "border-left-color",
-                "border-left-style",
                 "border-left-width",
-                "border-right-color",
-                "border-right-style",
                 "border-right-width",
                 "border-top-color",
                 "border-top-style",
                 "border-top-width",
-                "color",
                 "padding-bottom",
-                "padding-top",
-                "w"
+                "padding-top"
             ],
-            "reason": "Live data: the mock's capture is recorded (the unsure chip), the app's times are live (the calm chip)."
+            "reason": "The mock labels its capture \"Recorded Sun 4 Oct, 22:19\" in the uncertain chip. The app shows the same captured board (MockSample\\SampleTimetable, under the mock clock) as the board it would read live, so \"Live times\" in the calm chip. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row."
         },
         {
             "name": "favourite star",
             "mock": ".nearby-star",
             "app": ".nearby-star",
-            "ignore": ["x"],
-            "reason": "Same box and styles; the map switch (call #9) puts the mock's star at another x, so its edge anti-aliasing differs by a few pixels.",
+            "ignore": ["x", "y"],
+            "reason": "Same box and styles; the map switch (call #9) puts the mock's star at another x, and at 390 the mock's bar wraps (see station bar), so its edge anti-aliasing differs by a few pixels.",
             "pixels": false
         },
         {
             "name": "filters",
             "mock": ".nearby-chips",
             "app": ".nearby-chips",
-            "contentDiffers": true,
-            "reason": "\"Leaving via\" is offered only when the feed has via stops; the local feed has none, so the app leaves it out (CLAUDE.md: only choices backed by data)."
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "filter: type",
             "mock": ".nearby-chips .nearby-chip",
             "app": ".nearby-chips .nearby-chip",
-            "index": 0
+            "index": 0,
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "filter: lines",
             "mock": ".nearby-chips .nearby-chip",
             "app": ".nearby-chips .nearby-chip",
-            "index": 1
+            "index": 1,
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "departures count",
             "mock": ".nearby-count",
             "app": ".nearby-count",
-            "contentDiffers": true
+            "ignore": ["y"],
+            "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "boarding area",
             "mock": ".nearby-area",
             "app": ".nearby-area",
+            "ignore": ["h", "y"],
             "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the area is 32px taller in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "area head",
             "mock": ".nearby-area-head",
             "app": ".nearby-area-head",
-            "contentDiffers": true,
-            "ignore": ["h"],
-            "reason": "The mock's \"Show on the map\" (call #9) wraps the head on phones."
+            "ignore": ["h", "y"],
+            "reason": "The mock's \"Show on the map\" (call #9) wraps the head on phones.",
+            "contentDiffers": true
         },
         {
             "name": "area badges",
             "mock": ".nearby-area-head .nearby-badges",
             "app": ".nearby-area-head .nearby-badges",
-            "contentDiffers": true,
-            "ignore": ["x", "w"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "ignore": ["x", "y"],
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's head lays the badges out after its map link, 36px further in. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "area badge",
             "mock": ".nearby-area-head .nearby-badges > *",
             "app": ".nearby-area-head .nearby-badges > *",
-            "contentDiffers": true,
-            "ignore": ["x", "w", "background-color", "border-radius", "color"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "ignore": ["x", "y"],
+            "reason": "Where to stand and the map are deferred (call #9): the mock shows its platform chip (\"Gleis 1 · 2 (platforms) · underground\") and \"Show on the map\"; the app says \"Platform not known\". On phones the mock's head lays the badges out after its map link, 36px further in. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         },
         {
             "name": "platform chip",
@@ -185,49 +186,48 @@
             "name": "line strip",
             "mock": ".nearby-strip",
             "app": ".nearby-strip",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
         },
         {
             "name": "strip badge",
             "mock": ".nearby-strip .strip-badge",
             "app": ".nearby-strip .strip-badge",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "w", "background-color", "border-radius", "color"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
         },
         {
             "name": "strip destination",
             "mock": ".nearby-strip .strip-dest",
             "app": ".nearby-strip .strip-dest",
-            "contentDiffers": true,
-            "ignore": ["x", "y", "w"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
         },
         {
             "name": "strip track",
             "mock": ".nearby-strip .strip-track",
             "app": ".nearby-strip .strip-track",
-            "contentDiffers": true,
-            "ignore": ["y", "h"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
         },
         {
             "name": "strip time",
             "mock": ".nearby-strip .nearby-time",
             "app": ".nearby-strip .nearby-time",
-            "contentDiffers": true,
-            "ignore": ["x", "y", "w"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "ignore": ["y"],
+            "reason": "On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Moved by that, it lands on another sub-pixel offset."
         },
         {
             "name": "change note",
             "mock": ".nearby-change",
             "app": ".nearby-change",
+            "ignore": ["y"],
             "contentDiffers": true,
-            "ignore": ["y", "w", "h"],
-            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+            "reason": "Its platform words: the mock's \"Gleis 3 · 4 (platforms)\"; the app doesn't name a platform it doesn't know (call #9). On phones the mock's \"Show on the map\" (call #9) wraps the area head to a second row, so the strips below sit 32px lower in the mock. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock."
         }
-    ]
+    ],
+    "clock": "2026-09-30T13:10:00+02:00",
+    "note": "Under the mock clock (13:10, 30 Sept): Nearby reads the mock's own Neumarkt capture (departures-next/station-data.js) through MockSample\\SampleTimetable, and the lifts are unknown, as in the mock's sample (MockSample\\SampleKvb). What differs is the deferred platform and map (call #9) and the mock's \"Recorded\" label for its capture."
 }

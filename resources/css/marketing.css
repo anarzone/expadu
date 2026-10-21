@@ -68,6 +68,55 @@
 }
 
 /* Handwritten notes: Permanent Marker (Apache 2.0), as in the Events posters. */
+/* Metric-matched stand-ins while Geist and Bricolage load: Arial scaled to
+ * the web fonts' widths and line metrics (measured in Chrome against the
+ * self-hosted files), so hero text keeps its wrapping and nothing moves
+ * when the real fonts swap in. Re-measure if the font files change. */
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 400;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 104.32%;
+    ascent-override: 88.19%;
+    descent-override: 21.09%;
+    line-gap-override: 9.59%;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 500;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 106.64%;
+    ascent-override: 86.27%;
+    descent-override: 20.63%;
+    line-gap-override: 9.38%;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 600;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 101.27%;
+    ascent-override: 90.85%;
+    descent-override: 21.72%;
+    line-gap-override: 9.87%;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 700;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 103.42%;
+    ascent-override: 88.96%;
+    descent-override: 21.27%;
+    line-gap-override: 9.67%;
+}
+@font-face {
+    font-family: 'Bricolage Fallback';
+    font-weight: 600 800;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 92.09%;
+    ascent-override: 100.99%;
+    descent-override: 29.32%;
+    line-gap-override: 0%;
+}
 @font-face {
     font-family: 'Permanent Marker';
     font-weight: 400;
@@ -96,8 +145,12 @@
         0 1px 2px rgba(11, 26, 43, 0.06), 0 12px 32px rgba(11, 26, 43, 0.08);
     --band-ink: #0b1a2b;
     --band-text: #ffffff;
-    --font-display: 'Bricolage Grotesque', Geist, system-ui, sans-serif;
-    --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display:
+        'Bricolage Grotesque', 'Bricolage Fallback', Geist, 'Geist Fallback',
+        system-ui, sans-serif;
+    --font-sans:
+        'Geist', 'Geist Fallback', ui-sans-serif, system-ui, -apple-system,
+        sans-serif;
     --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     /* The landing's Cologne palette, for the colour cards. */
     --yellow: #ffe363;
@@ -303,11 +356,23 @@ section {
     white-space: nowrap;
 }
 .mk-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     opacity: 0.78;
+}
+.mk-kicker svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 .tool h3,
 .post-card h3 {
@@ -323,21 +388,19 @@ section {
     line-height: 1.55;
 }
 .mk-go {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 48px;
+    display: grid;
+    place-items: center;
+    align-self: flex-end;
+    width: 52px;
+    height: 52px;
     margin-top: auto;
-    padding: 0 22px;
-    border-radius: 999px;
+    border-radius: 50%;
     background: var(--ink);
     color: #fff;
-    font-size: 15px;
-    font-weight: 700;
 }
 .mk-go svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     fill: none;
     stroke: currentColor;
     stroke-width: 2.2;
@@ -1055,6 +1118,7 @@ details.more .inner {
     background: var(--ink);
     font-family:
         Geist,
+        'Geist Fallback',
         system-ui,
         -apple-system,
         'Segoe UI',
@@ -1081,13 +1145,15 @@ details.more .inner {
     outline-offset: 3px;
 }
 .xv .xv-disp {
-    font-family: 'Bricolage Grotesque', Geist, system-ui, sans-serif;
+    font-family:
+        'Bricolage Grotesque', 'Bricolage Fallback', Geist, 'Geist Fallback',
+        system-ui, sans-serif;
     font-weight: 800;
     font-optical-sizing: auto;
 }
 .xv .xv-marker,
 .xv .xv-svg-marker {
-    font-family: 'Permanent Marker', Geist, sans-serif;
+    font-family: 'Permanent Marker', Geist, 'Geist Fallback', sans-serif;
     font-weight: 400;
     letter-spacing: 0;
 }
@@ -1524,16 +1590,25 @@ details.more .inner {
     display: none;
 }
 .xv .xv-menu summary {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 16px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
     border: 2px solid var(--ink);
-    border-radius: 999px;
-    font-size: 15px;
-    font-weight: 600;
+    border-radius: 50%;
     list-style: none;
     cursor: pointer;
+}
+.xv .xv-menu summary .xv-ico {
+    width: 20px;
+    height: 20px;
+}
+.xv .xv-menu__close,
+.xv .xv-menu[open] .xv-menu__open {
+    display: none;
+}
+.xv .xv-menu[open] .xv-menu__close {
+    display: block;
 }
 .xv .xv-menu summary::-webkit-details-marker {
     display: none;

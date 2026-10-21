@@ -122,7 +122,7 @@ export default function NotificationsSettings() {
     }
 
     return (
-        <AppLayout rightPanel={null}>
+        <AppLayout>
             <Head title="Notification settings" />
 
             <h1 className="sr-only">Notification settings</h1>
@@ -137,12 +137,12 @@ export default function NotificationsSettings() {
 
                     {/* Master push toggle */}
                     <ToggleCard>
-                        <div className="flex items-center justify-between bg-surface-2 px-4 py-[13px]">
+                        <div className="flex items-center justify-between bg-bg-quiet px-4 py-[13px]">
                             <div>
                                 <div className="text-[13.5px] font-semibold">
                                     Push notifications
                                 </div>
-                                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                                <div className="mt-0.5 text-[11.5px] text-text-muted">
                                     {!isReady
                                         ? 'Checking this device…'
                                         : !isSupported
@@ -167,7 +167,10 @@ export default function NotificationsSettings() {
                         </div>
                     </ToggleCard>
                     {statusError && (
-                        <div role="alert" className="text-sm text-destructive">
+                        <div
+                            role="alert"
+                            className="text-sm text-conflict-text"
+                        >
                             {statusError}{' '}
                             <button
                                 type="button"
@@ -188,7 +191,7 @@ export default function NotificationsSettings() {
                             <div className="text-[13.5px] font-semibold">
                                 Alert types
                             </div>
-                            <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                            <div className="mt-0.5 text-[11.5px] text-text-muted">
                                 {isSubscribed
                                     ? 'Shown in your alerts feed and pushed to this device.'
                                     : 'Shown in your alerts feed. Turn on push above to also get them on this device.'}
@@ -208,15 +211,12 @@ export default function NotificationsSettings() {
                         </ToggleCard>
                     </div>
                     {error && (
-                        <p role="alert" className="text-sm text-destructive">
+                        <p role="alert" className="text-sm text-conflict-text">
                             {error}
                         </p>
                     )}
                     {saving && (
-                        <p
-                            role="status"
-                            className="text-sm text-muted-foreground"
-                        >
+                        <p role="status" className="text-sm text-text-muted">
                             Saving…
                         </p>
                     )}
