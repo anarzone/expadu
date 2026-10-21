@@ -1,0 +1,113 @@
+{
+    "name": "paperwork-documents-filtered",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/?view=paperwork",
+        "wait": ".paperwork-groups",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".paperwork-filters .case-chips:first-child button:nth-child(2)"
+            },
+            {
+                "wait": 300
+            },
+            {
+                "click": ".paperwork-filters .case-chips:nth-child(2) button:nth-child(3)"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy?view=paperwork",
+        "wait": ".paperwork-groups",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }",
+        "before": [
+            {
+                "click": ".paperwork-filters .case-chips:first-child button:nth-child(2)"
+            },
+            {
+                "wait": 300
+            },
+            {
+                "click": ".paperwork-filters .case-chips:nth-child(2) button:nth-child(3)"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "note": "Paperwork's documents filtered (PW3): the EU Blue Card's task chip, then \"You have it\": the way back to the task, the pressed chips and the one document you have. The same sample record and clock as paperwork.json.",
+    "pairs": [
+        {
+            "name": "back to the task",
+            "mock": ".view-back",
+            "app": ".view-back"
+        },
+        {
+            "name": "filters",
+            "mock": ".paperwork-filters",
+            "app": ".paperwork-filters",
+            "pixels": false,
+            "reason": "At 360 the status chips scroll sideways. After the tap the app keeps the row as it was, so the pressed chip stays in view (the browser scrolls the focused chip in); the mock redraws the whole page, so its row starts from the left again. Same chips, counts and pressed state."
+        },
+        {
+            "name": "task chip: EU Blue Card (pressed)",
+            "mock": ".paperwork-filters .case-chips button",
+            "app": ".paperwork-filters .case-chips button",
+            "index": 1
+        },
+        {
+            "name": "status chip: you have it (pressed)",
+            "mock": ".paperwork-filters .case-chips:nth-child(2) button",
+            "app": ".paperwork-filters .case-chips:nth-child(2) button",
+            "index": 2,
+            "ignore": [
+                "x"
+            ],
+            "reason": "At 360 the status chips scroll sideways. After the tap the app keeps the row as it was, so the pressed chip stays in view (the browser scrolls the focused chip in); the mock redraws the whole page, so its row starts from the left again. Same chips, counts and pressed state."
+        },
+        {
+            "name": "groups",
+            "mock": ".paperwork-groups",
+            "app": ".paperwork-groups"
+        },
+        {
+            "name": "group",
+            "mock": ".paperwork-group",
+            "app": ".paperwork-group"
+        },
+        {
+            "name": "group count",
+            "mock": ".paperwork-group .paper-count",
+            "app": ".paperwork-group .paper-count"
+        },
+        {
+            "name": "row",
+            "mock": ".document-row",
+            "app": ".document-row"
+        },
+        {
+            "name": "row status",
+            "mock": ".document-row summary > span > small:last-child",
+            "app": ".document-row summary > span > small:last-child"
+        }
+    ]
+}

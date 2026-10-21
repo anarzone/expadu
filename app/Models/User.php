@@ -20,8 +20,8 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'bureaucracy_path', 'profile_attributes', 'interests', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'needs_step_free', 'bureaucracy_path', 'profile_attributes', 'interests', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'needs_step_free'])]
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -49,6 +49,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'is_eu' => 'boolean',
             'has_deutschlandticket' => 'boolean',
             'transport_mode' => TransportMode::class,
+            'needs_step_free' => 'boolean',
             'profile_attributes' => 'array',
             'interests' => 'array',
         ];
@@ -172,5 +173,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         $settings = $this->userSetting?->settings ?? UserSetting::defaults();
 
         return $settings[$key] ?? UserSetting::defaults()[$key] ?? null;
+    }
+
+    /** Opted in to personalisation from their own activity (off by default). */
+    public function personalises(): bool
+    {
+        return $this->setting('personalisation') === true;
     }
 }

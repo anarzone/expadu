@@ -6,6 +6,7 @@ use App\Ai\LlmRollout;
 use App\Composer\ActivePlanStore;
 use App\Composer\Answers\Answers;
 use App\Composer\AnthropicCandidateRanker;
+use App\Composer\AnthropicPromptParser;
 use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -17,7 +18,6 @@ use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
@@ -25,7 +25,6 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
-use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -41,6 +40,8 @@ use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
@@ -194,9 +195,9 @@ class ComposerController extends Controller
     {
         $validated = $request->validated();
         $profile = $profiles->build($request->user());
-        $permit = $parser instanceof OpenAiCompatiblePromptParser && isset($validated['processing'])
+        $permit = $parser instanceof AnthropicPromptParser && isset($validated['processing'])
             ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
-                OpenAiCompatiblePromptParser::processingContext($validated['text'], $profile), $validated['processing'])
+                AnthropicPromptParser::processingContext($validated['text'], $profile), $validated['processing'])
             : null;
 
         $parsed = $parser->parse(
@@ -209,9 +210,7 @@ class ComposerController extends Controller
         // whether Composer answers it itself (the `answer` command) rather than planning.
         $routed = $answers->route($request->user(), $validated['text'], CarbonImmutable::now('Europe/Berlin'),
             app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        $answered = in_array($routed['kind'], Answers::KINDS, true)
-            && ! ($routed['kind'] === 'clarify' && $parsed->intent === PromptIntent::PlanDay)
-            && ! ($routed['kind'] === 'unavailable' && ($routed['topic'] ?? null) === 'listing');
+        $answered = Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }
@@ -716,6 +715,7 @@ class ComposerController extends Controller
                     'veedel' => $outgoing->veedel,
                 ],
             ]);
+            app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$plan->slots[$slotIndex]->toArray()], $plan->constraints->companions);
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".
@@ -789,11 +789,28 @@ class ComposerController extends Controller
             return response()->json(['message' => $exception->getMessage()], 409);
         }
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: isset($validated['keep']));
 
         return response()->json(['saved' => true]);
     }
 
     /** Un-pin the Today plan (the dismiss control on the home card). */
+    /**
+     * The person keeps the composed plan as it is: each stop counts as kept
+     * unedited (personalisation, with the opt-in). A plan with swaps or
+     * exclusions is not "unedited" and records nothing.
+     */
+    public function keep(Request $request): JsonResponse
+    {
+        $stored = $this->plans->get($request->user());
+        if (! is_array($stored)) {
+            return response()->json(['message' => 'There is no plan to keep.'], 404);
+        }
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: false);
+
+        return response()->json(['kept' => true]);
+    }
+
     public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
     {
         $today->forget($request->user());

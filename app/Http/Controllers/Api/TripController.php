@@ -8,6 +8,7 @@ use App\Http\Requests\StartTripRequest;
 use App\Jobs\SendTripStopReminder;
 use App\Models\ActiveTrip;
 use App\Models\User;
+use App\Personalisation\SignalRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -62,6 +63,7 @@ class TripController extends Controller
             (float) $validated['destination']['lat'],
             (float) $validated['destination']['lng'],
         );
+        app(SignalRecorder::class)->tripStarted($request->user(), $validated['destination'], $request->target());
 
         return response()->json(['trip' => $trip->toShared()]);
     }

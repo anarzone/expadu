@@ -274,8 +274,13 @@ export function NextTripCard({
                 tone="calm"
                 ring={{ kind: 'unplanned' }}
                 title={trip.target.title}
+                // When and where, as the mock's "Nothing planned yet" card.
                 place={
-                    compact ? undefined : (trip.target.start_time ?? undefined)
+                    compact
+                        ? undefined
+                        : [trip.target.start_time, trip.target.location]
+                              .filter(Boolean)
+                              .join(' · ') || undefined
                 }
                 flags={
                     <TravelChip kind="unsure" icon={icons.unsure}>
@@ -292,74 +297,138 @@ export function NextTripCard({
     const minutes = leaveIn ?? trip.leave_in_min ?? 0;
     const late = trip.status === 'late';
     const tight = trip.status === 'tight';
-    const tone: TripTone = minutes <= 0 || late || tight ? 'attention' : 'calm';
-    const ring: TripRingState = { kind: 'trip', leaveIn: minutes };
-    const title = minutes <= 0 ? 'Leave now' : `Leave at ${trip.leave_time}`;
+    // The way it would have taken is gone (cancelled, or missed): the card
+    // leads with the one to take instead.
+    const gone = trip.gone?.ride ? trip.gone : null;
+    // A lift out at one of the way's stations, as KVB files it: which
+    // platform it serves isn't matched to the way. For someone who needs
+    // step-free ways (their own saved need, owner, 21 Oct 2026) that's no
+    // step-free way; for everyone else the chip says it and the card keeps
+    // its title and facts.
+    const liftStops = [
+        ...new Set((trip.lifts ?? []).map((l) => stopName(l.stop, trip.city))),
+    ];
+    const many = liftStops.length > 1;
+    const blocked =
+        !gone && !!ride && !!trip.step_free_need && !!liftStops.length;
+    const lift = !liftStops.length
+        ? null
+        : blocked
+          ? `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order, and KVB doesn’t say which platform ${many ? 'they serve' : 'it serves'}: this way may not be step-free.`
+          : `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order; KVB doesn’t say if ${many ? 'they’re' : 'it’s'} on your way.`;
+    const tone: TripTone =
+        gone?.kind === 'cancelled' || blocked
+            ? 'conflict'
+            : gone || minutes <= 0 || late || tight
+              ? 'attention'
+              : 'calm';
+    const ring: TripRingState =
+        gone || blocked
+            ? { kind: 'alert' }
+            : { kind: 'trip', leaveIn: minutes };
+    const title =
+        blocked && ride
+            ? `No step-free way to ${vehicleWord(vehicleOf(ride.mode)).toLowerCase()}\u00a0${ride.line ?? ''}`.trim()
+            : gone && ride
+              ? `Take the ${ride.depart_time}`
+              : minutes <= 0
+                ? 'Leave now'
+                : `Leave at ${trip.leave_time}`;
     const spare = trip.spare_min ?? 0;
 
-    const facts = [
-        ride ? (
-            <TripFact
-                key="ride"
-                label={
-                    <RideLabel
-                        line={ride.line ?? ''}
-                        look={rideLook(ride)}
-                        word={vehicleWord(vehicleOf(ride.mode))}
-                    />
-                }
-                value={ride.depart_time}
-                sub={stopName(ride.from.name, trip.city)}
-            />
-        ) : (
-            <TripFact
-                key="walk"
-                label={journey.mode === 'bike' ? 'Bike' : 'Walk'}
-                value={trip.leave_time}
-                sub={trip.from?.label ?? ''}
-            />
-        ),
-        <TripFact
-            key="there"
-            label="There"
-            value={trip.arrive_time}
-            sub={
-                trip.target.location ??
-                (ride ? stopName(ride.to.name, trip.city) : '')
-            }
-        />,
-        late ? (
-            <TripFact
-                key="late"
-                label="Late"
-                value={
-                    <>
-                        {trip.late_by_min}
-                        <span>&nbsp;min</span>
-                    </>
-                }
-                sub={`after ${trip.target.start_time}`}
-                tone="attention"
-            />
-        ) : (
-            <TripFact
-                key="spare"
-                label="Spare"
-                value={
-                    <>
-                        {spare}
-                        <span>&nbsp;min</span>
-                    </>
-                }
-                sub={`before ${trip.target.start_time}`}
-                tone={spare < trip.margin_min ? 'attention' : undefined}
-            />
-        ),
-    ];
+    const facts = blocked
+        ? [
+              <TripFact
+                  key="ride"
+                  label={
+                      <RideLabel
+                          line={ride!.line ?? ''}
+                          look={rideLook(ride!)}
+                          word={vehicleWord(vehicleOf(ride!.mode))}
+                      />
+                  }
+                  value={ride!.depart_time}
+                  sub={stopName(ride!.from.name, trip.city)}
+              />,
+              <TripFact
+                  key="stepfree"
+                  label="Step-free"
+                  value="No"
+                  sub="Lift out of order"
+                  tone="conflict"
+              />,
+          ]
+        : [
+              ride ? (
+                  <TripFact
+                      key="ride"
+                      label={
+                          <RideLabel
+                              line={ride.line ?? ''}
+                              look={rideLook(ride)}
+                              word={vehicleWord(vehicleOf(ride.mode))}
+                          />
+                      }
+                      value={ride.depart_time}
+                      sub={stopName(ride.from.name, trip.city)}
+                  />
+              ) : (
+                  <TripFact
+                      key="walk"
+                      label={journey.mode === 'bike' ? 'Bike' : 'Walk'}
+                      value={trip.leave_time}
+                      sub={trip.from?.label ?? ''}
+                  />
+              ),
+              <TripFact
+                  key="there"
+                  label="There"
+                  value={trip.arrive_time}
+                  sub={
+                      trip.target.location ??
+                      (ride ? stopName(ride.to.name, trip.city) : '')
+                  }
+              />,
+              late ? (
+                  <TripFact
+                      key="late"
+                      label="Late"
+                      value={
+                          <>
+                              {trip.late_by_min}
+                              <span>&nbsp;min</span>
+                          </>
+                      }
+                      sub={`after ${trip.target.start_time}`}
+                      tone="attention"
+                  />
+              ) : (
+                  <TripFact
+                      key="spare"
+                      label="Spare"
+                      value={
+                          <>
+                              {spare}
+                              <span>&nbsp;min</span>
+                          </>
+                      }
+                      sub={`before ${trip.target.start_time}`}
+                      tone={spare < trip.margin_min ? 'attention' : undefined}
+                  />
+              ),
+          ];
 
-    const skipped = trip.skipped?.ride
-        ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
-        : null;
+    const skipped =
+        trip.skipped?.ride && !gone && !blocked
+            ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
+            : null;
+    // Why, with the way: how it's known.
+    const goneNote =
+        gone?.kind === 'cancelled'
+            ? 'The live times mark it cancelled; on the stop display it says „Fällt aus“.'
+            : gone?.kind === 'missed'
+              ? `We noticed because your location didn’t change after ${gone.leave_time}. Indoors this can be wrong.`
+              : null;
 
     // Timetable times only: said first, over the facts, so the ride tile
     // keeps its boarding stop (departures-next, 20 Oct 2026).
@@ -378,6 +447,28 @@ export function NextTripCard({
                 Nothing gets there by {trip.target.start_time}
             </TravelChip>
         ) : null,
+        gone?.kind === 'cancelled' ? (
+            <TravelChip
+                key="gone"
+                kind="conflict"
+                icon={<TravelIcon name="alert" />}
+            >
+                {`${gone.ride!.time} cancelled`}
+            </TravelChip>
+        ) : gone?.kind === 'missed' ? (
+            <TravelChip key="gone" kind="attention" icon={icons.clock}>
+                {`Missed the ${gone.ride!.time}`}
+            </TravelChip>
+        ) : null,
+        lift ? (
+            <TravelChip
+                key="lift"
+                kind="conflict"
+                icon={<TravelIcon name="lift" />}
+            >
+                Lift out of order
+            </TravelChip>
+        ) : null,
     ].filter(Boolean);
 
     const action = confirm ? (
@@ -385,6 +476,10 @@ export function NextTripCard({
     ) : going ? (
         <TripAction icon="route" href={tripHref}>
             Back to your trip
+        </TripAction>
+    ) : blocked && onPlan ? (
+        <TripAction icon="route" onClick={onPlan}>
+            Plan another way
         </TripAction>
     ) : onStart ? (
         <TripAction onClick={onStart} disabled={starting}>
@@ -407,6 +502,14 @@ export function NextTripCard({
                 compact ? undefined : (
                     <>
                         <WayStrip nodes={wayNodes(journey, trip.city)} />
+                        {[goneNote, lift].map((line) =>
+                            line ? (
+                                <p key={line} className="trip-line-note">
+                                    {icons.unsure}
+                                    <span>{line}</span>
+                                </p>
+                            ) : null,
+                        )}
                         <OtherWays trip={trip} onCompare={onPlan} />
                     </>
                 )

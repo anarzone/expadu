@@ -47,9 +47,11 @@ beforeEach(function () {
     $this->offer = app(OfferNextQuestion::class)->execute($this->actor, $this->session, (string) Str::uuid())['question'];
     $this->acceptance = ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction);
     $this->modelResult = ['outcome' => 'candidate', 'subject' => 'selected_person', 'value' => true];
-    Http::fake(['processor.example.test/*' => fn () => Http::response(['choices' => [['message' => ['content' => null,
-        'tool_calls' => [['type' => 'function', 'function' => ['name' => 'extract_authorized_fact', 'arguments' => json_encode(['result' => $this->modelResult])]]],
-    ]]]])]);
+    Http::fake(['processor.example.test/*' => fn () => Http::response([
+        'id' => 'msg_1', 'type' => 'message', 'role' => 'assistant', 'model' => 'synthetic-extractor', 'stop_reason' => 'tool_use',
+        'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'extract_authorized_fact', 'input' => ['result' => $this->modelResult]]],
+        'usage' => ['input_tokens' => 120, 'output_tokens' => 40],
+    ])]);
 });
 
 test('AI suggests a single selected-person answer and only explicit confirmation saves it', function () {
@@ -60,7 +62,7 @@ test('AI suggests a single selected-person answer and only explicit confirmation
     expect($extract->execute($this->actor, $this->session, $this->offer['id'], $this->offer['token'], 'The selected person is planning to move.', $this->acceptance)['candidate_id'])->toBe($candidate['candidate_id']);
     Http::assertSentCount(1);
     Http::assertSent(function ($request) {
-        $payload = json_decode($request['messages'][1]['content'], true);
+        $payload = json_decode($request['messages'][0]['content'], true);
 
         return isset($payload['selected_person']) && ! isset($payload['facts']) && ! isset($payload['household']) && ! isset($payload['selection']);
     });

@@ -1,14 +1,15 @@
-/* Adding an event to the person's plan from its details: Composer's
-   workspace (`add`, on the event's own day), with the Undo its change
-   carries. Nothing here plans anything itself: the workspace decides, and a
-   refusal (it clashes, it's full, it's gone) comes back in its own words. */
+/* Adding something to the person's plan from where it's shown (an event's
+   details, a place's sheet): Composer's workspace (`add`, on a day, at a
+   time when one is chosen), with the Undo its change carries. Nothing here
+   plans anything itself: the workspace decides, and a refusal (it clashes,
+   it's full, it isn't open then, it's gone) comes back in its own words. */
 
 import ComposerWorkspaceController from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { api, ApiError } from '@/components/composer/types';
 import type { EventOccurrence } from '@/components/events/types';
 
 type Slot = { id: string };
-type Change = {
+export type Change = {
     id: string;
     date: string;
     label: string;
@@ -41,13 +42,15 @@ export const inPlan = (
 const command = (body: Record<string, unknown>) =>
     api<Workspace>(ComposerWorkspaceController.update.url(), body);
 
-/** Adds the occurrence to its day's plan; once more if another tab moved on. */
+/** Adds a candidate (`event:…`, `spot:…`) to a day's plan, at `times`
+    when chosen; once more if another tab moved on. */
 export async function addToPlan(
-    o: EventOccurrence,
+    candidate: string,
     date: string,
     revision: number,
+    times?: { start: string; end: string },
 ): Promise<{ workspace: Workspace; change: Change | null }> {
-    const body = { action: 'add', candidate: candidateFor(o), date };
+    const body = { action: 'add', candidate, date, ...times };
     let workspace: Workspace;
 
     try {

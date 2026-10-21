@@ -1,5 +1,6 @@
 {
     "name": "travel-trip-arrived",
+    "seed": "php artisan mock:sample-day travel --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> MOCK_TRIP=started php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:48:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "height": 1600,
