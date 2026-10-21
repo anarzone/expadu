@@ -27,7 +27,9 @@ use Illuminate\Support\Facades\Redis;
  * E2E_EMAIL=you@expadu.test php artisan db:seed --class="Database\Seeders\MockSample\TravelSeeder"
  * (each session compares as its own account; the default is the E2E one).
  * No trip is running afterwards; MOCK_TRIP=started starts the sample's 13:14
- * (the trip page's started moments, travel-trip-*.json).
+ * (the trip page's started moments, travel-trip-*.json). The account's
+ * step-free need is off; MOCK_STEP_FREE=1 turns it on (travel-trip-lift-need
+ * compares as the account's `+stepfree` sibling, seeded that way).
  */
 class TravelSeeder extends Seeder
 {
@@ -65,6 +67,9 @@ class TravelSeeder extends Seeder
         ], JSON_THROW_ON_ERROR));
 
         FavouriteStop::query()->firstOrCreate(['user_id' => $user->id, 'name' => 'Neumarkt']);
+
+        // Off, as for anyone who hasn't said; on for the step-free comparison.
+        $user->forceFill(['needs_step_free' => env('MOCK_STEP_FREE') === '1'])->save();
 
         // The day's 14:00 appointment, as the day projection reads it.
         $target = 'appointment:'.PaperworkSeeder::APPOINTMENT_ID;

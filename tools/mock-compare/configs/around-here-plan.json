@@ -1,0 +1,188 @@
+{
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\"",
+    "mock": {
+        "url": "/dev/design/around-here/?kind=pharmacy&near=wiener-platz&time=14:30",
+        "wait": ".nearby-place",
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".place-sheet-tabs [data-section=\"plan\"]"
+            },
+            {
+                "wait": 1200
+            },
+            {
+                "click": ".shared-date-toggle"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-day=\"2026-10-02\"]"
+            },
+            {
+                "wait": 1200
+            }
+        ]
+    },
+    "app": {
+        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "wait": ".nearby-place",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 2500
+            },
+            {
+                "click": ".place-sheet-tabs button:nth-child(2)"
+            },
+            {
+                "wait": 2000
+            },
+            {
+                "click": ".visit-setup .ui-date-toggle"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-day=\"2026-10-02\"]"
+            },
+            {
+                "wait": 2000
+            }
+        ],
+        "screenshotStyle": ".fixed.right-4.bottom-24 { visibility: hidden !important; }",
+        "screenshotStyleReason": "The local QA persona button floats over the page's bottom right; it isn't part of the page, so it is hidden while elements are shot."
+    },
+    "name": "around-here-plan",
+    "pairs": [
+        {
+            "name": "Plan a visit (on)",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 1
+        },
+        {
+            "name": "panel",
+            "mock": "[data-panel=\"plan\"]",
+            "app": ".place-sheet-panel.is-plan",
+            "pixelThreshold": 0.001,
+            "reason": "The sheet\u2019s rounded bottom corners let the page behind show through for a few pixels at 1280 and 1440, and the page behind differs (list and map). Everything inside is compared exactly."
+        },
+        {
+            "name": "heading",
+            "mock": ".place-section-heading h3",
+            "app": ".place-section-heading h3"
+        },
+        {
+            "name": "heading line",
+            "mock": ".place-section-heading p",
+            "app": ".place-section-heading p"
+        },
+        {
+            "name": "day and time",
+            "mock": ".visit-setup",
+            "app": ".visit-setup"
+        },
+        {
+            "name": "Choose a day",
+            "mock": ".selection-day > span",
+            "app": ".selection-day > span"
+        },
+        {
+            "name": "date",
+            "mock": ".shared-date-toggle",
+            "app": ".visit-setup .ui-date-toggle"
+        },
+        {
+            "name": "Try a time",
+            "mock": ".visit-suggestions p",
+            "app": ".visit-suggestions p"
+        },
+        {
+            "name": "first time",
+            "mock": ".visit-suggestions [role=\"group\"] button",
+            "app": ".visit-suggestions [role=\"group\"] button",
+            "index": 0
+        },
+        {
+            "name": "second time",
+            "mock": ".visit-suggestions [role=\"group\"] button",
+            "app": ".visit-suggestions [role=\"group\"] button",
+            "index": 1
+        },
+        {
+            "name": "third time",
+            "mock": ".visit-suggestions [role=\"group\"] button",
+            "app": ".visit-suggestions [role=\"group\"] button",
+            "index": 2
+        },
+        {
+            "name": "From",
+            "mock": ".selection-times label",
+            "app": ".selection-times label",
+            "index": 0
+        },
+        {
+            "name": "From field",
+            "mock": ".selection-times input[name=\"start\"]",
+            "app": ".selection-times .ui-time-input",
+            "index": 0
+        },
+        {
+            "name": "dash",
+            "mock": ".selection-times > span",
+            "app": ".selection-times > span"
+        },
+        {
+            "name": "Until field",
+            "mock": ".selection-times input[name=\"end\"]",
+            "app": ".selection-times label:last-of-type .ui-time-input"
+        },
+        {
+            "name": "Your day",
+            "mock": ".selection-agenda",
+            "app": ".selection-agenda"
+        },
+        {
+            "name": "Your day summary",
+            "mock": ".selection-agenda summary",
+            "app": ".selection-agenda summary"
+        },
+        {
+            "name": "hint",
+            "mock": "p.selection-hint",
+            "app": "p.selection-hint"
+        },
+        {
+            "name": "footer",
+            "mock": "[data-panel=\"plan\"] .actions",
+            "app": ".place-sheet-panel.is-plan .place-sheet-footer",
+            "pixelThreshold": 0.001,
+            "reason": "The sheet\u2019s rounded bottom corners let the page behind show through for a few pixels at 1280 and 1440, and the page behind differs (list and map). Everything inside is compared exactly."
+        },
+        {
+            "name": "Add to plan",
+            "mock": "[data-panel=\"plan\"] .actions .button.primary",
+            "app": ".place-sheet-panel.is-plan .place-sheet-primary"
+        }
+    ]
+}

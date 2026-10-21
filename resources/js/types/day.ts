@@ -178,6 +178,19 @@ export type NextTrip = {
     source: string | null;
     /** The later trip that was too tight, when an earlier one was taken. */
     skipped: TripOption | null;
+    /**
+     * The way it would have taken, gone: cancelled in the live times, or
+     * missed (your own fresh location stayed where the way starts after it
+     * left). The card says so over the way it takes instead.
+     */
+    gone?: (TripOption & { kind: 'cancelled' | 'missed' }) | null;
+    /**
+     * Lifts KVB reports out of order at the way's stations (board, change,
+     * get off); null while KVB's lift feed isn't known.
+     */
+    lifts?: { label: string; stop: string; since: string | null }[] | null;
+    /** The person's own saved step-free need: a lift out is then no step-free way. */
+    step_free_need?: boolean;
     alternatives: (TripOption & { journey: Journey })[];
     /** Deep links when the router couldn't answer. */
     degraded?: { deep_links?: Record<string, string> } | null;

@@ -1,0 +1,146 @@
+{
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\"",
+    "mock": {
+        "url": "/dev/design/around-here/?kind=pharmacy&near=wiener-platz&time=14:30",
+        "wait": ".nearby-place",
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".place-sheet-tabs [data-section=\"directions\"]"
+            },
+            {
+                "wait": 1500
+            }
+        ]
+    },
+    "app": {
+        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "wait": ".nearby-place",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".nearby-place-open"
+            },
+            {
+                "wait": 2500
+            },
+            {
+                "click": ".place-sheet-tabs button:nth-child(3)"
+            },
+            {
+                "wait": 4000
+            }
+        ],
+        "screenshotStyle": ".fixed.right-4.bottom-24 { visibility: hidden !important; }",
+        "screenshotStyleReason": "The local QA persona button floats over the page's bottom right; it isn't part of the page, so it is hidden while elements are shot."
+    },
+    "name": "around-here-way",
+    "pairs": [
+        {
+            "name": "Get there (on)",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 2
+        },
+        {
+            "name": "panel",
+            "mock": "[data-panel=\"directions\"]",
+            "app": ".place-sheet-panel.is-way",
+            "pixels": false,
+            "ignore": ["h"],
+            "reason": "The mock\u2019s tab only previews a way (\u201cGet there with Departures \u00b7 Preview\u201d); the app shows Travel\u2019s own checks and ways to the place, as Events\u2019 Get there does (owner, 18 Oct: trips look like Travel everywhere). The design session redraws the tab with Travel\u2019s cards (coordinator, item 19). Its top, sides and styles are compared; it ends with the sheet, which in the app has no footer here yet (Travel\u2019s planner has no hand-off for a place)."
+        },
+        {
+            "name": "From and To",
+            "mock": ".place-route",
+            "app": ".place-route",
+            "contentDiffers": true,
+            "reason": "The app starts from where you are around (Around here\u2019s point, Wiener Platz); the mock\u2019s From is empty. Its box and styles are compared."
+        },
+        {
+            "name": "start",
+            "mock": ".place-route .route-dot",
+            "app": ".place-route .route-dot",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "start (phone)",
+            "mock": ".place-route .route-dot",
+            "app": ".place-route .route-dot",
+            "widths": [360, 390],
+            "pixelThreshold": 0.04,
+            "reason": "On a phone the 12px ring\u2019s edge antialiases 4\u20135 pixels differently, at the same box (36, 420.25) and the same styles; it matches from 768 up."
+        },
+        {
+            "name": "From",
+            "mock": ".place-route .route-field",
+            "app": ".place-route .route-field",
+            "contentDiffers": true,
+            "reason": "The app starts from where you are around (Around here\u2019s point, Wiener Platz); the mock\u2019s From is empty. Its box and styles are compared."
+        },
+        {
+            "name": "To",
+            "mock": ".place-journey-destination",
+            "app": ".place-journey-destination"
+        },
+        {
+            "name": "how",
+            "mock": ".place-journey fieldset",
+            "app": ".place-journey fieldset"
+        },
+        {
+            "name": "Transit (on)",
+            "mock": ".place-journey fieldset label > span",
+            "app": ".place-journey fieldset label > span",
+            "index": 0
+        },
+        {
+            "name": "Walk",
+            "mock": ".place-journey fieldset label > span",
+            "app": ".place-journey fieldset label > span",
+            "index": 1
+        },
+        {
+            "name": "Cycle",
+            "mock": ".place-journey fieldset label > span",
+            "app": ".place-journey fieldset label > span",
+            "index": 2
+        },
+        {
+            "name": "the ways",
+            "mock": ".place-journey .mini-departures",
+            "app": ".place-journey .gt",
+            "contentDiffers": true,
+            "pixels": false,
+            "ignore": [
+                "h",
+                "background-color",
+                "border-top-width",
+                "border-right-width",
+                "border-bottom-width",
+                "border-left-width",
+                "border-radius",
+                "padding-top",
+                "padding-right",
+                "padding-bottom",
+                "padding-left",
+                "gap"
+            ],
+            "reason": "The mock\u2019s tab only previews a way (\u201cGet there with Departures \u00b7 Preview\u201d); the app shows Travel\u2019s own checks and ways to the place, as Events\u2019 Get there does (owner, 18 Oct: trips look like Travel everywhere). The design session redraws the tab with Travel\u2019s cards (coordinator, item 19). Where they start and their width are compared; the stub\u2019s own card (its white fill, line, corners and padding) isn\u2019t Travel\u2019s."
+        }
+    ]
+}

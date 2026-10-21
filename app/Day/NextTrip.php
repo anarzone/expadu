@@ -3,6 +3,7 @@
 namespace App\Day;
 
 use App\Composer\TravelEstimator;
+use App\Models\User;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\Journey;
 use App\Transit\Dto\Leg;
@@ -39,9 +40,13 @@ class NextTrip
 
     private const MAX_ALTERNATIVES = 4;
 
+    /** A way whose leave time passed this recently can still have been missed. */
+    private const MISSED_WINDOW_SECONDS = 900;
+
     public function __construct(
         private readonly RouteService $routes,
         private readonly TravelEstimator $distance,
+        private readonly StillAtStart $stillAtStart,
     ) {}
 
     public static function marginFor(DayItem $item): int
@@ -52,7 +57,7 @@ class NextTrip
     /**
      * @return array<string, mixed>
      */
-    public function for(DayItem $target, ?TripOrigin $origin, CarbonImmutable $now, ?Journey $planned = null): array
+    public function for(DayItem $target, ?TripOrigin $origin, CarbonImmutable $now, ?Journey $planned = null, ?User $person = null): array
     {
         $margin = self::marginFor($target);
         $base = [
@@ -105,6 +110,7 @@ class NextTrip
         // The way the person picked ("Add to plan"): the router's same way
         // carries the mark, or the stored one joins the options.
         $mine = null;
+        $picked = null;
         if ($planned !== null) {
             $stored = $this->option($planned, $target->startAt, $notBefore, $margin);
             $index = array_search($stored['key'], array_column($options, 'key'), true);
@@ -113,17 +119,19 @@ class NextTrip
                 $index = array_key_last($options);
             }
             $options[$index]['in_plan'] = true;
+            $picked = $options[$index];
             $mine = $options[$index]['catchable'] ? $options[$index] : null;
         }
 
         $catchable = array_values(array_filter($options, fn (array $o) => $o['catchable']));
+        $gone = $this->gone($options, $picked, $margin, $origin, $notBefore, $now, $person);
 
         $fitting = array_values(array_filter($catchable, fn (array $o) => $o['spare_min'] >= $margin));
         $tight = array_values(array_filter($catchable, fn (array $o) => $o['spare_min'] >= 0 && $o['spare_min'] < $margin));
 
         // Your way, while it still leaves the margin.
         if ($mine !== null && $mine['spare_min'] >= $margin) {
-            return $this->answer($base, $options, $mine, 'fits', 'planned', $now, $result->source);
+            return $this->answer($base, $options, $mine, 'fits', 'planned', $now, $result->source, gone: $gone);
         }
 
         if ($fitting !== []) {
@@ -135,14 +143,14 @@ class NextTrip
             // "Your 13:24 has only 2 min spare": your way first, else the later tight one.
             $skipped = $mine ?? ($later[0] ?? null);
 
-            return $this->answer($base, $options, $chosen, 'fits', $skipped ? 'earlier_for_margin' : 'margin_met', $now, $result->source, $skipped);
+            return $this->answer($base, $options, $chosen, 'fits', $skipped ? 'earlier_for_margin' : 'margin_met', $now, $result->source, $skipped, gone: $gone);
         }
 
         if ($tight !== []) {
             // Nothing keeps the margin: the most room before the start.
             usort($tight, fn (array $a, array $b) => [$b['spare_min'], $b['leave']] <=> [$a['spare_min'], $a['leave']]);
 
-            return $this->answer($base, $options, $tight[0], 'tight', 'only_tight', $now, $result->source);
+            return $this->answer($base, $options, $tight[0], 'tight', 'only_tight', $now, $result->source, gone: $gone);
         }
 
         // Nothing arrives in time from here: the earliest arrival, and by how much it's late.
@@ -156,7 +164,7 @@ class NextTrip
         }
         usort($late, fn (array $a, array $b) => [$a['arrive'], $b['leave']] <=> [$b['arrive'], $a['leave']]);
 
-        return $this->answer($base, [...$options, ...$late], $late[0], 'late', 'no_connection_in_time', $now, $soonest->source);
+        return $this->answer($base, [...$options, ...$late], $late[0], 'late', 'no_connection_in_time', $now, $soonest->source, gone: $gone);
     }
 
     /**
@@ -166,7 +174,7 @@ class NextTrip
      * @param  array<string, mixed>|null  $skipped
      * @return array<string, mixed>
      */
-    private function answer(array $base, array $options, array $chosen, string $status, string $reason, CarbonImmutable $now, string $source, ?array $skipped = null): array
+    private function answer(array $base, array $options, array $chosen, string $status, string $reason, CarbonImmutable $now, string $source, ?array $skipped = null, ?array $gone = null): array
     {
         $journey = $chosen['journey'];
         $tz = 'Europe/Berlin';
@@ -194,11 +202,71 @@ class NextTrip
             'time_basis' => $chosen['realtime'] ? 'live' : 'scheduled',
             'source' => $source,
             'skipped' => $skipped === null ? null : $this->summary($skipped, $base['margin_min']),
+            // The way it would have taken, gone: cancelled (or missed).
+            'gone' => $gone,
             'alternatives' => array_map(
                 fn (array $o) => $this->summary($o, $base['margin_min']) + ['journey' => $o['journey']->toArray()],
                 array_slice($alternatives, 0, self::MAX_ALTERNATIVES),
             ),
         ];
+    }
+
+    /**
+     * The way it would take if nothing had gone wrong, when that one has, so
+     * the card says so ("13:14 cancelled · take the 13:24"): cancelled, or
+     * missed. Missed only from where the person is (not a plan they're at),
+     * a few minutes after its leave time, when their own pings say they were
+     * still at the start (StillAtStart).
+     *
+     * @param  list<array<string, mixed>>  $options
+     * @param  array<string, mixed>|null  $picked
+     * @return array<string, mixed>|null
+     */
+    private function gone(array $options, ?array $picked, int $margin, TripOrigin $origin, CarbonImmutable $notBefore, CarbonImmutable $now, ?User $person): ?array
+    {
+        $ahead = $this->ideal(array_values(array_filter($options, fn (array $o) => $o['leave'] >= $notBefore->getTimestamp() - self::GRACE_SECONDS)), $picked, $margin);
+        if ($ahead !== null && $ahead['cancelled']) {
+            return ['kind' => 'cancelled'] + $this->summary($ahead, $margin);
+        }
+
+        if ($person === null || ! in_array($origin->source, ['live', 'confirmed', 'ping'], true)) {
+            return null;
+        }
+        $recent = $this->ideal(array_values(array_filter($options, fn (array $o) => $o['leave'] >= $now->getTimestamp() - self::MISSED_WINDOW_SECONDS)), $picked, $margin);
+        $ride = $recent === null ? null : collect($recent['journey']->legs)->first(fn (Leg $leg) => $leg->isTransit());
+        if ($ride === null || $recent['catchable'] || $recent['cancelled']) {
+            return null;
+        }
+
+        return $this->stillAtStart->since($person, $origin->point, $ride->from->point, $recent['journey']->departAt, $now)
+            ? ['kind' => 'missed'] + $this->summary($recent, $margin)
+            : null;
+    }
+
+    /**
+     * The same choice as for() among the given rides, cancelled ones counted
+     * in: your way while it keeps the margin, else the latest leave that does
+     * (the earliest arrival breaking a tie), else the most room.
+     *
+     * @param  list<array<string, mixed>>  $options
+     * @param  array<string, mixed>|null  $mine
+     * @return array<string, mixed>|null
+     */
+    private function ideal(array $options, ?array $mine, int $margin): ?array
+    {
+        if ($mine !== null && $mine['spare_min'] >= $margin && in_array($mine['key'], array_column($options, 'key'), true)) {
+            return $mine;
+        }
+        $fitting = array_values(array_filter($options, fn (array $o) => $o['spare_min'] >= $margin));
+        if ($fitting !== []) {
+            usort($fitting, fn (array $a, array $b) => [$b['leave'], $a['arrive']] <=> [$a['leave'], $b['arrive']]);
+
+            return $fitting[0];
+        }
+        $tight = array_values(array_filter($options, fn (array $o) => $o['spare_min'] >= 0));
+        usort($tight, fn (array $a, array $b) => [$b['spare_min'], $b['leave']] <=> [$a['spare_min'], $a['leave']]);
+
+        return $tight[0] ?? null;
     }
 
     /**
@@ -274,7 +342,7 @@ class NextTrip
         return [
             'leave_at' => null, 'leave_time' => null, 'leave_in_min' => null,
             'arrive_at' => null, 'arrive_time' => null, 'spare_min' => null, 'late_by_min' => null,
-            'journey' => null, 'time_basis' => null, 'source' => null, 'skipped' => null, 'alternatives' => [],
+            'journey' => null, 'time_basis' => null, 'source' => null, 'skipped' => null, 'gone' => null, 'alternatives' => [],
         ];
     }
 
