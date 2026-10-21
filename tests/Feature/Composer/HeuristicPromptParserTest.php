@@ -169,14 +169,15 @@ test('a "today" plan asked once the day is spent rolls forward and KEEPS the act
 });
 
 test('an explicit evening still composes tonight when asked late, keeping the activity', function () {
-    // "pitch tonight" at 22:00 keeps the evening (stretched past midnight for
-    // room) rather than jumping to tomorrow — and still carries the category.
+    // "pitch tonight" at 22:00 keeps the evening rather than jumping to
+    // tomorrow, carries the category, and never runs past midnight: a plan
+    // is one day.
     $now = CarbonImmutable::parse('2026-06-29 22:00', 'Europe/Berlin');
     $result = (new HeuristicPromptParser)->parse('pitch tonight', heuristicProfile(), $now);
 
     expect($result->plan->categories)->toBe(['pitch'])
         ->and($result->plan->windowStart->isSameDay($now))->toBeTrue()
-        ->and($result->plan->windowMinutes())->toBeGreaterThanOrEqual(180);
+        ->and($result->plan->windowEnd->isSameDay($now))->toBeTrue();
 });
 
 test('free football nearby preserves the sport and search radius', function () {

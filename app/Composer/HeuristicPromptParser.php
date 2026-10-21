@@ -80,6 +80,10 @@ class HeuristicPromptParser implements ParsesPrompt
         'tennis' => 'tennis',
         'dog park' => 'dog_park',
         'concert' => 'event', 'gig' => 'event', 'live music' => 'event',
+        // "What's on tonight?" asks for events, not a generic plan.
+        "what's on" => 'event', 'whats on' => 'event', 'what’s on' => 'event', "what's happening" => 'event',
+        'whats happening' => 'event', 'what is happening' => 'event', 'what up' => 'event', 'was ist los' => 'event',
+        'events' => 'event', 'event' => 'event', 'festival' => 'event',
         'supermarket' => 'supermarket',
         'convenience shop' => 'convenience',
         'convenience' => 'convenience',

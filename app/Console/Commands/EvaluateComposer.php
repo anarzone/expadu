@@ -141,8 +141,11 @@ class EvaluateComposer extends Command
         $answered = Answers::handles($routed, $parsed->intent);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
+        // Where a request should go ("What's on tonight?" → an answer), checked apart from any plan.
+        $routing = isset($request['expect']['routed']) ? ['routed' => $row['routed'] === $request['expect']['routed']] : [];
+        $planExpect = array_diff_key($request['expect'], ['routed' => true]);
         if ($row['routed'] !== 'compose') {
-            return $row + ['expectations' => $checks->expectations($request['expect'], [], null), 'gates' => array_fill_keys(PlanChecks::GATES, [])];
+            return $row + ['expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []), 'gates' => array_fill_keys(PlanChecks::GATES, [])];
         }
 
         $composeStarted = hrtime(true);
@@ -181,7 +184,7 @@ class EvaluateComposer extends Command
             ], $slots),
             'notices' => array_column($body['notices'] ?? [], 'kind'),
             'gates' => $gated['gates'],
-            'expectations' => $checks->expectations($request['expect'], $slots, $constraints),
+            'expectations' => $routing + $checks->expectations($planExpect, $slots, $constraints),
         ];
     }
 
