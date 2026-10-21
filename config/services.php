@@ -1,5 +1,9 @@
 <?php
 
+// Owner, 21 Oct 2026: every AI feature runs on Claude Haiku, never Sonnet or Opus.
+// A *_MODEL env value names a Haiku version; anything else falls back to Haiku 5.5.
+$haiku = fn (mixed $model): string => is_string($model) && str_starts_with($model, 'claude-haiku-') ? $model : 'claude-haiku-5-5';
+
 return [
 
     /*
@@ -58,7 +62,7 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('ANTHROPIC_MODEL')),
         // low | medium | high. The classifier forces its tool, so this
         // mostly trims output spend rather than thinking.
         'effort' => env('ANTHROPIC_EFFORT', 'low'),
@@ -68,7 +72,7 @@ return [
     // Public data only. Off without ANTHROPIC_API_KEY or with the switch.
     'transit_briefs' => [
         'enabled' => env('TRANSIT_BRIEFS_ENABLED', true),
-        'model' => env('TRANSIT_BRIEFS_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('TRANSIT_BRIEFS_MODEL')),
         'effort' => env('TRANSIT_BRIEFS_EFFORT', 'low'),
         'daily_limit' => (int) env('TRANSIT_BRIEFS_DAILY_LIMIT', 300),
         'prompt_version' => '2026-10-21',
@@ -80,7 +84,7 @@ return [
     // estimate for batches still open; a submission is cut to fit it.
     'place_enrichment' => [
         'enabled' => env('PLACE_ENRICHMENT_ENABLED', false),
-        'model' => env('PLACE_ENRICHMENT_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('PLACE_ENRICHMENT_MODEL')),
         'effort' => env('PLACE_ENRICHMENT_EFFORT', 'low'),
         'max_tokens' => (int) env('PLACE_ENRICHMENT_MAX_TOKENS', 1024),
         'daily_budget_usd' => (float) env('PLACE_ENRICHMENT_DAILY_BUDGET_USD', 3),
@@ -94,7 +98,7 @@ return [
     // personalisation. Off unless switched on; a daily cap on calls.
     'taste_profile' => [
         'enabled' => env('TASTE_PROFILE_ENABLED', false),
-        'model' => env('TASTE_PROFILE_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('TASTE_PROFILE_MODEL')),
         'effort' => env('TASTE_PROFILE_EFFORT', 'low'),
         'daily_limit' => (int) env('TASTE_PROFILE_DAILY_LIMIT', 500),
         'prompt_version' => '2026-10-21.taste.1',
@@ -103,7 +107,7 @@ return [
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
-        'model' => env('COMPOSER_LLM_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('COMPOSER_LLM_MODEL')),
         // Thinking is disabled for latency, which Haiku 5.5 accepts only at
         // effort high or below; xhigh/max would 400 and fall back.
         'effort' => env('COMPOSER_LLM_EFFORT', 'low'),
@@ -135,7 +139,7 @@ return [
     'llm' => [
         'driver' => env('LLM_DRIVER', 'heuristic'),
         'base_url' => env('LLM_BASE_URL', 'https://api.anthropic.com'),
-        'model' => env('LLM_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('LLM_MODEL')),
         'effort' => env('LLM_EFFORT', 'low'),
         'key' => env('LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('LLM_PROCESSOR_NAME', 'Anthropic PBC'),
@@ -146,7 +150,7 @@ return [
     'bureaucracy_llm' => [
         'enabled' => env('BUREAUCRACY_LLM_ENABLED', false),
         'base_url' => env('BUREAUCRACY_LLM_BASE_URL', 'https://api.anthropic.com'),
-        'model' => env('BUREAUCRACY_LLM_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('BUREAUCRACY_LLM_MODEL')),
         'effort' => env('BUREAUCRACY_LLM_EFFORT', 'low'),
         'key' => env('BUREAUCRACY_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('BUREAUCRACY_LLM_PROCESSOR_NAME', 'Anthropic PBC'),
@@ -164,7 +168,7 @@ return [
     'paperwork_analyser' => [
         'enabled' => env('PAPERWORK_ANALYSER_ENABLED', false),
         'base_url' => env('PAPERWORK_ANALYSER_BASE_URL', 'https://api.anthropic.com'),
-        'model' => env('PAPERWORK_ANALYSER_MODEL', 'claude-haiku-5-5'),
+        'model' => $haiku(env('PAPERWORK_ANALYSER_MODEL')),
         'effort' => env('PAPERWORK_ANALYSER_EFFORT', 'low'),
         'key' => env('PAPERWORK_ANALYSER_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('PAPERWORK_ANALYSER_PROCESSOR_NAME', 'Anthropic PBC'),
