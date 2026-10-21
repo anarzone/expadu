@@ -831,22 +831,18 @@ export function PlanPanel({
             !item.completed &&
             item.location?.routable === true,
     );
-    // "Mülheim · Wiener Platz": the place, and where the next trip gets off.
+    // "Mülheim · Mülheim Wiener Platz": the place, and where the next trip
+    // gets off, by KVB's own name for the stop (as the mock, since #160).
     const nextTrip = day?.next_trip;
     const alight = nextTrip?.journey?.legs
         .filter((leg) => leg.mode !== 'walk' && leg.mode !== 'bike')
         .at(-1)?.to.name;
     const placeDetail = (item: DayItem) => {
         const label = item.location?.label ?? null;
-        let stop =
+        const stop =
             nextTrip?.target.id === item.id && alight
                 ? stopName(alight, nextTrip.city)
                 : null;
-
-        // "Mülheim Wiener Platz" under "Mülheim": the stop's own name.
-        if (stop && label && stop.startsWith(`${label} `)) {
-            stop = stop.slice(label.length + 1);
-        }
 
         return [label, stop].filter(Boolean).join(' · ');
     };
