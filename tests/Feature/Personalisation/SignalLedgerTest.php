@@ -216,16 +216,24 @@ test('two showings in one hour are one showing', function () {
 });
 
 test('aggregation is idempotent', function () {
+    // One instant for both runs: decay is computed from the time given, so two
+    // separate now() calls differed in the last digits and failed CI at random.
+    $this->freezeTime();
     $user = optedIn();
     $spot = Spot::factory()->create(['category' => 'park']);
     app(SignalRecorder::class)->record($user, SignalAction::Saved, SignalSurface::Places, SignalItemType::Spot, $spot->id);
+    $at = now();
+    $affinities = fn () => DB::table('user_affinities')->orderBy('dimension')->orderBy('key')->orderBy('context')
+        ->get(['dimension', 'key', 'context', 'score'])
+        ->map(fn ($row) => [$row->dimension, $row->key, $row->context, round((float) $row->score, 6)])->all();
 
-    $first = app(AffinityAggregator::class)->rebuild(now());
-    $rows = DB::table('user_affinities')->orderBy('dimension')->orderBy('key')->orderBy('context')->get(['dimension', 'key', 'context', 'score']);
-    $second = app(AffinityAggregator::class)->rebuild(now());
+    $first = app(AffinityAggregator::class)->rebuild($at);
+    $rows = $affinities();
+    $second = app(AffinityAggregator::class)->rebuild($at);
 
     expect($second)->toBe($first)
-        ->and(DB::table('user_affinities')->orderBy('dimension')->orderBy('key')->orderBy('context')->get(['dimension', 'key', 'context', 'score']))->toEqual($rows);
+        ->and($rows)->not->toBe([])
+        ->and($affinities())->toBe($rows);
 });
 
 test('saving an event and starting a trip to a planned place are recorded', function () {
