@@ -160,3 +160,23 @@ test('a stored tip that claims a language the listing never mentions is not show
     expect($presenter->present($event, $start, null)['tip'])->toBeNull()
         ->and($presenter->present($grounded, $start, null)['tip'])->toBe('Bring the book; the talk is in English.');
 });
+
+test('the model\'s chips, language and summary show only with the listing\'s evidence', function () {
+    $base = ['starts_at' => '2026-06-10 19:00:00', 'recurrence' => null, 'quality_score' => 0.9, 'is_free' => false, 'price_text' => null];
+    $guessed = Event::factory()->create([...$base, 'title' => 'Jazzabend', 'description' => 'Jazz im Stadtgarten.',
+        'chips' => ['English-friendly', 'solo-OK'], 'language' => 'none_needed', 'summary_en' => 'Jazz from 20:00, 15 € at the door.', 'description_en' => 'Jazz in the Stadtgarten.']);
+    $backed = Event::factory()->create([...$base, 'title' => 'Language exchange', 'description' => 'Stammtisch auf Englisch, um 19 Uhr.',
+        'chips' => ['English-friendly'], 'language' => 'en', 'summary_en' => 'An English Stammtisch at 19:00.']);
+    $presenter = app(EventOccurrencePresenter::class);
+    $start = CarbonImmutable::parse('2026-06-10 19:00', 'Europe/Berlin');
+
+    $shown = $presenter->present($guessed, $start, null);
+    expect($shown['chips'])->toBe([])
+        ->and($shown['language'])->toBeNull()
+        ->and($shown['summary'])->toBe('Jazz in the Stadtgarten.'); // the summary's figures aren't in the source; the translation's are
+
+    $shown = $presenter->present($backed, $start, null);
+    expect($shown['chips'])->toBe(['English-friendly'])
+        ->and($shown['language'])->toBe('en')
+        ->and($shown['summary'])->toBe('An English Stammtisch at 19:00.');
+});

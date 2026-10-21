@@ -12,6 +12,7 @@ use App\Places\PlaceIdentity;
 use App\Places\SourceTagFacts;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
+use App\Support\EventEvidence;
 use Carbon\CarbonImmutable;
 
 /**
@@ -377,7 +378,12 @@ class CandidateRepository
                     // A curated (expat-relevant / high-quality) event is the kind of
                     // thing worth building a day around — let it win the hero role.
                     isLandmark: (bool) $event->is_curated,
-                    description: $event->summary_en ?: $event->description_en ?: $event->description,
+                    // The model's summary only when every figure in it is in the listing.
+                    description: $event->source === 'manual'
+                        ? ($event->summary_en ?: $event->description_en ?: $event->description)
+                        : (EventEvidence::text($event->summary_en, EventEvidence::source($event))
+                            ?? EventEvidence::text($event->description_en, EventEvidence::source($event))
+                            ?? $event->description),
                     tags: $this->textTags([...(array) $event->tags, ...(array) $event->chips]),
                     qualityScore: $event->quality_score,
                     travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $point->lat, (float) $point->lng),
