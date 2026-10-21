@@ -4,7 +4,9 @@ namespace App\Console\Commands\QA;
 
 use App\Composer\WorkspaceStore;
 use App\Home\FirstVisit;
+use App\Models\ActiveTrip;
 use App\Models\ComposerWorkspace;
+use App\Models\PlannedTrip;
 use App\Support\MockAccounts;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -27,8 +29,11 @@ use Illuminate\Support\Facades\DB;
  *             Paperwork record stay as they are and nothing is cleared
  *
  * Every other view also keeps Coming up (1 and 3 October). It replaces only those
- * three dates; the account's other plans stay. Pair it with the
- * `mock_clock` cookie (App\Support\MockClock).
+ * three dates; the account's other plans stay. A way kept for those dates
+ * (Travel's PlannedTrip) and a running trip go too: MockSample\TravelSeeder
+ * puts the sample's back where a comparison wants them, and a quiet day
+ * shouldn't show the last comparison's. Pair it with the `mock_clock` cookie
+ * (App\Support\MockClock).
  */
 class MockSampleDayCommand extends Command
 {
@@ -98,6 +103,9 @@ class MockSampleDayCommand extends Command
 
             ksort($state['plans']);
             $row->forceFill(['state' => $state, 'revision' => $row->revision + 1])->save();
+
+            PlannedTrip::query()->where('user_id', $user->id)->whereIn('date', self::DATES)->delete();
+            ActiveTrip::query()->where('user_id', $user->id)->delete();
         });
 
         $this->info("The sample day ({$view}) is in {$email}'s plans.");
