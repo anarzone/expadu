@@ -9,6 +9,7 @@ use App\Composer\Answers\AroundNow;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AnthropicPromptParser;
 use App\Composer\AppointmentRepository;
+use App\Composer\Assistant\Assistant;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
@@ -20,6 +21,7 @@ use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
 use App\Composer\PaperworkGlance;
+use App\Composer\ParsedPrompt;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
 use App\Composer\PlanNarrator;
@@ -214,16 +216,20 @@ class ComposerController extends Controller
         $ai = $parser instanceof AnthropicPromptParser && isset($validated['processing']);
         // An open request ("What's up?") or one nothing specific matched: the same AI call
         // may write the lead of what's around you now, from what's on and the weather only.
-        $around = $ai && AroundNow::opens($routed) ? app(AroundNow::class)->listings($now) : null;
+        // With the assistant on, it writes that lead itself (below), so the read stays short.
+        $around = $ai && AroundNow::opens($routed) && ! ProcessingPurpose::ComposerAssist->available() ? app(AroundNow::class)->listings($now) : null;
         $facts = $around !== null ? AroundNow::prompt($around) : null;
         $permit = $ai
             ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
                 AnthropicPromptParser::processingContext($validated['text'], $profile, $facts), $validated['processing'])
             : null;
 
-        $parsed = $parser instanceof AnthropicPromptParser
-            ? $parser->parse($validated['text'], $profile, $now, $permit, $facts)
-            : $parser->parse($validated['text'], $profile, $now, $permit);
+        // Plainly casual ("What's up?"): the assistant answers without a read first, a second sooner.
+        $parsed = $permit !== null && $routed['kind'] === 'around' && ProcessingPurpose::ComposerAssist->available()
+            ? new ParsedPrompt(PromptIntent::Open, source: 'llm')
+            : ($parser instanceof AnthropicPromptParser
+                ? $parser->parse($validated['text'], $profile, $now, $permit, $facts)
+                : $parser->parse($validated['text'], $profile, $now, $permit));
         if ($around !== null) {
             app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
         }
@@ -232,7 +238,10 @@ class ComposerController extends Controller
             Answers::tripHint($request->user(), $validated['text'], (string) $parsed->query);
             $routed = $answers->route($request->user(), $validated['text'], $now, app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
         }
-        $answered = Answers::handles($routed, $parsed->intent);
+        // The assistant first: an open request is answered either way, and its answer waits for the workspace's.
+        $assisted = $this->assisted($request->user(), $validated['text'], $profile, $parsed, $permit, $now,
+            self::progressKey($request->user(), (string) ($validated['processing']['request_id'] ?? '')));
+        $answered = $assisted || Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered,
             'reader' => $this->readerWithoutAi($parser, $permit, $parsed->toArray()['source'] ?? null)]);
@@ -261,6 +270,48 @@ class ComposerController extends Controller
             'failed', 'completed' => 'failed',
             default => 'unpermitted',
         };
+    }
+
+    /**
+     * An open or vague request ("I'm bored, what do you suggest?"): Composer's assistant looks
+     * things up and answers, under the same say-so as the read; its answer waits for the
+     * workspace's. False when it doesn't answer (off, refused, or nothing it wrote held).
+     */
+    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?string $progress): bool
+    {
+        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || ! Assistant::wanted($parsed, $text)) {
+            return false;
+        }
+        $location = app(UserLocationService::class)->context($user, null, $user->veedel);
+        $answer = app(Assistant::class)->answer($user, $text, $profile, $now, $location->hasOrigin()
+            ? [(float) $location->lat, (float) $location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
+            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
+            app(WorkspaceStore::class)->read($user)['plans'] ?? [], $progress);
+        if ($answer === null) {
+            return false;
+        }
+        app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
+
+        return true;
+    }
+
+    /** Where a request's progress is kept for the page (its permit's request id); null without one. */
+    private static function progressKey(User $user, string $requestId): ?string
+    {
+        return Str::isUuid($requestId) ? "composer:progress:{$user->id}:".strtolower($requestId) : null;
+    }
+
+    /**
+     * How far Composer's assistant has got with a request, for the page's "Looking at…" line
+     * while it works: its step (reading, writing) and what it has looked at so far
+     * (listings, places, weather, plans, taste). Only the asker's own request.
+     */
+    public function progress(Request $request, string $requestId): JsonResponse
+    {
+        $key = self::progressKey($request->user(), $requestId);
+        $progress = $key !== null ? Cache::get($key) : null;
+
+        return response()->json(is_array($progress) ? $progress : ['step' => null, 'looked' => [], 'at' => null]);
     }
 
     public function compose(

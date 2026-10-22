@@ -5691,6 +5691,1056 @@
     "routed": "answer",
     "answer_kind": "trip"
    }
+  },
+  {
+   "id": "new_person.assist_bored_suggest",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "text": "I'm bored, what do you suggest?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_what_now",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "text": "what should I do now?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_chill_after_work",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:45:00+01:00",
+   "weather": "dry",
+   "text": "something chill after work",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_friend_sunday",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T12:00:00+01:00",
+   "weather": "dry",
+   "text": "my friend visits on Sunday, ideas?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_rainy_no_idea",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "text": "rainy afternoon, no idea what to do",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_sunny_where",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T11:30:00+01:00",
+   "weather": "dry",
+   "text": "it's sunny, where should I go?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_hour_to_kill",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T16:00:00+01:00",
+   "weather": "dry",
+   "text": "I have an hour to kill",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_get_out",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:15:00+01:00",
+   "weather": "dry",
+   "text": "need to get out of the house",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_good_around",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:00:00+01:00",
+   "weather": "dry",
+   "text": "what's good around here?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_new_in_town",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T10:30:00+01:00",
+   "weather": "dry",
+   "text": "hi! new in town, where do I start?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_date_ideas",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T18:30:00+01:00",
+   "weather": "dry",
+   "text": "date night ideas?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_cheap_today",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:00:00+01:00",
+   "weather": "dry",
+   "text": "something cheap to do today",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_dont_know_evening",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:00:00+01:00",
+   "weather": "dry",
+   "text": "I don't know what to do this evening",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_surprise_me",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T14:30:00+01:00",
+   "weather": "dry",
+   "text": "surprise me",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_lonely_social",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:40:00+01:00",
+   "weather": "dry",
+   "text": "feeling lonely, anything social on?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_thursday_people",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T20:00:00+01:00",
+   "weather": "dry",
+   "text": "what do people do here on a Thursday night?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_kids_bored",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T10:00:00+01:00",
+   "weather": "rain",
+   "text": "kids are bored, help",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_before_train",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T16:30:00+01:00",
+   "weather": "dry",
+   "text": "something to do before my train at 18:00",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_try_new",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T18:20:00+01:00",
+   "weather": "dry",
+   "text": "I want to try something new",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_worth_seeing",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T12:15:00+01:00",
+   "weather": "dry",
+   "text": "what's worth seeing today?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_quiet_think",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T14:00:00+01:00",
+   "weather": "rain",
+   "text": "quiet place to think",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_day_off",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T10:00:00+01:00",
+   "weather": "dry",
+   "text": "it's my day off",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_interesting",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T13:45:00+01:00",
+   "weather": "dry",
+   "text": "show me something interesting",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_meet_people",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T18:10:00+01:00",
+   "weather": "dry",
+   "text": "where can I meet people?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_too_tired",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T20:30:00+01:00",
+   "weather": "dry",
+   "text": "too tired to plan, just tell me something",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_happening_now",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T16:50:00+01:00",
+   "weather": "dry",
+   "text": "anything happening right now?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_lazy_sunday",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T12:40:00+01:00",
+   "weather": "rain",
+   "text": "lazy sunday vibes",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_recommend",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T14:30:00+01:00",
+   "weather": "dry",
+   "text": "can you recommend something?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_vibe_tonight",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T20:10:00+01:00",
+   "weather": "dry",
+   "text": "what's the vibe tonight?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.assist_free_hours",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T15:30:00+01:00",
+   "weather": "dry",
+   "text": "got a couple of free hours, what's good?",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "opted_in.assist_bored_suggest",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "text": "I'm bored, what do you suggest?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_what_now",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "text": "what should I do now?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_chill_after_work",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:45:00+01:00",
+   "weather": "dry",
+   "text": "something chill after work",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_friend_sunday",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T12:00:00+01:00",
+   "weather": "dry",
+   "text": "my friend visits on Sunday, ideas?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_rainy_no_idea",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "text": "rainy afternoon, no idea what to do",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_sunny_where",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T11:30:00+01:00",
+   "weather": "dry",
+   "text": "it's sunny, where should I go?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_hour_to_kill",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T16:00:00+01:00",
+   "weather": "dry",
+   "text": "I have an hour to kill",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_get_out",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:15:00+01:00",
+   "weather": "dry",
+   "text": "need to get out of the house",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_good_around",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T13:00:00+01:00",
+   "weather": "dry",
+   "text": "what's good around here?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_new_in_town",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T10:30:00+01:00",
+   "weather": "dry",
+   "text": "hi! new in town, where do I start?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_date_ideas",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T18:30:00+01:00",
+   "weather": "dry",
+   "text": "date night ideas?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_cheap_today",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:00:00+01:00",
+   "weather": "dry",
+   "text": "something cheap to do today",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_dont_know_evening",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:00:00+01:00",
+   "weather": "dry",
+   "text": "I don't know what to do this evening",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_surprise_me",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T14:30:00+01:00",
+   "weather": "dry",
+   "text": "surprise me",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_lonely_social",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:40:00+01:00",
+   "weather": "dry",
+   "text": "feeling lonely, anything social on?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_thursday_people",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T20:00:00+01:00",
+   "weather": "dry",
+   "text": "what do people do here on a Thursday night?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_kids_bored",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T10:00:00+01:00",
+   "weather": "rain",
+   "text": "kids are bored, help",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_before_train",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T16:30:00+01:00",
+   "weather": "dry",
+   "text": "something to do before my train at 18:00",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_try_new",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T18:20:00+01:00",
+   "weather": "dry",
+   "text": "I want to try something new",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_worth_seeing",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T12:15:00+01:00",
+   "weather": "dry",
+   "text": "what's worth seeing today?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_quiet_think",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T14:00:00+01:00",
+   "weather": "rain",
+   "text": "quiet place to think",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_day_off",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T10:00:00+01:00",
+   "weather": "dry",
+   "text": "it's my day off",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_interesting",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T13:45:00+01:00",
+   "weather": "dry",
+   "text": "show me something interesting",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_meet_people",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T18:10:00+01:00",
+   "weather": "dry",
+   "text": "where can I meet people?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_too_tired",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T20:30:00+01:00",
+   "weather": "dry",
+   "text": "too tired to plan, just tell me something",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_happening_now",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T16:50:00+01:00",
+   "weather": "dry",
+   "text": "anything happening right now?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_lazy_sunday",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T12:40:00+01:00",
+   "weather": "rain",
+   "text": "lazy sunday vibes",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_recommend",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-03T14:30:00+01:00",
+   "weather": "dry",
+   "text": "can you recommend something?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_vibe_tonight",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T20:10:00+01:00",
+   "weather": "dry",
+   "text": "what's the vibe tonight?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.assist_free_hours",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T15:30:00+01:00",
+   "weather": "dry",
+   "text": "got a couple of free hours, what's good?",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
   }
  ]
 }

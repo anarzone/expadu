@@ -448,6 +448,16 @@ export default function Events({
                 today={today}
                 size={where === 'column' ? 'column' : 'wall'}
                 style={style}
+                // The column's posters wash once today's hour has passed, as
+                // the wall's stack and the stories do (a solid filter).
+                className={
+                    where === 'column' &&
+                    date === today &&
+                    listing.poster.start !== null &&
+                    parseInt(listing.poster.start, 10) < Math.floor(nowHour)
+                        ? 'is-washed'
+                        : undefined
+                }
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
                 }
@@ -556,6 +566,7 @@ export default function Events({
                         poster={poster}
                         forecast={weather}
                         waiting={!!opened}
+                        onDate={onDate}
                     />
                 )}
             </section>

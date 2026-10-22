@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Bureaucracy\V2;
 
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\People\PersonAccess;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Http\Controllers\Controller;
 use App\Models\BureaucracyPerson;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,21 @@ class PeopleController extends Controller
         $case = $this->holders->dossier($request->user());
 
         return response()->json(['person' => $this->present($request, $case->person)])->header('Cache-Control', 'private, no-store');
+    }
+
+    /**
+     * Where you live: Paperwork's first answer, since the city decides which
+     * office's tasks apply (AccountHolderPlan::jurisdiction). It's the account's
+     * own city, the one Settings shows too.
+     */
+    public function city(Request $request, AccountHolderPlan $plans): JsonResponse
+    {
+        $validated = $request->validate(['city' => ['required', 'string', 'min:2', 'max:80']]);
+        $user = $request->user();
+        $user->forceFill(['city' => trim($validated['city'])])->save();
+
+        return response()->json(['city' => $user->city, 'jurisdiction' => $plans->jurisdiction($user)])
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function show(Request $request, BureaucracyPerson $person): JsonResponse

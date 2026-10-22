@@ -9,13 +9,21 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PosterArt } from '@/components/posters/poster-art';
 import type { PosterEvent } from '@/components/posters/poster-model';
+import { cn } from '@/lib/utils';
 import type { SkyKeys } from './street-sky';
 import './street-stories.css';
 
 const STEP_MS = 3600;
 
 export type StoryListing = { key: string; poster: PosterEvent };
-export type Story = { hour: number; index: number };
+export type Story = {
+    hour: number;
+    index: number;
+    /** A busy day's stack (owner chose A, 22 Oct 2026): its hours as one
+        run, titled "Ended" or "19:00–21:00", which closes at its end. */
+    hours?: number[];
+    label?: string;
+};
 
 const two = (h: number) => String(h).padStart(2, '0');
 const hourOf = (l: StoryListing) => Number(l.poster.start!.slice(0, 2));
@@ -140,9 +148,12 @@ export function StoryViewer({
     weather,
     poster,
     onStory,
+    nowHour = null,
 }: {
     /** A details page is open over the story: it waits, and keys are its. */
     waiting?: boolean;
+    /** Today's hour: an earlier hour's posters are over (and washed). */
+    nowHour?: number | null;
     story: Story;
     hours: number[];
     listings: StoryListing[];
@@ -155,9 +166,13 @@ export function StoryViewer({
     /** The next story to show; null closes the viewer. */
     onStory: (story: Story | null) => void;
 }) {
-    const list = inHour(listings, story.hour);
+    const list = story.hours
+        ? story.hours.flatMap((h) => inHour(listings, h))
+        : inHour(listings, story.hour);
     const index = Math.min(story.index, list.length - 1);
     const current = list[index];
+    const title = story.label ?? `${two(story.hour)}:00`;
+    const over = nowHour !== null && !!current && hourOf(current) < nowHour;
     const [paused, setPaused] = useState(false);
     const [pressed, setPressed] = useState(false);
     const [reduce] = useState(reducedMotion);
@@ -169,6 +184,21 @@ export function StoryViewer({
     const close = () => onStory(null);
 
     const step = (dir: number) => {
+        // A stack's run ends where it ends, not in the next hour.
+        if (story.hours) {
+            const next = index + dir;
+
+            if (next >= list.length) {
+                close();
+
+                return;
+            }
+
+            onStory({ ...story, index: Math.max(0, next) });
+
+            return;
+        }
+
         const at = hours.indexOf(story.hour);
         let hour = story.hour;
         let next = index + dir;
@@ -318,14 +348,16 @@ export function StoryViewer({
                 ref={dialog}
                 role="dialog"
                 aria-modal="true"
-                aria-label={`Stories at ${two(story.hour)}:00`}
+                aria-label={
+                    story.label ? `Stories: ${title}` : `Stories at ${title}`
+                }
                 tabIndex={-1}
                 className={`st-story st-story--${layout}`}
                 style={{
                     background: `linear-gradient(180deg,${k.s1},${k.s2} 30%,${k.s3} 60%,${k.s5})`,
                 }}
             >
-                <div className="st-story-bars" key={story.hour}>
+                <div className="st-story-bars" key={story.label ?? story.hour}>
                     {list.map((l, j) => (
                         <span key={l.key}>
                             <i
@@ -336,9 +368,10 @@ export function StoryViewer({
                     ))}
                 </div>
                 <div className="st-story-head">
-                    <span className="st-story-hour">{two(story.hour)}:00</span>
+                    <span className="st-story-hour">{title}</span>
                     <span className="st-story-count">
                         <strong>
+                            {over ? 'Over · ' : ''}
                             {index + 1} of {list.length}
                         </strong>
                         {wx ? (
@@ -430,7 +463,10 @@ export function StoryViewer({
                         aria-label="Next poster"
                         onClick={tap(1)}
                     />
-                    <div className="st-story-poster" key={current.key}>
+                    <div
+                        className={cn('st-story-poster', over && 'is-washed')}
+                        key={current.key}
+                    >
                         {poster(current, size)}
                     </div>
                 </div>

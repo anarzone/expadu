@@ -1482,6 +1482,44 @@
     .access-blank .actions .button {
         text-align: center;
     }
+    /* "Get started": where you live, as compact choices, then a city field. */
+    .start-city {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0 4px;
+    }
+    .start-city button {
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-pill);
+        background: white;
+        font-weight: var(--weight-medium);
+    }
+    .start-city button:active {
+        scale: 0.97;
+    }
+    .start-city button[aria-pressed='true'] {
+        border-color: var(--color-select-text);
+        background: var(--color-select-bg, var(--blue));
+        color: var(--color-select-text);
+    }
+    .start-city-other {
+        display: grid;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: var(--text-small);
+        color: var(--muted);
+    }
+    .start-city-other input {
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        font-size: var(--text-body);
+        color: var(--color-text);
+    }
     .honest-empty p,
     .access-blank p {
         color: var(--muted);

@@ -7,6 +7,8 @@ enum ProcessingPurpose: string
     case FactExtraction = 'extract_case_fact';
     case ComposerParse = 'composer_parse';
     case ComposerRank = 'composer_rank';
+    /** Composer's assistant: an open request, answered from what it looks up (events, places, weather). */
+    case ComposerAssist = 'composer_assist';
     /** A question about one person's case, answered only from source-checked cards. Bound to that case. */
     case PaperworkAnswer = 'paperwork_answer';
 
@@ -19,7 +21,7 @@ enum ProcessingPurpose: string
             'transport_version' => '2026-09-08.subject-bound.2',
             'endpoint' => $this === self::ComposerRank ? 'https://api.anthropic.com' : config($prefix.'.base_url'),
             'model' => config($prefix.'.model'),
-            'prompt_version' => config($prefix.'.prompt_version'),
+            'prompt_version' => config($prefix.($this === self::ComposerAssist ? '.assistant_prompt_version' : '.prompt_version')),
             'processor_name' => config($prefix.'.processor_name'),
             'privacy_url' => config($prefix.'.processor_privacy_url'),
         ], JSON_THROW_ON_ERROR));
@@ -28,7 +30,11 @@ enum ProcessingPurpose: string
     public function available(): bool
     {
         $prefix = $this->configPrefix();
-        $enabled = $this === self::ComposerParse ? config($prefix.'.driver') === 'anthropic' : config($prefix.'.enabled') === true;
+        $enabled = match ($this) {
+            self::ComposerParse => config($prefix.'.driver') === 'anthropic',
+            self::ComposerAssist => config($prefix.'.driver') === 'anthropic' && config($prefix.'.assistant') === true,
+            default => config($prefix.'.enabled') === true,
+        };
         if (! $enabled) {
             return false;
         }
@@ -46,7 +52,7 @@ enum ProcessingPurpose: string
             }
         }
 
-        return $this->dailyLimit() > 0 && (int) config($prefix.'.timeout', 10) > 0;
+        return (int) config($prefix.'.timeout', 10) > 0;
     }
 
     public function disclosure(): array
@@ -60,9 +66,15 @@ enum ProcessingPurpose: string
             'payload_categories' => match ($this) {
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 self::ComposerParse => ['your_text', 'home_area', 'reference_time', 'events_listed_today', 'weather_now'],
+                // With the opt-in to personalisation only: their taste and their day.
+                self::ComposerAssist => ['your_text', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather', 'your_taste_if_personalised', 'your_plans_if_personalised'],
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
             },
+            // One say-so covers Composer's read and, for an open request, its assistant's answer
+            // (ProcessingConsentStore::derive): the read's notice names what the answer sends too.
+            ...($this === self::ComposerParse && self::ComposerAssist->available()
+                ? ['answer_payload_categories' => self::ComposerAssist->disclosure()['payload_categories']] : []),
         ];
     }
 
@@ -70,18 +82,25 @@ enum ProcessingPurpose: string
     {
         return match ($this) {
             self::FactExtraction => 'services.bureaucracy_llm',
-            self::ComposerParse => 'services.llm',
+            self::ComposerParse, self::ComposerAssist => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
             self::PaperworkAnswer => 'services.paperwork_analyser',
         };
     }
 
-    public function dailyLimit(): int
+    /**
+     * The most requests of this kind one person may send in 24 hours, or null for no limit.
+     * No limit is the owner's default (22 Oct 2026: "lift the sanctions"); each can be set
+     * again with its env, and 0 or empty means none.
+     */
+    public function dailyLimit(): ?int
     {
-        return max(0, (int) match ($this) {
-            self::FactExtraction => config('services.bureaucracy_llm.daily_limit', 20),
-            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit', 20),
-            default => config('bureaucracy_privacy.daily_limits.'.$this->value, 20),
-        });
+        $limit = (int) match ($this) {
+            self::FactExtraction => config('services.bureaucracy_llm.daily_limit'),
+            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit'),
+            default => config('bureaucracy_privacy.daily_limits.'.$this->value),
+        };
+
+        return $limit > 0 ? $limit : null;
     }
 }

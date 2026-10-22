@@ -131,6 +131,54 @@
     border-radius: 6px;
     background: #211d15;
     color: #fffdf8;
+    white-space: nowrap;
+}
+/* Today's ended hours are washed: a solid filter, never opacity, so
+   posters that overlap never show through each other (owner chose A on
+   the busy-day canvas, 22 Oct 2026). */
+.st-bay.is-washed {
+    filter: grayscale(0.75) sepia(0.18) brightness(1.08) contrast(0.86);
+}
+.st-face .pp.is-washed {
+    filter: grayscale(0.75) sepia(0.18) brightness(1.08) contrast(0.86);
+}
+/* A stack's count sits under its tag, and opens its stories. */
+.st-more.st-more--stack {
+    top: 300px;
+    right: auto;
+    left: 12px;
+    text-align: start;
+}
+/* All of today's events are over: said plainly, with tomorrow. */
+.st-all-over {
+    position: absolute;
+    top: 322px;
+    right: 12px;
+    left: 12px;
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    padding: 18px 14px;
+    border: 2px dashed #b9ab90;
+    border-radius: 12px;
+    background: #fffdf8e6;
+    color: #3a352b;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: center;
+}
+.st-all-over button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: #211d15;
+    color: #fffdf8;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
 }
 .st-now {
     left: 82px;

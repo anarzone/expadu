@@ -41,7 +41,8 @@ final class ExternalProcessingGate
             if ($row->state !== 'pending') {
                 return [];
             }
-            if ($this->used($permit->actorId, $purpose) >= $purpose->dailyLimit()) {
+            $limit = $purpose->dailyLimit();
+            if ($limit !== null && $this->used($permit->actorId, $purpose) >= $limit) {
                 $row->update(['state' => 'limited']);
 
                 return [];
@@ -96,6 +97,98 @@ final class ExternalProcessingGate
             $row->update(['state' => $body === null ? 'failed' : 'completed', 'result' => $body, 'completed_at' => now()->utc()]);
 
             return $body;
+        });
+    }
+
+    /**
+     * Several calls under one permit (Composer's assistant: it looks things up, then answers).
+     * The permit is reserved once, as send() does, and every call is admitted only while it's
+     * still current: a withdrawal stops the next call, and the result is then discarded.
+     * `$run` gets a `$call(Closure $transport): ?array` and returns the final result.
+     *
+     * @param  array<string, mixed>  $context
+     * @param  Closure(Closure(Closure(): Response): ?array): ?array  $run
+     * @return array<string, mixed>|null
+     */
+    public function session(?ProcessingPermit $permit, ProcessingPurpose $purpose, array $context, Closure $run): ?array
+    {
+        if ($permit === null) {
+            return null;
+        }
+
+        $reservation = DB::transaction(function () use ($permit, $purpose, $context): array {
+            $row = $this->locked($permit);
+            if ($row === null || ! $this->current($row, $purpose, $context)) {
+                return [];
+            }
+            // A retry of a finished exchange gets its result; nothing is sent again.
+            if ($row->state === 'completed') {
+                return ['cached' => $row->result];
+            }
+            if ($row->state !== 'pending') {
+                return [];
+            }
+            $limit = $purpose->dailyLimit();
+            if ($limit !== null && $this->used($permit->actorId, $purpose) >= $limit) {
+                $row->update(['state' => 'limited']);
+
+                return [];
+            }
+            $row->update(['state' => 'processing', 'attempted_at' => now()->utc()]);
+
+            return ['run' => true];
+        });
+        if (! isset($reservation['run'])) {
+            return $reservation['cached'] ?? null;
+        }
+
+        $call = function (Closure $transport) use ($permit, $purpose, $context): ?array {
+            $admitted = DB::transaction(function () use ($permit, $purpose, $context): bool {
+                $row = $this->locked($permit);
+                if ($row === null || ! $this->current($row, $purpose, $context) || $row->state !== 'processing') {
+                    return false;
+                }
+                $row->update(['dispatched_at' => now()->utc()]);
+
+                return true;
+            });
+            if (! $admitted) {
+                return null;
+            }
+            try {
+                $response = $transport()->throw();
+                if ($response->successful() && strlen($response->body()) <= (int) config('bureaucracy_privacy.max_response_bytes', 65536)) {
+                    $decoded = $response->json();
+
+                    return is_array($decoded) ? $decoded : null;
+                }
+            } catch (Throwable $error) {
+                Log::warning('External processing request failed.', ['purpose' => $purpose->value, 'error_type' => $error::class]);
+            }
+
+            return null;
+        };
+
+        try {
+            $result = $run($call);
+        } catch (Throwable $error) {
+            Log::warning('External processing session failed.', ['purpose' => $purpose->value, 'error_type' => $error::class]);
+            $result = null;
+        }
+
+        return DB::transaction(function () use ($permit, $purpose, $context, $result): ?array {
+            $row = $this->locked($permit);
+            if ($row === null) {
+                return null;
+            }
+            if (! $this->current($row, $purpose, $context) || $row->state !== 'processing') {
+                $row->update(['result' => null]);
+
+                return null;
+            }
+            $row->update(['state' => $result === null ? 'failed' : 'completed', 'result' => $result, 'completed_at' => now()->utc()]);
+
+            return $result;
         });
     }
 

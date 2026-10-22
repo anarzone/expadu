@@ -15,6 +15,7 @@ import type {
 } from 'react';
 import { useId, useRef, useState } from 'react';
 import type { PosterFit, TitleStepName } from '@/components/posters/poster-art';
+import { cn } from '@/lib/utils';
 import manifest from './street-layers.json';
 import type { Bay, Slotted, StreetLayoutName } from './street-layout';
 import { drum, hourLabel, phonePages, STREET, wallBays } from './street-layout';
@@ -165,6 +166,10 @@ export type StreetSceneProps<T> = {
     chip?: ReactNode;
     /** A bay's "+N more" (EV2c opens the hour's stories). */
     onMore?: (hour: number) => void;
+    /** A busy day's stack: its hours as stories, from the first not on the wall. */
+    onStack?: (stack: NonNullable<Bay<T>['stack']>, onWall: T[]) => void;
+    /** All of today's events are over: See tomorrow. */
+    onTomorrow?: () => void;
     /** How much moves (the owner's motion lab); reduced motion stills it all. */
     motion?: StreetMotion;
     /** A poster's key, so one pasted up already isn't pasted again. */
@@ -189,6 +194,8 @@ export default function StreetScene<T>({
     poster,
     chip,
     onMore,
+    onStack,
+    onTomorrow,
     motion = 'full',
     itemKey,
     onColumnHold,
@@ -645,26 +652,60 @@ export default function StreetScene<T>({
                     >
                         {bays.map((b) => (
                             <div
-                                key={b.hour}
-                                className="st-bay"
-                                style={{
-                                    left: b.x,
-                                    width: STREET.desktop.bayW,
-                                    opacity: b.dim ? 0.72 : undefined,
-                                }}
+                                key={
+                                    b.allOver
+                                        ? 'over'
+                                        : (b.stack?.kind ?? b.hour)
+                                }
+                                className={cn(
+                                    'st-bay',
+                                    b.wash && 'is-washed',
+                                    b.stack && 'is-stack',
+                                )}
+                                style={{ left: b.x, width: b.w }}
                             >
-                                <span
-                                    className="st-hour"
-                                    style={{ left: b.labelX }}
-                                >
-                                    {hourLabel(b.hour)}
-                                </span>
+                                {b.allOver ? (
+                                    <div className="st-all-over">
+                                        <span>Today’s events have ended.</span>
+                                        <button
+                                            type="button"
+                                            onClick={onTomorrow}
+                                        >
+                                            See tomorrow
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <span
+                                        className="st-hour"
+                                        style={{ left: b.labelX }}
+                                    >
+                                        {b.stack
+                                            ? b.stack.label
+                                            : hourLabel(b.hour)}
+                                    </span>
+                                )}
                                 {b.isNow ? (
                                     <span className="st-now">
                                         Now {nowLabel}
                                     </span>
                                 ) : null}
-                                {b.more > 0 ? (
+                                {b.stack && b.stack.count > b.posters.length ? (
+                                    <button
+                                        type="button"
+                                        className="st-more st-more--stack"
+                                        onClick={() =>
+                                            onStack?.(
+                                                b.stack!,
+                                                b.posters.map((p) => p.item),
+                                            )
+                                        }
+                                    >
+                                        {b.stack.count}{' '}
+                                        {b.stack.count === 1
+                                            ? 'event'
+                                            : 'events'}
+                                    </button>
+                                ) : b.more > 0 ? (
                                     <button
                                         type="button"
                                         className="st-more"

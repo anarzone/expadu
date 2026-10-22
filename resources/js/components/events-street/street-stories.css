@@ -93,7 +93,7 @@
 }
 
 /* More rings than room: the row fades where it's cut. */
-.st-rings--phone > div[data-more] {
+.st-rings > div[data-more] {
     mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
 
@@ -230,7 +230,9 @@
 
 .st-story-hour {
     display: flex;
+    flex: none;
     align-items: center;
+    white-space: nowrap;
     height: 30px;
     padding: 0 10px;
     border-radius: 7px;
@@ -307,4 +309,9 @@
 .st-story-poster {
     position: relative;
     filter: drop-shadow(0 20px 30px rgb(0 0 0 / 0.4));
+}
+/* An event that's over is washed, not faded (owner chose A, 22 Oct 2026). */
+.st-story-poster.is-washed {
+    filter: drop-shadow(0 20px 30px rgb(0 0 0 / 0.4)) grayscale(0.75)
+        sepia(0.18) brightness(1.08) contrast(0.86);
 }
