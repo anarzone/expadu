@@ -20,6 +20,26 @@
         );
     const tray = document.querySelector('#composer-tray');
     const headerButton = document.querySelector('#shell .composer-header');
+    // Composer answers in place (owner chose B on the "Composer in place"
+    // canvas, 22 Oct 2026): Send no longer leaves the page. The answer shows
+    // in a card under the box, above it on phones: the Composer page itself,
+    // showing only the latest exchange (composer-studio/embed.js). Closing
+    // keeps the conversation; a dot and "Back to your conversation" bring it
+    // back, and Full Composer opens the whole page.
+    const I = (name) => window.ExpaduIcon?.(name) || '';
+    tray.querySelector('#compose-form').insertAdjacentHTML(
+        'beforeend',
+        '<p class="composer-ai-notice">Composer sends what you type to Anthropic, an AI service, to read your request · <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy notice</a></p>',
+    );
+    tray.insertAdjacentHTML(
+        'beforeend',
+        `<section class="composer-answer" id="composer-answer" aria-label="Composer’s answer" hidden><div class="composer-answer-head"><span class="composer-answer-mark">${I('spark')}</span><strong>Composer</strong><button type="button" class="composer-answer-full" aria-label="Open full Composer">${I('expand')}<span>Full Composer</span></button><button type="button" class="composer-answer-close" aria-label="Close Composer">${I('close')}</button></div><iframe class="composer-answer-frame" title="Composer’s answer" src="about:blank"></iframe><p class="sr-only" aria-live="polite"></p></section>`,
+    );
+    tray.insertAdjacentHTML('beforebegin', '<div class="composer-backdrop" aria-hidden="true"></div>');
+    document.body.insertAdjacentHTML(
+        'beforeend',
+        `<button type="button" class="composer-return-chip" hidden>${I('chat')}<span>Back to your conversation</span>${I('arrow')}</button>`,
+    );
     const openComposer = () =>
         tray.querySelector('.composer-launcher')?.click();
     headerButton?.addEventListener('click', openComposer);
@@ -106,14 +126,112 @@
     document
         .querySelector('#composer-tray')
         .addEventListener('focusin', showContext);
+    const answer = tray.querySelector('#composer-answer');
+    const frame = answer.querySelector('iframe');
+    const said = answer.querySelector('[aria-live]');
+    const chip = document.querySelector('.composer-return-chip');
+    const inPlace = () => !!S.read().answerInPlace;
+    let frameHeight = 0;
+    // The card takes the room the screen leaves: under a box at the top,
+    // down to 60px above the bottom; over a box at the bottom, up to 12px
+    // under the page's header.
+    function fit() {
+        if (answer.hidden) return;
+        const box = tray.getBoundingClientRect();
+        const top = box.top < innerHeight / 2;
+        tray.classList.toggle('is-top', top);
+        const head = answer.querySelector('.composer-answer-head').offsetHeight;
+        const room = top
+            ? innerHeight - box.bottom - 14 - 60
+            : box.top -
+              12 -
+              Math.max(12, (document.querySelector('#shell .app-header')?.getBoundingClientRect().bottom || 0) + 12);
+        frame.style.height = `${Math.max(120, Math.min(frameHeight || 240, room - head))}px`;
+    }
+    function showAnswer(ask) {
+        answer.hidden = false;
+        tray.classList.add('has-answer');
+        if (ask || frame.getAttribute('src') === 'about:blank') {
+            const url = new URL(S.routes.composer, document.baseURI || location.href);
+            url.searchParams.set('embed', '1');
+            frame.src = url.href;
+        }
+        fit();
+    }
+    window.addEventListener('message', (event) => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+        const type = event.data?.type;
+        if (type === 'expadu:embed-size') {
+            frameHeight = event.data.height;
+            fit();
+        }
+        if (type === 'expadu:embed-answer') said.textContent = event.data.text || '';
+        if (type === 'expadu:embed-close') tray.querySelector('.composer-dismiss').click();
+    });
+    window.addEventListener('resize', fit);
+    answer.querySelector('.composer-answer-close').addEventListener('click', () =>
+        tray.querySelector('.composer-dismiss').click(),
+    );
+    answer.querySelector('.composer-answer-full').addEventListener('click', () =>
+        S.go('composer', { resume: '1' }),
+    );
+    chip.addEventListener('click', openComposer);
+    tray.addEventListener('click', (event) => {
+        if (event.target.closest('[data-composer-action="new"]'))
+            S.update((s) => {
+                s.answerInPlace = false;
+            });
+    });
+    // Closed with a conversation kept: a dot on the button that opens
+    // Composer, and the way back under it (above the round button on phones).
+    function placeChip() {
+        if (chip.hidden) return;
+        const at = headerButton?.offsetParent ? headerButton.getBoundingClientRect() : null;
+        chip.classList.toggle('is-corner', !at);
+        chip.style.top = at ? `${Math.round(at.bottom + 8)}px` : '';
+        chip.style.left = at ? `${Math.round(at.left)}px` : '';
+    }
+    const backdrop = document.querySelector('.composer-backdrop');
+    function syncAnswer() {
+        const open = tray.classList.contains('is-active');
+        const header = headerButton?.offsetParent ? document.querySelector('#shell .app-header') : null;
+        backdrop.style.top = header ? `${Math.max(0, Math.round(header.getBoundingClientRect().bottom))}px` : '0px';
+        backdrop.classList.toggle('is-on', open);
+        const keep = inPlace();
+        if (open && keep && answer.hidden) showAnswer(false);
+        if (!keep && !answer.hidden) {
+            answer.hidden = true;
+            tray.classList.remove('has-answer');
+        }
+        chip.hidden = open || !keep;
+        headerButton?.classList.toggle('has-conversation', keep && !open);
+        tray.classList.toggle('has-conversation', keep && !open);
+        placeChip();
+    }
+    new MutationObserver(syncAnswer).observe(tray, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', placeChip);
+    window.addEventListener('scroll', placeChip, { passive: true });
+    // The first request goes to Composer's page in the card (as the handoff
+    // it always was); later ones are asked there. The box empties for the
+    // next question and keeps the focus.
     function submit() {
-        if (!field.value.trim()) return;
+        const text = field.value.trim();
+        if (!text) return;
         const context = pageContext();
+        const following = !answer.hidden && frame.getAttribute('src') !== 'about:blank';
         S.update((s) => {
-            s.prompt = field.value.trim();
             s.pageContext = context || null;
+            s.answerInPlace = true;
+            if (!following) {
+                s.prompt = text;
+                s.composerHandoff = { id: `${Date.now()}-${Math.random()}`, submit: true, date: null, action: null };
+            }
         });
-        S.go('composer', { compose: '1' });
+        if (following) frame.contentWindow?.postMessage({ type: 'expadu:ask', text }, location.origin);
+        else showAnswer(true);
+        field.value = '';
+        tray.querySelector('[type="submit"]').disabled = true;
+        field.focus({ preventScroll: true });
     }
     form.addEventListener(
         'submit',
@@ -136,12 +254,14 @@
             button = document.querySelector('#included-ideas');
         button.hidden = !s.draft.length;
         label.textContent = `${s.draft.length} waiting for review`;
-        resume.hidden = !(
-            S.isComposerMinimized?.() || S.canReturnToComposer?.()
-        );
+        // An answer kept in place comes back in its card instead.
+        resume.hidden =
+            inPlace() ||
+            !(S.isComposerMinimized?.() || S.canReturnToComposer?.());
     }
     window.addEventListener('expadu:change', sync);
     window.addEventListener('storage', sync);
     window.addEventListener('pageshow', sync);
     sync();
+    syncAnswer();
 })();
