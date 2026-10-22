@@ -68,10 +68,26 @@ export type Slotted<T> = { item: T; hour: number };
 export type Bay<T> = {
     hour: number;
     x: number;
+    /** A full bay, or a stack's narrower 118. */
+    w: number;
     labelX: number;
-    dim: boolean;
+    /** Today's ended hours: washed with a solid filter, never faded. */
+    wash: boolean;
     isNow: boolean;
     more: number;
+    /** A busy day's folded hours (owner chose A, 22 Oct 2026): today's
+        ended hours at the wall's start, the hours that don't fit at its end. */
+    stack?: {
+        kind: 'ended' | 'later';
+        hours: number[];
+        /** "Ended", "Later · 19–21". */
+        label: string;
+        /** The stories' title: "Ended", "19:00–21:00". */
+        storyLabel: string;
+        count: number;
+    };
+    /** All of today's events are over: the card beside the Ended stack. */
+    allOver?: boolean;
     posters: {
         item: T;
         x: number;
@@ -85,12 +101,24 @@ export type Bay<T> = {
 const two = (h: number) => `${h < 10 ? '0' : ''}${h}`;
 export const hourLabel = (h: number) => `${two(h)}:00`;
 
+/** Between full bays when a busy day folds, and a stack's width. */
+const GAP = 14;
+const STACK_W = 118;
+/** A stack's one poster, smaller, and how far below the tag it sits. */
+const STACK_ZOOM = 0.55;
+const STACK_DROP = 40;
+
 /**
- * The whole day on one wall (owner, 13 Oct 2026): the hours that have
- * events share the wall out; when more hours than fit, their posters
- * overlap, the last ending at the wall's end. Up to two posters an hour;
- * a lone poster fills its hour (owner, 16 Oct 2026), larger and down
- * towards the pavement, as far as the hours beside it leave room.
+ * The whole day on one wall (owner, 13 Oct 2026). When every hour fits
+ * and none has ended, the hours share the wall out. On a busy day nothing
+ * overlaps (owner chose A, 22 Oct 2026, the mock's dayItems()): today's
+ * ended hours fold into an "Ended" stack at the wall's start, as many
+ * hours as fit show at full size, 14 apart, and the rest fold into a
+ * "Later" stack at its end. When all of today's events are over, a card
+ * says so beside the Ended stack. Only today folds into Ended; any day can
+ * get Later. Up to two posters an hour; a lone poster fills its hour
+ * (owner, 16 Oct 2026), larger and down towards the pavement, as far as
+ * the hours beside it leave room.
  */
 export function wallBays<T>(
     items: Slotted<T>[],
@@ -99,17 +127,123 @@ export function wallBays<T>(
     const c = STREET.desktop;
     const zoneW = c.zoneW + width - c.size[0];
     const hours = [...new Set(items.map((x) => x.hour))].sort((a, b) => a - b);
-    const n = hours.length;
-    const fits = n * c.bayW <= zoneW;
-    const step = fits
-        ? zoneW / Math.max(1, n)
-        : (zoneW - c.bayW) / Math.max(1, n - 1);
-    const xs = hours.map((_, i) =>
-        Math.round(fits ? i * step + (step - c.bayW) / 2 : i * step),
-    );
+    const ended = nowHour === null ? [] : hours.filter((h) => h < nowHour);
+    const coming = hours.filter((h) => !ended.includes(h));
+    const allOver = nowHour !== null && !coming.length && ended.length > 0;
+    const placed: {
+        hour: number;
+        x: number;
+        stack?: Bay<T>['stack'];
+        w: number;
+    }[] = [];
+    const rotateOf = (s: Slotted<T>) =>
+        items.indexOf(s) % 2 === 0 ? 1.4 : -1.1;
+    const stack = (
+        kind: 'ended' | 'later',
+        hs: number[],
+        x: number,
+        w: number,
+    ) => {
+        const last = hs[hs.length - 1] + 1;
+        placed.push({
+            hour: hs[0],
+            x,
+            w,
+            stack: {
+                kind,
+                hours: hs,
+                label:
+                    kind === 'ended'
+                        ? 'Ended'
+                        : `Later · ${two(hs[0])}–${two(last)}`,
+                storyLabel:
+                    kind === 'ended'
+                        ? 'Ended'
+                        : `${two(hs[0])}:00–${two(last)}:00`,
+                count: items.filter((s) => hs.includes(s.hour)).length,
+            },
+        });
+    };
 
-    return hours.map((hour, i) => {
-        const here = items.filter((x) => x.hour === hour);
+    if (!ended.length && hours.length * c.bayW <= zoneW) {
+        // Nothing to fold: the hours share the wall out evenly.
+        const step = zoneW / Math.max(1, hours.length);
+        hours.forEach((hour, i) =>
+            placed.push({
+                hour,
+                x: Math.round(i * step + (step - c.bayW) / 2),
+                w: c.bayW,
+            }),
+        );
+    } else {
+        let x = 0;
+
+        if (ended.length) {
+            const w = allOver ? c.bayW : STACK_W;
+            stack('ended', ended, x, w);
+            x += w + GAP;
+        }
+
+        if (!allOver) {
+            const room = zoneW - x;
+            let fit = Math.max(1, Math.floor((room + GAP) / (c.bayW + GAP)));
+            let shown = coming;
+            let later: number[] = [];
+
+            if (coming.length > fit) {
+                fit = Math.max(
+                    1,
+                    Math.floor((room - STACK_W) / (c.bayW + GAP)),
+                );
+                shown = coming.slice(0, fit);
+                later = coming.slice(fit);
+            }
+
+            for (const hour of shown) {
+                placed.push({ hour, x, w: c.bayW });
+                x += c.bayW + GAP;
+            }
+
+            if (later.length) {
+                stack('later', later, x, STACK_W);
+            }
+        }
+    }
+
+    const xs = placed.map((p) => p.x);
+    const bays: Bay<T>[] = placed.map((p, i) => {
+        if (p.stack) {
+            // Ended shows its latest poster, Later its first.
+            const here = items.filter((s) => p.stack!.hours.includes(s.hour));
+            const one =
+                p.stack.kind === 'ended' ? here[here.length - 1] : here[0];
+
+            return {
+                hour: p.hour,
+                x: p.x,
+                w: p.w,
+                labelX: 12,
+                wash: p.stack.kind === 'ended',
+                isNow: false,
+                more: 0,
+                stack: p.stack,
+                posters: one
+                    ? [
+                          {
+                              item: one.item,
+                              x: Math.round((p.w - c.pw * STACK_ZOOM) / 2),
+                              y: c.rows[0] + STACK_DROP,
+                              zoom: Number(
+                                  (c.wallZoom * STACK_ZOOM).toFixed(4),
+                              ),
+                              rotate: rotateOf(one),
+                          },
+                      ]
+                    : [],
+            };
+        }
+
+        const here = items.filter((x) => x.hour === p.hour);
         const shown = here.slice(0, 2);
         // Leaning left or right by the listing's place in the day.
         let posters: Bay<T>['posters'] = shown.map((s, j) => ({
@@ -117,14 +251,14 @@ export function wallBays<T>(
             x: c.px,
             y: c.rows[j],
             zoom: c.wallZoom,
-            rotate: items.indexOf(s) % 2 === 0 ? 1.4 : -1.1,
+            rotate: rotateOf(s),
         }));
         let labelX = 12;
 
         if (posters.length === 1 && here.length === 1) {
             const near = Math.min(
                 Infinity,
-                ...xs.filter((_, j) => j !== i).map((x) => Math.abs(x - xs[i])),
+                ...xs.filter((_, j) => j !== i).map((x) => Math.abs(x - p.x)),
             );
             const grow = Math.max(
                 1,
@@ -150,15 +284,32 @@ export function wallBays<T>(
         }
 
         return {
-            hour,
-            x: xs[i],
+            hour: p.hour,
+            x: p.x,
+            w: p.w,
             labelX,
-            dim: nowHour !== null && hour < nowHour,
-            isNow: nowHour !== null && hour === nowHour,
+            wash: false,
+            isNow: nowHour !== null && p.hour === nowHour,
             more: here.length - shown.length,
             posters,
         };
     });
+
+    if (allOver) {
+        bays.push({
+            hour: -1,
+            x: placed[0].w + GAP,
+            w: c.bayW,
+            labelX: 12,
+            wash: false,
+            isNow: false,
+            more: 0,
+            allOver: true,
+            posters: [],
+        });
+    }
+
+    return bays;
 }
 
 /** The phone pages the day's posters, one at a time, up and down. */
