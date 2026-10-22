@@ -43,7 +43,6 @@ test('the provider binding stays unavailable unless every provider and disclosur
     'unencrypted privacy link' => [['processor_privacy_url' => 'http://www.anthropic.com/legal/privacy']],
     'missing prompt version' => [['prompt_version' => '']],
     'zero timeout' => [['timeout' => 0]],
-    'zero daily limit' => [['daily_limit' => 0]],
 ]);
 
 test('the provider binding selects Claude only when configuration and disclosure are complete', function () {

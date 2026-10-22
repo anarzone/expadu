@@ -41,7 +41,8 @@ final class ExternalProcessingGate
             if ($row->state !== 'pending') {
                 return [];
             }
-            if ($this->used($permit->actorId, $purpose) >= $purpose->dailyLimit()) {
+            $limit = $purpose->dailyLimit();
+            if ($limit !== null && $this->used($permit->actorId, $purpose) >= $limit) {
                 $row->update(['state' => 'limited']);
 
                 return [];
