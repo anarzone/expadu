@@ -13,7 +13,11 @@ import { useEffect, useRef, useState } from 'react';
 import { keep } from '@/actions/App/Http/Controllers/ComposerController';
 import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
-import { AnswerBody, isAnswer } from '@/components/composer/answers';
+import {
+    AnswerBody,
+    isAnswer,
+    ReaderNote,
+} from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
     readComposerEntry,
@@ -783,6 +787,7 @@ export default function ComposerPage({
                                             <IconArrowRight size={18} />
                                         </button>
                                     )}
+                                    <ReaderNote message={message} />
                                 </article>
                             );
                         })}
