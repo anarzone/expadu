@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\BureaucracyPerson;
 use App\Models\User;
+use App\Profile\ResetLegacyJourney;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Testing tool: send a user back to square one so the full journey —
@@ -24,7 +23,7 @@ class ResetUserJourney extends Command
 
     protected $description = 'Reset a legacy profile only when no bureaucracy dossier or person exists';
 
-    public function handle(): int
+    public function handle(ResetLegacyJourney $resetJourney): int
     {
         $user = User::where('email', $this->argument('email'))->first();
 
@@ -43,30 +42,7 @@ class ResetUserJourney extends Command
             return self::FAILURE;
         }
 
-        $reset = DB::transaction(function () use ($user): bool {
-            $locked = User::query()->whereKey($user->id)->lock('for no key update')->firstOrFail();
-            if ($locked->bureaucracyCase()->exists()
-                || BureaucracyPerson::query()->where('account_user_id', $locked->id)->exists()) {
-                return false;
-            }
-            $locked->update([
-                'onboarded_at' => null,
-                'situation' => null,
-                'is_eu' => null,
-                'veedel' => null,
-                'arrival_date' => null,
-                'german_level' => null,
-                'bureaucracy_path' => null,
-                'profile_attributes' => null,
-            ]);
-            $locked->attributeChanges()->delete();
-            if (! $this->option('keep-tasks')) {
-                $locked->userTasks()->delete();
-            }
-
-            return true;
-        });
-        if (! $reset) {
+        if (! $resetJourney->execute($user, (bool) $this->option('keep-tasks'))) {
             $this->error('This account has bureaucracy records. Use read-only persona preview for QA, or the dedicated correction/erasure flow. Nothing was reset.');
 
             return self::FAILURE;
