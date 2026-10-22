@@ -5,7 +5,7 @@ import type { Station, StationArea, StationDir, StationLine } from './types';
 /**
  * What Nearby shows under the person's filters (departures-next/nearby.js
  * `view`): each boarding area with its lines, a line's two soonest runs on
- * its strip, the areas soonest first. Minutes come from the device clock and
+ * its strip, in a steady order. Minutes come from the device clock and
  * the run's own time, so a board a minute old still counts down correctly.
  */
 
@@ -116,9 +116,6 @@ export function nearbyView(
         d.mins <= f.win &&
         (!f.delayed || d.delayMin > 0) &&
         (!f.via.length || f.via.includes(firstVia(d)));
-    // By the departure's own time: a paused board's past times stay in order.
-    const leaves = (d: ShownDir) => Date.parse(d.next?.at ?? '') || 0;
-    const soonest = (dirs: ShownDir[]) => Math.min(...dirs.map(leaves));
     const total = station.lines.reduce(
         (n, l) => n + l.dirs.filter((d) => d.next).length,
         0,
@@ -148,19 +145,21 @@ export function nearbyView(
                     pinned: pinned.includes(l.line),
                 }))
                 .filter((l) => l.shown.length)
+                // A steady order, pinned first, never reshuffled by which
+                // leaves sooner on a refresh (owner, 22 Oct).
                 .sort(
                     (a, b) =>
                         Number(b.pinned) - Number(a.pinned) ||
-                        soonest(a.shown) - soonest(b.shown),
+                        byLine(a.line, b.line),
                 );
 
             return { ...area, cards };
         })
         .filter((area) => area.cards.length)
+        // Steady too: trams before buses, the busier area first, then the
+        // station's own order.
         .sort(
             (a, b) =>
-                soonest(a.cards.flatMap((c) => c.shown)) -
-                    soonest(b.cards.flatMap((c) => c.shown)) ||
                 Number(a.mode === 'bus') - Number(b.mode === 'bus') ||
                 b.lines.length - a.lines.length,
         );

@@ -194,7 +194,8 @@ class DelfiCancellations
     public function fetch(): ?int
     {
         try {
-            $response = Http::timeout(60)->connectTimeout(10)->get((string) config('services.gtfsde.realtime_url'));
+            // gtfs.de can take most of a minute for the 26-30 MB when busy.
+            $response = Http::timeout(150)->connectTimeout(10)->get((string) config('services.gtfsde.realtime_url'));
         } catch (\Throwable $e) {
             Log::warning('gtfs.de realtime: fetch failed', ['message' => $e->getMessage()]);
 

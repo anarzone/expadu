@@ -137,9 +137,10 @@ class NearbyStation
     /**
      * DELFI's cancelled calls at the station, which VRS's board leaves out
      * (it drops a cancelled trip). Each joins its line and direction by line,
-     * destination and timetabled time, among the times the board shows, and
-     * never over a run the board lists. A direction the board has no row for
-     * gets one for the next hour's.
+     * destination and timetabled time, among the times the board shows (or
+     * the last ten minutes'), and never over a run the board lists. A
+     * direction the board has no row for gets one for the last ten minutes'
+     * and the next hour's.
      *
      * @param  array<string, array<string, mixed>>  $rows
      * @param  array<string, array<string, mixed>>  $areas
@@ -159,7 +160,7 @@ class NearbyStation
                 $key = collect($rows)->keys()->first(fn ($k) => (string) $rows[$k]['line'] === $call['line']
                     && self::sameWay((string) ($rows[$k]['destination'] ?? ''), (string) $call['headsign']));
                 if ($key === null) {
-                    if ($at->lt($now) || $at->gt($now->addHour())) {
+                    if ($at->lt($now->subMinutes(10)) || $at->gt($now->addHour())) {
                         continue;
                     }
                     $dest = self::place((string) $call['headsign']);
@@ -169,7 +170,9 @@ class NearbyStation
                 } else {
                     $times = collect($rows[$key]['services'] ?? [])
                         ->map(fn (array $s) => CarbonImmutable::parse($s['scheduled_at'] ?? $s['departure_at'])->getTimestamp());
-                    $from = $times->min() ?? $now->getTimestamp();
+                    // From the earliest it shows, or ten minutes ago: a run
+                    // that should have just left is the one someone waits for.
+                    $from = min($times->min() ?? PHP_INT_MAX, $now->subMinutes(10)->getTimestamp());
                     $to = $times->max() ?? $now->addHour()->getTimestamp();
                     if ($at->getTimestamp() < $from || $at->getTimestamp() > $to
                         || $times->contains(fn (int $t) => abs($t - $at->getTimestamp()) < 60)) {

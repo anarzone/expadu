@@ -130,6 +130,12 @@ const targetOf = (item: DayItem): PlanTarget | null =>
           }
         : null;
 
+/** Where a plan goes from and to, by place: an empty From is where you are. */
+const whereKey = (
+    from: { lat: number; lng: number } | null | undefined,
+    to: { lat: number; lng: number },
+) => `${from ? `${from.lat},${from.lng}` : 'here'}>${to.lat},${to.lng}`;
+
 function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
@@ -475,6 +481,7 @@ export function PlanPanel({
             });
 
             asked.current = `${whenMode}|${overrides?.date ?? date}|${overrides?.time ?? time}`;
+            askedWhere.current = whereKey(fromPlace, toPlace);
             request.current?.abort();
             const controller = new AbortController();
             request.current = controller;
@@ -875,6 +882,31 @@ export function PlanPanel({
 
     // While the options show, a new day or time asks again, once it settles.
     const asked = useRef<string | null>(null);
+    // ...and picking or changing either place (a suggestion, Your location,
+    // Home or Work, or a swap) asks again at once; typing alone waits until
+    // a place is picked (owner, 22 Oct 2026).
+    const askedWhere = useRef<string | null>(null);
+    const where =
+        to.place && (from.place || !from.text.trim())
+            ? whereKey(from.place, to.place)
+            : null;
+
+    useEffect(() => {
+        if (
+            !results ||
+            where === null ||
+            askedWhere.current === null ||
+            askedWhere.current === where ||
+            // Your location plans again itself, once the fix is in.
+            relocating.current ||
+            locating
+        ) {
+            return;
+        }
+
+        void plan();
+    }, [results, where, locating, plan]);
+
     const when = `${schedule}|${date}|${time}`;
 
     useEffect(() => {
