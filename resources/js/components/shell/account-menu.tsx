@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
-import { alerts, logout } from '@/routes';
+import { alerts, bureaucracy, logout } from '@/routes';
 import { edit } from '@/routes/profile';
 
 /**
@@ -46,7 +46,14 @@ export function AccountMenu() {
                     <p>{user.email}</p>
                     <div className="shell-account-links">
                         <Menu.Item asChild>
-                            <Link href="/profile">Your situation</Link>
+                            {/* Paperwork's Your situation (?guide=details opens it). */}
+                            <Link
+                                href={bureaucracy({
+                                    query: { guide: 'details' },
+                                })}
+                            >
+                                Your situation
+                            </Link>
                         </Menu.Item>
                         <Menu.Item asChild>
                             <Link href={edit()}>Settings</Link>
