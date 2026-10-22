@@ -237,8 +237,12 @@ final class AssistantTools
     /** Their plans and appointments today and tomorrow, as their records hold them. */
     private function myDay(): string
     {
-        if (! $this->personal() || $this->day === []) {
-            return 'Nothing planned today or tomorrow.';
+        if (! $this->personal()) {
+            return 'Not available.';
+        }
+        if ($this->day === []) {
+            // A fact like any other: "you have nothing planned" cites it.
+            return $this->line('d0', 'nothing planned today or tomorrow');
         }
 
         return collect($this->day)->values()->map(fn (array $fact, int $i): string => $this->line('d'.($i + 1), "{$fact['label']}: {$fact['value']}"))->implode("\n");
