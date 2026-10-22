@@ -105,7 +105,9 @@ final class AroundNow
         $lead = $this->checked($listings['items'], $reply);
         $lead === ''
             ? Cache::forget($this->key($user, $text))
-            : Cache::put($this->key($user, $text), ['listings' => $listings, 'lead' => $lead], now()->addMinutes(self::KEEP_MINUTES));
+            : Cache::put($this->key($user, $text), ['listings' => $listings, 'lead' => $lead,
+                // The read's lead is written from these, and only these.
+                'read' => array_values(array_filter(['listings', isset($listings['items']['weather']) ? 'weather' : null]))], now()->addMinutes(self::KEEP_MINUTES));
     }
 
     /**
@@ -117,7 +119,7 @@ final class AroundNow
     public function keepAssisted(User $user, string $text, array $assisted, CarbonImmutable $now): void
     {
         Cache::put($this->key($user, $text), ['lead' => $assisted['lead'], 'places' => $assisted['places'],
-            'taste' => $assisted['taste'] ?? false, 'invite' => $assisted['invite'] ?? false, 'listings' => [
+            'taste' => $assisted['taste'] ?? false, 'invite' => $assisted['invite'] ?? false, 'read' => $assisted['looked'] ?? [], 'listings' => [
                 'events' => $assisted['events'], 'weather' => $assisted['weather'] ?? $this->weatherNow(),
                 'when' => $now->setTimezone('Europe/Berlin')->format('H:i') >= '18:00' ? 'tonight' : 'today', 'items' => [],
             ]], now()->addMinutes(self::KEEP_MINUTES));
@@ -173,6 +175,9 @@ final class AroundNow
             'taste' => is_array($kept) && ($kept['taste'] ?? false) ? true : null,
             // Without it: the line inviting them to turn it on, under the assistant's answer.
             'invite' => is_array($kept) && ($kept['invite'] ?? false) ? true : null,
+            // What the AI read to write the lead, for the fine print ("from the listings, the
+            // weather, your plans and what you like"); none when the code wrote it.
+            'read' => is_array($kept) ? ($kept['read'] ?? []) ?: null : null,
             'facts' => $facts ?: null,
             // One link each: KVB's live notices share one page.
             'sources' => collect([

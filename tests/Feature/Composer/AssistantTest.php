@@ -99,7 +99,7 @@ test('🔒 the assistant answers from what it looked up, never the person’s ow
     Http::assertSentCount(2);
     Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'Jazz im Stadtgarten') && str_contains($request->body(), 'tool_result'));
     Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'PRIVATE-PLAN-7781'));
-    expect($reply)->kind->toBe('around')->written->toBe('ai')
+    expect($reply)->kind->toBe('around')->written->toBe('ai')->read->toBe(['listings', 'weather'])
         ->text->toBe('Jazz im Stadtgarten starts at 20:00 at Stadtgarten. Rain is due from 22:00, so bring a jacket.')
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
         ->and(collect($reply['facts'])->pluck('value')->all())->toContain('PRIVATE-PLAN-7781');
@@ -174,7 +174,7 @@ test('🔒 with the opt-in it may look at their taste: a "because" holds only wh
     $reply = assistantAsk($this);
 
     Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'likes a lot culture') && ! str_contains($request->body(), 'Skipped Jazz'));
-    expect($reply)->text->toBe('Since you like culture, Jazz im Stadtgarten starts at 20:00.')
+    expect($reply)->read->toBe(['taste', 'listings'])->text->toBe('Since you like culture, Jazz im Stadtgarten starts at 20:00.')
         ->taste->toBeTrue()->and($reply)->not->toHaveKey('invite')
         ->and($reply['events'][0]['because'])->toBe('You like culture');
 });
@@ -200,4 +200,10 @@ test('"not this" on a suggested event is recorded; a place\'s goes through its f
     $this->postJson('/api/signals', ['signals' => [['action' => 'not_for_me', 'surface' => 'composer', 'item_type' => 'spot', 'item_id' => $spot->id]]])
         ->assertUnprocessable()->assertJsonValidationErrors('signals.0.action');
     expect(DB::table('user_signals')->where('action', 'not_for_me')->where('item_type', 'event')->where('item_id', $jazz->id)->exists())->toBeTrue();
+});
+
+test('🔒 Composer\'s notice names what an open request\'s answer sends too', function () {
+    $this->actingAs(User::factory()->onboarded()->create())->getJson('/privacy/processing/composer_parse')->assertOk()
+        ->assertJsonPath('answer_payload_categories', ['your_text', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather',
+            'your_taste_if_personalised', 'your_plans_if_personalised']);
 });
