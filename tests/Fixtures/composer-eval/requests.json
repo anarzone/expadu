@@ -5706,7 +5706,7 @@
    "weather": "dry",
    "text": "I'm bored, what do you suggest?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5723,7 +5723,7 @@
    "weather": "dry",
    "text": "what should I do now?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5740,7 +5740,7 @@
    "weather": "dry",
    "text": "something chill after work",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5757,7 +5757,7 @@
    "weather": "dry",
    "text": "my friend visits on Sunday, ideas?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5774,7 +5774,7 @@
    "weather": "rain",
    "text": "rainy afternoon, no idea what to do",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5791,7 +5791,7 @@
    "weather": "dry",
    "text": "it's sunny, where should I go?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5808,7 +5808,7 @@
    "weather": "dry",
    "text": "I have an hour to kill",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5825,7 +5825,7 @@
    "weather": "dry",
    "text": "need to get out of the house",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5842,7 +5842,7 @@
    "weather": "dry",
    "text": "what's good around here?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5859,7 +5859,7 @@
    "weather": "dry",
    "text": "hi! new in town, where do I start?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5876,7 +5876,7 @@
    "weather": "dry",
    "text": "date night ideas?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5893,7 +5893,7 @@
    "weather": "dry",
    "text": "something cheap to do today",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5910,7 +5910,7 @@
    "weather": "dry",
    "text": "I don't know what to do this evening",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5927,7 +5927,7 @@
    "weather": "dry",
    "text": "surprise me",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5944,7 +5944,7 @@
    "weather": "dry",
    "text": "feeling lonely, anything social on?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5961,7 +5961,7 @@
    "weather": "dry",
    "text": "what do people do here on a Thursday night?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5978,7 +5978,7 @@
    "weather": "rain",
    "text": "kids are bored, help",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -5995,7 +5995,7 @@
    "weather": "dry",
    "text": "something to do before my train at 18:00",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6012,7 +6012,7 @@
    "weather": "dry",
    "text": "I want to try something new",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6029,7 +6029,7 @@
    "weather": "dry",
    "text": "what's worth seeing today?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6046,7 +6046,7 @@
    "weather": "rain",
    "text": "quiet place to think",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6063,7 +6063,7 @@
    "weather": "dry",
    "text": "it's my day off",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6080,7 +6080,7 @@
    "weather": "dry",
    "text": "show me something interesting",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6097,7 +6097,7 @@
    "weather": "dry",
    "text": "where can I meet people?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6114,7 +6114,7 @@
    "weather": "dry",
    "text": "too tired to plan, just tell me something",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6131,7 +6131,7 @@
    "weather": "dry",
    "text": "anything happening right now?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6148,7 +6148,7 @@
    "weather": "rain",
    "text": "lazy sunday vibes",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6165,7 +6165,7 @@
    "weather": "dry",
    "text": "can you recommend something?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6182,7 +6182,7 @@
    "weather": "dry",
    "text": "what's the vibe tonight?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6199,7 +6199,7 @@
    "weather": "dry",
    "text": "got a couple of free hours, what's good?",
    "expect": {
-    "routed": "answer"
+    "open": true
    }
   },
   {
@@ -6216,7 +6216,7 @@
    "weather": "dry",
    "text": "I'm bored, what do you suggest?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6234,7 +6234,7 @@
    "weather": "dry",
    "text": "what should I do now?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6252,7 +6252,7 @@
    "weather": "dry",
    "text": "something chill after work",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6270,7 +6270,7 @@
    "weather": "dry",
    "text": "my friend visits on Sunday, ideas?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6288,7 +6288,7 @@
    "weather": "rain",
    "text": "rainy afternoon, no idea what to do",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6306,7 +6306,7 @@
    "weather": "dry",
    "text": "it's sunny, where should I go?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6324,7 +6324,7 @@
    "weather": "dry",
    "text": "I have an hour to kill",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6342,7 +6342,7 @@
    "weather": "dry",
    "text": "need to get out of the house",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6360,7 +6360,7 @@
    "weather": "dry",
    "text": "what's good around here?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6378,7 +6378,7 @@
    "weather": "dry",
    "text": "hi! new in town, where do I start?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6396,7 +6396,7 @@
    "weather": "dry",
    "text": "date night ideas?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6414,7 +6414,7 @@
    "weather": "dry",
    "text": "something cheap to do today",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6432,7 +6432,7 @@
    "weather": "dry",
    "text": "I don't know what to do this evening",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6450,7 +6450,7 @@
    "weather": "dry",
    "text": "surprise me",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6468,7 +6468,7 @@
    "weather": "dry",
    "text": "feeling lonely, anything social on?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6486,7 +6486,7 @@
    "weather": "dry",
    "text": "what do people do here on a Thursday night?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6504,7 +6504,7 @@
    "weather": "rain",
    "text": "kids are bored, help",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6522,7 +6522,7 @@
    "weather": "dry",
    "text": "something to do before my train at 18:00",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6540,7 +6540,7 @@
    "weather": "dry",
    "text": "I want to try something new",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6558,7 +6558,7 @@
    "weather": "dry",
    "text": "what's worth seeing today?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6576,7 +6576,7 @@
    "weather": "rain",
    "text": "quiet place to think",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6594,7 +6594,7 @@
    "weather": "dry",
    "text": "it's my day off",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6612,7 +6612,7 @@
    "weather": "dry",
    "text": "show me something interesting",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6630,7 +6630,7 @@
    "weather": "dry",
    "text": "where can I meet people?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6648,7 +6648,7 @@
    "weather": "dry",
    "text": "too tired to plan, just tell me something",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6666,7 +6666,7 @@
    "weather": "dry",
    "text": "anything happening right now?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6684,7 +6684,7 @@
    "weather": "rain",
    "text": "lazy sunday vibes",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6702,7 +6702,7 @@
    "weather": "dry",
    "text": "can you recommend something?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6720,7 +6720,7 @@
    "weather": "dry",
    "text": "what's the vibe tonight?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   },
@@ -6738,7 +6738,7 @@
    "weather": "dry",
    "text": "got a couple of free hours, what's good?",
    "expect": {
-    "routed": "answer"
+    "open": true
    },
    "personalised": true
   }

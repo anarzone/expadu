@@ -189,7 +189,11 @@ class EvaluateComposer extends Command
         // Parse-only, a request with no route named is a plan to compose (the set's own kind).
         $route = $request['expect']['routed'] ?? ($this->option('parse-only') ? 'compose' : null);
         $routing = $route !== null ? ['routed' => $row['routed'] === $route] : [];
-        $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true, 'answer_kind' => true]);
+        // An open request is answered or planned, never left to a page reply.
+        if ($request['expect']['open'] ?? false) {
+            $routing = ['routed' => in_array($row['routed'], ['answer', 'compose'], true)];
+        }
+        $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true]);
         $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
         if ($row['routed'] === 'compose' && $this->option('parse-only')) {
             return $row + ['expectations' => $routing, 'gates' => $gates];
@@ -304,8 +308,10 @@ class EvaluateComposer extends Command
         }
         if ($said['written'] === 'ai' && $around !== null) {
             $listed = implode("\n", $around['items']);
+            // As the live check: a person who opted in may be spoken of from their own facts.
+            $personal = preg_grep('/^(t|a|h|w|d)\d+$/', array_keys($around['items'])) !== [];
             foreach (preg_split('/(?<=[.!?])\s+/u', $reply['text']) as $sentence) {
-                if (! app(AroundCheck::class)->holds($sentence, $listed)) {
+                if (! app(AroundCheck::class)->holds($sentence, $listed, $personal)) {
                     $invented[] = $sentence;
                 }
             }
