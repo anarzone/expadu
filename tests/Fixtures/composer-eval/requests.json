@@ -7359,6 +7359,49 @@
     "open": true,
     "around": true
    }
+  },
+  {
+   "id": "regression.cafe_nova_deutz",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:20:00+01:00",
+   "weather": "dry",
+   "text": "Take me to Café Nova in Deutz",
+   "before": [
+    "how can I go to the cafe nova?"
+   ],
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.cafe_nova_deutz_how_far",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:20:00+01:00",
+   "weather": "dry",
+   "text": "how far is it?",
+   "before": [
+    "how can I go to the cafe nova?",
+    "Take me to Café Nova in Deutz"
+   ],
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
   }
  ]
 }

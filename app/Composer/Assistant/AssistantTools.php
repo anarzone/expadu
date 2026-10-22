@@ -3,6 +3,7 @@
 namespace App\Composer\Assistant;
 
 use App\Bureaucracy\RuleSourcePolicy;
+use App\Composer\Answers\Destinations;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Answers\TripAnswers;
 use App\Composer\Candidate;
@@ -88,7 +89,7 @@ final class AssistantTools
         private ?string $progress = null,
         // What this conversation suggested and named: events and spots it showed (left out when
         // the person turns them down), and the places and areas of its trips (which Cafe Nova).
-        private array $earlier = ['event' => [], 'spot' => [], 'areas' => []],
+        private array $earlier = ['event' => [], 'spot' => [], 'areas' => [], 'places' => []],
         // Their Composer plans, by date (their next plan, from code only).
         private array $plans = [],
     ) {}
@@ -300,9 +301,19 @@ final class AssistantTools
     /** The way to a place (TripAnswers), or which of several places of that name. */
     private function planTrip(array $input): string
     {
+        $to = trim((string) ($input['to'] ?? ''));
+        $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        // "Café Nova in Deutz" (a tapped choice, copied as is) is Café Nova, in Deutz.
+        if ($area === null && preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
+            [$to, $area] = [trim($m[1]), PlanDay::areas([$m[2]])[0]];
+        }
+        // A place this conversation already went to ("how far is it?") is that one, by its name and area.
+        $key = fn (string $name): string => Destinations::key($name);
+        $before = collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area));
+        $area ??= $before['area'] ?? null;
         $answer = app(TripAnswers::class)->toPlace($this->user, [
-            'place' => trim((string) ($input['to'] ?? '')),
-            'area' => is_string($input['area'] ?? null) && $input['area'] !== '' ? $input['area'] : null,
+            'place' => $to,
+            'area' => $area,
             'at' => is_string($input['at'] ?? null) && preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $input['at']) === 1 ? $input['at'] : null,
             'ask' => ($input['how_far'] ?? false) === true ? 'distance' : null,
             // Places this conversation already named, so "Cafe Nova" can mean the one meant before.
@@ -319,7 +330,10 @@ final class AssistantTools
         $id = 'r'.(++$this->count);
         $this->cards[$id] = [...$extra, 'type' => isset($extra['trip']) ? 'trip' : 'note', 'text' => $answer['text']];
 
-        return $this->line($id, trim(($extra['title'] ?? '').' '.$answer['text']));
+        // The place it's to, by name, so the answer may name it ("Café Nova in Deutz is about 4.4 km away").
+        $to = isset($extra['destination']['name']) ? "Trip to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
+
+        return $this->line($id, $to.trim(($extra['title'] ?? '').' '.$answer['text']));
     }
 
     /** KVB notices on the lines named, or on the lines at their nearest stop; public notices only. */
@@ -487,7 +501,8 @@ final class AssistantTools
     /** A card of their own the AI may show but never reads: only that it's there. */
     private function own(string $id, array $card, string $what): string
     {
-        $this->cards[$id] = $card;
+        // Its words are Composer's and the AI never read them: the answer always says them.
+        $this->cards[$id] = [...$card, 'private' => true];
 
         return $this->line($id, ucfirst($what).', shown to them as a card. Its contents stay private: say only that it\'s below.');
     }
