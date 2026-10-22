@@ -6,6 +6,11 @@ import { TravelChip } from '@/components/travel/labels';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf } from '@/components/travel/line-look';
 import {
+    day,
+    LIVE_SOURCE,
+    publisher,
+} from '@/components/travel/plan/plan-headline';
+import {
     lookOf,
     tripSteps,
     wayRows,
@@ -90,6 +95,9 @@ type Major = {
     lines?: string[];
     /** The notice's page, when it's KVB's. */
     url?: string | null;
+    /** The notice's feed (kvb-…, vrs-trias, delfi) and when it started. */
+    feed?: string | null;
+    since?: string | null;
 };
 
 type Basis =
@@ -258,14 +266,15 @@ function MajorHeadline({ major }: { major: Major }) {
                           title: '',
                           details: major.details,
                           url: major.url ?? null,
-                          kvb: true,
+                          kvb: major.feed?.startsWith('kvb') ?? false,
                       }
                     : null
             }
+            // As Plan a trip says it: who published it and since when.
             source={
                 major.source === 'notice'
-                    ? 'From KVB’s notice'
-                    : 'From the live times · no KVB notice'
+                    ? `${publisher(major.feed)}${major.since ? ` of ${day(major.since)}` : ''}`
+                    : LIVE_SOURCE
             }
         />
     );
