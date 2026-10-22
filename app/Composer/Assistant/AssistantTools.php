@@ -228,11 +228,23 @@ final class AssistantTools
         $area = app(UserLocationService::class)->veedelAt((float) $this->location->lat, (float) $this->location->lng);
         // A Veedel's middle isn't where they are: no stop is named from it.
         $stop = $this->location->source === LocationSource::Area ? null : $this->nearestStop();
-        $this->cards['here'] = array_filter(['type' => 'where', 'area' => $area, 'from' => $from,
+        $this->cards['here'] = array_filter(['type' => 'where', 'area' => $area, 'from' => $from, 'basis' => $this->basis(),
             'stop' => $stop === null ? null : ['name' => $stop['name'], 'walk_min' => $stop['walk_min'], 'lines' => $stop['lines']]], fn ($v) => $v !== null);
 
         return $this->line('here', ucfirst($from).': '.($area !== null ? "in {$area}" : 'outside the Veedel Expadu knows')
             .($stop !== null ? ". Nearest KVB stop: {$stop['name']}, {$stop['walk_min']} min walk (lines ".implode(', ', $stop['lines']).')' : '').'.');
+    }
+
+    /** How where they are is known, as a key the page words itself. */
+    private function basis(): string
+    {
+        return match ($this->location->source) {
+            LocationSource::Live => is_numeric(request()->input('from_place')) ? 'saved_place' : ($this->location->label === 'Your location' ? 'browser' : 'chosen'),
+            LocationSource::Confirmed => 'confirmed',
+            LocationSource::Ping => 'last_shared',
+            LocationSource::Area => request()->input('from_area') === $this->location->label ? 'area' : 'home_area',
+            LocationSource::None => 'unknown',
+        };
     }
 
     /** How where they are is known, in words the AI may pass on. */
@@ -287,7 +299,7 @@ final class AssistantTools
                 }
             }
         }
-        $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'lines', 'lifts', 'notices']))];
+        $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'areas', 'lines', 'lifts', 'notices']))];
 
         return $this->line($id, "Departures at {$name} ({$basis}):\n".implode("\n", array_slice($rows, 0, 12)));
     }
