@@ -859,159 +859,154 @@
     }
 }
 
-/* ── B · Answer under the box (owner, 22 Oct 2026; the Composer review canvas
-   and the mock's connected/composer-entry.css): the tray's answer card, the dim,
-   the way back to the conversation, and the dot on what opens Composer. The
-   card sits above the box (a phone, or a box at the bottom) or, `.is-top`,
-   under a box at the top; its height is the room left (tray-answer's useFit).
-   It loads with the first answer. */
-.composer-tray-answer {
-    position: absolute;
-    left: -1px;
-    right: -1px;
-    bottom: calc(100% + 12px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 22px;
-    background: var(--color-bg-canvas);
-    color: var(--color-text);
-    text-align: left;
-    box-shadow: 0 30px 70px -30px rgb(33 29 21 / 0.7);
-    animation: composer-tray-answer-up 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.composer-tray-answer.is-top {
-    top: calc(100% + 14px);
-    bottom: auto;
-    border-radius: 24px;
-    animation-name: composer-tray-answer-down;
-}
-@keyframes composer-tray-answer-down {
-    from {
-        opacity: 0;
-        clip-path: inset(0 0 100% 0 round 24px);
-    }
-    40% {
-        opacity: 1;
-    }
-    to {
-        clip-path: inset(0 0 0 0 round 24px);
-    }
-}
-@keyframes composer-tray-answer-up {
-    from {
-        opacity: 0;
-        clip-path: inset(100% 0 0 0 round 22px);
-    }
-    40% {
-        opacity: 1;
-    }
-    to {
-        clip-path: inset(0 0 0 0 round 22px);
-    }
-}
-/* The card's close is the one close while it shows. */
-.composer-tray:has(.composer-tray-answer) .composer-tray-dismiss {
-    display: none;
-}
-.composer-tray-answer-head {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 52px;
-    padding: 0 8px 0 16px;
-    border-bottom: 1px solid #efe7d8;
-}
-.composer-tray-answer-head strong {
-    font-size: 15px;
-    font-weight: 700;
-}
-.composer-tray-answer-mark {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--color-select-text);
-    color: #ffffff;
-}
-.composer-tray .composer-tray-answer-mark svg {
-    width: 14px;
-    height: 14px;
-}
-.composer-tray-answer-full,
-.composer-tray-answer-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 40px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-text);
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-}
-.composer-tray-answer-full {
-    margin-left: auto;
-    padding: 0 12px;
-}
-.composer-tray-answer-close {
-    width: 44px;
-    height: 44px;
-}
-.composer-tray
-    :is(.composer-tray-answer-full, .composer-tray-answer-close)
-    svg {
-    width: 17px;
-    height: 17px;
-}
-.composer-tray-answer-full:hover,
-.composer-tray-answer-close:hover {
-    background: var(--color-bg-quiet);
-}
-.composer-tray-answer-body {
-    position: relative;
-    flex: 1;
+/* ── The tray's panel (owner, 22 Oct 2026: "anchor at the bottom"; the
+   Composer in place canvas, row Proposal, and the mock's connected/
+   composer-entry.css): its start (the conversation to go back to and recent
+   ones) or the conversation, between its head and the box (shell.css). Also
+   the way back after closing and the dot on what opens Composer. It loads
+   when the panel first opens. */
+.composer-tray-start,
+.composer-tray-body {
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+}
+.composer-tray-start {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 14px 6px;
+}
+.composer-tray-body {
+    position: relative;
     padding: 18px 18px 28px;
 }
-/* The page's conversation, at the card's measure. */
-.composer-tray-answer-body .chat-feed {
+/* The page's conversation, at the panel's measure. */
+.composer-tray-body .chat-feed {
     max-width: none;
     margin: 0;
     display: flex;
     flex-direction: column;
     gap: 26px;
 }
-.composer-tray-answer-body .chat-entry {
+.composer-tray-body .chat-entry {
     margin: 0;
 }
-.composer-tray-answer-body .chat-entry > p {
+.composer-tray-body .chat-entry > p {
     margin: 0 0 10px;
 }
-.composer-tray-earlier {
-    align-self: center;
+.composer-tray-start-back,
+.composer-tray-start-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-tray-start-back {
+    min-height: 72px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-tray-start-back:hover,
+.composer-tray-start-row:hover {
+    background: var(--color-bg-quiet);
+}
+.composer-tray-start-row svg {
+    flex: none;
+    color: var(--color-text-soft);
+}
+.composer-tray .composer-tray-start-row svg {
+    width: 18px;
+    height: 18px;
+}
+.composer-tray .composer-tray-start-row svg:last-child {
+    width: 16px;
+    height: 16px;
+}
+.composer-tray-start-mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-round);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.composer-tray .composer-tray-start-mark svg {
+    width: 18px;
+    height: 18px;
+}
+.composer-tray-start-copy {
+    display: grid;
+    flex: 1;
+    gap: 1px;
+    min-width: 0;
+}
+.composer-tray-start-copy > span {
+    color: var(--color-select-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.composer-tray-start-copy strong {
+    overflow: hidden;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.composer-tray-start-row .composer-tray-start-copy strong {
+    font-weight: var(--weight-medium);
+}
+.composer-tray-start-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.composer-tray-start-recent {
+    display: grid;
+    gap: 2px;
+}
+.composer-tray-start-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    padding: 0 2px 0 4px;
+}
+.composer-tray-start-head h2 {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.composer-tray-start-all {
     display: inline-flex;
     align-items: center;
     min-height: 36px;
-    padding: 0 14px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: var(--color-bg-surface);
-    color: #5d5647;
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
+    padding: 0 8px;
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.composer-tray-start-empty {
+    margin: 4px 4px 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
 }
 /* Closed with a conversation kept: the way back, under the header's button
    (top and left set by the tray), or above the round button on a phone. */
@@ -1073,26 +1068,7 @@
     border-radius: 50%;
     background: var(--color-action);
 }
-@media (max-width: 700px) {
-    .composer-tray-answer-head {
-        height: 48px;
-        padding: 0 4px 0 14px;
-    }
-    .composer-tray-answer-full {
-        width: 44px;
-        height: 44px;
-        padding: 0;
-    }
-    .composer-tray-answer-full span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-    }
-}
 @media (prefers-reduced-motion: reduce) {
-    .composer-tray-answer,
     .composer-tray-resume {
         animation: none;
     }
