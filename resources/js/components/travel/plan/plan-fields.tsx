@@ -101,6 +101,9 @@ type PlanFieldsProps = {
     locateNote?: string | null;
     /** Sharing was off: share it here. */
     onAllowLocation?: () => void;
+    /** The To line as Home's or Work's address line ("Home address"). */
+    toLabel?: string;
+    toPlaceholder?: string;
 };
 
 export function PlanFields({
@@ -118,6 +121,8 @@ export function PlanFields({
     locating = false,
     locateNote = null,
     onAllowLocation,
+    toLabel = 'To',
+    toPlaceholder = 'Where to?',
 }: PlanFieldsProps) {
     const listId = useId();
     const [open, setOpen] = useState<'from' | 'to' | null>(null);
@@ -291,11 +296,11 @@ export function PlanFields({
                 >
                     <TravelIcon name="pin" />
                 </span>
-                <label htmlFor="to">To</label>
+                <label htmlFor="to">{toLabel}</label>
                 <input
                     id="to"
                     ref={toRef}
-                    placeholder="Where to?"
+                    placeholder={toPlaceholder}
                     value={to.text}
                     onChange={(event) =>
                         onTo({ text: event.target.value, place: null })
