@@ -40,6 +40,8 @@ export type LaidOutMap = {
         y: number;
         anchor: 'start' | 'middle' | 'end';
         text: string;
+        /** The name on one line, or two when it's long. */
+        rows: string[];
         lines: string[];
     }[];
     ends: {
@@ -48,6 +50,7 @@ export type LaidOutMap = {
         y: number;
         anchor: 'start' | 'middle' | 'end';
         name: string;
+        rows: string[];
     }[];
     centre: { x: number; y: number; w: number; h: number };
     title: { x: number; y: number; anchor: 'start' | 'middle' | 'end' };
@@ -69,7 +72,43 @@ const byLine = (a: string, b: string) =>
     a.localeCompare(b, undefined, { numeric: true });
 
 /** Text width in viewBox units, roughly (Inter-like at weight 600). */
-const textWidth = (text: string, size: number) => text.length * size * 0.56;
+export const textWidth = (text: string, size: number) =>
+    text.length * size * 0.6;
+
+/** Between two lines of a name. */
+export const ROW_GAP = 2;
+
+/**
+ * A long name on two lines, broken where it breaks best (a space, a slash
+ * or a hyphen) nearest its middle: "Hans-Böckler-" / "Platz/Bf West".
+ */
+export function rowsOf(name: string, max = 16): string[] {
+    if (name.length <= max) {
+        return [name];
+    }
+
+    let best = -1;
+
+    for (let i = 1; i < name.length - 1; i++) {
+        const at = name[i] === ' ' ? i : '/-'.includes(name[i]) ? i + 1 : -1;
+
+        if (
+            at > 0 &&
+            (best < 0 ||
+                Math.abs(at - name.length / 2) <
+                    Math.abs(best - name.length / 2))
+        ) {
+            best = at;
+        }
+    }
+
+    return best < 0
+        ? [name]
+        : [name.slice(0, best).trimEnd(), name.slice(best).trimStart()];
+}
+
+const widest = (rows: string[], size: number) =>
+    Math.max(...rows.map((row) => textWidth(row, size)));
 
 export function layoutLinesMap(data: LinesMapData): LaidOutMap {
     const { station } = data;
@@ -200,8 +239,13 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
             next.set(name, [...(next.get(name) ?? []), w]);
         });
         const children = [...next.values()];
-        // Each branch turns by at most a slot or two, never back on itself.
-        const spread = slots === 8 ? 1 : 2;
+        const ending = (c: Way[]) => c.every((w) => k + 1 >= w.stops.length);
+        // Ends that fan out from one stop run on further, so their names
+        // don't pile up.
+        const fan = children.filter(ending).length;
+        // Each branch turns by at most a slot or two (more for a wide fan),
+        // never back on itself.
+        const spread = (slots === 8 ? 1 : 2) * (children.length > 3 ? 2 : 1);
         const real = children.map((c) => {
             const w = c[0];
             const here = w.points[k];
@@ -214,9 +258,11 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
             .sort((a, b) => a.want - b.want);
         const used = new Set<number>();
         order.forEach(({ c, want }, i) => {
+            // Ways that go on together keep straight (the mock bends only
+            // where lines part); where they part, each turns its real way.
             let d =
                 children.length === 1
-                    ? Math.max(-spread, Math.min(spread, want))
+                    ? 0
                     : Math.max(
                           -spread,
                           Math.min(
@@ -237,7 +283,7 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
                 k + 1,
                 at,
                 slot + d,
-                c.every((w) => k + 1 >= w.stops.length) ? TIP : STEP,
+                ending(c) ? TIP + 26 * (fan - 1) : STEP,
             );
         });
     };
@@ -260,8 +306,8 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
     });
 
     // The middle covers where the lanes swap.
-    const widest = Math.max(1, ...rays.map((r) => lanesOf(r.group).length));
-    const side = widest === 1 ? 36 : Math.max(48, (widest - 1) * LANE + 30);
+    const lanes = Math.max(1, ...rays.map((r) => lanesOf(r.group).length));
+    const side = lanes === 1 ? 36 : Math.max(48, (lanes - 1) * LANE + 30);
     const centre = { x: -side / 2, y: -side / 2, w: side, h: side };
 
     /* ---------- Words, placed where they cover least ---------- */
@@ -290,7 +336,8 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
             );
         }),
     );
-    // What a word would cover: other words, and the lines (worse).
+    // What a word would cover: other words, and the lines with their
+    // casing (worse).
     const cost = (b: Box) =>
         boxes.reduce(
             (sum, o) =>
@@ -302,10 +349,10 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
         40 *
             samples.filter(
                 ([x, y]) =>
-                    x > b.x0 - 3 &&
-                    x < b.x1 + 3 &&
-                    y > b.y0 - 3 &&
-                    y < b.y1 + 3,
+                    x > b.x0 - 6 &&
+                    x < b.x1 + 6 &&
+                    y > b.y0 - 6 &&
+                    y < b.y1 + 6,
             ).length;
     const boxOf = (
         x: number,
@@ -313,6 +360,7 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
         anchor: 'start' | 'middle' | 'end',
         width: number,
         size: number,
+        rows = 1,
     ): Box => {
         const x0 =
             anchor === 'start'
@@ -321,18 +369,25 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
                   ? x - width
                   : x - width / 2;
 
-        return { x0, y0: y - size * 0.8, x1: x0 + width, y1: y + size * 0.25 };
+        return {
+            x0,
+            y0: y - size * 0.8,
+            x1: x0 + width,
+            y1: y + size * 0.25 + (rows - 1) * (size + ROW_GAP),
+        };
     };
     const anchorOf = (dx: number): 'start' | 'middle' | 'end' =>
         dx > 0.35 ? 'start' : dx < -0.35 ? 'end' : 'middle';
     type Spot = { x: number; y: number; anchor: 'start' | 'middle' | 'end' };
     // The first spot that covers nothing, else the one that covers least.
-    const place = (spots: Spot[], width: number, size: number) => {
+    const place = (spots: Spot[], width: number, size: number, rows = 1) => {
         let best = spots[0];
         let least = Infinity;
 
         for (const spot of spots) {
-            const c = cost(boxOf(spot.x, spot.y, spot.anchor, width, size));
+            const c = cost(
+                boxOf(spot.x, spot.y, spot.anchor, width, size, rows),
+            );
 
             if (c < least) {
                 best = spot;
@@ -344,7 +399,7 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
             }
         }
 
-        boxes.push(boxOf(best.x, best.y, best.anchor, width, size));
+        boxes.push(boxOf(best.x, best.y, best.anchor, width, size, rows));
 
         return best;
     };
@@ -354,13 +409,20 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
         [nx, ny]: Pt,
         gap: number,
         size: number,
+        rows = 1,
     ): Spot[] => {
         const anchor = anchorOf(nx);
         const x = at[0] + nx * gap;
+        // Two lines sit higher above a point, and level ones centre on it.
+        const extra = (rows - 1) * (size + ROW_GAP);
         const y =
             at[1] +
             ny * gap +
-            (ny > 0.35 ? size * 0.75 : ny < -0.35 ? -2 : size * 0.33);
+            (ny > 0.35
+                ? size * 0.75
+                : ny < -0.35
+                  ? -2 - extra
+                  : size * 0.33 - extra / 2);
 
         return anchor === 'middle'
             ? [
@@ -373,15 +435,22 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
 
     const names: LaidOutMap['names'] = nodes.map((n) => {
         const half = ((n.lines.length - 1) * LANE + 14) / 2 + 8;
+        const rows = rowsOf(n.text);
         const spots = [perp(n.dir), perp([-n.dir[0], -n.dir[1]])].flatMap(
             (normal) =>
                 [0, 12, -12, 26, -26].flatMap((slide) =>
-                    beside(add(n.at, n.dir, slide), normal, half, NAME),
+                    beside(
+                        add(n.at, n.dir, slide),
+                        normal,
+                        half,
+                        NAME,
+                        rows.length,
+                    ),
                 ),
         );
-        const spot = place(spots, textWidth(n.text, NAME), NAME);
+        const spot = place(spots, widest(rows, NAME), NAME, rows.length);
 
-        return { ...spot, text: n.text, lines: n.lines };
+        return { ...spot, text: n.text, rows, lines: n.lines };
     });
 
     const ends: LaidOutMap['ends'] = runs.flatMap(({ path: p, tip }) => {
@@ -390,8 +459,8 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
         }
 
         const end = p.points.at(-1)!;
-        const width =
-            18 + 9 * p.line.length + 6 + textWidth(tip.way.towards, END_NAME);
+        const rows = rowsOf(tip.way.towards, 20);
+        const width = 18 + 9 * p.line.length + 6 + widest(rows, END_NAME);
         const spots = [10, 30].flatMap((along) =>
             [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5].flatMap((step) =>
                 beside(
@@ -403,31 +472,40 @@ export function layoutLinesMap(data: LinesMapData): LaidOutMap {
                     tip.dir,
                     10,
                     END_NAME,
+                    rows.length,
                 ),
             ),
         );
-        const spot = place(spots, width, END_NAME);
+        const spot = place(spots, width, END_NAME, rows.length);
 
-        return [{ line: p.line, ...spot, name: tip.way.towards }];
+        return [{ line: p.line, ...spot, name: tip.way.towards, rows }];
     });
 
-    // The station's name: wherever around the middle is free.
+    // The station's name: wherever around the middle is free, nearest first.
+    const corners: Pt[] = [
+        [1, 1],
+        [-1, 1],
+        [1, -1],
+        [-1, -1],
+        [0, 1],
+        [0, -1],
+        [1, 0],
+        [-1, 0],
+    ];
     const title = place(
-        (
-            [
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-                [-1, -1],
-                [0, 1],
-                [0, -1],
-                [1, 0],
-                [-1, 0],
-            ] as Pt[]
-        ).flatMap((corner) =>
-            beside([0, 0], corner, side / 2 + 8, TITLE).slice(0, 1),
+        [8, 30, 52, 74].flatMap((gap) =>
+            corners.flatMap(([cx, cy]) =>
+                // Straight above or below, also beside a line running there.
+                beside(
+                    [0, 0],
+                    [cx, cy],
+                    side / 2 + gap * (cx && cy ? 0.7 : 1),
+                    TITLE,
+                ).slice(0, cx ? 1 : 3),
+            ),
         ),
-        textWidth(station.name, TITLE),
+        // Bolder and bigger: a little wider than the stops' names.
+        textWidth(station.name, TITLE) * 1.08,
         TITLE,
     );
 

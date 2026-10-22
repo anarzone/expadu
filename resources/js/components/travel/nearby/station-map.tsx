@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { TravelChip } from '../labels';
 import { lineLook } from '../line-look';
 import { TravelIcon } from '../travel-icon';
-import { layoutLinesMap } from './lines-map-layout';
+import { layoutLinesMap, ROW_GAP, textWidth } from './lines-map-layout';
 import type { LinesMapData } from './lines-map-layout';
 import type { ShownLine } from './nearby-model';
 import type { Station } from './types';
@@ -64,6 +64,9 @@ export function useLinesMap(
 
     return data && (data.lines.length || data.buses.length) ? data : null;
 }
+
+/** Desktop: the map takes the list's place rather than a screen of its own. */
+const DESKTOP = '(min-width: 1000px)';
 
 const halo = {
     paintOrder: 'stroke',
@@ -159,12 +162,19 @@ function LinesDiagram({
                     opacity={on(n.lines) ? 1 : 0.22}
                     {...halo}
                 >
-                    {n.text}
+                    {n.rows.map((row, r) => (
+                        <tspan key={r} x={n.x} dy={r ? 15 + ROW_GAP : 0}>
+                            {row}
+                        </tspan>
+                    ))}
                 </text>
             ))}
             {map.ends.map((e, i) => {
                 const badge = 18 + 9 * e.line.length;
-                const total = badge + 6 + e.name.length * 14 * 0.56;
+                const total =
+                    badge +
+                    6 +
+                    Math.max(...e.rows.map((row) => textWidth(row, 14)));
                 const left =
                     e.anchor === 'start'
                         ? e.x
@@ -205,7 +215,15 @@ function LinesDiagram({
                             strokeWidth={5}
                             {...halo}
                         >
-                            {e.name}
+                            {e.rows.map((row, r) => (
+                                <tspan
+                                    key={r}
+                                    x={left + badge + 6}
+                                    dy={r ? 14 + ROW_GAP : 0}
+                                >
+                                    {row}
+                                </tspan>
+                            ))}
                         </text>
                     </g>
                 );
@@ -305,6 +323,43 @@ export function StationMap({
         document.addEventListener('keydown', escape);
 
         return () => document.removeEventListener('keydown', escape);
+    }, [open, onClose]);
+
+    // Phones: the map is a screen of its own, so the browser's Back closes
+    // it too. Its history entry keeps Inertia's page, and its Back is
+    // caught before Inertia's (which would load the page again).
+    useEffect(() => {
+        if (!open || window.matchMedia(DESKTOP).matches) {
+            return;
+        }
+
+        window.history.pushState(
+            { ...window.history.state, travelMap: true },
+            '',
+        );
+        let popped = false;
+        const back = (event: PopStateEvent) => {
+            popped = true;
+            event.stopImmediatePropagation();
+            onClose();
+        };
+        window.addEventListener('popstate', back, { capture: true });
+
+        return () => {
+            window.removeEventListener('popstate', back, { capture: true });
+
+            // Closed here (its own Back, Escape): take its entry off too,
+            // and keep that Back from Inertia as well.
+            if (!popped && window.history.state?.travelMap) {
+                const swallow = (event: PopStateEvent) =>
+                    event.stopImmediatePropagation();
+                window.addEventListener('popstate', swallow, {
+                    capture: true,
+                    once: true,
+                });
+                window.history.back();
+            }
+        };
     }, [open, onClose]);
 
     const badge = (line: string) => {

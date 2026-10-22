@@ -22,6 +22,9 @@ class StationLinesMap
     /** How far from the board's station a timetable stop of that name may be. */
     private const NEAR_METRES = 400;
 
+    /** Under this share of the busiest line's runs here, a line each way is left out. */
+    private const RARE = 0.05;
+
     public function __construct(private readonly TravelEstimator $distance) {}
 
     /**
@@ -33,7 +36,7 @@ class StationLinesMap
      */
     public function for(string $name, float $lat, float $lng): ?array
     {
-        $key = 'travel:lines-map:v1:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
+        $key = 'travel:lines-map:v2:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
 
         // Cached as scalars only (arrays), a day per timetable import.
         return Cache::remember($key, 86_400, fn () => $this->build($name, $lat, $lng));
@@ -76,11 +79,22 @@ class StationLinesMap
             ->selectRaw('r.route_short_name as line, r.route_type as type, t.direction_id as direction, t.trip_headsign as headsign, count(*) as trips, min(t.trip_id) as trip_id')
             ->get();
 
+        // How often each line runs here each way, all its patterns together.
+        $runsHere = [];
+        foreach ($patterns as $pattern) {
+            $slot = trim((string) $pattern->line).'|'.($pattern->direction ?? '-');
+            $runsHere[$slot] = ($runsHere[$slot] ?? 0) + (int) $pattern->trips;
+        }
+        // A diversion or a special run (16 and 18 via Friesenplatz, a few
+        // times in the whole timetable) isn't the line's way through here.
+        $often = self::RARE * max([0, ...$runsHere]);
+
         $buses = [];
         $chosen = [];
         foreach ($patterns as $pattern) {
             $line = trim((string) $pattern->line);
-            if ($line === '') {
+            $slot = $line.'|'.($pattern->direction ?? '-');
+            if ($line === '' || $runsHere[$slot] < $often) {
                 continue;
             }
             $mode = self::mode((int) $pattern->type);
@@ -92,7 +106,6 @@ class StationLinesMap
             if ($mode === null) {
                 continue;
             }
-            $slot = $line.'|'.($pattern->direction ?? '-');
             if (! isset($chosen[$slot]) || $pattern->trips > $chosen[$slot]['trips']) {
                 $chosen[$slot] = ['line' => $line, 'mode' => $mode, 'trips' => (int) $pattern->trips, 'trip_id' => $pattern->trip_id];
             }
