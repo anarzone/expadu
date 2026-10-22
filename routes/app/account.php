@@ -37,9 +37,7 @@ Route::middleware('throttle:taste-profile')->controller(TasteProfileController::
 Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
 
-Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding');
 Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
-Route::post('onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
 
 // Confirm it's you with an emailed code, where password.confirm asks an
 // account that has no password (EXP-174).
