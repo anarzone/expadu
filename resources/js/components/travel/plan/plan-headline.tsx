@@ -131,8 +131,8 @@ export function PlanHeadline({
             }
             text={
                 late
-                    ? `Run after run at ${stop}, ${what} towards ${trouble.dest} are ${lateBy(trouble)} min behind the timetable in the live times. The times below may be later.`
-                    : `Cancelled at ${stop}, towards ${trouble.dest}: ${trouble.runs.map((r) => r.time).join(' · ')}.`
+                    ? `Run after run at ${stop}, ${what} towards ${stopName(trouble.dest, answer.city)} are ${lateBy(trouble)} min behind the timetable in the live times. The times below may be later.`
+                    : `Cancelled at ${stop}, towards ${stopName(trouble.dest, answer.city)}: ${trouble.runs.map((r) => r.time).join(' · ')}.`
             }
             todo={
                 transit.length && !transit.some((o) => rides(o, [trouble.line]))

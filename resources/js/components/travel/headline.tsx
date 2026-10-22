@@ -17,6 +17,7 @@ export function Headline({
     title,
     lang = 'en',
     text,
+    textLang,
     todo,
     german,
     source,
@@ -28,6 +29,8 @@ export function Headline({
     /** The words' language: German when no English brief passed its checks. */
     lang?: 'en' | 'de';
     text?: string | null;
+    /** The text's language, when it isn't the title's. */
+    textLang?: 'en' | 'de';
     todo?: string | null;
     /** The notice's own words, when the title and text are an English brief of them. */
     german?: { words: string; url: string | null; kvb: boolean } | null;
@@ -54,7 +57,7 @@ export function Headline({
             <h2 id={`${id}-title`} lang={lang}>
                 {title}
             </h2>
-            {text ? <p lang={lang}>{text}</p> : null}
+            {text ? <p lang={textLang ?? lang}>{text}</p> : null}
             {todo ? (
                 <p>
                     <strong>What to do:</strong> {todo}

@@ -82,6 +82,41 @@ final class TripDisruptions
     }
 
     /**
+     * The one major problem on a trip's lines, for Leave now (Travel and
+     * Today): a major notice on a line it rides, else that line in trouble
+     * at the stop it boards, by its live runs. Null when there's none.
+     *
+     * @return array{notice: array<string, mixed>|null, trouble: array<string, mixed>|null}|null
+     */
+    public function forTrip(Journey $journey, bool $boards = true): ?array
+    {
+        $ridden = array_values(array_unique(array_map('strval', $journey->lines())));
+        if ($ridden === []) {
+            return null;
+        }
+
+        $notice = collect($this->disruptions->getLineDisruptions())
+            ->first(fn (array $d) => ($d['scale'] ?? 'minor') === 'major'
+                && array_intersect(array_map('strval', $d['affected_lines'] ?? []), $ridden) !== []);
+        if ($notice !== null) {
+            return ['notice' => [
+                'id' => $notice['id'],
+                'title' => $notice['title'] ?? '',
+                'lines' => array_values(array_map('strval', $notice['affected_lines'] ?? [])),
+                'source' => $notice['source'] ?? null,
+                'since' => $notice['started_at'] ?? null,
+                'brief' => $notice['brief'] ?? null,
+                'details' => ($notice['description'] ?? '') !== '' ? $notice['description'] : null,
+                'url' => $notice['url'] ?? null,
+            ], 'trouble' => null];
+        }
+
+        [$trouble] = $boards ? $this->atBoardingStops([$journey], $ridden) : [[], []];
+
+        return $trouble === [] ? null : ['notice' => null, 'trouble' => $trouble[0]];
+    }
+
+    /**
      * The lines KVB lists at the stop nearest a point, when one is near.
      *
      * @return list<string>
