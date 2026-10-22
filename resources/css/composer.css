@@ -885,3 +885,10 @@
         flex-basis: 100%;
     }
 }
+
+/* "Around you now": where its sentences come from, as links in the fine print. */
+.composer-page .answer-fine a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
