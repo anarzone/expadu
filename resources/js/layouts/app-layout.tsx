@@ -8,11 +8,7 @@ import type { AppLayoutProps } from '@/types';
  * (connected/page-frame.css). A page awaiting its rebuild passes `fullWidth`
  * and keeps its own column.
  */
-export default function AppLayout({
-    children,
-    fullWidth,
-    hideQaSwitcher,
-}: AppLayoutProps) {
+export default function AppLayout({ children, fullWidth }: AppLayoutProps) {
     return (
         <>
             <main
@@ -22,7 +18,7 @@ export default function AppLayout({
             >
                 {children}
             </main>
-            {!hideQaSwitcher && <PersonaSwitcher />}
+            <PersonaSwitcher />
         </>
     );
 }
