@@ -19,7 +19,8 @@ final class RemindCommand extends Command
     {
         $usersProcessed = 0;
         $eventsEvaluated = 0;
-        $query = User::query()->whereNotNull('onboarded_at')->whereNotNull('email_verified_at')
+        // Everyone with a Paperwork record; ReassessPerson keeps the alerts' own gate.
+        $query = User::query()->whereNotNull('email_verified_at')
             ->whereIn('id', BureaucracyPerson::query()->where('record_status', 'active')->whereNotNull('account_user_id')->select('account_user_id'));
         if ($specific = $this->option('user')) {
             $query->whereKey((int) $specific);
