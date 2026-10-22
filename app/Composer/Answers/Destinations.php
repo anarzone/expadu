@@ -22,8 +22,11 @@ final class Destinations
     /** Places offered when the name alone doesn't say which. */
     private const CHOICES = 3;
 
-    /** What "the centre" means in Cologne: the Innenstadt's Veedel. */
-    private const CENTRE = ['Altstadt-Nord', 'Altstadt-Süd', 'Neustadt-Nord', 'Neustadt-Süd', 'Deutz'];
+    /** Cologne's centre (lat, lng), for keeping Travel's search to the city. */
+    private const COLOGNE = [50.9375, 6.9603];
+
+    /** What "the centre" means in Cologne: the old town and the Neustadt, this side of the Rhine. */
+    private const CENTRE = ['Altstadt-Nord', 'Altstadt-Süd', 'Neustadt-Nord', 'Neustadt-Süd'];
 
     private const CENTRE_WORDS = '/^(the )?(city cent(er|re)|cent(er|re)|innenstadt|downtown|zentrum|old town|altstadt|town)$/u';
 
@@ -47,12 +50,20 @@ final class Destinations
             // Its longest word narrows the search ("Café Nova" holds "nova", not "cafe").
             ->where('name', 'ilike', '%'.collect(explode(' ', $key))->sortByDesc(fn (string $word): int => strlen($word))->first().'%')
             ->limit(200)->get(['id', 'name', 'category', 'veedel', 'lat', 'lng'])
-            ->filter(fn (Spot $spot): bool => self::key($spot->name) === $key)
             ->map(fn (Spot $spot): array => ['name' => $spot->name, 'area' => $spot->veedel,
                 'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id]);
-        $found = $spots->isNotEmpty() ? $spots : collect($this->searched($named, $near))
-            ->filter(fn (array $place): bool => str_contains(self::key($place['name']), $key));
+        $same = fn (array $place): bool => self::tight($place['name']) === self::tight($key);
 
+        // The name itself in Expadu's places, else in Travel's search (in Cologne); only then
+        // names holding it ("Zoo" in "Zoo Restaurant"), Expadu's first.
+        $found = $spots->filter($same);
+        if ($found->isEmpty()) {
+            $searched = collect($this->searched($named, $near))
+                ->filter(fn (array $place): bool => abs($place['point']->lat - self::COLOGNE[0]) < 0.2 && abs($place['point']->lng - self::COLOGNE[1]) < 0.3);
+            $found = $searched->filter($same);
+            $found = $found->isNotEmpty() ? $found : $spots->filter(fn (array $place): bool => preg_match('/\b'.preg_quote($key, '/').'\b/u', self::key($place['name'])) === 1);
+            $found = $found->isNotEmpty() ? $found : $searched->filter(fn (array $place): bool => str_contains(self::tight($place['name']), self::tight($key)));
+        }
         if ($veedels !== [] && ($inArea = $found->filter(fn (array $place): bool => in_array($place['area'], $veedels, true)))->isNotEmpty()) {
             $found = $inArea;
         }
@@ -67,6 +78,12 @@ final class Destinations
     public static function key(string $name): string
     {
         return trim((string) preg_replace(['/^the\s+/u', '/[^a-z0-9]+/u'], ['', ' '], mb_strtolower(Str::ascii($name))));
+    }
+
+    /** A name as compared, spaces aside ("RheinEnergieStadion" is "Rheinenergie Stadion"). */
+    private static function tight(string $name): string
+    {
+        return str_replace(' ', '', self::key($name));
     }
 
     /**
