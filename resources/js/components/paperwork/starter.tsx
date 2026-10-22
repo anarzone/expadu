@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CommandError, commands, reads } from './api';
 import { answerLabel, choices, fieldIcon, fieldLabel } from './facts';
@@ -50,6 +51,100 @@ export function useFreshStart(self: boolean): boolean {
     }, [allowed, plan.person_id, plan.evaluated_at]);
 
     return allowed && fresh;
+}
+
+/**
+ * Paperwork's own start (it replaces the old setup wizard): where you live
+ * first, since the city decides which office's tasks apply, then your record
+ * is made and the plan opens with the starter path. A city we don't cover yet
+ * opens the plan's outside-coverage page, which says so.
+ */
+export function StartRecord({ cities }: { cities: string[] }) {
+    const [choice, setChoice] = useState<string | null>(null);
+    const [other, setOther] = useState('');
+    const [pending, setPending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const city = choice === '' ? other.trim() : choice;
+
+    const start = async () => {
+        if (!city || city.length < 2 || pending) {
+            return;
+        }
+
+        setPending(true);
+        setError(null);
+
+        try {
+            await commands.setCity(city);
+            await commands.createSelf();
+            router.reload({
+                only: ['entry', 'jurisdiction', 'people', 'coverageWaitlist'],
+            });
+        } catch (e) {
+            setError(
+                e instanceof CommandError
+                    ? e.message
+                    : 'Something went wrong. Try again in a moment.',
+            );
+            setPending(false);
+        }
+    };
+
+    return (
+        <section className="access-blank start-record">
+            <h2>Where do you live?</h2>
+            <p>
+                Your city decides which office’s tasks apply to you. You can
+                change it later in Settings.
+            </p>
+            <div className="start-city" role="group" aria-label="Your city">
+                {cities.map((name) => (
+                    <button
+                        type="button"
+                        key={name}
+                        aria-pressed={choice === name}
+                        disabled={pending}
+                        onClick={() => setChoice(name)}
+                    >
+                        {name}
+                    </button>
+                ))}
+                <button
+                    type="button"
+                    aria-pressed={choice === ''}
+                    disabled={pending}
+                    onClick={() => setChoice('')}
+                >
+                    Somewhere else
+                </button>
+            </div>
+            {choice === '' ? (
+                <label className="start-city-other">
+                    Your city
+                    <input
+                        type="text"
+                        autoComplete="address-level2"
+                        maxLength={80}
+                        value={other}
+                        onChange={(e) => setOther(e.target.value)}
+                    />
+                </label>
+            ) : null}
+            <div className="actions">
+                <button
+                    type="button"
+                    className="button primary"
+                    disabled={pending || !city || city.length < 2}
+                    onClick={() => void start()}
+                >
+                    {pending ? 'Starting…' : 'Get started'}
+                </button>
+            </div>
+            <p className="orientation-error" role="alert" hidden={!error}>
+                {error}
+            </p>
+        </section>
+    );
 }
 
 /** "A little clarity. One step at a time.": the start of the starter path, above the overview. */

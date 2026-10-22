@@ -58,6 +58,8 @@ class BureaucracyController extends Controller
             // Outside Cologne: whether the person asked to be told, and confirmed by mail.
             // Read only there, and only for the signed-in account's own address.
             'coverageWaitlist' => fn () => $jurisdiction === 'outside_coverage' ? app(CoverageWaitlist::class)->state($actor) : null,
+            // "Get started" asks where you live: the cities Paperwork covers, from the catalogue.
+            'coveredCities' => fn () => array_values(array_map(fn (array $j): string => $j['city'], config('bureaucracy_catalogue.jurisdictions'))),
         ]);
     }
 

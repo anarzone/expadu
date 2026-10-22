@@ -137,6 +137,15 @@ export const reads = {
 };
 
 export const commands = {
+    /** Where you live: it decides which office's tasks apply. */
+    setCity: (city: string) =>
+        send<{ city: string; jurisdiction: string }>(
+            'PUT',
+            `${base}/people/self/city`,
+            { city },
+        ),
+    /** Your own record (idempotent): Paperwork's "Get started". */
+    createSelf: () => send('POST', `${base}/people/self`, {}),
     startProcess: (
         personId: number,
         jurisdiction: string,

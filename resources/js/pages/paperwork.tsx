@@ -21,7 +21,11 @@ import {
     Sharing,
     StoppedRecord,
 } from '@/components/paperwork/sharing';
-import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
+import {
+    StartRecord,
+    StarterWelcome,
+    useFreshStart,
+} from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
     searchable,
@@ -40,6 +44,8 @@ interface Props {
     jurisdiction: string;
     people: Person[];
     coverageWaitlist: CoverageWaitlist;
+    /** The cities Paperwork covers, for "Get started". */
+    coveredCities?: string[];
 }
 
 /** One search over tasks, dates, documents and Good to know; Escape or Clear empties it. */
@@ -330,26 +336,14 @@ function OutsideCoverage({ waitlist }: { waitlist: CoverageWaitlist }) {
     );
 }
 
-function Unavailable({ state }: { state: PlanEntry['state'] }) {
+function Unavailable() {
     return (
         <section className="access-blank">
-            <h2>
-                {state === 'setup_required'
-                    ? 'Tell us a little about your move first.'
-                    : 'Your paperwork record isn’t available right now.'}
-            </h2>
+            <h2>Your paperwork record isn’t available right now.</h2>
             <p>
-                {state === 'setup_required'
-                    ? 'A few answers about your situation let us show the tasks that apply to you.'
-                    : 'Your record is paused or being removed. Contact us if you didn’t expect this.'}
+                Your record is paused or being removed. Contact us if you didn’t
+                expect this.
             </p>
-            {state === 'setup_required' ? (
-                <div className="actions">
-                    <Link className="button primary" href="/onboarding">
-                        Get started
-                    </Link>
-                </div>
-            ) : null}
         </section>
     );
 }
@@ -359,6 +353,7 @@ export default function Paperwork({
     jurisdiction,
     people,
     coverageWaitlist,
+    coveredCities = [],
 }: Props) {
     const self = people.find((p) => p.is_self);
     const [notice, setNotice] = useState<string | null>(null);
@@ -389,8 +384,10 @@ export default function Paperwork({
                             <StoppedRecord personId={self.id} />
                         ) : entry.state === 'erased' ? (
                             <ErasedRecord />
+                        ) : entry.state === 'setup_required' ? (
+                            <StartRecord cities={coveredCities} />
                         ) : (
-                            <Unavailable state={entry.state} />
+                            <Unavailable />
                         )}
                         <RecordNoticeToast notice={notice} clear={setNotice} />
                     </div>
