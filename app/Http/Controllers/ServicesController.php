@@ -16,7 +16,8 @@ class ServicesController extends Controller
         return Inertia::render('services', ['comingSoon' => true]);
 
         $user = $request->user();
-        $home = $user->places()->orderBy('sort_order')->first();
+        // Your Home when it has a point; otherwise the app's own city.
+        $home = $user->places()->located()->where('category', 'home')->first();
         $lat = $home?->lat ?? 50.9375;
         $lng = $home?->lng ?? 6.9603;
 

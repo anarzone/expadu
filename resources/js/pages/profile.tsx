@@ -258,6 +258,10 @@ export default function Profile() {
     const [showArriveBy, setShowArriveBy] = useState(false);
     const [showDays, setShowDays] = useState(false);
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
+    // A new place that is your Home or Work ("Set your Home").
+    const [placeCategory, setPlaceCategory] = useState<'home' | 'work' | null>(
+        null,
+    );
 
     // Toast
 
@@ -414,8 +418,9 @@ export default function Profile() {
     }
 
     // Places
-    function openPlaceForm(place?: Place) {
+    function openPlaceForm(place?: Place, category?: 'home' | 'work') {
         setPlaceError(null);
+        setPlaceCategory(place ? null : (category ?? null));
 
         if (place) {
             setPlaceName(place.name);
@@ -428,9 +433,15 @@ export default function Profile() {
             setPlaceDayMode(place.day_mode ?? 'all');
             setPlaceActiveDays(place.active_days ?? []);
         } else {
-            setPlaceName('');
+            setPlaceName(
+                category === 'home'
+                    ? 'Home'
+                    : category === 'work'
+                      ? 'Work'
+                      : '',
+            );
             setPlaceAddr('');
-            setPlaceEmoji('🏠');
+            setPlaceEmoji(category === 'work' ? '💼' : '🏠');
             setEditingPlaceId(null);
             setPlaceLat(null);
             setPlaceLng(null);
@@ -502,6 +513,7 @@ export default function Profile() {
                 {
                     emoji: placeEmoji,
                     name: placeName.trim(),
+                    category: placeCategory,
                     address: placeAddr.trim() || null,
                     lat: placeLat,
                     lng: placeLng,
@@ -896,6 +908,60 @@ export default function Profile() {
                         onBack={() => setProfilePage(null)}
                         backLabel="← Back to Profile"
                     >
+                        {/* Home and Work are set by you, never made up:
+                            until then they say so, one tap from the form. */}
+                        {(['home', 'work'] as const)
+                            .filter(
+                                (category) =>
+                                    !places.some(
+                                        (p) => p.category === category,
+                                    ),
+                            )
+                            .map((category) => (
+                                <div
+                                    key={category}
+                                    className="flex items-center justify-between border-b border-border py-3.5"
+                                    style={{ gap: 12 }}
+                                >
+                                    <div>
+                                        <div
+                                            className="text-text"
+                                            style={{
+                                                fontSize: 14,
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            {category === 'home'
+                                                ? '🏠 Home'
+                                                : '💼 Work'}
+                                        </div>
+                                        <div
+                                            className="text-text-soft"
+                                            style={{
+                                                fontSize: 12,
+                                                marginTop: 2,
+                                            }}
+                                        >
+                                            Not set yet
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            openPlaceForm(undefined, category)
+                                        }
+                                        className="cursor-pointer rounded-[9px] border border-border bg-bg-surface px-2.5 py-1 text-text transition-all hover:bg-bg-hover"
+                                        style={{
+                                            fontFamily: "'Geist', sans-serif",
+                                            fontSize: 12,
+                                        }}
+                                    >
+                                        {category === 'home'
+                                            ? 'Set your Home'
+                                            : 'Set your Work'}
+                                    </button>
+                                </div>
+                            ))}
                         {places.map((p) => (
                             <div
                                 key={p.id}

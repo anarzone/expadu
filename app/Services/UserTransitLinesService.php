@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Places\AddressLocator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class UserTransitLinesService
 {
     public function __construct(
         private readonly NearbyStopService $nearbyStopService,
-        private readonly GeocodingService $geocodingService,
+        private readonly AddressLocator $locator,
     ) {}
 
     /**
@@ -56,11 +57,12 @@ class UserTransitLinesService
         $places = $user->places()->get();
 
         foreach ($places as $place) {
-            // Auto-geocode if address exists but no coordinates
+            // An address without a point gets one only when it's found
+            // exactly (AddressLocator); the first search result was a guess.
             if (! $place->lat && $place->address) {
-                $results = $this->geocodingService->search($place->address);
-                if (! empty($results)) {
-                    $place->update(['lat' => $results[0]['lat'], 'lng' => $results[0]['lng']]);
+                $point = $this->locator->locate($place->address);
+                if ($point !== null) {
+                    $place->update([...$point, 'located_from_address' => true]);
                 }
             }
 

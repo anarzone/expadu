@@ -6,6 +6,7 @@ use App\Models\UserPlace;
 use App\Places\AddressLocator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserPlaceController extends Controller
 {
@@ -14,6 +15,8 @@ class UserPlaceController extends Controller
         $validated = $request->validate([
             'emoji' => ['required', 'string', 'max:10'],
             'name' => ['required', 'string', 'max:255'],
+            // "Set your Home": your one Home or Work, made when you set it.
+            'category' => ['nullable', Rule::in(['home', 'work']), Rule::unique('user_places', 'category')->where('user_id', $request->user()->id)],
             'address' => ['nullable', 'string', 'max:500'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
@@ -22,6 +25,10 @@ class UserPlaceController extends Controller
             'active_days' => ['nullable', 'array'],
             'active_days.*' => ['in:mon,tue,wed,thu,fri,sat,sun'],
         ]);
+
+        if (($validated['category'] ?? null) === null) {
+            unset($validated['category']);
+        }
 
         [$validated, $notFound] = $this->locate($validated, $locator);
 

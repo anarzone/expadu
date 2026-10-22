@@ -297,8 +297,8 @@ class NearbyStopService
      */
     public function predictDestination(User $user, float $currentLat, float $currentLng): ?array
     {
-        $home = $user->places()->where('category', 'home')->first();
-        $work = $user->places()->where('category', 'work')->first();
+        $home = $user->places()->located()->where('category', 'home')->first();
+        $work = $user->places()->located()->where('category', 'work')->first();
         $homeLat = $home?->lat ? (float) $home->lat : null;
         $homeLng = $home?->lng ? (float) $home->lng : null;
         $workLat = $work?->lat ? (float) $work->lat : null;
