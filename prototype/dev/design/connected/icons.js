@@ -56,6 +56,7 @@
         sliders: '<path d="M4 6h16M4 18h16M8 3v6m8 6v6"/>',
         bell: '<path d="M4 17h16l-2-4V8a6 6 0 0 0-12 0v5l-2 4Zm5 4h6"/>',
         ticket: '<path d="M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5Z"/><path d="M15 5v3m0 3v2m0 3v3"/>',
+        expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
     });
     window.ExpaduIcon = (n) =>
         `<svg viewBox="0 0 24 24" aria-hidden="true">${shapes[n] || shapes.spark}</svg>`;

@@ -1,0 +1,56 @@
+/* Composer's answer in place (embed.js): inside another page's card, only
+   the conversation shows; the page's header, Your day, its own box and its
+   button stay out. The sample line stays, so the card says it isn't live. */
+html.is-embedded,
+html.is-embedded body {
+    background: var(--color-bg-canvas, #faf6ee);
+}
+html.is-embedded body {
+    min-height: 0;
+}
+html.is-embedded :is(
+        .studio-skip,
+        #shell,
+        .journey-resume,
+        #input-area,
+        .composer-here,
+        #header-account,
+        #location-popover,
+        .composer-day,
+        .composer-heading,
+        .composer-day-row,
+        .studio-input-wrap
+    ) {
+    display: none !important;
+}
+html.is-embedded #main {
+    margin: 0 !important;
+    padding: 14px 16px 18px !important;
+    max-width: none !important;
+    width: auto !important;
+    min-height: 0 !important;
+}
+html.is-embedded .chat-bar {
+    margin: 0 0 12px;
+}
+html.is-embedded .chat-feed:not(.show-earlier) > .chat-entry.is-earlier {
+    display: none;
+}
+/* The earlier exchanges, folded: one pill above the latest. */
+html.is-embedded .embed-earlier {
+    display: block;
+    min-height: 36px;
+    margin: 0 auto 14px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border, #e6ddcb);
+    border-radius: 999px;
+    background: var(--color-bg-surface, #fffdf8);
+    color: var(--color-text-soft, #5d5647);
+    font: inherit;
+    font-size: var(--text-small, 13px);
+    cursor: pointer;
+}
+html.is-embedded .embed-earlier:focus-visible {
+    outline: 3px solid var(--color-focus, #086981);
+    outline-offset: 2px;
+}

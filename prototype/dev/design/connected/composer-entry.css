@@ -90,9 +90,7 @@
         width: min(680px, calc(100% - 48px));
         margin-inline: auto;
         transform-origin: top center;
-        box-shadow:
-            0 24px 60px -24px #211d1599,
-            0 0 0 100vmax rgb(33 29 21 / 0.12);
+        box-shadow: 0 24px 60px -24px #211d1599;
     }
     :root
         body:is(.today-c, .department-composer):has(#shell .composer-header)
@@ -255,4 +253,238 @@
 }
 #composer-tray:not(.is-active) .composer-page-context {
     display: none;
+}
+
+/* Composer answers in place (owner chose B, "Composer in place" canvas,
+   22 Oct 2026; composer-entry.js): the box keeps its place and the answer
+   opens in a card beside it, over the dimmed page: under a box at the top
+   of the screen (under the header), above one at the bottom (phones, and
+   pages whose Composer is the corner button). */
+.department-composer #composer-tray .composer-ai-notice {
+    margin: 4px 4px 0;
+    color: var(--color-text-soft, #5d5647);
+    font-size: var(--text-micro);
+    line-height: 1.45;
+}
+.department-composer #composer-tray .composer-ai-notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.department-composer #composer-tray:not(.is-active) .composer-ai-notice,
+.department-composer #composer-tray:not(.is-active) .composer-answer,
+.department-composer .composer-answer[hidden] {
+    display: none;
+}
+.department-composer #composer-tray .composer-answer {
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: calc(100% + 12px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border, #e6ddcb);
+    border-radius: var(--radius-xl, 24px);
+    background: var(--color-bg-canvas, #faf6ee);
+    box-shadow: 0 30px 70px -30px rgb(33 29 21 / 0.7);
+    color: var(--color-text, #211d15);
+    animation: composer-answer-up 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.department-composer #composer-tray.is-top .composer-answer {
+    top: calc(100% + 14px);
+    bottom: auto;
+    animation-name: composer-answer-down;
+}
+/* The page dims while the box is open, under the header when Composer
+   opens from it; a click on it closes the box, and nothing under it. */
+.composer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgb(33 29 21 / 0.22);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 260ms ease;
+}
+.composer-backdrop.is-on {
+    opacity: 1;
+    pointer-events: auto;
+}
+@media (max-width: 700px) {
+    .composer-backdrop {
+        background: rgb(33 29 21 / 0.24);
+    }
+}
+@keyframes composer-answer-down {
+    from {
+        opacity: 0;
+        clip-path: inset(0 0 100% 0 round 24px);
+    }
+    40% {
+        opacity: 1;
+    }
+    to {
+        clip-path: inset(0 0 0 0 round 24px);
+    }
+}
+.department-composer .composer-answer-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 8px 0 16px;
+    border-bottom: 1px solid var(--color-border-soft, #efe7d8);
+}
+.department-composer .composer-answer-mark {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-round);
+    background: var(--teal, #00768b);
+    color: #fff;
+}
+.department-composer #composer-tray .composer-answer-mark svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+.department-composer .composer-answer-head strong {
+    font-size: var(--text-body, 15px);
+    font-weight: var(--weight-bold, 700);
+}
+.department-composer #composer-tray .composer-answer-full,
+.department-composer #composer-tray .composer-answer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    border: 0;
+    border-radius: var(--radius-pill, 999px);
+    background: transparent;
+    color: var(--color-text, #211d15);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.department-composer #composer-tray .composer-answer-full {
+    margin-left: auto;
+    padding: 0 12px;
+}
+.department-composer #composer-tray .composer-answer-close {
+    width: 44px;
+    height: 44px;
+}
+.department-composer #composer-tray .composer-answer-full svg,
+.department-composer #composer-tray .composer-answer-close svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.department-composer #composer-tray :is(.composer-answer-full, .composer-answer-close):hover {
+    background: var(--color-bg-quiet, #f1ebdf);
+}
+.department-composer .composer-answer-frame {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+}
+/* The card has its own ✕; the box's would sit where it is on phones. */
+.department-composer #composer-tray.has-answer .composer-dismiss {
+    display: none !important;
+}
+/* Closed with a conversation kept: a dot on what opens Composer. */
+#shell .header-utilities > .composer-header.has-conversation,
+.department-composer #composer-tray.has-conversation .composer-launcher {
+    position: relative;
+}
+#shell .header-utilities > .composer-header.has-conversation::after,
+.department-composer #composer-tray.has-conversation .composer-launcher::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--color-bg-surface, #fffdf8);
+    border-radius: var(--radius-round);
+    background: #c23b0e;
+}
+.composer-return-chip {
+    position: fixed;
+    z-index: 41;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border, #e6ddcb);
+    border-radius: 14px;
+    background: var(--color-bg-surface, #fffdf8);
+    color: var(--color-text, #211d15);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    box-shadow: 0 10px 24px -14px rgb(33 29 21 / 0.5);
+    cursor: pointer;
+}
+.composer-return-chip[hidden] {
+    display: none;
+}
+.composer-return-chip.is-corner {
+    right: 12px;
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+}
+.composer-return-chip svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+@media (max-width: 700px) {
+    .department-composer #composer-tray .composer-answer {
+        border-radius: 22px;
+    }
+    .department-composer .composer-answer-head {
+        height: 48px;
+        padding: 0 4px 0 14px;
+    }
+    .department-composer #composer-tray .composer-answer-full {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+    }
+    .department-composer #composer-tray .composer-answer-full span {
+        display: none;
+    }
+}
+@keyframes composer-answer-up {
+    from {
+        opacity: 0;
+        clip-path: inset(100% 0 0 0 round 22px);
+    }
+    40% {
+        opacity: 1;
+    }
+    to {
+        clip-path: inset(0 0 0 0 round 22px);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .department-composer #composer-tray .composer-answer {
+        animation: none;
+    }
 }

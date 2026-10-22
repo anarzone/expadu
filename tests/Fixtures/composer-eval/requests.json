@@ -4289,7 +4289,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4306,7 +4307,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4568,8 +4570,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1,
-    "kid_safe": true
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4586,8 +4588,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1,
-    "kid_safe": true
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4871,7 +4873,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4888,7 +4891,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -5030,6 +5034,536 @@
      "swimming",
      "sports_centre"
     ]
+   }
+  },
+  {
+   "id": "solo_newcomer.open_whats_up",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:05:00+01:00",
+   "weather": "dry",
+   "text": "What's up?",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "student_budget.open_whats_up_lower",
+   "persona": "student_budget",
+   "home_veedel": "Lindenthal",
+   "origin": {
+    "lat": 50.9318,
+    "lng": 6.9157
+   },
+   "companions": "friends",
+   "needs": [],
+   "now": "2026-11-06T21:10:00+01:00",
+   "weather": "dry",
+   "text": "whats up",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "student_budget.open_wassup",
+   "persona": "student_budget",
+   "home_veedel": "Lindenthal",
+   "origin": {
+    "lat": 50.9318,
+    "lng": 6.9157
+   },
+   "companions": "friends",
+   "needs": [],
+   "now": "2026-11-07T15:40:00+01:00",
+   "weather": "rain",
+   "text": "wassup",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "remote_worker.open_sup",
+   "persona": "remote_worker",
+   "home_veedel": "Neustadt-Nord",
+   "origin": {
+    "lat": 50.944,
+    "lng": 6.938
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T12:30:00+01:00",
+   "weather": "dry",
+   "text": "sup",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "couple.open_hi",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-07T10:15:00+01:00",
+   "weather": "dry",
+   "text": "hi",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "senior_visitor.open_hello",
+   "persona": "senior_visitor",
+   "home_veedel": "Altstadt-Nord",
+   "origin": {
+    "lat": 50.9413,
+    "lng": 6.9583
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-05T16:00:00+01:00",
+   "weather": "rain",
+   "text": "Hello!",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "toddler_family.open_hey_there",
+   "persona": "toddler_family",
+   "home_veedel": "Nippes",
+   "origin": {
+    "lat": 50.9668,
+    "lng": 6.9545
+   },
+   "companions": "kids",
+   "needs": [
+    "pram"
+   ],
+   "now": "2026-11-08T09:30:00+01:00",
+   "weather": "dry",
+   "text": "hey there",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "wheelchair.open_good_morning",
+   "persona": "wheelchair",
+   "home_veedel": "Deutz",
+   "origin": {
+    "lat": 50.9384,
+    "lng": 6.9737
+   },
+   "companions": "alone",
+   "needs": [
+    "step_free"
+   ],
+   "now": "2026-11-03T08:30:00+01:00",
+   "weather": "dry",
+   "text": "Good morning",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "solo_newcomer.open_bored",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T14:00:00+01:00",
+   "weather": "dry",
+   "text": "I'm bored",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "student_budget.open_so_bored_typo",
+   "persona": "student_budget",
+   "home_veedel": "Lindenthal",
+   "origin": {
+    "lat": 50.9318,
+    "lng": 6.9157
+   },
+   "companions": "friends",
+   "needs": [],
+   "now": "2026-11-05T22:45:00+01:00",
+   "weather": "dry",
+   "text": "im so boredd",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "couple.open_anything_fun",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-06T18:20:00+01:00",
+   "weather": "dry",
+   "text": "anything fun?",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "remote_worker.open_what_should_i_do",
+   "persona": "remote_worker",
+   "home_veedel": "Neustadt-Nord",
+   "origin": {
+    "lat": 50.944,
+    "lng": 6.938
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T17:50:00+01:00",
+   "weather": "rain",
+   "text": "what should I do",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "outskirts_no_home.open_what_can_i_do_now",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:00:00+01:00",
+   "weather": "dry",
+   "text": "what can I do now?",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "senior_visitor.open_whats_happening",
+   "persona": "senior_visitor",
+   "home_veedel": "Altstadt-Nord",
+   "origin": {
+    "lat": 50.9413,
+    "lng": 6.9583
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-07T19:30:00+01:00",
+   "weather": "dry",
+   "text": "what's happening",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "school_family.open_hows_it_going",
+   "persona": "school_family",
+   "home_veedel": "Sülz",
+   "origin": {
+    "lat": 50.9228,
+    "lng": 6.9188
+   },
+   "companions": "kids",
+   "needs": [],
+   "now": "2026-11-03T16:10:00+01:00",
+   "weather": "dry",
+   "text": "how's it going",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "toddler_family.open_any_ideas",
+   "persona": "toddler_family",
+   "home_veedel": "Nippes",
+   "origin": {
+    "lat": 50.9668,
+    "lng": 6.9545
+   },
+   "companions": "kids",
+   "needs": [
+    "pram"
+   ],
+   "now": "2026-11-08T15:00:00+01:00",
+   "weather": "rain",
+   "text": "any ideas for right now?",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "solo_newcomer.open_typo_whta",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T20:00:00+01:00",
+   "weather": "dry",
+   "text": "whta's up",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "student_budget.open_typo_wat_do",
+   "persona": "student_budget",
+   "home_veedel": "Lindenthal",
+   "origin": {
+    "lat": 50.9318,
+    "lng": 6.9157
+   },
+   "companions": "friends",
+   "needs": [],
+   "now": "2026-11-04T23:30:00+01:00",
+   "weather": "dry",
+   "text": "wat do",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "remote_worker.open_german_was_ist_los",
+   "persona": "remote_worker",
+   "home_veedel": "Neustadt-Nord",
+   "origin": {
+    "lat": 50.944,
+    "lng": 6.938
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T19:00:00+01:00",
+   "weather": "dry",
+   "text": "Was ist los?",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "couple.open_german_langweilig",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-08T13:20:00+01:00",
+   "weather": "rain",
+   "text": "mir ist langweilig",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "solo_newcomer.odd_joke",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T12:00:00+01:00",
+   "weather": "dry",
+   "text": "tell me a joke",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "couple.odd_table_booking",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-07T17:00:00+01:00",
+   "weather": "dry",
+   "text": "book me a table for two at 8",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "senior_visitor.odd_capital",
+   "persona": "senior_visitor",
+   "home_veedel": "Altstadt-Nord",
+   "origin": {
+    "lat": 50.9413,
+    "lng": 6.9583
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-04T10:00:00+01:00",
+   "weather": "dry",
+   "text": "what's the capital of France",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "outskirts_no_home.odd_gibberish",
+   "persona": "outskirts_no_home",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.0396,
+    "lng": 6.9301
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T14:30:00+01:00",
+   "weather": "dry",
+   "text": "asdfgh",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "student_budget.odd_pizza",
+   "persona": "student_budget",
+   "home_veedel": "Lindenthal",
+   "origin": {
+    "lat": 50.9318,
+    "lng": 6.9157
+   },
+   "companions": "friends",
+   "needs": [],
+   "now": "2026-11-07T20:30:00+01:00",
+   "weather": "dry",
+   "text": "can you order me a pizza",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "wheelchair.odd_weather_question",
+   "persona": "wheelchair",
+   "home_veedel": "Deutz",
+   "origin": {
+    "lat": 50.9384,
+    "lng": 6.9737
+   },
+   "companions": "alone",
+   "needs": [
+    "step_free"
+   ],
+   "now": "2026-11-05T07:45:00+01:00",
+   "weather": "rain",
+   "text": "do I need an umbrella today",
+   "expect": {
+    "routed": "answer",
+    "around": true
+   }
+  },
+  {
+   "id": "solo_newcomer.trip_cafe_nova",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T12:40:00+01:00",
+   "weather": "dry",
+   "text": "show me departures to go Cafe Nova in City Center",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "solo_newcomer.trip_take_me_dom",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T18:10:00+01:00",
+   "weather": "dry",
+   "text": "take me to the Dom",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "solo_newcomer.trip_how_get_neumarkt",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T09:20:00+01:00",
+   "weather": "dry",
+   "text": "How do I get to Neumarkt?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
    }
   }
  ]

@@ -14,5 +14,7 @@ enum PromptIntent: string
     case BureaucracyQ = 'bureaucracy_q';
     case Find = 'find';
     case TakeMeThere = 'take_me_there';
+    /** Casual or open, nothing to plan or find ("What's up?", "I'm bored"), or something Composer can't do: what's around you now. */
+    case Open = 'open';
     case Unknown = 'unknown';
 }
