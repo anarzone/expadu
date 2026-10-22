@@ -10,7 +10,7 @@ test.describe('Composer (universal prompt)', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('a request handed over by POST waits in the box with its About chip, once', async ({
+    test('a request handed over by POST waits in the box, once', async ({
         page,
     }) => {
         let parsed = 0;
@@ -20,7 +20,7 @@ test.describe('Composer (universal prompt)', () => {
             return route.continue();
         });
         // From another page, as Today's cards do: the words go by POST, never in the URL,
-        // and wait for Send (the tray's own Send asks at once: composer-tray.spec).
+        // and wait for Send (the tray's own Send answers in place: composer-tray.spec).
         await page.goto('/dashboard');
         await page.evaluate(() => {
             const form = document.createElement('form');
@@ -33,7 +33,6 @@ test.describe('Composer (universal prompt)', () => {
                         .querySelector('meta[name="csrf-token"]')
                         ?.getAttribute('content') ?? '',
                 prompt: 'Something near my appointment',
-                about: 'Events on Wed 30 Sept · 2 listed',
             })) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -48,17 +47,12 @@ test.describe('Composer (universal prompt)', () => {
         await page.waitForURL(/\/composer$/);
         const box = page.locator('#studio-request');
         await expect(box).toHaveValue('Something near my appointment');
-        await expect(
-            page.getByText('About: Events on Wed 30 Sept · 2 listed'),
-        ).toBeVisible();
         expect(page.url()).not.toContain('appointment');
         expect(parsed).toBe(0);
-        await page.getByRole('button', { name: 'Leave this out' }).click();
-        await expect(page.getByText(/^About:/)).toHaveCount(0);
         await box.fill('');
         // A reload doesn't hand the words over again.
         await page.reload();
-        await expect(page.getByText(/^About:/)).toHaveCount(0);
+        await expect(box).toHaveValue('');
     });
 
     test('an incoming request preserves unsent text and waits for Send', async ({

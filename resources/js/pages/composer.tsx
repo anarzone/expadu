@@ -10,22 +10,9 @@ import {
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 import { useEffect, useRef, useState } from 'react';
-import {
-    compose,
-    keep,
-    parse,
-} from '@/actions/App/Http/Controllers/ComposerController';
-import {
-    show,
-    event as selectedEvent,
-    update,
-} from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
-import {
-    AiNoticeLine,
-    aiPermit,
-    useAiNotice,
-} from '@/components/composer/ai-notice';
-import type { AiNotice } from '@/components/composer/ai-notice';
+import { keep } from '@/actions/App/Http/Controllers/ComposerController';
+import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
 import { AnswerBody, isAnswer } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
@@ -45,7 +32,6 @@ import {
     Welcome,
     YourDay,
     dayFacts,
-    starters,
     useComposerFrame,
     useComposerOrigin,
 } from '@/components/composer/frame';
@@ -59,13 +45,9 @@ import type { PlanOrigin } from '@/components/composer/origin-picker';
 import { WorkspacePanel } from '@/components/composer/panels';
 import { PlanCard } from '@/components/composer/plan-card';
 import { TimePicker } from '@/components/composer/time-picker';
-import { api, ApiError, dateLabel, today } from '@/components/composer/types';
-import type {
-    Command,
-    Plan,
-    Slot,
-    Workspace,
-} from '@/components/composer/types';
+import { api, dateLabel, today } from '@/components/composer/types';
+import type { Plan, Slot, Workspace } from '@/components/composer/types';
+import { useComposerEngine } from '@/components/composer/use-composer-engine';
 import { travelDestinationParams } from '@/components/departures/travel-request';
 import {
     eventDateLabel,
@@ -104,15 +86,6 @@ const weekday = (date: string) =>
     new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(
         new Date(`${date}T12:00:00`),
     );
-const normal = (text: string) =>
-    text
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/ue/g, 'u')
-        .replace(/oe/g, 'o')
-        .replace(/ae/g, 'a');
-
 export default function ComposerPage({
     workspace: initial,
     entry: handedOver = null,
@@ -131,16 +104,8 @@ export default function ComposerPage({
     paperwork?: PaperworkGlance;
     /** Tonight's listings and what's near today's appointment (deferred). */
     around?: DayAround;
-    /**
-     * What a page handed over by POST (the tray's words and the page they came from),
-     * once. The tray's Send (`send`) is asked on arrival, under the AI notice it showed.
-     */
-    entry?: {
-        prompt: string;
-        about: string | null;
-        send?: boolean;
-        notice?: { notice_version: string; provider_version: string } | null;
-    } | null;
+    /** What a page handed over by POST (Today's cards: the words and the page), once. */
+    entry?: { prompt: string } | null;
     prompt?: string;
     planDate?: string;
     pins?: string[];
@@ -148,20 +113,19 @@ export default function ComposerPage({
 }) {
     const page = usePage();
     const userId = page.props.auth.user.id;
-    const [workspace, setWorkspace] = useState(initial);
     const aiNotice = useAiNotice();
-    const stateRef = useRef(initial);
     const receivedUrl = useRef('');
     const [entry, setEntry] = useState<ComposerEntry | null>(() =>
         readComposerEntry(page.url),
     );
     const [entryEvent, setEntryEvent] = useState<EventOccurrence | null>(null);
+    // Whether the handed-over event had started when it loaded (it can't be added then).
+    const [entryStarted, setEntryStarted] = useState(false);
     const [entryError, setEntryError] = useState('');
     const [entryRetry, setEntryRetry] = useState(0);
     const [initialInput] = useState(() => {
-        // Words just handed over from another page come first; they wait for Send,
-        // unless Send was what handed them over (the tray), when they're asked below.
-        if (handedOver?.prompt && !handedOver.send) {
+        // Words just handed over from another page come first; they wait for Send.
+        if (handedOver?.prompt) {
             return handedOver.prompt;
         }
 
@@ -175,10 +139,6 @@ export default function ComposerPage({
             return prompt || '';
         }
     });
-    // "About: …": what the page was showing, kept with this request until left out.
-    const [about, setAbout] = useState<string | null>(
-        handedOver?.send ? null : (handedOver?.about ?? null),
-    );
     const [input, setInput] = useRemember(
         initialInput,
         `composer-input-${userId}`,
@@ -187,10 +147,6 @@ export default function ComposerPage({
         null,
         `composer-origin-${userId}`,
     );
-    const [busy, setBusy] = useState('');
-    const busyRef = useRef(false);
-    const [error, setError] = useState('');
-    const [retryMessage, setRetryMessage] = useState<string | null>(null);
     const cameFrom = useComposerOrigin();
     const [panel, setPanel] = useState<Panel>(() => {
         const asked = new URL(page.url, 'http://localhost').searchParams.get(
@@ -215,12 +171,35 @@ export default function ComposerPage({
     // The person's own times: nothing is chosen until they choose it.
     const [appointmentStart, setAppointmentStart] = useState('');
     const [appointmentEnd, setAppointmentEnd] = useState('');
-    const [pendingText, setPendingText] = useState('');
     const [newBelow, setNewBelow] = useState(false);
     const root = useRef<HTMLDivElement>(null);
     const textarea = useRef<HTMLTextAreaElement>(null);
     const isMobile = useIsMobile();
     const feedback = useFeedback();
+    const {
+        workspace,
+        stateRef,
+        busy,
+        error,
+        setError,
+        retryMessage,
+        pendingText,
+        command,
+        send,
+    } = useComposerEngine(initial, aiNotice, {
+        origin,
+        pins,
+        onAsking: () => {
+            setInput('');
+            scrollBottom(true);
+        },
+        onAnswered: () => scrollBottom(true),
+        onFailed: (text) => setInput((existing) => existing || text),
+        onSettled: () => textarea.current?.focus({ preventScroll: true }),
+        onConflict: () => setSwap(null),
+        onSwap: setSwap,
+        onPlans: () => setPanel('plans'),
+    });
     const conversation = workspace.conversations.find(
         (item) => item.id === workspace.active,
     )!;
@@ -293,65 +272,6 @@ export default function ComposerPage({
             setNewBelow(true);
         }
     }
-    function setState(state: Workspace) {
-        stateRef.current = state;
-        setWorkspace(state);
-    }
-    async function sendCommand(command: Command) {
-        try {
-            const result = await api<Workspace>(update.url(), {
-                revision: stateRef.current.revision,
-                ...command,
-            });
-            setState(result);
-
-            return result;
-        } catch (err) {
-            // Never automatically replay a mutation against a different plan version.
-            if (err instanceof ApiError && err.status === 409) {
-                setState(await api<Workspace>(show.url()));
-                setSwap(null);
-            }
-
-            // A change that couldn't go in left the plan as it was; the reply
-            // saying why is in the workspace that came back.
-            if (
-                err instanceof ApiError &&
-                err.status === 422 &&
-                err.data.workspace
-            ) {
-                setState(err.data.workspace as Workspace);
-            }
-
-            throw err;
-        }
-    }
-    async function command(command: Command): Promise<boolean> {
-        if (busyRef.current) {
-            return false;
-        }
-
-        busyRef.current = true;
-        setBusy('Updating your plan…');
-        setError('');
-
-        try {
-            await sendCommand(command);
-
-            return true;
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'Could not save. Try again.',
-            );
-
-            return false;
-        } finally {
-            busyRef.current = false;
-            setBusy('');
-        }
-    }
     function openBrowse() {
         setBrowseDate(activePlan?.date ?? today());
         setPanel('browse');
@@ -402,188 +322,6 @@ export default function ComposerPage({
 
         return success;
     }
-    /** Asks a request; `notice` is the AI notice the person saw when they sent it. */
-    async function send(text: string, notice: AiNotice | null = aiNotice) {
-        if (!text.trim() || busyRef.current) {
-            return;
-        }
-
-        busyRef.current = true;
-        setBusy('Working on your request…');
-        setError('');
-        setRetryMessage(null);
-        setPendingText(text);
-        setInput('');
-        scrollBottom(true);
-
-        // Once the message is in the conversation, Composer answers it even when the
-        // request fails: the reply says so, and the bar says why.
-        let asked = false;
-
-        try {
-            await sendCommand({ action: 'message', text });
-            asked = true;
-            setPendingText('');
-            const state = stateRef.current;
-            const current = state.focus
-                ? (state.plans[state.focus] ?? null)
-                : null;
-            const clean = normal(text);
-
-            if (/^(show|view|open)( me)?( my| the)? plan\b/.test(clean)) {
-                const dates = Object.keys(state.plans);
-                const date =
-                    state.focus ?? (dates.length === 1 ? dates[0] : null);
-
-                if (date) {
-                    await sendCommand({ action: 'open', date });
-                } else {
-                    setPanel('plans');
-                }
-            } else if (
-                current &&
-                /^(move|change|rename|remove|swap)\b/.test(clean)
-            ) {
-                const matched = current.slots.filter((slot) =>
-                    clean.includes(normal(slot.name)),
-                );
-
-                if (matched.length !== 1) {
-                    throw new Error(
-                        'Choose an activity in the plan below, or include its full name so I know which one to change.',
-                    );
-                }
-
-                const slot = matched[0];
-                const times = text.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g);
-
-                if (clean.startsWith('swap')) {
-                    setSwap({
-                        slot,
-                        date: current.date,
-                        revision: stateRef.current.revision,
-                    });
-                } else if (clean.startsWith('remove')) {
-                    await sendCommand({
-                        action: 'remove',
-                        id: slot.id,
-                        date: current.date,
-                    });
-                } else if (
-                    /^(rename|change.*name)/.test(clean) &&
-                    /\s+to\s+/i.test(text)
-                ) {
-                    await sendCommand({
-                        action: 'edit',
-                        id: slot.id,
-                        date: current.date,
-                        name: text
-                            .split(/\s+to\s+/i)
-                            .slice(1)
-                            .join(' to '),
-                    });
-                } else if (times?.length === 2) {
-                    await sendCommand({
-                        action: 'edit',
-                        id: slot.id,
-                        date: current.date,
-                        start: times[0].padStart(5, '0'),
-                        end: times[1].padStart(5, '0'),
-                    });
-                } else {
-                    throw new Error(
-                        'Include both times, for example “move ' +
-                            slot.name +
-                            ' to 14:00–15:00”, or use Edit time.',
-                    );
-                }
-            } else {
-                type Parsed = {
-                    intent: string;
-                    constraints: Record<string, unknown> | null;
-                    kind: string;
-                    answer: boolean;
-                };
-                // Read with the AI service under the line's say-so; if that's refused (an
-                // outdated notice, the service off), the request is read without it.
-                const parsed = await api<Parsed>(parse.url(), {
-                    text,
-                    ...aiPermit(notice),
-                }).catch((error: unknown) =>
-                    notice
-                        ? api<Parsed>(parse.url(), { text })
-                        : Promise.reject(error),
-                );
-
-                if (parsed.answer) {
-                    // Composer answers it from your day and records (the server works
-                    // out what you asked from your own words).
-                    await sendCommand({ action: 'answer' });
-                } else if (parsed.intent === 'plan_day' && parsed.constraints) {
-                    setBusy('Putting your day together…');
-                    const result = await api<{
-                        handoff_token: string;
-                        plan: { slots: Slot[] };
-                    }>(compose.url(), {
-                        constraints: parsed.constraints,
-                        pins,
-                        ...(origin
-                            ? {
-                                  lat: origin.lat,
-                                  lng: origin.lng,
-                                  from_place: origin.from_place,
-                                  from_area: origin.from_area,
-                                  from_label: origin.label.slice(0, 80),
-                              }
-                            : {}),
-                    });
-
-                    if (result.plan.slots.length === 0) {
-                        throw new Error(
-                            'No suitable activities were found for that time. Try another date or browse places.',
-                        );
-                    }
-
-                    await sendCommand({
-                        action: 'proposal',
-                        token: result.handoff_token,
-                    });
-                } else {
-                    const kind =
-                        parsed.intent === 'bureaucracy_q'
-                            ? 'bureaucracy'
-                            : parsed.intent === 'take_me_there'
-                              ? 'journey'
-                              : parsed.intent === 'find'
-                                ? 'find'
-                                : 'unknown';
-                    await sendCommand({ action: 'reply', kind });
-                }
-            }
-
-            scrollBottom(true);
-        } catch (err) {
-            if (asked) {
-                await sendCommand({ action: 'reply', kind: 'failed' }).catch(
-                    () => undefined,
-                );
-                scrollBottom(true);
-            }
-
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'Could not finish that request.',
-            );
-            setRetryMessage(text);
-            setInput((existing) => existing || text);
-        } finally {
-            setPendingText('');
-            setBusy('');
-            busyRef.current = false;
-            textarea.current?.focus({ preventScroll: true });
-        }
-    }
     async function openPlan(plan: Plan) {
         if (await command({ action: 'open', date: plan.date })) {
             setPanel(null);
@@ -600,27 +338,6 @@ export default function ComposerPage({
             {children}
         </ItemPreview>
     );
-    // The tray's Send, asked once on arrival, under the notice the tray showed (or
-    // none, when it showed none: the request is then read without AI).
-    const handedSent = useRef(false);
-    useEffect(() => {
-        if (handedSent.current || !handedOver?.send || !handedOver.prompt) {
-            return;
-        }
-
-        handedSent.current = true;
-        void send(
-            handedOver.prompt,
-            handedOver.notice
-                ? {
-                      processor_name: '',
-                      processor_privacy_url: null,
-                      ...handedOver.notice,
-                  }
-                : null,
-        );
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival: a later render must not ask it again.
-    }, []);
     const entryCommand = useRef(command);
     useEffect(() => {
         entryCommand.current = command;
@@ -643,6 +360,7 @@ export default function ComposerPage({
             new URL(page.url, 'http://localhost').searchParams.get('panel') ===
             'saved'
         ) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- The address is outside React: each new one opens what it asks for, once.
             setPanel('saved');
             setSavedFrom(cameFrom);
         }
@@ -661,8 +379,9 @@ export default function ComposerPage({
             void entryCommand.current({ action: 'open', date: planDate });
         }
         // A URL is context for review, never permission to send a message.
-    }, [page.url, planDate, cameFrom]);
+    }, [page.url, planDate, cameFrom, stateRef]);
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- A new hand-off clears the last one's event before loading its own.
         setEntryEvent(null);
         setEntryError('');
 
@@ -679,6 +398,9 @@ export default function ComposerPage({
             .then((event) => {
                 if (!controller.signal.aborted) {
                     setEntryEvent(event);
+                    setEntryStarted(
+                        Date.parse(event.occurrence_start) <= Date.now(),
+                    );
                 }
             })
             .catch((reason) => {
@@ -839,11 +561,6 @@ export default function ComposerPage({
                                             latest={
                                                 message.id === latestReplyId
                                             }
-                                            starters={starters(
-                                                day,
-                                                paperwork,
-                                                around,
-                                            )}
                                             onAsk={ask}
                                             onPanel={openCollection}
                                             planned={(event) =>
@@ -1197,9 +914,7 @@ export default function ComposerPage({
                                                     disabled={
                                                         !!busy ||
                                                         !entryEvent.occurrence_end ||
-                                                        Date.parse(
-                                                            entryEvent.occurrence_start,
-                                                        ) <= Date.now()
+                                                        entryStarted
                                                     }
                                                     onClick={addSelectedEvent}
                                                 >
@@ -1320,19 +1035,6 @@ export default function ComposerPage({
                                     </button>
                                 )}
                             </section>
-                        )}
-
-                        {about && (
-                            <div className="composer-about">
-                                <span>About: {about}</span>
-                                <button
-                                    type="button"
-                                    aria-label="Leave this out"
-                                    onClick={() => setAbout(null)}
-                                >
-                                    <IconX size={15} />
-                                </button>
-                            </div>
                         )}
 
                         {newBelow && (
