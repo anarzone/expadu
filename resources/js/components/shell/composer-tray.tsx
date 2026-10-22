@@ -87,6 +87,13 @@ function useTrayOpen(): boolean {
     );
 }
 
+// "Saturday": the day a plan in focus is on, as Composer's own box says it.
+const weekday = (date: string) =>
+    new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        timeZone: 'Europe/Berlin',
+    }).format(new Date(`${date}T12:00:00`));
+
 const today = () =>
     new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(
         new Date(),
@@ -131,6 +138,8 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const [menuOpen, setMenuOpen] = useState(false);
     // The request just sent, and whether there's a conversation to come back to.
     const [asked, setAsked] = useState<TrayAsked | null>(null);
+    // The conversation's day in focus, once the answer has loaded it.
+    const [focusDay, setFocusDay] = useState<string | null>(null);
     const talked = useComposerKept();
     // Where the dim starts (under the header when Composer opens from it), and
     // where the way back sits (under the header's button, or in the corner).
@@ -428,7 +437,11 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 }
                             }}
                             aria-label="Your request to Composer"
-                            placeholder="Ask, discover, or plan…"
+                            placeholder={
+                                talked && focusDay
+                                    ? `Ask or change ${weekday(focusDay)}…`
+                                    : 'Ask, discover, or plan…'
+                            }
                         />
                         <div className="composer-tray-tools">
                             <div className="composer-tray-actions">
@@ -510,6 +523,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 asked={asked}
                                 notice={aiNotice}
                                 onClose={close}
+                                onFocus={setFocusDay}
                             />
                         </Suspense>
                     )}

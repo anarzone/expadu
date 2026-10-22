@@ -28,11 +28,14 @@ export default function TrayAnswer({
     asked,
     notice,
     onClose,
+    onFocus,
 }: {
     asked: TrayAsked | null;
     /** The AI line the tray shows: every request sent from it is under it. */
     notice: AiNotice | null;
     onClose: () => void;
+    /** The day in focus, so the box can say "Ask or change Saturday…". */
+    onFocus: (date: string | null) => void;
 }) {
     const [initial, setInitial] = useState<Workspace | null>(null);
     const [failed, setFailed] = useState(false);
@@ -65,6 +68,7 @@ export default function TrayAnswer({
             asked={asked}
             notice={notice}
             onClose={onClose}
+            onFocus={onFocus}
         />
     ) : (
         <Card onClose={onClose}>
@@ -175,11 +179,13 @@ function Conversation({
     asked,
     notice,
     onClose,
+    onFocus,
 }: {
     initial: Workspace;
     asked: TrayAsked | null;
     notice: AiNotice | null;
     onClose: () => void;
+    onFocus: (date: string | null) => void;
 }) {
     const body = useRef<HTMLDivElement>(null);
     const [all, setAll] = useState(false);
@@ -192,6 +198,14 @@ function Conversation({
         (item) => item.id === workspace.active,
     );
     const messages = conversation?.messages ?? [];
+    // The day in focus (with a plan), as the box's placeholder names it.
+    const focus =
+        workspace.focus && workspace.plans[workspace.focus]
+            ? workspace.focus
+            : null;
+    useEffect(() => {
+        onFocus(focus);
+    }, [focus, onFocus]);
 
     // Each request the tray sends, asked once.
     useEffect(() => {
