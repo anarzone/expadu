@@ -2,6 +2,7 @@
 
 namespace App\Composer\Answers;
 
+use App\Composer\TravelEstimator;
 use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
@@ -95,15 +96,22 @@ final class TripAnswers
             ? "{$this->vehicle($ride['mode'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
             : "Walk: {$journey['duration_min']} min.";
 
-        $answer = $this->reply("{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}."
-            .($ride !== null ? ' '.$this->running($ride) : ''), $title, [
-                'journey' => $journey,
-                'for' => $this->for($to['name'], null, null, null, false, null),
-                'city' => $city,
-                'link' => 'plan',
-                'label' => 'Open in Travel',
-                'basis' => collect($journey['legs'])->contains(fn (array $leg): bool => $this->rides($leg) && ($leg['realtime'] ?? false)) ? 'live' : 'scheduled',
-            ]);
+        // "How far is it?": the distance and the time in one line, the way folded under it.
+        $distance = ($request['ask'] ?? null) === 'distance';
+        $km = app(TravelEstimator::class)->haversineKm($origin->lat, $origin->lng, $to['point']->lat, $to['point']->lng);
+        $text = $distance
+            ? ($from === 'L' ? 'A' : substr($from, 0, -1).'a').'bout '.($km < 10 ? number_format($km, 1) : (string) round($km))." km away in a straight line, {$journey['duration_min']} min door to door; leave at {$journey['depart_time']}."
+            : "{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}.".($ride !== null ? ' '.$this->running($ride) : '');
+
+        $answer = $this->reply($text, $distance ? null : $title, [
+            'folded' => $distance,
+            'journey' => $journey,
+            'for' => $this->for($to['name'], null, null, null, false, null),
+            'city' => $city,
+            'link' => 'plan',
+            'label' => 'Open in Travel',
+            'basis' => collect($journey['legs'])->contains(fn (array $leg): bool => $this->rides($leg) && ($leg['realtime'] ?? false)) ? 'live' : 'scheduled',
+        ]);
         // The place, for a follow-up about it ("how far is it?").
         $answer['extra']['destination'] = ['name' => $to['name'], 'area' => $to['area']];
 

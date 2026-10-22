@@ -55,6 +55,7 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::post('processes/{process}/review', [ProcessController::class, 'review'])->whereNumber('process')->name('processes.review');
     Route::post('processes/{process}/events/{event}/corrections', [ProcessController::class, 'correct'])->whereNumber(['process', 'event'])->name('processes.correct');
     Route::post('people/self', [PeopleController::class, 'store'])->name('people.self');
+    Route::put('people/self/city', [PeopleController::class, 'city'])->name('people.self.city');
     Route::get('people/{person}', [PeopleController::class, 'show'])->name('people.show');
     Route::get('people/{person}/sharing', [DelegationController::class, 'index'])->name('people.sharing');
     Route::get('people/{person}/facts', [PersonFactController::class, 'index'])->name('facts.index');
