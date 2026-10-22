@@ -32,7 +32,6 @@ function onboardAs(string $residenceTitle): User
         'arrival_date' => now()->subYears(6)->toDateString(),
         'address_registration_status' => 'not_registrable',
         'registration_status' => 'not_registered',
-        'interests' => [],
     ])->assertSessionHasNoErrors();
 
     return $user->fresh();
@@ -81,7 +80,6 @@ it('changing an existing title requires an explicit correction rather than silen
         'arrival_planned' => false,
         'arrival_date' => now()->subYears(6)->toDateString(),
         'address_registration_status' => 'not_registrable',
-        'interests' => [],
     ])->assertSessionHasErrors();
 
     $user->refresh();

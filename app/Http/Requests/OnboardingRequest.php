@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
-use App\Profile\Interest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -31,8 +30,6 @@ class OnboardingRequest extends FormRequest
             'german_level' => ['nullable', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             'documented_german_level' => ['nullable', Rule::in($registry->definition('german_level')->options)],
             'has_deutschlandticket' => ['nullable', 'boolean'],
-            'interests' => ['nullable', 'array', 'max:'.Interest::MAX_SELECT],
-            'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
             // This old field describes whether an address seems registrable, not proof that registration is complete.
             'address_registration_status' => ['nullable', Rule::in(['registrable', 'not_registrable', 'unsure'])],
         ];

@@ -76,7 +76,6 @@ it('accepts both permanent residence values through onboarding', function (strin
         'arrival_planned' => false,
         'arrival_date' => now()->subYears(6)->toDateString(),
         'address_registration_status' => 'not_registrable',
-        'interests' => [],
     ])->assertSessionHasNoErrors();
 
     // Keep the exact title as a fact, not a global completion declaration.

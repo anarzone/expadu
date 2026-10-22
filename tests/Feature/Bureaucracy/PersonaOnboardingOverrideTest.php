@@ -46,7 +46,6 @@ function onboardedAfter(?array $persona): User
         'arrival_date' => now()->subYear()->toDateString(),
         'entry_mode' => 'has_permit',
         'current_residence_title' => 'family_reunification',
-        'interests' => [],
     ]);
 
     return $user->fresh();
