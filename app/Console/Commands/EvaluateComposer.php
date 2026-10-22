@@ -16,6 +16,7 @@ use App\Composer\PromptIntent;
 use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
 use App\Http\Controllers\ComposerController;
+use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
@@ -64,7 +65,10 @@ class EvaluateComposer extends Command
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
     /** What Composer says instead of a plan: never a dead end, never a fact the listings don't hold. */
-    private const ANSWER_GATES = ['dead_end', 'invented', 'because_unbacked'];
+    private const ANSWER_GATES = ['dead_end', 'invented', 'because_unbacked', 'repeated_after_refusal'];
+
+    /** The assistant's last answer as written, before its checks. */
+    private ?array $written = null;
 
     /** What the opted-in persona has saved and liked, as the nightly aggregate would write it. */
     private const TASTE = [['category', 'cafe', 12.0, 6], ['category', 'culture', 7.0, 4], ['category', 'nightclub', -4.0, 1],
@@ -150,6 +154,24 @@ class EvaluateComposer extends Command
         $parser = $this->option('parser') === 'heuristic' ? app(HeuristicPromptParser::class) : app(ParsesPrompt::class);
         $row = ['id' => $request['id'], 'text' => $request['text'], 'now' => $now->toIso8601String(), 'weather' => $request['weather']];
 
+        // A follow-up ("nope, something else" after "I'm bored"): the earlier turns go through the
+        // workspace as the page sends them, then this one is asked in that conversation.
+        $history = null;
+        if (($request['before'] ?? []) !== []) {
+            try {
+                ComposerWorkspace::query()->where('user_id', $user->id)->delete();
+                foreach ($request['before'] as $earlier) {
+                    $this->turn($user, $profile, $parser, (string) $earlier, $now);
+                }
+                $this->workspace($user, ['action' => 'message', 'text' => $request['text']]);
+                $history = Assistant::history(ComposerController::earlierMessages(app(WorkspaceStore::class)->read($user)));
+            } catch (Throwable $e) {
+                return $row + ['error' => 'earlier turns: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
+            }
+            $row['before'] = $request['before'];
+        }
+        $followsUp = $history !== null && Assistant::followsUp($request['text'], $history);
+
         $started = hrtime(true);
         $around = null;
         try {
@@ -162,7 +184,7 @@ class EvaluateComposer extends Command
                 ? app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerParse,
                     $parser::processingContext($request['text'], $profile, $facts), $this->acceptance(ProcessingPurpose::ComposerParse))
                 : null;
-            $parsed = $permit !== null && $routed['kind'] === 'around' && ProcessingPurpose::ComposerAssist->available()
+            $parsed = $permit !== null && ($routed['kind'] === 'around' || $followsUp) && ProcessingPurpose::ComposerAssist->available()
                 ? new ParsedPrompt(PromptIntent::Open, source: 'llm')
                 : ($ai ? $parser->parse($request['text'], $profile, $now, $permit, $facts) : $parser->parse($request['text'], $profile, $now, $permit));
             if ($around !== null) {
@@ -180,8 +202,18 @@ class EvaluateComposer extends Command
             $routed = app(Answers::class)->route($user, $request['text'], $now, app(WorkspaceStore::class)->read($user)['focus'] ?? null);
         }
         $assistStarted = hrtime(true);
-        $assisted = $this->assisted($user, $request['text'], $profile, $parsed, $permit ?? null, $now);
+        $assisted = $this->assisted($user, $request['text'], $profile, $parsed, $permit ?? null, $now, $history, $followsUp);
         $row['assist_ms'] = $assisted !== null ? (int) ((hrtime(true) - $assistStarted) / 1e6) : null;
+        // Written but nothing held: what it wrote, to see why.
+        if ($assisted === null && $this->written !== null) {
+            $row['assistant_dropped'] = array_column($this->written['sentences'] ?? [], 'text');
+        }
+        // Turned down: nothing suggested earlier in the conversation may come back.
+        $repeated = [];
+        if ($history !== null && $assisted !== null && preg_match(Assistant::REFUSAL, $request['text']) === 1) {
+            $repeated = [...array_values(array_intersect_key($history['suggested']['event'], array_flip(array_column($assisted['events'], 'id')))),
+                ...array_values(array_intersect_key($history['suggested']['spot'], array_flip(array_column($assisted['places'], 'id'))))];
+        }
         $answered = Answers::handles($routed, $parsed->intent) || $assisted !== null;
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
@@ -207,7 +239,8 @@ class EvaluateComposer extends Command
             $routing += isset($request['expect']['around']) ? ['around' => ($said['kind'] ?? null) === 'around'] : [];
             $routing += isset($request['expect']['answer_kind']) ? ['answer_kind' => ($said['kind'] ?? null) === $request['expect']['answer_kind']] : [];
 
-            return $row + ['said' => $said, 'expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []), 'gates' => $gated + $gates];
+            return $row + ['said' => $said, 'expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []),
+                'gates' => ['repeated_after_refusal' => $repeated] + $gated + $gates];
         }
 
         $composeStarted = hrtime(true);
@@ -326,19 +359,48 @@ class EvaluateComposer extends Command
      *
      * @return array<string, mixed>|null
      */
-    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now): ?array
+    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?array $history = null, bool $followsUp = false): ?array
     {
-        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || ! Assistant::wanted($parsed, $text)) {
+        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || (! $followsUp && ! Assistant::wanted($parsed, $text))) {
             return null;
         }
-        $answer = app(Assistant::class)->answer($user, $text, $profile, $now, [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
+        $assistant = app(Assistant::class);
+        $answer = $assistant->answer($user, $text, $profile, $now, [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
             app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
-            app(WorkspaceStore::class)->read($user)['plans'] ?? []);
+            app(WorkspaceStore::class)->read($user)['plans'] ?? [], null, $history);
+        $this->written = $assistant->written;
         if ($answer !== null) {
             app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
         }
 
         return $answer;
+    }
+
+    /**
+     * One earlier turn of a follow-up case, as the page sends it: the message, the read (or, for
+     * an open request, the assistant), then the answer, all in the person's workspace.
+     */
+    private function turn(User $user, Profile $profile, ParsesPrompt $parser, string $text, CarbonImmutable $now): void
+    {
+        $this->workspace($user, ['action' => 'message', 'text' => $text]);
+        $history = Assistant::history(ComposerController::earlierMessages(app(WorkspaceStore::class)->read($user)));
+        $followsUp = Assistant::followsUp($text, $history);
+        $routed = app(Answers::class)->route($user, $text, $now, null);
+        $ai = method_exists($parser, 'processingContext');
+        $permit = $ai ? app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerParse,
+            $parser::processingContext($text, $profile), $this->acceptance(ProcessingPurpose::ComposerParse)) : null;
+        $parsed = $permit !== null && ($routed['kind'] === 'around' || $followsUp) && ProcessingPurpose::ComposerAssist->available()
+            ? new ParsedPrompt(PromptIntent::Open, source: 'llm')
+            : ($ai ? $parser->parse($text, $profile, $now, $permit) : $parser->parse($text, $profile, $now, $permit));
+        $this->assisted($user, $text, $profile, $parsed, $permit, $now, $history, $followsUp);
+        $this->workspace($user, ['action' => 'answer']);
+    }
+
+    /** A workspace command for the synthetic user, at the workspace's current revision. */
+    private function workspace(User $user, array $input): void
+    {
+        $store = app(WorkspaceStore::class);
+        $store->command($user, $input + ['revision' => $store->read($user)['revision']]);
     }
 
     /**
