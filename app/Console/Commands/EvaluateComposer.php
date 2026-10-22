@@ -161,6 +161,9 @@ class EvaluateComposer extends Command
             return $row + ['error' => 'ask: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
         }
         $row['ask_ms'] = (int) ((hrtime(true) - $started) / 1e6);
+        // Where the time went: each call and lookup, in order, and what's left (the workspace, the cards).
+        $row['timing'] = array_map(fn (array $t): string => "{$t[0]} {$t[1]}", $assistant->timings);
+        $row['timing'][] = 'rest '.($row['ask_ms'] - array_sum(array_column($assistant->timings, 1)));
         $row['tokens'] = ['input' => $assistant->usage['input'], 'output' => $assistant->usage['output'], 'calls' => $assistant->usage['calls']];
         $answer = collect($added)->first(fn (array $m): bool => ($m['request'] ?? null) === 'ask') ?? [];
         $plan = collect($added)->first(fn (array $m): bool => ($m['kind'] ?? null) === 'plan')['plan'] ?? null;

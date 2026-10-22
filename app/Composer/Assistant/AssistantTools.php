@@ -64,6 +64,9 @@ final class AssistantTools
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
 
+    /** @var list<array{0: string, 1: int}> each lookup and its milliseconds, in order (composer:eval reads where the time goes) */
+    public array $timings = [];
+
     /** @var list<string> the lookups made, by the page's names for them */
     private array $looked = [];
 
@@ -188,6 +191,7 @@ final class AssistantTools
             'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans', default => $name,
         };
+        $started = hrtime(true);
         try {
             return match ($name) {
                 'where_am_i' => $this->whereAmI(),
@@ -209,6 +213,8 @@ final class AssistantTools
             };
         } catch (Throwable) {
             return 'Nothing found: the lookup failed.';
+        } finally {
+            $this->timings[] = [$name, (int) round((hrtime(true) - $started) / 1e6)];
         }
     }
 
@@ -222,11 +228,23 @@ final class AssistantTools
         $area = app(UserLocationService::class)->veedelAt((float) $this->location->lat, (float) $this->location->lng);
         // A Veedel's middle isn't where they are: no stop is named from it.
         $stop = $this->location->source === LocationSource::Area ? null : $this->nearestStop();
-        $this->cards['here'] = array_filter(['type' => 'where', 'area' => $area, 'from' => $from,
+        $this->cards['here'] = array_filter(['type' => 'where', 'area' => $area, 'from' => $from, 'basis' => $this->basis(),
             'stop' => $stop === null ? null : ['name' => $stop['name'], 'walk_min' => $stop['walk_min'], 'lines' => $stop['lines']]], fn ($v) => $v !== null);
 
         return $this->line('here', ucfirst($from).': '.($area !== null ? "in {$area}" : 'outside the Veedel Expadu knows')
             .($stop !== null ? ". Nearest KVB stop: {$stop['name']}, {$stop['walk_min']} min walk (lines ".implode(', ', $stop['lines']).')' : '').'.');
+    }
+
+    /** How where they are is known, as a key the page words itself. */
+    private function basis(): string
+    {
+        return match ($this->location->source) {
+            LocationSource::Live => is_numeric(request()->input('from_place')) ? 'saved_place' : ($this->location->label === 'Your location' ? 'browser' : 'chosen'),
+            LocationSource::Confirmed => 'confirmed',
+            LocationSource::Ping => 'last_shared',
+            LocationSource::Area => request()->input('from_area') === $this->location->label ? 'area' : 'home_area',
+            LocationSource::None => 'unknown',
+        };
     }
 
     /** How where they are is known, in words the AI may pass on. */
@@ -281,7 +299,7 @@ final class AssistantTools
                 }
             }
         }
-        $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'lines', 'lifts', 'notices']))];
+        $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'areas', 'lines', 'lifts', 'notices']))];
 
         return $this->line($id, "Departures at {$name} ({$basis}):\n".implode("\n", array_slice($rows, 0, 12)));
     }
@@ -307,9 +325,11 @@ final class AssistantTools
         if ($area === null && preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
             [$to, $area] = [trim($m[1]), PlanDay::areas([$m[2]])[0]];
         }
-        // A place this conversation already went to ("how far is it?") is that one, by its name and area.
+        // "How far is it?" is about the place this conversation's last trip went to, by its name and
+        // area. Asked for by name again, the place finder picks the one meant before and offers the others.
         $key = fn (string $name): string => Destinations::key($name);
-        $before = collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area));
+        $before = ($input['how_far'] ?? false) === true
+            ? collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area)) : null;
         $area ??= $before['area'] ?? null;
         $answer = app(TripAnswers::class)->toPlace($this->user, [
             'place' => $to,
@@ -328,7 +348,12 @@ final class AssistantTools
             return $this->line($id, $answer['text'].' The places: '.collect($extra['suggestions'])->pluck('label')->implode('; ').'.');
         }
         $id = 'r'.(++$this->count);
-        $this->cards[$id] = [...$extra, 'type' => isset($extra['trip']) ? 'trip' : 'note', 'text' => $answer['text']];
+        $this->cards[$id] = [...array_diff_key($extra, ['also' => true]), 'type' => isset($extra['trip']) ? 'trip' : 'note', 'text' => $answer['text']];
+        // Planned to the one this conversation meant: "There's also one in Altstadt-Nord", with its
+        // tap, is Composer's own line, said whatever the AI says, and shown with the trip.
+        if (isset($extra['also'])) {
+            $this->cards[$id.'-also'] = ['type' => 'choices', 'text' => $extra['also']['text'], 'options' => $extra['also']['options'], 'private' => true];
+        }
 
         // The place it's to, by name, so the answer may name it ("Café Nova in Deutz is about 4.4 km away").
         $to = isset($extra['destination']['name']) ? "Trip to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
@@ -415,15 +440,16 @@ final class AssistantTools
         }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         [$lat, $lng] = $this->location->hasOrigin() ? [(float) $this->location->lat, (float) $this->location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
-        $found = collect($this->catalogue->candidatesFor(new Constraints(
+        // The nearest that fit, two of a kind, and a few spare for the filters below.
+        $found = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
             areas: array_values(array_filter([$area])),
             categories: array_values(array_filter([is_string($input['kind'] ?? null) ? $input['kind'] : null])),
             activities: array_values(array_filter([is_string($input['activity'] ?? null) ? $input['activity'] : null])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
-        ), $lat, $lng))
-            ->filter(fn (Candidate $c): bool => $c->type === 'spot' && ! $c->closedToday
+        ), $lat, $lng, 2, self::SHOWN * 3))
+            ->filter(fn (Candidate $c): bool => ! $c->closedToday
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)

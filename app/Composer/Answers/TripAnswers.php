@@ -100,7 +100,7 @@ final class TripAnswers
         $city = config('geocoding.search_default.city');
         $changes = $journey['transfers'] > 0 ? ', with '.$journey['transfers'].' change'.($journey['transfers'] > 1 ? 's' : '') : '';
         $title = $ride !== null
-            ? "{$this->vehicle($ride['mode'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
+            ? "{$this->vehicle($ride['mode'], $ride['line'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
             : "Walk: {$journey['duration_min']} min.";
 
         // "How far is it?": the distance and the time in one line, the way folded under it.
@@ -121,10 +121,11 @@ final class TripAnswers
         ]);
         // The place, for a follow-up about it ("how far is it?").
         $answer['extra']['destination'] = ['name' => $to['name'], 'area' => $to['area']];
+        // Picked from this conversation, the others of that name are offered beside it, each with its tap.
         if ($others !== []) {
             $other = $others[0];
-            $answer['text'] .= " There’s also a {$other['name']}".($other['area'] !== null ? " in {$other['area']}" : '').'. Did you mean that one?';
-            $answer['extra']['suggestions'] = [...array_map(fn (array $place): array => $this->choice($place), $others), ...($answer['extra']['suggestions'] ?? [])];
+            $answer['extra']['also'] = ['text' => "There’s also a {$other['name']}".($other['area'] !== null ? " in {$other['area']}" : '').'. Did you mean that one?',
+                'options' => array_map(fn (array $place): array => $this->choice($place), $others)];
         }
 
         return $answer;
@@ -230,14 +231,14 @@ final class TripAnswers
         $legs = $trip['journey']['legs'] ?? [];
         $ride = collect($legs)->first(fn (array $leg): bool => $this->rides($leg));
         $city = $trip['city'] ?? null;
-        $vehicle = $ride === null ? null : $this->vehicle($ride['mode']);
+        $vehicle = $ride === null ? null : $this->vehicle($ride['mode'], $ride['line']);
         $unnamed = ($request['unnamed'] ?? false) ? "That’s for {$which}. " : '';
         $official = (bool) $target['official'];
         $needs = ($official ? 'official appointments need ' : 'plans need ').$trip['margin_min'];
 
         if (($request['status'] ?? false) && $ride !== null) {
             $title = "{$vehicle} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}.";
-            $text = $this->running($ride).' It’s the '.mb_strtolower($vehicle)." for {$which}.";
+            $text = $this->running($ride).' It’s the '.self::lower($vehicle)." for {$which}.";
         } else {
             $title = $trip['leave_in_min'] <= 0 ? "Leave now — it’s {$now->format('H:i')}." : "Leave by {$trip['leave_time']}.";
             $skipped = $trip['skipped'];
@@ -305,8 +306,8 @@ final class TripAnswers
 
         $boarding = $board === null ? null : $steps[$board];
         $leg = $boarding['leg'] ?? null;
-        $vehicle = $leg === null ? 'Line' : $this->vehicle($leg['mode']);
-        $ride = trim(mb_strtolower($vehicle).' '.($leg['line'] ?? ''));
+        $vehicle = $leg === null ? 'Line' : $this->vehicle($leg['mode'], $leg['line'] ?? null);
+        $ride = trim(self::lower($vehicle).' '.($leg['line'] ?? ''));
         $Ride = ucfirst($ride);
         $towards = $leg !== null && $leg['headsign'] ? ' towards '.$this->stop($leg['headsign'], $city) : '';
         $arrive = $journey['arrive_time'] ?? null;
@@ -329,7 +330,7 @@ final class TripAnswers
             $heading = match ($stage) {
                 'before' => "{$Ride} at {$boarding['time']} from {$boarding['place']}.",
                 'riding' => "You’re on {$ride}{$towards}.",
-                default => 'You’re off the '.mb_strtolower($vehicle).'.',
+                default => 'You’re off the '.self::lower($vehicle).'.',
             };
             $text = in_array($stage, ['before', 'riding'], true) ? $join($this->running($leg), $stage === 'riding' ? $offAt : '') : $join($where, $there);
         } elseif ($ask === 'stop' && $leaving !== null) {
@@ -384,7 +385,7 @@ final class TripAnswers
                 continue;
             }
             $steps[] = ['kind' => 'transit', 'time' => $leg['depart_time'], 'at' => $at,
-                'title' => "{$this->vehicle($leg['mode'])} {$leg['line']} to {$this->stop($leg['to']['name'], $city)}",
+                'title' => "{$this->vehicle($leg['mode'], $leg['line'])} {$leg['line']} to {$this->stop($leg['to']['name'], $city)}",
                 'detail' => 'From '.$this->stop($leg['from']['name'], $city), 'place' => $this->stop($leg['from']['name'], $city), 'leg' => $leg];
             $steps[] = ['kind' => 'alight', 'time' => $leg['arrive_time'], 'at' => CarbonImmutable::parse($leg['arrive_at'])->getTimestamp(),
                 'title' => 'Get off at '.$this->stop($leg['to']['name'], $city), 'detail' => $last ? 'You’re there' : 'Your stop',
@@ -425,14 +426,26 @@ final class TripAnswers
     }
 
     /** Travel's word for a leg's vehicle (line-look.ts `vehicleWord`, `vehicleOf`). */
-    private function vehicle(?string $mode): string
+    /** A vehicle mid-sentence: "the tram", but "the S-Bahn". */
+    private static function lower(string $vehicle): string
     {
+        return $vehicle === 'S-Bahn' ? $vehicle : mb_strtolower($vehicle);
+    }
+
+    private function vehicle(?string $mode, ?string $line = null): string
+    {
+        // The feed reports S-Bahn lines as "subway", like the Stadtbahn: the line's name says which
+        // (owner's preview, 22 Oct 2026: "take tram S12").
+        if (preg_match('/^S\s?\d+$/i', trim((string) $line)) === 1) {
+            return 'S-Bahn';
+        }
+
         return match ($mode) {
             'bus' => 'Bus',
             'rail', 'train' => 'Train',
             'ferry' => 'Ferry',
             // Cologne's Stadtbahn is reported as "subway": a tram.
-            default => 'Tram',
+            default => preg_match('/^(RE|RB|IC|ICE|EC)\s?\d+$/i', trim((string) $line)) === 1 ? 'Train' : 'Tram',
         };
     }
 
