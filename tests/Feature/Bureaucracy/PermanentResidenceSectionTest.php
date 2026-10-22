@@ -5,6 +5,7 @@ use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\LegacyFactBootstrapper;
 use App\Models\User;
+use Tests\Support\PaperworkStart;
 
 /**
  * Germany has more than one permanent residence permit. §9 is the ordinary
@@ -64,19 +65,17 @@ it('offers the spouse-of-18c settlement route only to an actual 18c sponsor', fu
         ->not->toContain('case.family.settlement.spouse_18c_option');
 });
 
-it('accepts both permanent residence values through onboarding', function (string $title) {
+it('accepts both permanent residence values as answers', function (string $title) {
     $user = User::factory()->create(['onboarded_at' => null, 'email_verified_at' => now()]);
 
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee',
-        'is_eu' => false,
-        'entry_mode' => 'has_permit',
-        'current_residence_title' => $title,
-        'veedel' => 'Altstadt-Nord',
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu',
+        'purpose' => 'employment',
         'arrival_planned' => false,
         'arrival_date' => now()->subYears(6)->toDateString(),
-        'address_registration_status' => 'not_registrable',
-    ])->assertSessionHasNoErrors();
+        'entry_mode' => 'has_permit',
+        'current_residence_title' => $title,
+    ]);
 
     // Keep the exact title as a fact, not a global completion declaration.
     $user->refresh();

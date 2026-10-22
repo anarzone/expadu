@@ -6,6 +6,8 @@ use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
+use Tests\Support\PaperworkStart;
 
 /**
  * Owner review: "The Long game / permanent residency is in two sections — both
@@ -22,17 +24,15 @@ function onboardAs(string $residenceTitle): User
         'email_verified_at' => now(),
     ]);
 
-    test()->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee',
-        'is_eu' => false,
-        'entry_mode' => 'has_permit',
-        'current_residence_title' => $residenceTitle,
-        'veedel' => 'Altstadt-Nord',
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu',
+        'purpose' => 'employment',
         'arrival_planned' => false,
         'arrival_date' => now()->subYears(6)->toDateString(),
-        'address_registration_status' => 'not_registrable',
+        'entry_mode' => 'has_permit',
+        'current_residence_title' => $residenceTitle,
         'registration_status' => 'not_registered',
-    ])->assertSessionHasNoErrors();
+    ]);
 
     return $user->fresh();
 }
@@ -71,16 +71,8 @@ it('changing an existing title requires an explicit correction rather than silen
     $user = onboardAs('settlement_permit_18c');
     expect(app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString())['values']['current_residence_title'])->toBe('settlement_permit_18c');
 
-    test()->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee',
-        'is_eu' => false,
-        'entry_mode' => 'has_permit',
-        'current_residence_title' => 'standard_work_permit',
-        'veedel' => 'Altstadt-Nord',
-        'arrival_planned' => false,
-        'arrival_date' => now()->subYears(6)->toDateString(),
-        'address_registration_status' => 'not_registrable',
-    ])->assertSessionHasErrors();
+    expect(fn () => PaperworkStart::completeDraft($user, ['current_residence_title' => 'standard_work_permit']))
+        ->toThrow(ValidationException::class, 'Choose whether this corrects an earlier answer or records a real change.');
 
     $user->refresh();
     $before = app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString());
