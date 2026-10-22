@@ -149,7 +149,7 @@ class ComposerController extends Controller
      * The hand-off from entry(), removed as it is read. Words left waiting longer than a
      * few minutes (the visit never arrived) are dropped rather than shown later.
      *
-     * @return array{prompt: string, about: ?string}|null
+     * @return array{prompt: string}|null
      */
     private function takeEntry(Request $request): ?array
     {
@@ -159,8 +159,7 @@ class ComposerController extends Controller
             return null;
         }
 
-        return ['prompt' => (string) $entry['prompt'], 'about' => $entry['about'] ?? null,
-            'send' => (bool) ($entry['send'] ?? false), 'notice' => $entry['notice'] ?? null];
+        return ['prompt' => (string) $entry['prompt']];
     }
 
     /**
@@ -184,19 +183,10 @@ class ComposerController extends Controller
     {
         $validated = $request->validate([
             'prompt' => ['required', 'string', 'max:500'],
-            'about' => ['nullable', 'string', 'max:160'],
             'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
-            // The tray's Send: asked on arrival, under the AI notice it showed (if any).
-            'send' => ['nullable', 'boolean'],
-            'notice_version' => ['nullable', 'required_with:provider_version', 'string', 'max:100'],
-            'provider_version' => ['nullable', 'required_with:notice_version', 'string', 'size:64'],
         ]);
         Cache::put($this->entryKey($request), json_encode([
             'prompt' => trim($validated['prompt']),
-            'about' => $validated['about'] ?? null,
-            'send' => (bool) ($validated['send'] ?? false),
-            'notice' => isset($validated['notice_version'])
-                ? ['notice_version' => $validated['notice_version'], 'provider_version' => $validated['provider_version']] : null,
             'at' => now()->getTimestamp(),
         ]), self::ENTRY_TTL);
 

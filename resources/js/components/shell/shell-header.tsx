@@ -4,7 +4,10 @@ import type { MouseEvent } from 'react';
 import { ExpaduMark } from '@/components/app-logo-icon';
 import { AccountMenu } from '@/components/shell/account-menu';
 import { CityPicker } from '@/components/shell/city-picker';
-import { openComposerTray } from '@/components/shell/composer-tray';
+import {
+    openComposerTray,
+    useComposerWaiting,
+} from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { sectionAgain } from '@/hooks/use-shell-scroll';
@@ -50,6 +53,8 @@ export function ShellHeader() {
     const { url } = usePage();
     const path = url.split('?')[0];
     const mac = useMac();
+    // A conversation kept after closing Composer: a dot on its button (B).
+    const kept = useComposerWaiting();
     // On Composer its button says you are here (the mock's selected tint).
     const onComposer = within(path, composer.url());
     const shortcut = mac ? '⌘K' : 'Ctrl K';
@@ -96,7 +101,11 @@ export function ShellHeader() {
                 <div className="shell-utilities">
                     <button
                         type="button"
-                        className="shell-composer"
+                        className={
+                            kept
+                                ? 'shell-composer has-conversation'
+                                : 'shell-composer'
+                        }
                         aria-current={onComposer ? 'page' : undefined}
                         aria-label={
                             onComposer

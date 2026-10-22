@@ -1004,15 +1004,12 @@ html {
         right: 0;
         width: min(680px, calc(100% - 48px));
         transform-origin: top center;
-        box-shadow:
-            0 24px 60px -24px #211d1599,
-            0 0 0 100vmax rgb(33 29 21 / 0.12);
+        box-shadow: 0 24px 60px -24px #211d1599;
     }
-    /* Under the header it keeps the same shadow while you type. */
+    /* Under the header it keeps the same shadow while you type. The page's dim
+       is its own layer (.composer-backdrop), which takes the click that closes. */
     .composer-tray:has(textarea:focus) {
-        box-shadow:
-            0 24px 60px -24px #211d1599,
-            0 0 0 100vmax rgb(33 29 21 / 0.12);
+        box-shadow: 0 24px 60px -24px #211d1599;
     }
     .composer-tray-dismiss {
         top: 10px;
@@ -1107,4 +1104,33 @@ html {
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
+}
+
+/* B (owner, 22 Oct 2026): the page dims while Composer's box is open, under the
+   header when it opens from there (its top set by the tray), the whole screen
+   otherwise; a click on it closes the box, and nothing under it is pressed. */
+.composer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgb(33 29 21 / 0.22);
+    animation: composer-backdrop-in 260ms ease;
+}
+@keyframes composer-backdrop-in {
+    from {
+        opacity: 0;
+    }
+}
+/* On a phone it covers the header and the floating sections too (both inside
+   .shell, z 40), and stays under the box (46). */
+@media (max-width: 700px) {
+    .composer-backdrop {
+        z-index: 41;
+        background: rgb(33 29 21 / 0.24);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-backdrop {
+        animation: none;
+    }
 }

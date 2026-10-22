@@ -10,7 +10,6 @@ import {
 import type { TripFor } from '@/components/travel/trip/trip-model';
 import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
-import type { IconName } from '@/components/ui/icon';
 import { timetable } from '@/routes';
 import type { Journey } from '@/types/transit';
 import { EventAnswer } from './event-answer';
@@ -33,14 +32,6 @@ export type Suggestion = {
     prompt?: string;
     href?: string;
     nav?: Panel;
-};
-
-export type AnswerStarter = {
-    key: string;
-    tag: string;
-    icon: IconName;
-    prompt: string;
-    detail: string;
 };
 
 type Checklist = {
@@ -70,7 +61,6 @@ export type AnswerMessage = Message & {
     request?: string;
     title?: string;
     suggestions?: Suggestion[];
-    options?: boolean;
     record?: Checklist;
     facts?: Fact[];
     trip?: TripAnswer;
@@ -168,7 +158,6 @@ function TripWay({ trip }: { trip: TripAnswer }) {
 export function AnswerBody({
     message,
     latest,
-    starters,
     onAsk,
     onPanel,
     planned,
@@ -177,7 +166,6 @@ export function AnswerBody({
     message: AnswerMessage;
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
     latest: boolean;
-    starters: AnswerStarter[];
     onAsk: (prompt: string) => void;
     onPanel: (panel: Panel) => void;
     /** Whether a listed event is in its day's plan already. */
@@ -190,14 +178,6 @@ export function AnswerBody({
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
         : 0;
-    // "It can do these:" always lists them: the person's own starters on the
-    // latest reply; otherwise (none, or an older reply) the everyday ones the
-    // reply carries. Next steps on other older replies don't pile up.
-    const showOptions = latest && !!message.options && starters.length > 0;
-    const showSuggestions =
-        !showOptions &&
-        !!message.suggestions?.length &&
-        (latest || !!message.options);
 
     return (
         <>
@@ -315,28 +295,7 @@ export function AnswerBody({
             {message.kind === 'facts' && !!message.facts?.length && (
                 <FactList facts={message.facts} />
             )}
-            {showOptions && (
-                <div className="answer-options">
-                    {starters.map((starter) => (
-                        <button
-                            type="button"
-                            key={starter.key}
-                            className={`answer-option is-${starter.key}`}
-                            onClick={() => onAsk(starter.prompt)}
-                        >
-                            <span className="answer-option-icon">
-                                <Icon name={starter.icon} variant="line" />
-                            </span>
-                            <span>
-                                <strong>{starter.prompt}</strong>
-                                <small>{`${starter.tag} · ${starter.detail}`}</small>
-                            </span>
-                            <Icon name="arrow" variant="line" />
-                        </button>
-                    ))}
-                </div>
-            )}
-            {showSuggestions && message.suggestions && (
+            {latest && !!message.suggestions?.length && (
                 <div className="reply-suggestions">
                     {message.suggestions.map((suggestion) =>
                         suggestion.href ? (

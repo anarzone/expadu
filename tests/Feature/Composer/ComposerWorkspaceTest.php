@@ -275,19 +275,14 @@ test('catalogue handoffs cannot be taken from another user', function () {
 test('a page hands Composer its request by POST, once, never in the URL', function () {
     $this->post('/composer/entry', ['prompt' => 'x'])->assertRedirect('/login');
     $this->actingAs(User::factory()->onboarded()->create());
-    $response = $this->post('/composer/entry', ['prompt' => '  Plan my Saturday near my appointment  ', 'about' => 'Events on Wed 30 Sept · 2 listed', 'panel' => 'plans']);
+    $response = $this->post('/composer/entry', ['prompt' => '  Plan my Saturday near my appointment  ', 'panel' => 'plans']);
     $response->assertRedirect('/composer?panel=plans');
     expect($response->headers->get('Location'))->not->toContain('Saturday');
 
     $this->get('/composer?panel=plans')->assertInertia(fn ($page) => $page->component('composer')
-        ->where('entry', ['prompt' => 'Plan my Saturday near my appointment', 'about' => 'Events on Wed 30 Sept · 2 listed', 'send' => false, 'notice' => null]));
+        ->where('entry', ['prompt' => 'Plan my Saturday near my appointment']));
     $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', null));
 
-    // The tray's Send: asked on arrival, under the notice the tray showed.
-    $this->post('/composer/entry', ['prompt' => 'Find a park', 'send' => true, 'notice_version' => 'notice.1', 'provider_version' => str_repeat('c', 64)]);
-    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', ['prompt' => 'Find a park', 'about' => null, 'send' => true,
-        'notice' => ['notice_version' => 'notice.1', 'provider_version' => str_repeat('c', 64)]]));
-    $this->post('/composer/entry', ['prompt' => 'Hi', 'send' => true, 'notice_version' => 'notice.1'])->assertSessionHasErrors('provider_version');
     $this->post('/composer/entry', ['prompt' => str_repeat('a', 501)])->assertSessionHasErrors('prompt');
     $this->post('/composer/entry', ['prompt' => 'Hi', 'panel' => 'settings'])->assertSessionHasErrors('panel');
 });

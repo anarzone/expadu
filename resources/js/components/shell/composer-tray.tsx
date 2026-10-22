@@ -1,5 +1,7 @@
-import { Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import {
+    lazy,
+    Suspense,
     useEffect,
     useId,
     useLayoutEffect,
@@ -9,20 +11,25 @@ import {
 } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
+import type { TrayAsked } from '@/components/composer/tray-answer';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
-import { useCurrentPageContext } from '@/lib/page-context';
 import { composer } from '@/routes';
-import { store as composerEntry } from '@/routes/composer/entry';
+
+// The answer and Composer's styles load with the first request, not every page.
+const TrayAnswer = lazy(() => import('@/components/composer/tray-answer'));
 
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
  * controls): one box to ask in from any page. Phones open it from the round
  * button beside the floating sections; tablets and desktops from "Ask
  * Composer" in the header or ⌘K, and it sits just under the header with the
- * page dimmed. Send sends: Composer opens and asks it at once, under the AI
- * line shown here (sending is the consent, owner 21 Oct 2026). It lives in
- * the persistent shell, so an unsent request survives moving between pages.
+ * page dimmed. Send asks Composer here (direction B, owner 22 Oct 2026): the
+ * answer drops under the box (rises above it on a phone), under the AI line
+ * shown here (sending is the consent, owner 21 Oct 2026); Full Composer
+ * carries on with the same conversation. Closing keeps it for coming back. It
+ * lives in the persistent shell, so an unsent request survives moving between
+ * pages.
  */
 
 let open = false;
@@ -37,6 +44,37 @@ export function openComposerTray(): void {
     setOpen(true);
 }
 
+// A conversation kept after closing (B): the dot on what opens Composer, and the way back.
+let kept = false;
+const setKept = (next: boolean) => {
+    kept = next;
+    listeners.forEach((notify) => notify());
+};
+
+const subscribe = (notify: () => void) => {
+    listeners.add(notify);
+
+    return () => listeners.delete(notify);
+};
+
+/** Whether there's a conversation from the tray, open or closed. */
+function useComposerKept(): boolean {
+    return useSyncExternalStore(
+        subscribe,
+        () => kept,
+        () => false,
+    );
+}
+
+/** A conversation kept with Composer closed: the dot on what opens it. */
+export function useComposerWaiting(): boolean {
+    return useSyncExternalStore(
+        subscribe,
+        () => kept && !open,
+        () => false,
+    );
+}
+
 function useTrayOpen(): boolean {
     return useSyncExternalStore(
         (notify) => {
@@ -48,6 +86,13 @@ function useTrayOpen(): boolean {
         () => false,
     );
 }
+
+// "Saturday": the day a plan in focus is on, as Composer's own box says it.
+const weekday = (date: string) =>
+    new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        timeZone: 'Europe/Berlin',
+    }).format(new Date(`${date}T12:00:00`));
 
 const today = () =>
     new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(
@@ -91,9 +136,17 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const isOpen = useTrayOpen();
     const [text, setText] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
-    const [leftOut, setLeftOut] = useState<string | null>(null);
-    const context = useCurrentPageContext();
-    const about = context && context.label !== leftOut ? context : null;
+    // The request just sent, and whether there's a conversation to come back to.
+    const [asked, setAsked] = useState<TrayAsked | null>(null);
+    // The conversation's day in focus, once the answer has loaded it.
+    const [focusDay, setFocusDay] = useState<string | null>(null);
+    const talked = useComposerKept();
+    // Where the dim starts (under the header when Composer opens from it), and
+    // where the way back sits (under the header's button, or in the corner).
+    const [dimTop, setDimTop] = useState(0);
+    const [chipAt, setChipAt] = useState<{ top: number; left: number } | null>(
+        null,
+    );
     const tray = useRef<HTMLDivElement>(null);
     const field = useRef<HTMLTextAreaElement>(null);
     const launcher = useRef<HTMLButtonElement>(null);
@@ -121,8 +174,63 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }
     }, [isOpen]);
 
+    // Open, the page under the dim is inert: no focus and no clicks but the one that
+    // closes. From the header, the dim starts under it; otherwise it covers everything.
+    useLayoutEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const button = document.querySelector<HTMLElement>('.shell-composer');
+        const header = button?.offsetParent
+            ? document.querySelector<HTMLElement>('.shell-header')
+            : null;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Measured from the page's own header, which is outside React's view.
+        setDimTop(
+            header ? Math.round(header.getBoundingClientRect().bottom) : 0,
+        );
+        const under = [
+            document.getElementById('main'),
+            header ? null : document.querySelector('.shell-header'),
+        ].filter((element): element is HTMLElement => !!element);
+        under.forEach((element) => element.setAttribute('inert', ''));
+
+        return () =>
+            under.forEach((element) => element.removeAttribute('inert'));
+    }, [isOpen]);
+
+    // Closed with a conversation kept: the way back, 8px under the header's button.
+    useLayoutEffect(() => {
+        if (isOpen || !talked) {
+            return;
+        }
+
+        const place = () => {
+            const button =
+                document.querySelector<HTMLElement>('.shell-composer');
+            const at = button?.offsetParent
+                ? button.getBoundingClientRect()
+                : null;
+            setChipAt(
+                at
+                    ? {
+                          top: Math.round(at.bottom + 8),
+                          left: Math.round(at.left),
+                      }
+                    : null,
+            );
+        };
+
+        place();
+        window.addEventListener('resize', place);
+
+        return () => window.removeEventListener('resize', place);
+    }, [isOpen, talked]);
+
     const hide = () => {
         setMenuOpen(false);
+        // What was asked is answered in the conversation; reopening asks nothing again.
+        setAsked(null);
         const box = tray.current;
 
         if (!box || still()) {
@@ -131,12 +239,13 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             return;
         }
 
+        // Box and answer go together (B): fade and rise 8px.
         box.animate(
             [
-                { opacity: 1, transform: 'translateY(0) scale(1)' },
-                { opacity: 0, transform: 'translateY(10px) scale(0.96)' },
+                { opacity: 1, transform: 'translateY(0)' },
+                { opacity: 0, transform: 'translateY(-8px)' },
             ],
-            { duration: 180, easing: 'cubic-bezier(.4,0,1,1)', fill: 'both' },
+            { duration: 240, easing: 'ease', fill: 'both' },
         ).finished.then(
             () => setOpen(false),
             () => {},
@@ -202,20 +311,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
         setText('');
         setMenuOpen(false);
-        setOpen(false);
-        // By POST, so the words stay out of the URL, history and logs. `send`:
-        // Composer asks it on arrival, under the notice shown here, if any.
-        router.post(composerEntry.url(), {
-            prompt: request,
-            ...(about ? { about: about.label } : {}),
-            send: true,
-            ...(aiNotice
-                ? {
-                      notice_version: aiNotice.notice_version,
-                      provider_version: aiNotice.provider_version,
-                  }
-                : {}),
-        });
+        // Asked here, once; the box stays for the next one.
+        setAsked({ id: Date.now(), text: request });
+        setKept(true);
+        field.current?.focus({ preventScroll: true });
     };
 
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -256,7 +355,11 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     ref={launcher}
                     type="button"
                     className="shell-composer-round"
-                    aria-label="Open Composer"
+                    aria-label={
+                        talked
+                            ? 'Open Composer, with your conversation'
+                            : 'Open Composer'
+                    }
                     aria-expanded={false}
                     data-composer-opener
                     onClick={() => setOpen(true)}
@@ -264,7 +367,39 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     <span className="shell-composer-round-icon">
                         <Icon name="spark" variant="line" />
                     </span>
+                    {talked && (
+                        <span
+                            className="shell-composer-dot"
+                            aria-hidden="true"
+                        />
+                    )}
                 </button>
+            )}
+            {!isOpen && talked && (
+                <button
+                    type="button"
+                    className={
+                        chipAt
+                            ? 'composer-tray-resume'
+                            : 'composer-tray-resume is-corner'
+                    }
+                    style={chipAt ?? undefined}
+                    data-composer-opener
+                    onClick={() => setOpen(true)}
+                >
+                    <Icon name="chat" variant="line" />
+                    Back to your conversation
+                    <Icon name="arrow" variant="line" />
+                </button>
+            )}
+            {isOpen && (
+                // The dim takes the click that closes, so nothing under it is pressed.
+                <div
+                    className="composer-backdrop"
+                    style={{ top: dimTop }}
+                    aria-hidden="true"
+                    onClick={close}
+                />
             )}
             {isOpen && (
                 <div
@@ -285,21 +420,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                             <Icon name="close" variant="line" />
                         </span>
                     </button>
-                    {about && (
-                        <div className="composer-tray-about">
-                            <span>About: {about.label}</span>
-                            <button
-                                type="button"
-                                aria-label={`Don’t include ${about.label}`}
-                                onClick={() => {
-                                    setLeftOut(about.label);
-                                    field.current?.focus();
-                                }}
-                            >
-                                <Icon name="close" variant="line" />
-                            </button>
-                        </div>
-                    )}
                     <form onSubmit={send}>
                         <textarea
                             ref={field}
@@ -317,7 +437,11 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 }
                             }}
                             aria-label="Your request to Composer"
-                            placeholder="Ask, discover, or plan…"
+                            placeholder={
+                                talked && focusDay
+                                    ? `Ask or change ${weekday(focusDay)}…`
+                                    : 'Ask, discover, or plan…'
+                            }
                         />
                         <div className="composer-tray-tools">
                             <div className="composer-tray-actions">
@@ -347,6 +471,14 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                                 onClick={() => {
                                                     setMenuOpen(false);
                                                     setOpen(false);
+
+                                                    // A fresh start leaves nothing to come back to.
+                                                    if (
+                                                        action.label ===
+                                                        'Start fresh'
+                                                    ) {
+                                                        setKept(false);
+                                                    }
                                                 }}
                                             >
                                                 <span
@@ -385,6 +517,16 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                         </div>
                     </form>
                     {aiNotice && <AiNoticeLine notice={aiNotice} />}
+                    {talked && (
+                        <Suspense fallback={null}>
+                            <TrayAnswer
+                                asked={asked}
+                                notice={aiNotice}
+                                onClose={close}
+                                onFocus={setFocusDay}
+                            />
+                        </Suspense>
+                    )}
                 </div>
             )}
         </>
