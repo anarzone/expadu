@@ -265,7 +265,6 @@ function Conversation({
                 <AnswerBody
                     message={message}
                     latest={message.id === latestReplyId}
-                    starters={[]}
                     onAsk={(prompt) => void engine.send(prompt)}
                     onPanel={() => undefined}
                     planned={(event) =>

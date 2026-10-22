@@ -32,7 +32,6 @@ import {
     Welcome,
     YourDay,
     dayFacts,
-    starters,
     useComposerFrame,
     useComposerOrigin,
 } from '@/components/composer/frame';
@@ -562,11 +561,6 @@ export default function ComposerPage({
                                             latest={
                                                 message.id === latestReplyId
                                             }
-                                            starters={starters(
-                                                day,
-                                                paperwork,
-                                                around,
-                                            )}
                                             onAsk={ask}
                                             onPanel={openCollection}
                                             planned={(event) =>
