@@ -2506,8 +2506,16 @@
 /* A line's place in the cards: one cell, so its strip still stretches to
    the row; opened, the whole row (nearby-view.tsx LineSlot animates it). */
 :where(.travel-page) .nearby-line-slot {
+    position: relative;
     display: grid;
     min-width: 0;
+}
+/* The strip over its detail while the line unfolds or folds back. */
+:where(.travel-page) .nearby-line-ghost {
+    position: absolute;
+    inset: 0 0 auto;
+    background: var(--color-bg-surface);
+    pointer-events: none;
 }
 :where(.travel-page) .nearby-line-slot.is-open {
     grid-column: 1 / -1;

@@ -97,23 +97,31 @@ const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
 
 /**
  * A line's place in its area: its strip, or its detail when opened. Opening
- * grows from the strip's height to the detail's; closing shrinks the detail,
- * still shown and clipped, back to the strip's height and only then swaps
- * (`closing` keeps the detail and its full width until `onClosed`). With
- * reduced motion it just swaps. Its own updates (new times) don't animate.
+ * unfolds the detail, at its own size and clipped, from the strip's height to
+ * its own, while the strip over it fades; closing folds it back and the strip
+ * fades in over it before taking its place (`opening` and `closing` keep the
+ * strip on top until `onOpened` / `onClosed`). Nothing is squeezed to fit.
+ * With reduced motion it just swaps. Its own updates (new times) don't animate.
  */
 function LineSlot({
     open,
+    opening,
     closing,
+    strip,
+    detail,
+    onOpened,
     onClosed,
-    children,
 }: {
     open: boolean;
+    opening: boolean;
     closing: boolean;
+    strip: ReactNode;
+    detail: ReactNode;
+    onOpened: () => void;
     onClosed: () => void;
-    children: ReactNode;
 }) {
     const box = useRef<HTMLDivElement>(null);
+    const ghost = useRef<HTMLDivElement>(null);
     const height = useRef(0);
     // The strip's height when it opened: where closing goes back to.
     const shut = useRef(0);
@@ -145,36 +153,51 @@ function LineSlot({
             from === to ||
             window.matchMedia('(prefers-reduced-motion: reduce)').matches
         ) {
-            if (!open) {
-                onClosed();
-            }
+            (open ? onOpened : onClosed)();
 
             return;
         }
 
         el.style.overflow = 'hidden';
+        el.style.alignItems = 'start';
         // Closing holds the last frame until the strip takes its place.
         const anim = el.animate(
             [{ height: `${from}px` }, { height: `${to}px` }],
             { ...OPEN, fill: open ? 'none' : 'forwards' },
         );
+        ghost.current?.animate(
+            open
+                ? [{ opacity: 1 }, { opacity: 0 }]
+                : [{ opacity: 0 }, { opacity: 1 }],
+            {
+                duration: 140,
+                delay: open ? 0 : OPEN.duration - 140,
+                easing: 'ease-out',
+                fill: 'both',
+            },
+        );
         running.current = { anim, to };
+        const settle = () => {
+            el.style.overflow = '';
+            el.style.alignItems = '';
+        };
         anim.onfinish = () => {
             if (open) {
-                el.style.overflow = '';
+                settle();
                 running.current = null;
+                onOpened();
             } else {
                 onClosed();
             }
         };
         anim.oncancel = () => {
-            el.style.overflow = '';
+            settle();
 
             if (running.current?.anim === anim) {
                 running.current = null;
             }
         };
-    }, [open, onClosed]);
+    }, [open, onOpened, onClosed]);
 
     // The strip is back: let go of the closing's last frame.
     useLayoutEffect(() => {
@@ -189,12 +212,21 @@ function LineSlot({
         height.current = running.current?.to ?? box.current?.offsetHeight ?? 0;
     });
 
+    const shown = open || closing;
+
     return (
-        <div
-            ref={box}
-            className={cn('nearby-line-slot', (open || closing) && 'is-open')}
-        >
-            {children}
+        <div ref={box} className={cn('nearby-line-slot', shown && 'is-open')}>
+            {shown ? detail : strip}
+            {(open && opening) || closing ? (
+                <div
+                    ref={ghost}
+                    className="nearby-line-ghost"
+                    aria-hidden="true"
+                    inert
+                >
+                    {strip}
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -218,12 +250,19 @@ export function NearbyView({
     const [picked, setPicked] = useState('');
     // A picked line that left the board closes.
     const openLine = station.lines.some((l) => l.line === picked) ? picked : '';
-    // The line shrinking back to its strip (its detail shown until it has).
+    // The line unfolding into its detail, and the one folding back to its
+    // strip (the strip shown over it until it has).
+    const [opening, setOpening] = useState('');
     const [closing, setClosing] = useState('');
     const setOpenLine = (line: string) => {
         setClosing(openLine && openLine !== line ? openLine : '');
+        setOpening(line);
         setPicked(line);
     };
+    const opened = useCallback(
+        (line: string) => setOpening((now) => (now === line ? '' : now)),
+        [],
+    );
     const closed = useCallback(
         (line: string) => setClosing((now) => (now === line ? '' : now)),
         [],
@@ -597,11 +636,7 @@ export function NearbyView({
         );
     };
 
-    const card = (l: ShownLine) => {
-        if (openLine === l.line || closing === l.line) {
-            return detail(l);
-        }
-
+    const strip = (l: ShownLine) => {
         const [first, second] = l.shown;
         const end = (d: ShownDir | undefined) =>
             d
@@ -1103,11 +1138,18 @@ export function NearbyView({
                                         <LineSlot
                                             key={l.line}
                                             open={openLine === l.line}
+                                            opening={opening === l.line}
                                             closing={closing === l.line}
+                                            strip={strip(l)}
+                                            detail={
+                                                openLine === l.line ||
+                                                closing === l.line
+                                                    ? detail(l)
+                                                    : null
+                                            }
+                                            onOpened={() => opened(l.line)}
                                             onClosed={() => closed(l.line)}
-                                        >
-                                            {card(l)}
-                                        </LineSlot>
+                                        />
                                     ))}
                                 </div>
                             </section>
