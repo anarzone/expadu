@@ -2494,6 +2494,15 @@
 :where(.travel-page) .nearby-line {
     grid-column: 1 / -1;
 }
+/* A line's place in the cards: one cell, so its strip still stretches to
+   the row; opened, the whole row (nearby-view.tsx LineSlot animates it). */
+:where(.travel-page) .nearby-line-slot {
+    display: grid;
+    min-width: 0;
+}
+:where(.travel-page) .nearby-line-slot.is-open {
+    grid-column: 1 / -1;
+}
 :where(.travel-page) .nearby-line.is-inline {
     border: 1.5px solid var(--color-text);
     border-radius: 22px;
@@ -4358,7 +4367,10 @@
     .travel-page #journey-view {
         grid-area: 1 / 1 / span 6;
         position: sticky;
-        top: 96px;
+        /* Where it sits anyway (the 72px header and the page's 16px), level
+           with Nearby: at 96 it stuck 8px lower whenever Nearby grew taller
+           (a line opened), so the column jumped. */
+        top: 88px;
         max-height: calc(-120px + 100vh);
         box-sizing: border-box;
         overflow-y: auto;

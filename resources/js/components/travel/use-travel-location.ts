@@ -283,9 +283,12 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
                         lng: position.coords.longitude,
                     };
 
+                    // A move, not the fix wobbling: past 150 m and past the
+                    // fix's own accuracy (Wi-Fi positions jump about by that).
                     if (
                         anchor.current &&
-                        metres(anchor.current, here) < FOLLOW_METRES
+                        metres(anchor.current, here) <
+                            Math.max(FOLLOW_METRES, position.coords.accuracy)
                     ) {
                         return;
                     }

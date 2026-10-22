@@ -1,4 +1,4 @@
-import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
     useCallback,
     useEffect,
@@ -665,42 +665,41 @@ export default function Timetable() {
                             ) : null}
                         </>
                     ) : null}
-                    <Deferred
-                        data="station"
-                        fallback={
-                            <Waiting label="Finding the closest station…" />
-                        }
-                    >
-                        {shown ? (
-                            <NearbyView
-                                station={shown}
-                                favourites={favouriteStops}
-                                onPickStop={pickStop}
-                                onToggleFavourite={toggleFavourite}
-                                favouriteBusy={favouriteBusy}
-                                stepFreeNeed={page.props.stepFreeNeed ?? false}
-                            />
-                        ) : (
-                            <div className="nearby-empty">
-                                <strong>Where are you?</strong>
-                                <span>
-                                    Nearby shows the station closest to you.
-                                    Share your location, or pick a stop.
-                                </span>
-                                <button
-                                    type="button"
-                                    className="quiet-button"
-                                    onClick={location.locate}
-                                    disabled={location.locating}
-                                >
-                                    <TravelIcon name="locate" />
-                                    {location.locating
-                                        ? 'Locating…'
-                                        : 'Use my location'}
-                                </button>
-                            </div>
-                        )}
-                    </Deferred>
+                    {/* Straight from the prop, not <Deferred>: that drops back to its
+                        fallback whenever the station is re-read (the 30 s poll, a
+                        new fix), so Nearby was rebuilt instead of its times
+                        changing in place. */}
+                    {shown === undefined ? (
+                        <Waiting label="Finding the closest station…" />
+                    ) : shown ? (
+                        <NearbyView
+                            station={shown}
+                            favourites={favouriteStops}
+                            onPickStop={pickStop}
+                            onToggleFavourite={toggleFavourite}
+                            favouriteBusy={favouriteBusy}
+                            stepFreeNeed={page.props.stepFreeNeed ?? false}
+                        />
+                    ) : (
+                        <div className="nearby-empty">
+                            <strong>Where are you?</strong>
+                            <span>
+                                Nearby shows the station closest to you. Share
+                                your location, or pick a stop.
+                            </span>
+                            <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={location.locate}
+                                disabled={location.locating}
+                            >
+                                <TravelIcon name="locate" />
+                                {location.locating
+                                    ? 'Locating…'
+                                    : 'Use my location'}
+                            </button>
+                        </div>
+                    )}
                     {location.error ? (
                         <p className="nearby-stepnote" role="status">
                             {locateErrorText[location.error]}

@@ -120,7 +120,13 @@ export function nearbyView(
                             (d): d is ShownDir => d !== null && !d.cancelled,
                         )
                         .filter(dirOk)
-                        .sort((a, b) => leaves(a) - leaves(b)),
+                        // Each way keeps its side (as the mock: the station's
+                        // order), never swapping with whichever leaves sooner.
+                        .sort(
+                            (a, b) =>
+                                (a.direction ?? 9) - (b.direction ?? 9) ||
+                                a.dest.localeCompare(b.dest),
+                        ),
                     pinned: pinned.includes(l.line),
                 }))
                 .filter((l) => l.shown.length)

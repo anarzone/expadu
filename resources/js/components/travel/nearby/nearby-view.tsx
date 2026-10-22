@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { CardStrip, TravelBanner, TravelChip } from '../labels';
@@ -84,6 +84,71 @@ type NearbyViewProps = {
     /** The person's saved step-free need: Step-free starts on. */
     stepFreeNeed?: boolean;
 };
+
+/** The app's open easing (Composer's tray). */
+const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
+
+/**
+ * A line's place in its area: its strip, or its detail when opened. The swap
+ * grows (or shrinks) to the new height while the new content fades in; with
+ * reduced motion it just swaps. Its own updates (new times) don't animate.
+ */
+function LineSlot({ open, children }: { open: boolean; children: ReactNode }) {
+    const box = useRef<HTMLDivElement>(null);
+    const height = useRef(0);
+    const was = useRef(open);
+    // The swap under way and the height it goes to.
+    const running = useRef<{ anim: Animation; to: number } | null>(null);
+
+    // Before the swap paints: from the height it had to the height it has.
+    useLayoutEffect(() => {
+        const el = box.current;
+
+        if (!el || was.current === open) {
+            return;
+        }
+
+        was.current = open;
+        const from = height.current;
+        const to = el.offsetHeight;
+
+        if (
+            !from ||
+            from === to ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            return;
+        }
+
+        running.current?.anim.cancel();
+        el.style.overflow = 'hidden';
+        const grow = el.animate(
+            [{ height: `${from}px` }, { height: `${to}px` }],
+            OPEN,
+        );
+        running.current = { anim: grow, to };
+        el.firstElementChild?.animate([{ opacity: 0 }, { opacity: 1 }], OPEN);
+        grow.onfinish = grow.oncancel = () => {
+            el.style.overflow = '';
+
+            if (running.current?.anim === grow) {
+                running.current = null;
+            }
+        };
+    }, [open]);
+
+    // Its height after every render, for the next swap to start from (the
+    // one it's growing to while a swap is under way, not the frame now).
+    useLayoutEffect(() => {
+        height.current = running.current?.to ?? box.current?.offsetHeight ?? 0;
+    });
+
+    return (
+        <div ref={box} className={cn('nearby-line-slot', open && 'is-open')}>
+            {children}
+        </div>
+    );
+}
 
 export function NearbyView({
     station,
@@ -923,7 +988,14 @@ export function NearbyView({
                                     )}
                                 </div>
                                 <div className="nearby-cards">
-                                    {area.cards.map(card)}
+                                    {area.cards.map((l) => (
+                                        <LineSlot
+                                            key={l.line}
+                                            open={openLine === l.line}
+                                        >
+                                            {card(l)}
+                                        </LineSlot>
+                                    ))}
                                 </div>
                             </section>
                         </div>
