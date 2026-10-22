@@ -2555,6 +2555,28 @@
 :where(.travel-page) .nearby-line.is-inline .nearby-detail-dir {
     padding-inline: var(--space-14);
 }
+/* Delays and disruptions, two tiers (delays canvas, 22 Oct 2026): everyday
+   lateness and cancellations stay small in the row; a major problem on this
+   stop's lines is the one headline above the board. */
+:where(.travel-page) .nearby-late {
+    background: var(--color-attention-bg);
+    font-weight: var(--weight-semibold);
+}
+:where(.travel-page) .nearby-late.is-strong {
+    background: var(--color-attention);
+    font-weight: var(--weight-bold);
+}
+/* The board's one headline (tl-headline, travel.css) and, when there are
+   more, "and N more" under it. */
+:where(.travel-page) .nearby-major {
+    display: grid;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
+}
+:where(.travel-page) .nearby-cards > .tl-reason,
+:where(.travel-page) .nearby-list > .tl-reason {
+    padding: 0 0 10px;
+}
 :where(.travel-page) .nearby-detail-dir > span:first-child {
     flex: 1 1 0%;
     min-width: 0px;
