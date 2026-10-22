@@ -52,7 +52,13 @@ jobs:
         run: node --experimental-strip-types --test tests/Frontend/*.test.mjs tests/Unit/Frontend/*.test.cjs
 
   test:
-    name: Test
+    # Three shards in parallel: the suite took ~15 min as one job and gated every
+    # PR and staging deploy. Deploy jobs' `needs: [test]` waits for all three.
+    name: Test (${{ matrix.shard }}/3)
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
 
     services:
@@ -142,11 +148,12 @@ jobs:
             -c "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 
       - name: Run Tests
-        run: vendor/bin/pest --compact --parallel --exclude-group=slow
+        run: vendor/bin/pest --compact --parallel --exclude-group=slow --shard=${{ matrix.shard }}/3
 
       # Two worker processes meet at a database lock barrier; that only
       # behaves deterministically outside the parallel runner, so run it alone.
       - name: Run concurrency tests (serial)
+        if: matrix.shard == 1
         run: vendor/bin/pest --compact --group=serial-concurrency
 
   browser-test:
@@ -265,6 +272,14 @@ jobs:
           php artisan db:seed --force --class=E2ETestUserSeeder
           # composer-workspace.spec plans a day from these test-only places.
           php artisan db:seed --force --class=E2EComposerCatalogueSeeder
+
+      # The browser download from Playwright's CDN failed several runs on 21–22 Oct
+      # and blocked deploys; a cached copy skips it (system deps still install).
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
