@@ -41,6 +41,7 @@ test('a major notice on a line the trip rides leads it, in its checked brief, wi
     expect(app(TripTrouble::class)->major(troubleJourney(), 'Köln'))->toBe([
         'title' => 'Line 4 is interrupted between Neumarkt and Wiener Platz', 'text' => 'Replacement buses run.', 'todo' => null, 'source' => 'notice',
         'details' => "Linie 4: Unterbrechung zwischen Neumarkt und Wiener Platz\nErsatzbusse sind eingerichtet.",
+        'lines' => ['4'], 'feed' => 'kvb-betriebslage', 'since' => $notice->created_at->toIso8601String(), 'url' => 'https://www.kvb.koeln/',
     ]);
 });
 

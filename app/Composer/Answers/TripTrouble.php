@@ -27,7 +27,7 @@ final class TripTrouble
     /**
      * @param  array<string, mixed>  $journey  a journey as the trip answer carries it
      * @param  bool  $boards  whether there's time to read the boarding stop's live board
-     * @return array{title: string, text: ?string, todo: ?string, source: 'notice'|'live', details: ?string}|null
+     * @return array{title: string, text: ?string, todo: ?string, source: 'notice'|'live', details: ?string, lines: list<string>, feed: ?string, since: ?string, url: ?string}|null
      */
     public function major(array $journey, ?string $city, bool $boards = true): ?array
     {
@@ -51,9 +51,12 @@ final class TripTrouble
             $todo = $notice['on'] === 'ends' && $avoided !== []
                 ? 'This way doesn’t use '.(count($avoided) === 1 ? "line {$avoided[0]}" : 'lines '.self::list($avoided)).'.' : null;
 
+            // As Plan a trip's headline draws it: its lines, the feed that published it (KVB, VRS or DELFI) and since when, and KVB's page.
+            $about = ['lines' => array_values(array_map('strval', $notice['lines'])), 'feed' => $notice['source'] ?? null, 'since' => $notice['since'] ?? null, 'url' => $notice['url'] ?? null];
+
             return is_array($notice['brief'] ?? null)
-                ? ['title' => (string) $notice['brief']['headline'], 'text' => $notice['brief']['text'] ?: null, 'todo' => $todo, 'source' => 'notice', 'details' => $german]
-                : ['title' => (string) $notice['title'], 'text' => $notice['details'] ?? null, 'todo' => $todo, 'source' => 'notice', 'details' => null];
+                ? ['title' => (string) $notice['brief']['headline'], 'text' => $notice['brief']['text'] ?: null, 'todo' => $todo, 'source' => 'notice', 'details' => $german, ...$about]
+                : ['title' => (string) $notice['title'], 'text' => $notice['details'] ?? null, 'todo' => $todo, 'source' => 'notice', 'details' => null, ...$about];
         }
 
         $trouble = $found['trouble'][0] ?? null;
@@ -63,16 +66,17 @@ final class TripTrouble
         $stop = trim((string) preg_replace('/^'.preg_quote((string) $city, '/').'\s+/u', '', (string) ($trouble['stop'] ?? '')));
         $towards = $trouble['dest'] !== '' ? " towards {$trouble['dest']}" : '';
         $at = $stop !== '' ? " at {$stop}" : '';
+        $about = ['lines' => [(string) $trouble['line']], 'feed' => null, 'since' => null, 'url' => null];
         if ($trouble['kind'] === 'cancelled') {
             return ['title' => "Line {$trouble['line']}: {$trouble['count']} of the next {$trouble['of']} runs cancelled",
-                'text' => "That’s by the live times{$at}{$towards}.", 'todo' => 'Travel can find you another way.', 'source' => 'live', 'details' => null];
+                'text' => "That’s by the live times{$at}{$towards}.", 'todo' => 'Travel can find you another way.', 'source' => 'live', 'details' => null, ...$about];
         }
         $delays = array_column($trouble['runs'], 'delay');
         $late = min($delays) === max($delays) ? min($delays).' min' : min($delays).'–'.max($delays).' min';
 
         return ['title' => "Line {$trouble['line']} is running {$late} late",
             'text' => "The next {$trouble['count']} runs{$towards}{$at} are each 15 min or more late, by live times.",
-            'todo' => 'Allow extra time, or let Travel find another way.', 'source' => 'live', 'details' => null];
+            'todo' => 'Allow extra time, or let Travel find another way.', 'source' => 'live', 'details' => null, ...$about];
     }
 
     /** @param  list<string>  $lines  "1, 7 and 9" */
