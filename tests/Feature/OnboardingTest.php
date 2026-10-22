@@ -6,7 +6,6 @@ use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Models\BureaucracyCaseFact;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\UserPlace;
 use App\Models\UserTask;
 use App\Onboarding\ApplyOnboardingAnswers;
 
@@ -505,32 +504,21 @@ test('re-onboarding requires an explicit change review instead of silently overw
         ->and($user->fresh()->situation->value)->toBe('family_reunification');
 });
 
-test('onboarding rolls back profile and canonical fact writes when required place creation fails', function () {
+test('onboarding makes no empty Home or Work: they exist once the person sets them', function () {
     $user = User::factory()->notOnboarded()->create();
-    $originalDispatcher = UserPlace::getEventDispatcher();
-    UserPlace::setEventDispatcher(clone $originalDispatcher);
 
-    try {
-        UserPlace::creating(fn () => throw new RuntimeException('Place creation failed.'));
+    app(ApplyOnboardingAnswers::class)->execute($user, [
+        'situation' => 'non_eu_employee',
+        'veedel' => 'Ehrenfeld',
+        'arrival_date' => '2026-01-15',
+        'arrival_planned' => false,
+        'address_registration_status' => 'not_registrable',
+        'entry_mode' => 'visa_free',
+        'interests' => ['parks', 'museums', 'cafes'],
+    ]);
 
-        expect(fn () => app(ApplyOnboardingAnswers::class)->execute($user, [
-            'situation' => 'non_eu_employee',
-            'veedel' => 'Ehrenfeld',
-            'arrival_date' => '2026-01-15',
-            'arrival_planned' => false,
-            'address_registration_status' => 'not_registrable',
-            'entry_mode' => 'visa_free',
-            'interests' => ['parks', 'museums', 'cafes'],
-        ]))->toThrow(RuntimeException::class);
-    } finally {
-        UserPlace::setEventDispatcher($originalDispatcher);
-    }
-
-    $user->refresh();
-    expect(UserPlace::getEventDispatcher())->toBe($originalDispatcher);
-    expect($user->onboarded_at)->toBeNull();
-    expect($user->bureaucracyCase)->toBeNull();
-    expect($user->places()->count())->toBe(0);
+    expect($user->fresh()->onboarded_at)->not->toBeNull()
+        ->and($user->places()->count())->toBe(0);
 });
 
 test('onboarding returns to an intended app page without accepting external destinations', function (string $intended, string $expected) {

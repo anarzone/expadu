@@ -48,8 +48,9 @@ Route::post('user/confirm-email/code', [EmailConfirmationController::class, 'sen
 Route::post('user/confirm-email', [EmailConfirmationController::class, 'confirm'])
     ->middleware('throttle:10,1')->name('email-confirmation.confirm');
 
-// The shared primitives (components/ui), for checking against the mock —
-// local + staging only, like the design-system reference below.
+// The shared primitives (components/ui), for checking against the mock.
+// Visible on local + staging, hidden on production. Staging runs
+// APP_ENV=production, so gate on the host.
 Route::get('dev/primitives', function () {
     abort_if(
         app()->isProduction() && ! str_contains((string) request()->getHost(), 'staging'),
@@ -58,17 +59,6 @@ Route::get('dev/primitives', function () {
 
     return Inertia::render('dev/primitives');
 })->name('dev.primitives');
-
-// Design-system reference — visible on local + staging, hidden on
-// production. Staging runs APP_ENV=production, so gate on the host.
-Route::get('dev/design-system', function () {
-    abort_if(
-        app()->isProduction() && ! str_contains((string) request()->getHost(), 'staging'),
-        404,
-    );
-
-    return Inertia::render('dev/design-system');
-})->name('dev.design-system');
 
 // Alerts
 Route::get('alerts', [AlertController::class, 'index'])->name('alerts');

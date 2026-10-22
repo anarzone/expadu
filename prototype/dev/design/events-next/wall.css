@@ -3496,7 +3496,10 @@ main[data-view='wall'] .st-board .event-past-note {
     z-index: 4;
     left: var(--rings-x, 30%);
     top: var(--rings-y, 14px);
-    max-width: calc(var(--street-w, 900px) * 0.6);
+    max-width: min(calc(var(--street-w, 900px) * 0.6), var(--rings-room, 100vw));
+}
+.st-root[data-layout='desktop'] > .st-rings > div[data-more] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
 .st-root[data-layout='desktop'] > .st-rings > div {
     gap: 14px !important;

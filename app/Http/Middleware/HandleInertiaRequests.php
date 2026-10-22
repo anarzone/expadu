@@ -3,9 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\ActiveTrip;
-use App\Models\NotificationPreference;
 use App\Models\UserSetting;
-use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,14 +41,12 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
                 // Which "confirm it's you" to offer: the password, or an
                 // emailed code (EXP-174). Nothing else about the password.
                 'has_password' => $request->user() !== null && $request->user()->password !== null,
             ],
-            'isOnboarded' => $request->user()?->isOnboarded() ?? false,
             // Admin-only QA tooling: the floating "become this persona"
             // toolbar. Null for everyone else so PersonaSwitcher can gate off
             // a single prop instead of shipping a separate admin flag.
@@ -64,8 +60,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
-            'serviceErrors' => fn () => session('serviceErrors', []),
-            'notificationPreferences' => fn () => $request->user()?->notificationPreference?->preferences ?? NotificationPreference::defaults(),
             'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
@@ -73,23 +67,6 @@ class HandleInertiaRequests extends Middleware
             // A finished trip isn't shown and is deleted on the way, so where
             // it started isn't kept past the trip (ActiveTrip::currentFor).
             'activeTrip' => fn () => ActiveTrip::currentFor($request->user())?->toShared(),
-            // User location — only a real, confirmed or recently accepted
-            // origin is shared. Never invent a home or city-centre position.
-            'userLocation' => function () use ($request) {
-                $user = $request->user();
-                if (! $user) {
-                    return null;
-                }
-
-                $location = app(UserLocationService::class)->context($user, $request);
-
-                return $location->hasOrigin() ? [
-                    'lat' => $location->lat,
-                    'lng' => $location->lng,
-                    'source' => $location->source->value,
-                    'name' => $location->label,
-                ] : null;
-            },
             ...$this->widgets($request),
         ];
     }

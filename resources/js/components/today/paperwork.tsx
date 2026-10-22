@@ -157,7 +157,10 @@ export function PaperworkPanel({
                 )}
             </Link>
             <div className="paperwork-followups">
-                <Link className="situation-link" href="/profile">
+                <Link
+                    className="situation-link"
+                    href={bureaucracy({ query: { guide: 'details' } })}
+                >
                     Your situation
                     <span>Review details</span>
                 </Link>

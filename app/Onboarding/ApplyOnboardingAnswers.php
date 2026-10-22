@@ -49,9 +49,8 @@ final class ApplyOnboardingAnswers
             $fresh = $user->fresh();
             $fresh->update([...$profile, 'bureaucracy_path' => null]);
             $fresh->setProfileAttribute('qa_persona', null, 'onboarding');
-            foreach (['home' => ['Home', '🏠', 0], 'work' => ['Work', '💼', 1]] as $category => [$name, $emoji, $order]) {
-                $fresh->places()->firstOrCreate(['category' => $category], ['name' => $name, 'emoji' => $emoji, 'sort_order' => $order]);
-            }
+            // No empty Home or Work: a place exists once the person sets it
+            // ("Set your Home"), never as a placeholder (owner, 22 Oct).
 
             return $case->fresh();
         });
