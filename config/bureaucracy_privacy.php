@@ -11,5 +11,6 @@ return [
     'daily_limits' => [
         'composer_parse' => env('COMPOSER_PARSE_DAILY_LIMIT'),
         'composer_rank' => env('COMPOSER_RANK_DAILY_LIMIT'),
+        'composer_assist' => env('COMPOSER_ASSIST_DAILY_LIMIT'),
     ],
 ];
