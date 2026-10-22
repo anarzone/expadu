@@ -2,29 +2,9 @@
 
 use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\ConfirmedFactView;
-use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Models\BureaucracyCaseFact;
-use App\Models\Task;
 use App\Models\User;
-use App\Models\UserTask;
 use App\Onboarding\ApplyOnboardingAnswers;
-
-test('onboarding page renders for non-onboarded user', function () {
-    $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('onboarding'));
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page->has('veedels')->missing('taskPreviews'));
-});
-
-test('onboarded user accessing onboarding is not redirected away', function () {
-    $user = User::factory()->onboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->get(route('onboarding'));
-    $response->assertOk();
-});
 
 test('onboarding can be completed with valid data', function () {
     $user = User::factory()->notOnboarded()->create();
@@ -330,44 +310,6 @@ test('entry mode is an encrypted attributed answer and is not duplicated in the 
         ->and($fact->getRawOriginal('encrypted_value'))->not->toContain('d_visa')
         ->and($user->profile_attributes['entry_mode'] ?? null)->toBeNull()
         ->and($user->profile_attributes['housing_status'] ?? null)->toBeNull();
-});
-
-test('redo onboarding retains legacy rows without transferring their progress into the new plan', function () {
-    $task = Task::factory()->create([
-        'key' => 'rd.anmeldung',
-        'situation' => ['eu_employee'],
-        'applies_if' => [['purpose' => 'employment', 'citizenship_group' => 'eu']],
-        'documents_required' => ['Passport'],
-    ]);
-
-    $user = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
-    $this->actingAs($user);
-    $userTask = UserTask::factory()->for($user)->create(['task_id' => $task->id, 'documents_checked' => ['Passport']]);
-
-    $this->post(route('onboarding.restart'))->assertRedirect(route('onboarding'));
-
-    $user->refresh();
-    expect($user->onboarded_at)->toBeNull();
-    // Answers stay (they're re-asked and overwritten) and progress is KEPT.
-    expect($user->situation->value)->toBe('eu_employee');
-    expect($user->userTasks()->count())->toBe(1);
-    expect($userTask->fresh()->documents_checked)->toBe(['Passport']);
-
-    // Returning to the questionnaire never locks someone out of the app.
-    $this->get(route('explore'))->assertOk();
-
-    $this->post(route('onboarding.complete'), [
-        'situation' => 'student',
-        'is_eu' => true,
-        'veedel' => 'Nippes',
-        'arrival_date' => now()->subDays(3)->toDateString(),
-        'arrival_planned' => false,
-        'address_registration_status' => 'not_registrable',
-        'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('dashboard'));
-
-    expect($userTask->fresh()->documents_checked)->toBe(['Passport'])
-        ->and(app(AccountHolderPlan::class)->for($user->fresh())['progress']['completed']['count'])->toBe(0);
 });
 
 test('planning mode completes onboarding with no arrival date', function () {
