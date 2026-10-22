@@ -575,6 +575,7 @@ export default function Timetable() {
                     onLocate={location.locate}
                     locating={location.locating}
                     locateError={location.error}
+                    onAllowLocation={() => void location.allow()}
                 />
 
                 {tripOpen ? (
@@ -703,6 +704,19 @@ export default function Timetable() {
                     {location.error ? (
                         <p className="nearby-stepnote" role="status">
                             {locateErrorText[location.error]}
+                            {location.error === 'off' ? (
+                                <>
+                                    {' '}
+                                    <button
+                                        type="button"
+                                        className="text-action"
+                                        disabled={location.locating}
+                                        onClick={() => void location.allow()}
+                                    >
+                                        Share my location
+                                    </button>
+                                </>
+                            ) : null}
                         </p>
                     ) : null}
                     {notice ? (

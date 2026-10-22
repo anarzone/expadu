@@ -184,11 +184,13 @@ type PlanPanelProps = {
     locating: boolean;
     /** Why the last "Use my location" didn't work. */
     locateError?: LocateError | null;
+    /** Location sharing was off: turn it on here, then locate. */
+    onAllowLocation?: () => void;
 };
 
 /** Why From couldn't be where you are, and what to do instead. */
 const fromLocateText: Record<LocateError, string> = {
-    off: 'Location sharing is off. Type where you’re starting, or turn it on in Settings.',
+    off: 'Location sharing is off. Share your location to start from where you are, or type where you’re starting.',
     unsupported:
         'Location isn’t available on this device. Type where you’re starting.',
     blocked:
@@ -223,6 +225,7 @@ export function PlanPanel({
     onLocate,
     locating,
     locateError = null,
+    onAllowLocation,
 }: PlanPanelProps) {
     const today = berlinToday();
     const [from, setFrom] = useState<FieldValue>(EMPTY);
@@ -899,11 +902,16 @@ export function PlanPanel({
     // From becomes where the device is now: the fix goes to the server as
     // "I'm here", so an empty From plans from it. A shown answer is planned
     // again from there once the fix is in.
-    const useMyLocation = () => {
+    const startFromHere = (allow = false) => {
         setFrom(EMPTY);
         setRelocated(true);
         relocating.current = true;
-        onLocate();
+
+        if (allow && onAllowLocation) {
+            onAllowLocation();
+        } else {
+            onLocate();
+        }
     };
 
     useEffect(() => {
@@ -982,6 +990,39 @@ export function PlanPanel({
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
+    // The Deutschlandticket, said where the fare is: kept with your account,
+    // then the ways are planned again so the fare matches.
+    const [ticketBusy, setTicketBusy] = useState(false);
+    const sayTicket = async (held: boolean) => {
+        setTicketBusy(true);
+
+        try {
+            const response = await fetch('/api/travel/deutschlandticket', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN':
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ held }),
+            });
+
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+
+            await plan();
+        } catch {
+            showToast('That couldn’t be saved. Try again.', { error: true });
+        } finally {
+            setTicketBusy(false);
+        }
+    };
+
     const barTitle = saved
         ? 'Saved'
         : results
@@ -1390,7 +1431,14 @@ export function PlanPanel({
                                 setPicked(null);
                             }}
                             toRef={toField}
-                            onUseLocation={useMyLocation}
+                            onUseLocation={() => startFromHere()}
+                            onAllowLocation={
+                                relocated &&
+                                locateError === 'off' &&
+                                onAllowLocation
+                                    ? () => startFromHere(true)
+                                    : undefined
+                            }
                             locating={locating}
                             locateNote={
                                 relocated && locateError
@@ -1831,6 +1879,10 @@ export function PlanPanel({
                                     ) : answer && ranked.length ? (
                                         <>
                                             <PlanChecks
+                                                onTicket={(held) =>
+                                                    void sayTicket(held)
+                                                }
+                                                ticketBusy={ticketBusy}
                                                 checks={checksFor(
                                                     answer,
                                                     chosen,

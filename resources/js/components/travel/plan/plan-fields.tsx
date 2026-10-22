@@ -99,6 +99,8 @@ type PlanFieldsProps = {
     locating?: boolean;
     /** Why that didn't work, in words. */
     locateNote?: string | null;
+    /** Sharing was off: share it here. */
+    onAllowLocation?: () => void;
 };
 
 export function PlanFields({
@@ -115,6 +117,7 @@ export function PlanFields({
     onUseLocation,
     locating = false,
     locateNote = null,
+    onAllowLocation,
 }: PlanFieldsProps) {
     const listId = useId();
     const [open, setOpen] = useState<'from' | 'to' | null>(null);
@@ -404,6 +407,19 @@ export function PlanFields({
             {locateNote ? (
                 <p className="from-locate-note" role="status">
                     {locateNote}
+                    {onAllowLocation ? (
+                        <>
+                            {' '}
+                            <button
+                                type="button"
+                                className="text-action"
+                                disabled={locating}
+                                onClick={onAllowLocation}
+                            >
+                                Share my location
+                            </button>
+                        </>
+                    ) : null}
                 </p>
             ) : null}
         </div>
