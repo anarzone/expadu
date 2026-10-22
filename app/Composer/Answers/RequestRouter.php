@@ -77,12 +77,16 @@ final class RequestRouter
         '/\b(?:how|hw|hoe|hwo)\s+(?:\S+\s+){0,4}?(?:get|go|travel|come|walk|cycle|ride)\s+(?:over\s+)?to\s+(?<place>.+)$/iu',
         '/\b(?:how|hw)\s+(?:\S+\s+){0,3}?reach\s+(?<place>.+)$/iu',
         '/\bhow (?:far|long)\b(?:\s+(?:away|is|it|does it take|will it take|to|from here|from me))*\s+(?<place>.+)$/iu',
+        '/\bhow many (?:minutes|mins|km|kilomet(?:re|er)s)\b(?:\s+(?:is it|does it take|will it take|away))?\s+(?:to|from here to)\s+(?<place>.+)$/iu',
     ];
+
+    /** Asking how far or how long, not for the way (owner's staging test, 22 Oct 2026: "how far is it?"). */
+    private const DISTANCE = '/\bhow (?:far|long)\b|\bhow many (?:minutes|mins|km|kilomet(?:re|er)s)\b|\bdistance\b/iu';
 
     private const GO_TO = '/\b(?:go|going|head|heading|travel|travelling|get)\s+to\s+(?<place>.+)$/iu';
 
     /** The place a trip was to, again: "how do I get there?", "how far is it?", "take me there". */
-    private const AGAIN = '/^(?:and\s+|so\s+)?(?:(?:how|hw)\b.*\b(?:get|go|reach)\s+there|(?:take|bring|get) me there|directions(?:\s+there)?|how (?:far|long) (?:is it|away is it|does it take)|(?:the )?(?:way|route) there)\b[?!. ]*$/iu';
+    private const AGAIN = '/^(?:and\s+|so\s+)?(?:(?:how|hw)\b.*\b(?:get|go|reach)\s+there|(?:take|bring|get) me there|directions(?:\s+there)?|how (?:far|long) (?:is it|away is it|does it take)(?:\s+(?:from here|to get there))?|how many (?:minutes|mins|km) (?:is it|does it take|away)|(?:the )?(?:way|route) there)\b[?!. ]*$/iu';
 
     /** A greeting and nothing else ("hi", "Hallo!"): what's around you now. */
     private const GREETING = '/^(hi|hiya|hello|hey|hallo|moin|servus|yo|good (morning|afternoon|evening|day))( there| composer| expadu)?[!.,? ]*$/u';
@@ -276,13 +280,15 @@ final class RequestRouter
      * do I get there?"). Null when the words aren't a trip to a place. The keyword reader
      * asks this too, so both readers know a trip the same way.
      *
-     * @return array{place: ?string, area: ?string, at: ?string, again: bool}|null
+     * @return array{place: ?string, area: ?string, at: ?string, again: bool, ask: ?string}|null
      */
     public static function destination(string $text): ?array
     {
         $text = trim(str_replace(['’', '‘'], "'", $text));
+        // "How far is it?" asks for the distance and the time, not the way.
+        $ask = preg_match(self::DISTANCE, $text) === 1 ? 'distance' : null;
         if (preg_match(self::AGAIN, $text) === 1) {
-            return ['place' => null, 'area' => null, 'at' => null, 'again' => true];
+            return ['place' => null, 'area' => null, 'at' => null, 'again' => true, 'ask' => $ask];
         }
         $sure = false;
         foreach (self::TRIP_TO as $pattern) {
@@ -311,11 +317,11 @@ final class RequestRouter
             return null;
         }
         if (preg_match('/^(there|it|that( place)?|this place)$/iu', $place) === 1) {
-            return ['place' => null, 'area' => null, 'at' => $at, 'again' => true];
+            return ['place' => null, 'area' => null, 'at' => $at, 'again' => true, 'ask' => $ask];
         }
 
         return mb_strlen($place) >= 3 && mb_strlen($place) <= 80 && ($sure || preg_match('/\p{Lu}/u', $place) === 1)
-            ? ['place' => $place, 'area' => $area, 'at' => $at, 'again' => false] : null;
+            ? ['place' => $place, 'area' => $area, 'at' => $at, 'again' => false, 'ask' => $ask] : null;
     }
 
     /** "When should I leave for the cinema?" (model.js eventTrip): the id of today's event it names. */

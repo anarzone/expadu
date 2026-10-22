@@ -41,6 +41,8 @@ test('a trip to a named place is read with its area and time; an outing stays an
     ['how far is it to the zoo?', ['place' => 'zoo']],
     ['how do I reach Kölner Dom', ['place' => 'Kölner Dom']],
     ['how do i get there?', ['again' => true]],
+    ['how far is it?', ['again' => true, 'ask' => 'distance']],
+    ['how many minutes to cafe nova', ['place' => 'cafe nova', 'ask' => 'distance']],
     ['what is the best way to spend the afternoon', null],
     ['I am on my way to work', null],
 ]);
@@ -118,4 +120,15 @@ test('Composer plans the trip to the place named, in the area named, from where 
 
     expect($routes->to?->lng)->toBe(6.9530)->and($again)->kind->toBe('trip')
         ->and($again['destination'])->toBe(['name' => 'Cafe Nova', 'area' => 'Altstadt-Nord']);
+
+    // "How far is it?": the distance and the time in one line, the way folded under it.
+    Redis::set("confirmed_location:{$user->id}", json_encode(['lat' => 50.9497, 'lng' => 6.9177, 'name' => 'Home', 'at' => now()->timestamp]));
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'message', 'text' => 'how far is it?'])->assertOk();
+    $far = collect($this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'answer'])->assertOk()
+        ->json('conversations.0.messages'))->last();
+    Redis::del("confirmed_location:{$user->id}");
+
+    expect($far)->kind->toBe('trip')->text->toBe('About 2.8 km away in a straight line, 23 min door to door; leave at 12:44.')
+        ->and($far)->not->toHaveKey('title')
+        ->and($far['trip']['folded'])->toBeTrue();
 });
