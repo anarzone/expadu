@@ -68,7 +68,9 @@ final class TripAnswers
             return ['text' => 'There’s more than one by that name. Which do you mean?', 'extra' => [
                 'kind' => 'places',
                 'places' => array_map(fn (array $place, int $i): array => ['id' => $place['spot'] ?? -1 - $i, 'name' => $place['name'],
-                    'kind' => $place['kind'], 'distance' => null, 'area' => $place['area'], 'href' => $this->planHref($place)], $found, array_keys($found)),
+                    'kind' => $place['kind'], 'distance' => null, 'area' => $place['area'], 'href' => $this->planHref($place),
+                    // Where the place comes from (osm, overture, transit), for the cards' credit.
+                    'source' => $place['source']], $found, array_keys($found)),
             ]];
         }
 

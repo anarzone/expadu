@@ -36,7 +36,7 @@ final class Destinations
      * The places the name means, best first: one when it's clear, a few to choose from when
      * it isn't, none when nothing by that name is found.
      *
-     * @return list<array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: ?int}>
+     * @return list<array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: ?int, source: ?string}>
      */
     public function find(string $named, ?string $area, ?GeoPoint $near): array
     {
@@ -49,9 +49,9 @@ final class Destinations
         $spots = Spot::query()->canonical()->where('is_active', true)->whereNotNull('lat')->whereNotNull('lng')
             // Its longest word narrows the search ("Café Nova" holds "nova", not "cafe").
             ->where('name', 'ilike', '%'.collect(explode(' ', $key))->sortByDesc(fn (string $word): int => strlen($word))->first().'%')
-            ->limit(200)->get(['id', 'name', 'category', 'veedel', 'lat', 'lng'])
+            ->limit(200)->get(['id', 'name', 'category', 'veedel', 'lat', 'lng', 'source'])
             ->map(fn (Spot $spot): array => ['name' => $spot->name, 'area' => $spot->veedel,
-                'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id]);
+                'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id, 'source' => $spot->source]);
         $same = fn (array $place): bool => self::tight($place['name']) === self::tight($key);
 
         // The name itself in Expadu's places, else in Travel's search (in Cologne); only then
@@ -89,7 +89,7 @@ final class Destinations
     /**
      * Travel's own search for a name Expadu's places don't hold.
      *
-     * @return list<array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: null}>
+     * @return list<array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: null, source: string}>
      */
     private function searched(string $named, ?GeoPoint $near): array
     {
@@ -100,7 +100,9 @@ final class Destinations
         }
 
         return array_map(fn (Place $place): array => ['name' => $place->name, 'area' => $place->area !== null ? Str::before($place->area, ' · ') : null,
-            'kind' => $place->kind === 'stop' ? 'Stop' : null, 'point' => $place->point, 'spot' => null], $places);
+            'kind' => $place->kind === 'stop' ? 'Stop' : null, 'point' => $place->point, 'spot' => null,
+            // Travel's search: stops from the timetables, places and addresses from OpenStreetMap.
+            'source' => $place->kind === 'stop' ? 'transit' : 'osm'], $places);
     }
 
     /** @return list<string> the Veedel an area named with the place means */
