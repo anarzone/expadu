@@ -1137,6 +1137,22 @@ export function NearbyView({
                     </div>
                 )}
             </div>
+            {station.credits?.map((credit) => (
+                <p key={credit.name} className="nearby-credit">
+                    {credit.for}:{' '}
+                    <a href={credit.url} target="_blank" rel="noreferrer">
+                        {credit.name}
+                    </a>
+                    ,{' '}
+                    <a
+                        href={credit.licence_url}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        {credit.licence}
+                    </a>
+                </p>
+            ))}
         </div>
     );
 }

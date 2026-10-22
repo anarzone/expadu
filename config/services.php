@@ -189,6 +189,17 @@ return [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
     ],
 
+    // gtfs.de's free DELFI feeds (CC BY-SA 4.0, attribution required, no
+    // guarantee): Travel reads only the cancellations VRS leaves out. The
+    // realtime ids match gtfs.de's own static feed, so a slice of it (the
+    // area below) is imported to place them.
+    'gtfsde' => [
+        'static_url' => env('GTFSDE_STATIC_URL', 'https://download.gtfs.de/germany/nv_free/latest.zip'),
+        'realtime_url' => env('GTFSDE_REALTIME_URL', 'https://realtime.gtfs.de/realtime-free.pb'),
+        // south, west, north, east: Cologne.
+        'area' => [50.83, 6.77, 51.09, 7.17],
+    ],
+
     'vrs' => [
         'gtfsrt_url' => env('VRS_GTFSRT_URL'),
         'trias_url' => env('VRS_TRIAS_URL'),

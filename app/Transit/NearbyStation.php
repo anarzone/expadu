@@ -35,6 +35,7 @@ class NearbyStation
         private readonly KvbApiService $kvb,
         private readonly DisruptionService $disruptions,
         private readonly TravelEstimator $distance,
+        private readonly DelfiCancellations $delfi,
     ) {}
 
     /**
@@ -122,7 +123,103 @@ class NearbyStation
             }
         }
 
-        return $this->station($name, $points, $areas, array_values($rows), $boards);
+        // Someone's looking: DELFI's cancellations are read while they are.
+        $this->delfi->markWanted();
+        [$rows, $credited] = $this->withCancellations($name, $rows, $areas);
+
+        return [
+            ...$this->station($name, $points, $areas, array_values($rows), $boards),
+            // DELFI's licence asks for its name beside what it gave the board.
+            'credits' => $credited ? [DelfiCancellations::CREDIT] : [],
+        ];
+    }
+
+    /**
+     * DELFI's cancelled calls at the station, which VRS's board leaves out
+     * (it drops a cancelled trip). Each joins its line and direction by line,
+     * destination and timetabled time, among the times the board shows, and
+     * never over a run the board lists. A direction the board has no row for
+     * gets one for the next hour's.
+     *
+     * @param  array<string, array<string, mixed>>  $rows
+     * @param  array<string, array<string, mixed>>  $areas
+     * @return array{0: array<string, array<string, mixed>>, 1: bool}
+     */
+    private function withCancellations(string $station, array $rows, array $areas): array
+    {
+        $now = CarbonImmutable::now('Europe/Berlin');
+        $added = false;
+        foreach ($areas as $area) {
+            foreach ($this->delfi->near($area['places'], array_map('strval', $area['lines'])) as $call) {
+                // A trip ending here doesn't leave from here.
+                if (self::sameWay($station, (string) $call['headsign'])) {
+                    continue;
+                }
+                $at = CarbonImmutable::parse($call['at']);
+                $key = collect($rows)->keys()->first(fn ($k) => (string) $rows[$k]['line'] === $call['line']
+                    && self::sameWay((string) ($rows[$k]['destination'] ?? ''), (string) $call['headsign']));
+                if ($key === null) {
+                    if ($at->lt($now) || $at->gt($now->addHour())) {
+                        continue;
+                    }
+                    $dest = self::place((string) $call['headsign']);
+                    $key = $call['line'].'|'.$dest;
+                    $rows[$key] ??= ['line' => $call['line'], 'destination' => $dest, 'type' => $area['mode'] === 'bus' ? 'bus' : 'tram',
+                        'minutes' => [], 'services' => [], 'delay' => 0, 'cancelled' => true, 'disrupted' => false, 'direction' => null, 'via' => []];
+                } else {
+                    $times = collect($rows[$key]['services'] ?? [])
+                        ->map(fn (array $s) => CarbonImmutable::parse($s['scheduled_at'] ?? $s['departure_at'])->getTimestamp());
+                    $from = $times->min() ?? $now->getTimestamp();
+                    $to = $times->max() ?? $now->addHour()->getTimestamp();
+                    if ($at->getTimestamp() < $from || $at->getTimestamp() > $to
+                        || $times->contains(fn (int $t) => abs($t - $at->getTimestamp()) < 60)) {
+                        continue;
+                    }
+                }
+                if (collect($rows[$key]['services'])->contains('id', $call['id'])) {
+                    continue;
+                }
+                $rows[$key]['services'][] = ['id' => $call['id'], 'departure_at' => $call['at'], 'scheduled_at' => $call['at'],
+                    'expected_at' => null, 'time_basis' => 'realtime', 'delay' => 0, 'cancelled' => true];
+                $added = true;
+            }
+        }
+
+        foreach ($rows as $key => $row) {
+            if ($row['services'] ?? []) {
+                usort($row['services'], fn (array $a, array $b) => strcmp(
+                    CarbonImmutable::parse($a['departure_at'])->toIso8601ZuluString(),
+                    CarbonImmutable::parse($b['departure_at'])->toIso8601ZuluString(),
+                ));
+                $row['cancelled'] = collect($row['services'])->every(fn (array $s) => (bool) ($s['cancelled'] ?? false));
+                $rows[$key] = $row;
+            }
+        }
+
+        return [$rows, $added];
+    }
+
+    /** The place a destination names, without the city: "Köln Merkenich" → "Merkenich". */
+    private static function place(string $destination): string
+    {
+        return trim((string) preg_replace('/^(Köln|Koeln)\s+/u', '', trim($destination)));
+    }
+
+    /**
+     * One destination named two ways, the shorter whole within the longer:
+     * "Zollstock" and "Köln Zollstock Südfriedhof", "Schlebusch" and
+     * "Leverkusen Schlebusch".
+     */
+    private static function sameWay(string $a, string $b): bool
+    {
+        $a = mb_strtolower(self::place($a));
+        $b = mb_strtolower(self::place($b));
+        if ($a === '' || $b === '') {
+            return false;
+        }
+        [$short, $long] = mb_strlen($a) <= mb_strlen($b) ? [$a, $b] : [$b, $a];
+
+        return str_contains(' '.$long.' ', ' '.$short.' ');
     }
 
     /**
@@ -253,6 +350,10 @@ class NearbyStation
             $byLine[$line] ??= ['line' => $line, 'mode' => $mode, 'area' => null, 'dirs' => []];
             $first = $next ?? ($runs[0] ?? null);
             $later = array_values(array_filter($runs, fn (array $r) => $first === null || $r['id'] !== $first['id']));
+            // The next few that leave, and the first few cancelled ones.
+            $running = array_slice(array_values(array_filter($later, fn (array $r) => ! $r['cancelled'])), 0, 3);
+            $gone = array_slice(array_values(array_filter($later, fn (array $r) => $r['cancelled'])), 0, 4);
+            $later = array_values(array_filter($later, fn (array $r) => in_array($r, $running, true) || in_array($r, $gone, true)));
             $byLine[$line]['dirs'][] = [
                 'id' => sha1($line.'|'.($row['destination'] ?? '')),
                 'dest' => (string) ($row['destination'] ?? ''),
@@ -260,7 +361,7 @@ class NearbyStation
                 'direction' => $row['direction'] ?? null,
                 // Older rows carry minutes only; a run is then minutes from now.
                 'next' => $first ?? $this->fromMinutes($row),
-                'later' => array_slice($later, 0, 3),
+                'later' => $later,
                 'later_recorded' => count($runs) >= self::LATER_SHOWN,
                 'cancelled' => $cancelled,
                 'disrupted' => (bool) ($row['disrupted'] ?? false),

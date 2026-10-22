@@ -2593,6 +2593,17 @@
 :where(.travel-page) .nearby-line.is-inline .nearby-front {
     margin: 0 var(--space-12);
 }
+/* Who gave the board what it carries (DELFI's licence asks to be named). */
+:where(.travel-page) .nearby-credit {
+    margin: var(--space-12) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) .nearby-credit a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
 :where(.travel-page) .nearby-later {
     margin: 0 var(--space-12);
     color: var(--color-text-soft);
