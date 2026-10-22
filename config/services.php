@@ -145,6 +145,9 @@ return [
         'processor_name' => env('LLM_PROCESSOR_NAME', 'Anthropic PBC'),
         'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
         'prompt_version' => '2026-10-22.parser.claude.3',
+        // Composer's assistant for open requests (it looks things up with tools, then answers).
+        'assistant' => (bool) env('COMPOSER_ASSISTANT', true),
+        'assistant_prompt_version' => '2026-10-22.assistant.1',
     ],
 
     'bureaucracy_llm' => [
@@ -157,7 +160,8 @@ return [
         'processor_privacy_url' => env('BUREAUCRACY_LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
         'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
         'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.2'),
-        'daily_limit' => (int) env('BUREAUCRACY_LLM_DAILY_LIMIT', 20),
+        // Per person per 24 hours; none by default (bureaucracy_privacy.daily_limits).
+        'daily_limit' => env('BUREAUCRACY_LLM_DAILY_LIMIT'),
     ],
 
     /*
@@ -175,7 +179,8 @@ return [
         'processor_privacy_url' => env('PAPERWORK_ANALYSER_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
         'timeout' => (int) env('PAPERWORK_ANALYSER_TIMEOUT', 15),
         'prompt_version' => env('PAPERWORK_ANALYSER_PROMPT_VERSION', '2026-10-21.analyser.1'),
-        'daily_limit' => (int) env('PAPERWORK_ANALYSER_DAILY_LIMIT', 20),
+        // Per person per 24 hours; none by default (bureaucracy_privacy.daily_limits).
+        'daily_limit' => env('PAPERWORK_ANALYSER_DAILY_LIMIT'),
     ],
 
     'motis' => [

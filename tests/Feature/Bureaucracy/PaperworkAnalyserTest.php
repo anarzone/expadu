@@ -264,7 +264,6 @@ test('without permission or with the purpose switched off nothing is sent', func
     'no consent' => [['processing' => null], [], 'consent_required'],
     'flag off' => [[], ['enabled' => false], 'unavailable'],
     'no key' => [[], ['key' => ''], 'unavailable'],
-    'zero daily limit' => [[], ['daily_limit' => 0], 'unavailable'],
 ]);
 
 test('another account cannot ask about someone else\'s case', function () {

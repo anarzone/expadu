@@ -254,6 +254,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('composer-parse', fn (Request $request): Limit => Limit::perMinute(10)
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
+        // The page polls about once a second while the assistant works (3–6 s).
+        RateLimiter::for('composer-progress', fn (Request $request): Limit => Limit::perMinute(120)
+            ->by('composer-progress:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
         // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed

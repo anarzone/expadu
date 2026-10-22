@@ -86,7 +86,7 @@ export function aiPermit(notice: AiNotice | null): object {
 export function AiNoticeLine({ notice }: { notice: AiNotice }) {
     return (
         <p className="composer-ai-notice">
-            {`Composer sends what you type to ${notice.processor_name}, an AI service, to read your request`}
+            {`Composer sends what you type to ${notice.processor_name}, an AI service, to read and answer your request`}
             {notice.processor_privacy_url ? (
                 <>
                     {' · '}

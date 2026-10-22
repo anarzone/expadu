@@ -23,7 +23,7 @@ final class AroundCheck
     private const STARTERS = ['a', 'all', 'also', 'and', 'any', 'anything', 'as', 'at', 'bring', 'but', 'by', 'can', 'catch', 'check', 'come', 'could', 'do',
         'enjoy', 'evening', 'fancy', 'feel', 'for', 'from', 'get', 'go', 'good', 'grab', 'great', 'happy', 'have', 'head', 'hello', 'here', "here's", 'hey', 'hi',
         'how', 'if', 'in', 'it', "it's", 'join', 'just', 'keep', 'let', "let's", 'looking', 'make', 'maybe', 'meanwhile', 'no', 'not', 'nothing', 'now', 'on',
-        'one', 'or', 'otherwise', 'out', 'perfect', 'plan', 'quiet', 'right', 'so', 'some', 'something', 'sorry', 'sounds', 'still', 'take',
+        'one', 'or', 'otherwise', 'out', 'perfect', 'plan', 'quiet', 'right', 'since', 'so', 'some', 'something', 'sorry', 'sounds', 'still', 'take',
         'tell', 'thanks', 'that', "that's", 'the', 'then', 'there', "there's", 'these', 'this', 'tonight', 'today', 'tomorrow', 'try', 'unfortunately',
         'want', 'well', 'what', "what's", 'when', 'where', 'whether', 'while', 'why', 'with', 'yes', 'you', "you're", "you'll", 'your'];
 
@@ -47,15 +47,17 @@ final class AroundCheck
     /**
      * @param  string  $sentence  one sentence as written
      * @param  string  $source  the text of the items it cites, plus the time line every sentence may use
+     * @param  bool  $personal  it cites the person's own facts (their taste or their day, with the
+     *                          opt-in), so it may speak of them, as softly as those facts are
      */
-    public function holds(string $sentence, string $source): bool
+    public function holds(string $sentence, string $source, bool $personal = false): bool
     {
         $sentence = trim(str_replace(['’', '‘'], "'", $sentence));
         $lower = mb_strtolower($sentence);
         $source = mb_strtolower(str_replace(['’', '‘'], "'", $source));
 
         if ($sentence === '' || mb_strlen($sentence) > self::MAX_LENGTH || preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence)
-            || preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower) || preg_match(self::COUNTS, $lower)) {
+            || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower))) || preg_match(self::COUNTS, $lower)) {
             return false;
         }
 
