@@ -15,6 +15,8 @@ export type AnsweredEvent = PosterSource & {
     date: string;
     /** Whether a plan can hold it (a place in Cologne); only then Add to plan. */
     plannable: boolean;
+    /** Why the assistant suggests it, from the person's own taste (opt-in only). */
+    because?: string | null;
 };
 
 /*
@@ -27,10 +29,13 @@ export function EventAnswer({
     events,
     planned,
     onAdd,
+    onNotThis,
 }: {
     events: AnsweredEvent[];
     planned: (event: AnsweredEvent) => boolean;
     onAdd: (event: AnsweredEvent) => void;
+    /** "Not this" on an assistant's suggestion. */
+    onNotThis?: (event: AnsweredEvent) => void;
 }) {
     const user = (usePage().props as { auth: { user: { id: number } } }).auth
         .user;
@@ -44,7 +49,7 @@ export function EventAnswer({
                     const key = occurrenceKey(event);
                     const added = planned(event);
 
-                    return (
+                    const poster = (
                         <Poster
                             key={key}
                             event={posterEvent(event)}
@@ -79,6 +84,28 @@ export function EventAnswer({
                                 )
                             }
                         />
+                    );
+
+                    // A suggestion says why, from the person's taste, and can be left out.
+                    return event.because || onNotThis ? (
+                        <div key={key} className="event-answer-item">
+                            {poster}
+                            {event.because && (
+                                <p className="answer-fine">{event.because}</p>
+                            )}
+                            {onNotThis && (
+                                <button
+                                    type="button"
+                                    className="composer-text-button"
+                                    aria-label={`Not this: ${event.title}`}
+                                    onClick={() => onNotThis(event)}
+                                >
+                                    Not this
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        poster
                     );
                 })}
             </div>

@@ -844,17 +844,49 @@
 
 /* "What's on": Events' own posters in the answer, at the approved answer's sizes
    (composer-studio .event-poster): two to a row, or a row to swipe on a phone. */
-.composer-page .event-posters > .pp {
+.composer-page .event-posters > .pp,
+.composer-page .event-answer-item > .pp {
     width: auto;
     height: 380px;
 }
+/* A suggestion's poster with its "because" line and Not this under it. */
+.composer-page .event-answer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.composer-page .event-answer-item .answer-fine {
+    margin: 0;
+}
+/* A suggested place's card, with its "because" line and Not this under it. */
+.composer-page .nearby-answer > .nearby-answer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.composer-page .nearby-answer > .nearby-answer-item > .nearby-answer-card {
+    flex: 1 1 auto;
+    height: auto;
+}
+.composer-page .nearby-answer-item .answer-fine {
+    margin: 0;
+}
+.composer-page
+    :is(.nearby-answer-item, .event-answer-item)
+    > .composer-text-button {
+    align-self: flex-start;
+}
 @media (max-width: 700px) {
-    .composer-page .event-posters > .pp {
+    .composer-page .event-posters > :is(.pp, .event-answer-item) {
         flex: 0 0 84%;
-        height: 340px;
         scroll-snap-align: start;
     }
-    .composer-page .event-posters > .pp:only-child {
+    .composer-page :is(.event-posters, .event-answer-item) > .pp {
+        height: 340px;
+    }
+    .composer-page .event-posters > :is(.pp, .event-answer-item):only-child {
         flex-basis: 100%;
     }
 }
@@ -1103,4 +1135,20 @@
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
+}
+/* Its quiet actions (Not this, the invitation's two) read as the fine print's links. */
+.composer-page
+    :is(.nearby-answer-item, .event-answer-item, .answer-fine)
+    .composer-text-button {
+    min-height: 36px;
+    padding: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.composer-page .answer-fine .composer-text-button {
+    min-height: 0;
+    color: inherit;
+    font-size: inherit;
 }

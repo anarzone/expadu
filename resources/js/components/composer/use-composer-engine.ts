@@ -10,6 +10,7 @@ import {
 import { aiPermit } from './ai-notice';
 import type { AiNotice } from './ai-notice';
 import type { PlanOrigin } from './origin-picker';
+import { watchProgress } from './progress';
 import { api, ApiError } from './types';
 import type { Command, Slot, Workspace } from './types';
 
@@ -233,14 +234,23 @@ export function useComposerEngine(
                 };
                 // Read with the AI service under the line's say-so; if that's refused (an
                 // outdated notice, the service off), the request is read without it.
+                const permit = aiPermit(notice) as {
+                    processing?: { request_id: string };
+                };
+                // The assistant looks things up inside this read; the line says how far.
+                const stop = permit.processing
+                    ? watchProgress(permit.processing.request_id, setBusy)
+                    : () => undefined;
                 const parsed = await api<Parsed>(parse.url(), {
                     text,
-                    ...aiPermit(notice),
-                }).catch((error: unknown) =>
-                    notice
-                        ? api<Parsed>(parse.url(), { text })
-                        : Promise.reject(error),
-                );
+                    ...permit,
+                })
+                    .catch((error: unknown) =>
+                        notice
+                            ? api<Parsed>(parse.url(), { text })
+                            : Promise.reject(error),
+                    )
+                    .finally(stop);
                 // Read without the AI: the reply says why (nothing fake, 22 Oct 2026).
                 const reader = parsed.reader ? { reader: parsed.reader } : {};
 
