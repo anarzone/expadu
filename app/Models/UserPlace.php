@@ -73,6 +73,18 @@ class UserPlace extends Model
     }
 
     /**
+     * Places with a point: one without isn't set, so nothing works it out
+     * from a placeholder.
+     *
+     * @param  Builder<UserPlace>  $query
+     * @return Builder<UserPlace>
+     */
+    public function scopeLocated(Builder $query): Builder
+    {
+        return $query->whereNotNull('lat')->whereNotNull('lng');
+    }
+
+    /**
      * Required places (Home + Work).
      *
      * @param  Builder<UserPlace>  $query

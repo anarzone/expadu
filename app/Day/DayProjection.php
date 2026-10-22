@@ -96,7 +96,7 @@ class DayProjection
             }
         }
 
-        $home = $user->places()->where('category', 'home')->orderBy('sort_order')->first(['id', 'name', 'lat', 'lng']);
+        $home = $user->places()->located()->where('category', 'home')->orderBy('sort_order')->first(['id', 'name', 'lat', 'lng']);
 
         return [
             'date' => $date,
