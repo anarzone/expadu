@@ -218,7 +218,7 @@ final class AssistantTools
         } catch (Throwable) {
             return 'Nothing found: the lookup failed.';
         } finally {
-            $this->timings[] = [$name, (int) round((hrtime(true) - $started) / 1e6)];
+            $this->timings[] = [$name.' '.json_encode($input, JSON_UNESCAPED_UNICODE), (int) round((hrtime(true) - $started) / 1e6)];
         }
     }
 
@@ -471,6 +471,8 @@ final class AssistantTools
             categories: array_values(array_filter([is_string($input['kind'] ?? null) ? $input['kind'] : null])),
             activities: array_values(array_filter([is_string($input['activity'] ?? null) ? $input['activity'] : null])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
+            // Their own step-free need, from their settings: only places with it verified (never told to the AI).
+            needs: $this->user->needs_step_free ? ['step_free'] : [],
         ), $lat, $lng, 2, self::SHOWN * 3))
             ->filter(fn (Candidate $c): bool => ! $c->closedToday
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)

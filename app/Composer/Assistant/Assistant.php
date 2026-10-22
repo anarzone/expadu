@@ -66,7 +66,7 @@ final class Assistant
 
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
-        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", or a stretch of time with things to do: plan_day. "What's up?", "I'm bored", "anything fun?": search_events and search_places, with the weather. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
+        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("nope", "something else"), look again with leave_out_earlier and suggest something of another kind or in another area. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
@@ -116,6 +116,9 @@ final class Assistant
 
     /** @var array<string, string> what the last answer looked at, by id, as it read it (composer:eval re-checks the words against it) */
     public array $read = [];
+
+    /** @var list<array{text: string, uses: list<string>}> the last answer's sentences that held, with what they cite */
+    public array $kept = [];
 
     /** @var array{input: int, output: int, calls: int} the tokens its calls used, since this instance was made */
     public array $usage = ['input' => 0, 'output' => 0, 'calls' => 0];
@@ -197,6 +200,7 @@ final class Assistant
     {
         $now = $now->setTimezone('Europe/Berlin');
         $this->timings = [];
+        $this->kept = [];
         $personal = $user->personalises();
         $tools = new AssistantTools($user, $now, $location, $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
@@ -236,7 +240,7 @@ final class Assistant
         // The conversation so far, then the message; earlier messages are untrusted words like it.
         $earlier = $history['turns'] === [] ? '' : "Earlier in this conversation (oldest first):\n"
             .collect($history['turns'])->map(fn (array $t): string => ($t['role'] === 'user' ? '- They asked: "' : '- You answered: "').$t['text'].'"')->implode("\n")."\n\n";
-        $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F, H:i')}, Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
+        $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""]];
 
         for ($round = 1; $round <= self::ROUNDS; $round++) {
@@ -331,6 +335,7 @@ final class Assistant
                 continue;
             }
             $kept[] = trim($s['text']);
+            $this->kept[] = ['text' => trim($s['text']), 'uses' => $uses];
             $mentioned = [...$mentioned, ...$uses];
         }
         $lead = implode(' ', array_slice($kept, 0, 3));

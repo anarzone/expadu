@@ -14,6 +14,7 @@ use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
 use App\Support\EventEvidence;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The impure boundary of the composer: snapshots spots and curated
@@ -27,6 +28,9 @@ class CandidateRepository
 
     /** Nearest spots kept per category — diverse enough for a 6-slot day, local enough to be relevant. */
     private const PER_CATEGORY = 12;
+
+    /** How far the assistant's nearest places go (nearestSpots), in km. */
+    private const NEAR_KM = 5.0;
 
     /** Cologne centre — the origin a plan falls back to when the user has no location. */
     public const COLOGNE_LAT = 50.9375;
@@ -106,6 +110,19 @@ class CandidateRepository
      */
     private function spotCandidates(Constraints $constraints, float $originLat, float $originLng, int $perCategory = self::PER_CATEGORY, ?int $enough = null): array
     {
+        // The fact rules make these queries look costly to PostgreSQL, so it compiles them
+        // first (JIT): 3–4 s for 30 ms of work. Off for these queries only, same results
+        // (owner, 22 Oct 2026: every Composer reply under 6 s).
+        return DB::transaction(function () use ($constraints, $originLat, $originLng, $perCategory, $enough): array {
+            DB::statement('SET LOCAL jit = off');
+
+            return $this->nearestFitting($constraints, $originLat, $originLng, $perCategory, $enough);
+        });
+    }
+
+    /** @return list<Candidate> */
+    private function nearestFitting(Constraints $constraints, float $originLat, float $originLng, int $perCategory, ?int $enough): array
+    {
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
         $requestedFacilities = array_values(array_filter(
@@ -137,6 +154,10 @@ class CandidateRepository
         $hints = app(PlaceSearchHints::class)->ordered(clone $query, $constraints, $originLat, $originLng);
         $offset = 0;
         while ($offset < count($hints)) {
+            // For the assistant, within a few kilometres: past them, few that fit (step-free, a sport) aren't worth the wait.
+            if ($enough !== null && $hints[$offset]['minimum_km'] > self::NEAR_KM) {
+                break;
+            }
             // Enough already, and every place left is farther than the last of them.
             if ($enough !== null && $offset > 0) {
                 $distances = array_map(fn (Candidate $c): float => (float) $c->distanceKmFromOrigin, array_merge([], ...array_values($selected)));

@@ -58,6 +58,9 @@ class EvaluateComposer extends Command
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true];
 
+    /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
+    private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
+
     /** A follow-up that turns the last suggestions down (the eval's oracle; Composer itself has no such rule). */
     private const REFUSAL = '/^\s*(no+|nope|nah|meh|neither|none|boring)\b|\bnot (really|that|those|these|this|it|them|for me|interested|my thing)\b|\b(something|anything|somewhere) (else|different|new)\b|\b(another|other|different|new) (one|thing|idea|option|place|suggestion)s?\b|\binstead\b/iu';
 
@@ -195,8 +198,10 @@ class EvaluateComposer extends Command
         $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
         $gates = [...$gates, ...$this->said($user, $answer, $assistant, $now, $earlier, $request['text'], $plan !== null)];
         if ($plan === null) {
-            // A plan was asked for (the fixture says what it should hold) and none came: unless any answer will do.
-            $planned = $planExpect !== [] && ! ($expect['open'] ?? false) && ! isset($expect['routed']) ? ['planned' => false] : [];
+            // A plan was asked for in words ("plan my Saturday", "park first, then dinner") and none came.
+            // Other requests may be answered with places or listings instead; then there's no plan to check.
+            $planned = $planExpect !== [] && ! ($expect['open'] ?? false) && ! ($expect['allow_empty'] ?? false) && ! isset($expect['routed']) && preg_match(self::ASKS_TO_PLAN, $request['text']) === 1
+                ? ['planned' => false] : [];
 
             return $row + ['expectations' => $routing + $planned, 'gates' => $gates];
         }
@@ -231,15 +236,13 @@ class EvaluateComposer extends Command
         $dead = $answer === [] || (trim((string) ($answer['text'] ?? '')) === '' && ($answer['blocks'] ?? []) === [] && ! $planned);
         $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel, ...$assistant->read];
         $invented = [];
-        // The listings and places it read, by name, and the choices it offered: a sentence may count what it names.
-        $named = array_filter(array_map(fn (string $line): ?string => preg_match('/^"([^"]+)"/u', $line, $m) === 1 ? mb_strtolower($m[1]) : null,
-            array_intersect_key($assistant->read, array_flip(preg_grep('/^(e\d+@\d+|spot:\d+)$/', array_keys($assistant->read))))));
-        foreach (($answer['written'] ?? null) === 'ai' ? preg_split('/(?<=[.!?])\s+/u', (string) ($answer['lead'] ?? ''), flags: PREG_SPLIT_NO_EMPTY) : [] as $sentence) {
-            $count = count(array_filter($named, fn (string $name): bool => str_contains(mb_strtolower($sentence), $name)))
+        // Each sentence it kept, against everything it read (not only what it cited): a sentence may
+        // speak of the person from their own facts, and count the listings, places and choices it cites.
+        foreach (($answer['written'] ?? null) === 'ai' ? $assistant->kept : [] as $sentence) {
+            $count = count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', $sentence['uses']))
                 + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? []);
-            // As the live check: a sentence may speak of the person from their own facts.
-            if (! app(AroundCheck::class)->holds($sentence, implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
-                $invented[] = $sentence;
+            if (! app(AroundCheck::class)->holds($sentence['text'], implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
+                $invented[] = $sentence['text'];
             }
         }
         $taste = implode("\n", array_intersect_key($assistant->read, array_flip(preg_grep('/^(t|a|h|w)\d+$/', array_keys($assistant->read)))));
@@ -370,6 +373,8 @@ class EvaluateComposer extends Command
             'email_verified_at' => $user->email_verified_at ?? now(),
             'veedel' => $request['home_veedel'],
             'situation' => self::SITUATIONS[$request['persona']] ?? Situation::Other,
+            // A persona's step-free need is in its settings, as a person's is.
+            'needs_step_free' => in_array('step_free', $request['needs'] ?? [], true),
         ])->save();
         // A persona with personalisation on, and a taste to go with it.
         $personalised = (bool) ($request['personalised'] ?? false);
