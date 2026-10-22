@@ -1,0 +1,525 @@
+/* Settings (owner, 22 Oct 2026: "build it", two-factor hidden for now),
+   ported from the mock's settings-next/style.css. Panels and tiles are
+   Paperwork's Your situation: a tile is one button that opens its edit in
+   place. Laptop: Your account on the left, the rest beside it. Phone: the
+   same panels, one under another. */
+.settings-page {
+    display: grid;
+    gap: 16px;
+    align-items: start;
+}
+.settings-side,
+.settings-later {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+}
+@media (min-width: 1000px) {
+    .settings-page {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+}
+@media (min-width: 560px) {
+    .settings-later {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 16px 20px 20px;
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+.settings-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.settings-eyebrow svg {
+    width: 18px;
+    height: 18px;
+}
+.settings-account h1 {
+    margin: 4px 0 0;
+    font-size: var(--text-title-lg);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+    text-wrap: balance;
+}
+.settings-panel > p,
+.settings-head p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.settings-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+.settings-head > div {
+    min-width: 0;
+    flex: 1;
+}
+.settings-head h2 {
+    margin: 0 0 4px;
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+.settings-chip {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+}
+.settings-chip svg {
+    width: 22px;
+    height: 22px;
+}
+.settings-chip.learn {
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-nav-violet);
+}
+.settings-chip.place {
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+}
+.settings-chip.delete {
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+}
+
+.settings-tiles {
+    display: grid;
+    gap: 8px;
+}
+.settings-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-canvas);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+}
+button.settings-tile {
+    cursor: pointer;
+}
+button.settings-tile:hover {
+    background: var(--color-bg-quiet);
+}
+.settings-tile > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--color-select-text);
+}
+.settings-tile > svg.settings-tile-edit {
+    width: 17px;
+    height: 17px;
+    color: var(--color-text-soft);
+}
+.settings-tile-copy {
+    flex: 1;
+    min-width: 0;
+}
+.settings-tile small {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.settings-tile strong {
+    display: block;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    overflow-wrap: anywhere;
+}
+.settings-tile .settings-tile-note {
+    display: block;
+    margin: 3px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.settings-tile .settings-secret {
+    letter-spacing: 0.15em;
+}
+.settings-badge {
+    flex: none;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.settings-badge.none {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+
+/* The open edit: the tile's place, with the focus colour round it. */
+.settings-edit {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 14px 16px 16px;
+    border: 1px solid var(--color-focus);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-field);
+    animation: settings-in 160ms ease-out;
+}
+.settings-choices {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.settings-edit > strong,
+.settings-edit legend {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.settings-edit legend {
+    padding: 0 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular);
+}
+.settings-field {
+    display: grid;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.settings-field input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-field);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 16px;
+}
+.settings-field input:focus {
+    border-color: var(--color-focus);
+    outline: 0;
+    box-shadow: var(--ring-focus);
+}
+.settings-field input[aria-invalid='true'] {
+    border-color: var(--color-conflict-text);
+}
+.settings-field input.code {
+    max-width: 200px;
+    letter-spacing: 0.2em;
+}
+.settings-field input.short {
+    max-width: 340px;
+}
+.settings-error {
+    margin: -2px 0 0;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+.settings-hint {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.settings-hint.paper {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-text);
+}
+.settings-choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-field);
+    cursor: pointer;
+}
+.settings-choice:has(input:checked) {
+    border-color: var(--color-paper-text);
+    background: var(--color-paper-bg-quiet);
+}
+.settings-choice input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-paper-text);
+}
+.settings-choice span {
+    flex: 1;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.settings-choice strong {
+    display: block;
+    color: var(--color-text);
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.settings-primary,
+.settings-quiet,
+.settings-danger,
+.settings-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-bold);
+    text-decoration: none;
+    cursor: pointer;
+}
+.settings-primary {
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.settings-primary:hover {
+    background: var(--color-action-hover);
+}
+.settings-quiet {
+    border-color: var(--color-border);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.settings-quiet:hover {
+    background: var(--color-bg-quiet);
+}
+.settings-quiet svg {
+    width: 17px;
+    height: 17px;
+}
+.settings-danger {
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.settings-danger-outline {
+    align-self: flex-start;
+    border-color: var(--color-conflict-text);
+    background: var(--color-bg-surface);
+    color: var(--color-conflict-text);
+}
+.settings-danger-outline:hover {
+    background: var(--color-conflict-bg);
+}
+.settings-link {
+    justify-self: start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.settings-out {
+    align-self: flex-start;
+    /* A button here (sign-out posts), where the mock has a link. */
+    text-align: start;
+    margin-top: 4px;
+}
+:is(
+    .settings-tile,
+    .settings-primary,
+    .settings-quiet,
+    .settings-danger,
+    .settings-danger-outline,
+    .settings-link,
+    .settings-switch
+):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.settings-status {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.settings-status:empty {
+    display: none;
+}
+
+/* Learn what I like: the switch sits in a tile. */
+.settings-switch {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-border-strong);
+    cursor: pointer;
+    transition: background 160ms ease;
+}
+.settings-switch[aria-checked='true'] {
+    background: var(--color-select-text);
+}
+.settings-switch::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-field);
+    box-shadow: 0 1px 3px rgba(33, 29, 21, 0.35);
+    transition: transform 160ms ease;
+}
+.settings-switch[aria-checked='true']::after {
+    transform: translateX(20px);
+}
+.settings-learns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.settings-learns span + span {
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-paper-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+
+/* A choice that deletes something asks in place, in the conflict colours. */
+.settings-confirm {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--color-conflict-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-conflict-bg);
+    animation: settings-in 160ms ease-out;
+}
+.settings-confirm > strong {
+    font-size: 16px;
+    font-weight: var(--weight-bold);
+}
+.settings-confirm p {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.settings-done {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+
+/* Parts that come later: dashed, with a label saying when. */
+.settings-panel.is-later {
+    gap: 10px;
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px dashed var(--color-border-later);
+    background: transparent;
+}
+.is-later .settings-head {
+    align-items: center;
+    gap: 12px;
+}
+.is-later .settings-chip {
+    width: 40px;
+    height: 40px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+.is-later .settings-chip svg {
+    width: 20px;
+    height: 20px;
+}
+.is-later h2 {
+    margin: 0;
+    font-size: var(--text-section);
+}
+.settings-later-label {
+    flex: none;
+    padding: 2px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+
+.settings-edit.is-still {
+    animation: none;
+}
+@keyframes settings-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .settings-edit,
+    .settings-confirm {
+        animation: none;
+    }
+    .settings-switch,
+    .settings-switch::after {
+        transition: none;
+    }
+}

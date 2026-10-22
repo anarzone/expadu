@@ -71,6 +71,17 @@ export const lineIcons = {
     trash: '<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
     sliders: '<path d="M4 6h16M4 18h16M8 3v6m8 6v6"/>',
     bell: '<path d="M4 17h16l-2-4V8a6 6 0 0 0-12 0v5l-2 4Zm5 4h6"/>',
+    // Settings (design canvas "Settings and account", 22 Oct 2026).
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-4 4 3 3"/>',
+    lock: '<rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    'sign-out': '<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h11"/>',
+    // Settings' panel chips draw a smaller spark and a narrower pin.
+    'spark-small':
+        '<path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/>',
+    'pin-narrow':
+        '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
     ticket: '<path d="M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5Z"/><path d="M15 5v3m0 3v2m0 3v3"/>',
     'calendar-add':
         '<path d="M8 2v4m8-4v4M3 10h18M12 21H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6M18 16v6m-3-3h6"/>',
