@@ -39,7 +39,7 @@ beforeEach(function () {
     });
 });
 
-function aroundEvent(string $title, string $venue, string $start, string $end): Event
+function whatsUpEvent(string $title, string $venue, string $start, string $end): Event
 {
     $event = Event::factory()->create(['title' => $title, 'title_en' => null, 'location_name' => $venue, 'category' => 'music', 'is_curated' => true,
         'starts_at' => CarbonImmutable::parse($start, 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse($end, 'Europe/Berlin')]);
@@ -49,7 +49,7 @@ function aroundEvent(string $title, string $venue, string $start, string $end): 
 }
 
 /** The person's own plan for tonight, as the workspace keeps it. */
-function aroundPlan(User $user, string $name): void
+function whatsUpPlan(User $user, string $name): void
 {
     ComposerWorkspace::query()->create(['user_id' => $user->id, 'revision' => 0, 'state' => [
         'schema' => WorkspaceUpgrade::SCHEMA, 'active' => 'initial', 'focus' => null, 'changes' => [],
@@ -60,7 +60,7 @@ function aroundPlan(User $user, string $name): void
 }
 
 /** Asks as the page does: the message, then the answer to it. */
-function aroundAsk($test, string $text): array
+function whatsUpAsk($test, string $text): array
 {
     $revision = $test->getJson('/composer/workspace')->json('revision');
     $test->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'message', 'text' => $text])->assertOk();
@@ -71,11 +71,11 @@ function aroundAsk($test, string $text): array
 
 test('🔒 "What’s up?" is what’s around you now, with something to do next', function () {
     $user = User::factory()->onboarded()->create();
-    aroundEvent('Jazz im Stadtgarten', 'Stadtgarten', '2026-11-05 20:00', '2026-11-05 23:00');
-    aroundPlan($user, 'Late swim');
+    whatsUpEvent('Jazz im Stadtgarten', 'Stadtgarten', '2026-11-05 20:00', '2026-11-05 23:00');
+    whatsUpPlan($user, 'Late swim');
     $this->actingAs($user);
 
-    $reply = aroundAsk($this, 'What’s up?');
+    $reply = whatsUpAsk($this, 'What’s up?');
 
     expect($reply)->kind->toBe('around')->request->toBe('around')->written->toBe('listings')
         ->text->toBe('Here’s what’s still on in Cologne tonight.')
@@ -88,12 +88,32 @@ test('🔒 "What’s up?" is what’s around you now, with something to do next'
 test('🔒 what Composer can’t answer says so and offers what’s around, never “isn’t something Composer knows”', function () {
     $this->actingAs(User::factory()->onboarded()->create());
 
-    $reply = aroundAsk($this, 'tell me a joke');
+    $reply = whatsUpAsk($this, 'tell me a joke');
 
     expect($reply)->kind->toBe('around')->request->toBe('clarify')
         ->text->toBe('I’m not sure I can help with that yet. Nothing more is listed in Cologne tonight, but I can plan something for you.')
         ->and($reply['suggestions'])->not->toBeEmpty()
         ->and($reply['text'])->not->toContain('something Composer knows');
+});
+
+test('🔒 a part whose query fails leaves it out, and the answer is still saved', function () {
+    // The answer is written in the workspace's transaction; a failed query there must not abort it (CI, 22 Oct).
+    app()->instance(WeatherService::class, new class extends WeatherService
+    {
+        public function __construct() {}
+
+        public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
+        {
+            DB::select('select * from no_such_table');
+
+            return [];
+        }
+    });
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    $reply = whatsUpAsk($this, 'hi');
+
+    expect($reply)->kind->toBe('around')->and($reply)->not->toHaveKey('facts');
 });
 
 test('🔒 the AI writes the lead from what’s on and the weather only; a sentence they don’t back is dropped', function () {
@@ -103,7 +123,7 @@ test('🔒 the AI writes the lead from what’s on and the weather only; a sente
     ]);
     Http::fake(['processor.example.test/*' => Http::response([
         'id' => 'msg_1', 'type' => 'message', 'role' => 'assistant', 'model' => 'claude-haiku-5-5', 'stop_reason' => 'tool_use',
-        'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => ['intent' => 'unknown', 'reply' => [
+        'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => ['intent' => 'open', 'reply' => [
             ['text' => 'Jazz im Stadtgarten starts at 20:00 at Stadtgarten.', 'uses' => ['e1']],
             ['text' => 'There’s also a boat party on the Rhine at 21:00.', 'uses' => ['e1']],
             ['text' => 'Rain is due from 22:00, so bring a jacket.', 'uses' => ['weather']],
@@ -111,8 +131,8 @@ test('🔒 the AI writes the lead from what’s on and the weather only; a sente
         'usage' => ['input_tokens' => 300, 'output_tokens' => 80],
     ])]);
     $user = User::factory()->onboarded()->create();
-    aroundEvent('Jazz im Stadtgarten', 'Stadtgarten', '2026-11-05 20:00', '2026-11-05 23:00');
-    aroundPlan($user, 'PRIVATE-PLAN-7781');
+    whatsUpEvent('Jazz im Stadtgarten', 'Stadtgarten', '2026-11-05 20:00', '2026-11-05 23:00');
+    whatsUpPlan($user, 'PRIVATE-PLAN-7781');
     $this->actingAs($user);
 
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'whats up'])->assertOk();

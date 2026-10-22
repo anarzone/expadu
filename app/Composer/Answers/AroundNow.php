@@ -10,6 +10,8 @@ use App\Services\UserTransitLinesService;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -200,12 +202,7 @@ final class AroundNow
     /** Cologne's weather now and the next hours ("14° · Partly cloudy · Dry next 8 hours"), or null when unknown. */
     private function weatherNow(): ?string
     {
-        try {
-            $current = $this->weather->getCurrentWeather();
-            $forecast = $this->weather->getForecast();
-        } catch (Throwable) {
-            return null;
-        }
+        [$current, $forecast] = $this->safely('weather', fn (): array => [$this->weather->getCurrentWeather(), $this->weather->getForecast()], [[], []]);
         if (($current['available'] ?? false) !== true) {
             return null;
         }
@@ -242,11 +239,7 @@ final class AroundNow
         $items = collect($plans)->only([$now->toDateString(), $tomorrow])->flatMap(fn (array $plan): array => $plan['slots'] ?? [])
             ->map(fn (array $slot): array => ['start' => CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin'),
                 'end' => isset($slot['end_at']) ? CarbonImmutable::parse($slot['end_at']) : null, 'title' => (string) $slot['name']]);
-        try {
-            $recorded = $this->appointments->for($user, $now->startOfDay(), $now->startOfDay()->addDays(2));
-        } catch (Throwable) {
-            $recorded = [];
-        }
+        $recorded = $this->safely('appointments', fn (): array => $this->appointments->for($user, $now->startOfDay(), $now->startOfDay()->addDays(2)), []);
         foreach ($recorded as $row) {
             $start = CarbonImmutable::parse($row['starts_at'])->setTimezone('Europe/Berlin');
             // An appointment the plan holds already is shown once.
@@ -273,12 +266,11 @@ final class AroundNow
      */
     private function notices(User $user): array
     {
-        try {
+        [$lines, $disruptions] = $this->safely('notices', function () use ($user): array {
             $lines = array_map('strval', $this->lines->getRelevantLines($user)['lines']->all());
-            $disruptions = $lines === [] ? [] : $this->disruptions->getLineDisruptions();
-        } catch (Throwable) {
-            return [];
-        }
+
+            return [$lines, $lines === [] ? [] : $this->disruptions->getLineDisruptions()];
+        }, [[], []]);
 
         return collect($disruptions)
             ->map(fn (array $notice): array => [...$notice, 'mine' => array_values(array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $lines))])
@@ -299,11 +291,7 @@ final class AroundNow
      */
     private function deadline(User $user, CarbonImmutable $now): ?array
     {
-        try {
-            $deadline = $this->paperwork->for($user)['deadline'];
-        } catch (Throwable) {
-            return null;
-        }
+        $deadline = $this->safely('paperwork', fn (): ?array => $this->paperwork->for($user)['deadline'], null);
         if ($deadline === null || $deadline['days_remaining'] < 0 || $deadline['days_remaining'] >= 7) {
             return null;
         }
@@ -322,6 +310,22 @@ final class AroundNow
             'source' => ['label' => 'Paperwork', 'href' => $deadline['occurrence_key'] !== null
                 ? '/bureaucracy?view=detail&process='.rawurlencode((string) $deadline['occurrence_key']) : '/bureaucracy'],
         ];
+    }
+
+    /**
+     * One part of the answer, which may fail without failing the rest. It reads in its own
+     * savepoint: the answer is written in the workspace's transaction, and a failed query
+     * would otherwise abort the whole change. Only the part and the error's type are logged.
+     */
+    private function safely(string $part, callable $read, mixed $otherwise): mixed
+    {
+        try {
+            return DB::transaction(fn () => $read());
+        } catch (Throwable $error) {
+            Log::warning('Around you now: a part is unavailable.', ['part' => $part, 'error_type' => $error::class]);
+
+            return $otherwise;
+        }
     }
 
     private function key(User $user, string $text): string
