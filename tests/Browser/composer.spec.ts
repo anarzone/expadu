@@ -19,7 +19,8 @@ test.describe('Composer (universal prompt)', () => {
 
             return route.continue();
         });
-        // From another page, as the shell's tray does: the words go by POST, never in the URL.
+        // From another page, as Today's cards do: the words go by POST, never in the URL,
+        // and wait for Send (the tray's own Send asks at once: composer-tray.spec).
         await page.goto('/dashboard');
         await page.evaluate(() => {
             const form = document.createElement('form');
@@ -100,6 +101,9 @@ test.describe('Composer (universal prompt)', () => {
                 )
                 .last(),
         ).toBeVisible();
+        // The conversation may already hold that reply, so wait until this one is
+        // saved: a reply still in flight would change the plan under the next test.
+        await expect(page.locator('.composer-working')).toHaveCount(0);
     });
 
     test('a paperwork request opens reviewed guidance only after explicit Send', async ({

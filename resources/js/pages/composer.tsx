@@ -25,6 +25,7 @@ import {
     aiPermit,
     useAiNotice,
 } from '@/components/composer/ai-notice';
+import type { AiNotice } from '@/components/composer/ai-notice';
 import { AnswerBody, isAnswer } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
@@ -130,8 +131,16 @@ export default function ComposerPage({
     paperwork?: PaperworkGlance;
     /** Tonight's listings and what's near today's appointment (deferred). */
     around?: DayAround;
-    /** What a page handed over by POST (the tray's words and the page they came from), once. */
-    entry?: { prompt: string; about: string | null } | null;
+    /**
+     * What a page handed over by POST (the tray's words and the page they came from),
+     * once. The tray's Send (`send`) is asked on arrival, under the AI notice it showed.
+     */
+    entry?: {
+        prompt: string;
+        about: string | null;
+        send?: boolean;
+        notice?: { notice_version: string; provider_version: string } | null;
+    } | null;
     prompt?: string;
     planDate?: string;
     pins?: string[];
@@ -150,8 +159,9 @@ export default function ComposerPage({
     const [entryError, setEntryError] = useState('');
     const [entryRetry, setEntryRetry] = useState(0);
     const [initialInput] = useState(() => {
-        // Words just handed over from another page come first; they wait for Send.
-        if (handedOver?.prompt) {
+        // Words just handed over from another page come first; they wait for Send,
+        // unless Send was what handed them over (the tray), when they're asked below.
+        if (handedOver?.prompt && !handedOver.send) {
             return handedOver.prompt;
         }
 
@@ -167,7 +177,7 @@ export default function ComposerPage({
     });
     // "About: …": what the page was showing, kept with this request until left out.
     const [about, setAbout] = useState<string | null>(
-        handedOver?.about ?? null,
+        handedOver?.send ? null : (handedOver?.about ?? null),
     );
     const [input, setInput] = useRemember(
         initialInput,
@@ -392,7 +402,8 @@ export default function ComposerPage({
 
         return success;
     }
-    async function send(text: string) {
+    /** Asks a request; `notice` is the AI notice the person saw when they sent it. */
+    async function send(text: string, notice: AiNotice | null = aiNotice) {
         if (!text.trim() || busyRef.current) {
             return;
         }
@@ -497,9 +508,9 @@ export default function ComposerPage({
                 // outdated notice, the service off), the request is read without it.
                 const parsed = await api<Parsed>(parse.url(), {
                     text,
-                    ...aiPermit(aiNotice),
+                    ...aiPermit(notice),
                 }).catch((error: unknown) =>
-                    aiNotice
+                    notice
                         ? api<Parsed>(parse.url(), { text })
                         : Promise.reject(error),
                 );
@@ -589,6 +600,27 @@ export default function ComposerPage({
             {children}
         </ItemPreview>
     );
+    // The tray's Send, asked once on arrival, under the notice the tray showed (or
+    // none, when it showed none: the request is then read without AI).
+    const handedSent = useRef(false);
+    useEffect(() => {
+        if (handedSent.current || !handedOver?.send || !handedOver.prompt) {
+            return;
+        }
+
+        handedSent.current = true;
+        void send(
+            handedOver.prompt,
+            handedOver.notice
+                ? {
+                      processor_name: '',
+                      processor_privacy_url: null,
+                      ...handedOver.notice,
+                  }
+                : null,
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival: a later render must not ask it again.
+    }, []);
     const entryCommand = useRef(command);
     useEffect(() => {
         entryCommand.current = command;

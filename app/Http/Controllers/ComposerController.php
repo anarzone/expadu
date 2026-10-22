@@ -158,7 +158,8 @@ class ComposerController extends Controller
             return null;
         }
 
-        return ['prompt' => (string) $entry['prompt'], 'about' => $entry['about'] ?? null];
+        return ['prompt' => (string) $entry['prompt'], 'about' => $entry['about'] ?? null,
+            'send' => (bool) ($entry['send'] ?? false), 'notice' => $entry['notice'] ?? null];
     }
 
     /**
@@ -184,10 +185,17 @@ class ComposerController extends Controller
             'prompt' => ['required', 'string', 'max:500'],
             'about' => ['nullable', 'string', 'max:160'],
             'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
+            // The tray's Send: asked on arrival, under the AI notice it showed (if any).
+            'send' => ['nullable', 'boolean'],
+            'notice_version' => ['nullable', 'required_with:provider_version', 'string', 'max:100'],
+            'provider_version' => ['nullable', 'required_with:notice_version', 'string', 'size:64'],
         ]);
         Cache::put($this->entryKey($request), json_encode([
             'prompt' => trim($validated['prompt']),
             'about' => $validated['about'] ?? null,
+            'send' => (bool) ($validated['send'] ?? false),
+            'notice' => isset($validated['notice_version'])
+                ? ['notice_version' => $validated['notice_version'], 'provider_version' => $validated['provider_version']] : null,
             'at' => now()->getTimestamp(),
         ]), self::ENTRY_TTL);
 

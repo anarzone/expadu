@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ProcessingNoticeController from '@/actions/App/Http/Controllers/ProcessingNoticeController';
 
 /**
@@ -18,11 +18,20 @@ export type AiNotice = {
 
 type Disclosure = Partial<AiNotice> & { available?: boolean };
 
-/** The notice, read once per page load; null while it's loading, off or unreadable. */
-export function useAiNotice(): AiNotice | null {
+/**
+ * The notice, read once per page load (or once the tray first opens, `wanted`);
+ * null while it's loading, off or unreadable.
+ */
+export function useAiNotice(wanted = true): AiNotice | null {
     const [notice, setNotice] = useState<AiNotice | null>(null);
+    const read = useRef(false);
 
     useEffect(() => {
+        if (!wanted || read.current) {
+            return;
+        }
+
+        read.current = true;
         let live = true;
 
         fetch(ProcessingNoticeController.url('composer_parse'), {
@@ -54,7 +63,7 @@ export function useAiNotice(): AiNotice | null {
         return () => {
             live = false;
         };
-    }, []);
+    }, [wanted]);
 
     return notice;
 }
