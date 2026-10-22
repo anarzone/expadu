@@ -30,7 +30,8 @@ export type AnsweredBoard = Pick<
     | 'lines'
     | 'lifts'
     | 'notices'
->;
+> &
+    Partial<Pick<Station, 'areas'>>;
 
 /** Every departure the board has, however far off. */
 const ANY_TIME = Number.POSITIVE_INFINITY as NearbyFilters['win'];
@@ -48,22 +49,23 @@ const clockOf = (iso: string) =>
  * whether the times are live, and the way on to Travel's timetable.
  */
 export function DeparturesAnswer({ board }: { board: AnsweredBoard }) {
-    // The answer leaves out the boarding areas; each line still names its own.
-    const areas: StationArea[] = [
-        ...new Set(board.lines.map((line) => line.area)),
-    ].map((id) => {
-        const lines = board.lines.filter((line) => line.area === id);
+    // Its boarding areas; answers kept from before they came rebuild them from
+    // the area each line names.
+    const areas: StationArea[] =
+        board.areas ??
+        [...new Set(board.lines.map((line) => line.area))].map((id) => {
+            const lines = board.lines.filter((line) => line.area === id);
 
-        return {
-            id,
-            lines: lines.map((line) => line.line),
-            mode: lines[0]?.mode ?? 'tram',
-            places: [],
-            lat: null,
-            lng: null,
-            platform: null,
-        };
-    });
+            return {
+                id,
+                lines: lines.map((line) => line.line),
+                mode: lines[0]?.mode ?? 'tram',
+                places: [],
+                lat: null,
+                lng: null,
+                platform: null,
+            };
+        });
     const station = { ...board, areas } as Station;
     const paused = board.is_stale || board.time_basis === 'stale';
     const leaves = (dir: ShownDir) => Date.parse(dir.next?.at ?? '') || 0;

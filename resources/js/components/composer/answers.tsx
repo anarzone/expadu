@@ -83,6 +83,28 @@ type Major = {
     details?: string | null;
 };
 
+type Basis =
+    | 'browser'
+    | 'chosen'
+    | 'saved_place'
+    | 'area'
+    | 'confirmed'
+    | 'last_shared'
+    | 'home_area'
+    | 'unknown';
+
+/** How where they are is known, as the location card's label says it. */
+const BASIS: Record<Basis, string> = {
+    browser: 'Where you are',
+    confirmed: 'Where you are',
+    chosen: 'Where you start',
+    saved_place: 'Your saved place',
+    last_shared: 'Where you last were',
+    area: 'The area you chose',
+    home_area: 'Your home Veedel',
+    unknown: 'Your area',
+};
+
 /**
  * One card of an assistant's answer (App\Composer\Assistant\Ask::message), drawn
  * by its type in the order it came. A plan it showed isn't one: it arrives as
@@ -92,6 +114,8 @@ type Block =
     | {
           type: 'where';
           area?: string;
+          /** How where they are is known. */
+          basis?: Basis;
           stop?: { name: string; walk_min: number; lines: string[] };
       }
     | { type: 'departures'; board: AnsweredBoard }
@@ -103,7 +127,7 @@ type Block =
           major?: Major | null;
           private?: boolean;
       }
-    | { type: 'choices'; text: string }
+    | { type: 'choices'; text: string; private?: boolean }
     | { type: 'events'; events: AnsweredEvent[] }
     | { type: 'places'; places: AnsweredPlace[] }
     | {
@@ -545,9 +569,9 @@ export function AnswerBody({
     // order it came. Composer's own words for a card are on the card.
     if (asked) {
         const blocks = message.blocks ?? [];
-        // One voice: a card's own words show when they're the person's own
-        // records (`private`, which the AI never reads) or there's no lead;
-        // otherwise the lead has said it.
+        // One voice: a card's own words show when they're Composer's own,
+        // which the AI didn't say (`private`: the person's records, a
+        // follow-up question), or there's no lead; otherwise the lead has.
         const own = (block: { text?: string; private?: boolean }) =>
             block.private || !message.lead ? block.text : undefined;
         const card = (block: Block, index: number) => {
@@ -558,7 +582,7 @@ export function AnswerBody({
                             key={index}
                             facts={[
                                 {
-                                    label: 'Your area',
+                                    label: BASIS[block.basis ?? 'unknown'],
                                     value:
                                         block.area ??
                                         'Outside the Veedel Expadu knows',
@@ -590,11 +614,10 @@ export function AnswerBody({
                         </Fragment>
                     );
                 case 'choices':
-                    // The code's own question, when the AI didn't ask it; its
-                    // options are the suggestions under the answer.
-                    return message.lead ? null : (
-                        <p key={index}>{block.text}</p>
-                    );
+                    // The code's own question, when it's Composer's own words
+                    // or the AI didn't ask it; its options are the suggestions
+                    // under the answer.
+                    return own(block) ? <p key={index}>{block.text}</p> : null;
                 case 'events':
                     return (
                         <Fragment key={index}>
