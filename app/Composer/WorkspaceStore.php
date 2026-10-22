@@ -68,8 +68,10 @@ class WorkspaceStore
             $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
             abort_if($row->revision !== $input['revision'], 409, 'Your plan changed in another tab. The latest version has been loaded; review it before trying again.');
             $s = $this->state($row);
+            $before = count(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? []);
             try {
                 $displaced = $this->run($s, $user, $input);
+                $this->markReader($s, $before, $input['reader'] ?? null);
             } catch (WorkspaceRefusal $error) {
                 // A change that can't go in changes nothing, not even the revision;
                 // the reply says why, and the workspace comes back as it was.
@@ -641,6 +643,28 @@ class WorkspaceStore
         return $candidate->opensAt !== null && $candidate->closesAt !== null
             ? "Opening hours aren’t listed for {$candidate->name}, so Composer plans it between {$candidate->opensAt->format('H:i')} and {$candidate->closesAt->format('H:i')}, as is usual for its kind. Choose a time then."
             : "Opening hours aren’t listed for {$candidate->name}, so Composer can’t plan it for that time.";
+    }
+
+    /**
+     * The request was read without the AI: its reply says so (the parse's `reader`),
+     * on the reply this command added, never an earlier one.
+     */
+    private function markReader(array &$s, int $before, ?string $reader): void
+    {
+        if ($reader === null) {
+            return;
+        }
+        foreach ($s['conversations'] as &$conversation) {
+            if ($conversation['id'] !== $s['active']) {
+                continue;
+            }
+            for ($i = count($conversation['messages']) - 1; $i >= $before; $i--) {
+                if ($conversation['messages'][$i]['role'] === 'assistant') {
+                    $conversation['messages'][$i]['reader'] = $reader;
+                    break;
+                }
+            }
+        }
     }
 
     private function weekday(string $date): string

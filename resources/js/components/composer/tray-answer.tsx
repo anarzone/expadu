@@ -4,7 +4,7 @@ import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 import type { AiNotice } from './ai-notice';
-import { AnswerBody, isAnswer } from './answers';
+import { AnswerBody, isAnswer, ReaderNote } from './answers';
 import { Guidance } from './guidance';
 import { ComposerLoading } from './loading';
 import { PlanCard } from './plan-card';
@@ -321,6 +321,7 @@ function Conversation({
                     <Icon name="arrow" variant="line" />
                 </Link>
             )}
+            <ReaderNote message={message} />
         </article>
     );
 

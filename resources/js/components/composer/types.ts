@@ -56,6 +56,8 @@ export type ChangeRow = {
 };
 export type Message = {
     id: string;
+    /** Read without the AI, and why (the parse's `reader`); said under the reply. */
+    reader?: 'limited' | 'off' | 'failed' | 'unpermitted';
     role: 'user' | 'assistant';
     text: string;
     created_at: string;

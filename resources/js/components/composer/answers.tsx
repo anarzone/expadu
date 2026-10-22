@@ -72,6 +72,25 @@ export type AnswerMessage = Message & {
     written?: 'ai' | 'listings';
 };
 
+const READER: Record<NonNullable<Message['reader']>, string> = {
+    limited:
+        'AI reading is paused for today, so this answer comes from Composer’s simpler reader.',
+    off: 'The AI reader is off right now, so this answer comes from Composer’s simpler reader.',
+    failed: 'The AI reader couldn’t read this one, so this answer comes from Composer’s simpler reader.',
+    unpermitted:
+        'This was read without the AI service, so this answer comes from Composer’s simpler reader.',
+};
+
+/**
+ * A reply to a request read without the AI says so, quietly (nothing fake, 22 Oct
+ * 2026): why, in the fine print, on the page and in the tray's card alike.
+ */
+export function ReaderNote({ message }: { message: Message }) {
+    return message.reader ? (
+        <p className="answer-fine">{READER[message.reader]}</p>
+    ) : null;
+}
+
 /** The person's facts, word for word as recorded; an unknown says so. */
 function FactList({ facts }: { facts: Fact[] }) {
     return (
