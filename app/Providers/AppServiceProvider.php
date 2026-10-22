@@ -15,7 +15,6 @@ use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
 use App\ContextEngine\Listeners\RecordContextAlert;
-use App\ContextEngine\Listeners\RecordReservedPushSent;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
@@ -134,7 +133,6 @@ class AppServiceProvider extends ServiceProvider
         User::observe(PersonalisationAccountObserver::class);
 
         // CreateAlertFromNotification is registered by listener discovery.
-        Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
@@ -230,11 +228,6 @@ class AppServiceProvider extends ServiceProvider
             Limit::perDay(10)->by('email-confirmation:user-day:'.$request->user()?->getAuthIdentifier()),
             Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
         ]);
-
-        // User-generated public content (reviews) — the classic spam target,
-        // stacked under app-writes with a much tighter budget.
-        RateLimiter::for('ugc', fn (Request $request): Limit => Limit::perMinute(10)
-            ->by('ugc:'.$userOrIp($request)));
 
         RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10)
             ->by('composer-ask:'.$request->user()?->getAuthIdentifier()));

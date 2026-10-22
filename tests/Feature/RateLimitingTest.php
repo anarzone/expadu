@@ -44,7 +44,6 @@ test('expensive and abuse-prone routes carry their buckets', function () {
         'api.journey' => 'throttle:journey',
         'api.track' => 'throttle:app-writes',
         'composer.ask' => 'throttle:composer-ask',
-        'reviews.store' => 'throttle:ugc',
         'social.redirect' => 'throttle:social',
         'profile.update' => 'throttle:app-writes',
         'user-password.update' => 'throttle:6,1',
