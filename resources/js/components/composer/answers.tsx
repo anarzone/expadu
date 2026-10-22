@@ -12,7 +12,7 @@ import type { TripFor } from '@/components/travel/trip/trip-model';
 import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
 import { timetable } from '@/routes';
-import type { Journey } from '@/types/transit';
+import type { Journey, JourneyLeg } from '@/types/transit';
 import { DeparturesAnswer } from './departures-answer';
 import type { AnsweredBoard } from './departures-answer';
 import { EventAnswer } from './event-answer';
@@ -67,6 +67,23 @@ type TripAnswer = {
 };
 
 /**
+ * A major problem on a line the way uses, or at its start or end (the delays
+ * canvas, owner 22 Oct 2026): a notice that the line doesn't serve part of
+ * its route, one graded critical or major, a strike or 3+ tram lines; or the
+ * live times (most of a direction's runs cancelled, or run after run 15+ min
+ * late). Classified and worded by the data (session 1's notices), never by
+ * the model; everyday problems have none.
+ */
+type Major = {
+    title: string;
+    /** What it means for the trip, and what to do. */
+    text: string;
+    source: 'notice' | 'live';
+    /** KVB's own words, in German, one tap away. */
+    details?: string | null;
+};
+
+/**
  * One card of an assistant's answer (App\Composer\Assistant\Ask::message), drawn
  * by its type in the order it came. A plan it showed isn't one: it arrives as
  * the usual change and plan messages.
@@ -83,6 +100,7 @@ type Block =
           title?: string;
           text: string;
           trip: TripAnswer;
+          major?: Major | null;
           private?: boolean;
       }
     | { type: 'choices'; text: string }
@@ -169,6 +187,47 @@ function tripHref(trip: TripAnswer): string {
 }
 
 /**
+ * How a ride is running, as Travel says it: its time struck through and
+ * "Cancelled" (never a filled pill), or a late chip from 2 min, live times only.
+ */
+function RideStatus({ leg }: { leg: JourneyLeg }) {
+    if (leg.cancelled) {
+        return (
+            <span className="answer-ride-cancelled">
+                <s>{leg.depart_time}</s> Cancelled
+            </span>
+        );
+    }
+
+    const late = leg.realtime ? (leg.delay_min ?? 0) : 0;
+
+    return late >= 2 ? (
+        <span className="answer-ride-late">{`${late}\u00a0min late`}</span>
+    ) : null;
+}
+
+/** One headline for a major problem, before the answer's words. */
+function MajorHeadline({ major }: { major: Major }) {
+    return (
+        <section className="answer-major" aria-label="Major disruption">
+            <strong>{major.title}</strong>
+            <p>{major.text}</p>
+            <small>
+                {major.source === 'notice'
+                    ? 'From KVB’s notice'
+                    : 'From the live times · no KVB notice'}
+            </small>
+            {major.source === 'notice' && major.details && (
+                <details>
+                    <summary>KVB’s words, in German</summary>
+                    <p lang="de">{major.details}</p>
+                </details>
+            )}
+        </section>
+    );
+}
+
+/**
  * The way as Travel's trip draws it (trip-model.ts, way.tsx), so a trip reads the same
  * wherever it shows. On the way, it starts from where you were when you asked.
  */
@@ -202,6 +261,7 @@ function TripWay({ trip }: { trip: TripAnswer }) {
                                       look={lookOf(leg)}
                                   />
                               ),
+                              status: <RideStatus leg={leg} />,
                           }
                         : row;
                 })}
@@ -575,8 +635,15 @@ export function AnswerBody({
             }
         };
 
+        // A major problem on the way gets one headline, before the words.
+        const major = blocks.find(
+            (block): block is Extract<Block, { type: 'trip' }> =>
+                block.type === 'trip' && !!block.major,
+        )?.major;
+
         return (
             <>
+                {major && <MajorHeadline major={major} />}
                 {message.lead && <p>{message.lead}</p>}
                 {blocks.map(card)}
                 {after}
