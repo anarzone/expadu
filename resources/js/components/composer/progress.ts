@@ -1,8 +1,9 @@
+import { progress } from '@/actions/App/Http/Controllers/ComposerController';
 import { api } from './types';
 
 type Looked = 'listings' | 'places' | 'weather' | 'plans' | 'taste';
 
-type Progress = {
+type Report = {
     step: 'reading' | 'writing' | null;
     looked: Looked[];
 };
@@ -17,7 +18,7 @@ const LOOKED: Record<Looked, () => string> = {
 };
 
 /** What the line under the box says while the assistant works (3–6 s). */
-function label({ step, looked }: Progress): string | null {
+function label({ step, looked }: Report): string | null {
     if (step === 'writing') {
         return 'Putting it together…';
     }
@@ -57,9 +58,9 @@ export function watchProgress(
         }
 
         asking = true;
-        api<Progress>(`/composer/progress/${requestId}`)
-            .then((progress) => {
-                const text = label(progress);
+        api<Report>(progress.url({ requestId }))
+            .then((report) => {
+                const text = label(report);
 
                 if (!stopped && text) {
                     say(text);
