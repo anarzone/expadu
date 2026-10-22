@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
@@ -89,19 +96,32 @@ type NearbyViewProps = {
 const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
 
 /**
- * A line's place in its area: its strip, or its detail when opened. The swap
- * goes straight from the height it had to the new one, the new content shown
- * whole from the first frame (a fade-in read as the strip shrinking first);
- * with reduced motion it just swaps. Its own updates (new times) don't animate.
+ * A line's place in its area: its strip, or its detail when opened. Opening
+ * grows from the strip's height to the detail's; closing shrinks the detail,
+ * still shown and clipped, back to the strip's height and only then swaps
+ * (`closing` keeps the detail and its full width until `onClosed`). With
+ * reduced motion it just swaps. Its own updates (new times) don't animate.
  */
-function LineSlot({ open, children }: { open: boolean; children: ReactNode }) {
+function LineSlot({
+    open,
+    closing,
+    onClosed,
+    children,
+}: {
+    open: boolean;
+    closing: boolean;
+    onClosed: () => void;
+    children: ReactNode;
+}) {
     const box = useRef<HTMLDivElement>(null);
     const height = useRef(0);
+    // The strip's height when it opened: where closing goes back to.
+    const shut = useRef(0);
     const was = useRef(open);
-    // The swap under way and the height it goes to.
+    // The change under way and the height it goes to.
     const running = useRef<{ anim: Animation; to: number } | null>(null);
 
-    // Before the swap paints: from the height it had to the height it has.
+    // Before it paints: from the height it had to the one it goes to.
     useLayoutEffect(() => {
         const el = box.current;
 
@@ -111,44 +131,69 @@ function LineSlot({ open, children }: { open: boolean; children: ReactNode }) {
 
         was.current = open;
         const from = height.current;
-        const to = el.offsetHeight;
+        const to = open ? el.offsetHeight : shut.current;
 
-        if (
-            !from ||
-            from === to ||
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ) {
-            return;
+        if (open) {
+            shut.current = from;
         }
 
         running.current?.anim.cancel();
-        el.style.overflow = 'hidden';
-        // Closing: the strip keeps its own height at the top while the room
-        // under it goes, rather than stretching and sliding up with it.
-        el.style.alignItems = to < from ? 'start' : '';
-        const grow = el.animate(
-            [{ height: `${from}px` }, { height: `${to}px` }],
-            OPEN,
-        );
-        running.current = { anim: grow, to };
-        grow.onfinish = grow.oncancel = () => {
-            el.style.overflow = '';
-            el.style.alignItems = '';
 
-            if (running.current?.anim === grow) {
+        if (
+            !from ||
+            !to ||
+            from === to ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            if (!open) {
+                onClosed();
+            }
+
+            return;
+        }
+
+        el.style.overflow = 'hidden';
+        // Closing holds the last frame until the strip takes its place.
+        const anim = el.animate(
+            [{ height: `${from}px` }, { height: `${to}px` }],
+            { ...OPEN, fill: open ? 'none' : 'forwards' },
+        );
+        running.current = { anim, to };
+        anim.onfinish = () => {
+            if (open) {
+                el.style.overflow = '';
+                running.current = null;
+            } else {
+                onClosed();
+            }
+        };
+        anim.oncancel = () => {
+            el.style.overflow = '';
+
+            if (running.current?.anim === anim) {
                 running.current = null;
             }
         };
-    }, [open]);
+    }, [open, onClosed]);
 
-    // Its height after every render, for the next swap to start from (the
-    // one it's growing to while a swap is under way, not the frame now).
+    // The strip is back: let go of the closing's last frame.
+    useLayoutEffect(() => {
+        if (!open && !closing) {
+            running.current?.anim.cancel();
+        }
+    }, [open, closing]);
+
+    // Its height after every render, for the next change to start from (the
+    // one it's going to while a change is under way, not the frame now).
     useLayoutEffect(() => {
         height.current = running.current?.to ?? box.current?.offsetHeight ?? 0;
     });
 
     return (
-        <div ref={box} className={cn('nearby-line-slot', open && 'is-open')}>
+        <div
+            ref={box}
+            className={cn('nearby-line-slot', (open || closing) && 'is-open')}
+        >
             {children}
         </div>
     );
@@ -170,9 +215,19 @@ export function NearbyView({
     }));
     const [panel, setPanel] = useState<Panel>('');
     const [stopsOpen, setStopsOpen] = useState(false);
-    const [picked, setOpenLine] = useState('');
+    const [picked, setPicked] = useState('');
     // A picked line that left the board closes.
     const openLine = station.lines.some((l) => l.line === picked) ? picked : '';
+    // The line shrinking back to its strip (its detail shown until it has).
+    const [closing, setClosing] = useState('');
+    const setOpenLine = (line: string) => {
+        setClosing(openLine && openLine !== line ? openLine : '');
+        setPicked(line);
+    };
+    const closed = useCallback(
+        (line: string) => setClosing((now) => (now === line ? '' : now)),
+        [],
+    );
     const [pinned, setPinned] = useState<string[]>(readPins);
     const root = useRef<HTMLDivElement>(null);
 
@@ -519,7 +574,7 @@ export function NearbyView({
     };
 
     const card = (l: ShownLine) => {
-        if (openLine === l.line) {
+        if (openLine === l.line || closing === l.line) {
             return detail(l);
         }
 
@@ -998,6 +1053,8 @@ export function NearbyView({
                                         <LineSlot
                                             key={l.line}
                                             open={openLine === l.line}
+                                            closing={closing === l.line}
+                                            onClosed={() => closed(l.line)}
                                         >
                                             {card(l)}
                                         </LineSlot>
