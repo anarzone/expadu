@@ -109,6 +109,21 @@ final class AroundNow
     }
 
     /**
+     * Keeps the assistant's answer (Assistant::answer) for this request: its checked lead,
+     * the listings and places it suggests, and the weather it looked at (else Cologne's now).
+     *
+     * @param  array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string}  $assisted
+     */
+    public function keepAssisted(User $user, string $text, array $assisted, CarbonImmutable $now): void
+    {
+        Cache::put($this->key($user, $text), ['lead' => $assisted['lead'], 'places' => $assisted['places'],
+            'taste' => $assisted['taste'] ?? false, 'invite' => $assisted['invite'] ?? false, 'listings' => [
+                'events' => $assisted['events'], 'weather' => $assisted['weather'] ?? $this->weatherNow(),
+                'when' => $now->setTimezone('Europe/Berlin')->format('H:i') >= '18:00' ? 'tonight' : 'today', 'items' => [],
+            ]], now()->addMinutes(self::KEEP_MINUTES));
+    }
+
+    /**
      * The sentences that hold what their cited items say, joined; empty when none does.
      * The time and the weather are one fact each, shown with every answer, so any
      * sentence may use them; a listing only when the sentence cites it.
@@ -152,6 +167,12 @@ final class AroundNow
             'kind' => 'around',
             'written' => is_array($kept) ? 'ai' : 'listings',
             'events' => $listings['events'] ?: null,
+            // What the assistant suggests besides listings (Assistant), as the activity places are drawn.
+            'places' => is_array($kept) ? ($kept['places'] ?? []) ?: null : null,
+            // With the opt-in: a "because" on a suggestion came from what the person saved and liked.
+            'taste' => is_array($kept) && ($kept['taste'] ?? false) ? true : null,
+            // Without it: the line inviting them to turn it on, under the assistant's answer.
+            'invite' => is_array($kept) && ($kept['invite'] ?? false) ? true : null,
             'facts' => $facts ?: null,
             // One link each: KVB's live notices share one page.
             'sources' => collect([
@@ -228,12 +249,13 @@ final class AroundNow
 
     /**
      * The person's own plans and recorded appointments still to come today, then
-     * tomorrow's, nearest first, as their records hold them.
+     * tomorrow's, nearest first, as their records hold them (also what the assistant may
+     * look at, with the opt-in).
      *
      * @param  array<string, array<string, mixed>>  $plans
      * @return list<array{label: string, value: string, known: bool}>
      */
-    private function day(User $user, array $plans, CarbonImmutable $now): array
+    public function day(User $user, array $plans, CarbonImmutable $now): array
     {
         $tomorrow = $now->addDay()->toDateString();
         $items = collect($plans)->only([$now->toDateString(), $tomorrow])->flatMap(fn (array $plan): array => $plan['slots'] ?? [])

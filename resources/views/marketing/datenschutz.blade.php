@@ -10,7 +10,7 @@
     <div class="wrap mk-hero__prose">
     <span class="eyebrow">Privacy</span>
     <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
-    <p class="meta">Last updated: 21 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 22 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
     </div>
 @endsection
 
@@ -63,12 +63,20 @@
 
     <h2>6. The Expadu app</h2>
     <p>
-        If you create an account at app.expadu.com, we process the data you provide (e-mail, name,
-        password — stored hashed) and, to power the product, the situation profile you set up
-        (e.g. residency situation, arrival date, neighbourhood, interests) — legal basis: contract
-        performance (Art. 6(1)(b) GDPR). You can also sign in with Google or Apple; in that case we
-        receive your name and e-mail address from the provider, and nothing is shared back with
-        them beyond the sign-in itself.
+        If you create an account at app.expadu.com, we process the data you provide: your e-mail
+        address, name and password (stored hashed). You can also sign in with Google; we then
+        receive your name and e-mail address from Google, and nothing is shared back beyond the
+        sign-in itself. Legal basis: contract performance (Art. 6(1)(b) GDPR).
+    </p>
+    <p>
+        In Paperwork you can keep a record of your situation (for example your residence
+        situation, your arrival date and your city), your documents and your appointments, so the
+        app can show the steps that apply to you and when they are due. You can also keep records
+        for family members you look after, or give someone you invite access to yours. Records are
+        kept with your account and used only for this; you can stop their processing or erase
+        them at any time.
+        In Travel you can save places such as home and work, to plan trips from and to them.
+        Legal basis: contract performance (Art. 6(1)(b) GDPR).
     </p>
     <p>
         If you grant browser location access, your position is used to compute departures, routes
@@ -80,6 +88,21 @@
         MOTIS is used when configured; requests can also go to Transitous and the configured
         TRIAS service. Requests can include starting-point and destination coordinates, search
         text, travel mode and requested departure or arrival times.
+    </p>
+    <h3>Notifications</h3>
+    <p>
+        The app sends you notices you asked for (an event reminder, when to leave for a trip you
+        planned, when to get off) and notices about things you set up: a change to a planned trip,
+        delays and disruptions on the lines you use, Paperwork dates coming up, weather that
+        affects your commute and city notices that affect you. They appear in the app, and as push
+        notifications only if you allow them in your browser. For push we store your browser’s
+        push subscription (an address and its keys); the message is delivered through your
+        browser maker’s push service (for example Google, Mozilla or Apple), which sees only that
+        a message is sent, not what it says. We send at most two pushes an hour and five a day,
+        and hold non-urgent ones during quiet hours. You can turn push off at any time in the app
+        or your browser; turning it off in the app deletes the subscription. Legal basis: contract
+        performance (Art. 6(1)(b) GDPR), and for push your consent in the browser (Art. 6(1)(a)
+        GDPR).
     </p>
     <p>
         When you open a map, your browser loads map styles and tiles directly from OpenFreeMap.
@@ -102,9 +125,14 @@
     <ul>
         <li>
             <strong>Composer.</strong> When you send a request in Composer, what you typed, your
-            home neighbourhood and the current time are sent to Anthropic to read the request.
-            The line next to the box says so; sending is your consent for that one request
-            (Art. 6(1)(a) GDPR). Nothing else from your account is sent.
+            home neighbourhood and the current time are sent to Anthropic to read the request and,
+            for an open request such as “I’m bored”, to answer it. To answer, Composer looks up
+            public information (event listings, places from our catalogue and the weather) and
+            sends what it finds as well. If you turned on personalisation, it may also send what
+            you tend to like and skip (kinds of places and events, areas and times of day, never
+            place names or your history) and your own plans for today and tomorrow, so the
+            suggestions fit you. The line next to the box says so; sending is your consent for
+            that one request (Art. 6(1)(a) GDPR). Nothing else from your account is sent.
         </li>
         <li>
             <strong>Paperwork: your own words and questions.</strong> When you tap “Suggest an
@@ -134,8 +162,9 @@
         such as which places and events you open, save, travel to or turn down, to rank
         suggestions for you (Art. 6(1)(a) GDPR). This is stored under a pseudonymous key, never
         includes your location or anything you type, and individual records are deleted after 90
-        days. Turning personalisation off deletes everything learned. It is off unless you turn
-        it on.
+        days. With it on, Composer may also use what you like and your plans for today and
+        tomorrow to answer an open request, as described under AI features. Turning
+        personalisation off deletes everything learned. It is off unless you turn it on.
     </p>
 
     <h2>7. Retention &amp; deletion</h2>
