@@ -8,6 +8,7 @@ import {
     useSyncExternalStore,
 } from 'react';
 import type { KeyboardEvent } from 'react';
+import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useCurrentPageContext } from '@/lib/page-context';
@@ -19,8 +20,9 @@ import { store as composerEntry } from '@/routes/composer/entry';
  * controls): one box to ask in from any page. Phones open it from the round
  * button beside the floating sections; tablets and desktops from "Ask
  * Composer" in the header or ⌘K, and it sits just under the header with the
- * page dimmed. Sending opens Composer with the words. It lives in the
- * persistent shell, so an unsent request survives moving between pages.
+ * page dimmed. Send sends: Composer opens and asks it at once, under the AI
+ * line shown here (sending is the consent, owner 21 Oct 2026). It lives in
+ * the persistent shell, so an unsent request survives moving between pages.
  */
 
 let open = false;
@@ -96,6 +98,8 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const field = useRef<HTMLTextAreaElement>(null);
     const launcher = useRef<HTMLButtonElement>(null);
     const menuId = useId();
+    // Read once the tray first opens: who reads the request, said before Send.
+    const aiNotice = useAiNotice(isOpen);
 
     // Opening settles the box in; closing (hide) tucks it away before it
     // goes. Reduced motion: no movement.
@@ -199,13 +203,19 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         setText('');
         setMenuOpen(false);
         setOpen(false);
-        // By POST, so the words stay out of the URL, history and logs.
-        router.post(
-            composerEntry.url(),
-            about
-                ? { prompt: request, about: about.label }
-                : { prompt: request },
-        );
+        // By POST, so the words stay out of the URL, history and logs. `send`:
+        // Composer asks it on arrival, under the notice shown here, if any.
+        router.post(composerEntry.url(), {
+            prompt: request,
+            ...(about ? { about: about.label } : {}),
+            send: true,
+            ...(aiNotice
+                ? {
+                      notice_version: aiNotice.notice_version,
+                      provider_version: aiNotice.provider_version,
+                  }
+                : {}),
+        });
     };
 
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -374,6 +384,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                             </button>
                         </div>
                     </form>
+                    {aiNotice && <AiNoticeLine notice={aiNotice} />}
                 </div>
             )}
         </>
