@@ -1186,6 +1186,9 @@
     font-size: 14px;
     line-height: 1.5;
 }
+.composer-page .answer-major .answer-major-todo {
+    font-weight: 600;
+}
 .composer-page .answer-major small {
     color: var(--color-text-soft);
     font-size: 12px;

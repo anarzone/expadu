@@ -77,8 +77,10 @@ type TripAnswer = {
 type Major = {
     /** A notice's checked brief; its own German words until it has one. */
     title: string;
-    /** What it means for the trip, and what to do. */
+    /** What it means for the trip. */
     text: string | null;
+    /** What to do, from the way itself ("This way doesn't use lines 1, 7 and 9."). */
+    todo?: string | null;
     source: 'notice' | 'live';
     /** KVB's own words, in German, one tap away. */
     details?: string | null;
@@ -237,6 +239,7 @@ function MajorHeadline({ major }: { major: Major }) {
         <section className="answer-major" aria-label="Major disruption">
             <strong>{major.title}</strong>
             {major.text && <p>{major.text}</p>}
+            {major.todo && <p className="answer-major-todo">{major.todo}</p>}
             <small>
                 {major.source === 'notice'
                     ? 'From KVB’s notice'
