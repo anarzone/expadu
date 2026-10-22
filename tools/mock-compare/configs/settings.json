@@ -105,9 +105,7 @@
         {
             "name": "city",
             "mock": "section[aria-labelledby=\"city-title\"]",
-            "app": "section[aria-labelledby=\"city-title\"]",
-            "pixels": false,
-            "ignoreReason": "The mock's global .city rule (connected/style.css, the header's city button: 1px #c9dee3 border, 10px 15px padding) also lands on its .settings-chip.city, so its pin sits 5px right with a border. The app's chip is the intended one; boxes and styles are still compared."
+            "app": "section[aria-labelledby=\"city-title\"]"
         },
         {
             "name": "city tile",

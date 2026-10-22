@@ -415,7 +415,7 @@ export function CityPanel({
     return (
         <section className="settings-panel" aria-labelledby="city-title">
             <div className="settings-head">
-                <span className="settings-chip city">
+                <span className="settings-chip place">
                     <SettingsIcon name="pin-narrow" />
                 </span>
                 <div>

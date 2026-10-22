@@ -94,7 +94,7 @@
     background: var(--color-paper-bg-quiet);
     color: var(--color-nav-violet);
 }
-.settings-chip.city {
+.settings-chip.place {
     background: var(--color-paper-bg);
     color: var(--color-paper-text);
 }
