@@ -5511,6 +5511,60 @@
     "routed": "answer",
     "around": true
    }
+  },
+  {
+   "id": "solo_newcomer.trip_cafe_nova",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T12:40:00+01:00",
+   "weather": "dry",
+   "text": "show me departures to go Cafe Nova in City Center",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "solo_newcomer.trip_take_me_dom",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T18:10:00+01:00",
+   "weather": "dry",
+   "text": "take me to the Dom",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "solo_newcomer.trip_how_get_neumarkt",
+   "persona": "solo_newcomer",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T09:20:00+01:00",
+   "weather": "dry",
+   "text": "How do I get to Neumarkt?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
   }
  ]
 }

@@ -169,7 +169,7 @@ class EvaluateComposer extends Command
         // Parse-only, a request with no route named is a plan to compose (the set's own kind).
         $route = $request['expect']['routed'] ?? ($this->option('parse-only') ? 'compose' : null);
         $routing = $route !== null ? ['routed' => $row['routed'] === $route] : [];
-        $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true]);
+        $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true, 'answer_kind' => true]);
         $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
         if ($row['routed'] === 'compose' && $this->option('parse-only')) {
             return $row + ['expectations' => $routing, 'gates' => $gates];
@@ -181,6 +181,7 @@ class EvaluateComposer extends Command
                 return $row + ['error' => 'answer: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
             }
             $routing += isset($request['expect']['around']) ? ['around' => ($said['kind'] ?? null) === 'around'] : [];
+            $routing += isset($request['expect']['answer_kind']) ? ['answer_kind' => ($said['kind'] ?? null) === $request['expect']['answer_kind']] : [];
 
             return $row + ['said' => $said, 'expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []), 'gates' => $gated + $gates];
         }
