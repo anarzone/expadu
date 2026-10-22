@@ -63,6 +63,14 @@ export function useNowHour(): number {
 
 export type StreetListing = { key: string; poster: PosterEvent };
 
+/** A YYYY-MM-DD day `n` days on. */
+const addDays = (day: string, n: number) => {
+    const d = new Date(`${day}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+
+    return d.toISOString().slice(0, 10);
+};
+
 export function EventsStreet({
     date,
     today,
@@ -71,9 +79,12 @@ export function EventsStreet({
     poster,
     forecast,
     waiting = false,
+    onDate,
 }: {
     /** A details page is open over the street: stories and the column wait. */
     waiting?: boolean;
+    /** Shows another day (See tomorrow, when all of today's are over). */
+    onDate?: (date: string) => void;
     date: string;
     today: string;
     /** The day's forecast (EventController's deferred weather). */
@@ -93,6 +104,8 @@ export function EventsStreet({
     const [story, setStory] = useState<Story | null>(null);
     const [seen, setSeen] = useState<Set<number>>(() => new Set());
     const [ringsRight, setRingsRight] = useState(12);
+    // A desktop's weather chip, from the street's left: its rings stop short.
+    const [chipLeft, setChipLeft] = useState<number | null>(null);
     const opener = useRef<HTMLElement | null>(null);
     // How much moves: the mock's street unless the owner's motion lab
     // (QA tooling, with ?motion=lab) picks otherwise. Replay starts it over.
@@ -173,24 +186,26 @@ export function EventsStreet({
         };
     }, []);
 
-    // A phone's rings scroll sideways up to the weather, stopping 12px
-    // short of it.
+    // The rings scroll sideways up to the weather: a phone's stop 12px
+    // short of it, a desktop's 20px (and fade where they're cut).
     useEffect(() => {
         const node = host.current;
         const chip = node?.querySelector('.st-weather');
 
-        if (!node || !chip || layout !== 'phone') {
+        if (!node || !chip) {
             return;
         }
 
-        const measure = () =>
-            setRingsRight(
-                Math.round(
-                    node.getBoundingClientRect().right -
-                        chip.getBoundingClientRect().left +
-                        12,
-                ),
-            );
+        const measure = () => {
+            const at = node.getBoundingClientRect();
+            const left = chip.getBoundingClientRect().left;
+
+            if (layout === 'phone') {
+                setRingsRight(Math.round(at.right - left + 12));
+            } else {
+                setChipLeft(Math.round(left - at.left));
+            }
+        };
         const resized = new ResizeObserver(measure);
         resized.observe(chip);
         resized.observe(node);
@@ -286,6 +301,20 @@ export function EventsStreet({
             phone: layout === 'phone',
             weather: weatherFor(forecast),
         });
+    const desktopRingsWidth = (
+        view: { width: number; zoom: number },
+        room: { width: number },
+    ) => {
+        const left = Math.round(
+            (room.width - view.width * view.zoom) / 2 +
+                STREET.desktop.size[0] * view.zoom * 0.3,
+        );
+        const most = Math.round(view.width * view.zoom * 0.6);
+
+        return chipLeft === null
+            ? most
+            : Math.min(most, Math.max(120, chipLeft - left - 20));
+    };
     const ringsStyle: CSSProperties | undefined =
         fit && box
             ? layout === 'desktop'
@@ -295,7 +324,7 @@ export function EventsStreet({
                               STREET.desktop.size[0] * fit.zoom * 0.3,
                       ),
                       top: 16,
-                      maxWidth: Math.round(fit.width * fit.zoom * 0.6),
+                      maxWidth: desktopRingsWidth(fit, box),
                   }
                 : { right: ringsRight }
             : undefined;
@@ -354,6 +383,28 @@ export function EventsStreet({
                             poster(item, where, style, fit)
                         }
                         onMore={(hour) => openStory(hour)}
+                        onStack={(stack, onWall) => {
+                            // From the first of its events not on the wall.
+                            const run = timed.filter(
+                                (l) =>
+                                    l.poster.start &&
+                                    stack.hours.includes(
+                                        Number(l.poster.start.slice(0, 2)),
+                                    ),
+                            );
+                            const first = run.findIndex(
+                                (l) => !onWall.includes(l),
+                            );
+                            opener.current =
+                                document.activeElement as HTMLElement | null;
+                            setStory({
+                                hour: stack.hours[0],
+                                index: Math.max(0, first),
+                                hours: stack.hours,
+                                label: stack.storyLabel,
+                            });
+                        }}
+                        onTomorrow={() => onDate?.(addDays(date, 1))}
                         chip={
                             <WeatherChip
                                 forecast={forecast}
@@ -381,6 +432,7 @@ export function EventsStreet({
                     waiting={waiting}
                     story={story}
                     hours={hours}
+                    nowHour={isToday ? Math.floor(nowHour) : null}
                     listings={timed}
                     layout={layout}
                     skyAt={skyAt}
