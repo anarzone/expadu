@@ -8,6 +8,7 @@ import {
 import { aiPermit } from './ai-notice';
 import type { AiNotice } from './ai-notice';
 import type { PlanOrigin } from './origin-picker';
+import { watchProgress } from './progress';
 import { api, ApiError } from './types';
 import type { Command, Slot, Workspace } from './types';
 
@@ -250,14 +251,23 @@ export function useComposerEngine(
                           }
                         : {}),
                 };
+                // The say-so for this request; while the assistant works, the line says how far.
+                const permit = aiPermit(notice) as {
+                    processing?: { request_id: string };
+                };
+                const stop = permit.processing
+                    ? watchProgress(permit.processing.request_id, setBusy)
+                    : () => undefined;
                 const answered = await api<Workspace>(ask.url(), {
                     ...where,
-                    ...aiPermit(notice),
-                }).catch((error: unknown) =>
-                    notice
-                        ? api<Workspace>(ask.url(), where)
-                        : Promise.reject(error),
-                );
+                    ...permit,
+                })
+                    .catch((error: unknown) =>
+                        notice
+                            ? api<Workspace>(ask.url(), where)
+                            : Promise.reject(error),
+                    )
+                    .finally(stop);
                 setState(answered);
             }
 
