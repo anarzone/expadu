@@ -68,14 +68,7 @@ class EventAnswers
         }
 
         $count = $shown->count();
-        $plannable = $this->plannable($shown);
-        $posters = $shown
-            // Ranked, never filtered: the listings Events would put first come first.
-            ->sortByDesc(fn (array $occurrence): array => [$occurrence['event']->relevance ?? -1, $occurrence['event']->quality_score ?? -1])
-            ->take(self::SHOWN)
-            ->sortBy(fn (array $occurrence): int => $occurrence['starts_at']->getTimestamp())
-            ->map(fn (array $occurrence): array => $this->poster($occurrence, $plannable))
-            ->values()->all();
+        $posters = $this->posters($shown, self::SHOWN);
 
         return [
             'text' => $topic !== null && $matching->isEmpty() ? "I don’t see {$topic[1]} {$when}. This is what’s on." : '',
@@ -86,6 +79,39 @@ class EventAnswers
                 'suggestions' => $count > self::SHOWN ? [$browse] : null,
             ],
         ];
+    }
+
+    /**
+     * What's still on today, the listings Events would put first, as posters (Composer's
+     * "around you now").
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function stillOn(CarbonImmutable $now, int $limit): array
+    {
+        $now = $now->setTimezone('Europe/Berlin');
+
+        return $this->posters($this->stillToCome(Event::occurringBetween($now->startOfDay(), $now->endOfDay()), $now), $limit);
+    }
+
+    /**
+     * The first few listings as Events' posters, in time order.
+     *
+     * @param  Collection<int, array<string, mixed>>  $occurrences
+     * @return list<array<string, mixed>>
+     */
+    public function posters(Collection $occurrences, int $limit): array
+    {
+        // Ranked, never filtered: the listings Events would put first come first.
+        $shown = $occurrences
+            ->sortByDesc(fn (array $occurrence): array => [$occurrence['event']->relevance ?? -1, $occurrence['event']->quality_score ?? -1])
+            ->take($limit);
+        $plannable = $this->plannable($shown);
+
+        return $shown
+            ->sortBy(fn (array $occurrence): int => $occurrence['starts_at']->getTimestamp())
+            ->map(fn (array $occurrence): array => $this->poster($occurrence, $plannable))
+            ->values()->all();
     }
 
     /**

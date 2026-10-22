@@ -46,7 +46,7 @@ test('🔒 an answer is worked out from the stored request, never from words the
 
     $reply = collect($this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'answer'])->assertOk()
         ->json('conversations.0.messages'))->last();
-    expect($reply)->role->toBe('assistant')->request->toBe('help');
+    expect($reply)->role->toBe('assistant')->request->toBe('around');
 });
 
 test('🔒 the checklist is the asker\'s own record, never another account\'s', function () {

@@ -2,10 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Ai\LlmCalls;
 use App\Composer\Answers\Answers;
+use App\Composer\Answers\AroundCheck;
+use App\Composer\Answers\AroundNow;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Eval\PlanChecks;
 use App\Composer\HeuristicPromptParser;
+use App\Composer\ParsedPrompt;
 use App\Composer\PromptIntent;
 use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
@@ -31,7 +35,9 @@ use Throwable;
  * composer-eval/requests.json) through the real parse and compose paths for
  * one synthetic user per persona, and checks every plan against the database
  * (PlanChecks). Each request runs at its weekday and time in the coming week,
- * so events are real, with the scenario's weather. Gates must stay at zero.
+ * so events are real, with the scenario's weather. Gates must stay at zero:
+ * the plan gates (PlanChecks) and, for what Composer says instead of planning,
+ * no dead end and nothing the AI's lead says that its listings don't.
  *
  * Writes only to the synthetic users (composer-eval+…@example.invalid): their
  * composer runs, active plan and hand-off, as a person composing would.
@@ -44,9 +50,15 @@ class EvaluateComposer extends Command
         {--limit= : Run at most this many requests}
         {--parser=configured : configured (the app binding) or heuristic}
         {--week= : Monday of the week to run in (default: next Monday)}
-        {--label=baseline : Name for the report file}';
+        {--label=baseline : Name for the report file}
+        {--effort= : The parser\'s effort for this run (low, medium, high)}
+        {--cohort= : Suffix for the synthetic users, so runs can go side by side}
+        {--parse-only : Read and answer each request, but compose no plan}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
+
+    /** What Composer says instead of a plan: never a dead end, never a fact the listings don't hold. */
+    private const ANSWER_GATES = ['dead_end', 'invented'];
 
     private const SITUATIONS = [
         'student_budget' => Situation::Student,
@@ -78,6 +90,9 @@ class EvaluateComposer extends Command
             : CarbonImmutable::now('Europe/Berlin')->next(CarbonImmutable::MONDAY)->startOfDay();
         // One permit per request; the daily cap is for people, not this run.
         config(['bureaucracy_privacy.daily_limits.'.ProcessingPurpose::ComposerParse->value => 100000]);
+        if ($this->option('effort')) {
+            config(['services.llm.effort' => (string) $this->option('effort')]);
+        }
 
         $results = [];
         $bar = $this->output->createProgressBar($requests->count());
@@ -125,27 +140,50 @@ class EvaluateComposer extends Command
         $row = ['id' => $request['id'], 'text' => $request['text'], 'now' => $now->toIso8601String(), 'weather' => $request['weather']];
 
         $started = hrtime(true);
+        $around = null;
         try {
-            $permit = method_exists($parser, 'processingContext')
-                ? app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerParse,
-                    $parser::processingContext($request['text'], $profile), $this->acceptance(ProcessingPurpose::ComposerParse))
-                : null;
-            $parsed = $parser->parse($request['text'], $profile, $now, $permit);
+            // As ComposerController::parse() does it.
             $routed = app(Answers::class)->route($user, $request['text'], $now, app(WorkspaceStore::class)->read($user)['focus'] ?? null);
+            $ai = method_exists($parser, 'processingContext');
+            $around = $ai && AroundNow::opens($routed) ? app(AroundNow::class)->listings($now) : null;
+            $facts = $around !== null ? AroundNow::prompt($around) : null;
+            $permit = $ai
+                ? app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerParse,
+                    $parser::processingContext($request['text'], $profile, $facts), $this->acceptance(ProcessingPurpose::ComposerParse))
+                : null;
+            $parsed = $ai ? $parser->parse($request['text'], $profile, $now, $permit, $facts) : $parser->parse($request['text'], $profile, $now, $permit);
+            if ($around !== null) {
+                app(AroundNow::class)->keep($user, $request['text'], $around, $parsed->reply);
+            }
         } catch (Throwable $e) {
             return $row + ['error' => 'parse: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
         }
         $row['parse_ms'] = (int) ((hrtime(true) - $started) / 1e6);
+        $row['tokens'] = $parser->usage ?? null;
         $row['parse'] = ['intent' => $parsed->intent->value, 'source' => $parsed->source, 'kind' => $routed['kind'], 'constraints' => $parsed->plan?->toArray()];
         // The same rule ComposerController::parse() applies.
         $answered = Answers::handles($routed, $parsed->intent);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
         // Where a request should go ("What's on tonight?" → an answer), checked apart from any plan.
-        $routing = isset($request['expect']['routed']) ? ['routed' => $row['routed'] === $request['expect']['routed']] : [];
-        $planExpect = array_diff_key($request['expect'], ['routed' => true]);
+        // Parse-only, a request with no route named is a plan to compose (the set's own kind).
+        $route = $request['expect']['routed'] ?? ($this->option('parse-only') ? 'compose' : null);
+        $routing = $route !== null ? ['routed' => $row['routed'] === $route] : [];
+        $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true, 'answer_kind' => true]);
+        $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
+        if ($row['routed'] === 'compose' && $this->option('parse-only')) {
+            return $row + ['expectations' => $routing, 'gates' => $gates];
+        }
         if ($row['routed'] !== 'compose') {
-            return $row + ['expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []), 'gates' => array_fill_keys(PlanChecks::GATES, [])];
+            try {
+                [$said, $gated] = $this->said($user, $request['text'], $routed, $parsed, $answered, $around, $now);
+            } catch (Throwable $e) {
+                return $row + ['error' => 'answer: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
+            }
+            $routing += isset($request['expect']['around']) ? ['around' => ($said['kind'] ?? null) === 'around'] : [];
+            $routing += isset($request['expect']['answer_kind']) ? ['answer_kind' => ($said['kind'] ?? null) === $request['expect']['answer_kind']] : [];
+
+            return $row + ['said' => $said, 'expectations' => $routing + ($routing === [] ? $checks->expectations($planExpect, [], null) : []), 'gates' => $gated + $gates];
         }
 
         $composeStarted = hrtime(true);
@@ -183,9 +221,63 @@ class EvaluateComposer extends Command
                 'outdoor' => $s['outdoor'] ?? null, 'cost' => $s['cost_tier'] ?? null,
             ], $slots),
             'notices' => array_column($body['notices'] ?? [], 'kind'),
-            'gates' => $gated['gates'],
+            'gates' => $gated['gates'] + $gates,
             'expectations' => $routing + $checks->expectations($planExpect, $slots, $constraints),
         ];
+    }
+
+    /**
+     * What the person is told instead of a plan, as the workspace says it (WorkspaceStore's
+     * `answer` and `reply`), and its gates: a dead end (no reply of its own, the old
+     * "isn't something Composer knows", or nothing to do next) and, in the AI's lead,
+     * any sentence its listings don't hold. The page's own replies (search, paperwork,
+     * journey) are named, not judged.
+     *
+     * @param  array<string, mixed>  $routed
+     * @param  array<string, mixed>|null  $around
+     * @return array{0: array<string, mixed>, 1: array<string, list<string>>}
+     */
+    private function said(User $user, string $text, array $routed, ParsedPrompt $parsed, bool $answered, ?array $around, CarbonImmutable $now): array
+    {
+        $answers = app(Answers::class);
+        $page = match ($parsed->intent) {
+            PromptIntent::BureaucracyQ => 'bureaucracy',
+            PromptIntent::TakeMeThere => 'journey',
+            PromptIntent::Find => 'find',
+            default => null,
+        };
+        $reply = match (true) {
+            $answered => $answers->answer($user, $text, $routed, [], $now)
+                ?? (in_array($routed['kind'], ['checklist', 'bureaucracy', 'journey', 'onway'], true) ? false : $answers->around($user, $text, $routed, [], $now)),
+            $page !== null => false,
+            default => $answers->around($user, $text, ['kind' => 'clarify'] + $routed, [], $now),
+        };
+        if ($reply === false) {
+            return [['kind' => 'page:'.($page ?? $routed['kind'])], []];
+        }
+
+        $said = ['kind' => $reply['extra']['kind'] ?? null, 'text' => $reply['text'], 'written' => $reply['extra']['written'] ?? null,
+            'events' => count($reply['extra']['events'] ?? []), 'facts' => array_column($reply['extra']['facts'] ?? [], 'label'),
+            'next' => array_column($reply['extra']['suggestions'] ?? [], 'label')];
+        $dead = $reply['text'] === '' || str_contains($reply['text'], 'something Composer knows')
+            || (($said['kind'] === 'around') && $said['next'] === []);
+        $invented = [];
+        if ($around !== null) {
+            $said['ai_sentences'] = count($parsed->reply);
+            $said['ai_dropped'] = array_values(array_map(fn (array $sentence): string => $sentence['text'].' ['.implode(',', $sentence['uses']).']',
+                array_filter($parsed->reply, fn (array $sentence): bool => app(AroundNow::class)->checked($around['items'], [$sentence]) === '')));
+            $said['ai_kept'] = $said['ai_sentences'] - count($said['ai_dropped']);
+        }
+        if ($said['written'] === 'ai' && $around !== null) {
+            $listed = implode("\n", $around['items']);
+            foreach (preg_split('/(?<=[.!?])\s+/u', $reply['text']) as $sentence) {
+                if (! app(AroundCheck::class)->holds($sentence, $listed)) {
+                    $invented[] = $sentence;
+                }
+            }
+        }
+
+        return [$said, ['dead_end' => $dead ? [Str::limit($reply['text'], 120)] : [], 'invented' => $invented]];
     }
 
     /**
@@ -194,12 +286,27 @@ class EvaluateComposer extends Command
      */
     private function summarise(array $results): array
     {
-        $gates = array_fill_keys(PlanChecks::GATES, 0);
+        $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], 0);
         $expect = [];
         $routed = [];
         $sources = [];
         $latency = [];
+        $leads = ['ai' => 0, 'listings' => 0, 'ai_sentences' => 0, 'ai_kept' => 0];
+        $answering = [];
+        $parsing = [];
+        $tokens = ['input' => 0, 'output' => 0];
         foreach ($results as $r) {
+            if (isset($r['parse_ms'])) {
+                $parsing[] = $r['parse_ms'];
+            }
+            $tokens['input'] += $r['tokens']['input'] ?? 0;
+            $tokens['output'] += $r['tokens']['output'] ?? 0;
+            if (isset($r['said']['written'])) {
+                $leads[$r['said']['written']]++;
+                $leads['ai_sentences'] += $r['said']['ai_sentences'] ?? 0;
+                $leads['ai_kept'] += $r['said']['ai_kept'] ?? 0;
+                $answering[] = $r['parse_ms'];
+            }
             foreach ($r['gates'] ?? [] as $gate => $hits) {
                 $gates[$gate] += count($hits);
             }
@@ -217,7 +324,10 @@ class EvaluateComposer extends Command
             }
         }
         sort($latency);
-        $pick = fn (float $q): ?int => $latency === [] ? null : $latency[(int) floor($q * (count($latency) - 1))];
+        sort($answering);
+        sort($parsing);
+        $cost = app(LlmCalls::class)->cost((string) config('services.llm.model'), $tokens['input'], $tokens['output']);
+        $pick = fn (float $q, ?array $of = null): ?int => ($of ?? $latency) === [] ? null : ($of ?? $latency)[(int) floor($q * (count($of ?? $latency) - 1))];
         $all = count($results);
         $passedAll = count(array_filter($results, fn (array $r): bool => ! isset($r['error'])
             && array_sum(array_map('count', $r['gates'] ?? [])) === 0
@@ -231,8 +341,14 @@ class EvaluateComposer extends Command
             'requests_fully_passing' => $passedAll,
             'expectations' => $expect,
             'routed' => $routed,
+            'leads' => $leads,
             'parse_source' => $sources,
             'latency_ms' => ['p50' => $pick(0.5), 'p95' => $pick(0.95)],
+            // The parse call that also writes the lead, for what Composer says instead of a plan.
+            'answer_parse_ms' => ['p50' => $pick(0.5, $answering), 'p95' => $pick(0.95, $answering)],
+            'parse_ms' => ['p50' => $pick(0.5, $parsing), 'p95' => $pick(0.95, $parsing)],
+            'effort' => (string) config('services.llm.effort'),
+            'tokens' => $tokens + ['cost_usd' => $cost, 'cost_per_request_usd' => $cost === null || $all === 0 ? null : round($cost / $all, 6)],
         ];
     }
 
@@ -241,6 +357,8 @@ class EvaluateComposer extends Command
         $this->info(sprintf('%d requests · %d fully passing · %d errors · gates %d (%s)',
             $summary['requests'], $summary['requests_fully_passing'], $summary['errors'], $summary['gates_total'],
             collect($summary['gates'])->map(fn (int $n, string $g): string => "{$g} {$n}")->implode(', ')));
+        $this->line('Leads: '.json_encode($summary['leads']).' · answer parse p50 '.$summary['answer_parse_ms']['p50'].' ms, p95 '.$summary['answer_parse_ms']['p95'].' ms');
+        $this->line('Effort '.$summary['effort'].' · parse p50 '.$summary['parse_ms']['p50'].' ms, p95 '.$summary['parse_ms']['p95'].' ms · tokens '.json_encode($summary['tokens']));
         $this->line('Routed: '.json_encode($summary['routed']).' · parser: '.json_encode($summary['parse_source'])
             .' · latency p50 '.$summary['latency_ms']['p50'].' ms, p95 '.$summary['latency_ms']['p95'].' ms');
         $this->table(['expectation', 'pass', 'of', 'rate'], collect($summary['expectations'])
@@ -261,7 +379,7 @@ class EvaluateComposer extends Command
 
     private function user(array $request): User
     {
-        $user = User::query()->firstOrNew(['email' => "composer-eval+{$request['persona']}@example.invalid"]);
+        $user = User::query()->firstOrNew(['email' => "composer-eval+{$request['persona']}{$this->option('cohort')}@example.invalid"]);
         $user->forceFill([
             'name' => 'Composer eval · '.$request['persona'],
             'password' => $user->password ?? Hash::make(Str::random(40)),
@@ -296,7 +414,8 @@ class EvaluateComposer extends Command
 
             public function getCurrentWeather(float $lat = 50.9375, float $lng = 6.9603): array
             {
-                return ['available' => true, 'temperature' => 12, 'precipitation' => $this->rain ? 1.2 : 0, 'icon' => $this->rain ? 'rain' : 'clear', 'label' => $this->rain ? 'Rain' : 'Clear'];
+                return ['available' => true, 'temperature' => 12, 'precipitation' => $this->rain ? 1.2 : 0, 'icon' => $this->rain ? 'rain' : 'clear', 'label' => $this->rain ? 'Rain' : 'Clear',
+                    'condition' => $this->rain ? 'Rain' : 'Clear sky'];
             }
 
             public function getForecast(float $lat = 50.9375, float $lng = 6.9603): array

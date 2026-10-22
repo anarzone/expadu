@@ -19,12 +19,14 @@ use Illuminate\Support\Facades\DB;
  * (`suggestions`) and, for some kinds, a block (your checklist, a listing's facts).
  *
  * Only the kinds below are answered here (KINDS); the others keep the page's current
- * replies until their part of CO3 lands. Nothing here changes a plan.
+ * replies until their part of CO3 lands. Whatever has no answer of its own gets what's
+ * around you now (AroundNow), never a dead end (owner, 22 Oct 2026). Nothing here
+ * changes a plan.
  */
 final class Answers
 {
     /** The kinds this class answers (and, for a journey, only the appointment's: handles()). */
-    public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey', 'event', 'places'];
+    public const KINDS = ['help', 'around', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey', 'event', 'places'];
 
     /** Questions about your own day, trip and records, answered even when the words read as a plan. */
     private const ABOUT_YOUR_DAY = ['next', 'checklist', 'journey', 'onway'];
@@ -62,16 +64,20 @@ final class Answers
         private TripAnswers $trips,
         private EventAnswers $events,
         private PlaceAnswers $places,
+        private AroundNow $around,
     ) {}
 
     /**
      * Whether Composer answers this request itself, given what the prompt parser made of it.
      * A plan the parser understood is planned: only questions about your own day, trip and
-     * records answer instead. A journey only when it's the appointment's ("When should I
-     * leave for my 14:00?", "Is my tram on time?"); other journeys keep the page's reply
-     * until their part of CO3. "I can't answer that" and "the listings can't vouch for it"
-     * come only when nothing else understood the request; a search the parser reads goes
-     * to the search. A preference about a listing is the places' to answer.
+     * records answer instead. A journey when it's the appointment's ("When should I leave
+     * for my 14:00?", "Is my tram on time?") or to a place named ("show me departures to
+     * Cafe Nova"); other journeys keep the page's reply until their part of CO3. A casual
+     * or open message ("What's up?", "I'm bored", or what the parser reads as open: "wat
+     * do") is answered with what's around you now. What nothing understood is answered too
+     * (what's around you, and what Composer can do), as is a search nothing more specific
+     * matched; "the listings can't vouch for it" only when the parser understood nothing.
+     * A preference about a listing is the places' to answer.
      *
      * @param  array<string, mixed>  $request
      */
@@ -79,11 +85,11 @@ final class Answers
     {
         $kind = $request['kind'];
 
-        return in_array($kind, self::KINDS, true)
-            && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment')
+        return in_array($intent, [PromptIntent::Open, PromptIntent::Unknown], true) || $kind === 'around' || (in_array($kind, self::KINDS, true)
+            && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment' || isset($request['place']))
             && ($intent !== PromptIntent::PlanDay || in_array($kind, [...self::ABOUT_YOUR_DAY, ...self::LISTINGS], true))
-            && (! in_array($kind, ['clarify', 'unavailable'], true) || $intent === PromptIntent::Unknown)
-            && ! ($kind === 'unavailable' && ($request['topic'] ?? null) === 'listing');
+            && ($kind !== 'clarify' || $intent === PromptIntent::Find)
+            && $kind !== 'unavailable');
     }
 
     /** What the router needs to know about this person's day right now. */
@@ -118,36 +124,44 @@ final class Answers
      * The reply to a request this class answers: its text and the message's other fields.
      *
      * @param  array<string, array<string, mixed>>  $plans  the person's Composer plans, by date
-     * @param  bool  $again  the previous reply was a clarify too
-     * @return array{text: string, extra: array<string, mixed>}|null null when the kind isn't one of KINDS
+     * @return array{text: string, extra: array<string, mixed>}|null null when the kind has no answer of its own (then: around())
      */
-    public function answer(User $user, string $text, array $request, array $plans, CarbonImmutable $now, bool $again = false): ?array
+    public function answer(User $user, string $text, array $request, array $plans, CarbonImmutable $now): ?array
     {
         $now = $now->setTimezone('Europe/Berlin');
 
         return match ($request['kind']) {
             'help' => $this->reply('I can help you plan a day, find events and places, check a journey, and point you to reviewed paperwork information.',
                 suggestions: self::EVERYDAY),
-            // Said plainly, with no heading (owner, 21 Oct 2026). The page lists the person's
-            // own starters; with none, these everyday ones.
-            'clarify' => $again
-                ? $this->reply('That’s outside what I know too. It can do these:', 'clarify', suggestions: self::EVERYDAY, options: true)
-                : $this->reply('“'.(mb_strlen($text) > 40 ? mb_substr($text, 0, 39).'…' : $text).'” isn’t something Composer knows. It can do these:',
-                    'clarify', suggestions: self::EVERYDAY, options: true),
+            'around', 'clarify' => $this->around($user, $text, $request, $plans, $now),
             'next' => $this->next($user, $request, $plans, $now),
             'checklist' => $this->checklist($user, $now),
             'access' => $this->access($request, $now),
-            'service' => $this->reply('Expadu doesn’t list '.(self::SERVICES[$request['service']] ?? 'services').' yet.', 'service'),
+            'service' => $this->around($user, $text, $request, $plans, $now,
+                'Expadu doesn’t list '.(self::SERVICES[$request['service']] ?? 'services').' yet.'),
             // A preference the listings can't vouch for. (Listings questions go to places.)
             'unavailable' => ($request['topic'] ?? null) === 'listing' ? null
-                : $this->reply('The listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
-                    'unavailable', suggestions: [self::EVERYDAY[0], self::EVERYDAY[2]]),
+                : $this->around($user, $text, $request, $plans, $now,
+                    'The listings don’t hold enough verified information to answer that, and I won’t guess about prices, access or availability.'),
             'onway' => $this->trips->onTheWay($user, (string) ($request['ask'] ?? 'next'), $now),
             'journey' => $this->journey($user, $request, $now),
             'event' => $this->events->whatsOn($request, $now),
             'places' => $this->places->near($user, $request, $now),
             default => null,
         };
+    }
+
+    /**
+     * What's around you now (AroundNow), for a casual or open message and for whatever
+     * has no answer of its own, said after `$first` when that's given.
+     *
+     * @param  array<string, mixed>  $request
+     * @param  array<string, array<string, mixed>>  $plans
+     * @return array{text: string, extra: array<string, mixed>}
+     */
+    public function around(User $user, string $text, array $request, array $plans, CarbonImmutable $now, ?string $first = null): array
+    {
+        return $this->around->answer($user, $text, $request, $plans, $now, $first);
     }
 
     /**
@@ -158,6 +172,9 @@ final class Answers
      */
     private function journey(User $user, array $request, CarbonImmutable $now): ?array
     {
+        if (isset($request['place'])) {
+            return $this->trips->toPlace($user, $request, $now);
+        }
         if (($request['to'] ?? null) !== 'appointment') {
             return null;
         }
@@ -296,9 +313,9 @@ final class Answers
      * @param  array<string, mixed>  $extra
      * @return array{text: string, extra: array<string, mixed>}
      */
-    private function reply(string $text, string $kind = 'text', ?string $title = null, array $suggestions = [], bool $options = false, array $extra = []): array
+    private function reply(string $text, string $kind = 'text', ?string $title = null, array $suggestions = [], array $extra = []): array
     {
         return ['text' => $text, 'extra' => array_filter(['kind' => $kind, 'title' => $title, 'suggestions' => $suggestions ?: null,
-            'options' => $options ?: null, ...$extra], fn ($value) => $value !== null)];
+            ...$extra], fn ($value) => $value !== null)];
     }
 }

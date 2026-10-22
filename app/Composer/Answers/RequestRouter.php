@@ -64,6 +64,24 @@ final class RequestRouter
         'swimming' => '/\b(swim|swimming|lake|bathing)\b/u',
     ];
 
+    /**
+     * A trip to a place named (owner's staging test, 22 Oct 2026: "show me departures to go
+     * Cafe Nova in City Center"). These words mean a trip whatever the place's case; "go to"
+     * and the like only with a name (capitalised), so "go to the park" stays an outing.
+     */
+    private const TRIP_TO = '/\\b(?:take me|bring me|get me|directions|route|departures?|connections?|navigate|how (?:do|can|should) i get)\\b(?:\\s+\\S+){0,2}?\\s+to\\s+(?:go\\s+(?:to\\s+)?)?(?<place>.+)$/iu';
+
+    private const GO_TO = '/\\b(?:go|going|head|heading|travel|travelling|get)\\s+to\\s+(?<place>.+)$/iu';
+
+    /** A greeting and nothing else ("hi", "Hallo!"): what's around you now. */
+    private const GREETING = '/^(hi|hiya|hello|hey|hallo|moin|servus|yo|good (morning|afternoon|evening|day))( there| composer| expadu)?[!.,? ]*$/u';
+
+    /** Casual or open messages (owner, 22 Oct 2026): "What's up?", "I'm bored", "anything fun?", "what should I do". */
+    private const OPEN = "/\\bw(h)?at'?s+ *u+p+\\b|\\bwh?at up\\b|\\bwass?up\\b|^sup\\b|\\bwhat'?s (new|good|happening|going on)\\b|\\bhow'?s it going\\b|\\bhow are (you|u)\\b"
+        ."|\\b(i'?m|im|i am|so|feeling|i feel) bored\\b|^bored\\b|\\banything (fun|good|interesting|nice|cool|exciting)\\b|\\bsomething (fun|interesting|cool)\\b"
+        ."|\\bwhat (should|can|could|shall) (i|we) do\\b|\\bwhat to do\\b|\\bentertain me\\b|\\bany (ideas|suggestions)\\b|\\bwhat'?s (around|near) (me|here)\\b"
+        .'|\\bwas (ist|geht) (los|ab)\\b|^was geht\\b|\\bwas soll ich (machen|tun)\\b|\\blangweilig\\b/u';
+
     private const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     private const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -81,7 +99,11 @@ final class RequestRouter
             return ['kind' => 'clarify', 'date' => $context->date];
         }
 
-        if (preg_match('/^(hi|hello|hey|hallo|moin|good (morning|afternoon|evening))[!. ]*$|what can you do|how (can|do) you help|^help[?!. ]*$|who are you/u', $t)) {
+        if (preg_match(self::GREETING, $t)) {
+            return ['kind' => 'around', 'date' => $context->today];
+        }
+
+        if (preg_match('/what can you do|how (can|do) you help|^help[?!. ]*$|who are you/u', $t)) {
             return ['kind' => 'help', 'date' => $date];
         }
 
@@ -93,6 +115,11 @@ final class RequestRouter
         // "When should I leave for the cinema?": today's event, by its title or venue.
         if (($event = $this->eventTrip($t, $context)) !== null) {
             return ['kind' => 'journey', 'date' => $context->today, 'event' => $event];
+        }
+
+        // "Show me departures to Cafe Nova in City Center": a trip to that place, today.
+        if ($this->date($t, $context, $context->today) === $context->today && ($trip = $this->tripTo($text)) !== null) {
+            return ['kind' => 'journey', 'date' => $context->today, ...$trip];
         }
 
         // On your way (Travel's "I'm on my way"): where to get off, when you'll be there, what's next.
@@ -201,6 +228,13 @@ final class RequestRouter
             return ['kind' => 'discovery', 'date' => $date];
         }
 
+        // Open about now: what's around you. About another day, it's that day's plan.
+        if (preg_match(self::OPEN, $t)) {
+            $day = $this->date($t, $context, $context->today);
+
+            return $day === $context->today ? ['kind' => 'around', 'date' => $day] : ['kind' => 'proposal', 'date' => $day, 'appointment' => false];
+        }
+
         return ['kind' => 'clarify', 'date' => $date];
     }
 
@@ -222,6 +256,33 @@ final class RequestRouter
         }
 
         return $bare;
+    }
+
+    /**
+     * The place a trip is to, as typed ("Cafe Nova"), the area named with it ("City
+     * Center") and a time to leave at ("at 18:30"); null when the words aren't a trip to a
+     * named place.
+     *
+     * @return array{place: string, area: ?string, at: ?string}|null
+     */
+    private function tripTo(string $text): ?array
+    {
+        $text = trim(str_replace(['’', '‘'], "'", $text));
+        $sure = preg_match(self::TRIP_TO, $text, $m) === 1;
+        if (! $sure && preg_match(self::GO_TO, $text, $m) !== 1) {
+            return null;
+        }
+        $at = preg_match('/\s+at\s+(\d{1,2}):(\d{2})\b/u', $m['place'], $time) === 1 && (int) $time[1] < 24 && (int) $time[2] < 60
+            ? sprintf('%02d:%s', $time[1], $time[2]) : null;
+        $place = (string) preg_replace(['/^(the|my)\s+/iu', '/\s+(at \d{1,2}:\d{2}|right now|now|today|tonight|please|pls|asap|from here)\b.*$/iu'], '', trim($m['place']));
+        $place = rtrim($place, ' ?.!,');
+        $area = null;
+        if (preg_match('/^(?<place>.+?)\s+(?:in|near|at|by)\s+(?:the\s+)?(?<area>[^,]+)$/iu', $place, $a) === 1) {
+            [$place, $area] = [trim($a['place']), trim($a['area'])];
+        }
+
+        return mb_strlen($place) >= 3 && mb_strlen($place) <= 80 && ($sure || preg_match('/\p{Lu}/u', $place) === 1)
+            ? ['place' => $place, 'area' => $area, 'at' => $at] : null;
     }
 
     /** "When should I leave for the cinema?" (model.js eventTrip): the id of today's event it names. */
