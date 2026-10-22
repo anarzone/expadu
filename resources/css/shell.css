@@ -1095,3 +1095,16 @@ html {
         animation: none;
     }
 }
+
+/* Who reads the request, said before Send (Composer's AI line, as under its own box). */
+.composer-tray .composer-ai-notice {
+    margin: 8px 6px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.45;
+}
+.composer-tray .composer-ai-notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
