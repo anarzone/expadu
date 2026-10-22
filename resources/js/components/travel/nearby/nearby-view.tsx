@@ -16,7 +16,7 @@ import { LineStrip, StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
-import { MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
+import { LiftLine, MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
 import { StopPicker } from './stop-picker';
 import { closestNow, closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
@@ -91,8 +91,6 @@ type NearbyViewProps = {
     favouriteBusy?: boolean;
     /** The person's saved step-free need: Step-free starts on. */
     stepFreeNeed?: boolean;
-    /** The major headline's "Plan a trip": opens the planner. */
-    onPlanTrip?: () => void;
 };
 
 /** The app's open easing (Composer's tray). */
@@ -241,7 +239,6 @@ export function NearbyView({
     onToggleFavourite,
     favouriteBusy = false,
     stepFreeNeed = false,
-    onPlanTrip,
 }: NearbyViewProps) {
     const now = useClock();
     // Their own need starts Step-free on; Clear filters still clears it.
@@ -596,7 +593,7 @@ export function NearbyView({
     // clock, struck through, then "Cancelled" in red (no pill).
     const cancelTag = (dir: ShownDir) =>
         dir.cancelledClocks.length ? (
-            <span className="nearby-cancelled">
+            <span className="tl-cancelled">
                 {dir.cancelled ? null : (
                     <>
                         <s>{dir.cancelledClocks.join(' · ')}</s>{' '}
@@ -879,6 +876,7 @@ export function NearbyView({
 
     return (
         <div className="nearby" data-view="list" ref={root}>
+            <MajorHeadline station={station} />
             {station.unknown_stop ? (
                 <div className="nearby-banner is-labelled">
                     <TravelBanner
@@ -887,16 +885,6 @@ export function NearbyView({
                         title={`“${station.unknown_stop}” isn’t a KVB stop`}
                     >
                         Showing the closest station instead.
-                    </TravelBanner>
-                </div>
-            ) : liftOut ? (
-                <div className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind="conflict"
-                        icon={<TravelIcon name="lift" />}
-                        title={`A lift at ${station.name} is out of order`}
-                    >
-                        {lifts.out.map((lift) => lift.label).join('; ')}
                     </TravelBanner>
                 </div>
             ) : wait ? (
@@ -935,6 +923,14 @@ export function NearbyView({
                             {placesKind}
                         </TravelChip>
                         {timesLabel}
+                        {liftOut ? (
+                            <TravelChip
+                                kind="conflict"
+                                icon={<TravelIcon name="lift" />}
+                            >
+                                Lift out of order
+                            </TravelChip>
+                        ) : null}
                     </span>
                 </div>
                 <button
@@ -1009,7 +1005,7 @@ export function NearbyView({
                     </button>
                 ) : null}
             </div>
-            <MajorHeadline station={station} onPlanTrip={onPlanTrip} />
+            <LiftLine station={station} />
             <div className="nearby-list">
                 {v.areas.length ? (
                     v.areas.map((area, index) => (

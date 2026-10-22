@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { KvbNoticeLink } from '../kvb-notice';
+import { GermanToggle, Headline } from '../headline';
+import type { HeadlineGerman } from '../headline';
+import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
-import { lineLook } from '../line-look';
 import { TravelIcon } from '../travel-icon';
 import type { Station } from './types';
 import { noticeWords } from './types';
 
 /**
  * Delays and disruptions on the station board, in two tiers (the delays
- * canvas the owner agreed, 22 Oct 2026): a major problem on this stop's lines
- * gets the one headline above the board ("and 1 more" for the rest);
- * everything else stays small, in its line's row.
+ * canvas the owner agreed, 22 Oct 2026; mock design/disruption-tiers): a
+ * major problem on this stop's lines gets the one headline at the top of the
+ * board ("and 1 more" for the rest); everything else stays small, in place.
  */
 
 type Notice = Station['notices'][number];
@@ -32,11 +33,6 @@ const vehicles = (mode: Trouble['mode'], count: number) =>
           : count === 1
             ? 'tram'
             : 'trams';
-
-const listed = (items: string[]) =>
-    items.length < 2
-        ? (items[0] ?? '')
-        : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
 /** The majors on this stop's lines: notices first, then lines whose own runs are in trouble. */
 export function majorsOf(station: Station) {
@@ -83,69 +79,22 @@ export function rowNoticesOf(
     return byLine;
 }
 
-function Badges({ lines }: { lines: string[] }) {
-    return (
-        <span className="nearby-major-badges">
-            {lines.map((line) => {
-                const look = lineLook(
-                    line,
-                    Number(line) >= 100 ? 'bus' : 'tram',
-                );
+/** Whose notice it is, as the headline's source line says it. */
+const sourceOf = (notice: Notice) =>
+    fromKvb(notice)
+        ? 'From KVB’s notice'
+        : notice.source === 'vrs-trias'
+          ? 'From VRS’s notice'
+          : notice.source === 'delfi'
+            ? 'From the DELFI notice'
+            : 'From the operator’s notice';
 
-                return (
-                    <span
-                        key={line}
-                        className={cn('nearby-badge', look.bus && 'is-bus')}
-                        style={
-                            {
-                                '--line': look.colour,
-                                '--ink': look.ink,
-                            } as CSSProperties
-                        }
-                    >
-                        {line}
-                    </span>
-                );
-            })}
-        </span>
-    );
-}
-
-/** The notice's own German words, one more tap away, with KVB's page. */
-function German({ notice }: { notice: Notice }) {
-    return (
-        <div className="nearby-notice-german" lang="de">
-            <p>
-                {notice.title}
-                {notice.details ? ` ${notice.details}` : ''}
-            </p>
-            {notice.url ? <KvbNoticeLink url={notice.url} /> : null}
-        </div>
-    );
-}
-
-function GermanToggle({
-    notice,
-    open,
-    onToggle,
-}: {
-    notice: Notice;
-    open: boolean;
-    onToggle: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            className="nearby-notice-de"
-            aria-expanded={open}
-            onClick={onToggle}
-        >
-            {fromKvb(notice)
-                ? 'KVB’s words, in German'
-                : 'In German, as published'}
-        </button>
-    );
-}
+const germanOf = (notice: Notice): HeadlineGerman => ({
+    title: notice.title,
+    details: notice.details,
+    url: notice.url,
+    kvb: fromKvb(notice),
+});
 
 /** A label when the English is a checked literal translation, not a brief. */
 function Translated({ notice }: { notice: Notice }) {
@@ -156,49 +105,90 @@ function Translated({ notice }: { notice: Notice }) {
     ) : null;
 }
 
-function troubleWords(t: Trouble) {
-    const what = `line ${t.line} to ${t.dest}`;
+const range = (values: number[]) => {
+    const low = Math.min(...values);
+    const high = Math.max(...values);
 
+    return low === high ? String(low) : `${low}–${high}`;
+};
+
+/** A live major's words: what the departures say, and what to do. */
+function troubleWords(t: Trouble) {
     if (t.kind === 'cancelled') {
+        const share =
+            t.count === t.of ? 'All' : t.count * 2 > t.of ? 'Most' : 'Half the';
+
         return {
-            headline:
-                t.count === t.of
-                    ? `The next ${t.count} ${vehicles(t.mode, t.count)} on ${what} are cancelled`
-                    : `${t.count} of the next ${t.of} ${vehicles(t.mode, t.of)} on ${what} are cancelled`,
-            text: `Cancelled: ${t.runs.map((r) => r.time).join(' · ')}.`,
+            title: `${share} line ${t.line} ${vehicles(t.mode, 2)} towards ${t.dest} are cancelled for the next hour`,
+            text: `${t.count} of the next ${t.of} runs are cancelled in the live times.`,
+            todo: 'Plan another way.',
         };
     }
 
+    const late = range(t.runs.map((r) => r.delay));
+
     return {
-        headline: `The next ${t.count} ${vehicles(t.mode, t.count)} on ${what} are 15+ min late`,
-        text: `Running ${listed(t.runs.map((r) => String(r.delay)))} min late.`,
+        title: `Line ${t.line} is running ${late} min late`,
+        text: `Run after run, ${vehicles(t.mode, 2)} on line ${t.line} are ${late} min behind the timetable in the live times.`,
+        todo: `Allow ${late} min more, or plan another way.`,
     };
 }
 
+type Major =
+    | { key: string; notice: Notice; trouble?: never }
+    | { key: string; trouble: Trouble; notice?: never };
+
+/** One major, in the shared headline. */
+function MajorItem({ item, level }: { item: Major; level: 'h2' | 'h3' }) {
+    if (item.notice) {
+        const { headline, text, lang } = noticeWords(item.notice);
+
+        return (
+            <Headline
+                lines={item.notice.lines}
+                title={headline}
+                text={text}
+                lang={lang}
+                level={level}
+                german={germanOf(item.notice)}
+                source={sourceOf(item.notice)}
+                chip={
+                    lang === 'de' ? (
+                        <InGermanChip fromKvb={fromKvb(item.notice)} />
+                    ) : (
+                        <Translated notice={item.notice} />
+                    )
+                }
+            />
+        );
+    }
+
+    const words = troubleWords(item.trouble);
+
+    return (
+        <Headline
+            lines={[item.trouble.line]}
+            title={words.title}
+            text={words.text}
+            todo={words.todo}
+            level={level}
+            source="From the live times · no KVB notice"
+        />
+    );
+}
+
 /**
- * The one headline: a major problem on this stop's lines, in English when a
- * brief or checked translation passed, with KVB's own words a tap away.
- * Further majors wait behind "and 1 more".
+ * The one headline at the top of the board: a major problem on this stop's
+ * lines, in English when a brief or checked translation passed, with the
+ * notice's own words a tap away. Further majors wait behind "and N more".
  */
-export function MajorHeadline({
-    station,
-    onPlanTrip,
-}: {
-    station: Station;
-    onPlanTrip?: () => void;
-}) {
-    const [german, setGerman] = useState('');
+export function MajorHeadline({ station }: { station: Station }) {
     const [more, setMore] = useState(false);
     const { notices, trouble } = majorsOf(station);
-    const items = [
-        ...notices.map((n) => ({
-            key: n.id,
-            notice: n as Notice | null,
-            trouble: null as Trouble | null,
-        })),
+    const items: Major[] = [
+        ...notices.map((notice) => ({ key: notice.id, notice })),
         ...trouble.map((t) => ({
-            key: `${t.line}|${t.dest}`,
-            notice: null,
+            key: `${t.line}|${t.dest}|${t.kind}`,
             trouble: t,
         })),
     ];
@@ -207,71 +197,19 @@ export function MajorHeadline({
         return null;
     }
 
-    const shown = more ? items : items.slice(0, 1);
-
     return (
         <section className="nearby-major" aria-label="Major disruption">
-            {shown.map((item, index) => {
-                const words = item.notice
-                    ? noticeWords(item.notice)
-                    : troubleWords(item.trouble!);
-                const lang = item.notice ? noticeWords(item.notice).lang : 'en';
-                const lines = item.notice
-                    ? item.notice.lines
-                    : [item.trouble!.line];
-                const Heading = index ? 'h3' : 'h2';
-
-                return (
-                    <div key={item.key} className="nearby-major-item">
-                        <span className="nearby-major-icon" aria-hidden="true">
-                            <TravelIcon name="alert" />
-                        </span>
-                        <div className="nearby-major-body">
-                            <Badges lines={lines} />
-                            <Heading lang={lang}>{words.headline}</Heading>
-                            {item.notice ? (
-                                <Translated notice={item.notice} />
-                            ) : null}
-                            {words.text ? (
-                                <p lang={lang}>{words.text}</p>
-                            ) : null}
-                            <div className="nearby-major-actions">
-                                {onPlanTrip && index === 0 ? (
-                                    <button
-                                        type="button"
-                                        className="nearby-major-plan"
-                                        onClick={onPlanTrip}
-                                    >
-                                        Plan a trip
-                                    </button>
-                                ) : null}
-                                {item.notice && lang === 'en' ? (
-                                    <GermanToggle
-                                        notice={item.notice}
-                                        open={german === item.key}
-                                        onToggle={() =>
-                                            setGerman(
-                                                german === item.key
-                                                    ? ''
-                                                    : item.key,
-                                            )
-                                        }
-                                    />
-                                ) : item.notice?.url ? (
-                                    <KvbNoticeLink url={item.notice.url} />
-                                ) : null}
-                            </div>
-                            {item.notice && german === item.key ? (
-                                <German notice={item.notice} />
-                            ) : null}
-                        </div>
-                    </div>
-                );
-            })}
+            {(more ? items : items.slice(0, 1)).map((item, index) => (
+                <MajorItem
+                    key={item.key}
+                    item={item}
+                    level={index ? 'h3' : 'h2'}
+                />
+            ))}
             {items.length > 1 ? (
                 <button
                     type="button"
-                    className="nearby-major-more"
+                    className="tl-german nearby-major-more"
                     aria-expanded={more}
                     onClick={() => setMore(!more)}
                 >
@@ -283,51 +221,96 @@ export function MajorHeadline({
 }
 
 /**
- * A minor notice under its line's row: one English line, the brief on tap,
- * and the notice's German one more tap away.
+ * An everyday notice: one line under the row it explains, a tap for the
+ * full English, then the German (mock labels.js `reason`).
  */
-export function NoticeLine({ notice }: { notice: Notice }) {
+function ReasonLine({
+    lines,
+    short,
+    lang = 'en',
+    chip,
+    children,
+}: {
+    lines?: string;
+    short: string;
+    lang?: 'en' | 'de';
+    chip?: ReactNode;
+    children: ReactNode;
+}) {
     const [open, setOpen] = useState(false);
-    const [german, setGerman] = useState(false);
-    const { headline, text, lang } = noticeWords(notice);
 
     return (
-        <div className="nearby-notice">
+        <div className={cn('tl-reason', open && 'is-open')}>
             <button
                 type="button"
-                className="nearby-notice-line"
+                className="tl-reason-line"
                 aria-expanded={open}
-                onClick={() => {
-                    setOpen(!open);
-                    setGerman(false);
-                }}
+                onClick={() => setOpen(!open)}
             >
                 <TravelIcon name="info" />
                 <span>
-                    <strong>{notice.lines.join(' · ')}</strong>
-                    {' · '}
-                    <span lang={lang}>{headline}</span>
+                    {chip}
+                    {lines ? (
+                        <>
+                            <strong>{lines}</strong>
+                            {' · '}
+                        </>
+                    ) : null}
+                    <span lang={lang}>{short}</span>
                 </span>
-                <TravelIcon name={open ? 'up' : 'down'} />
+                <TravelIcon name="down" />
             </button>
-            {open ? (
-                <div className="nearby-notice-open">
-                    <Translated notice={notice} />
-                    {text ? <p lang={lang}>{text}</p> : null}
-                    {lang === 'en' ? (
-                        <GermanToggle
-                            notice={notice}
-                            open={german}
-                            onToggle={() => setGerman(!german)}
-                        />
-                    ) : notice.url ? (
-                        <KvbNoticeLink url={notice.url} />
-                    ) : null}
-                    {lang === 'en' && german ? (
-                        <German notice={notice} />
-                    ) : null}
-                </div>
-            ) : null}
+            {open ? <div className="tl-reason-more">{children}</div> : null}
         </div>
+    );
+}
+
+/** A minor notice under the first row of a line it names. */
+export function NoticeLine({ notice }: { notice: Notice }) {
+    const { headline, text, lang } = noticeWords(notice);
+
+    return (
+        <ReasonLine
+            lines={notice.lines.join(' · ')}
+            short={headline}
+            lang={lang}
+            chip={
+                lang === 'de' ? (
+                    <InGermanChip fromKvb={fromKvb(notice)} />
+                ) : null
+            }
+        >
+            <Translated notice={notice} />
+            {text ? <p lang={lang}>{text}</p> : null}
+            {lang === 'en' ? (
+                <GermanToggle german={germanOf(notice)} />
+            ) : notice.url ? (
+                <KvbNoticeLink url={notice.url} />
+            ) : null}
+        </ReasonLine>
+    );
+}
+
+/** A lift out of order: everyday, one line over the board (which platforms it serves isn't recorded). */
+export function LiftLine({ station }: { station: Station }) {
+    const out = station.lifts.known ? station.lifts.out : [];
+
+    if (!out.length) {
+        return null;
+    }
+
+    return (
+        <ReasonLine
+            short={
+                out.length === 1
+                    ? `A lift at ${station.name} is out of order`
+                    : `${out.length} lifts at ${station.name} are out of order`
+            }
+        >
+            <p>{`Out of order: ${out.map((lift) => lift.label).join('; ')}.`}</p>
+            <p>
+                KVB’s lift status doesn’t say which platforms each lift serves.
+            </p>
+        </ReasonLine>
     );
 }

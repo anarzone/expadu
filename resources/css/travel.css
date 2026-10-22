@@ -1497,9 +1497,10 @@
     background: var(--color-action-hover);
 }
 
-/* Delays and disruptions in two tiers (the delays canvas the owner agreed,
-   22 Oct 2026). Everyday ones stay small and in place: a cancelled run is
-   its time struck through with "Cancelled", never a filled pill. */
+/* ---------- Disruptions in two tiers (labels.css) ---------- */
+/* Owner, 22 Oct 2026, "Delays and disruptions" canvas: everyday ones stay
+   small and in place, a major one gets one headline. A cancelled run is its
+   time struck through, never a filled pill. */
 .tl-cancelled {
     display: inline-flex;
     align-items: baseline;
@@ -1512,17 +1513,98 @@
 .tl-cancelled s {
     text-decoration-thickness: 1.5px;
 }
-/* A major one: the one headline on a screen. */
+/* An everyday notice: one line under the row it explains. */
+.tl-reason {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+}
+.tl-reason-line {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    text-align: left;
+    cursor: pointer;
+}
+.tl-reason-line .tl-chip {
+    margin-right: 6px;
+}
+.tl-reason-line svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+}
+.tl-reason-line > svg:last-child {
+    transition: rotate 200ms ease;
+}
+.tl-reason.is-open .tl-reason-line > svg:last-child {
+    rotate: 180deg;
+}
+.tl-reason-more {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    max-width: 62ch;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-canvas);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.tl-reason-more p {
+    margin: 0;
+}
+/* KVB's own words, one tap further than the English. */
+.tl-german {
+    justify-self: start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.tl-german-text {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.tl-german-text a {
+    color: inherit;
+    font-weight: var(--weight-semibold);
+}
+/* A major one: the one headline on the screen. */
 .tl-headline {
     display: grid;
     gap: 8px;
+    justify-items: start;
     padding: 18px 20px;
     border: 1px solid var(--color-conflict-border);
     border-radius: var(--radius-xl);
     background: var(--color-conflict-bg);
     color: var(--color-text);
 }
-.tl-headline-top {
+.tl-headline-top,
+.tl-headline-badges {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1541,9 +1623,9 @@
 .tl-headline-mark svg {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
 }
-.tl-headline h2 {
+.tl-headline h2,
+.tl-headline h3 {
     margin: 0;
     font-size: var(--text-title-sm);
     font-weight: var(--weight-bold);
@@ -1555,39 +1637,20 @@
     font-size: var(--text-body);
     line-height: 1.5;
 }
-.tl-headline-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-8);
-    margin-top: 4px;
-}
-.tl-german {
-    justify-self: start;
-    min-height: 36px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--color-text);
-    font: inherit;
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    cursor: pointer;
-}
-.tl-german-text {
-    display: grid;
-    gap: 6px;
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
+.tl-headline .tl-german-text {
     font-size: var(--text-control);
-    line-height: 1.5;
-}
-.tl-german-text p {
-    margin: 0;
 }
 .tl-source {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
+}
+.tl-reason-line:focus-visible,
+.tl-german:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tl-reason-line > svg:last-child {
+        transition: none;
+    }
 }

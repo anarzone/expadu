@@ -297,9 +297,7 @@ export function NextTripCard({
 
     // A major problem on its lines: the card is its headline.
     if (trip.major && (trip.major.notice || trip.major.trouble)) {
-        return (
-            <TripMajor id={id} trip={trip} major={trip.major} onPlan={onPlan} />
-        );
+        return <TripMajor trip={trip} major={trip.major} onPlan={onPlan} />;
     }
 
     const journey = trip.journey;
@@ -559,12 +557,10 @@ const continued = (words: string) =>
  * major only through this card, so only when it touches your day.
  */
 function TripMajor({
-    id,
     trip,
     major,
     onPlan,
 }: {
-    id: string;
     trip: NextTrip;
     major: NonNullable<NextTrip['major']>;
     onPlan?: () => void;
@@ -588,36 +584,26 @@ function TripMajor({
             : null;
         const kvb = notice.source?.startsWith('kvb') ?? false;
 
+        // In English when a brief passed its checks; else the card says it
+        // in English and KVB's own German is a tap away, as on the board.
         return (
             <Headline
-                id={`${id}-major`}
                 lines={notice.lines}
                 title={
                     words.lang === 'en'
                         ? `${to}: ${continued(words.headline)}`
                         : `${to}: a notice on line${notice.lines.length > 1 ? 's' : ''} ${notice.lines.join(', ')}`
                 }
-                text={
-                    words.lang === 'en'
-                        ? words.text
-                        : [words.headline, words.text].filter(Boolean).join(' ')
-                }
-                textLang={words.lang}
-                german={
-                    words.lang === 'en'
-                        ? {
-                              words: [notice.title, notice.details]
-                                  .filter(Boolean)
-                                  .join(' '),
-                              url: notice.url,
-                              kvb,
-                          }
-                        : null
-                }
+                text={words.lang === 'en' ? words.text : null}
+                german={{
+                    title: notice.title,
+                    details: notice.details,
+                    url: notice.url,
+                    kvb,
+                }}
                 source={`${kvb ? 'KVB’s notice' : 'Notice'}${since ? ` of ${since}` : ''}`}
-            >
-                {action}
-            </Headline>
+                action={action}
+            />
         );
     }
 
@@ -628,7 +614,6 @@ function TripMajor({
 
     return (
         <Headline
-            id={`${id}-major`}
             lines={[trouble.line]}
             title={
                 late
@@ -646,8 +631,7 @@ function TripMajor({
                     : null
             }
             source="From the live times · no notice"
-        >
-            {action}
-        </Headline>
+            action={action}
+        />
     );
 }

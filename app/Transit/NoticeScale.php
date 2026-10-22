@@ -5,20 +5,25 @@ namespace App\Transit;
 /**
  * Whether a transit notice is a major line problem (a headline) or an
  * everyday one (small, in place), by the delays canvas the owner agreed
- * (22 Oct 2026, the design session's spec). Worked out in code from the
- * notice's own words, never by the model, with the reasons so the page can
- * say why.
+ * ("Notices + live data", 22 Oct 2026). Worked out in code from the notice's
+ * own words, lines and grade, never by the model, with the reasons so the
+ * page can say why.
  *
  * Major: the line doesn't serve part of its route (suspended, closed track or
- * tunnel, ends early, runs in sections, replacement buses), or a strike. How
- * long it runs doesn't matter. Everything else is minor: a diversion, a stop
- * moved or skipped, delays, a lift. (A line whose runs at a stop are mostly
- * cancelled or very late is major too: NearbyStation::trouble.)
+ * tunnel, ends early, runs in sections, replacement buses, skips stops on a
+ * diversion); the notice is graded critical or major; it names three or more
+ * tram lines at once; or a strike. How long it runs doesn't matter. Everything
+ * else is minor: a diversion, a stop moved, delays, a lift. (A line whose runs
+ * at a stop are mostly cancelled or very late is major too:
+ * NearbyStation::trouble.)
  */
 final class NoticeScale
 {
+    /** Tram lines named at once that make a notice major. */
+    public const MANY_LINES = 3;
+
     /** Reasons that make a notice major on their own. */
-    private const MAJOR = ['suspended', 'cut_short', 'replacement', 'split', 'strike'];
+    private const MAJOR = ['suspended', 'cut_short', 'replacement', 'split', 'strike', 'graded', 'many_lines'];
 
     /** @var array<string, string> reason => pattern over the notice's German words */
     private const PATTERNS = [
@@ -36,9 +41,11 @@ final class NoticeScale
     ];
 
     /**
+     * @param  list<string>  $lines  the lines it names
+     * @param  string|null  $severity  its grade (KVB's scraper: critical, major, moderate, minor)
      * @return array{scale: 'major'|'minor', reasons: list<string>}
      */
-    public static function of(string $title, ?string $details): array
+    public static function of(string $title, ?string $details, array $lines = [], ?string $severity = null): array
     {
         $text = $title.' '.(string) $details;
         $reasons = [];
@@ -47,7 +54,18 @@ final class NoticeScale
                 $reasons[] = $reason;
             }
         }
+        if (in_array($severity, ['critical', 'major'], true)) {
+            $reasons[] = 'graded';
+        }
+        // Tram lines are KVB's numbered ones below 100; buses are 100 and up.
+        $trams = array_filter($lines, fn ($line) => ctype_digit((string) $line) && (int) $line < 100);
+        if (count(array_unique($trams)) >= self::MANY_LINES) {
+            $reasons[] = 'many_lines';
+        }
 
-        return ['scale' => array_intersect($reasons, self::MAJOR) !== [] ? 'major' : 'minor', 'reasons' => $reasons];
+        $major = array_intersect($reasons, self::MAJOR) !== []
+            || (in_array('diverted', $reasons, true) && in_array('stops_skipped', $reasons, true));
+
+        return ['scale' => $major ? 'major' : 'minor', 'reasons' => $reasons];
     }
 }

@@ -30,7 +30,7 @@ class NearbyStation
 
     private const WALK_KMH = 4.5;
 
-    /** Cancelled runs one way in the next hour that put a line in trouble (and more than half). */
+    /** Cancelled runs one way in the next hour that put a line in trouble (and at least half). */
     private const TROUBLE_CANCELLED = 2;
 
     /** Minutes late that count towards a line in trouble. */
@@ -414,7 +414,7 @@ class NearbyStation
     /**
      * A line in trouble at this stop by its own runs, one way (the delays
      * canvas, 22 Oct 2026): most of the next hour's runs cancelled (at least
-     * two, and more than half), or three in a row each 15+ min late, or every
+     * two, and all or at least half), or three in a row each 15+ min late, or every
      * run in the next 30 min (at least two) that late. Only what the feeds
      * say: lateness only from live times, none while they're paused.
      *
@@ -429,7 +429,7 @@ class NearbyStation
             $hour = $runs->filter(fn (array $r) => CarbonImmutable::parse($r['at'])->lte($now->addHour()))->values();
             $gone = $hour->where('cancelled', true);
             $brief = fn ($list) => $list->map(fn (array $r) => ['time' => $r['time'], 'delay' => $r['delay'], 'cancelled' => $r['cancelled']])->values()->all();
-            if ($gone->count() >= self::TROUBLE_CANCELLED && $gone->count() * 2 > $hour->count()) {
+            if ($gone->count() >= self::TROUBLE_CANCELLED && $gone->count() * 2 >= $hour->count()) {
                 $trouble[] = ['line' => $way['line'], 'mode' => $way['mode'], 'dest' => $way['dest'], 'kind' => 'cancelled',
                     'count' => $gone->count(), 'of' => $hour->count(), 'runs' => $brief($gone)];
 

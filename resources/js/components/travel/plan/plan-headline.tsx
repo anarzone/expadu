@@ -81,7 +81,6 @@ export function PlanHeadline({
 
         return (
             <Headline
-                id="plan-major"
                 lines={notice.lines}
                 title={words.headline}
                 lang={words.lang}
@@ -92,17 +91,13 @@ export function PlanHeadline({
                         ? 'The ways below don’t use them.'
                         : null
                 }
-                german={
-                    words.lang === 'en'
-                        ? {
-                              words: [notice.title, notice.details]
-                                  .filter(Boolean)
-                                  .join(' '),
-                              url: notice.url ?? null,
-                              kvb: notice.source?.startsWith('kvb') ?? false,
-                          }
-                        : null
-                }
+                // Its German a tap away; already German: KVB's page only.
+                german={{
+                    title: notice.title,
+                    details: notice.details,
+                    url: notice.url,
+                    kvb: notice.source?.startsWith('kvb') ?? false,
+                }}
                 source={`${publisher(notice.source)}${since ? ` of ${since}` : ''}`}
             />
         );
@@ -120,7 +115,6 @@ export function PlanHeadline({
 
     return (
         <Headline
-            id="plan-major"
             lines={[trouble.line]}
             title={
                 late

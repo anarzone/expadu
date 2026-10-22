@@ -73,7 +73,7 @@ export type Station = {
         severity: string;
         /** A major line problem (a headline) or an everyday one (small, in place). */
         scale?: 'major' | 'minor';
-        /** Why (NoticeScale): suspended, cut_short, replacement, split, strike, graded, many_lines, diverted, stops_skipped, stop_moved, delays. */
+        /** Why (NoticeScale): suspended, cut_short, replacement, split, strike, graded, many_lines, diverted, stops_skipped, stop_moved, delays; not_started (announced ahead). */
         reasons?: string[];
         lines: string[];
         source: string | null;
