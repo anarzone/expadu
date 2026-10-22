@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
 
@@ -108,14 +109,8 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
         [],
     );
 
-    /** "Use my location": asks the browser, anchors, and starts following. */
-    const locate = useCallback(() => {
-        if (!enabled) {
-            setError('off');
-
-            return;
-        }
-
+    /** Asks the browser, anchors, and starts following. */
+    const fix = useCallback(() => {
         if (!navigator.geolocation) {
             setError('unsupported');
 
@@ -153,7 +148,52 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
             },
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
         );
-    }, [enabled, confirm]);
+    }, [confirm]);
+
+    /** "Use my location": with location sharing on. */
+    const locate = useCallback(() => {
+        if (!enabled) {
+            setError('off');
+
+            return;
+        }
+
+        fix();
+    }, [enabled, fix]);
+
+    /**
+     * Location sharing was off: asked here, where your location is wanted,
+     * rather than in Settings. On, then located.
+     */
+    const allow = useCallback(async () => {
+        setLocating(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/user-settings', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: JSON.stringify({ settings: { share_location: true } }),
+            });
+
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+        } catch {
+            setLocating(false);
+            setError('unsaved');
+
+            return;
+        }
+
+        router.reload({ only: ['userSettings'] });
+        fix();
+    }, [fix]);
 
     // On open, with permission already granted: one precise fix, at most
     // every five minutes across visits, silent on failure.
@@ -289,12 +329,13 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
         error,
         following,
         locate,
+        allow,
         stopFollowing: () => setFollowing(false),
     };
 }
 
 export const locateErrorText: Record<LocateError, string> = {
-    off: 'Location sharing is off. Pick a stop instead, or turn it on in Settings.',
+    off: 'Location sharing is off. Share your location to see the station closest to you, or pick a stop.',
     unsupported:
         'Location isn’t available on this device. Pick a stop instead.',
     blocked:

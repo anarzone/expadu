@@ -51,7 +51,16 @@ function aroundHereHref(stop: NonNullable<Step['stop']>) {
     return `/explore?${params}`;
 }
 
-export function PlanChecks({ checks }: { checks: Check[] }) {
+export function PlanChecks({
+    checks,
+    onTicket,
+    ticketBusy = false,
+}: {
+    checks: Check[];
+    /** "I have a Deutschlandticket" (or not): said here, then planned again. */
+    onTicket?: (held: boolean) => void;
+    ticketBusy?: boolean;
+}) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -65,15 +74,18 @@ export function PlanChecks({ checks }: { checks: Check[] }) {
             >
                 <strong>We checked today’s conditions</strong>
                 <span className="plan-check-chips tl-chips">
-                    {checks.map((check) => (
-                        <TravelChip
-                            key={check.title}
-                            kind={check.tone}
-                            icon={<TravelIcon name={check.icon} />}
-                        >
-                            {check.short}
-                        </TravelChip>
-                    ))}
+                    {/* The fare is in the list, not a chip: the chips are today's conditions. */}
+                    {checks
+                        .filter((check) => !check.ticket)
+                        .map((check) => (
+                            <TravelChip
+                                key={check.title}
+                                kind={check.tone}
+                                icon={<TravelIcon name={check.icon} />}
+                            >
+                                {check.short}
+                            </TravelChip>
+                        ))}
                 </span>
                 <span className="plan-checks-more">
                     {open ? 'Hide' : 'Details'}
@@ -116,6 +128,19 @@ export function PlanChecks({ checks }: { checks: Check[] }) {
                         ) : (
                             <span>{check.text}</span>
                         )}
+                        {check.ticket && onTicket ? (
+                            <button
+                                type="button"
+                                className="plan-ticket-toggle"
+                                aria-pressed={check.ticket.held}
+                                disabled={ticketBusy}
+                                onClick={() => onTicket(!check.ticket!.held)}
+                            >
+                                {check.ticket.held
+                                    ? 'I don’t have one'
+                                    : 'I have a Deutschlandticket'}
+                            </button>
+                        ) : null}
                     </p>
                 ))}
             </div>
