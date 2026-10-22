@@ -88,6 +88,8 @@ class DisruptionService
                     'scale_reasons' => $scale['reasons'],
                     'type' => 'line',
                     'affected_lines' => $n->affected_lines ?? [],
+                    // The stops it names (VRS's and DELFI's notices), for a trip's From and To.
+                    'affected_stops' => $n->affected_stops ?? [],
                     // A live KVB notice's published_at is when it was last seen
                     // (every scrape); it started when it was first seen.
                     'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),

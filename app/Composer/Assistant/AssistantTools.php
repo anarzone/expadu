@@ -321,9 +321,9 @@ final class AssistantTools
     {
         $to = trim((string) ($input['to'] ?? ''));
         $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
-        // "Café Nova in Deutz" (a tapped choice, copied as is) is Café Nova, in Deutz.
-        if ($area === null && preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
-            [$to, $area] = [trim($m[1]), PlanDay::areas([$m[2]])[0]];
+        // "Café Nova in Deutz" (a tapped choice, copied as is) is Café Nova, in Deutz, whether or not the area came too.
+        if (preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
+            [$to, $area] = [trim($m[1]), $area ?? PlanDay::areas([$m[2]])[0]];
         }
         // "How far is it?" is about the place this conversation's last trip went to, by its name and
         // area. Asked for by name again, the place finder picks the one meant before and offers the others.
@@ -358,7 +358,10 @@ final class AssistantTools
         // The place it's to, by name, so the answer may name it ("Café Nova in Deutz is about 4.4 km away").
         $to = isset($extra['destination']['name']) ? "Trip to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
 
-        return $this->line($id, $to.trim(($extra['title'] ?? '').' '.$answer['text']));
+        // A major problem on the way, in its own checked words, so the answer agrees with the headline.
+        $major = isset($extra['major']) ? "\nMajor problem on the way: {$extra['major']['title']}.".($extra['major']['text'] !== null ? " {$extra['major']['text']}" : '') : '';
+
+        return $this->line($id, $to.trim(($extra['title'] ?? '').' '.$answer['text']).$major);
     }
 
     /** KVB notices on the lines named, or on the lines at their nearest stop; public notices only. */
