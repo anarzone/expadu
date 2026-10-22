@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Ai\LlmRollout;
 use App\Composer\ActivePlanStore;
 use App\Composer\Answers\Answers;
+use App\Composer\Answers\AroundNow;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AnthropicPromptParser;
 use App\Composer\AppointmentRepository;
@@ -204,22 +205,29 @@ class ComposerController extends Controller
     {
         $validated = $request->validated();
         $profile = $profiles->build($request->user());
-        $permit = $parser instanceof AnthropicPromptParser && isset($validated['processing'])
-            ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
-                AnthropicPromptParser::processingContext($validated['text'], $profile), $validated['processing'])
-            : null;
-
-        $parsed = $parser->parse(
-            $validated['text'],
-            $profile,
-            CarbonImmutable::now('Europe/Berlin'),
-            $permit,
-        );
+        $now = CarbonImmutable::now('Europe/Berlin');
         // Which kind of answer the request wants (the approved Composer's order), and
         // whether Composer answers it itself (the `answer` command) rather than planning.
-        $routed = $answers->route($request->user(), $validated['text'], CarbonImmutable::now('Europe/Berlin'),
+        $routed = $answers->route($request->user(), $validated['text'], $now,
             app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        $answered = Answers::handles($routed, $parsed->intent);
+        $ai = $parser instanceof AnthropicPromptParser && isset($validated['processing']);
+        // An open request ("What's up?") or one nothing specific matched: the same AI call
+        // may write the lead of what's around you now, from what's on and the weather only.
+        $around = $ai && AroundNow::opens($routed) ? app(AroundNow::class)->listings($now) : null;
+        $facts = $around !== null ? AroundNow::prompt($around) : null;
+        $permit = $ai
+            ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
+                AnthropicPromptParser::processingContext($validated['text'], $profile, $facts), $validated['processing'])
+            : null;
+
+        $parsed = $parser instanceof AnthropicPromptParser
+            ? $parser->parse($validated['text'], $profile, $now, $permit, $facts)
+            : $parser->parse($validated['text'], $profile, $now, $permit);
+        if ($around !== null) {
+            app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
+        }
+        // A lead the AI wrote means it read the message as open ("wat do"), whatever its intent.
+        $answered = Answers::handles($routed, $parsed->intent) || ($around !== null && $parsed->reply !== []);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }

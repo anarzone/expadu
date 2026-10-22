@@ -64,6 +64,15 @@ final class RequestRouter
         'swimming' => '/\b(swim|swimming|lake|bathing)\b/u',
     ];
 
+    /** A greeting and nothing else ("hi", "Hallo!"): what's around you now. */
+    private const GREETING = '/^(hi|hiya|hello|hey|hallo|moin|servus|yo|good (morning|afternoon|evening|day))( there| composer| expadu)?[!.,? ]*$/u';
+
+    /** Casual or open messages (owner, 22 Oct 2026): "What's up?", "I'm bored", "anything fun?", "what should I do". */
+    private const OPEN = "/\\bw(h)?at'?s+ *u+p+\\b|\\bwh?at up\\b|\\bwass?up\\b|^sup\\b|\\bwhat'?s (new|good|happening|going on)\\b|\\bhow'?s it going\\b|\\bhow are (you|u)\\b"
+        ."|\\b(i'?m|im|i am|so|feeling|i feel) bored\\b|^bored\\b|\\banything (fun|good|interesting|nice|cool|exciting)\\b|\\bsomething (fun|interesting|cool)\\b"
+        ."|\\bwhat (should|can|could|shall) (i|we) do\\b|\\bwhat to do\\b|\\bentertain me\\b|\\bany (ideas|suggestions)\\b|\\bwhat'?s (around|near) (me|here)\\b"
+        .'|\\bwas (ist|geht) (los|ab)\\b|^was geht\\b|\\bwas soll ich (machen|tun)\\b|\\blangweilig\\b/u';
+
     private const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
     private const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -81,7 +90,11 @@ final class RequestRouter
             return ['kind' => 'clarify', 'date' => $context->date];
         }
 
-        if (preg_match('/^(hi|hello|hey|hallo|moin|good (morning|afternoon|evening))[!. ]*$|what can you do|how (can|do) you help|^help[?!. ]*$|who are you/u', $t)) {
+        if (preg_match(self::GREETING, $t)) {
+            return ['kind' => 'around', 'date' => $context->today];
+        }
+
+        if (preg_match('/what can you do|how (can|do) you help|^help[?!. ]*$|who are you/u', $t)) {
             return ['kind' => 'help', 'date' => $date];
         }
 
@@ -199,6 +212,13 @@ final class RequestRouter
 
         if (preg_match('/outdoor|park|fresh air|walk|discover/u', $t)) {
             return ['kind' => 'discovery', 'date' => $date];
+        }
+
+        // Open about now: what's around you. About another day, it's that day's plan.
+        if (preg_match(self::OPEN, $t)) {
+            $day = $this->date($t, $context, $context->today);
+
+            return $day === $context->today ? ['kind' => 'around', 'date' => $day] : ['kind' => 'proposal', 'date' => $day, 'appointment' => false];
         }
 
         return ['kind' => 'clarify', 'date' => $date];
