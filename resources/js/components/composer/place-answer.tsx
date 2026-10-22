@@ -10,15 +10,33 @@ export type AnsweredPlace = {
     distance: string | null;
     area: string | null;
     href: string;
+    /** Where the place comes from, for its credit; cards stored without it were OSM's. */
+    source?: 'osm' | 'overture' | 'transit';
+};
+
+/** Each source asks for its own credit where it's shown; timetable stops need none. */
+const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
+    osm: 'OpenStreetMap contributors (ODbL)',
+    overture: 'Overture Maps Foundation',
 };
 
 /*
  * "Somewhere nearby to play football" as the approved nearby answer draws it
  * (composer-studio app.js `nearbyCards`): compact cards, nearest first, each
- * with its kind and distance, opening the place in Around here. The data is
- * OpenStreetMap's (ODbL), which asks for credit where it's shown.
+ * with its kind and distance, opening the place in Around here (or Travel).
+ * Each source the cards come from is credited once, as each asks.
  */
 export function PlaceAnswer({ places }: { places: AnsweredPlace[] }) {
+    const credits = [
+        ...new Set(
+            places.flatMap((place) => {
+                const credit = CREDITS[place.source ?? 'osm'];
+
+                return credit ? [credit] : [];
+            }),
+        ),
+    ];
+
     return (
         <>
             <ul className="nearby-answer" role="list">
@@ -50,9 +68,11 @@ export function PlaceAnswer({ places }: { places: AnsweredPlace[] }) {
                     );
                 })}
             </ul>
-            <div className="answer-actions place-answer-actions">
-                <span>From OpenStreetMap contributors (ODbL)</span>
-            </div>
+            {credits.length > 0 && (
+                <div className="answer-actions place-answer-actions">
+                    <span>From {credits.join(' and ')}</span>
+                </div>
+            )}
         </>
     );
 }
