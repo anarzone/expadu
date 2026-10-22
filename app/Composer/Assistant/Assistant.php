@@ -132,14 +132,18 @@ final class Assistant
      * and what was answered, what it showed (listings, places) and the places its trips went to.
      *
      * @param  list<array<string, mixed>>  $messages  the conversation's messages before the one being answered
-     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>}}
+     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>, places: list<array{name: string, area: ?string}>}}
      */
     public static function history(array $messages): array
     {
-        $suggested = ['event' => [], 'spot' => [], 'areas' => []];
+        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => []];
         foreach ($messages as $m) {
-            if (is_array($m) && ($m['role'] ?? null) === 'assistant' && isset($m['destination']['area'])) {
-                $suggested['areas'][] = (string) $m['destination']['area'];
+            if (is_array($m) && ($m['role'] ?? null) === 'assistant' && isset($m['destination']['name'])) {
+                // The places its trips went to, latest first: "how far is it?" means the last one.
+                array_unshift($suggested['places'], ['name' => (string) $m['destination']['name'], 'area' => $m['destination']['area'] ?? null]);
+                if (isset($m['destination']['area'])) {
+                    $suggested['areas'][] = (string) $m['destination']['area'];
+                }
             }
         }
         $suggested['areas'] = array_values(array_unique($suggested['areas']));

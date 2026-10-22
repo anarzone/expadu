@@ -74,8 +74,9 @@ final class Ask
         if ($answer !== null) {
             return $this->workspace->answer($user, $conversation, self::message($answer['text'], $answer['blocks'], [
                 'written' => 'ai',
-                // What the AI was given (the fine print), and the line inviting the opt-in without it.
+                // What the AI was given (the fine print, in its words), and the line inviting the opt-in without it.
                 'read' => $answer['looked'] ?: null,
+                'looked_at' => self::lookedAt($answer['looked'], $now) ?: null,
                 'invite' => $answer['invite'] ?: null,
                 'taste' => $answer['taste'] ?: null,
             ]), $answer['token']);
@@ -91,9 +92,9 @@ final class Ask
 
     /**
      * An answer as the conversation keeps it: the AI's checked words (`lead`), the cards in
-     * its order (`blocks`, which the page draws by type), and, until it does, the same
-     * cards in the fields today's answer view reads, with Composer's own words for its
-     * cards in `text`.
+     * its order (`blocks`, which the page draws by type; a card's own `text` is said when it
+     * is `private` or the lead is empty), and, until the page draws them, the same cards in
+     * the fields today's answer view reads, with `text` the words in one voice.
      *
      * @param  list<array<string, mixed>>  $blocks
      * @param  array<string, mixed>  $meta
@@ -105,7 +106,9 @@ final class Ask
         $trip = $first('trip');
         $record = $first('checklist');
         $guidance = $first('guidance');
-        $own = collect($blocks)->filter(fn (array $b): bool => in_array($b['type'], ['note', 'choices', 'checklist', 'trip'], true) && filled($b['text'] ?? null))->pluck('text');
+        // One voice: Composer's own words for a card only when the AI couldn't say it (the
+        // person's own records, which it never reads) or said nothing itself.
+        $own = collect($blocks)->filter(fn (array $b): bool => filled($b['text'] ?? null) && (($b['private'] ?? false) || $lead === ''))->pluck('text');
         $sources = collect($blocks)->flatMap(fn (array $b): array => $b['sources'] ?? [])->unique('href')->values()->all();
         $suggestions = collect([...collect($blocks)->flatMap(fn (array $b): array => $b['type'] === 'choices' ? $b['options'] : ($b['suggestions'] ?? []))->all(),
             ...($meta['suggestions'] ?? [])])->unique('label')->values()->all();
@@ -129,6 +132,25 @@ final class Ask
             ...array_diff_key($meta, ['suggestions' => true]),
             'suggestions' => $suggestions ?: null,
         ], fn ($value) => $value !== null && $value !== '')];
+    }
+
+    /**
+     * What the AI read to answer, as the fine print names it ("Written by AI from your nearest
+     * stop and the trip planner"). The person's own cards aren't among them: it never reads those.
+     *
+     * @param  list<string>  $looked  AssistantTools::looked()
+     * @return list<string>
+     */
+    public static function lookedAt(array $looked, CarbonImmutable $now): array
+    {
+        $words = [
+            'listings' => $now->setTimezone('Europe/Berlin')->format('H') >= 17 ? 'tonight’s listings' : 'today’s listings',
+            'places' => 'places', 'weather' => 'the weather', 'location' => 'your nearest stop and Veedel', 'departures' => 'departures',
+            'trip' => 'the trip planner', 'planner' => 'the day planner', 'notices' => 'KVB notices', 'guidance' => 'reviewed paperwork guides',
+            'my_places' => 'your saved places’ names', 'taste' => 'what you like', 'plans' => 'your plans',
+        ];
+
+        return array_values(array_unique(array_filter(array_map(fn (string $key): ?string => $words[$key] ?? null, $looked))));
     }
 
     /** Why the AI didn't answer: it's off, it wasn't asked to, the day's limit, or it failed. */

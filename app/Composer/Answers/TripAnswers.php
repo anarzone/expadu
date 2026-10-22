@@ -91,7 +91,7 @@ final class TripAnswers
         // Leaving at the time named, when it's still to come; otherwise now.
         $leave = isset($request['at']) ? $now->setTimeFromTimeString($request['at']) : $now;
         $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), 3);
-        $journey = $result->source === 'degraded' ? null : ($result->journeys[0] ?? null)?->toArray();
+        $journey = self::named($result->source === 'degraded' ? null : ($result->journeys[0] ?? null)?->toArray());
         if ($journey === null) {
             return $this->reply("I can’t find a connection to {$name} right now. Travel can look again.", null, null, [$plan]);
         }
@@ -171,6 +171,24 @@ final class TripAnswers
         return '/timetable?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng]);
     }
 
+    /**
+     * The journey with each line as riders read it: "RB27", not the feed's "RB27 (10635)"
+     * with its train's run number (owner's preview, 22 Oct 2026).
+     *
+     * @param  array<string, mixed>|null  $journey
+     * @return array<string, mixed>|null
+     */
+    private static function named(?array $journey): ?array
+    {
+        if (! is_array($journey) || ! is_array($journey['legs'] ?? null)) {
+            return $journey;
+        }
+        $journey['legs'] = array_map(fn (mixed $leg): mixed => is_array($leg) && is_string($leg['line'] ?? null)
+            ? [...$leg, 'line' => trim((string) preg_replace('/\s*\(\d+\)$/', '', $leg['line']))] : $leg, $journey['legs']);
+
+        return $journey;
+    }
+
     /** The trip under way, when it's to the plan starting at this time (the appointment). */
     public function onWayTo(User $user, ?string $start): bool
     {
@@ -208,6 +226,7 @@ final class TripAnswers
             return $text === null ? null : $this->reply($text, null, null, [['label' => 'Open Travel', 'href' => '/timetable']]);
         }
 
+        $trip['journey'] = self::named($trip['journey'] ?? null);
         $legs = $trip['journey']['legs'] ?? [];
         $ride = collect($legs)->first(fn (array $leg): bool => $this->rides($leg));
         $city = $trip['city'] ?? null;
@@ -254,7 +273,7 @@ final class TripAnswers
     public function onTheWay(User $user, string $ask, CarbonImmutable $now): ?array
     {
         $active = ActiveTrip::currentFor($user);
-        $journey = $active?->journey;
+        $journey = self::named($active?->journey);
         if (! is_array($journey) || ($journey['legs'] ?? []) === []) {
             return null;
         }
