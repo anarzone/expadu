@@ -107,6 +107,13 @@ class AnthropicPromptParser implements ParsesPrompt
     /** The last call's tokens and time, for composer:eval's cost and latency. */
     public ?array $usage = null;
 
+    /** Everyday names for Veedel, as people type them (eval, 22 Oct 2026: "Something in the Südstadt this evening" lost its area). */
+    private const AREA_NAMES = [
+        'südstadt' => 'Neustadt-Süd', 'suedstadt' => 'Neustadt-Süd', 'sudstadt' => 'Neustadt-Süd',
+        'old town' => 'Altstadt-Nord', 'altstadt' => 'Altstadt-Nord', 'belgisches viertel' => 'Neustadt-Nord',
+        'belgian quarter' => 'Neustadt-Nord', 'agnesviertel' => 'Neustadt-Nord', 'kwartier latäng' => 'Neustadt-Süd',
+    ];
+
     public function __construct(private readonly HeuristicPromptParser $fallback) {}
 
     private function toolSchema(): array
@@ -291,10 +298,10 @@ class AnthropicPromptParser implements ParsesPrompt
             return [];
         }
 
-        $known = collect(config('veedels', []))
-            ->flatten()
-            ->filter(fn (mixed $area): bool => is_string($area))
-            ->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area]);
+        $names = collect(config('veedels', []))->flatten()->filter(fn (mixed $area): bool => is_string($area));
+        $known = $names->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area])
+            // What people call them, when the model returns that instead of the Veedel's name.
+            ->union(collect(self::AREA_NAMES)->filter(fn (string $veedel): bool => $names->contains($veedel)));
 
         return collect($areas)
             ->filter(fn (mixed $area): bool => is_string($area))

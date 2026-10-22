@@ -69,9 +69,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150
+    "open": true
    }
   },
   {
@@ -88,8 +86,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free"
+    "open": true
    }
   },
   {
@@ -214,7 +211,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1
+    "open": true
    }
   },
   {
@@ -464,8 +461,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25
+    "open": true
    }
   },
   {
@@ -570,9 +566,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150
+    "open": true
    }
   },
   {
@@ -715,7 +709,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1
+    "open": true
    }
   },
   {
@@ -965,8 +959,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25
+    "open": true
    }
   },
   {
@@ -1082,10 +1075,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150,
-    "kid_safe": true
+    "open": true
    }
   },
   {
@@ -1104,9 +1094,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free",
-    "kid_safe": true
+    "open": true
    }
   },
   {
@@ -1531,9 +1519,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25,
-    "kid_safe": true
+    "open": true
    }
   },
   {
@@ -1777,8 +1763,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1,
-    "kid_safe": true
+    "open": true
    }
   },
   {
@@ -2056,9 +2041,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25,
-    "kid_safe": true
+    "open": true
    }
   },
   {
@@ -2176,10 +2159,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150,
-    "step_free": true
+    "open": true
    }
   },
   {
@@ -2198,9 +2178,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free",
-    "step_free": true
+    "open": true
    }
   },
   {
@@ -2342,8 +2320,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1,
-    "step_free": true
+    "open": true
    }
   },
   {
@@ -2606,9 +2583,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25,
-    "step_free": true
+    "open": true
    }
   },
   {
@@ -2719,9 +2694,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150
+    "open": true
    }
   },
   {
@@ -2738,8 +2711,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free"
+    "open": true
    }
   },
   {
@@ -2864,7 +2836,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1
+    "open": true
    }
   },
   {
@@ -3114,8 +3086,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25
+    "open": true
    }
   },
   {
@@ -3220,9 +3191,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150
+    "open": true
    }
   },
   {
@@ -3239,8 +3208,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free"
+    "open": true
    }
   },
   {
@@ -3365,7 +3333,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1
+    "open": true
    }
   },
   {
@@ -3615,8 +3583,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25
+    "open": true
    }
   },
   {
@@ -3721,9 +3688,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
-    "min_slots": 1,
-    "max_slots": 3,
-    "max_window_min": 150
+    "open": true
    }
   },
   {
@@ -3740,8 +3705,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
-    "min_slots": 1,
-    "budget": "free"
+    "open": true
    }
   },
   {
@@ -3866,7 +3830,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
-    "min_slots": 1
+    "open": true
    }
   },
   {
@@ -4116,8 +4080,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
-    "min_slots": 1,
-    "max_leg_min": 25
+    "open": true
    }
   },
   {

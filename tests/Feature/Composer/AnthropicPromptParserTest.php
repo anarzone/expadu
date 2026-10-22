@@ -316,3 +316,15 @@ it('plans from now when a plan names no time', function () {
         ->and($plan->windowStart->format('H:i'))->toBe('14:15')
         ->and($plan->categories)->toBe(['pitch']);
 });
+
+test('an area named the everyday way is its Veedel ("Südstadt" is Neustadt-Süd)', function () {
+    $now = CarbonImmutable::parse('2026-06-10 17:00', 'Europe/Berlin');
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => $now->addHour()->toIso8601String(),
+        'window_end' => $now->addHours(4)->toIso8601String(),
+        'areas' => ['Südstadt', 'Belgisches Viertel'],
+    ]);
+
+    expect(parseWithConsent('Something in the Südstadt this evening', llmProfile(), $now)->plan->areas)->toBe(['Neustadt-Süd', 'Neustadt-Nord']);
+});
