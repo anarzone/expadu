@@ -29,6 +29,7 @@ const tokens = new Set();
 const walk = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name);
+
         if (entry.isDirectory()) {
             walk(full);
         } else if (CODE.test(entry.name)) {
@@ -59,16 +60,22 @@ const split = (list) => {
     const out = [];
     let depth = 0;
     let start = 0;
+
     for (let i = 0; i < list.length; i++) {
         const c = list[i];
-        if (c === '\\') i++;
-        else if (c === '(' || c === '[') depth++;
-        else if (c === ')' || c === ']') depth--;
-        else if (c === ',' && depth === 0) {
+
+        if (c === '\\') {
+i++;
+} else if (c === '(' || c === '[') {
+depth++;
+} else if (c === ')' || c === ']') {
+depth--;
+} else if (c === ',' && depth === 0) {
             out.push(list.slice(start, i));
             start = i + 1;
         }
     }
+
     out.push(list.slice(start));
 
     return out.map((s) => s.trim()).filter(Boolean);
@@ -78,14 +85,22 @@ const split = (list) => {
 const required = (selector) => {
     const names = [];
     let depth = 0;
+
     for (let i = 0; i < selector.length; i++) {
         const c = selector[i];
-        if (c === '\\') i++;
-        else if (c === '(' || c === '[') depth++;
-        else if (c === ')' || c === ']') depth--;
-        else if (c === '.' && depth === 0) {
+
+        if (c === '\\') {
+i++;
+} else if (c === '(' || c === '[') {
+depth++;
+} else if (c === ')' || c === ']') {
+depth--;
+} else if (c === '.' && depth === 0) {
             const name = selector.slice(i + 1).match(/^-?[_a-zA-Z][\w-]*/)?.[0];
-            if (name) names.push(name);
+
+            if (name) {
+names.push(name);
+}
         }
     }
 
@@ -99,8 +114,10 @@ let selectorsDropped = 0;
 let rulesDropped = 0;
 
 root.walkRules((rule) => {
-    if (rule.parent?.type === 'atrule' && /keyframes$/.test(rule.parent.name))
-        return;
+    if (rule.parent?.type === 'atrule' && /keyframes$/.test(rule.parent.name)) {
+return;
+}
+
     const selectors = split(rule.selector);
     const live = selectors.filter((selector) => {
         const dead = required(selector).filter((name) => !rendered(name));
@@ -108,6 +125,7 @@ root.walkRules((rule) => {
 
         return dead.length === 0;
     });
+
     if (live.length === 0) {
         rule.remove();
         rulesDropped++;
@@ -119,6 +137,7 @@ root.walkRules((rule) => {
 
 // At-rules left empty (a @media whose rules all went).
 let emptied = true;
+
 while (emptied) {
     emptied = false;
     root.walkAtRules((atRule) => {
@@ -140,4 +159,7 @@ console.log(
 console.log(
     `unrendered classes (${unused.size}): ${[...unused].sort().join(' ')}`,
 );
-if (!dry) fs.writeFileSync(file, out);
+
+if (!dry) {
+fs.writeFileSync(file, out);
+}
