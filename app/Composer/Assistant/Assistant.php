@@ -66,7 +66,7 @@ final class Assistant
 
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
-        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip. "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", or a stretch of time with things to do: plan_day. "What's up?", "I'm bored", "anything fun?": search_events and search_places, with the weather. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
+        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", or a stretch of time with things to do: plan_day. "What's up?", "I'm bored", "anything fun?": search_events and search_places, with the weather. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("nope", "something else"), look again with leave_out_earlier and suggest something of another kind or in another area. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, say it first, in its words (the card leads with it too), then the way.
@@ -136,7 +136,7 @@ final class Assistant
      * and what was answered, what it showed (listings, places) and the places its trips went to.
      *
      * @param  list<array<string, mixed>>  $messages  the conversation's messages before the one being answered
-     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>, places: list<array{name: string, area: ?string}>}}
+     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>, places: list<array{name: string, area: ?string, start: ?array{name: string, area: ?string}}>}}
      */
     public static function history(array $messages): array
     {
@@ -144,7 +144,8 @@ final class Assistant
         foreach ($messages as $m) {
             if (is_array($m) && ($m['role'] ?? null) === 'assistant' && isset($m['destination']['name'])) {
                 // The places its trips went to, latest first: "how far is it?" means the last one.
-                array_unshift($suggested['places'], ['name' => (string) $m['destination']['name'], 'area' => $m['destination']['area'] ?? null]);
+                array_unshift($suggested['places'], ['name' => (string) $m['destination']['name'], 'area' => $m['destination']['area'] ?? null,
+                    'start' => isset($m['start']['name']) ? ['name' => (string) $m['start']['name'], 'area' => $m['start']['area'] ?? null] : null]);
                 if (isset($m['destination']['area'])) {
                     $suggested['areas'][] = (string) $m['destination']['area'];
                 }
@@ -165,7 +166,7 @@ final class Assistant
                 }
                 $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing)", $m['events'] ?? []),
                     ...array_map(fn (array $p): string => "\"{$p['name']}\" (place)", $m['places'] ?? []),
-                    ...(isset($m['destination']['name']) ? ["the way to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
+                    ...(isset($m['destination']['name']) ? ['the way'.(isset($m['start']['name']) ? " from \"{$m['start']['name']}\"" : '')." to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
                 $text .= $shown !== [] ? ' Shown: '.implode(', ', $shown).'.' : '';
             }
             $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 600)];
