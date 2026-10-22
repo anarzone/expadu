@@ -2,101 +2,82 @@
 
 namespace App\Composer\Answers;
 
-use App\Services\DisruptionService;
-use App\Transit\NearbyStation;
+use App\Transit\Dto\Journey;
+use App\Transit\TripDisruptions;
 use Throwable;
 
 /**
- * A major problem on a trip's way, for Composer's trip answer to lead with. It follows
- * the delays canvas the owner agreed, 22 Oct 2026: everyday delays stay small and in
- * place, and one headline goes to a major line problem.
+ * A major problem on a trip's way, for Composer's trip answer to lead with. It follows the
+ * delays canvas the owner agreed, 22 Oct 2026: everyday delays stay small and in place,
+ * and one headline goes to a major line problem.
  *
- * "Major" is the classified data's own call, never the model's. Two sources:
- * - a notice NoticeScale grades major, on a line the trip rides or at its From or To
- *   stop, worded by its checked English brief, with KVB's German behind it;
- * - live trouble at the stop where the trip boards (NearbyStation's rules: most of
- *   the hour's runs cancelled, or runs in a row 15+ min late), worded here from its
- *   own numbers.
- * Nothing else is said, and nothing is invented.
+ * It uses Travel's own rule (TripDisruptions), so Composer and Plan a trip agree:
+ * - a notice NoticeScale grades major, on a line the trip rides or on one serving its
+ *   From or To stop, even when the way avoids that line (the 1, 7 and 9 split is why
+ *   the way is a bus);
+ * - else live trouble on a line it rides, at the stop where it boards.
+ *
+ * Its words are the classified data's own: a notice's checked English brief, with KVB's
+ * German behind it, or live trouble worded here from its numbers. Nothing is invented.
  */
 final class TripTrouble
 {
-    public function __construct(private DisruptionService $disruptions, private NearbyStation $stations) {}
+    public function __construct(private TripDisruptions $disruptions) {}
 
     /**
-     * @param  array<string, mixed>  $journey  a journey as the trip answer carries it (lines without run numbers)
-     * @param  string|null  $city  the city a stop's name starts with ("Köln"), left off as the stop signs do
-     * @return array{title: string, text: ?string, source: 'notice'|'live', details: ?string}|null
+     * @param  array<string, mixed>  $journey  a journey as the trip answer carries it
+     * @param  bool  $boards  whether there's time to read the boarding stop's live board
+     * @return array{title: string, text: ?string, todo: ?string, source: 'notice'|'live', details: ?string}|null
      */
-    public function major(array $journey, ?string $city): ?array
-    {
-        $rides = collect($journey['legs'] ?? [])->filter(fn (mixed $leg): bool => is_array($leg) && ! in_array($leg['mode'] ?? 'walk', ['walk', 'bike'], true))->values();
-        if ($rides->isEmpty()) {
-            return null;
-        }
-        $stop = fn (?string $name): string => trim((string) preg_replace('/^'.preg_quote((string) $city, '/').'\s+/u', '', (string) $name));
-        $lines = $rides->pluck('line')->filter()->map(fn ($line): string => (string) $line)->unique()->values()->all();
-        $ends = array_values(array_filter([$stop($rides->first()['from']['name'] ?? null), $stop($rides->last()['to']['name'] ?? null)]));
-
-        return $this->notice($lines, $ends) ?? $this->live($rides->first(), $stop($rides->first()['from']['name'] ?? null));
-    }
-
-    /**
-     * A major notice on one of the trip's lines or at its From or To stop.
-     *
-     * @param  list<string>  $lines
-     * @param  list<string>  $ends
-     * @return array{title: string, text: ?string, source: 'notice', details: ?string}|null
-     */
-    private function notice(array $lines, array $ends): ?array
+    public function major(array $journey, ?string $city, bool $boards = true): ?array
     {
         try {
-            $notice = collect($this->disruptions->getLineDisruptions())->first(fn (array $d): bool => ($d['scale'] ?? 'minor') === 'major'
-                && (array_intersect(array_map('strval', $d['affected_lines'] ?? []), $lines) !== []
-                    || array_intersect(array_map(fn ($s): string => mb_strtolower((string) $s), $d['affected_stops'] ?? []), array_map('mb_strtolower', $ends)) !== []));
+            $trip = Journey::fromArray($journey);
+            if ($trip->legs === []) {
+                return null;
+            }
+            $found = $this->disruptions->for([$trip], $trip->legs[0]->from->point, $trip->legs[array_key_last($trip->legs)]->to->point, $boards);
         } catch (Throwable) {
             return null;
         }
-        if ($notice === null) {
-            return null;
-        }
-        $german = trim($notice['title']."\n".($notice['description'] ?? ''));
+        $ridden = array_map('strval', $trip->lines());
 
-        // Its checked English brief; without one, its own words, as Travel shows it.
-        return is_array($notice['brief'] ?? null)
-            ? ['title' => (string) $notice['brief']['headline'], 'text' => $notice['brief']['text'] ?: null, 'source' => 'notice', 'details' => $german]
-            : ['title' => (string) $notice['title'], 'text' => ($notice['description'] ?? '') !== '' ? $notice['description'] : null, 'source' => 'notice', 'details' => null];
-    }
+        // A notice on the lines it rides first, then one on a line at its From or To.
+        $notice = collect($found['notices'])->where('scale', 'major')->sortBy(fn (array $n): int => $n['on'] === 'ways' ? 0 : 1)->first();
+        if ($notice !== null) {
+            $german = trim($notice['title']."\n".($notice['details'] ?? ''));
+            $avoided = array_values(array_diff(array_map('strval', $notice['lines']), $ridden));
+            // What to do: only what the way itself shows, that it doesn't use those lines.
+            $todo = $notice['on'] === 'ends' && $avoided !== []
+                ? 'This way doesn’t use '.(count($avoided) === 1 ? "line {$avoided[0]}" : 'lines '.self::list($avoided)).'.' : null;
 
-    /**
-     * Live trouble on the first line the trip boards, at the stop where it boards it.
-     *
-     * @param  array<string, mixed>  $ride
-     * @return array{title: string, text: ?string, source: 'live', details: null}|null
-     */
-    private function live(array $ride, string $boarding): ?array
-    {
-        if ($boarding === '' || ! filled($ride['line'] ?? null)) {
-            return null;
+            return is_array($notice['brief'] ?? null)
+                ? ['title' => (string) $notice['brief']['headline'], 'text' => $notice['brief']['text'] ?: null, 'todo' => $todo, 'source' => 'notice', 'details' => $german]
+                : ['title' => (string) $notice['title'], 'text' => $notice['details'] ?? null, 'todo' => $todo, 'source' => 'notice', 'details' => null];
         }
-        try {
-            $trouble = collect($this->stations->named($boarding)['trouble'] ?? [])->first(fn (array $t): bool => (string) $t['line'] === (string) $ride['line']);
-        } catch (Throwable) {
-            return null;
-        }
+
+        $trouble = $found['trouble'][0] ?? null;
         if ($trouble === null) {
             return null;
         }
+        $stop = trim((string) preg_replace('/^'.preg_quote((string) $city, '/').'\s+/u', '', (string) ($trouble['stop'] ?? '')));
         $towards = $trouble['dest'] !== '' ? " towards {$trouble['dest']}" : '';
+        $at = $stop !== '' ? " at {$stop}" : '';
         if ($trouble['kind'] === 'cancelled') {
             return ['title' => "Line {$trouble['line']}: {$trouble['count']} of the next {$trouble['of']} runs cancelled",
-                'text' => "That’s by the live times at {$boarding}{$towards}. Travel can find you another way.", 'source' => 'live', 'details' => null];
+                'text' => "That’s by the live times{$at}{$towards}.", 'todo' => 'Travel can find you another way.', 'source' => 'live', 'details' => null];
         }
         $delays = array_column($trouble['runs'], 'delay');
         $late = min($delays) === max($delays) ? min($delays).' min' : min($delays).'–'.max($delays).' min';
 
         return ['title' => "Line {$trouble['line']} is running {$late} late",
-            'text' => "The next {$trouble['count']} runs{$towards} at {$boarding} are each 15 min or more late, by live times. Allow extra time, or let Travel find another way.",
-            'source' => 'live', 'details' => null];
+            'text' => "The next {$trouble['count']} runs{$towards}{$at} are each 15 min or more late, by live times.",
+            'todo' => 'Allow extra time, or let Travel find another way.', 'source' => 'live', 'details' => null];
+    }
+
+    /** @param  list<string>  $lines  "1, 7 and 9" */
+    private static function list(array $lines): string
+    {
+        return count($lines) < 2 ? implode('', $lines) : implode(', ', array_slice($lines, 0, -1)).' and '.end($lines);
     }
 }

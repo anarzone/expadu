@@ -378,7 +378,8 @@ final class AssistantTools
             ." to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
 
         // A major problem on the way, in its own checked words, so the answer agrees with the headline.
-        $major = isset($extra['major']) ? "\nMajor problem on the way: {$extra['major']['title']}.".($extra['major']['text'] !== null ? " {$extra['major']['text']}" : '') : '';
+        $major = isset($extra['major']) ? "\nMajor problem on the way: {$extra['major']['title']}.".($extra['major']['text'] !== null ? " {$extra['major']['text']}" : '')
+            .($extra['major']['todo'] !== null ? " {$extra['major']['todo']}" : '') : '';
 
         return $this->line($id, $to.trim(($extra['title'] ?? '').' '.$answer['text']).$major);
     }

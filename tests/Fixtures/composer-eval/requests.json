@@ -7481,6 +7481,24 @@
    "before": [
     "how do I get from Neumarkt to Weiden West?"
    ]
+  },
+  {
+   "id": "regression.from_neumarkt_deutz_messe",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how do I get from Neumarkt to Bf Deutz/Messe?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
   }
  ]
 }

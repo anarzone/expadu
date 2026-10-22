@@ -172,7 +172,8 @@ class EvaluateComposer extends Command
         $row['said'] = array_filter(['kind' => $answer['kind'] ?? null, 'lead' => $answer['lead'] ?? null, 'text' => $answer['text'] ?? null,
             // A trip's ends and the lines it rides, to see the start named was kept.
             'trip' => isset($answer['trip']) ? [($answer['start']['name'] ?? 'here').' → '.($answer['destination']['name'] ?? '?'),
-                collect($answer['trip']['journey']['legs'] ?? [])->pluck('line')->filter()->implode(', ')] : null,
+                collect($answer['trip']['journey']['legs'] ?? [])->pluck('line')->filter()->implode(', '),
+                ...(isset(collect($answer['blocks'] ?? [])->firstWhere('type', 'trip')['major']) ? ['major: '.collect($answer['blocks'])->firstWhere('type', 'trip')['major']['title']] : [])] : null,
             'blocks' => $blocks, 'written' => $answer['written'] ?? null, 'without_ai' => $answer['without_ai'] ?? null,
             'looked' => $answer['read'] ?? null, 'events' => array_column($answer['events'] ?? [], 'title'), 'places' => array_column($answer['places'] ?? [], 'name'),
             'next' => array_column($answer['suggestions'] ?? [], 'label')], fn ($v) => $v !== null && $v !== []);

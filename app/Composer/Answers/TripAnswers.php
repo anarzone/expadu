@@ -39,8 +39,14 @@ final class TripAnswers
     /** Ways of travelling a person may ask for or rule out ("by tram", "without trains"). */
     public const KINDS = ['tram', 'bus', 'train'];
 
-    /** How long a trip to a named place may take to plan, in seconds. */
-    private const BUDGET_SECONDS = 8.0;
+    /** How long a trip to a named place may take to plan, in seconds: Composer's replies stay under 6 s. */
+    private const BUDGET_SECONDS = 3.5;
+
+    /** Past this many seconds of planning, the boarding stops' live boards aren't read (the notices still are). */
+    private const BOARDS_WITHIN_SECONDS = 2.0;
+
+    /** Whether there's time to read the boarding stops' boards for this answer. */
+    private bool $boards = true;
 
     public function __construct(
         private DayProjection $day,
@@ -119,7 +125,9 @@ final class TripAnswers
         $leave = isset($request['at']) ? $now->setTimeFromTimeString($request['at']) : $now;
         $wanted = array_values(array_intersect((array) ($request['by'] ?? []), self::KINDS));
         $avoided = array_values(array_intersect((array) ($request['avoid'] ?? []), self::KINDS));
+        $planning = hrtime(true);
         $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), $wanted !== [] || $avoided !== [] ? 6 : 3);
+        $this->boards = (hrtime(true) - $planning) / 1e9 < self::BOARDS_WITHIN_SECONDS;
         $journeys = $result->source === 'degraded' ? [] : array_map(fn ($journey): ?array => self::named($journey->toArray()), $result->journeys);
         // A way of travelling asked for picks among Travel's ways; none that fits is said, never hidden.
         $fits = array_values(array_filter($journeys, fn (array $j): bool => collect($j['legs'])->filter(fn (array $leg): bool => $this->rides($leg))
@@ -547,7 +555,7 @@ final class TripAnswers
             'title' => $title,
             'trip' => $trip,
             // A major problem on the way leads the answer (TripTrouble); everyday delays stay on the legs.
-            'major' => is_array($trip['journey'] ?? null) ? $this->trouble->major($trip['journey'], $trip['city'] ?? null) : null,
+            'major' => is_array($trip['journey'] ?? null) ? $this->trouble->major($trip['journey'], $trip['city'] ?? null, $this->boards) : null,
             'suggestions' => $suggestions ?: null,
         ], fn ($value) => $value !== null)];
     }
