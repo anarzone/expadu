@@ -2,8 +2,11 @@
 
 use App\Composer\Answers\RequestRouter;
 use App\Composer\Answers\RouterContext;
+use App\Composer\HeuristicPromptParser;
+use App\Composer\PromptIntent;
 use App\Models\Spot;
 use App\Models\User;
+use App\Profile\ProfileEngine;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -22,7 +25,7 @@ use Illuminate\Support\Facades\Redis;
 test('a trip to a named place is read with its area and time; an outing stays an outing', function (string $text, ?array $trip) {
     $routed = app(RequestRouter::class)->route($text, new RouterContext(today: '2026-10-22', date: '2026-10-22'));
 
-    expect($trip === null ? $routed['kind'] !== 'journey' || ! isset($routed['place'])
+    expect($trip === null ? $routed['kind'] !== 'journey' || (! isset($routed['place']) && ! ($routed['again'] ?? false))
         : $routed['kind'] === 'journey' && array_intersect_key($routed, $trip) === $trip)->toBeTrue();
 })->with([
     ['show me departures to go Cafe Nova in City Center', ['place' => 'Cafe Nova', 'area' => 'City Center', 'at' => null]],
@@ -31,7 +34,23 @@ test('a trip to a named place is read with its area and time; an outing stays an
     ['I want to go to Cafe Nova at 18:30', ['place' => 'Cafe Nova', 'at' => '18:30']],
     ['I want to go to the park', null],
     ['take me to Cafe Nova tomorrow', null],
+    ['how can i go to the cafe nova?', ['place' => 'cafe nova', 'area' => null]],
+    ['hw cna i get to cafe nova', ['place' => 'cafe nova']],
+    ['whats the way to cafe nova', ['place' => 'cafe nova']],
+    ['directions to neumarkt please', ['place' => 'neumarkt']],
+    ['how far is it to the zoo?', ['place' => 'zoo']],
+    ['how do I reach Kölner Dom', ['place' => 'Kölner Dom']],
+    ['how do i get there?', ['again' => true]],
+    ['what is the best way to spend the afternoon', null],
+    ['I am on my way to work', null],
 ]);
+
+test('the keyword reader knows a trip as the router does, to the place named', function () {
+    $parsed = app(HeuristicPromptParser::class)->parse('how can i go to the cafe nova?', app(ProfileEngine::class)->build(User::factory()->onboarded()->create()),
+        CarbonImmutable::parse('2026-10-22 13:50', 'Europe/Berlin'));
+
+    expect($parsed->intent)->toBe(PromptIntent::TakeMeThere)->and($parsed->query)->toBe('cafe nova');
+});
 
 test('Composer plans the trip to the place named, in the area named, from where you are', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:40', 'Europe/Berlin'));
@@ -82,7 +101,6 @@ test('Composer plans the trip to the place named, in the area named, from where 
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'show me departures to go Cafe Nova in City Center'])->assertOk();
     $reply = collect($this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'answer'])->assertOk()
         ->json('conversations.0.messages'))->last();
-    Redis::del("confirmed_location:{$user->id}");
 
     expect($routes->to?->lng)->toBe(6.9530)
         ->and($reply)->kind->toBe('trip')->request->toBe('journey')
@@ -90,4 +108,14 @@ test('Composer plans the trip to the place named, in the area named, from where 
         ->text->toBe('Leave at 12:44 to be at Cafe Nova in Altstadt-Nord by 13:07. Live times have it on time.')
         ->and($reply['trip'])->link->toBe('plan')->basis->toBe('live')
         ->and($reply['trip']['for']['place'])->toBe('Cafe Nova');
+
+    // A follow-up about the same place plans the trip there again.
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'message', 'text' => 'how can i go there?'])->assertOk();
+    $routes->to = null;
+    $again = collect($this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'answer'])->assertOk()
+        ->json('conversations.0.messages'))->last();
+    Redis::del("confirmed_location:{$user->id}");
+
+    expect($routes->to?->lng)->toBe(6.9530)->and($again)->kind->toBe('trip')
+        ->and($again['destination'])->toBe(['name' => 'Cafe Nova', 'area' => 'Altstadt-Nord']);
 });

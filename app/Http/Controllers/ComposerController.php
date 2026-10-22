@@ -26,6 +26,7 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
+use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -233,6 +234,11 @@ class ComposerController extends Controller
             : $parser->parse($validated['text'], $profile, $now, $permit);
         if ($around !== null) {
             app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
+        }
+        // A trip the AI read ("take_me_there") where the words alone didn't say so: to its place.
+        if ($parsed->intent === PromptIntent::TakeMeThere && filled($parsed->query) && in_array($routed['kind'], Answers::UNSPECIFIC, true) && ! isset($routed['place'])) {
+            Answers::tripHint($request->user(), $validated['text'], (string) $parsed->query);
+            $routed = $answers->route($request->user(), $validated['text'], $now, app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
         }
         $answered = Answers::handles($routed, $parsed->intent);
 
