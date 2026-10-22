@@ -5581,7 +5581,7 @@
    "text": "how can i go to the cafe nova?",
    "expect": {
     "routed": "answer",
-    "answer_kind": "text"
+    "answer_kind": "choices"
    }
   },
   {
@@ -5599,7 +5599,7 @@
    "text": "hw cna i get to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "text"
+    "answer_kind": "choices"
    }
   },
   {
@@ -5617,7 +5617,7 @@
    "text": "whats the way to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "text"
+    "answer_kind": "choices"
    }
   },
   {
@@ -7153,6 +7153,184 @@
     "open": true
    },
    "personalised": true
+  },
+  {
+   "id": "regression.whats_up",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "What's up?",
+   "expect": {
+    "open": true,
+    "around": true
+   }
+  },
+  {
+   "id": "regression.bored",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I'm bored",
+   "expect": {
+    "open": true,
+    "around": true
+   }
+  },
+  {
+   "id": "regression.bored_nope",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true,
+    "around": true
+   },
+   "before": [
+    "I'm bored"
+   ]
+  },
+  {
+   "id": "regression.bored_nope_cheaper",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   },
+   "before": [
+    "I'm bored",
+    "nope, I want something else"
+   ]
+  },
+  {
+   "id": "regression.cafe_nova",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how can I go to the cafe nova?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": [
+     "choices",
+     "trip"
+    ]
+   }
+  },
+  {
+   "id": "regression.cafe_nova_how_far",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how far is it?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": [
+     "choices",
+     "trip"
+    ]
+   },
+   "before": [
+    "how can I go to the cafe nova?"
+   ]
+  },
+  {
+   "id": "regression.suedstadt_evening",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "Something in the Südstadt this evening",
+   "expect": {
+    "routed": "compose",
+    "area": "Neustadt-Süd",
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "regression.where_am_i",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "where I am?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "where"
+   }
+  },
+  {
+   "id": "regression.bored_suggest",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I'm feeling bored today, what do you suggest?",
+   "expect": {
+    "open": true,
+    "around": true
+   }
   }
  ]
 }

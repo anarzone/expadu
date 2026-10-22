@@ -4,31 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Ai\LlmRollout;
 use App\Composer\ActivePlanStore;
-use App\Composer\Answers\Answers;
-use App\Composer\Answers\AroundNow;
 use App\Composer\AnthropicCandidateRanker;
-use App\Composer\AnthropicPromptParser;
 use App\Composer\AppointmentRepository;
-use App\Composer\Assistant\Assistant;
+use App\Composer\Assistant\Ask;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\Contracts\EstimatesTravel;
-use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
 use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
 use App\Composer\PaperworkGlance;
-use App\Composer\ParsedPrompt;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
 use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
-use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -40,8 +34,6 @@ use App\Day\DayProjection;
 use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
-use App\Http\Requests\ParseComposerPromptRequest;
-use App\Models\BureaucracyProcessingConsent;
 use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
@@ -52,7 +44,6 @@ use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
 use App\Privacy\ProcessingConsentStore;
-use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
@@ -77,7 +68,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Day Composer endpoints: parse, compose, and swap. Composition adds an
+ * Day Composer endpoints: ask, compose, and swap. Composition adds an
  * optional grounded LLM preference layer, while the deterministic pipeline
  * retains authority over facts, constraints, travel, and timing. Intermediate
  * recommendations live in Redis; WorkspaceStore persists confirmed plans and chat.
@@ -199,125 +190,26 @@ class ComposerController extends Controller
     }
 
     /**
-     * The single parse call: classify intent + extract payload. The result
-     * carries the intent so the frontend renders the right surface (plan,
-     * verified answer, or search), plus `source` so a degraded parse is
-     * framed honestly. The parser never picks venues or answers questions.
+     * One message, answered (owner, 22 Oct 2026: one assistant for every message): the
+     * person's last message in their conversation, under their say-so for this request
+     * (`processing`), from where they start (the page's From, or their browser's position).
+     * The answer, and a plan it showed, go into the workspace, which comes back.
      */
-    public function parse(ParseComposerPromptRequest $request, ParsesPrompt $parser, ProfileEngine $profiles, Answers $answers): JsonResponse
+    public function ask(Request $request, Ask $ask): JsonResponse
     {
-        $validated = $request->validated();
-        $profile = $profiles->build($request->user());
-        $now = CarbonImmutable::now('Europe/Berlin');
-        // Which kind of answer the request wants (the approved Composer's order), and
-        // whether Composer answers it itself (the `answer` command) rather than planning.
-        $routed = $answers->route($request->user(), $validated['text'], $now,
-            app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        $ai = $parser instanceof AnthropicPromptParser && isset($validated['processing']);
-        // An open request ("What's up?") or one nothing specific matched: the same AI call
-        // may write the lead of what's around you now, from what's on and the weather only.
-        // With the assistant on, it writes that lead itself (below), so the read stays short.
-        $around = $ai && AroundNow::opens($routed) && ! ProcessingPurpose::ComposerAssist->available() ? app(AroundNow::class)->listings($now) : null;
-        $facts = $around !== null ? AroundNow::prompt($around) : null;
-        $permit = $ai
-            ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
-                AnthropicPromptParser::processingContext($validated['text'], $profile, $facts), $validated['processing'])
-            : null;
+        $areas = collect(config('veedels', []))->flatten()->all();
+        $validated = $request->validate([
+            // The page it was asked on (Composer, Travel, Today…), for the assistant's context.
+            'page' => ['nullable', 'string', 'max:40', 'regex:/^[\pL ]+$/u'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
+            'from_label' => ['nullable', 'string', 'max:80'],
+            'from_area' => ['nullable', 'string', Rule::in($areas)],
+            'from_place' => ['nullable', 'integer'],
+            ...ProcessingAcceptanceRules::rules(),
+        ]);
 
-        // This conversation so far: a follow-up to the assistant ("nope, something else", "cheaper")
-        // goes back to it with what it suggested.
-        $history = Assistant::history(self::earlierMessages(app(WorkspaceStore::class)->read($request->user())));
-        $followsUp = Assistant::followsUp($validated['text'], $history);
-        // Plainly casual ("What's up?") or a follow-up: the assistant answers without a read first, a second sooner.
-        $parsed = $permit !== null && ($routed['kind'] === 'around' || $followsUp) && ProcessingPurpose::ComposerAssist->available()
-            ? new ParsedPrompt(PromptIntent::Open, source: 'llm')
-            : ($parser instanceof AnthropicPromptParser
-                ? $parser->parse($validated['text'], $profile, $now, $permit, $facts)
-                : $parser->parse($validated['text'], $profile, $now, $permit));
-        if ($around !== null) {
-            app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
-        }
-        // A trip the AI read ("take_me_there") where the words alone didn't say so: to its place.
-        if ($parsed->intent === PromptIntent::TakeMeThere && filled($parsed->query) && in_array($routed['kind'], Answers::UNSPECIFIC, true) && ! isset($routed['place'])) {
-            Answers::tripHint($request->user(), $validated['text'], (string) $parsed->query);
-            $routed = $answers->route($request->user(), $validated['text'], $now, app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        }
-        // The assistant first: an open request is answered either way, and its answer waits for the workspace's.
-        $assisted = $this->assisted($request->user(), $validated['text'], $profile, $parsed, $permit, $now,
-            self::progressKey($request->user(), (string) ($validated['processing']['request_id'] ?? '')), $history, $followsUp);
-        $answered = $assisted || Answers::handles($routed, $parsed->intent);
-
-        return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered,
-            'reader' => $this->readerWithoutAi($parser, $permit, $parsed->toArray()['source'] ?? null)]);
-    }
-
-    /**
-     * Why a request was read without the AI, when it was (nothing fake, 22 Oct 2026): the
-     * day's allowance used up, the AI reader off, the service not answering, or no
-     * permission for this request. Null when the AI read it.
-     */
-    private function readerWithoutAi(ParsesPrompt $parser, ?ProcessingPermit $permit, ?string $source): ?string
-    {
-        if ($source === 'llm') {
-            return null;
-        }
-        if (! $parser instanceof AnthropicPromptParser) {
-            return 'off';
-        }
-        if ($permit === null) {
-            return 'unpermitted';
-        }
-
-        return match (BureaucracyProcessingConsent::query()->whereKey($permit->id)->value('state')) {
-            'limited' => 'limited',
-            // Sent but no usable reading came back (an error, or nothing it could use).
-            'failed', 'completed' => 'failed',
-            default => 'unpermitted',
-        };
-    }
-
-    /**
-     * An open or vague request ("I'm bored, what do you suggest?"): Composer's assistant looks
-     * things up and answers, under the same say-so as the read; its answer waits for the
-     * workspace's. False when it doesn't answer (off, refused, or nothing it wrote held).
-     */
-    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?string $progress, array $history, bool $followsUp): bool
-    {
-        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || (! $followsUp && ! Assistant::wanted($parsed, $text))) {
-            return false;
-        }
-        $location = app(UserLocationService::class)->context($user, null, $user->veedel);
-        $answer = app(Assistant::class)->answer($user, $text, $profile, $now, $location->hasOrigin()
-            ? [(float) $location->lat, (float) $location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
-            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
-            app(WorkspaceStore::class)->read($user)['plans'] ?? [], $progress, $history);
-        if ($answer === null) {
-            return false;
-        }
-        app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
-
-        return true;
-    }
-
-    /**
-     * The active conversation's messages before the one being answered (the page sends the
-     * message to the workspace before it asks for the read).
-     *
-     * @param  array<string, mixed>  $workspace
-     * @return list<array<string, mixed>>
-     */
-    public static function earlierMessages(array $workspace): array
-    {
-        $messages = collect($workspace['conversations'] ?? [])->firstWhere('id', $workspace['active'] ?? null)['messages'] ?? [];
-        $last = array_key_last(array_filter($messages, fn (mixed $m): bool => is_array($m) && ($m['role'] ?? null) === 'user'));
-
-        return $last === null ? $messages : array_slice($messages, 0, $last);
-    }
-
-    /** Where a request's progress is kept for the page (its permit's request id); null without one. */
-    private static function progressKey(User $user, string $requestId): ?string
-    {
-        return Str::isUuid($requestId) ? "composer:progress:{$user->id}:".strtolower($requestId) : null;
+        return response()->json($ask->answer($request->user(), $validated['processing'] ?? null, $validated['page'] ?? null, $request));
     }
 
     /**
@@ -327,7 +219,7 @@ class ComposerController extends Controller
      */
     public function progress(Request $request, string $requestId): JsonResponse
     {
-        $key = self::progressKey($request->user(), $requestId);
+        $key = Ask::progressKey($request->user(), $requestId);
         $progress = $key !== null ? Cache::get($key) : null;
 
         return response()->json(is_array($progress) ? $progress : ['step' => null, 'looked' => [], 'at' => null]);

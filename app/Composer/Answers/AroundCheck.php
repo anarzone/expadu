@@ -25,7 +25,9 @@ final class AroundCheck
         'how', 'if', 'in', 'it', "it's", 'join', 'just', 'keep', 'let', "let's", 'looking', 'make', 'maybe', 'meanwhile', 'no', 'not', 'nothing', 'now', 'on',
         'one', 'or', 'otherwise', 'out', 'perfect', 'plan', 'quiet', 'right', 'since', 'so', 'some', 'something', 'sorry', 'sounds', 'still', 'take',
         'tell', 'thanks', 'that', "that's", 'the', 'then', 'there', "there's", 'these', 'this', 'tonight', 'today', 'tomorrow', 'try', 'unfortunately',
-        'want', 'well', 'what', "what's", 'when', 'where', 'whether', 'while', 'why', 'with', 'yes', 'you', "you're", "you'll", 'your'];
+        'want', 'well', 'what', "what's", 'when', 'where', 'whether', 'which', 'while', 'who', 'why', 'with', 'would', 'yes', 'you', "you're", "you'll", 'your',
+        // A question back ("Which one do you mean?", "Did you mean…", "Shall I plan it?").
+        'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride'];
 
     /** Claims a sentence may make only when its items make them too. */
     private const CLAIMS = ['/\bfree\b/u', '/\bcheap\w*/u', '/\bexpensive\b/u', '/\bsold[ -]?out\b/u', '/\btickets?\b/u', '/€|\beuros?\b/u',

@@ -41,56 +41,17 @@ function composerUser(): User
     return $user;
 }
 
-// ── parse: intent routing (heuristic — no key, no network) ───────────────
+// ── ask ─────────────────────────────────────────────────────────────────
 
-test('parse classifies a leisure prompt as plan_day with editable constraints', function () {
+test('ask is rate limited per authenticated user', function () {
     $this->actingAs(composerUser());
-
-    $response = $this->postJson('/composer/parse', [
-        'text' => 'tomorrow afternoon in Ehrenfeld with friends',
-    ]);
-
-    $response->assertOk();
-    $response->assertJsonPath('intent', 'plan_day');
-    $response->assertJsonPath('source', 'heuristic');
-    $response->assertJsonPath('constraints.companions', 'friends');
-    expect($response->json('constraints.areas'))->toContain('Ehrenfeld');
-});
-
-test('parse routes a paperwork question to bureaucracy, not a plan', function () {
-    $this->actingAs(composerUser());
-
-    $response = $this->postJson('/composer/parse', [
-        'text' => 'do I need an appointment for Anmeldung?',
-    ]);
-
-    $response->assertOk();
-    $response->assertJsonPath('intent', 'bureaucracy_q');
-    $response->assertJsonPath('constraints', null);
-    expect($response->json('query'))->not->toBeNull();
-});
-
-test('parse routes a place search to find', function () {
-    $this->actingAs(composerUser());
-
-    $response = $this->postJson('/composer/parse', [
-        'text' => 'basketball court near Ehrenfeld',
-    ]);
-
-    $response->assertOk();
-    $response->assertJsonPath('intent', 'find');
-});
-
-test('parse is rate limited per authenticated user', function () {
-    $this->actingAs(composerUser());
+    $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'free afternoon'])->assertOk();
 
     foreach (range(1, 10) as $attempt) {
-        $this->postJson('/composer/parse', ['text' => "free afternoon {$attempt}"])
-            ->assertOk();
+        $this->postJson('/composer/ask')->assertOk();
     }
 
-    $this->postJson('/composer/parse', ['text' => 'one request too many'])
-        ->assertTooManyRequests();
+    $this->postJson('/composer/ask')->assertTooManyRequests();
 });
 
 // ── compose / swap ───────────────────────────────────────────────────────
@@ -962,10 +923,12 @@ test('free football works from parse through compose swap and save without photo
     }
     Spot::factory()->create(['name' => 'Wrong sport', 'category' => 'pitch', 'lat' => 50.949, 'lng' => 6.924, 'tags' => ['sport' => 'basketball', 'access' => 'yes', 'fee' => 'no']]);
     $prompt = 'recommend free football nearby tomorrow afternoon within 2 km';
-    $parsed = $this->postJson('/composer/parse', ['text' => $prompt])->assertSuccessful()
-        ->assertJsonPath('constraints.activities', ['soccer'])
-        ->assertJsonPath('constraints.budget', 'free');
-    $composed = $this->postJson('/composer/compose', ['constraints' => $parsed->json('constraints')])->assertSuccessful();
+    // What the assistant's plan_day fills in for it (PlanDay).
+    $tomorrow = now('Europe/Berlin')->addDay();
+    $composed = $this->postJson('/composer/compose', ['constraints' => [
+        'window_start' => $tomorrow->setTime(13, 0)->toIso8601String(), 'window_end' => $tomorrow->setTime(18, 0)->toIso8601String(),
+        'categories' => ['pitch'], 'activities' => ['soccer'], 'budget' => 'free', 'radius_km' => 2,
+    ]])->assertSuccessful();
     $slots = $composed->json('plan.slots');
     expect($slots)->not->toBeEmpty()
         ->and(count($composed->json('options')))->toBe(3);

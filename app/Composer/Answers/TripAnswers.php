@@ -8,6 +8,7 @@ use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
+use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
@@ -50,14 +51,14 @@ final class TripAnswers
      * the place named, then the next way there from where you are, by Travel's routes. When
      * the name means several places, which one; when it means none, Travel's search.
      *
-     * @param  array<string, mixed>  $request  the router's journey request (place, area)
+     * @param  array<string, mixed>  $request  the place named, its area, a time to leave, and what this conversation named before
      * @return array{text: string, extra: array<string, mixed>}
      */
-    public function toPlace(User $user, array $request, CarbonImmutable $now): array
+    public function toPlace(User $user, array $request, CarbonImmutable $now, ?LocationContext $location = null): array
     {
         $now = $now->setTimezone(self::TIMEZONE);
-        // Where you are; else your home Veedel, and the answer says so.
-        $location = $this->locations->context($user, request(), $user->veedel);
+        // Where you are (as the assistant's other lookups have it); else your home Veedel, and the answer says so.
+        $location ??= $this->locations->context($user, request(), $user->veedel);
         $origin = $location->hasOrigin() ? new GeoPoint((float) $location->lat, (float) $location->lng) : null;
         $from = $location->source === LocationSource::Area ? "From your home area, {$location->label}: l" : 'L';
         $named = (string) $request['place'];

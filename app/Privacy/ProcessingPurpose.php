@@ -5,9 +5,8 @@ namespace App\Privacy;
 enum ProcessingPurpose: string
 {
     case FactExtraction = 'extract_case_fact';
-    case ComposerParse = 'composer_parse';
     case ComposerRank = 'composer_rank';
-    /** Composer's assistant: an open request, answered from what it looks up (events, places, weather). */
+    /** Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). */
     case ComposerAssist = 'composer_assist';
     /** A question about one person's case, answered only from source-checked cards. Bound to that case. */
     case PaperworkAnswer = 'paperwork_answer';
@@ -21,7 +20,7 @@ enum ProcessingPurpose: string
             'transport_version' => '2026-09-08.subject-bound.2',
             'endpoint' => $this === self::ComposerRank ? 'https://api.anthropic.com' : config($prefix.'.base_url'),
             'model' => config($prefix.'.model'),
-            'prompt_version' => config($prefix.($this === self::ComposerAssist ? '.assistant_prompt_version' : '.prompt_version')),
+            'prompt_version' => config($prefix.'.prompt_version'),
             'processor_name' => config($prefix.'.processor_name'),
             'privacy_url' => config($prefix.'.processor_privacy_url'),
         ], JSON_THROW_ON_ERROR));
@@ -31,8 +30,7 @@ enum ProcessingPurpose: string
     {
         $prefix = $this->configPrefix();
         $enabled = match ($this) {
-            self::ComposerParse => config($prefix.'.driver') === 'anthropic',
-            self::ComposerAssist => config($prefix.'.driver') === 'anthropic' && config($prefix.'.assistant') === true,
+            self::ComposerAssist => config($prefix.'.driver') === 'anthropic',
             default => config($prefix.'.enabled') === true,
         };
         if (! $enabled) {
@@ -65,16 +63,15 @@ enum ProcessingPurpose: string
             'response_retention_minutes' => min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15))),
             'payload_categories' => match ($this) {
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
-                self::ComposerParse => ['your_text', 'home_area', 'reference_time', 'events_listed_today', 'weather_now'],
-                // With the opt-in to personalisation only: their taste and their day.
-                self::ComposerAssist => ['your_text', 'your_earlier_messages_in_this_conversation', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather', 'your_taste_if_personalised', 'your_plans_if_personalised'],
+                // Where you are only as your nearest stop and Veedel, never coordinates or addresses; your
+                // Paperwork, your trip and your next plan never (Composer shows them itself); with the
+                // opt-in to personalisation only, your taste and your day.
+                self::ComposerAssist => ['your_text', 'your_earlier_messages_in_this_conversation', 'home_area', 'reference_time', 'page_you_asked_on',
+                    'your_nearest_stop_and_veedel', 'your_saved_places_names', 'events_listed', 'places_listed', 'weather', 'departures', 'trips_to_places_you_name',
+                    'transit_notices', 'paperwork_guide_titles', 'plans_composed', 'your_taste_if_personalised', 'your_plans_if_personalised'],
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
             },
-            // One say-so covers Composer's read and, for an open request, its assistant's answer
-            // (ProcessingConsentStore::derive): the read's notice names what the answer sends too.
-            ...($this === self::ComposerParse && self::ComposerAssist->available()
-                ? ['answer_payload_categories' => self::ComposerAssist->disclosure()['payload_categories']] : []),
         ];
     }
 
@@ -82,7 +79,7 @@ enum ProcessingPurpose: string
     {
         return match ($this) {
             self::FactExtraction => 'services.bureaucracy_llm',
-            self::ComposerParse, self::ComposerAssist => 'services.llm',
+            self::ComposerAssist => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
             self::PaperworkAnswer => 'services.paperwork_analyser',
         };

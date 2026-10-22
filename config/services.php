@@ -144,10 +144,8 @@ return [
         'key' => env('LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('LLM_PROCESSOR_NAME', 'Anthropic PBC'),
         'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'prompt_version' => '2026-10-22.parser.claude.3',
-        // Composer's assistant for open requests (it looks things up with tools, then answers).
-        'assistant' => (bool) env('COMPOSER_ASSISTANT', true),
-        'assistant_prompt_version' => '2026-10-22.assistant.1',
+        // Composer's assistant: one loop for every message (it looks things up with tools, then answers).
+        'prompt_version' => '2026-10-22.assistant.2',
     ],
 
     'bureaucracy_llm' => [

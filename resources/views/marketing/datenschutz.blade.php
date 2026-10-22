@@ -124,15 +124,21 @@
     </p>
     <ul>
         <li>
-            <strong>Composer.</strong> When you send a request in Composer, what you typed, your
-            home neighbourhood and the current time are sent to Anthropic to read the request and,
-            for an open request such as “I’m bored”, to answer it. To answer, Composer looks up
-            public information (event listings, places from our catalogue and the weather) and
-            sends what it finds as well. If you turned on personalisation, it may also send what
-            you tend to like and skip (kinds of places and events, areas and times of day, never
-            place names or your history) and your own plans for today and tomorrow, so the
-            suggestions fit you. The line next to the box says so; sending is your consent for
-            that one request (Art. 6(1)(a) GDPR). Nothing else from your account is sent.
+            <strong>Composer.</strong> When you send a message in Composer, what you typed, your
+            earlier messages in that conversation, your home neighbourhood, the current time and
+            the page you asked from are sent to Anthropic to answer it. To answer, Composer looks
+            things up and sends what it finds: public information (event listings, places from our
+            catalogue, the weather, departures, routes to places you name, public transport notices
+            and the titles of our reviewed paperwork guides), the plans our planner puts together
+            for you, the names of your saved places (such as Home or Work) and where you are only
+            as your nearest stop and neighbourhood, from your browser’s location or the start you
+            chose: never coordinates or addresses. Your Paperwork record, a trip you’re on and your
+            next plan are never sent; Composer shows them to you itself. If you turned on
+            personalisation, it may also send what you tend to like and skip (kinds of places and
+            events, areas and times of day, never place names or your history) and your own plans
+            for today and tomorrow, so the suggestions fit you. The line next to the box says so;
+            sending is your consent for that one request (Art. 6(1)(a) GDPR). Nothing else from
+            your account is sent.
         </li>
         <li>
             <strong>Paperwork: your own words and questions.</strong> When you tap “Suggest an
@@ -163,7 +169,7 @@
         suggestions for you (Art. 6(1)(a) GDPR). This is stored under a pseudonymous key, never
         includes your location or anything you type, and individual records are deleted after 90
         days. With it on, Composer may also use what you like and your plans for today and
-        tomorrow to answer an open request, as described under AI features. Turning
+        tomorrow to answer you, as described under AI features. Turning
         personalisation off deletes everything learned. It is off unless you turn it on.
     </p>
 
