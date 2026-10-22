@@ -80,7 +80,6 @@ export function Headline({
     chip,
     action,
     lang = 'en',
-    textLang = lang,
     level = 'h2',
     className,
 }: {
@@ -89,7 +88,7 @@ export function Headline({
     text?: string | null;
     /** Shown as "What to do: …". */
     todo?: string | null;
-    /** The notice's German, a tap away; or, when the words are already German, its link only. */
+    /** The notice's German, a tap away; or, with `lang` "de", its link only. */
     german?: HeadlineGerman | null;
     /** "From KVB's notice", "From the live times · no KVB notice". */
     source?: string | null;
@@ -99,8 +98,6 @@ export function Headline({
     action?: ReactNode;
     /** The words' language: "de" when no English passed its checks. */
     lang?: 'en' | 'de';
-    /** The paragraph's, when it differs: an English title over German text. */
-    textLang?: 'en' | 'de';
     level?: 'h2' | 'h3';
     className?: string;
 }) {
@@ -116,15 +113,14 @@ export function Headline({
                 {chip}
             </div>
             <Heading lang={lang}>{title}</Heading>
-            {text ? <p lang={textLang}>{text}</p> : null}
+            {text ? <p lang={lang}>{text}</p> : null}
             {todo ? (
                 <p>
                     <strong>What to do:</strong> {todo}
                 </p>
             ) : null}
             {action}
-            {/* German already shown: its link only. */}
-            {german && lang === 'en' && textLang === 'en' ? (
+            {german && lang === 'en' ? (
                 <GermanToggle german={german} />
             ) : german?.url ? (
                 <KvbNoticeLink url={german.url} />
