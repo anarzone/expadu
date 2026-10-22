@@ -537,6 +537,9 @@ class NearbyStation
                 'id' => $d['id'],
                 'title' => $d['title'],
                 'severity' => $d['severity'],
+                // Major (a headline) or minor (small, in place), and why (NoticeScale).
+                'scale' => $d['scale'] ?? 'minor',
+                'reasons' => $d['scale_reasons'] ?? [],
                 'lines' => array_values(array_map('strval', $d['affected_lines'] ?? [])),
                 'source' => $d['source'] ?? null,
                 'since' => $d['started_at'] ?? null,

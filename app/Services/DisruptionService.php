@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\CityNews;
 use App\Models\NoticeBrief;
+use App\Transit\NoticeScale;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -70,12 +72,21 @@ class DisruptionService
         return $notices
             ->map(function (CityNews $n) use ($briefs) {
                 $brief = $briefs->get(NoticeBrief::hashFor((string) $n->title, $n->summary));
+                // A live KVB notice's published_at is when it was last seen; it started when first seen.
+                $from = $n->source === 'kvb-betriebslage' ? $n->created_at : ($n->published_at ?? $n->created_at);
+                $scale = NoticeScale::of((string) $n->title, $n->summary,
+                    $from !== null ? CarbonImmutable::parse($from) : null,
+                    $n->expires_at !== null ? CarbonImmutable::parse($n->expires_at) : null,
+                    $n->severity);
 
                 return [
                     'id' => 'news_'.$n->id,
                     'title' => $n->title,
                     'description' => $n->summary ?? '',
                     'severity' => $n->severity ?? 'minor',
+                    // A major line problem (a headline) or an everyday one (in place), and why.
+                    'scale' => $scale['scale'],
+                    'scale_reasons' => $scale['reasons'],
                     'type' => 'line',
                     'affected_lines' => $n->affected_lines ?? [],
                     // A live KVB notice's published_at is when it was last seen

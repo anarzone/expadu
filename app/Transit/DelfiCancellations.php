@@ -304,11 +304,11 @@ class DelfiCancellations
         }
     }
 
-    /** gtfs.de's credit, or only a vehicle's features ("Solobus", "Niederflur"). */
+    /** gtfs.de's credit, or only what a vehicle is ("Solobus", "Niederflur", "Stadtbahn"). */
     public static function notNews(string $text): bool
     {
-        return preg_match('/^Echtzeitdaten aufbereitet von/u', $text) === 1
-            || (mb_strlen($text) <= 80 && preg_match('/^[\s,.\-]*(?:(?:Solobus|Gelenkbus|Niederflur\w*|Stufenlose?s? Fahrzeug|WLAN|WC|Klimaanlage|Fahrradmitnahme)[\s,.\-]*)+$/u', $text) === 1);
+        return preg_match('/^Echtzeitdaten aufbereitet von/iu', $text) === 1
+            || (mb_strlen($text) <= 80 && preg_match('/^[\s,.\-]*(?:(?:Solobus|Gelenkbus|Niederflur\w*|Rollstuhl\w*|für\s+Rollstuhlfahrer\s+geeignet|Stufenlose?s?\s+Fahrzeug|WLAN|WC|Klimaanlage|Fahrradmitnahme|Stadtbahn|Straßenbahn|Bus|Zug)[\s,.\-]*)+$/iu', $text) === 1);
     }
 
     /**

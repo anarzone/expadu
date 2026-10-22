@@ -71,6 +71,10 @@ export type Station = {
         id: string;
         title: string;
         severity: string;
+        /** A major line problem (a headline) or an everyday one (small, in place). */
+        scale?: 'major' | 'minor';
+        /** Why: suspended, replacement, split, diverted, stop_moved, delays, long. */
+        reasons?: string[];
         lines: string[];
         source: string | null;
         since: string | null;
