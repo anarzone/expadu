@@ -73,6 +73,54 @@ export default function TrayAnswer({
     );
 }
 
+/**
+ * The card takes the room the screen leaves (the mock's fit()): under a box at
+ * the top, down to 60px above the bottom; over a box at the bottom, up to 12px
+ * under the page's header. Which side follows the box; the keyboard counts.
+ */
+function useFit() {
+    const card = useRef<HTMLElement>(null);
+
+    useLayoutEffect(() => {
+        const element = card.current;
+        const box = element?.parentElement;
+
+        if (!element || !box) {
+            return;
+        }
+
+        const fit = () => {
+            const height = window.visualViewport?.height ?? window.innerHeight;
+            const at = box.getBoundingClientRect();
+            const top = at.top < height / 2;
+            const header =
+                document.querySelector('.shell-header')?.getBoundingClientRect()
+                    .bottom ?? 0;
+            element.classList.toggle('is-top', top);
+            element.style.maxHeight = `${Math.max(
+                160,
+                top
+                    ? height - at.bottom - 14 - 60
+                    : at.top - 12 - Math.max(12, header + 12),
+            )}px`;
+        };
+
+        fit();
+        const observer = new ResizeObserver(fit);
+        observer.observe(box);
+        window.addEventListener('resize', fit);
+        window.visualViewport?.addEventListener('resize', fit);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', fit);
+            window.visualViewport?.removeEventListener('resize', fit);
+        };
+    }, []);
+
+    return card;
+}
+
 function Card({
     onClose,
     children,
@@ -82,8 +130,11 @@ function Card({
     children: React.ReactNode;
     scrollRef?: React.Ref<HTMLDivElement>;
 }) {
+    const card = useFit();
+
     return (
         <section
+            ref={card}
             className="composer-tray-answer"
             aria-label="Composer’s answer"
         >
@@ -159,9 +210,18 @@ function Conversation({
         ? starts.length
         : Math.max(0, starts.length - 1);
     const shown = all ? messages : messages.slice(from);
-    const latestReplyId = messages.findLast(
+    const latestReply = messages.findLast(
         (message) => message.role === 'assistant',
-    )?.id;
+    );
+    const latestReplyId = latestReply?.id;
+    // Said aloud when it arrives: the answer's first sentence (or its title).
+    const said = asked
+        ? (
+              latestReply?.text ||
+              (latestReply as { title?: string } | undefined)?.title ||
+              ''
+          ).split(/(?<=[.!?])\s/)[0]
+        : '';
 
     // A new turn opens at its top.
     useLayoutEffect(() => {
@@ -253,6 +313,9 @@ function Conversation({
 
     return (
         <Card onClose={onClose} scrollRef={body}>
+            <p className="sr-only" aria-live="polite">
+                {busy ? '' : said}
+            </p>
             <div className="chat-feed" aria-label="Conversation">
                 {earlier > 0 && (
                     <button

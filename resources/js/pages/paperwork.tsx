@@ -5,7 +5,6 @@ import { AskBody } from '@/components/paperwork/ask';
 import { TaskDetail, TaskTitleStatus } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
-import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
 import {
     AllActions,
@@ -30,7 +29,6 @@ import {
 } from '@/components/paperwork/state';
 import type { Person, PlanEntry } from '@/components/paperwork/types';
 import AppLayout from '@/layouts/app-layout';
-import { usePageContext } from '@/lib/page-context';
 import { composer } from '@/routes';
 import { waitlist as joinWaitlist } from '@/routes/paperwork';
 import '../../css/paperwork.css';
@@ -173,18 +171,6 @@ function Workspace({
         plan.processes.some((p) => !p.is_closed);
     const coverage = () =>
         openSheet({ title: 'Source and coverage', body: <SourcesBody /> });
-
-    // What Composer's tray says this page is about: the task on screen, otherwise the
-    // person's next one to do (blocked and waiting ones aren't), as the mock's
-    // page-context.js names it.
-    const next = plan.processes.find(
-        (p) => !p.is_closed && taskGroup(p) === 'todo',
-    );
-    const about = process ?? next;
-    usePageContext({
-        page: 'paperwork',
-        label: about ? `Paperwork · ${about.title}` : 'Paperwork',
-    });
 
     return (
         <>

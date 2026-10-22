@@ -180,8 +180,6 @@ type PlanPanelProps = {
     onDay: () => void;
     /** "Show the way": the trip page, before you start. */
     onShowTheWay: (way: ShownWay) => void;
-    /** What Composer's tray says this is about, once there's a journey. */
-    onAbout: (label: string | null) => void;
     onLocate: () => void;
     locating: boolean;
     /** Why the last "Use my location" didn't work. */
@@ -222,7 +220,6 @@ export function PlanPanel({
     onBoardStop,
     onDay,
     onShowTheWay,
-    onAbout,
     onLocate,
     locating,
     locateError = null,
@@ -931,19 +928,6 @@ export function PlanPanel({
     const chosen =
         shown.find((option) => option.id === selected) ?? shown[0] ?? null;
     const open = new Set(expanded);
-
-    // Composer's tray says what a request is about (page-context.js): the
-    // journey and the way picked, once there's one.
-    const fromText = from.text.trim() || 'Your location';
-    const toText = (picked?.title ?? to.text).trim();
-    const about =
-        results && toText
-            ? `Your journey · ${fromText} → ${toText}${chosen ? ` · ${optionLabel(chosen)}, leave ${chosen.journey.depart_time}, there ${chosen.journey.arrive_time}` : ''}`
-            : null;
-
-    useEffect(() => {
-        onAbout(about);
-    }, [about, onAbout]);
 
     // Desktop shows the chosen way's details until you fold them.
     if (desktop && !touched && chosen) {

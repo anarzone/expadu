@@ -36,13 +36,12 @@ import { rainLikely } from '@/components/events-street/street-weather';
 import type { DayForecast } from '@/components/events-street/street-weather';
 import { Poster } from '@/components/posters/poster-art';
 import type { PosterFit } from '@/components/posters/poster-art';
-import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
+import { posterEvent } from '@/components/posters/poster-model';
 import { showToast } from '@/components/ui/toast';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import AppLayout from '@/layouts/app-layout';
 import { kmBetween } from '@/lib/geo';
 import { isHidden, useHidden } from '@/lib/not-now';
-import { usePageContext } from '@/lib/page-context';
 import { useImpressions } from '@/lib/signals';
 import type { Auth } from '@/types';
 import type { DayProjection } from '@/types/day';
@@ -342,15 +341,6 @@ export default function Events({
     }, [otherKey]);
 
     const otherDay = other.key === otherKey ? other.value : null;
-
-    usePageContext(
-        wall.length
-            ? {
-                  page: 'events',
-                  label: `Events on ${posterWeekday(date)} · ${wall.length} listed`,
-              }
-            : null,
-    );
 
     async function toggleSave(listing: Listing) {
         const isSaved = saved.keys.has(listing.key);

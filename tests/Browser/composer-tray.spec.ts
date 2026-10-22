@@ -72,8 +72,14 @@ test('🔒 one press of the tray’s Send answers under the box, with its permit
     await asked;
     await expect(answer.getByText(text, { exact: true })).toBeVisible();
     await expect(
-        answer.getByText('Browse places and events below', { exact: false }),
+        answer
+            .locator('.chat-entry')
+            .getByText('Browse places and events below', { exact: false }),
     ).toBeVisible();
+    // Said aloud for a screen reader: the answer's first sentence.
+    await expect(answer.locator('[aria-live="polite"]')).toHaveText(
+        /^Browse places and events below/,
+    );
     await expect(page.locator('.composer-working')).toHaveCount(0);
     expect(parsed).toHaveLength(1);
     expect(parsed[0].text).toBe(text);

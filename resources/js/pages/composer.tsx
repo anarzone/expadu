@@ -106,7 +106,7 @@ export default function ComposerPage({
     /** Tonight's listings and what's near today's appointment (deferred). */
     around?: DayAround;
     /** What a page handed over by POST (Today's cards: the words and the page), once. */
-    entry?: { prompt: string; about: string | null } | null;
+    entry?: { prompt: string } | null;
     prompt?: string;
     planDate?: string;
     pins?: string[];
@@ -140,10 +140,6 @@ export default function ComposerPage({
             return prompt || '';
         }
     });
-    // "About: …": what the page was showing, kept with this request until left out.
-    const [about, setAbout] = useState<string | null>(
-        handedOver?.about ?? null,
-    );
     const [input, setInput] = useRemember(
         initialInput,
         `composer-input-${userId}`,
@@ -1045,19 +1041,6 @@ export default function ComposerPage({
                                     </button>
                                 )}
                             </section>
-                        )}
-
-                        {about && (
-                            <div className="composer-about">
-                                <span>About: {about}</span>
-                                <button
-                                    type="button"
-                                    aria-label="Leave this out"
-                                    onClick={() => setAbout(null)}
-                                >
-                                    <IconX size={15} />
-                                </button>
-                            </div>
                         )}
 
                         {newBelow && (
