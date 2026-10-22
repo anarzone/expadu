@@ -67,10 +67,14 @@ enum ProcessingPurpose: string
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 self::ComposerParse => ['your_text', 'home_area', 'reference_time', 'events_listed_today', 'weather_now'],
                 // With the opt-in to personalisation only: their taste and their day.
-                self::ComposerAssist => ['your_text', 'reference_time', 'events_listed', 'places_listed', 'weather', 'your_taste_if_personalised', 'your_plans_if_personalised'],
+                self::ComposerAssist => ['your_text', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather', 'your_taste_if_personalised', 'your_plans_if_personalised'],
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
             },
+            // One say-so covers Composer's read and, for an open request, its assistant's answer
+            // (ProcessingConsentStore::derive): the read's notice names what the answer sends too.
+            ...($this === self::ComposerParse && self::ComposerAssist->available()
+                ? ['answer_payload_categories' => self::ComposerAssist->disclosure()['payload_categories']] : []),
         ];
     }
 
