@@ -439,16 +439,6 @@
     color: var(--color-text-soft);
     font-size: 12.5px;
 }
-/* Why it's cancelled, when a notice says: one quiet line, cut short. */
-.strip-note {
-    display: block;
-    max-width: 100%;
-    overflow: hidden;
-    color: var(--color-conflict-text);
-    font-size: 12.5px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
 .strip-when {
     display: inline-flex;
     flex-wrap: wrap;
@@ -542,9 +532,8 @@
     .strip-dest {
         grid-column: 1;
     }
-    .strip-via,
-    .strip-note {
-        grid-column: 1 / -1;
+    .strip-via {
+        grid-column: 1;
     }
     /* The minutes keep the right; a tag ("Running 2 min late") goes under
        the via, so the via keeps the row's width and doesn't wrap round it

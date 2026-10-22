@@ -30,11 +30,20 @@ class NearbyStation
 
     private const WALK_KMH = 4.5;
 
+    /** Cancelled runs one way in the next hour that put a line in trouble (and more than half). */
+    private const TROUBLE_CANCELLED = 2;
+
+    /** Minutes late that count towards a line in trouble. */
+    private const TROUBLE_LATE_MIN = 15;
+
     /** @var array{keys: array<string, string>, trips: array<string, string>, lines: list<array<string, mixed>>}|null */
     private ?array $noticeIndex = null;
 
     /** @var list<string> notices a departure points to, listed with the station's own */
     private array $referenced = [];
+
+    /** @var array<string, array{line: string, mode: string, dest: string, runs: list<array<string, mixed>>}> each line's runs by direction, for trouble() */
+    private array $byDirection = [];
 
     public function __construct(
         private readonly TimetableService $timetable,
@@ -278,7 +287,10 @@ class NearbyStation
             'areas' => array_values($areas),
             'lines' => $lines,
             'lifts' => $this->lifts($points),
-            'notices' => $this->notices(array_column($lines, 'line'), $this->referenced),
+            // Its lines as KVB lists them too: one that doesn't stop here now (a closure) still counts.
+            'notices' => $this->notices(array_values(array_unique([...array_column($lines, 'line'),
+                ...array_map('strval', array_merge(...array_column(array_values($areas), 'lines')))])), $this->referenced),
+            'trouble' => $this->trouble($stale),
         ];
     }
 
@@ -343,6 +355,7 @@ class NearbyStation
     private function lines(array $rows, array $areas): array
     {
         $byLine = [];
+        $this->byDirection = [];
         foreach ($rows as $row) {
             $services = array_values(array_filter($row['services'] ?? [], fn ($s) => is_array($s) && isset($s['departure_at'])));
             $runs = array_map(fn (array $s) => $this->service($s, (string) $row['line']), $services);
@@ -358,6 +371,9 @@ class NearbyStation
                 default => 'tram',
             };
             $byLine[$line] ??= ['line' => $line, 'mode' => $mode, 'area' => null, 'dirs' => []];
+            $way = $line.'|'.($row['direction'] ?? $row['destination'] ?? '');
+            $this->byDirection[$way] ??= ['line' => $line, 'mode' => $mode, 'dest' => (string) ($row['destination'] ?? ''), 'runs' => []];
+            array_push($this->byDirection[$way]['runs'], ...$runs);
             $first = $next ?? ($runs[0] ?? null);
             $later = array_values(array_filter($runs, fn (array $r) => $first === null || $r['id'] !== $first['id']));
             // The next few that leave, and the first few cancelled ones.
@@ -393,6 +409,52 @@ class NearbyStation
         usort($lines, fn ($a, $b) => strnatcmp($a['line'], $b['line']));
 
         return $lines;
+    }
+
+    /**
+     * A line in trouble at this stop by its own runs, one way (the delays
+     * canvas, 22 Oct 2026): most of the next hour's runs cancelled (at least
+     * two, and more than half), or three in a row each 15+ min late, or every
+     * run in the next 30 min (at least two) that late. Only what the feeds
+     * say: lateness only from live times, none while they're paused.
+     *
+     * @return list<array{line: string, mode: string, dest: string, kind: 'cancelled'|'late', count: int, of: int, runs: list<array{time: string, delay: int, cancelled: bool}>}>
+     */
+    private function trouble(bool $stale): array
+    {
+        $now = CarbonImmutable::now();
+        $trouble = [];
+        foreach ($this->byDirection as $way) {
+            $runs = collect($way['runs'])->unique('id')->sortBy('at')->values();
+            $hour = $runs->filter(fn (array $r) => CarbonImmutable::parse($r['at'])->lte($now->addHour()))->values();
+            $gone = $hour->where('cancelled', true);
+            $brief = fn ($list) => $list->map(fn (array $r) => ['time' => $r['time'], 'delay' => $r['delay'], 'cancelled' => $r['cancelled']])->values()->all();
+            if ($gone->count() >= self::TROUBLE_CANCELLED && $gone->count() * 2 > $hour->count()) {
+                $trouble[] = ['line' => $way['line'], 'mode' => $way['mode'], 'dest' => $way['dest'], 'kind' => 'cancelled',
+                    'count' => $gone->count(), 'of' => $hour->count(), 'runs' => $brief($gone)];
+
+                continue;
+            }
+            if ($stale) {
+                continue;
+            }
+            $live = $runs->filter(fn (array $r) => ! $r['cancelled'] && $r['time_basis'] === 'realtime')->values();
+            $streak = [];
+            $longest = [];
+            foreach ($live as $run) {
+                $streak = $run['delay'] >= self::TROUBLE_LATE_MIN ? [...$streak, $run] : [];
+                $longest = count($streak) > count($longest) ? $streak : $longest;
+            }
+            $soon = $runs->filter(fn (array $r) => ! $r['cancelled'] && CarbonImmutable::parse($r['at'])->lte($now->addMinutes(30)))->values();
+            $allLate = $soon->count() >= 2 && $soon->every(fn (array $r) => $r['time_basis'] === 'realtime' && $r['delay'] >= self::TROUBLE_LATE_MIN);
+            if (count($longest) >= 3 || $allLate) {
+                $late = count($longest) >= 3 ? collect($longest) : $soon;
+                $trouble[] = ['line' => $way['line'], 'mode' => $way['mode'], 'dest' => $way['dest'], 'kind' => 'late',
+                    'count' => $late->count(), 'of' => $late->count(), 'runs' => $brief($late)];
+            }
+        }
+
+        return $trouble;
     }
 
     /**

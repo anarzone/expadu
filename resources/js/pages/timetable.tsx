@@ -679,6 +679,13 @@ export default function Timetable() {
                             onToggleFavourite={toggleFavourite}
                             favouriteBusy={favouriteBusy}
                             stepFreeNeed={page.props.stepFreeNeed ?? false}
+                            onPlanTrip={() => {
+                                setBoardReturn(null);
+                                setView('journey');
+                                requestAnimationFrame(() =>
+                                    document.getElementById('to')?.focus(),
+                                );
+                            }}
                         />
                     ) : (
                         <div className="nearby-empty">

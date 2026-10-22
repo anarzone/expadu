@@ -73,7 +73,7 @@ export type Station = {
         severity: string;
         /** A major line problem (a headline) or an everyday one (small, in place). */
         scale?: 'major' | 'minor';
-        /** Why: suspended, replacement, split, diverted, stop_moved, delays, long. */
+        /** Why (NoticeScale): suspended, cut_short, replacement, split, strike, graded, many_lines, diverted, stops_skipped, stop_moved, delays. */
         reasons?: string[];
         lines: string[];
         source: string | null;
@@ -83,6 +83,16 @@ export type Station = {
         details?: string | null;
         /** KVB's page for the notice; null when it isn't KVB's. */
         url?: string | null;
+    }[];
+    /** A line in trouble here by its own runs, one way: mostly cancelled in the next hour, or 15+ min late (NearbyStation::trouble). */
+    trouble?: {
+        line: string;
+        mode: 'tram' | 'bus' | 'rail';
+        dest: string;
+        kind: 'cancelled' | 'late';
+        count: number;
+        of: number;
+        runs: { time: string; delay: number; cancelled: boolean }[];
     }[];
     /** A `?stop=` name KVB doesn't know: the closest station shows instead. */
     unknown_stop?: string | null;
