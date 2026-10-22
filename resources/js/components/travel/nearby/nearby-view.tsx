@@ -823,20 +823,22 @@ export function NearbyView({
                 );
             })}
             <div className="nearby-bar">
-                <button
-                    type="button"
-                    className="nearby-stop"
-                    aria-expanded={stopsOpen}
-                    aria-label={`Change stop, now ${station.name}`}
-                    onClick={() => {
-                        setPanel('');
-                        setStopsOpen(!stopsOpen);
-                    }}
-                >
-                    <span className="nearby-stop-name">
+                {/* Only the name and its chevron change the stop: the row
+                    beside it and the labels under it do nothing. */}
+                <div className="nearby-stop">
+                    <button
+                        type="button"
+                        className="nearby-stop-name"
+                        aria-expanded={stopsOpen}
+                        aria-label={`Change stop, now ${station.name}`}
+                        onClick={() => {
+                            setPanel('');
+                            setStopsOpen(!stopsOpen);
+                        }}
+                    >
                         {station.name}
                         <TravelIcon name="down" />
-                    </span>
+                    </button>
                     <span className="tl-chips">
                         <TravelChip
                             kind="calm"
@@ -846,7 +848,7 @@ export function NearbyView({
                         </TravelChip>
                         {timesLabel}
                     </span>
-                </button>
+                </div>
                 <button
                     type="button"
                     className="nearby-star"

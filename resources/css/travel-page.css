@@ -2241,9 +2241,18 @@
     line-height: var(--leading-snug);
 }
 :where(.travel-page) .nearby-stop-name {
-    display: flex;
+    display: inline-flex;
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 100%;
     align-items: center;
     gap: var(--space-6);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: inherit;
+    text-align: left;
     font-size: var(--text-title-sm);
     font-weight: var(--weight-bold);
     letter-spacing: -0.3px;
@@ -2253,7 +2262,7 @@
     height: 16px;
     transition: transform var(--duration-fast) var(--ease-standard);
 }
-:where(.travel-page) .nearby-stop[aria-expanded='true'] .nearby-stop-name svg {
+:where(.travel-page) .nearby-stop-name[aria-expanded='true'] svg {
     transform: rotate(180deg);
 }
 :where(.travel-page) .nearby-stops [role='listbox'] {
@@ -4151,7 +4160,7 @@
         .plan-checks-toggle,
         .day-places button,
         .where-to,
-        .nearby-stop
+        .nearby-stop-name
     ):active {
     scale: 0.985;
 }
