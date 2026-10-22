@@ -225,7 +225,9 @@ body.today-header .header-account-popover p {
     line-height: 1.5;
     color: var(--muted);
 }
-/* Sign out opens the sign-in page (account/), as the app does. */
+/* Settings opens settings-next/; Sign out opens the sign-in page
+   (account/), as the app does. */
+body.today-header .header-account-link,
 body.today-header .header-account-out {
     display: flex;
     align-items: center;
@@ -238,6 +240,10 @@ body.today-header .header-account-out {
     font-weight: 600;
     text-decoration: none;
 }
+body.today-header .header-account-link + .header-account-out {
+    margin-top: 0;
+}
+body.today-header .header-account-link:hover,
 body.today-header .header-account-out:hover {
     color: var(--color-action-text);
 }

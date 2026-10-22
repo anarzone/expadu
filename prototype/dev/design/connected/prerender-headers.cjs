@@ -15,6 +15,7 @@ const pages = {
     'services-next': 'services',
     'today-next/brief': 'today',
     'composer-studio': 'composer',
+    'settings-next': 'settings',
 };
 const sections = [
     ['today', 'home', 'Today', '../today-next/brief/'],
