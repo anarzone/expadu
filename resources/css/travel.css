@@ -574,7 +574,7 @@
         color: var(--color-text-soft);
     }
 }
-/* When it leaves: minutes, "Now" in the line's colour, or a paused clock. */
+/* When it leaves: minutes, "Now" in the line's colour, a paused clock, or a struck one. */
 .nearby-time {
     display: flex;
     align-items: baseline;
@@ -593,6 +593,13 @@
 }
 .nearby-time.is-paused {
     color: var(--color-text-soft);
+}
+/* A cancelled run: its timetabled clock, struck, beside "Cancelled". */
+.nearby-time.is-cancelled {
+    color: var(--color-text-soft);
+}
+.nearby-time.is-cancelled s {
+    text-decoration-thickness: 2px;
 }
 .nearby-time.is-now {
     display: inline-flex;
@@ -1488,4 +1495,162 @@
 .plan-schedule-done:active {
     transform: scale(0.98);
     background: var(--color-action-hover);
+}
+
+/* ---------- Disruptions in two tiers (labels.css) ---------- */
+/* Owner, 22 Oct 2026, "Delays and disruptions" canvas: everyday ones stay
+   small and in place, a major one gets one headline. A cancelled run is its
+   time struck through, never a filled pill. */
+.tl-cancelled {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.tl-cancelled s {
+    text-decoration-thickness: 1.5px;
+}
+/* An everyday notice: one line under the row it explains. */
+.tl-reason {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+}
+.tl-reason-line {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    text-align: left;
+    cursor: pointer;
+}
+.tl-reason-line .tl-chip {
+    margin-right: 6px;
+}
+.tl-reason-line svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+}
+.tl-reason-line > svg:last-child {
+    transition: rotate 200ms ease;
+}
+.tl-reason.is-open .tl-reason-line > svg:last-child {
+    rotate: 180deg;
+}
+.tl-reason-more {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    max-width: 62ch;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-canvas);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.tl-reason-more p {
+    margin: 0;
+}
+/* KVB's own words, one tap further than the English. */
+.tl-german {
+    justify-self: start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.tl-german-text {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.tl-german-text a {
+    color: inherit;
+    font-weight: var(--weight-semibold);
+}
+/* A major one: the one headline on the screen. */
+.tl-headline {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    padding: 18px 20px;
+    border: 1px solid var(--color-conflict-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-conflict-bg);
+    color: var(--color-text);
+}
+.tl-headline-top,
+.tl-headline-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.tl-headline-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-right: 4px;
+    border-radius: var(--radius-round);
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-headline-mark svg {
+    width: 16px;
+    height: 16px;
+}
+.tl-headline h2,
+.tl-headline h3 {
+    margin: 0;
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+    text-wrap: balance;
+}
+.tl-headline p {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: 1.5;
+}
+.tl-headline .tl-german-text {
+    font-size: var(--text-control);
+}
+.tl-source {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.tl-reason-line:focus-visible,
+.tl-german:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tl-reason-line > svg:last-child {
+        transition: none;
+    }
 }
