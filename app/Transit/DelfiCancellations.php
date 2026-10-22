@@ -208,6 +208,7 @@ class DelfiCancellations
 
         $known = array_flip(DB::table('delfi_calls')->distinct()->pluck('trip_id')->all());
         $skipped = array_intersect_key(self::skipped($response->body()), $known);
+        $this->rememberAlerts($response->body(), $known);
 
         $cancelled = [];
         $now = CarbonImmutable::now('Europe/Berlin');
@@ -226,6 +227,8 @@ class DelfiCancellations
                 }
                 $cancelled[] = [
                     'id' => 'delfi:'.sha1($call->trip_id.'|'.($trip['date'] ?? '').'|'.$call->stop_sequence),
+                    // The trip and its day, as DELFI's alerts name them.
+                    'trip' => self::tripKey($call->trip_id, $trip['date'] ?? null),
                     'line' => $call->line,
                     'headsign' => $call->headsign,
                     'at' => $at->toIso8601String(),
@@ -245,7 +248,7 @@ class DelfiCancellations
      *
      * @param  list<array{lat: float|string, lng: float|string}>  $points
      * @param  list<string>  $lines
-     * @return list<array{id: string, line: string, headsign: ?string, at: string}>
+     * @return list<array{id: string, line: string, headsign: ?string, at: string, trip: ?string}>
      */
     public function near(array $points, array $lines): array
     {
@@ -257,9 +260,142 @@ class DelfiCancellations
         $near = fn (array $call) => collect($points)->contains(fn (array $p) => self::metres((float) $p['lat'], (float) $p['lng'], $call['lat'], $call['lng']) <= self::NEAR_METRES);
 
         return array_values(array_map(
-            fn (array $call) => ['id' => $call['id'], 'line' => $call['line'], 'headsign' => $call['headsign'], 'at' => $call['at']],
+            fn (array $call) => ['id' => $call['id'], 'line' => $call['line'], 'headsign' => $call['headsign'], 'at' => $call['at'], 'trip' => $call['trip'] ?? null],
             array_filter($all, fn ($call) => is_array($call) && in_array((string) $call['line'], $lines, true) && $near($call)),
         ));
+    }
+
+    /** A trip on its service day, as alerts and cancelled calls both name it. */
+    public static function tripKey(string $trip, ?string $date): string
+    {
+        return $date !== null && $date !== '' ? "{$trip}@{$date}" : $trip;
+    }
+
+    /**
+     * DELFI's alerts on the area's trips, into the notices store: their text
+     * (German), the lines of the trips they're attached to, and those trips,
+     * so a cancelled call shows the alert about its own trip. gtfs.de's data
+     * credits and a vehicle's features ride the same channel and aren't news.
+     *
+     * @param  array<string, int>  $known  the area's trip ids
+     */
+    private function rememberAlerts(string $feed, array $known): void
+    {
+        $notices = app(TransitNotices::class);
+        foreach (self::alerts($feed, $known) as $id => $alert) {
+            $trips = $alert['trips'];
+            $parts = array_filter([$alert['header'], $alert['description']], fn (string $part) => $part !== '');
+            if ($trips === [] || $parts === [] || array_filter($parts, fn (string $part) => ! self::notNews($part)) === []) {
+                continue;
+            }
+            $lines = DB::table('delfi_calls')->whereIn('trip_id', array_column($trips, 'trip'))->distinct()->pluck('line')->all();
+            $notices->remember(
+                'delfi:alert:'.$id,
+                'delfi',
+                $alert['header'],
+                $alert['description'] !== $alert['header'] ? $alert['description'] : null,
+                array_map('strval', $lines),
+                [],
+                array_map(fn (array $trip) => self::tripKey($trip['trip'], $trip['date']), $trips),
+                $alert['from'] !== null ? CarbonImmutable::createFromTimestamp($alert['from']) : null,
+                $alert['until'] !== null ? CarbonImmutable::createFromTimestamp($alert['until']) : null,
+            );
+        }
+    }
+
+    /** gtfs.de's credit, or only a vehicle's features ("Solobus", "Niederflur"). */
+    public static function notNews(string $text): bool
+    {
+        return preg_match('/^Echtzeitdaten aufbereitet von/u', $text) === 1
+            || (mb_strlen($text) <= 80 && preg_match('/^[\s,.\-]*(?:(?:Solobus|Gelenkbus|Niederflur\w*|Stufenlose?s? Fahrzeug|WLAN|WC|Klimaanlage|Fahrradmitnahme)[\s,.\-]*)+$/u', $text) === 1);
+    }
+
+    /**
+     * The feed's alerts by id: German header and description, the trips
+     * they're attached to (with their service day; only the given ones, when
+     * given: a credit names most of Germany's trips) and their period.
+     *
+     * @param  array<string, mixed>|null  $only  trip ids to keep
+     * @return array<string, array{header: string, description: string, trips: list<array{trip: string, date: ?string}>, from: ?int, until: ?int}>
+     */
+    public static function alerts(string $feed, ?array $only = null): array
+    {
+        $alerts = [];
+        $text = function (array $field) use ($feed): string {
+            $out = '';
+            foreach (self::fields($feed, $field[1], $field[2]) as $k => $translation) {
+                if ($k !== 1 || $translation[0] !== 2) {
+                    continue;
+                }
+                $value = '';
+                $language = '';
+                foreach (self::fields($feed, $translation[1], $translation[2]) as $kk => $part) {
+                    if ($kk === 1 && $part[0] === 2) {
+                        $value = substr($feed, $part[1], $part[2] - $part[1]);
+                    } elseif ($kk === 2 && $part[0] === 2) {
+                        $language = substr($feed, $part[1], $part[2] - $part[1]);
+                    }
+                }
+                if ($out === '' || $language === 'de') {
+                    $out = $value;
+                }
+            }
+
+            return trim(str_replace("\u{a0}", ' ', $out));
+        };
+
+        foreach (self::fields($feed, 0, strlen($feed)) as $field => $entity) {
+            if ($field !== 2 || $entity[0] !== 2) {
+                continue;
+            }
+            $id = null;
+            $alert = null;
+            foreach (self::fields($feed, $entity[1], $entity[2]) as $part => $value) {
+                if ($part === 1 && $value[0] === 2) {
+                    $id = substr($feed, $value[1], $value[2] - $value[1]);
+                } elseif ($part === 5 && $value[0] === 2) {
+                    $alert = ['header' => '', 'description' => '', 'trips' => [], 'from' => null, 'until' => null];
+                    foreach (self::fields($feed, $value[1], $value[2]) as $k => $v) {
+                        if ($k === 1 && $v[0] === 2) {
+                            foreach (self::fields($feed, $v[1], $v[2]) as $kk => $vv) {
+                                if ($kk === 1 && $vv[0] === 0) {
+                                    $alert['from'] = $alert['from'] === null ? $vv[1] : min($alert['from'], $vv[1]);
+                                } elseif ($kk === 2 && $vv[0] === 0) {
+                                    $alert['until'] = max($alert['until'] ?? 0, $vv[1]);
+                                }
+                            }
+                        } elseif ($k === 5 && $v[0] === 2) {
+                            foreach (self::fields($feed, $v[1], $v[2]) as $kk => $vv) {
+                                if ($kk !== 4 || $vv[0] !== 2) {
+                                    continue;
+                                }
+                                $trip = null;
+                                $date = null;
+                                foreach (self::fields($feed, $vv[1], $vv[2]) as $t => $tv) {
+                                    if ($t === 1 && $tv[0] === 2) {
+                                        $trip = substr($feed, $tv[1], $tv[2] - $tv[1]);
+                                    } elseif ($t === 3 && $tv[0] === 2) {
+                                        $date = substr($feed, $tv[1], $tv[2] - $tv[1]);
+                                    }
+                                }
+                                if ($trip !== null && ($only === null || isset($only[$trip]))) {
+                                    $alert['trips'][] = ['trip' => $trip, 'date' => $date];
+                                }
+                            }
+                        } elseif ($k === 10 && $v[0] === 2) {
+                            $alert['header'] = $text($v);
+                        } elseif ($k === 11 && $v[0] === 2) {
+                            $alert['description'] = $text($v);
+                        }
+                    }
+                }
+            }
+            if ($id !== null && $alert !== null) {
+                $alerts[$id] = $alert;
+            }
+        }
+
+        return $alerts;
     }
 
     /**

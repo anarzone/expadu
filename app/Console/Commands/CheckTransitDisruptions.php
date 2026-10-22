@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Events\Context\TransitDisruptionDetected;
 use App\Services\DisruptionService;
+use App\Transit\TransitNotices;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,11 @@ class CheckTransitDisruptions extends Command
 
     public function handle(DisruptionService $disruptionService): int
     {
-        $disruptions = $disruptionService->getLineDisruptions();
+        $disruptions = array_values(array_filter(
+            $disruptionService->getLineDisruptions(),
+            // VRS's and DELFI's notices show on boards; they aren't pushed yet.
+            fn (array $d) => ! in_array($d['source'] ?? null, TransitNotices::SOURCES, true),
+        ));
 
         if (empty($disruptions)) {
             $this->info('No disruptions found.');
