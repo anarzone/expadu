@@ -541,7 +541,7 @@
         if ('todayAccount' in data)
             U.open(
                 'Your account',
-                '<p class="detail-intro">Anar · Preview profile</p><p>Account settings are available in the main app.</p>',
+                `<p class="detail-intro">Anar · Preview profile</p><p><a href="${S.routes.settings}">Settings</a></p>`,
             );
         if ('clearTodayContext' in data) {
             S.update((state) => {

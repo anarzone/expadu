@@ -143,6 +143,7 @@
         departures: '../departures-next/',
         composer: '../composer-studio/',
         account: '../account/',
+        settings: '../settings-next/',
     };
     const sessionKey = 'expadu-composer-navigation-v1';
     function composerSession() {
