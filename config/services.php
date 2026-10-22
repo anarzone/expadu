@@ -68,14 +68,14 @@ return [
         'effort' => env('ANTHROPIC_EFFORT', 'low'),
     ],
 
-    // KVB notices as short English briefs (App\Transit\NoticeBriefWriter).
+    // Transit notices (KVB, VRS, DELFI) as short English briefs (App\Transit\NoticeBriefWriter).
     // Public data only. Off without ANTHROPIC_API_KEY or with the switch.
     'transit_briefs' => [
         'enabled' => env('TRANSIT_BRIEFS_ENABLED', true),
         'model' => $haiku(env('TRANSIT_BRIEFS_MODEL')),
         'effort' => env('TRANSIT_BRIEFS_EFFORT', 'low'),
         'daily_limit' => (int) env('TRANSIT_BRIEFS_DAILY_LIMIT', 300),
-        'prompt_version' => '2026-10-21',
+        'prompt_version' => '2026-10-22',
     ],
 
     // Place descriptions and evidence-backed vibe tags (App\Places\Enrichment).
@@ -190,6 +190,17 @@ return [
 
     'transitous' => [
         'url' => env('TRANSITOUS_URL', 'https://api.transitous.org'),
+    ],
+
+    // gtfs.de's free DELFI feeds (CC BY-SA 4.0, attribution required, no
+    // guarantee): Travel reads only the cancellations VRS leaves out. The
+    // realtime ids match gtfs.de's own static feed, so a slice of it (the
+    // area below) is imported to place them.
+    'gtfsde' => [
+        'static_url' => env('GTFSDE_STATIC_URL', 'https://download.gtfs.de/germany/nv_free/latest.zip'),
+        'realtime_url' => env('GTFSDE_REALTIME_URL', 'https://realtime.gtfs.de/realtime-free.pb'),
+        // south, west, north, east: Cologne.
+        'area' => [50.83, 6.77, 51.09, 7.17],
     ],
 
     'vrs' => [

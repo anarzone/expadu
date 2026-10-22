@@ -6,6 +6,7 @@
 */
 
 use App\Http\Controllers\Api\DayController;
+use App\Http\Controllers\Api\DeutschlandticketController;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\GeocodeSearchController;
@@ -34,6 +35,7 @@ Route::get('api/stops', StopSearchController::class)->middleware('throttle:searc
 Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
 Route::get('api/journey', TakeMeThereController::class)->middleware('throttle:journey')->name('api.journey');
 Route::post('api/journey/plan', JourneyPlanController::class)->middleware('throttle:journey')->name('api.journey.plan');
+Route::put('api/travel/deutschlandticket', DeutschlandticketController::class)->name('api.travel.deutschlandticket');
 Route::get('api/journey/suggest', JourneySuggestController::class)->middleware('throttle:search')->name('api.journey.suggest');
 Route::post('api/journey/suggest/search', JourneySuggestSearchController::class)->middleware('throttle:search')->name('api.journey.suggest.search');
 Route::get('api/saved-journeys', [SavedJourneyController::class, 'index'])->name('api.saved-journeys.index');

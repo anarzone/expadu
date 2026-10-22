@@ -44,6 +44,7 @@ final class TripAnswers
         private Destinations $destinations,
         private RouteService $routes,
         private UserLocationService $locations,
+        private TripTrouble $trouble,
     ) {}
 
     /**
@@ -490,6 +491,8 @@ final class TripAnswers
             'kind' => $trip === null ? 'text' : 'trip',
             'title' => $title,
             'trip' => $trip,
+            // A major problem on the way leads the answer (TripTrouble); everyday delays stay on the legs.
+            'major' => is_array($trip['journey'] ?? null) ? $this->trouble->major($trip['journey'], $trip['city'] ?? null) : null,
             'suggestions' => $suggestions ?: null,
         ], fn ($value) => $value !== null)];
     }
