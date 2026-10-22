@@ -71,7 +71,12 @@ class DisruptionService
         return $notices
             ->map(function (CityNews $n) use ($briefs) {
                 $brief = $briefs->get(NoticeBrief::hashFor((string) $n->title, $n->summary));
-                $scale = NoticeScale::of((string) $n->title, $n->summary);
+                $scale = NoticeScale::of((string) $n->title, $n->summary,
+                    array_map('strval', $n->affected_lines ?? []), $n->severity);
+                // Major from its start to its end: one announced ahead is everyday until then.
+                if ($n->source !== 'kvb-betriebslage' && $n->published_at?->isFuture()) {
+                    $scale = ['scale' => 'minor', 'reasons' => [...$scale['reasons'], 'not_started']];
+                }
 
                 return [
                     'id' => 'news_'.$n->id,
