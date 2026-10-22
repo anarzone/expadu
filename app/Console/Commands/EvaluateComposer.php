@@ -17,6 +17,7 @@ use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
 use App\Http\Controllers\ComposerController;
 use App\Models\User;
+use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
@@ -29,6 +30,7 @@ use Illuminate\Console\Command;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -62,7 +64,11 @@ class EvaluateComposer extends Command
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
     /** What Composer says instead of a plan: never a dead end, never a fact the listings don't hold. */
-    private const ANSWER_GATES = ['dead_end', 'invented'];
+    private const ANSWER_GATES = ['dead_end', 'invented', 'because_unbacked'];
+
+    /** What the opted-in persona has saved and liked, as the nightly aggregate would write it. */
+    private const TASTE = [['category', 'cafe', 12.0, 6], ['category', 'culture', 7.0, 4], ['category', 'nightclub', -4.0, 1],
+        ['veedel', 'Ehrenfeld', 9.0, 6], ['daypart', 'evening', 8.0, 6]];
 
     private const SITUATIONS = [
         'student_budget' => Situation::Student,
@@ -276,8 +282,18 @@ class EvaluateComposer extends Command
         $dead = $reply['text'] === '' || str_contains($reply['text'], 'something Composer knows')
             || (($said['kind'] === 'around') && $said['next'] === []);
         $invented = [];
+        $unbacked = [];
         if ($assisted !== null) {
-            $said['assistant'] = ['events' => count($assisted['events']), 'places' => array_column($assisted['places'], 'name'), 'looked' => array_keys($assisted['read'])];
+            $said['assistant'] = ['events' => count($assisted['events']), 'places' => array_column($assisted['places'], 'name'), 'looked' => array_keys($assisted['read']),
+                'because' => array_values(array_filter([...array_column($assisted['events'], 'because'), ...array_column($assisted['places'], 'because')])),
+                'taste' => $assisted['taste'], 'invite' => $assisted['invite']];
+            // Every "because" holds what the person's taste says (the answer's own check, again).
+            $taste = implode("\n", array_intersect_key($assisted['read'], array_flip(preg_grep('/^(t|a|h|w|d)\d+$/', array_keys($assisted['read'])))));
+            foreach ($said['assistant']['because'] as $because) {
+                if ($taste === '' || ! app(AroundCheck::class)->holds($because, $taste."\n".implode("\n", $assisted['read']), true)) {
+                    $unbacked[] = $because;
+                }
+            }
             // As the live check reads it: the time and the weather, then everything it looked at.
             $around = ['items' => ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', ...$assisted['read']]];
         } elseif ($around !== null) {
@@ -295,7 +311,7 @@ class EvaluateComposer extends Command
             }
         }
 
-        return [$said, ['dead_end' => $dead ? [Str::limit($reply['text'], 120)] : [], 'invented' => $invented]];
+        return [$said, ['dead_end' => $dead ? [Str::limit($reply['text'], 120)] : [], 'invented' => $invented, 'because_unbacked' => $unbacked]];
     }
 
     /**
@@ -330,7 +346,7 @@ class EvaluateComposer extends Command
         $routed = [];
         $sources = [];
         $latency = [];
-        $leads = ['ai' => 0, 'listings' => 0, 'ai_sentences' => 0, 'ai_kept' => 0];
+        $leads = ['ai' => 0, 'listings' => 0, 'ai_sentences' => 0, 'ai_kept' => 0, 'because' => 0, 'taste' => 0, 'invite' => 0];
         $answering = [];
         $assisting = array_values(array_filter(array_column($results, 'assist_ms')));
         sort($assisting);
@@ -346,6 +362,9 @@ class EvaluateComposer extends Command
                 $leads[$r['said']['written']]++;
                 $leads['ai_sentences'] += $r['said']['ai_sentences'] ?? 0;
                 $leads['ai_kept'] += $r['said']['ai_kept'] ?? 0;
+                $leads['because'] += count($r['said']['assistant']['because'] ?? []);
+                $leads['taste'] += ($r['said']['assistant']['taste'] ?? false) ? 1 : 0;
+                $leads['invite'] += ($r['said']['assistant']['invite'] ?? false) ? 1 : 0;
                 $answering[] = $r['parse_ms'];
             }
             foreach ($r['gates'] ?? [] as $gate => $hits) {
@@ -431,8 +450,17 @@ class EvaluateComposer extends Command
             'veedel' => $request['home_veedel'],
             'situation' => self::SITUATIONS[$request['persona']] ?? Situation::Other,
         ])->save();
+        // A persona with personalisation on, and a taste to go with it.
+        $personalised = (bool) ($request['personalised'] ?? false);
+        $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => $personalised]]);
+        $subject = Pseudonym::for($user);
+        DB::table('user_affinities')->where('subject_key', $subject)->delete();
+        if ($personalised) {
+            DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => $subject, 'dimension' => $row[0], 'key' => $row[1],
+                'context' => 'all', 'score' => $row[2], 'signals_count' => $row[3], 'updated_at' => now()], self::TASTE));
+        }
 
-        return $user;
+        return $user->fresh();
     }
 
     /**
