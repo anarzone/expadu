@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Ai\LlmCalls;
 use App\Composer\Answers\Answers;
 use App\Composer\Answers\AroundCheck;
 use App\Composer\Answers\AroundNow;
@@ -49,7 +50,10 @@ class EvaluateComposer extends Command
         {--limit= : Run at most this many requests}
         {--parser=configured : configured (the app binding) or heuristic}
         {--week= : Monday of the week to run in (default: next Monday)}
-        {--label=baseline : Name for the report file}';
+        {--label=baseline : Name for the report file}
+        {--effort= : The parser\'s effort for this run (low, medium, high)}
+        {--cohort= : Suffix for the synthetic users, so runs can go side by side}
+        {--parse-only : Read and answer each request, but compose no plan}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
@@ -86,6 +90,9 @@ class EvaluateComposer extends Command
             : CarbonImmutable::now('Europe/Berlin')->next(CarbonImmutable::MONDAY)->startOfDay();
         // One permit per request; the daily cap is for people, not this run.
         config(['bureaucracy_privacy.daily_limits.'.ProcessingPurpose::ComposerParse->value => 100000]);
+        if ($this->option('effort')) {
+            config(['services.llm.effort' => (string) $this->option('effort')]);
+        }
 
         $results = [];
         $bar = $this->output->createProgressBar($requests->count());
@@ -152,15 +159,21 @@ class EvaluateComposer extends Command
             return $row + ['error' => 'parse: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
         }
         $row['parse_ms'] = (int) ((hrtime(true) - $started) / 1e6);
+        $row['tokens'] = $parser->usage ?? null;
         $row['parse'] = ['intent' => $parsed->intent->value, 'source' => $parsed->source, 'kind' => $routed['kind'], 'constraints' => $parsed->plan?->toArray()];
         // The same rule ComposerController::parse() applies.
         $answered = Answers::handles($routed, $parsed->intent) || ($around !== null && $parsed->reply !== []);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
         // Where a request should go ("What's on tonight?" → an answer), checked apart from any plan.
-        $routing = isset($request['expect']['routed']) ? ['routed' => $row['routed'] === $request['expect']['routed']] : [];
+        // Parse-only, a request with no route named is a plan to compose (the set's own kind).
+        $route = $request['expect']['routed'] ?? ($this->option('parse-only') ? 'compose' : null);
+        $routing = $route !== null ? ['routed' => $row['routed'] === $route] : [];
         $planExpect = array_diff_key($request['expect'], ['routed' => true, 'around' => true]);
         $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
+        if ($row['routed'] === 'compose' && $this->option('parse-only')) {
+            return $row + ['expectations' => $routing, 'gates' => $gates];
+        }
         if ($row['routed'] !== 'compose') {
             try {
                 [$said, $gated] = $this->said($user, $request['text'], $routed, $parsed, $answered, $around, $now);
@@ -279,7 +292,14 @@ class EvaluateComposer extends Command
         $latency = [];
         $leads = ['ai' => 0, 'listings' => 0, 'ai_sentences' => 0, 'ai_kept' => 0];
         $answering = [];
+        $parsing = [];
+        $tokens = ['input' => 0, 'output' => 0];
         foreach ($results as $r) {
+            if (isset($r['parse_ms'])) {
+                $parsing[] = $r['parse_ms'];
+            }
+            $tokens['input'] += $r['tokens']['input'] ?? 0;
+            $tokens['output'] += $r['tokens']['output'] ?? 0;
             if (isset($r['said']['written'])) {
                 $leads[$r['said']['written']]++;
                 $leads['ai_sentences'] += $r['said']['ai_sentences'] ?? 0;
@@ -304,6 +324,8 @@ class EvaluateComposer extends Command
         }
         sort($latency);
         sort($answering);
+        sort($parsing);
+        $cost = app(LlmCalls::class)->cost((string) config('services.llm.model'), $tokens['input'], $tokens['output']);
         $pick = fn (float $q, ?array $of = null): ?int => ($of ?? $latency) === [] ? null : ($of ?? $latency)[(int) floor($q * (count($of ?? $latency) - 1))];
         $all = count($results);
         $passedAll = count(array_filter($results, fn (array $r): bool => ! isset($r['error'])
@@ -323,6 +345,9 @@ class EvaluateComposer extends Command
             'latency_ms' => ['p50' => $pick(0.5), 'p95' => $pick(0.95)],
             // The parse call that also writes the lead, for what Composer says instead of a plan.
             'answer_parse_ms' => ['p50' => $pick(0.5, $answering), 'p95' => $pick(0.95, $answering)],
+            'parse_ms' => ['p50' => $pick(0.5, $parsing), 'p95' => $pick(0.95, $parsing)],
+            'effort' => (string) config('services.llm.effort'),
+            'tokens' => $tokens + ['cost_usd' => $cost, 'cost_per_request_usd' => $cost === null || $all === 0 ? null : round($cost / $all, 6)],
         ];
     }
 
@@ -332,6 +357,7 @@ class EvaluateComposer extends Command
             $summary['requests'], $summary['requests_fully_passing'], $summary['errors'], $summary['gates_total'],
             collect($summary['gates'])->map(fn (int $n, string $g): string => "{$g} {$n}")->implode(', ')));
         $this->line('Leads: '.json_encode($summary['leads']).' · answer parse p50 '.$summary['answer_parse_ms']['p50'].' ms, p95 '.$summary['answer_parse_ms']['p95'].' ms');
+        $this->line('Effort '.$summary['effort'].' · parse p50 '.$summary['parse_ms']['p50'].' ms, p95 '.$summary['parse_ms']['p95'].' ms · tokens '.json_encode($summary['tokens']));
         $this->line('Routed: '.json_encode($summary['routed']).' · parser: '.json_encode($summary['parse_source'])
             .' · latency p50 '.$summary['latency_ms']['p50'].' ms, p95 '.$summary['latency_ms']['p95'].' ms');
         $this->table(['expectation', 'pass', 'of', 'rate'], collect($summary['expectations'])
@@ -352,7 +378,7 @@ class EvaluateComposer extends Command
 
     private function user(array $request): User
     {
-        $user = User::query()->firstOrNew(['email' => "composer-eval+{$request['persona']}@example.invalid"]);
+        $user = User::query()->firstOrNew(['email' => "composer-eval+{$request['persona']}{$this->option('cohort')}@example.invalid"]);
         $user->forceFill([
             'name' => 'Composer eval · '.$request['persona'],
             'password' => $user->password ?? Hash::make(Str::random(40)),

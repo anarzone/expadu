@@ -104,6 +104,9 @@ class AnthropicPromptParser implements ParsesPrompt
         - What you can do: plan a day or an evening, list what's on, find places for an activity, check a journey, and point to reviewed paperwork guidance.
         TXT;
 
+    /** The last call's tokens and time, for composer:eval's cost and latency. */
+    public ?array $usage = null;
+
     public function __construct(private readonly HeuristicPromptParser $fallback) {}
 
     private function toolSchema(): array
@@ -175,6 +178,8 @@ class AnthropicPromptParser implements ParsesPrompt
             }
 
             $this->recordCall($startedAt, 'success', (int) data_get($body, 'usage.input_tokens', 0), (int) data_get($body, 'usage.output_tokens', 0), $around !== null);
+            $this->usage = ['input' => (int) data_get($body, 'usage.input_tokens', 0) + (int) data_get($body, 'usage.cache_read_input_tokens', 0)
+                + (int) data_get($body, 'usage.cache_creation_input_tokens', 0), 'output' => (int) data_get($body, 'usage.output_tokens', 0)];
             $args = $this->arguments($body);
             $reply = $around !== null ? $this->reply($args['reply'] ?? null) : [];
             $explicit = $this->fallback->explicitPlaceRequirements($text);
