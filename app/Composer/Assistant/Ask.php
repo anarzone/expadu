@@ -120,8 +120,9 @@ final class Ask
             'blocks' => $blocks,
             'title' => $trip['title'] ?? $record['title'] ?? null,
             'trip' => $trip['trip'] ?? null,
-            // The place a trip went to, for a follow-up ("how far is it?").
+            // The place a trip went to, and the start named, for a follow-up ("how far is it?").
             'destination' => $trip['destination'] ?? null,
+            'start' => $trip['start'] ?? null,
             'record' => $record['record'] ?? null,
             // Reviewed guides matching these words (the page's Guidance).
             'query' => $guidance['query'] ?? null,

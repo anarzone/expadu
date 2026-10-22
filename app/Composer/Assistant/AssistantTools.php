@@ -134,10 +134,14 @@ final class AssistantTools
             ['name' => 'where_am_i', 'description' => 'Where the person is: their nearest KVB stop and Veedel, from their browser\'s location or the start they chose, and how that\'s known.', 'input_schema' => $none],
             ['name' => 'departures', 'description' => 'Live departures at a KVB stop, by line and direction. Without a stop: at the stop nearest the person.',
                 'input_schema' => ['type' => 'object', 'properties' => ['stop' => ['type' => 'string', 'description' => 'a KVB stop name, optional']]]],
-            ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train from where the person is, with Expadu\'s place finder. When the name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?".',
+            ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train, from where the person is or from the start they name, with Expadu\'s place finder. When a name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?".',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
+                    'from' => ['type' => 'string', 'description' => 'the start they named ("from Neumarkt"); leave out to start from where they are'],
+                    'from_area' => ['type' => 'string', 'description' => 'a Veedel they named with the start, optional'],
+                    'by' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => TripAnswers::KINDS], 'description' => 'only these ways of travelling ("by tram"); S-Bahn and regional trains are train'],
+                    'avoid' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => TripAnswers::KINDS], 'description' => 'ways of travelling they ruled out ("without trains")'],
                     'at' => ['type' => 'string', 'description' => 'HH:MM today when they want to leave, optional'],
                     'how_far' => ['type' => 'boolean', 'description' => 'they asked how far it is'],
                 ], 'required' => ['to']]],
@@ -319,21 +323,35 @@ final class AssistantTools
     /** The way to a place (TripAnswers), or which of several places of that name. */
     private function planTrip(array $input): string
     {
-        $to = trim((string) ($input['to'] ?? ''));
-        $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
         // "Café Nova in Deutz" (a tapped choice, copied as is) is Café Nova, in Deutz, whether or not the area came too.
-        if (preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
-            [$to, $area] = [trim($m[1]), $area ?? PlanDay::areas([$m[2]])[0]];
-        }
+        $split = function (mixed $name, mixed $area): array {
+            $name = trim((string) $name);
+            $area = is_string($area) && trim($area) !== '' ? trim($area) : null;
+            if (preg_match('/^(.+?)\s+in\s+(.+)$/iu', $name, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
+                return [trim($m[1]), $area ?? PlanDay::areas([$m[2]])[0]];
+            }
+
+            return [$name, $area];
+        };
+        [$to, $area] = $split($input['to'] ?? '', $input['area'] ?? null);
+        [$from, $fromArea] = $split($input['from'] ?? '', $input['from_area'] ?? null);
         // "How far is it?" is about the place this conversation's last trip went to, by its name and
         // area. Asked for by name again, the place finder picks the one meant before and offers the others.
         $key = fn (string $name): string => Destinations::key($name);
         $before = ($input['how_far'] ?? false) === true
             ? collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area)) : null;
         $area ??= $before['area'] ?? null;
+        // ...from the start that trip had, unless they name another.
+        if ($from === '' && isset($before['start']['name'])) {
+            [$from, $fromArea] = [$before['start']['name'], $before['start']['area'] ?? null];
+        }
         $answer = app(TripAnswers::class)->toPlace($this->user, [
             'place' => $to,
             'area' => $area,
+            'from' => $from !== '' ? $from : null,
+            'from_area' => $fromArea,
+            'by' => is_array($input['by'] ?? null) ? $input['by'] : [],
+            'avoid' => is_array($input['avoid'] ?? null) ? $input['avoid'] : [],
             'at' => is_string($input['at'] ?? null) && preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $input['at']) === 1 ? $input['at'] : null,
             'ask' => ($input['how_far'] ?? false) === true ? 'distance' : null,
             // Places this conversation already named, so "Cafe Nova" can mean the one meant before.
@@ -356,10 +374,12 @@ final class AssistantTools
         }
 
         // The place it's to, by name, so the answer may name it ("Café Nova in Deutz is about 4.4 km away").
-        $to = isset($extra['destination']['name']) ? "Trip to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
+        $to = isset($extra['destination']['name']) ? 'Trip'.(isset($extra['start']['name']) ? " from \"{$extra['start']['name']}\"".(isset($extra['start']['area']) ? " in {$extra['start']['area']}" : '') : '')
+            ." to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
 
         // A major problem on the way, in its own checked words, so the answer agrees with the headline.
-        $major = isset($extra['major']) ? "\nMajor problem on the way: {$extra['major']['title']}.".($extra['major']['text'] !== null ? " {$extra['major']['text']}" : '') : '';
+        $major = isset($extra['major']) ? "\nMajor problem on the way: {$extra['major']['title']}.".($extra['major']['text'] !== null ? " {$extra['major']['text']}" : '')
+            .($extra['major']['todo'] !== null ? " {$extra['major']['todo']}" : '') : '';
 
         return $this->line($id, $to.trim(($extra['title'] ?? '').' '.$answer['text']).$major);
     }
