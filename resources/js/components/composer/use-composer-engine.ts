@@ -228,6 +228,8 @@ export function useComposerEngine(
                     constraints: Record<string, unknown> | null;
                     kind: string;
                     answer: boolean;
+                    /** Why it was read without the AI, when it was. */
+                    reader?: string | null;
                 };
                 // Read with the AI service under the line's say-so; if that's refused (an
                 // outdated notice, the service off), the request is read without it.
@@ -239,13 +241,15 @@ export function useComposerEngine(
                         ? api<Parsed>(parse.url(), { text })
                         : Promise.reject(error),
                 );
+                // Read without the AI: the reply says why (nothing fake, 22 Oct 2026).
+                const reader = parsed.reader ? { reader: parsed.reader } : {};
 
                 const origin = on.current.origin ?? null;
 
                 if (parsed.answer) {
                     // Composer answers it from your day and records (the server works
                     // out what you asked from your own words).
-                    await sendCommand({ action: 'answer' });
+                    await sendCommand({ action: 'answer', ...reader });
                 } else if (parsed.intent === 'plan_day' && parsed.constraints) {
                     setBusy('Putting your day together…');
                     const result = await api<{
@@ -273,6 +277,7 @@ export function useComposerEngine(
 
                     await sendCommand({
                         action: 'proposal',
+                        ...reader,
                         token: result.handoff_token,
                     });
                 } else {
@@ -284,7 +289,7 @@ export function useComposerEngine(
                               : parsed.intent === 'find'
                                 ? 'find'
                                 : 'unknown';
-                    await sendCommand({ action: 'reply', kind });
+                    await sendCommand({ action: 'reply', kind, ...reader });
                 }
             }
 

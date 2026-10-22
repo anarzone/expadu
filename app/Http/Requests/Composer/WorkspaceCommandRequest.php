@@ -23,6 +23,8 @@ class WorkspaceCommandRequest extends FormRequest
             // Only a message carries words; an answer is worked out from the stored one.
             'text' => ['required_if:action,message', 'prohibited_unless:action,message', 'string', 'max:500'],
             'kind' => ['required_if:action,reply', Rule::in(['bureaucracy', 'find', 'journey', 'unknown', 'failed'])],
+            // Why the request was read without the AI (the parse's `reader`), said under its answer.
+            'reader' => ['nullable', Rule::in(['limited', 'off', 'failed', 'unpermitted'])],
             'token' => ['required_if:action,proposal', 'string', 'max:80'],
             'id' => ['required_if:action,edit,remove,replace,resume,reapply,complete,uncomplete', 'string', 'max:120'],
             // Which change to undo; without it, the newest one.

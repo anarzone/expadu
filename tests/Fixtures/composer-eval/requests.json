@@ -5565,6 +5565,132 @@
     "routed": "answer",
     "answer_kind": "trip"
    }
+  },
+  {
+   "id": "couple.trip_how_can_i_go",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-05T13:50:00+01:00",
+   "weather": "dry",
+   "text": "how can i go to the cafe nova?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_typo",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-06T10:15:00+01:00",
+   "weather": "dry",
+   "text": "hw cna i get to cafe nova",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_way_to",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-04T16:30:00+01:00",
+   "weather": "dry",
+   "text": "whats the way to cafe nova",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_directions_lower",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-07T11:05:00+01:00",
+   "weather": "dry",
+   "text": "directions to neumarkt",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_how_far",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-03T15:45:00+01:00",
+   "weather": "dry",
+   "text": "how far is the Dom from here?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_reach",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-08T12:20:00+01:00",
+   "weather": "dry",
+   "text": "how do I reach Kölner Dom",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "couple.trip_route_please",
+   "persona": "couple",
+   "home_veedel": "Neustadt-Süd",
+   "origin": {
+    "lat": 50.9282,
+    "lng": 6.9443
+   },
+   "companions": "partner",
+   "needs": [],
+   "now": "2026-11-05T18:40:00+01:00",
+   "weather": "dry",
+   "text": "route to the Dom please",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
   }
  ]
 }

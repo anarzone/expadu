@@ -26,6 +26,7 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
+use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -38,6 +39,7 @@ use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Http\Requests\ParseComposerPromptRequest;
+use App\Models\BureaucracyProcessingConsent;
 use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
@@ -48,6 +50,7 @@ use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
 use App\Privacy\ProcessingConsentStore;
+use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
@@ -224,9 +227,40 @@ class ComposerController extends Controller
         if ($around !== null) {
             app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
         }
+        // A trip the AI read ("take_me_there") where the words alone didn't say so: to its place.
+        if ($parsed->intent === PromptIntent::TakeMeThere && filled($parsed->query) && in_array($routed['kind'], Answers::UNSPECIFIC, true) && ! isset($routed['place'])) {
+            Answers::tripHint($request->user(), $validated['text'], (string) $parsed->query);
+            $routed = $answers->route($request->user(), $validated['text'], $now, app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
+        }
         $answered = Answers::handles($routed, $parsed->intent);
 
-        return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
+        return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered,
+            'reader' => $this->readerWithoutAi($parser, $permit, $parsed->toArray()['source'] ?? null)]);
+    }
+
+    /**
+     * Why a request was read without the AI, when it was (nothing fake, 22 Oct 2026): the
+     * day's allowance used up, the AI reader off, the service not answering, or no
+     * permission for this request. Null when the AI read it.
+     */
+    private function readerWithoutAi(ParsesPrompt $parser, ?ProcessingPermit $permit, ?string $source): ?string
+    {
+        if ($source === 'llm') {
+            return null;
+        }
+        if (! $parser instanceof AnthropicPromptParser) {
+            return 'off';
+        }
+        if ($permit === null) {
+            return 'unpermitted';
+        }
+
+        return match (BureaucracyProcessingConsent::query()->whereKey($permit->id)->value('state')) {
+            'limited' => 'limited',
+            // Sent but no usable reading came back (an error, or nothing it could use).
+            'failed', 'completed' => 'failed',
+            default => 'unpermitted',
+        };
     }
 
     public function compose(

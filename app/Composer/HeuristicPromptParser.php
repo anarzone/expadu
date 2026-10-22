@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Composer\Answers\RequestRouter;
 use App\Composer\Concerns\NormalisesConstraints;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Privacy\ProcessingPermit;
@@ -205,9 +206,10 @@ class HeuristicPromptParser implements ParsesPrompt
         $raw = trim($text);
         $t = mb_strtolower($raw);
 
-        // 1. Explicit navigation wins outright.
-        if ($this->containsAny($t, self::NAV_PHRASES)) {
-            return new ParsedPrompt(PromptIntent::TakeMeThere, query: $raw);
+        // 1. Explicit navigation wins outright: to the place named, as the router reads it.
+        $trip = RequestRouter::destination($raw);
+        if ($trip !== null || $this->containsAny($t, self::NAV_PHRASES)) {
+            return new ParsedPrompt(PromptIntent::TakeMeThere, query: $trip['place'] ?? $raw);
         }
 
         // 2. A bureaucracy keyword routes to the verified checklist, never a plan.

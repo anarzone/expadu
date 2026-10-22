@@ -161,7 +161,11 @@ class EvaluateComposer extends Command
         $row['parse_ms'] = (int) ((hrtime(true) - $started) / 1e6);
         $row['tokens'] = $parser->usage ?? null;
         $row['parse'] = ['intent' => $parsed->intent->value, 'source' => $parsed->source, 'kind' => $routed['kind'], 'constraints' => $parsed->plan?->toArray()];
-        // The same rule ComposerController::parse() applies.
+        // The same rules ComposerController::parse() applies.
+        if ($parsed->intent === PromptIntent::TakeMeThere && filled($parsed->query) && in_array($routed['kind'], Answers::UNSPECIFIC, true) && ! isset($routed['place'])) {
+            Answers::tripHint($user, $request['text'], (string) $parsed->query);
+            $routed = app(Answers::class)->route($user, $request['text'], $now, app(WorkspaceStore::class)->read($user)['focus'] ?? null);
+        }
         $answered = Answers::handles($routed, $parsed->intent);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 

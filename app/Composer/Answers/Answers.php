@@ -9,6 +9,7 @@ use App\Models\ActiveTrip;
 use App\Models\Event;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,9 @@ final class Answers
 {
     /** The kinds this class answers (and, for a journey, only the appointment's: handles()). */
     public const KINDS = ['help', 'around', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable', 'onway', 'journey', 'event', 'places'];
+
+    /** What the router says when the words name nothing in particular: a trip the AI read may stand in. */
+    public const UNSPECIFIC = ['clarify', 'nearby', 'unavailable', 'discovery', 'journey', 'around'];
 
     /** Questions about your own day, trip and records, answered even when the words read as a plan. */
     private const ABOUT_YOUR_DAY = ['next', 'checklist', 'journey', 'onway'];
@@ -86,7 +90,7 @@ final class Answers
         $kind = $request['kind'];
 
         return in_array($intent, [PromptIntent::Open, PromptIntent::Unknown], true) || $kind === 'around' || (in_array($kind, self::KINDS, true)
-            && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment' || isset($request['place']))
+            && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment' || isset($request['place']) || ($request['again'] ?? false))
             && ($intent !== PromptIntent::PlanDay || in_array($kind, [...self::ABOUT_YOUR_DAY, ...self::LISTINGS], true))
             && ($kind !== 'clarify' || $intent === PromptIntent::Find)
             && $kind !== 'unavailable');
@@ -117,7 +121,25 @@ final class Answers
     /** @return array{kind: string, date: string}&array<string, mixed> */
     public function route(User $user, string $text, CarbonImmutable $now, ?string $focus): array
     {
-        return $this->router->route($text, $this->context($user, $now, $focus));
+        $routed = $this->router->route($text, $this->context($user, $now, $focus));
+        // A trip the AI read where the words alone didn't say so ("how cn i get 2 cafe nova").
+        $trip = in_array($routed['kind'], self::UNSPECIFIC, true) && ! isset($routed['place']) ? Cache::get(self::tripKey($user, $text)) : null;
+
+        return is_array($trip) ? ['kind' => 'journey', 'date' => $now->setTimezone('Europe/Berlin')->toDateString(), ...$trip] : $routed;
+    }
+
+    /**
+     * Keeps the place the AI read a trip to ("take_me_there" and its query), for the answer
+     * to this request; the words alone may not say it's a trip.
+     */
+    public static function tripHint(User $user, string $text, string $place): void
+    {
+        Cache::put(self::tripKey($user, $text), ['place' => $place, 'area' => null, 'at' => null, 'again' => false], now()->addMinutes(15));
+    }
+
+    private static function tripKey(User $user, string $text): string
+    {
+        return "composer:trip:{$user->id}:".hash('sha256', trim($text));
     }
 
     /**

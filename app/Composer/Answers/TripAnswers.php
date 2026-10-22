@@ -95,7 +95,7 @@ final class TripAnswers
             ? "{$this->vehicle($ride['mode'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
             : "Walk: {$journey['duration_min']} min.";
 
-        return $this->reply("{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}."
+        $answer = $this->reply("{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}."
             .($ride !== null ? ' '.$this->running($ride) : ''), $title, [
                 'journey' => $journey,
                 'for' => $this->for($to['name'], null, null, null, false, null),
@@ -104,6 +104,10 @@ final class TripAnswers
                 'label' => 'Open in Travel',
                 'basis' => collect($journey['legs'])->contains(fn (array $leg): bool => $this->rides($leg) && ($leg['realtime'] ?? false)) ? 'live' : 'scheduled',
             ]);
+        // The place, for a follow-up about it ("how far is it?").
+        $answer['extra']['destination'] = ['name' => $to['name'], 'area' => $to['area']];
+
+        return $answer;
     }
 
     /**

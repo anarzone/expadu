@@ -97,3 +97,37 @@ test('an identical parser retry preserves its original resolved time window', fu
         ->and($second)->toBe($first);
     Http::assertSentCount(1);
 });
+
+test('🔒 a request read without the AI says why, and one the AI read says nothing', function () {
+    // The AI read it: no line.
+    $this->postJson(route('composer.parse'), ['text' => 'Anmeldung appointment',
+        'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse)])
+        ->assertOk()->assertJsonPath('source', 'llm')->assertJsonPath('reader', null);
+
+    // No permission for this request.
+    $this->postJson(route('composer.parse'), ['text' => 'Anmeldung appointment'])
+        ->assertOk()->assertJsonPath('reader', 'unpermitted');
+
+    // The day's allowance used up: the gate holds it as limited.
+    config()->set('bureaucracy_privacy.daily_limits.composer_parse', 1);
+    $this->postJson(route('composer.parse'), ['text' => 'Anmeldung appointment please',
+        'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse)])
+        ->assertOk()->assertJsonPath('source', 'heuristic')->assertJsonPath('reader', 'limited');
+
+    // The AI reader off.
+    config()->set('services.llm.driver', 'heuristic');
+    $this->postJson(route('composer.parse'), ['text' => 'Anmeldung appointment'])
+        ->assertOk()->assertJsonPath('reader', 'off');
+});
+
+test('🔒 the reason is kept on the reply it explains, never an earlier one', function () {
+    $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'Anmeldung appointment'])->assertOk();
+    $state = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'reply', 'kind' => 'bureaucracy', 'reader' => 'limited'])
+        ->assertOk()->json();
+    $messages = $state['conversations'][0]['messages'];
+    expect(end($messages))->role->toBe('assistant')->reader->toBe('limited')
+        ->and($messages[0])->not->toHaveKey('reader');
+
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'reply', 'kind' => 'find', 'reader' => 'made-up'])
+        ->assertUnprocessable()->assertJsonValidationErrors('reader');
+});
