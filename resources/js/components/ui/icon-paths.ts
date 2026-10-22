@@ -22,6 +22,7 @@ export const lineIcons = {
     home: '<path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
     back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
+    next: '<path d="m9 6 6 6-6 6"/>',
     down: '<path d="m7 10 5 5 5-5"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
     walk: '<circle cx="13" cy="4" r="2"/><path d="m10 9 3-2 3 5 4 1M10 9l-3 4H4m9-5-2 8-4 6m4-6 5 1 2 5"/>',

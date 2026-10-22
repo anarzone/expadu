@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import {
     lazy,
     Suspense,
@@ -11,22 +11,24 @@ import {
 } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
-import type { TrayAsked } from '@/components/composer/tray-answer';
+import type { TrayAsked, TrayView } from '@/components/composer/tray-body';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { composer } from '@/routes';
 
-// The answer and Composer's styles load with the first request, not every page.
-const TrayAnswer = lazy(() => import('@/components/composer/tray-answer'));
+// The panel's start and conversation, and Composer's styles, load when it first
+// opens, not with every page.
+const TrayBody = lazy(() => import('@/components/composer/tray-body'));
 
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
- * controls): one box to ask in from any page. Phones open it from the round
- * button beside the floating sections; tablets and desktops from "Ask
- * Composer" in the header or ⌘K, and it sits just under the header with the
- * page dimmed. Send asks Composer here (direction B, owner 22 Oct 2026): the
- * answer drops under the box (rises above it on a phone), under the AI line
- * shown here (sending is the consent, owner 21 Oct 2026); Full Composer
+ * controls): one panel to ask in from any page, with the box at its foot.
+ * Phones open it from the round button beside the floating sections; tablets
+ * and desktops from "Ask Composer" in the header or ⌘K, and it rises at the
+ * foot of the screen with the page dimmed (owner, 22 Oct 2026: "anchor at the
+ * bottom"). Before you ask, the panel offers the conversation to go back to
+ * and recent ones; asked, the conversation grows above the box, under the AI
+ * line shown here (sending is the consent, owner 21 Oct 2026). Full Composer
  * carries on with the same conversation. Closing keeps it for coming back. It
  * lives in the persistent shell, so an unsent request survives moving between
  * pages.
@@ -39,8 +41,12 @@ const setOpen = (next: boolean) => {
     listeners.forEach((notify) => notify());
 };
 
+// While the tray is going away: opening again keeps it instead.
+let stopClosing: (() => void) | null = null;
+
 /** Opens the tray (the header button, ⌘K). */
 export function openComposerTray(): void {
+    stopClosing?.();
     setOpen(true);
 }
 
@@ -138,6 +144,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const [menuOpen, setMenuOpen] = useState(false);
     // The request just sent, and whether there's a conversation to come back to.
     const [asked, setAsked] = useState<TrayAsked | null>(null);
+    // The panel's start each time it opens; the conversation once asked, or
+    // reopened from "Back to your conversation".
+    const [view, setView] = useState<TrayView>('start');
+    const backed = useRef(false);
     // The conversation's day in focus, once the answer has loaded it.
     const [focusDay, setFocusDay] = useState<string | null>(null);
     const talked = useComposerKept();
@@ -147,7 +157,16 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const [chipAt, setChipAt] = useState<{ top: number; left: number } | null>(
         null,
     );
+    // The way back shows for a moment after closing (owner, 22 Oct 2026); the dot
+    // on what opens Composer is the lasting one.
+    const [resume, setResume] = useState(false);
+    const chip = useRef<HTMLButtonElement>(null);
     const tray = useRef<HTMLDivElement>(null);
+    const panel = useRef<HTMLElement>(null);
+    const dim = useRef<HTMLDivElement>(null);
+    // One close at a time: a tap outside closes on pointerdown, then its click
+    // lands on the dim; a second fade from full would flash the box back.
+    const closing = useRef(false);
     const field = useRef<HTMLTextAreaElement>(null);
     const launcher = useRef<HTMLButtonElement>(null);
     const menuId = useId();
@@ -161,6 +180,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             return;
         }
 
+        closing.current = false;
         field.current?.focus({ preventScroll: true });
 
         if (!still()) {
@@ -227,30 +247,132 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         return () => window.removeEventListener('resize', place);
     }, [isOpen, talked]);
 
+    // It goes about 4 s after closing, or at the first tap or scroll elsewhere,
+    // whichever comes first. Reduced motion: it just goes.
+    useEffect(() => {
+        if (isOpen || !talked || !resume) {
+            return;
+        }
+
+        let gone = false;
+        const leave = (event?: Event) => {
+            if (
+                gone ||
+                (event?.target instanceof Node &&
+                    chip.current?.contains(event.target))
+            ) {
+                return;
+            }
+
+            gone = true;
+            const fade =
+                chip.current && !still()
+                    ? chip.current.animate(
+                          [
+                              { opacity: 1 },
+                              { opacity: 0, transform: 'translateY(-4px)' },
+                          ],
+                          { duration: 200, easing: 'ease', fill: 'forwards' },
+                      )
+                    : null;
+
+            if (fade) {
+                fade.finished.then(
+                    () => setResume(false),
+                    () => {},
+                );
+            } else {
+                setResume(false);
+            }
+        };
+        const timer = window.setTimeout(leave, 4000);
+        const events = ['pointerdown', 'wheel', 'touchmove'] as const;
+        events.forEach((name) =>
+            document.addEventListener(name, leave, {
+                capture: true,
+                passive: true,
+            }),
+        );
+
+        return () => {
+            window.clearTimeout(timer);
+            events.forEach((name) =>
+                document.removeEventListener(name, leave, { capture: true }),
+            );
+        };
+    }, [isOpen, talked, resume]);
+
+    // Closed, it opens at its start next time.
+    const shut = () => {
+        setOpen(false);
+        setView('start');
+    };
+
     const hide = () => {
+        if (closing.current) {
+            return;
+        }
+
         setMenuOpen(false);
         // What was asked is answered in the conversation; reopening asks nothing again.
         setAsked(null);
         const box = tray.current;
 
         if (!box || still()) {
-            setOpen(false);
+            shut();
+            setResume(true);
 
             return;
         }
 
-        // Box and answer go together (B): fade and rise 8px.
-        box.animate(
+        // Panel and box go together: fade and sink 8px, the dim fading with them.
+        closing.current = true;
+        const timing = { duration: 240, easing: 'ease', fill: 'both' } as const;
+        const fade = box.animate(
             [
                 { opacity: 1, transform: 'translateY(0)' },
-                { opacity: 0, transform: 'translateY(-8px)' },
+                { opacity: 0, transform: 'translateY(8px)' },
             ],
-            { duration: 240, easing: 'ease', fill: 'both' },
-        ).finished.then(
-            () => setOpen(false),
+            timing,
+        );
+        const dimFade = dim.current?.animate(
+            [{ opacity: 1 }, { opacity: 0 }],
+            timing,
+        );
+        stopClosing = () => {
+            stopClosing = null;
+            closing.current = false;
+            fade.cancel();
+            dimFade?.cancel();
+        };
+        fade.finished.then(
+            () => {
+                stopClosing = null;
+                closing.current = false;
+                shut();
+                setResume(true);
+            },
             () => {},
         );
     };
+
+    // A link in it that leaves for another page (Open in Travel, a place or an
+    // event, Full Composer) closes it with its fade; the conversation stays for
+    // later (owner, 22 Oct 2026). A partial reload (turning personalisation on)
+    // leaves it open.
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        return router.on('start', (event) => {
+            const { only, except } = event.detail.visit;
+
+            if (only.length === 0 && except.length === 0) {
+                hide();
+            }
+        });
+    }, [isOpen]);
 
     // An outside tap closes it; the request stays for next time.
     useEffect(() => {
@@ -276,6 +398,53 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
         return () => document.removeEventListener('pointerdown', onPointer);
     }, [isOpen]);
+
+    // The panel grows up from the box, at most to 12px under the page's header;
+    // the keyboard counts.
+    useLayoutEffect(() => {
+        const box = tray.current;
+        const element = panel.current;
+
+        if (!isOpen || !box || !element) {
+            return;
+        }
+
+        const fit = () => {
+            const header =
+                document.querySelector('.shell-header')?.getBoundingClientRect()
+                    .bottom ?? 0;
+            element.style.maxHeight = `${Math.max(
+                160,
+                box.getBoundingClientRect().top - Math.max(12, header + 12),
+            )}px`;
+        };
+
+        fit();
+        const observer = new ResizeObserver(fit);
+        observer.observe(box);
+        window.addEventListener('resize', fit);
+        window.visualViewport?.addEventListener('resize', fit);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', fit);
+            window.visualViewport?.removeEventListener('resize', fit);
+        };
+    }, [isOpen]);
+
+    // ‹ goes back to the start, with the focus on its first button.
+    useEffect(() => {
+        if (view !== 'start' || !backed.current) {
+            return;
+        }
+
+        backed.current = false;
+        (
+            tray.current?.querySelector<HTMLElement>(
+                '.composer-tray-start :is(button, a)',
+            ) ?? field.current
+        )?.focus({ preventScroll: true });
+    }, [view]);
 
     // The field grows with the request, up to five lines.
     useLayoutEffect(() => {
@@ -311,8 +480,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
         setText('');
         setMenuOpen(false);
-        // Asked here, once; the box stays for the next one.
-        setAsked({ id: Date.now(), text: request });
+        // Asked here, once; the box stays for the next one. From the start,
+        // it's a new conversation.
+        setAsked({ id: Date.now(), text: request, fresh: view === 'start' });
+        setView('talk');
         setKept(true);
         field.current?.focus({ preventScroll: true });
     };
@@ -375,8 +546,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     )}
                 </button>
             )}
-            {!isOpen && talked && (
+            {!isOpen && talked && resume && (
                 <button
+                    ref={chip}
                     type="button"
                     className={
                         chipAt
@@ -385,7 +557,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     }
                     style={chipAt ?? undefined}
                     data-composer-opener
-                    onClick={() => setOpen(true)}
+                    onClick={() => {
+                        setView('talk');
+                        setOpen(true);
+                    }}
                 >
                     <Icon name="chat" variant="line" />
                     Back to your conversation
@@ -393,8 +568,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                 </button>
             )}
             {isOpen && (
-                // The dim takes the click that closes, so nothing under it is pressed.
+                // The dim takes the tap, so nothing under it is pressed. The tap has
+                // already closed it on pointerdown; its click only hands focus back.
                 <div
+                    ref={dim}
                     className="composer-backdrop"
                     style={{ top: dimTop }}
                     aria-hidden="true"
@@ -409,17 +586,65 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     aria-label="Ask Composer"
                     onKeyDown={onKeyDown}
                 >
-                    <button
-                        type="button"
-                        className="composer-tray-dismiss"
-                        aria-label="Close Composer"
-                        title="Close Composer"
-                        onClick={close}
+                    <section
+                        ref={panel}
+                        className="composer-tray-panel"
+                        aria-label="Composer"
                     >
-                        <span className="composer-tray-icon">
-                            <Icon name="close" variant="line" />
-                        </span>
-                    </button>
+                        <header className="composer-tray-head">
+                            {view === 'talk' && (
+                                <button
+                                    type="button"
+                                    className="composer-tray-head-button"
+                                    aria-label="Back to recent conversations"
+                                    onClick={() => {
+                                        backed.current = true;
+                                        setView('start');
+                                    }}
+                                >
+                                    <Icon name="back" variant="line" />
+                                </button>
+                            )}
+                            <span
+                                className="composer-tray-mark"
+                                aria-hidden="true"
+                            >
+                                <Icon name="spark" variant="line" />
+                            </span>
+                            <strong>Composer</strong>
+                            <Link
+                                className="composer-tray-full"
+                                href={composer.url()}
+                                aria-label="Open full Composer"
+                            >
+                                <Icon name="grow" variant="line" />
+                                <span>Full Composer</span>
+                            </Link>
+                            <button
+                                type="button"
+                                className="composer-tray-head-button"
+                                aria-label="Close Composer"
+                                onClick={close}
+                            >
+                                <Icon name="close" variant="line" />
+                            </button>
+                        </header>
+                        <Suspense fallback={null}>
+                            <TrayBody
+                                view={view}
+                                asked={asked}
+                                notice={aiNotice}
+                                onOpen={() => {
+                                    setView('talk');
+                                    setKept(true);
+                                    field.current?.focus({
+                                        preventScroll: true,
+                                    });
+                                }}
+                                onFocus={setFocusDay}
+                            />
+                        </Suspense>
+                    </section>
                     <form onSubmit={send}>
                         <textarea
                             ref={field}
@@ -438,7 +663,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                             }}
                             aria-label="Your request to Composer"
                             placeholder={
-                                talked && focusDay
+                                view === 'talk' && focusDay
                                     ? `Ask or change ${weekday(focusDay)}…`
                                     : 'Ask, discover, or plan…'
                             }
@@ -470,7 +695,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                                 role="menuitem"
                                                 onClick={() => {
                                                     setMenuOpen(false);
-                                                    setOpen(false);
+                                                    shut();
 
                                                     // A fresh start leaves nothing to come back to.
                                                     if (
@@ -517,16 +742,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                         </div>
                     </form>
                     {aiNotice && <AiNoticeLine notice={aiNotice} />}
-                    {talked && (
-                        <Suspense fallback={null}>
-                            <TrayAnswer
-                                asked={asked}
-                                notice={aiNotice}
-                                onClose={close}
-                                onFocus={setFocusDay}
-                            />
-                        </Suspense>
-                    )}
                 </div>
             )}
         </>
