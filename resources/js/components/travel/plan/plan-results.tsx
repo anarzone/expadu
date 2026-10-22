@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { PLATFORM_NOT_KNOWN, sourceLabel } from '@/components/ui/state-notice';
 import { cn } from '@/lib/utils';
 import type { JourneyLeg } from '@/types/transit';
@@ -349,38 +350,52 @@ type PlanOptionsProps = {
     answer: PlanAnswer;
     target: PlanTarget | null;
     destination: string;
-    selected: string | null;
-    onSelect: (id: string) => void;
+    /** The picked option, for options picked with their round button. */
+    selected?: string | null;
+    onSelect?: (id: string) => void;
     expanded: Set<string>;
     onToggle: (id: string) => void;
+    /**
+     * An option's own buttons, at the foot of its open details. With them an
+     * option opens in place (Plan a trip: owner, 22 Oct 2026, "Trip options"
+     * canvas); without them it's picked with its round button (Get there).
+     */
+    actions?: (option: PlanOption) => ReactNode;
     /** Whether an option is the way in your plan ("In your plan"). */
     planned?: (option: PlanOption) => boolean;
     /** A boarding stop's timetable, in Nearby. */
     onBoardStop?: (name: string) => void;
 };
 
-/** The options as one choice; "Best for you" names the first when there's a choice. */
+/**
+ * The options, "Best for you" naming the first when there's a choice: each
+ * opens in place with its own buttons (`actions`), or they're one choice
+ * picked with round buttons.
+ */
 export function PlanOptions({
     options,
     answer,
     target,
     destination,
-    selected,
+    selected = null,
     onSelect,
     expanded,
     onToggle,
+    actions,
     planned,
     onBoardStop,
 }: PlanOptionsProps) {
+    const inPlace = actions !== undefined;
+
     return (
         <div
             className="plan-options"
-            role="radiogroup"
+            role={inPlace ? 'group' : 'radiogroup'}
             aria-label="Your options"
         >
             {options.map((option, index) => {
-                const on = option.id === selected;
                 const open = expanded.has(option.id);
+                const on = inPlace ? open : option.id === selected;
                 const best = index === 0 && options.length > 1;
                 const reasons = reasonsFor(
                     option,
@@ -389,6 +404,42 @@ export function PlanOptions({
                     planned?.(option) ?? false,
                 );
                 const disclosure = `route-disclosure-${option.id}`;
+                const body = (
+                    <span className="plan-option-body">
+                        <span className="plan-option-head">
+                            {best ? (
+                                <TravelChip
+                                    kind="best"
+                                    icon={<TravelIcon name="star" />}
+                                >
+                                    Best for you
+                                </TravelChip>
+                            ) : (
+                                <OptionTitle option={option} />
+                            )}
+                            {spareChip(option, target)}
+                        </span>
+                        {best ? <OptionTitle option={option} /> : null}
+                        <span className="plan-option-times">
+                            Leave <strong>{option.journey.depart_time}</strong>{' '}
+                            → there{' '}
+                            <strong>{option.journey.arrive_time}</strong>
+                        </span>
+                        <span className="plan-option-reasons">
+                            {reasons.map((reason) => (
+                                <span
+                                    key={reason.text}
+                                    className={`is-${reason.kind}`}
+                                >
+                                    <span className="plan-reason-icon">
+                                        <TravelIcon name={reason.icon} />
+                                    </span>
+                                    {reason.text}
+                                </span>
+                            ))}
+                        </span>
+                    </span>
+                );
 
                 return (
                     <article
@@ -396,96 +447,78 @@ export function PlanOptions({
                         className={cn('plan-option', on && 'is-on')}
                         aria-label={`${optionLabel(option)}, leave ${option.journey.depart_time}, there ${option.journey.arrive_time}`}
                     >
-                        <button
-                            type="button"
-                            className="plan-option-pick"
-                            role="radio"
-                            aria-checked={on}
-                            tabIndex={on ? 0 : -1}
-                            onClick={() => onSelect(option.id)}
-                            onKeyDown={(event) => {
-                                if (
-                                    event.key !== 'ArrowDown' &&
-                                    event.key !== 'ArrowUp'
-                                ) {
-                                    return;
-                                }
+                        {inPlace ? (
+                            // The whole top opens its details; "Journey
+                            // details" under it says so.
+                            <button
+                                type="button"
+                                className="plan-option-pick"
+                                aria-expanded={open}
+                                aria-controls={disclosure}
+                                onClick={() => onToggle(option.id)}
+                            >
+                                {body}
+                                <span className="details-toggle">
+                                    Journey details <TravelIcon name="down" />
+                                </span>
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    className="plan-option-pick"
+                                    role="radio"
+                                    aria-checked={on}
+                                    tabIndex={on ? 0 : -1}
+                                    onClick={() => onSelect?.(option.id)}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key !== 'ArrowDown' &&
+                                            event.key !== 'ArrowUp'
+                                        ) {
+                                            return;
+                                        }
 
-                                event.preventDefault();
-                                const next =
-                                    options[
-                                        (index +
-                                            (event.key === 'ArrowDown'
-                                                ? 1
-                                                : -1) +
-                                            options.length) %
-                                            options.length
-                                    ];
-                                onSelect(next.id);
-                                (
-                                    event.currentTarget.closest(
-                                        '.plan-options',
-                                    ) as HTMLElement | null
-                                )
-                                    ?.querySelector<HTMLButtonElement>(
-                                        `[data-option="${next.id}"]`,
-                                    )
-                                    ?.focus();
-                            }}
-                            data-option={option.id}
-                        >
-                            <span className="plan-radio" aria-hidden="true" />
-                            <span className="plan-option-body">
-                                <span className="plan-option-head">
-                                    {best ? (
-                                        <TravelChip
-                                            kind="best"
-                                            icon={<TravelIcon name="star" />}
-                                        >
-                                            Best for you
-                                        </TravelChip>
-                                    ) : (
-                                        <OptionTitle option={option} />
-                                    )}
-                                    {spareChip(option, target)}
-                                </span>
-                                {best ? <OptionTitle option={option} /> : null}
-                                <span className="plan-option-times">
-                                    Leave{' '}
-                                    <strong>
-                                        {option.journey.depart_time}
-                                    </strong>{' '}
-                                    → there{' '}
-                                    <strong>
-                                        {option.journey.arrive_time}
-                                    </strong>
-                                </span>
-                                <span className="plan-option-reasons">
-                                    {reasons.map((reason) => (
-                                        <span
-                                            key={reason.text}
-                                            className={`is-${reason.kind}`}
-                                        >
-                                            <span className="plan-reason-icon">
-                                                <TravelIcon
-                                                    name={reason.icon}
-                                                />
-                                            </span>
-                                            {reason.text}
-                                        </span>
-                                    ))}
-                                </span>
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            className="details-toggle"
-                            aria-expanded={open}
-                            aria-controls={disclosure}
-                            onClick={() => onToggle(option.id)}
-                        >
-                            Journey details <TravelIcon name="down" />
-                        </button>
+                                        event.preventDefault();
+                                        const next =
+                                            options[
+                                                (index +
+                                                    (event.key === 'ArrowDown'
+                                                        ? 1
+                                                        : -1) +
+                                                    options.length) %
+                                                    options.length
+                                            ];
+                                        onSelect?.(next.id);
+                                        (
+                                            event.currentTarget.closest(
+                                                '.plan-options',
+                                            ) as HTMLElement | null
+                                        )
+                                            ?.querySelector<HTMLButtonElement>(
+                                                `[data-option="${next.id}"]`,
+                                            )
+                                            ?.focus();
+                                    }}
+                                    data-option={option.id}
+                                >
+                                    <span
+                                        className="plan-radio"
+                                        aria-hidden="true"
+                                    />
+                                    {body}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="details-toggle"
+                                    aria-expanded={open}
+                                    aria-controls={disclosure}
+                                    onClick={() => onToggle(option.id)}
+                                >
+                                    Journey details <TravelIcon name="down" />
+                                </button>
+                            </>
+                        )}
                         <div
                             id={disclosure}
                             className="route-disclosure"
@@ -494,13 +527,16 @@ export function PlanOptions({
                         >
                             <div className="route-disclosure-inner">
                                 {open ? (
-                                    <JourneySteps
-                                        option={option}
-                                        destination={destination}
-                                        answer={answer}
-                                        target={target}
-                                        onBoardStop={onBoardStop}
-                                    />
+                                    <>
+                                        <JourneySteps
+                                            option={option}
+                                            destination={destination}
+                                            answer={answer}
+                                            target={target}
+                                            onBoardStop={onBoardStop}
+                                        />
+                                        {actions?.(option)}
+                                    </>
                                 ) : null}
                             </div>
                         </div>

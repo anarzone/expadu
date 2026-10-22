@@ -253,9 +253,9 @@ export function PlanPanel({
     const [relocated, setRelocated] = useState(false);
     const relocating = useRef(false);
     const [status, setStatus] = useState<Status>({ kind: 'idle' });
+    // The option open in place: one at a time, none at first (owner,
+    // 22 Oct 2026, "Trip options" canvas).
     const [selected, setSelected] = useState<string | null>(null);
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
-    const [touched, setTouched] = useState(false);
     const [more, setMore] = useState(false);
     const [big, setBig] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -489,7 +489,7 @@ export function PlanPanel({
             setEditing(false);
             setStatus({ kind: 'loading' });
             setMore(false);
-            setTouched(false);
+            setSelected(null);
 
             try {
                 // In the body: where you go and start never sit in a URL.
@@ -883,7 +883,7 @@ export function PlanPanel({
     // While the options show, a new day or time asks again, once it settles.
     const asked = useRef<string | null>(null);
     // ...and picking or changing either place (a suggestion, Your location,
-    // Home or Work, or a swap) asks again at once; typing alone waits until
+    // Home or Work) asks again at once; typing alone waits until
     // a place is picked (owner, 22 Oct 2026).
     const askedWhere = useRef<string | null>(null);
     const where =
@@ -980,14 +980,12 @@ export function PlanPanel({
         [options, sort, prefs, deadline],
     );
     const shown = more ? ranked : ranked.slice(0, 3);
+    const openOption = shown.some((option) => option.id === selected)
+        ? selected
+        : null;
+    // The open option, else the best: what the checks and a hand-off read.
     const chosen =
-        shown.find((option) => option.id === selected) ?? shown[0] ?? null;
-    const open = new Set(expanded);
-
-    // Desktop shows the chosen way's details until you fold them.
-    if (desktop && !touched && chosen) {
-        open.add(chosen.id);
-    }
+        shown.find((option) => option.id === openOption) ?? shown[0] ?? null;
 
     const go = (place: PlanPlace, next?: Picked | null) => {
         setTo({ text: place.name, place });
@@ -1196,7 +1194,7 @@ export function PlanPanel({
                 kind: target?.kind ?? null,
             },
             inPlan: isPlanned(option),
-            addToPlan: target ? addToPlan : null,
+            addToPlan: target ? () => addToPlan(option) : null,
         });
     };
 
@@ -1211,12 +1209,12 @@ export function PlanPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status.kind, chosen]);
 
-    const addToPlan = async (): Promise<boolean> => {
-        if (!chosen || !target || saving) {
+    const addToPlan = async (option: PlanOption): Promise<boolean> => {
+        if (!target || saving) {
             return false;
         }
 
-        if (isPlanned(chosen) && plannedNow) {
+        if (isPlanned(option) && plannedNow) {
             setSaved(plannedNow);
 
             return true;
@@ -1232,7 +1230,7 @@ export function PlanPanel({
                 body: JSON.stringify({
                     date: berlinNow(new Date(target.start_at)).date,
                     target_id: target.id,
-                    journey: chosen.journey,
+                    journey: option.journey,
                     // On by default where notifications are already allowed,
                     // as the mock shows it; otherwise the switch asks.
                     remind: push.isSubscribed,
@@ -1536,11 +1534,6 @@ export function PlanPanel({
                                     () => toField.current?.focus(),
                                     0,
                                 );
-                            }}
-                            onSwap={() => {
-                                setFrom(to);
-                                setTo(from);
-                                setPicked(null);
                             }}
                             toRef={toField}
                             onUseLocation={() => startFromHere()}
@@ -2030,28 +2023,58 @@ export function PlanPanel({
                                                         to.place?.name ??
                                                         to.text
                                                     }
-                                                    selected={
-                                                        chosen?.id ?? null
-                                                    }
                                                     planned={isPlanned}
                                                     onBoardStop={onBoardStop}
-                                                    onSelect={setSelected}
-                                                    expanded={open}
-                                                    onToggle={(id) => {
-                                                        setTouched(true);
-                                                        setExpanded(() => {
-                                                            const next =
-                                                                new Set(open);
-
-                                                            if (next.has(id)) {
-                                                                next.delete(id);
-                                                            } else {
-                                                                next.add(id);
-                                                            }
-
-                                                            return next;
-                                                        });
-                                                    }}
+                                                    expanded={
+                                                        new Set(
+                                                            openOption
+                                                                ? [openOption]
+                                                                : [],
+                                                        )
+                                                    }
+                                                    onToggle={(id) =>
+                                                        setSelected((now) =>
+                                                            now === id
+                                                                ? null
+                                                                : id,
+                                                        )
+                                                    }
+                                                    actions={(option) => (
+                                                        <div className="plan-option-actions">
+                                                            <button
+                                                                type="button"
+                                                                className="primary plan-go"
+                                                                onClick={() =>
+                                                                    showTheWay(
+                                                                        option,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <TravelIcon name="route" />
+                                                                Show the way
+                                                            </button>
+                                                            {target ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="quiet-button plan-save"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                    onClick={() =>
+                                                                        void addToPlan(
+                                                                            option,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {isPlanned(
+                                                                        option,
+                                                                    )
+                                                                        ? 'In your plan · see it'
+                                                                        : 'Add to plan'}
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
                                                 />
                                                 {ranked.length > 3 ? (
                                                     <button
@@ -2070,40 +2093,6 @@ export function PlanPanel({
                                                             : `${ranked.length - 3} more routes`}
                                                         <TravelIcon name="down" />
                                                     </button>
-                                                ) : null}
-                                                {chosen ? (
-                                                    <div className="plan-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="primary plan-go"
-                                                            onClick={() =>
-                                                                showTheWay(
-                                                                    chosen,
-                                                                )
-                                                            }
-                                                        >
-                                                            <TravelIcon name="route" />
-                                                            Show the way
-                                                        </button>
-                                                        {target ? (
-                                                            <button
-                                                                type="button"
-                                                                className="quiet-button plan-save"
-                                                                disabled={
-                                                                    saving
-                                                                }
-                                                                onClick={() =>
-                                                                    void addToPlan()
-                                                                }
-                                                            >
-                                                                {isPlanned(
-                                                                    chosen,
-                                                                )
-                                                                    ? 'In your plan · see it'
-                                                                    : 'Add to plan'}
-                                                            </button>
-                                                        ) : null}
-                                                    </div>
                                                 ) : null}
                                             </div>
                                         </>
