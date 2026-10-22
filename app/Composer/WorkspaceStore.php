@@ -120,6 +120,11 @@ class WorkspaceStore
                 $answers = app(Answers::class);
                 $now = CarbonImmutable::now('Europe/Berlin');
                 $request = $answers->route($user, $asked['text'], $now, $s['focus']);
+                if (($request['again'] ?? false) && ! isset($request['place'])) {
+                    // "How do I get there?": the place this conversation's last trip was to.
+                    $last = $messages->last(fn ($message) => isset($message['destination']['name']))['destination'] ?? null;
+                    $request = $last === null ? array_diff_key($request, ['again' => true]) : [...$request, 'place' => $last['name'], 'area' => $last['area'] ?? null];
+                }
                 $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now);
                 if ($reply === null && ! in_array($request['kind'], ['checklist', 'bureaucracy', 'journey', 'onway'], true)) {
                     // No answer of its own: what's around you and what Composer can do.

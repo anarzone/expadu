@@ -65,13 +65,24 @@ final class RequestRouter
     ];
 
     /**
-     * A trip to a place named (owner's staging test, 22 Oct 2026: "show me departures to go
-     * Cafe Nova in City Center"). These words mean a trip whatever the place's case; "go to"
-     * and the like only with a name (capitalised), so "go to the park" stays an outing.
+     * A trip to a place named (owner's staging tests, 22 Oct 2026: "show me departures to go
+     * Cafe Nova in City Center", "how can i go to the cafe nova?"). These words mean a trip
+     * whatever the place's case, typos and all; "go to" and the like only with a name
+     * (capitalised), so "go to the park" stays an outing.
      */
-    private const TRIP_TO = '/\\b(?:take me|bring me|get me|directions|route|departures?|connections?|navigate|how (?:do|can|should) i get)\\b(?:\\s+\\S+){0,2}?\\s+to\\s+(?:go\\s+(?:to\\s+)?)?(?<place>.+)$/iu';
+    private const TRIP_TO = [
+        '/\b(?:take|bring|get|guide) me\s+(?:\S+\s+)?to\s+(?<place>.+)$/iu',
+        '/\b(?:navigate|directions?|route|departures?|connections?)\s+(?:\S+\s+){0,2}?to\s+(?:go\s+(?:to\s+)?)?(?<place>.+)$/iu',
+        '/(?<!on my )(?<!on the )\bway\s+(?:\S+\s+){0,2}?to\s+(?<place>.+)$/iu',
+        '/\b(?:how|hw|hoe|hwo)\s+(?:\S+\s+){0,4}?(?:get|go|travel|come|walk|cycle|ride)\s+(?:over\s+)?to\s+(?<place>.+)$/iu',
+        '/\b(?:how|hw)\s+(?:\S+\s+){0,3}?reach\s+(?<place>.+)$/iu',
+        '/\bhow (?:far|long)\b(?:\s+(?:away|is|it|does it take|will it take|to|from here|from me))*\s+(?<place>.+)$/iu',
+    ];
 
-    private const GO_TO = '/\\b(?:go|going|head|heading|travel|travelling|get)\\s+to\\s+(?<place>.+)$/iu';
+    private const GO_TO = '/\b(?:go|going|head|heading|travel|travelling|get)\s+to\s+(?<place>.+)$/iu';
+
+    /** The place a trip was to, again: "how do I get there?", "how far is it?", "take me there". */
+    private const AGAIN = '/^(?:and\s+|so\s+)?(?:(?:how|hw)\b.*\b(?:get|go|reach)\s+there|(?:take|bring|get) me there|directions(?:\s+there)?|how (?:far|long) (?:is it|away is it|does it take)|(?:the )?(?:way|route) there)\b[?!. ]*$/iu';
 
     /** A greeting and nothing else ("hi", "Hallo!"): what's around you now. */
     private const GREETING = '/^(hi|hiya|hello|hey|hallo|moin|servus|yo|good (morning|afternoon|evening|day))( there| composer| expadu)?[!.,? ]*$/u';
@@ -117,8 +128,9 @@ final class RequestRouter
             return ['kind' => 'journey', 'date' => $context->today, 'event' => $event];
         }
 
-        // "Show me departures to Cafe Nova in City Center": a trip to that place, today.
-        if ($this->date($t, $context, $context->today) === $context->today && ($trip = $this->tripTo($text)) !== null) {
+        // "Show me departures to Cafe Nova in City Center": a trip to that place, today; "how do
+        // I get there?" the place the last trip was to (the workspace knows which).
+        if ($this->date($t, $context, $context->today) === $context->today && ($trip = self::destination($text)) !== null) {
             return ['kind' => 'journey', 'date' => $context->today, ...$trip];
         }
 
@@ -260,29 +272,50 @@ final class RequestRouter
 
     /**
      * The place a trip is to, as typed ("Cafe Nova"), the area named with it ("City
-     * Center") and a time to leave at ("at 18:30"); null when the words aren't a trip to a
-     * named place.
+     * Center") and a time to leave at ("at 18:30"); `again` for the last trip's place ("how
+     * do I get there?"). Null when the words aren't a trip to a place. The keyword reader
+     * asks this too, so both readers know a trip the same way.
      *
-     * @return array{place: string, area: ?string, at: ?string}|null
+     * @return array{place: ?string, area: ?string, at: ?string, again: bool}|null
      */
-    private function tripTo(string $text): ?array
+    public static function destination(string $text): ?array
     {
         $text = trim(str_replace(['’', '‘'], "'", $text));
-        $sure = preg_match(self::TRIP_TO, $text, $m) === 1;
+        if (preg_match(self::AGAIN, $text) === 1) {
+            return ['place' => null, 'area' => null, 'at' => null, 'again' => true];
+        }
+        $sure = false;
+        foreach (self::TRIP_TO as $pattern) {
+            if (preg_match($pattern, $text, $m) === 1) {
+                $sure = true;
+                break;
+            }
+        }
         if (! $sure && preg_match(self::GO_TO, $text, $m) !== 1) {
             return null;
         }
         $at = preg_match('/\s+at\s+(\d{1,2}):(\d{2})\b/u', $m['place'], $time) === 1 && (int) $time[1] < 24 && (int) $time[2] < 60
             ? sprintf('%02d:%s', $time[1], $time[2]) : null;
-        $place = (string) preg_replace(['/^(the|my)\s+/iu', '/\s+(at \d{1,2}:\d{2}|right now|now|today|tonight|please|pls|asap|from here)\b.*$/iu'], '', trim($m['place']));
+        $place = (string) preg_replace([
+            '/^(?:(?:get|go|travel)\s+to|it\s+to|it\s+from\s+here\s+to)\s+/iu',
+            '/^(?:the|my)\s+/iu',
+            '/\s+(at \d{1,2}:\d{2}|right now|now|today|tonight|please|pls|plz|asap|from here|by (?:tram|bus|train|bike|foot))\b.*$/iu',
+        ], '', trim($m['place']));
         $place = rtrim($place, ' ?.!,');
         $area = null;
         if (preg_match('/^(?<place>.+?)\s+(?:in|near|at|by)\s+(?:the\s+)?(?<area>[^,]+)$/iu', $place, $a) === 1) {
             [$place, $area] = [trim($a['place']), trim($a['area'])];
         }
+        // "The best way to spend Saturday" is no trip.
+        if (preg_match('/^(spend|do|make|have|enjoy|relax|meet|see|start|end|use|kill|pass|celebrate|learn|find|stay|save|cook|eat|sleep|chill)\b/iu', $place) === 1) {
+            return null;
+        }
+        if (preg_match('/^(there|it|that( place)?|this place)$/iu', $place) === 1) {
+            return ['place' => null, 'area' => null, 'at' => $at, 'again' => true];
+        }
 
         return mb_strlen($place) >= 3 && mb_strlen($place) <= 80 && ($sure || preg_match('/\p{Lu}/u', $place) === 1)
-            ? ['place' => $place, 'area' => $area, 'at' => $at] : null;
+            ? ['place' => $place, 'area' => $area, 'at' => $at, 'again' => false] : null;
     }
 
     /** "When should I leave for the cinema?" (model.js eventTrip): the id of today's event it names. */
