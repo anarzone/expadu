@@ -1,5 +1,7 @@
-import { Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import {
+    lazy,
+    Suspense,
     useEffect,
     useId,
     useLayoutEffect,
@@ -9,20 +11,26 @@ import {
 } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
+import type { TrayAsked } from '@/components/composer/tray-answer';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useCurrentPageContext } from '@/lib/page-context';
 import { composer } from '@/routes';
-import { store as composerEntry } from '@/routes/composer/entry';
+
+// The answer and Composer's styles load with the first request, not every page.
+const TrayAnswer = lazy(() => import('@/components/composer/tray-answer'));
 
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
  * controls): one box to ask in from any page. Phones open it from the round
  * button beside the floating sections; tablets and desktops from "Ask
  * Composer" in the header or ⌘K, and it sits just under the header with the
- * page dimmed. Send sends: Composer opens and asks it at once, under the AI
- * line shown here (sending is the consent, owner 21 Oct 2026). It lives in
- * the persistent shell, so an unsent request survives moving between pages.
+ * page dimmed. Send asks Composer here (direction B, owner 22 Oct 2026): the
+ * answer drops under the box (rises above it on a phone), under the AI line
+ * shown here (sending is the consent, owner 21 Oct 2026); Full Composer
+ * carries on with the same conversation. Closing keeps it for coming back. It
+ * lives in the persistent shell, so an unsent request survives moving between
+ * pages.
  */
 
 let open = false;
@@ -92,6 +100,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const [text, setText] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
     const [leftOut, setLeftOut] = useState<string | null>(null);
+    // The request just sent, and whether there's a conversation to come back to.
+    const [asked, setAsked] = useState<TrayAsked | null>(null);
+    const [talked, setTalked] = useState(false);
     const context = useCurrentPageContext();
     const about = context && context.label !== leftOut ? context : null;
     const tray = useRef<HTMLDivElement>(null);
@@ -123,6 +134,8 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
     const hide = () => {
         setMenuOpen(false);
+        // What was asked is answered in the conversation; reopening asks nothing again.
+        setAsked(null);
         const box = tray.current;
 
         if (!box || still()) {
@@ -202,20 +215,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
         setText('');
         setMenuOpen(false);
-        setOpen(false);
-        // By POST, so the words stay out of the URL, history and logs. `send`:
-        // Composer asks it on arrival, under the notice shown here, if any.
-        router.post(composerEntry.url(), {
-            prompt: request,
-            ...(about ? { about: about.label } : {}),
-            send: true,
-            ...(aiNotice
-                ? {
-                      notice_version: aiNotice.notice_version,
-                      provider_version: aiNotice.provider_version,
-                  }
-                : {}),
-        });
+        // Asked here, once; the box stays for the next one.
+        setAsked({ id: Date.now(), text: request });
+        setTalked(true);
+        field.current?.focus({ preventScroll: true });
     };
 
     const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -256,7 +259,11 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     ref={launcher}
                     type="button"
                     className="shell-composer-round"
-                    aria-label="Open Composer"
+                    aria-label={
+                        talked
+                            ? 'Open Composer, with your conversation'
+                            : 'Open Composer'
+                    }
                     aria-expanded={false}
                     data-composer-opener
                     onClick={() => setOpen(true)}
@@ -264,6 +271,23 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     <span className="shell-composer-round-icon">
                         <Icon name="spark" variant="line" />
                     </span>
+                    {talked && (
+                        <span
+                            className="shell-composer-dot"
+                            aria-hidden="true"
+                        />
+                    )}
+                </button>
+            )}
+            {!isOpen && talked && (
+                <button
+                    type="button"
+                    className="composer-tray-resume"
+                    data-composer-opener
+                    onClick={() => setOpen(true)}
+                >
+                    <Icon name="chat" variant="line" />
+                    Back to your conversation
                 </button>
             )}
             {isOpen && (
@@ -385,6 +409,15 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                         </div>
                     </form>
                     {aiNotice && <AiNoticeLine notice={aiNotice} />}
+                    {talked && (
+                        <Suspense fallback={null}>
+                            <TrayAnswer
+                                asked={asked}
+                                notice={aiNotice}
+                                onClose={close}
+                            />
+                        </Suspense>
+                    )}
                 </div>
             )}
         </>

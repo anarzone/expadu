@@ -105,16 +105,8 @@ export default function ComposerPage({
     paperwork?: PaperworkGlance;
     /** Tonight's listings and what's near today's appointment (deferred). */
     around?: DayAround;
-    /**
-     * What a page handed over by POST (the tray's words and the page they came from),
-     * once. The tray's Send (`send`) is asked on arrival, under the AI notice it showed.
-     */
-    entry?: {
-        prompt: string;
-        about: string | null;
-        send?: boolean;
-        notice?: { notice_version: string; provider_version: string } | null;
-    } | null;
+    /** What a page handed over by POST (Today's cards: the words and the page), once. */
+    entry?: { prompt: string; about: string | null } | null;
     prompt?: string;
     planDate?: string;
     pins?: string[];
@@ -128,12 +120,13 @@ export default function ComposerPage({
         readComposerEntry(page.url),
     );
     const [entryEvent, setEntryEvent] = useState<EventOccurrence | null>(null);
+    // Whether the handed-over event had started when it loaded (it can't be added then).
+    const [entryStarted, setEntryStarted] = useState(false);
     const [entryError, setEntryError] = useState('');
     const [entryRetry, setEntryRetry] = useState(0);
     const [initialInput] = useState(() => {
-        // Words just handed over from another page come first; they wait for Send,
-        // unless Send was what handed them over (the tray), when they're asked below.
-        if (handedOver?.prompt && !handedOver.send) {
+        // Words just handed over from another page come first; they wait for Send.
+        if (handedOver?.prompt) {
             return handedOver.prompt;
         }
 
@@ -149,7 +142,7 @@ export default function ComposerPage({
     });
     // "About: …": what the page was showing, kept with this request until left out.
     const [about, setAbout] = useState<string | null>(
-        handedOver?.send ? null : (handedOver?.about ?? null),
+        handedOver?.about ?? null,
     );
     const [input, setInput] = useRemember(
         initialInput,
@@ -350,27 +343,6 @@ export default function ComposerPage({
             {children}
         </ItemPreview>
     );
-    // The tray's Send, asked once on arrival, under the notice the tray showed (or
-    // none, when it showed none: the request is then read without AI).
-    const handedSent = useRef(false);
-    useEffect(() => {
-        if (handedSent.current || !handedOver?.send || !handedOver.prompt) {
-            return;
-        }
-
-        handedSent.current = true;
-        void send(
-            handedOver.prompt,
-            handedOver.notice
-                ? {
-                      processor_name: '',
-                      processor_privacy_url: null,
-                      ...handedOver.notice,
-                  }
-                : null,
-        );
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival: a later render must not ask it again.
-    }, []);
     const entryCommand = useRef(command);
     useEffect(() => {
         entryCommand.current = command;
@@ -393,6 +365,7 @@ export default function ComposerPage({
             new URL(page.url, 'http://localhost').searchParams.get('panel') ===
             'saved'
         ) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- The address is outside React: each new one opens what it asks for, once.
             setPanel('saved');
             setSavedFrom(cameFrom);
         }
@@ -413,6 +386,7 @@ export default function ComposerPage({
         // A URL is context for review, never permission to send a message.
     }, [page.url, planDate, cameFrom, stateRef]);
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- A new hand-off clears the last one's event before loading its own.
         setEntryEvent(null);
         setEntryError('');
 
@@ -429,6 +403,9 @@ export default function ComposerPage({
             .then((event) => {
                 if (!controller.signal.aborted) {
                     setEntryEvent(event);
+                    setEntryStarted(
+                        Date.parse(event.occurrence_start) <= Date.now(),
+                    );
                 }
             })
             .catch((reason) => {
@@ -947,9 +924,7 @@ export default function ComposerPage({
                                                     disabled={
                                                         !!busy ||
                                                         !entryEvent.occurrence_end ||
-                                                        Date.parse(
-                                                            entryEvent.occurrence_start,
-                                                        ) <= Date.now()
+                                                        entryStarted
                                                     }
                                                     onClick={addSelectedEvent}
                                                 >
