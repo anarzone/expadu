@@ -23,6 +23,9 @@ Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue
 Route::post('composer/parse', [ComposerController::class, 'parse'])
     ->middleware('throttle:composer-parse')
     ->name('composer.parse');
+// How far the assistant has got with a request (its permit's request id), polled while it works.
+Route::get('composer/progress/{requestId}', [ComposerController::class, 'progress'])
+    ->whereUuid('requestId')->middleware('throttle:composer-progress')->name('composer.progress');
 // What each external processing purpose sends and to whom; withdrawing ends it.
 Route::get('privacy/processing/{purpose}', ProcessingNoticeController::class)
     ->middleware('throttle:privacy-processing')->name('privacy.processing.show');

@@ -309,8 +309,9 @@ class EvaluateComposer extends Command
         if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || ! Assistant::wanted($parsed, $text)) {
             return null;
         }
-        $answer = app(Assistant::class)->answer($text, $profile, $now, [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
-            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)));
+        $answer = app(Assistant::class)->answer($user, $text, $profile, $now, [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
+            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
+            app(WorkspaceStore::class)->read($user)['plans'] ?? []);
         if ($answer !== null) {
             app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
         }

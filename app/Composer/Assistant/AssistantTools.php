@@ -8,18 +8,22 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Enums\SpotCategory;
 use App\Models\Event;
+use App\Personalisation\AffinitySnapshot;
 use App\Places\PlaceCapabilities;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
  * What Composer's assistant may look at (owner, 22 Oct 2026: "it should act as a proper
  * assistant"), as tools it calls: what's on, places to go and the weather, from the same
- * listings, catalogue and forecast the rest of the app shows. Read-only and public: nothing
- * here reads the person's own records. Every result carries an id the answer must cite,
- * and keeps the item behind it so the answer can show it as the app draws it.
+ * listings, catalogue and forecast the rest of the app shows. Read-only. The person's own
+ * taste and day are tools only with their opt-in to personalisation (owner, 22 Oct 2026),
+ * and then what they marked "not for me" stays out of the results. Every result carries
+ * an id the answer must cite, and keeps the item behind it so the answer can show it as
+ * the app draws it.
  */
 final class AssistantTools
 {
@@ -42,10 +46,40 @@ final class AssistantTools
         private CandidateRepository $catalogue,
         private EventAnswers $listings,
         private WeatherService $weather,
+        // With the opt-in only: what they like and skip (TasteFacts), their day (AroundNow::day),
+        // and their affinities, whose hides keep "not for me" items out.
+        private ?AffinitySnapshot $affinities = null,
+        private ?array $taste = null,
+        private array $day = [],
+        // Where the page asks how far it's got ("composer:progress:…"), when it does.
+        private ?string $progress = null,
     ) {}
 
-    /** @return list<array<string, mixed>> the tools, as the Messages API takes them */
-    public static function definitions(): array
+    /** Whether the person's own taste and day are tools here (the opt-in). */
+    public function personal(): bool
+    {
+        return $this->affinities !== null;
+    }
+
+    /**
+     * What it's doing, for the page's "Looking at…" line: the step and what it has looked at
+     * so far. Only what really happens.
+     */
+    public function progress(string $step): void
+    {
+        if ($this->progress !== null) {
+            Cache::put($this->progress, ['step' => $step, 'looked' => array_values(array_unique($this->looked)), 'at' => now()->getTimestamp()], 60);
+        }
+    }
+
+    /** @var list<string> the lookups made, by the page's names for them */
+    private array $looked = [];
+
+    /**
+     * @param  bool  $personal  with the opt-in: the person's taste and day too
+     * @return list<array<string, mixed>> the tools, as the Messages API takes them
+     */
+    public static function definitions(bool $personal = false): array
     {
         $kinds = array_values(array_unique([...array_map(fn (SpotCategory $c): string => $c->value, SpotCategory::cases()), ...SpotCategory::placesCoarse()]));
 
@@ -66,6 +100,12 @@ final class AssistantTools
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today, optional'],
                 ]]],
             ['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ...($personal ? [
+                ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.',
+                    'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+                ['name' => 'my_day', 'description' => 'This person\'s own plans and appointments today and tomorrow. They turned personalisation on.',
+                    'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ] : []),
         ];
     }
 
@@ -76,11 +116,16 @@ final class AssistantTools
      */
     public function run(string $name, array $input): string
     {
+        $this->looked[] = match ($name) {
+            'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste', default => $name,
+        };
         try {
             return match ($name) {
                 'search_events' => $this->searchEvents($input),
                 'search_places' => $this->searchPlaces($input),
                 'weather' => $this->weatherNow(),
+                'my_taste' => $this->myTaste(),
+                'my_day' => $this->myDay(),
                 default => 'Unknown tool.',
             };
         } catch (Throwable) {
@@ -103,6 +148,8 @@ final class AssistantTools
         $from = $from->max($day->isSameDay($this->now) ? $this->now : $day);
         $occurrences = Event::occurringBetween($day, $day->endOfDay())
             ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from));
+        // What they marked "not for me" (with the opt-in) stays out.
+        $occurrences = $occurrences->reject(fn (array $o): bool => $this->affinities?->isHidden('event', $o['event']->id) ?? false);
         $topic = trim((string) ($input['topic'] ?? ''));
         if ($topic !== '') {
             $words = array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 3);
@@ -135,6 +182,7 @@ final class AssistantTools
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
         ), $this->lat, $this->lng))
             ->filter(fn (Candidate $c): bool => $c->type === 'spot' && ! $c->closedToday
+                && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ($c->hoursAssumed || $c->opensAt === null || ($c->opensAt->lessThanOrEqualTo($at) && $c->closesAt?->greaterThan($at))))
             ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
             ->take(self::SHOWN)->values();
@@ -160,6 +208,40 @@ final class AssistantTools
             .(is_string($forecast['rain_summary'] ?? null) && $forecast['rain_summary'] !== 'No data' ? ". Next hours: {$forecast['rain_summary']}" : '');
 
         return $this->line('weather', $text);
+    }
+
+    /** What they like and skip, as TasteFacts states it: kinds, areas, times of day. */
+    private function myTaste(): string
+    {
+        if (! $this->personal() || $this->taste === null) {
+            return 'Not enough saved or opened yet to say what this person likes.';
+        }
+        $levels = ['strong' => 'likes a lot', 'some' => 'likes', 'avoid' => 'tends to skip'];
+        $lines = [];
+        foreach ($this->taste['categories'] as $i => $row) {
+            $lines[] = $this->line('t'.($i + 1), "{$levels[$row['level']]} {$row['name']}");
+        }
+        foreach ($this->taste['veedels'] as $i => $row) {
+            $lines[] = $this->line('a'.($i + 1), ($row['level'] === 'avoid' ? 'rarely goes to ' : 'goes to ')."{$row['name']}".($row['level'] === 'strong' ? ' a lot' : ''));
+        }
+        if ($this->taste['dayparts'] !== []) {
+            $lines[] = $this->line('h1', 'usually out in the '.implode(' and ', $this->taste['dayparts']));
+        }
+        if ($this->taste['week'] !== null) {
+            $lines[] = $this->line('w1', $this->taste['week'] === 'weekend' ? 'goes out more at weekends' : 'goes out more on weekdays');
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /** Their plans and appointments today and tomorrow, as their records hold them. */
+    private function myDay(): string
+    {
+        if (! $this->personal() || $this->day === []) {
+            return 'Nothing planned today or tomorrow.';
+        }
+
+        return collect($this->day)->values()->map(fn (array $fact, int $i): string => $this->line('d'.($i + 1), "{$fact['label']}: {$fact['value']}"))->implode("\n");
     }
 
     /** A listing as the assistant reads it: title, kind, venue, time and price, as listed. */

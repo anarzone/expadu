@@ -239,7 +239,8 @@ class ComposerController extends Controller
             $routed = $answers->route($request->user(), $validated['text'], $now, app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
         }
         // The assistant first: an open request is answered either way, and its answer waits for the workspace's.
-        $assisted = $this->assisted($request->user(), $validated['text'], $profile, $parsed, $permit, $now);
+        $assisted = $this->assisted($request->user(), $validated['text'], $profile, $parsed, $permit, $now,
+            self::progressKey($request->user(), (string) ($validated['processing']['request_id'] ?? '')));
         $answered = $assisted || Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered,
@@ -276,21 +277,41 @@ class ComposerController extends Controller
      * things up and answers, under the same say-so as the read; its answer waits for the
      * workspace's. False when it doesn't answer (off, refused, or nothing it wrote held).
      */
-    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now): bool
+    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?string $progress): bool
     {
         if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || ! Assistant::wanted($parsed, $text)) {
             return false;
         }
         $location = app(UserLocationService::class)->context($user, null, $user->veedel);
-        $answer = app(Assistant::class)->answer($text, $profile, $now, $location->hasOrigin()
+        $answer = app(Assistant::class)->answer($user, $text, $profile, $now, $location->hasOrigin()
             ? [(float) $location->lat, (float) $location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
-            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)));
+            app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
+            app(WorkspaceStore::class)->read($user)['plans'] ?? [], $progress);
         if ($answer === null) {
             return false;
         }
         app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
 
         return true;
+    }
+
+    /** Where a request's progress is kept for the page (its permit's request id); null without one. */
+    private static function progressKey(User $user, string $requestId): ?string
+    {
+        return Str::isUuid($requestId) ? "composer:progress:{$user->id}:".strtolower($requestId) : null;
+    }
+
+    /**
+     * How far Composer's assistant has got with a request, for the page's "Looking at…" line
+     * while it works: its step (reading, writing) and what it has looked at so far
+     * (listings, places, weather, plans, taste). Only the asker's own request.
+     */
+    public function progress(Request $request, string $requestId): JsonResponse
+    {
+        $key = self::progressKey($request->user(), $requestId);
+        $progress = $key !== null ? Cache::get($key) : null;
+
+        return response()->json(is_array($progress) ? $progress : ['step' => null, 'looked' => [], 'at' => null]);
     }
 
     public function compose(

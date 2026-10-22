@@ -27,8 +27,9 @@ enum SignalAction: string
      */
     public static function fromClient(): array
     {
-        // Taps only the client sees: "Not now" (hides 7 days) and sharing.
-        return [self::Impression->value, self::DetailViewed->value, self::NotNow->value, self::Shared->value];
+        // Taps only the client sees: "Not now" (hides 7 days), sharing, and "Not this" on a
+        // suggested event (not for me, hides 90 days; a place's goes through its own feedback).
+        return [self::Impression->value, self::DetailViewed->value, self::NotNow->value, self::Shared->value, self::NotForMe->value];
     }
 
     /**
