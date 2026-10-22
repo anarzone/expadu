@@ -151,11 +151,12 @@ final class AroundNow
             'written' => is_array($kept) ? 'ai' : 'listings',
             'events' => $listings['events'] ?: null,
             'facts' => $facts ?: null,
-            'sources' => array_values(array_filter([
+            // One link each: KVB's live notices share one page.
+            'sources' => collect([
                 $listings['events'] !== [] ? ['label' => 'Events', 'href' => route('events', ['date' => $now->toDateString()], false)] : null,
                 ...array_map(fn (array $notice): ?array => $notice['source'], $notices),
                 $deadline['source'] ?? null,
-            ])) ?: null,
+            ])->filter()->unique('href')->values()->all() ?: null,
             'suggestions' => $this->next($listings, $now),
         ], fn ($value) => $value !== null)];
     }
