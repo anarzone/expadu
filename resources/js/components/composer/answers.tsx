@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Fragment, useState } from 'react';
 import { travelDestinationParams } from '@/components/departures/travel-request';
+import { Headline } from '@/components/travel/headline';
+import { TravelChip } from '@/components/travel/labels';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf } from '@/components/travel/line-look';
 import {
@@ -84,6 +86,10 @@ type Major = {
     source: 'notice' | 'live';
     /** KVB's own words, in German, one tap away. */
     details?: string | null;
+    /** The lines it's about, as Travel's headline badges them. */
+    lines?: string[];
+    /** The notice's page, when it's KVB's. */
+    url?: string | null;
 };
 
 type Basis =
@@ -214,13 +220,14 @@ function tripHref(trip: TripAnswer): string {
 }
 
 /**
- * How a ride is running, as Travel says it: its time struck through and
- * "Cancelled" (never a filled pill), or a late chip from 2 min, live times only.
+ * How a ride is running, as Travel says it (its station board's chips): its
+ * time struck through and "Cancelled", never a filled pill, or a late chip
+ * from 2 min, live times only.
  */
 function RideStatus({ leg }: { leg: JourneyLeg }) {
     if (leg.cancelled) {
         return (
-            <span className="answer-ride-cancelled">
+            <span className="tl-cancelled">
                 <s>{leg.depart_time}</s> Cancelled
             </span>
         );
@@ -229,29 +236,38 @@ function RideStatus({ leg }: { leg: JourneyLeg }) {
     const late = leg.realtime ? (leg.delay_min ?? 0) : 0;
 
     return late >= 2 ? (
-        <span className="answer-ride-late">{`${late}\u00a0min late`}</span>
+        <TravelChip kind="attention" size="sm">
+            {`${late}\u00a0min late`}
+        </TravelChip>
     ) : null;
 }
 
-/** One headline for a major problem, before the answer's words. */
+/** One headline for a major problem, before the answer's words: Travel's own. */
 function MajorHeadline({ major }: { major: Major }) {
     return (
-        <section className="answer-major" aria-label="Major disruption">
-            <strong>{major.title}</strong>
-            {major.text && <p>{major.text}</p>}
-            {major.todo && <p className="answer-major-todo">{major.todo}</p>}
-            <small>
-                {major.source === 'notice'
+        <Headline
+            level="h3"
+            className="answer-major"
+            lines={major.lines ?? []}
+            title={major.title}
+            text={major.text}
+            todo={major.todo}
+            german={
+                major.source === 'notice' && major.details
+                    ? {
+                          title: '',
+                          details: major.details,
+                          url: major.url ?? null,
+                          kvb: true,
+                      }
+                    : null
+            }
+            source={
+                major.source === 'notice'
                     ? 'From KVB’s notice'
-                    : 'From the live times · no KVB notice'}
-            </small>
-            {major.source === 'notice' && major.details && (
-                <details>
-                    <summary>KVB’s words, in German</summary>
-                    <p lang="de">{major.details}</p>
-                </details>
-            )}
-        </section>
+                    : 'From the live times · no KVB notice'
+            }
+        />
     );
 }
 
