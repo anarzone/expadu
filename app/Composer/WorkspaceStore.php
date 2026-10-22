@@ -29,7 +29,6 @@ class WorkspaceStore
         'bureaucracy' => 'For paperwork, use our reviewed guidance. Composer does not generate legal answers.',
         'find' => 'Browse places and events below. Pick a date before adding something to your plan.',
         'journey' => 'Choose a place below to check a journey from your current location.',
-        'unknown' => 'I can help you plan a day and find places, events or reviewed paperwork guidance. Try “plan tomorrow afternoon”, or use the controls below.',
         'failed' => 'I could not finish that request. Your plan is unchanged. You can retry your message.',
     ];
 
@@ -101,7 +100,12 @@ class WorkspaceStore
             case 'reply':
                 $conversation = collect($s['conversations'])->firstWhere('id', $s['active']);
                 $query = collect($conversation['messages'])->last(fn ($message) => $message['role'] === 'user')['text'] ?? '';
-                $this->message($s, 'assistant', self::REPLIES[$input['kind']], ['kind' => $input['kind'], 'query' => $query]);
+                if ($input['kind'] === 'unknown') {
+                    // Not understood: what's around you and what Composer can do, never a dead end.
+                    $this->around($s, $user, $query, ['kind' => 'clarify']);
+                } else {
+                    $this->message($s, 'assistant', self::REPLIES[$input['kind']], ['kind' => $input['kind'], 'query' => $query]);
+                }
                 if (in_array($input['kind'], ['bureaucracy', 'unknown'])) {
                     $s['focus'] = null;
                 }
@@ -116,16 +120,14 @@ class WorkspaceStore
                 $answers = app(Answers::class);
                 $now = CarbonImmutable::now('Europe/Berlin');
                 $request = $answers->route($user, $asked['text'], $now, $s['focus']);
-                $again = ($messages->last(fn ($message) => $message['role'] === 'assistant')['kind'] ?? null) === 'clarify';
-                $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now, $again);
-                if ($reply === null) {
-                    // Not one it answers yet: the page's own reply for the kind (no checklist is a
-                    // paperwork question; a trip it can't time is a journey to look up).
-                    $kind = match ($request['kind']) {
-                        'checklist', 'bureaucracy' => 'bureaucracy',
-                        'journey', 'onway' => 'journey',
-                        default => 'unknown',
-                    };
+                $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now);
+                if ($reply === null && ! in_array($request['kind'], ['checklist', 'bureaucracy', 'journey', 'onway'], true)) {
+                    // No answer of its own: what's around you and what Composer can do.
+                    $this->around($s, $user, $asked['text'], $request);
+                } elseif ($reply === null) {
+                    // The page's own reply for the kind: no checklist is a paperwork question; a
+                    // trip it can't time is a journey to look up.
+                    $kind = in_array($request['kind'], ['checklist', 'bureaucracy'], true) ? 'bureaucracy' : 'journey';
                     $this->message($s, 'assistant', self::REPLIES[$kind], ['kind' => $kind, 'query' => $asked['text']]);
                 } else {
                     $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
@@ -606,6 +608,13 @@ class WorkspaceStore
         if ($force || ! $has) {
             $this->message($s, 'assistant', '', ['kind' => 'plan', 'date' => $date]);
         }
+    }
+
+    /** What's around you now (Answers::around), as the reply to `$text`. */
+    private function around(array &$s, User $user, string $text, array $request): void
+    {
+        $reply = app(Answers::class)->around($user, $text, $request, $s['plans'], CarbonImmutable::now('Europe/Berlin'));
+        $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
     }
 
     private function message(array &$s, string $role, string $text, array $extra = []): void

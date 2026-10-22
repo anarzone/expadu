@@ -144,7 +144,7 @@ return [
         'key' => env('LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'processor_name' => env('LLM_PROCESSOR_NAME', 'Anthropic PBC'),
         'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'prompt_version' => '2026-10-21.parser.claude.2',
+        'prompt_version' => '2026-10-22.parser.claude.3',
     ],
 
     'bureaucracy_llm' => [

@@ -7,6 +7,7 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
+use App\Models\Spot;
 use App\Models\User;
 use App\Services\UserLocationService;
 use Carbon\CarbonImmutable;
@@ -80,6 +81,8 @@ class PlaceAnswers
         }
 
         $furthest = (float) $found->last()->distanceKmFromOrigin;
+        // Where each place comes from (osm, overture), for the cards' credit.
+        $sources = Spot::query()->whereKey($found->map(fn (Candidate $candidate): int => (int) substr($candidate->id, 5))->all())->pluck('source', 'id');
         $reach = $within !== null && $furthest > $within
             ? ($inside->isEmpty() ? 'None is within '.self::km($within) : ($inside->count() === 1 ? 'Only one is' : 'Only '.mb_strtolower(self::NUMBERS[$inside->count() - 1]).' are').' within '.self::km($within))
                 .', so I looked further: nearest first, up to '.self::km($furthest)
@@ -98,6 +101,7 @@ class PlaceAnswers
                     'distance' => $candidate->distanceKmFromOrigin !== null ? number_format($candidate->distanceKmFromOrigin, 1).' km' : null,
                     'area' => $candidate->veedel,
                     'href' => route('explore', ['place' => (int) substr($candidate->id, 5)], false),
+                    'source' => $sources[(int) substr($candidate->id, 5)] ?? null,
                 ])->all(),
             ],
         ];

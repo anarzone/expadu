@@ -76,7 +76,27 @@ export type AnswerMessage = Message & {
     trip?: TripAnswer;
     events?: AnsweredEvent[];
     places?: AnsweredPlace[];
+    /** Where an "around you now" answer's sentences come from, to check them. */
+    sources?: { label: string; href: string }[];
+    /** Whether the AI wrote the sentences ('ai') or Composer's own words did. */
+    written?: 'ai' | 'listings';
 };
+
+/** The person's facts, word for word as recorded; an unknown says so. */
+function FactList({ facts }: { facts: Fact[] }) {
+    return (
+        <dl className="answer-facts">
+            {facts.map((fact) => (
+                <div key={`${fact.label}|${fact.value}`}>
+                    <dt>{fact.label}</dt>
+                    <dd className={fact.known ? undefined : 'is-unknown'}>
+                        {fact.value}
+                    </dd>
+                </div>
+            ))}
+        </dl>
+    );
+}
 
 /** Whether a message is one of these answers (the server marks them with their request's kind). */
 export const isAnswer = (message: Message): message is AnswerMessage =>
@@ -186,6 +206,46 @@ export function AnswerBody({
             )}
             {/* Your checklist and the trip lead with their block; the explanation follows it. */}
             {!record && !trip && paragraph}
+            {/* "Around you now": the sentences, then what they're grounded in (the
+                person's own facts, tonight's listings) and where to check it. */}
+            {message.kind === 'around' && (
+                <>
+                    {!!message.facts?.length && (
+                        <FactList facts={message.facts} />
+                    )}
+                    {!!message.events?.length && (
+                        <EventAnswer
+                            events={message.events}
+                            planned={planned}
+                            onAdd={onAddEvent}
+                        />
+                    )}
+                    {(message.written === 'ai' ||
+                        !!message.sources?.length) && (
+                        <p className="answer-fine">
+                            {/* The AI only ever reads public listings and the weather
+                                (AI session, 22 Oct 2026); the person's own items are
+                                Composer's words, as recorded. */}
+                            {message.written === 'ai' &&
+                                'Written by AI from public listings and the weather; your own items are as recorded. '}
+                            {!!message.sources?.length && (
+                                <>
+                                    From:{' '}
+                                    {message.sources.map((source, index) => (
+                                        <span key={source.href}>
+                                            {index > 0 && ' · '}
+                                            <Link href={source.href}>
+                                                {source.label}
+                                            </Link>
+                                        </span>
+                                    ))}
+                                    .
+                                </>
+                            )}
+                        </p>
+                    )}
+                </>
+            )}
             {message.kind === 'event' && !!message.events?.length && (
                 <EventAnswer
                     events={message.events}
@@ -253,20 +313,7 @@ export function AnswerBody({
                 </>
             )}
             {message.kind === 'facts' && !!message.facts?.length && (
-                <dl className="answer-facts">
-                    {message.facts.map((fact) => (
-                        <div key={fact.label}>
-                            <dt>{fact.label}</dt>
-                            <dd
-                                className={
-                                    fact.known ? undefined : 'is-unknown'
-                                }
-                            >
-                                {fact.value}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
+                <FactList facts={message.facts} />
             )}
             {showOptions && (
                 <div className="answer-options">
