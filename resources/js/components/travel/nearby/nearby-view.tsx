@@ -90,8 +90,9 @@ const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
 
 /**
  * A line's place in its area: its strip, or its detail when opened. The swap
- * grows (or shrinks) to the new height while the new content fades in; with
- * reduced motion it just swaps. Its own updates (new times) don't animate.
+ * goes straight from the height it had to the new one, the new content shown
+ * whole from the first frame (a fade-in read as the strip shrinking first);
+ * with reduced motion it just swaps. Its own updates (new times) don't animate.
  */
 function LineSlot({ open, children }: { open: boolean; children: ReactNode }) {
     const box = useRef<HTMLDivElement>(null);
@@ -122,14 +123,17 @@ function LineSlot({ open, children }: { open: boolean; children: ReactNode }) {
 
         running.current?.anim.cancel();
         el.style.overflow = 'hidden';
+        // Closing: the strip keeps its own height at the top while the room
+        // under it goes, rather than stretching and sliding up with it.
+        el.style.alignItems = to < from ? 'start' : '';
         const grow = el.animate(
             [{ height: `${from}px` }, { height: `${to}px` }],
             OPEN,
         );
         running.current = { anim: grow, to };
-        el.firstElementChild?.animate([{ opacity: 0 }, { opacity: 1 }], OPEN);
         grow.onfinish = grow.oncancel = () => {
             el.style.overflow = '';
+            el.style.alignItems = '';
 
             if (running.current?.anim === grow) {
                 running.current = null;

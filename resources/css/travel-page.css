@@ -2240,7 +2240,7 @@
     text-align: left;
     line-height: var(--leading-snug);
 }
-:where(.travel-page) .nearby-stop-name {
+:where(.travel-page) .nearby .nearby-stop-name {
     display: inline-flex;
     align-self: flex-start;
     width: fit-content;
@@ -2659,7 +2659,7 @@
     }
 }
 @media (min-width: 1000px) {
-    :where(.travel-page) .nearby-stop-name {
+    :where(.travel-page) .nearby .nearby-stop-name {
         font-size: var(--text-title-lg);
         letter-spacing: -0.6px;
     }
