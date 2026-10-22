@@ -108,7 +108,6 @@ class SeedPersonasCommand extends Command
             'onboarded_at' => now(),
         ])->save();
 
-        $this->ensurePlaces($user);
         $this->scenarioFacts->sync($user, $persona);
 
         if ($fresh) {
@@ -145,24 +144,6 @@ class SeedPersonasCommand extends Command
         ])->save();
 
         return $user;
-    }
-
-    /**
-     * Create the required Home + Work places if they don't exist yet —
-     * mirrors OnboardingController::complete() so a seeded account looks
-     * exactly like one that just finished onboarding for real.
-     */
-    private function ensurePlaces(User $user): void
-    {
-        $user->places()->firstOrCreate(
-            ['category' => 'home'],
-            ['emoji' => '🏠', 'name' => 'Home', 'sort_order' => 0],
-        );
-
-        $user->places()->firstOrCreate(
-            ['category' => 'work'],
-            ['emoji' => '💼', 'name' => 'Work', 'sort_order' => 1],
-        );
     }
 
     /**
