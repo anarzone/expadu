@@ -4,6 +4,7 @@ namespace App\Composer\Assistant;
 
 use App\Ai\LlmCalls;
 use App\Composer\Answers\AroundCheck;
+use App\Composer\Answers\AroundNow;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -11,6 +12,9 @@ use App\Composer\ParsedPrompt;
 use App\Composer\PromptIntent;
 use App\Enums\SpotCategory;
 use App\Models\Spot;
+use App\Models\User;
+use App\Personalisation\Affinities;
+use App\Personalisation\TasteFacts;
 use App\Privacy\ExternalProcessingGate;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
@@ -26,7 +30,9 @@ use Illuminate\Support\Facades\Http;
  * on, places, the weather), looks it up with tools, then answers in two or three sentences
  * with the listings and places it suggests. Every sentence is checked against the results
  * it cites (AroundCheck) and dropped when it fails; what it suggests is shown from the
- * results themselves. It sees only public data and the person's words.
+ * results themselves. It sees public data and the person's words; with their opt-in to
+ * personalisation, also their taste and their day, and then it may say why it suggests
+ * something ("You like live music"), checked against that taste.
  *
  * One permit covers the whole exchange (ExternalProcessingGate::session); a withdrawal
  * stops the next call. One round of lookups, then the answer, within a time budget.
@@ -60,6 +66,12 @@ final class Assistant
         - If nothing fits, say plainly what you looked at and offer to plan something.
         TXT;
 
+    /** Added for people who turned personalisation on. */
+    private const PERSONAL = <<<'TXT'
+        This person turned personalisation on: you may also look at what they like and skip (my_taste) and their own plans today and tomorrow (my_day). Prefer what fits their taste and leaves their plans free, and never suggest what they skip.
+        - because: for each suggestion that fits their taste, one short line saying why, in the form "You like live music" or "You go to Ehrenfeld a lot", citing the my_taste ids in uses. No counts, nothing their taste doesn't say.
+        TXT;
+
     private const ANSWER = [
         'name' => 'answer',
         'description' => 'Answer the person: two or three sentences built only from the results, and the listings and places suggested.',
@@ -70,8 +82,19 @@ final class Assistant
             ], 'required' => ['text', 'uses']]],
             'events' => ['type' => 'array', 'items' => ['type' => 'string']],
             'places' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'because' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => [
+                'id' => ['type' => 'string'],
+                'text' => ['type' => 'string'],
+                'uses' => ['type' => 'array', 'items' => ['type' => 'string']],
+            ], 'required' => ['id', 'text', 'uses']]],
         ], 'required' => ['sentences', 'events', 'places']],
     ];
+
+    /** A sentence that leans on the one before it. */
+    private const LEANS = '/^(also|or|and|but|so|then|that|this|it|its|it\'s|there|they|if you\'?d rather|if you prefer|otherwise|instead)\b|\b(also|too|as well|the same|that one|either)\b/iu';
+
+    /** Ids of the person's own facts (my_taste, my_day): a sentence citing one may speak of them. */
+    private const PERSONAL_IDS = '/^(t|a|h|w|d)\d+$/';
 
     public function __construct(
         private ExternalProcessingGate $gate,
@@ -108,12 +131,19 @@ final class Assistant
      * nothing it wrote held).
      *
      * @param  array{0: float, 1: float}  $origin  where nearness is measured from (never sent)
-     * @return array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string, read: array<string, string>}|null
+     * @param  array<string, array<string, mixed>>  $plans  the person's Composer plans, by date (sent only with the opt-in)
+     * @param  string|null  $progress  where the page reads how far it's got
+     * @return array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string, read: array<string, string>, taste: bool, invite: bool}|null
      */
-    public function answer(string $text, Profile $profile, CarbonImmutable $now, array $origin, ?ProcessingPermit $permit): ?array
+    public function answer(User $user, string $text, Profile $profile, CarbonImmutable $now, array $origin, ?ProcessingPermit $permit, array $plans = [], ?string $progress = null): ?array
     {
         $now = $now->setTimezone('Europe/Berlin');
-        $tools = new AssistantTools($now, $origin[0], $origin[1], $this->catalogue, $this->listings, $this->weather);
+        $personal = $user->personalises();
+        $tools = new AssistantTools($now, $origin[0], $origin[1], $this->catalogue, $this->listings, $this->weather,
+            $personal ? app(Affinities::class)->for($user) : null,
+            $personal ? app(TasteFacts::class)->for($user) : null,
+            $personal ? app(AroundNow::class)->day($user, $plans, $now) : [],
+            $progress);
         $started = hrtime(true);
 
         $result = $this->gate->session($permit, ProcessingPurpose::ComposerAssist, self::processingContext($text, $profile),
@@ -122,7 +152,10 @@ final class Assistant
             return null;
         }
 
-        return $this->built($result['answer'], $tools, $now);
+        $built = $this->built($result['answer'], $tools, $now);
+
+        // Without the opt-in, the answer invites it (session 2 shows the line).
+        return $built === null ? null : [...$built, 'invite' => ! $personal];
     }
 
     /**
@@ -136,6 +169,7 @@ final class Assistant
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nRequest: \"{$text}\""]];
 
         for ($round = 1; $round <= self::ROUNDS; $round++) {
+            $tools->progress($round === 1 ? 'reading' : 'writing');
             $left = self::BUDGET_SECONDS - (hrtime(true) - $started) / 1e9;
             if ($left < 1.5) {
                 return null;
@@ -151,10 +185,11 @@ final class Assistant
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
-                    'tools' => [...AssistantTools::definitions(), self::ANSWER],
+                    'tools' => [...AssistantTools::definitions($tools->personal()), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
-                    'system' => [['type' => 'text', 'text' => self::SYSTEM, 'cache_control' => ['type' => 'ephemeral']]],
+                    'system' => [['type' => 'text', 'text' => self::SYSTEM, 'cache_control' => ['type' => 'ephemeral']],
+                        ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : [])],
                     'messages' => $messages,
                 ]));
             $this->record($callStarted, $body);
@@ -187,28 +222,57 @@ final class Assistant
     private function built(array $answer, AssistantTools $tools, CarbonImmutable $now): ?array
     {
         $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '');
-        $lead = collect(is_array($answer['sentences'] ?? null) ? $answer['sentences'] : [])
-            ->filter(fn (mixed $s): bool => is_array($s) && is_string($s['text'] ?? null))
-            ->filter(fn (array $s): bool => $this->check->holds($s['text'], $always."\n".collect(is_array($s['uses'] ?? null) ? $s['uses'] : [])
-                ->filter(fn (mixed $id): bool => is_string($id))->map(fn (string $id): string => $tools->read[$id] ?? '')->implode("\n")))
-            ->take(3)->map(fn (array $s): string => trim($s['text']))->implode(' ');
+        $cited = fn (mixed $uses): array => array_values(array_filter(is_array($uses) ? $uses : [], fn (mixed $id): bool => is_string($id) && isset($tools->read[$id])));
+        // A sentence citing the person's own facts may speak of them (only they were given those).
+        $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,
+            $always."\n".$also."\n".implode("\n", array_map(fn (string $id): string => $tools->read[$id], $uses)),
+            $tools->personal() && preg_grep(self::PERSONAL_IDS, $uses) !== []);
+        $kept = [];
+        $dropped = false;
+        foreach (is_array($answer['sentences'] ?? null) ? $answer['sentences'] : [] as $s) {
+            if (! is_array($s) || ! is_string($s['text'] ?? null)) {
+                continue;
+            }
+            // Once a sentence is dropped, one leaning on it ("also", "the same library") goes too.
+            if (! $holds($s['text'], $cited($s['uses'] ?? null)) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
+                $dropped = true;
+
+                continue;
+            }
+            $kept[] = trim($s['text']);
+        }
+        $lead = implode(' ', array_slice($kept, 0, 3));
         if ($lead === '') {
             return null;
         }
+
+        // Why a suggestion fits them: one line, from their taste only, checked against it.
+        $because = $tools->personal() ? collect(is_array($answer['because'] ?? null) ? $answer['because'] : [])
+            ->filter(fn (mixed $b): bool => is_array($b) && is_string($b['id'] ?? null) && is_string($b['text'] ?? null) && mb_strlen($b['text']) <= 90
+                && ($uses = $cited($b['uses'] ?? null)) !== [] && preg_grep(self::PERSONAL_IDS, $uses) === $uses
+                && $holds($b['text'], $uses, $tools->read[$b['id']] ?? ''))
+            ->mapWithKeys(fn (array $b): array => [$b['id'] => trim($b['text'])])->all() : [];
 
         $events = $tools->occurrences(array_slice(is_array($answer['events'] ?? null) ? $answer['events'] : [], 0, self::SHOWN));
         $places = collect(array_slice(is_array($answer['places'] ?? null) ? $answer['places'] : [], 0, self::SHOWN))
             ->map(fn (mixed $id): ?Candidate => is_string($id) ? ($tools->places[$id] ?? null) : null)->filter()->values();
         $sources = $places->isEmpty() ? collect() : Spot::query()->whereKey($places->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all())->pluck('source', 'id');
 
+        $posters = $events->isEmpty() ? [] : array_map(fn (array $poster): array => array_filter([...$poster,
+            'because' => $because['e'.$poster['id'].'@'.CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp()] ?? null], fn ($v) => $v !== null),
+            $this->listings->posters($events, self::SHOWN));
+
         return [
             'lead' => $lead,
-            'events' => $events->isEmpty() ? [] : $this->listings->posters($events, self::SHOWN),
+            'events' => $posters,
+            // With the opt-in, a "because" on a suggestion came from their taste.
+            'taste' => $because !== [] && (collect($posters)->contains(fn (array $p): bool => isset($p['because']))
+                || $places->contains(fn (Candidate $c): bool => isset($because[$c->id]))),
             // As the activity places are drawn (PlaceAnswers), with where each comes from.
             'places' => $places->map(fn (Candidate $c): array => ['id' => (int) substr($c->id, 5), 'name' => $c->name,
                 'kind' => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
                 'distance' => null, 'area' => $c->veedel, 'href' => route('explore', ['place' => (int) substr($c->id, 5)], false),
-                'source' => $sources[(int) substr($c->id, 5)] ?? null])->all(),
+                'source' => $sources[(int) substr($c->id, 5)] ?? null, ...(isset($because[$c->id]) ? ['because' => $because[$c->id]] : [])])->all(),
             // Everything it looked at, as it read it (composer:eval checks the lead against it).
             'read' => $tools->read,
             'weather' => isset($tools->read['weather']) ? str_replace(['Cologne now: ', '. Next hours: ', ', '], ['', ' · ', ' · '], $tools->read['weather']) : null,

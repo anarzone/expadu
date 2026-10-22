@@ -3,15 +3,19 @@
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
+use App\Models\Spot;
 use App\Models\User;
+use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\Support\ExternalProcessingFixtures;
 
 /*
@@ -127,4 +131,73 @@ test('🔒 only Composer’s read can lend its say-so, and only to the assistant
     expect($store->derive($read, ProcessingPurpose::FactExtraction, ['text' => 'hi', 'veedel' => null]))->toBeNull()
         ->and($store->derive($read, ProcessingPurpose::ComposerAssist, ['text' => 'hi', 'veedel' => null]))->toBeInstanceOf(ProcessingPermit::class)
         ->and($store->derive(new ProcessingPermit($read->id, $user->id + 1), ProcessingPurpose::ComposerAssist, ['text' => 'hi', 'veedel' => null]))->toBeNull();
+});
+
+test('🔒 without the opt-in it gets no taste or plans to look at, and the answer invites the opt-in', function () {
+    $user = User::factory()->onboarded()->create();
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id]]],
+            'events' => [$id], 'places' => [], 'because' => [['id' => $id, 'text' => 'You like culture', 'uses' => ['t1']]]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this);
+
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'my_taste') || str_contains($request->body(), 'my_day'));
+    expect($reply)->invite->toBeTrue()->and($reply)->not->toHaveKey('taste')
+        ->and($reply['events'][0])->not->toHaveKey('because');
+});
+
+test('🔒 with the opt-in it may look at their taste: a "because" holds only what their taste says, and "not for me" stays out', function () {
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $subject = Pseudonym::for($user);
+    DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => $subject, 'dimension' => $row[0], 'key' => $row[1],
+        'context' => 'all', 'score' => $row[2], 'signals_count' => $row[3], 'updated_at' => now()], [['category', 'culture', 12.0, 6], ['veedel', 'Ehrenfeld', 8.0, 5]]));
+    $jazz = assistantJazz();
+    $skipped = assistantJazz();
+    $skipped->update(['title' => 'Skipped Jazz']);
+    DB::table('user_place_negatives')->insert(['subject_key' => $subject, 'item_type' => 'event', 'item_id' => $skipped->id, 'context' => 'all',
+        'score' => -4.0, 'hidden_until' => now()->addDays(90), 'signals_count' => 1, 'updated_at' => now()]);
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['my_taste', []], ['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Since you like culture, Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id, 't1']]],
+            'events' => [$id], 'places' => [], 'because' => [
+                ['id' => $id, 'text' => 'You like culture', 'uses' => ['t1']],
+                ['id' => $id, 'text' => 'You saved two jazz nights', 'uses' => ['t1']],
+            ]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this);
+
+    Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'likes a lot culture') && ! str_contains($request->body(), 'Skipped Jazz'));
+    expect($reply)->text->toBe('Since you like culture, Jazz im Stadtgarten starts at 20:00.')
+        ->taste->toBeTrue()->and($reply)->not->toHaveKey('invite')
+        ->and($reply['events'][0]['because'])->toBe('You like culture');
+});
+
+test('🔒 the page reads how far its own request has got, and nobody else\'s', function () {
+    $user = User::factory()->onboarded()->create();
+    $requestId = (string) Str::uuid();
+    Cache::put("composer:progress:{$user->id}:{$requestId}", ['step' => 'writing', 'looked' => ['listings', 'weather'], 'at' => 1], 60);
+
+    $this->actingAs($user)->getJson("/composer/progress/{$requestId}")->assertOk()
+        ->assertJsonPath('step', 'writing')->assertJsonPath('looked', ['listings', 'weather']);
+    $this->actingAs(User::factory()->onboarded()->create())->getJson("/composer/progress/{$requestId}")->assertOk()->assertJsonPath('step', null);
+});
+
+test('"not this" on a suggested event is recorded; a place\'s goes through its feedback', function () {
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $jazz = assistantJazz();
+    $spot = Spot::factory()->create();
+
+    $this->actingAs($user)->postJson('/api/signals', ['signals' => [['action' => 'not_for_me', 'surface' => 'composer', 'item_type' => 'event', 'item_id' => $jazz->id]]])
+        ->assertStatus(202);
+    $this->postJson('/api/signals', ['signals' => [['action' => 'not_for_me', 'surface' => 'composer', 'item_type' => 'spot', 'item_id' => $spot->id]]])
+        ->assertUnprocessable()->assertJsonValidationErrors('signals.0.action');
+    expect(DB::table('user_signals')->where('action', 'not_for_me')->where('item_type', 'event')->where('item_id', $jazz->id)->exists())->toBeTrue();
 });
