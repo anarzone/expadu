@@ -232,7 +232,7 @@ export function NearbyView({
     const root = useRef<HTMLDivElement>(null);
 
     const v = useMemo(
-        () => nearbyView(station, filters, { pinned, now }),
+        () => nearbyView(station, filters, { pinned, now, cancelled: true }),
         [station, filters, pinned, now],
     );
     const stale = station.is_stale || station.time_basis === 'stale';
@@ -537,7 +537,7 @@ export function NearbyView({
             ) : null;
         }
 
-        if (stale || !dir.delayMin) {
+        if (stale || dir.cancelled || !dir.delayMin) {
             return null;
         }
 
@@ -557,7 +557,31 @@ export function NearbyView({
 
     // Paused times are the last ones read: their clocks. A timetable time
     // leaving now shows its clock, quietly: "Now" is for a live departure.
+    // Only what the feed says: its cancelled runs, by their timetabled clock.
+    const cancelTag = (dir: ShownDir) =>
+        dir.cancelledClocks.length ? (
+            <TravelChip
+                kind="conflict"
+                icon={<TravelIcon name="alert" />}
+                size="sm"
+            >
+                {dir.cancelled
+                    ? 'Cancelled'
+                    : `${dir.cancelledClocks.join(' · ')} cancelled`}
+            </TravelChip>
+        ) : null;
+
     const time = (dir: ShownDir) => {
+        if (dir.cancelled) {
+            return (
+                <span className="nearby-time is-cancelled">
+                    <strong>
+                        <s>{dir.clock}</s>
+                    </strong>
+                </span>
+            );
+        }
+
         const paused = stale || !dir.live;
         const when = whenOf(dir);
 
@@ -588,6 +612,7 @@ export function NearbyView({
                           <>
                               {time(d)}
                               {delayTag(d)}
+                              {cancelTag(d)}
                           </>
                       ),
                   }
@@ -598,7 +623,15 @@ export function NearbyView({
             .map((d) => {
                 const t = whenOf(d);
 
-                return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}${d.live ? '' : ' (timetable)'}`;
+                if (d.cancelled) {
+                    return `${d.dest} ${d.clock} cancelled`;
+                }
+
+                const gone = d.cancelledClocks.length
+                    ? ` (${d.cancelledClocks.join(', ')} cancelled)`
+                    : '';
+
+                return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}${d.live ? '' : ' (timetable)'}${gone}`;
             })
             .join(', ')}`;
 
@@ -628,7 +661,11 @@ export function NearbyView({
                         >
                             {/* Each way's next one, soonest first: "Then 00:56 · 00:59". */}
                             {`Then ${l.shown
-                                .flatMap((d) => d.later.slice(0, 1))
+                                .flatMap((d) =>
+                                    d.later
+                                        .filter((run) => !run.cancelled)
+                                        .slice(0, 1),
+                                )
                                 .sort(
                                     (a, b) =>
                                         Date.parse(a.at) - Date.parse(b.at),
@@ -716,13 +753,26 @@ export function NearbyView({
                                 <span
                                     className={cn(
                                         'nearby-time is-large',
-                                        (stale || !d.live) && 'is-paused',
+                                        d.cancelled
+                                            ? 'is-cancelled'
+                                            : (stale || !d.live) && 'is-paused',
                                     )}
                                 >
-                                    <strong>{t.big}</strong>
-                                    {t.unit ? <small>{t.unit}</small> : null}
+                                    {d.cancelled ? (
+                                        <strong>
+                                            <s>{d.clock}</s>
+                                        </strong>
+                                    ) : (
+                                        <>
+                                            <strong>{t.big}</strong>
+                                            {t.unit ? (
+                                                <small>{t.unit}</small>
+                                            ) : null}
+                                        </>
+                                    )}
                                 </span>
                                 {delayTag(d, true)}
+                                {cancelTag(d)}
                             </span>
                         </div>
                     );

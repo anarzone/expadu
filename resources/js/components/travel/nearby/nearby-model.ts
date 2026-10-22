@@ -31,7 +31,10 @@ export type ShownDir = StationDir & {
     mins: number;
     clock: string;
     delayMin: number;
+    /** The later runs that leave (a cancelled one isn't a "then"). */
     laterClocks: string[];
+    /** Its runs the feed says are cancelled, by their timetabled clock. */
+    cancelledClocks: string[];
     live: boolean;
 };
 
@@ -80,7 +83,12 @@ function shownDir(dir: StationDir, now: number): ShownDir | null {
         mins: minutesUntil(dir.next.at, now),
         clock: dir.next.time,
         delayMin: Math.max(0, dir.next.delay),
-        laterClocks: dir.later.map((run) => run.time),
+        laterClocks: dir.later
+            .filter((run) => !run.cancelled)
+            .map((run) => run.time),
+        cancelledClocks: [dir.next, ...dir.later]
+            .filter((run) => run.cancelled)
+            .map((run) => run.time),
         live: dir.next.time_basis === 'realtime',
     };
 }
@@ -88,7 +96,16 @@ function shownDir(dir: StationDir, now: number): ShownDir | null {
 export function nearbyView(
     station: Station,
     filters: NearbyFilters,
-    { pinned = [], now = Date.now() }: { pinned?: string[]; now?: number } = {},
+    {
+        pinned = [],
+        now = Date.now(),
+        cancelled = false,
+    }: {
+        pinned?: string[];
+        now?: number;
+        /** Keep a way whose every run is cancelled (Nearby says so). */
+        cancelled?: boolean;
+    } = {},
 ): NearbyView {
     const f = filters;
     const firstVia = (d: StationDir) => d.via[0] ?? '';
@@ -117,7 +134,8 @@ export function nearbyView(
                     shown: l.dirs
                         .map((d) => shownDir(d, now))
                         .filter(
-                            (d): d is ShownDir => d !== null && !d.cancelled,
+                            (d): d is ShownDir =>
+                                d !== null && (cancelled || !d.cancelled),
                         )
                         .filter(dirOk)
                         // Each way keeps its side (as the mock: the station's
