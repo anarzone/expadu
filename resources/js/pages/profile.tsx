@@ -5,7 +5,6 @@ import {
     IconClock,
     IconMapPin,
     IconRefresh,
-    IconStar,
     IconUser,
     IconX,
 } from '@tabler/icons-react';
@@ -94,26 +93,6 @@ const PLACE_ICONS = [
     '👨‍👩‍👧',
 ];
 
-// Keys + labels + emojis mirror the backend App\Profile\Interest enum.
-const INTEREST_OPTIONS: { value: string; label: string; emoji: string }[] = [
-    { value: 'parks', label: 'Parks & green', emoji: '🌳' },
-    { value: 'swimming', label: 'Swimming & lakes', emoji: '🏊' },
-    { value: 'sports', label: 'Sports & courts', emoji: '⚽' },
-    { value: 'museums', label: 'Museums & galleries', emoji: '🎨' },
-    { value: 'sights', label: 'Sights & landmarks', emoji: '🏛️' },
-    { value: 'family', label: 'Family & kids', emoji: '🛝' },
-    { value: 'cafes', label: 'Cafés & bakeries', emoji: '☕' },
-    { value: 'nightlife', label: 'Bars & nightlife', emoji: '🍻' },
-    { value: 'live_music', label: 'Live music', emoji: '🎶' },
-    { value: 'coworking', label: 'Coworking', emoji: '💻' },
-    { value: 'libraries', label: 'Libraries', emoji: '📚' },
-    { value: 'dogs', label: 'Dog-friendly', emoji: '🐕' },
-];
-
-// Mirrors App\Profile\Interest::MIN_SELECT / MAX_SELECT.
-const INTEREST_MIN = 3;
-const INTEREST_MAX = 6;
-
 // Maps for enum display values
 const SITUATION_LABELS: Record<string, string> = {
     non_eu_employee: 'Non-EU employee',
@@ -181,20 +160,12 @@ const notFoundNote = (page: { props: unknown }) =>
     null;
 
 export default function Profile() {
-    const {
-        auth,
-        userPlaces,
-        goingEvents,
-        pastEvents,
-        stats,
-        interests: serverInterests,
-    } = usePage<{
+    const { auth, userPlaces, goingEvents, pastEvents, stats } = usePage<{
         auth: Auth;
         userPlaces?: UserPlaceData[];
         goingEvents?: EventSummary[];
         pastEvents?: EventSummary[];
         stats?: ProfileStats;
-        interests?: string[];
     }>().props;
     const user = auth.user;
 
@@ -224,9 +195,6 @@ export default function Profile() {
     const [editValue, setEditValue] = useState('');
     const [profileSaving, setProfileSaving] = useState(false);
     const [profileError, setProfileError] = useState<string | null>(null);
-
-    // Interests — seeded from backend, persisted to /settings/profile
-    const [interests, setInterests] = useState<string[]>(serverInterests ?? []);
 
     // Places — always derived from backend props (re-syncs after Inertia navigations)
     const places: Place[] = (userPlaces ?? []).map((p: UserPlaceData) => ({
@@ -266,8 +234,7 @@ export default function Profile() {
     function buildProfilePayload(
         field: string,
         value: string,
-        extraInterests?: string[],
-    ): Record<string, string | string[] | boolean | null> {
+    ): Record<string, string | boolean | null> {
         const currentName = field === 'name' ? value : profileName;
         const currentEmail = field === 'email' ? value : profileEmail;
         const currentCity = field === 'city' ? value : profileCity;
@@ -287,7 +254,6 @@ export default function Profile() {
             situation: currentSituation || null,
             german_level: currentGerman || null,
             has_deutschlandticket: hasDticket,
-            interests: extraInterests ?? interests,
         };
     }
 
@@ -363,54 +329,6 @@ export default function Profile() {
 
         setEditingField(null);
         setProfileError(null);
-    }
-
-    // Interests — toggle a chip and persist alongside required profile fields.
-    async function toggleInterest(value: string) {
-        if (profileSaving) {
-            return;
-        }
-
-        const isOn = interests.includes(value);
-
-        // Don't let the user drop below the minimum; backend also enforces this.
-        if (isOn && interests.length <= INTEREST_MIN) {
-            showToast(`Keep at least ${INTEREST_MIN} interests`);
-
-            return;
-        }
-
-        if (!isOn && interests.length >= INTEREST_MAX) {
-            showToast(`Up to ${INTEREST_MAX} interests`);
-
-            return;
-        }
-
-        const next = isOn
-            ? interests.filter((i) => i !== value)
-            : [...interests, value];
-
-        setProfileSaving(true);
-        setProfileError(null);
-
-        try {
-            await writeJson(
-                '/settings/profile',
-                'PATCH',
-                buildProfilePayload('interests', '', next),
-            );
-            setInterests(next);
-            showToast('✓ Interests updated');
-            router.reload({ only: ['auth'] });
-        } catch (error) {
-            setProfileError(
-                error instanceof Error
-                    ? error.message
-                    : 'We couldn’t save your interests. Please try again.',
-            );
-        } finally {
-            setProfileSaving(false);
-        }
     }
 
     // Places
@@ -818,71 +736,6 @@ export default function Profile() {
                                 <IconRefresh size={16} stroke={ICON_STROKE} />
                                 Redo onboarding
                             </button>
-                        </div>
-                    </SettingsSection>
-
-                    {/* INTERESTS — drill-in */}
-                    <SettingsSection
-                        id="interests"
-                        icon={IconStar}
-                        title="Interests"
-                        activePage={profilePage}
-                        onNavigate={setProfilePage}
-                        onBack={() => setProfilePage(null)}
-                        backLabel="← Back to Profile"
-                    >
-                        <div className="mb-3 flex items-center justify-end">
-                            <span
-                                className="text-text-soft"
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.08em',
-                                }}
-                            >
-                                {`${interests.length}/${INTEREST_MAX}`}
-                            </span>
-                        </div>
-                        <p className="mb-3 text-xs text-text-soft">
-                            Pick {INTEREST_MIN}–{INTEREST_MAX}. We lead your
-                            home feed and day plans with these.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2.5">
-                            {INTEREST_OPTIONS.map((interest) => {
-                                const on = interests.includes(interest.value);
-                                const atMax = interests.length >= INTEREST_MAX;
-                                const disabled = !on && atMax;
-
-                                return (
-                                    <button
-                                        key={interest.value}
-                                        type="button"
-                                        aria-pressed={on}
-                                        disabled={disabled}
-                                        onClick={() =>
-                                            toggleInterest(interest.value)
-                                        }
-                                        className={`flex items-center gap-2.5 rounded-[12px] border-[1.5px] px-4 py-3.5 text-left text-[14px] font-semibold transition-all ${
-                                            on
-                                                ? 'border-select-text bg-select-bg text-select-text'
-                                                : disabled
-                                                  ? 'border-border bg-bg-surface opacity-40'
-                                                  : 'border-border bg-bg-surface hover:border-select-text/30'
-                                        }`}
-                                    >
-                                        <span className="text-[20px] leading-none">
-                                            {interest.emoji}
-                                        </span>
-                                        {interest.label}
-                                        {on && (
-                                            <span className="ml-auto text-select-text">
-                                                ✓
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
                         </div>
                     </SettingsSection>
 
