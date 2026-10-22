@@ -640,8 +640,16 @@ class WorkspaceStore
             ->filter(fn (array $m): bool => $m['role'] === 'assistant' && is_array($m['facts'] ?? null))
             ->flatMap(fn (array $m): array => array_map(fn (array $f): string => "{$f['label']}|{$f['value']}", $m['facts']))->flip();
         $facts = array_values(array_filter($extra['facts'], fn (array $f): bool => ! $shown->has("{$f['label']}|{$f['value']}")));
+        // "From:" names only what this answer still shows (a dropped Paperwork card takes its link along).
+        $labels = array_column($facts, 'label');
+        $sources = array_values(array_filter($extra['sources'] ?? [], fn (array $source): bool => match ($source['label']) {
+            'Paperwork' => in_array('Paperwork', $labels, true),
+            'KVB notice' => collect($labels)->contains(fn (string $label): bool => str_starts_with($label, 'KVB')),
+            'Events' => ($extra['events'] ?? []) !== [],
+            default => true,
+        }));
 
-        return $facts === [] ? array_diff_key($extra, ['facts' => true]) : [...$extra, 'facts' => $facts];
+        return array_diff_key([...$extra, 'facts' => $facts, 'sources' => $sources], array_filter(['facts' => $facts === [], 'sources' => $sources === []]));
     }
 
     private function message(array &$s, string $role, string $text, array $extra = []): void
