@@ -102,7 +102,7 @@ final class AssistantTools
                     'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
                 ], 'required' => ['day']]],
-            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known.',
+            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known, nearest to the person first.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kind' => ['type' => 'string', 'enum' => $kinds],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
@@ -213,7 +213,8 @@ final class AssistantTools
             return 'No place listed for that.';
         }
 
-        return $found->map(function (Candidate $c): string {
+        // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
+        return "Nearest to the person first:\n".$found->map(function (Candidate $c): string {
             $this->places[$c->id] = $c;
 
             return $this->line($c->id, self::placeText($c));

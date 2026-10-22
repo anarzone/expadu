@@ -235,7 +235,9 @@ final class Assistant
             return null;
         }
 
-        $built = $this->built($result['answer'], $tools, $now);
+        // A sentence may also name the home Veedel and what was suggested earlier in this conversation.
+        $built = $this->built($result['answer'], $tools, $now, 'Home Veedel: '.($profile->veedel ?? '')."\n"
+            .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']]));
 
         // Without the opt-in, the answer invites it (session 2 shows the line); `looked` says what
         // the AI was given (listings, places, weather, and with the opt-in plans, taste).
@@ -313,9 +315,9 @@ final class Assistant
      * @param  array<string, mixed>  $answer
      * @return array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string}|null
      */
-    private function built(array $answer, AssistantTools $tools, CarbonImmutable $now): ?array
+    private function built(array $answer, AssistantTools $tools, CarbonImmutable $now, string $known = ''): ?array
     {
-        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '');
+        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known;
         $cited = fn (mixed $uses): array => array_values(array_filter(is_array($uses) ? $uses : [], fn (mixed $id): bool => is_string($id) && isset($tools->read[$id])));
         // A sentence citing the person's own facts may speak of them (only they were given those).
         $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,

@@ -202,7 +202,11 @@ class EvaluateComposer extends Command
             $routed = app(Answers::class)->route($user, $request['text'], $now, app(WorkspaceStore::class)->read($user)['focus'] ?? null);
         }
         $assistStarted = hrtime(true);
-        $assisted = $this->assisted($user, $request['text'], $profile, $parsed, $permit ?? null, $now, $history, $followsUp);
+        $assisted = $this->assisted($user, $request['text'], $profile, $parsed, $permit ?? null, $now, $history, $followsUp, $request['origin'] ?? null);
+        if ($assisted !== null) {
+            // As the answer command does: the assistant's answer stands whatever the words alone route to.
+            $routed = app(Answers::class)->route($user, $request['text'], $now, null);
+        }
         $row['assist_ms'] = $assisted !== null ? (int) ((hrtime(true) - $assistStarted) / 1e6) : null;
         // Written but nothing held: what it wrote, to see why.
         if ($assisted === null && $this->written !== null) {
@@ -332,7 +336,7 @@ class EvaluateComposer extends Command
                 }
             }
             // As the live check reads it: the time and the weather, then everything it looked at.
-            $around = ['items' => ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', ...$assisted['read']]];
+            $around = ['items' => ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel, ...$assisted['read']]];
         } elseif ($around !== null) {
             $said['ai_sentences'] = count($parsed->reply);
             $said['ai_dropped'] = array_values(array_map(fn (array $sentence): string => $sentence['text'].' ['.implode(',', $sentence['uses']).']',
@@ -359,13 +363,15 @@ class EvaluateComposer extends Command
      *
      * @return array<string, mixed>|null
      */
-    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?array $history = null, bool $followsUp = false): ?array
+    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?array $history = null, bool $followsUp = false, ?array $origin = null): ?array
     {
         if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || (! $followsUp && ! Assistant::wanted($parsed, $text))) {
             return null;
         }
         $assistant = app(Assistant::class);
-        $answer = $assistant->answer($user, $text, $profile, $now, [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
+        // From the persona's own starting point, as the app measures from where the person is.
+        $answer = $assistant->answer($user, $text, $profile, $now, isset($origin['lat'], $origin['lng'])
+            ? [(float) $origin['lat'], (float) $origin['lng']] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
             app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
             app(WorkspaceStore::class)->read($user)['plans'] ?? [], null, $history);
         $this->written = $assistant->written;
