@@ -27,7 +27,10 @@ final class AroundCheck
         'tell', 'thanks', 'that', "that's", 'the', 'then', 'there', "there's", 'these', 'this', 'tonight', 'today', 'tomorrow', 'try', 'unfortunately',
         'want', 'well', 'what', "what's", 'when', 'where', 'whether', 'which', 'while', 'who', 'why', 'with', 'would', 'yes', 'you', "you're", "you'll", 'your',
         // A question back ("Which one do you mean?", "Did you mean…", "Shall I plan it?").
-        'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride'];
+        'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride',
+        // Order and place words a sentence starts with ("After that…", "Near you…", "Everything I found…").
+        'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything',
+        'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we'];
 
     /** Claims a sentence may make only when its items make them too. */
     private const CLAIMS = ['/\bfree\b/u', '/\bcheap\w*/u', '/\bexpensive\b/u', '/\bsold[ -]?out\b/u', '/\btickets?\b/u', '/€|\beuros?\b/u',
@@ -39,29 +42,36 @@ final class AroundCheck
         // Access is a fact only a listing can state (the assistant called a museum "step-free", 22 Oct 2026).
         '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u'];
 
-    /** Counts are claims too; none is checked against the listings, so none is kept. */
+    /** Counts are claims too: kept only as the number of things the sentence itself names (`$named`). */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';
+
+    private const NUMBERS = ['two' => 2, 'three' => 3, 'four' => 4, 'five' => 5, 'six' => 6];
 
     /** Hedged facts aren't facts. */
     private const HEDGES = '/\b(might|probably|likely|usually|often|typically|apparently|reportedly|rumou?red|supposedly)\b/u';
 
     /** The person's own day: the AI is never sent it, so it can't speak of it. Only "your evening", "your umbrella" and the like. */
-    private const PERSONAL = '/(?<!plan )\byour (?!(evening|night|afternoon|morning|weekend|umbrella|jacket|coat|way)\b)|\byou have (a|an|no|nothing|\d)|\byou\'re (meeting|seeing|due|booked)\b/u';
+    private const PERSONAL = '/(?<!plan )\byour (?!(evening|night|afternoon|morning|weekend|umbrella|jacket|coat|way|home)\b)|\byou have (a|an|no|nothing|\d)|\byou\'re (meeting|seeing|due|booked)\b/u';
 
     /**
      * @param  string  $sentence  one sentence as written
      * @param  string  $source  the text of the items it cites, plus the time line every sentence may use
      * @param  bool  $personal  it cites the person's own facts (their taste or their day, with the
      *                          opt-in), so it may speak of them, as softly as those facts are
+     * @param  int  $named  how many listed things the sentence names ("two events": the two it names)
      */
-    public function holds(string $sentence, string $source, bool $personal = false): bool
+    public function holds(string $sentence, string $source, bool $personal = false, int $named = 0): bool
     {
         $sentence = trim(str_replace(['’', '‘'], "'", $sentence));
         $lower = mb_strtolower($sentence);
         $source = mb_strtolower(str_replace(['’', '‘'], "'", $source));
 
         if ($sentence === '' || mb_strlen($sentence) > self::MAX_LENGTH || preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence)
-            || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower))) || preg_match(self::COUNTS, $lower)) {
+            || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower)))) {
+            return false;
+        }
+        preg_match_all(self::COUNTS, $lower, $counts);
+        if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? null) !== $named)) {
             return false;
         }
 
@@ -82,11 +92,11 @@ final class AroundCheck
         // app, the city, a day or month, or an ordinary word starting a sentence.
         preg_match_all("/\p{Lu}[\p{L}'-]*/u", $sentence, $names, PREG_OFFSET_CAPTURE);
         foreach ($names[0] as [$name, $offset]) {
-            $word = rtrim(mb_strtolower($name), "'-");
+            // "Today's" and "Cologne's" are the word itself.
+            $word = preg_replace("/'s$/u", '', rtrim(mb_strtolower($name), "'-"));
             $before = rtrim(substr($sentence, 0, $offset), " \t\"'(“");
             $first = $before === '' || preg_match('/[.!?:;–—]$/u', $before) === 1;
-            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true))
-                || str_contains($source, preg_replace("/'s$/u", '', $word))) {
+            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true)) || str_contains($source, $word)) {
                 continue;
             }
 

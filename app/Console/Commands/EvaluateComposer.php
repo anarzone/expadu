@@ -224,9 +224,14 @@ class EvaluateComposer extends Command
         $dead = $answer === [] || (trim((string) ($answer['text'] ?? '')) === '' && ($answer['blocks'] ?? []) === [] && ! $planned);
         $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel, ...$assistant->read];
         $invented = [];
+        // The listings and places it read, by name, and the choices it offered: a sentence may count what it names.
+        $named = array_filter(array_map(fn (string $line): ?string => preg_match('/^"([^"]+)"/u', $line, $m) === 1 ? mb_strtolower($m[1]) : null,
+            array_intersect_key($assistant->read, array_flip(preg_grep('/^(e\d+@\d+|spot:\d+)$/', array_keys($assistant->read))))));
         foreach (($answer['written'] ?? null) === 'ai' ? preg_split('/(?<=[.!?])\s+/u', (string) ($answer['lead'] ?? ''), flags: PREG_SPLIT_NO_EMPTY) : [] as $sentence) {
+            $count = count(array_filter($named, fn (string $name): bool => str_contains(mb_strtolower($sentence), $name)))
+                + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? []);
             // As the live check: a sentence may speak of the person from their own facts.
-            if (! app(AroundCheck::class)->holds($sentence, implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [])) {
+            if (! app(AroundCheck::class)->holds($sentence, implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
                 $invented[] = $sentence;
             }
         }

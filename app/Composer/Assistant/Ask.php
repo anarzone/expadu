@@ -31,6 +31,8 @@ final class Ask
         'limited' => 'Composer’s AI has reached today’s limit, so I can’t answer that.',
         'unpermitted' => 'I answer with an AI service, and this message was sent without it, so I can’t answer that.',
         'failed' => 'The AI service didn’t answer this time, so I can’t answer that.',
+        // It answered, but nothing it said held against what it found, and it had nothing to show.
+        'unchecked' => 'I didn’t find anything I can vouch for there.',
     ];
 
     public function __construct(
@@ -79,7 +81,7 @@ final class Ask
             ]), $answer['token']);
         }
 
-        $reason = $this->withoutAi($permit, $processing);
+        $reason = $permit !== null && $this->assistant->written !== null ? 'unchecked' : $this->withoutAi($permit, $processing);
         $around = $this->around->answer($user, $workspace['plans'] ?? [], $now, self::WITHOUT_AI[$reason]);
 
         return $this->workspace->answer($user, $conversation, self::message($around['text'], $around['blocks'], [

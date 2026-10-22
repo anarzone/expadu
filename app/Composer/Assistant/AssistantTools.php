@@ -378,7 +378,9 @@ final class AssistantTools
         }
         $shown = collect($this->listings->posters($occurrences->values(), self::SHOWN));
         if ($shown->isEmpty()) {
-            return 'Nothing listed for that.';
+            // What was looked for, so "nothing free is on" is a fact the answer may state.
+            return 'Nothing'.(($input['free'] ?? false) === true ? ' free' : '').' is listed '.($day->isSameDay($this->now) ? 'today' : 'on '.$day->format('l j F'))
+                .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.';
         }
 
         return $shown->map(function (array $poster) use ($occurrences): string {
@@ -393,12 +395,16 @@ final class AssistantTools
     private function searchPlaces(array $input): string
     {
         $at = $this->clock($input['open_at'] ?? null, $this->now) ?? $this->now;
+        $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? (PlanDay::areas([$input['area']])[0] ?? null) : null;
+        if ($area === null && is_string($input['area'] ?? null) && trim($input['area']) !== '') {
+            return "No Veedel is called \"{$input['area']}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt).";
+        }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         [$lat, $lng] = $this->location->hasOrigin() ? [(float) $this->location->lat, (float) $this->location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
         $found = collect($this->catalogue->candidatesFor(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
-            areas: array_values(array_filter([is_string($input['area'] ?? null) ? $input['area'] : null])),
+            areas: array_values(array_filter([$area])),
             categories: array_values(array_filter([is_string($input['kind'] ?? null) ? $input['kind'] : null])),
             activities: array_values(array_filter([is_string($input['activity'] ?? null) ? $input['activity'] : null])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
@@ -415,15 +421,17 @@ final class AssistantTools
             ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
             ->take(self::SHOWN)->values();
         if ($found->isEmpty()) {
-            return 'No place listed for that.';
+            return 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '').' place is listed for that'
+                .($area !== null ? " in {$area}" : '').'.';
         }
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
-        return ($this->location->hasOrigin() ? "Nearest to the person first:\n" : "Across Cologne (where they are isn't known):\n").$found->map(function (Candidate $c): string {
-            $this->places[$c->id] = $c;
+        return ($area !== null ? "In {$area}".(mb_strtolower(trim($input['area'])) !== mb_strtolower($area) ? " (\"{$input['area']}\")" : '').', ' : '')
+            .($this->location->hasOrigin() ? "nearest to the person first:\n" : "across Cologne (where they are isn't known):\n").$found->map(function (Candidate $c): string {
+                $this->places[$c->id] = $c;
 
-            return $this->line($c->id, self::placeText($c).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
-        })->implode("\n");
+                return $this->line($c->id, self::placeText($c).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+            })->implode("\n");
     }
 
     private function weatherNow(): string
@@ -450,7 +458,11 @@ final class AssistantTools
         $this->cards[$id] = ['type' => 'plan', 'token' => $planned['token'],
             'date' => CarbonImmutable::parse($planned['plan']['constraints']['window_start'])->setTimezone('Europe/Berlin')->toDateString()];
 
-        return $this->line($id, PlanDay::text($planned['plan']));
+        // The areas asked for, as they said them ("Südstadt") and as the planner knows them.
+        $asked = collect(is_array($input['areas'] ?? null) ? $input['areas'] : [])->filter(fn (mixed $a): bool => is_string($a))
+            ->map(fn (string $a): string => ($k = PlanDay::areas([$a])[0] ?? $a) === $a ? $a : "{$k} (\"{$a}\")")->implode(', ');
+
+        return $this->line($id, ($asked !== '' ? "Asked for: {$asked}.\n" : '').PlanDay::text($planned['plan']));
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */

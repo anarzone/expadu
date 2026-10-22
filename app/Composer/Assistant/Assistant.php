@@ -105,7 +105,7 @@ final class Assistant
     ];
 
     /** A sentence that leans on the one before it. */
-    private const LEANS = '/^(also|or|and|but|so|then|that|this|it|its|it\'s|there|they|if you\'?d rather|if you prefer|otherwise|instead)\b|\b(also|too|as well|the same|that one|either)\b/iu';
+    private const LEANS = '/^(also|or|and|but|so|then)\b|\b(the same|that one)\b/iu';
 
     /** Cards of the person's own and questions back: shown whenever they were looked up. */
     private const ALWAYS_SHOWN = '/^(pw|trip|next|c\d+)$/';
@@ -285,11 +285,20 @@ final class Assistant
     private function built(array $answer, AssistantTools $tools, CarbonImmutable $now, string $known = ''): ?array
     {
         $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known;
-        $cited = fn (mixed $uses): array => array_values(array_filter(is_array($uses) ? $uses : [], fn (mixed $id): bool => is_string($id) && isset($tools->read[$id])));
-        // A sentence citing the person's own facts may speak of them (only they were given those).
+        // A listing or place named in a sentence is cited by it, whether or not the AI said so.
+        $names = [...array_map(fn (array $o): array => array_filter([$o['event']->title, $o['event']->title_en]), $tools->events),
+            ...array_map(fn (Candidate $c): array => [$c->name], $tools->places)];
+        $cited = fn (mixed $uses, string $text = ''): array => array_values(array_unique([
+            ...array_filter(is_array($uses) ? $uses : [], fn (mixed $id): bool => is_string($id) && isset($tools->read[$id])),
+            ...array_keys(array_filter($names, fn (array $titles): bool => $text !== '' && collect($titles)->contains(fn (string $t): bool => mb_strlen($t) > 3 && str_contains(mb_strtolower($text), mb_strtolower($t))))),
+        ]));
+        // A sentence citing the person's own facts may speak of them (only they were given those);
+        // it may count the listings and places it names, and no more.
         $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,
             $always."\n".$also."\n".implode("\n", array_map(fn (string $id): string => $tools->read[$id], $uses)),
-            preg_grep(AssistantTools::PERSONAL_IDS, $uses) !== []);
+            preg_grep(AssistantTools::PERSONAL_IDS, $uses) !== [],
+            count(array_filter($uses, fn (string $id): bool => isset($tools->events[$id]) || isset($tools->places[$id])))
+                + array_sum(array_map(fn (string $id): int => count($tools->cards[$id]['options'] ?? []), $uses)));
         $kept = [];
         $dropped = false;
         $mentioned = [];
@@ -298,13 +307,14 @@ final class Assistant
                 continue;
             }
             // Once a sentence is dropped, one leaning on it ("also", "the same library") goes too.
-            if (! $holds($s['text'], $cited($s['uses'] ?? null)) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
+            $uses = $cited($s['uses'] ?? null, $s['text']);
+            if (! $holds($s['text'], $uses) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
                 $dropped = true;
 
                 continue;
             }
             $kept[] = trim($s['text']);
-            $mentioned = [...$mentioned, ...$cited($s['uses'] ?? null)];
+            $mentioned = [...$mentioned, ...$uses];
         }
         $lead = implode(' ', array_slice($kept, 0, 3));
 

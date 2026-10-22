@@ -24,6 +24,14 @@ final class PlanDay
     /** Shortest stretch the planner can fill with an activity and the way there. */
     private const MIN_WINDOW_MINUTES = 180;
 
+    /** Areas as people in Cologne call them, by the Veedel the planner knows (owner's test, 22 Oct 2026: "Südstadt"). */
+    private const AREA_NAMES = [
+        'südstadt' => 'Neustadt-Süd', 'suedstadt' => 'Neustadt-Süd', 'sudstadt' => 'Neustadt-Süd', 'kwartier latäng' => 'Neustadt-Süd',
+        'belgisches viertel' => 'Neustadt-Nord', 'belgian quarter' => 'Neustadt-Nord', 'agnesviertel' => 'Neustadt-Nord',
+        'altstadt' => 'Altstadt-Nord', 'old town' => 'Altstadt-Nord', 'innenstadt' => 'Altstadt-Nord', 'city centre' => 'Altstadt-Nord',
+        'city center' => 'Altstadt-Nord', 'zentrum' => 'Altstadt-Nord', 'rheinauhafen' => 'Altstadt-Süd',
+    ];
+
     /** @return array<string, mixed> the tool, as the Messages API takes it */
     public static function definition(): array
     {
@@ -69,10 +77,16 @@ final class PlanDay
         $until = self::clock($input['until'] ?? null, $day) ?? $from->addHours(4);
         $sequence = self::listOf($input['sequence'] ?? [], self::kinds());
         $moods = self::listOf($input['moods'] ?? [], Constraints::MOODS);
+        $areas = self::areas($input['areas'] ?? []);
+        // An area it doesn't know is said, never planned somewhere else instead.
+        $unknown = array_values(array_filter(is_array($input['areas'] ?? null) ? $input['areas'] : [], fn (mixed $area): bool => is_string($area) && self::areas([$area]) === []));
+        if ($unknown !== []) {
+            return 'The planner doesn\'t know the area "'.implode('", "', $unknown).'". It plans by Cologne\'s Veedel (e.g. Neustadt-Süd for the Südstadt).';
+        }
         $constraints = $this->clamped(new Constraints(
             windowStart: $from,
             windowEnd: $until->greaterThan($from) ? $until : $from->addHours(4),
-            areas: self::areas($input['areas'] ?? []),
+            areas: $areas,
             categories: array_values(array_unique([...self::listOf($input['kinds'] ?? [], self::kinds()), ...(count($sequence) >= 2 ? $sequence : [])])),
             companions: self::oneOf($input['companions'] ?? null, ['alone', 'partner', 'friends', 'kids']),
             budget: self::oneOf($input['budget'] ?? null, ['free', 'low', 'normal']),
@@ -152,14 +166,15 @@ final class PlanDay
         return array_values(array_unique([...array_map(fn (SpotCategory $c): string => $c->value, SpotCategory::cases()), ...SpotCategory::placesCoarse(), 'event']));
     }
 
-    /** @return list<string> the Veedel named, as Cologne spells them */
-    private static function areas(mixed $areas): array
+    /** @return list<string> the Veedel named, as Cologne spells them ("Südstadt" is Neustadt-Süd) */
+    public static function areas(mixed $areas): array
     {
         $known = collect(config('veedels', []))->flatten()->filter(fn (mixed $area): bool => is_string($area))
-            ->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area]);
+            ->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area])->all() + self::AREA_NAMES;
 
         return collect(is_array($areas) ? $areas : [])->filter(fn (mixed $area): bool => is_string($area))
-            ->map(fn (string $area): ?string => $known->get(mb_strtolower(trim($area))))->filter()->unique()->values()->all();
+            ->map(fn (string $area): ?string => $known[mb_strtolower(trim(preg_replace('/^(the|die|das|der)\s+/iu', '', trim($area))))] ?? null)
+            ->filter()->unique()->values()->all();
     }
 
     /**
