@@ -616,7 +616,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 className="composer-tray-full"
                                 href={composer.url()}
                                 aria-label="Open full Composer"
-                                onClick={shut}
                             >
                                 <Icon name="grow" variant="line" />
                                 <span>Full Composer</span>
