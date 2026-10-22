@@ -122,6 +122,13 @@ class WorkspaceStore
                 $answers = app(Answers::class);
                 $now = CarbonImmutable::now('Europe/Berlin');
                 $request = $answers->route($user, $asked['text'], $now, $s['focus']);
+                if (isset($request['place']) || ($request['again'] ?? false)) {
+                    // Places this conversation already named, so "Cafe Nova" can mean the one meant before.
+                    $request['mentioned'] = [
+                        'spots' => $messages->flatMap(fn (array $m): array => array_column($m['places'] ?? [], 'id'))->map(fn ($id): int => (int) $id)->unique()->values()->all(),
+                        'areas' => $messages->map(fn (array $m): ?string => $m['destination']['area'] ?? null)->filter()->unique()->values()->all(),
+                    ];
+                }
                 if (($request['again'] ?? false) && ! isset($request['place'])) {
                     // "How do I get there?": the place this conversation's last trip was to.
                     $last = $messages->last(fn ($message) => isset($message['destination']['name']))['destination'] ?? null;
