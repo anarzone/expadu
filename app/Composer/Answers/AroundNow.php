@@ -109,6 +109,20 @@ final class AroundNow
     }
 
     /**
+     * Keeps the assistant's answer (Assistant::answer) for this request: its checked lead,
+     * the listings and places it suggests, and the weather it looked at (else Cologne's now).
+     *
+     * @param  array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string}  $assisted
+     */
+    public function keepAssisted(User $user, string $text, array $assisted, CarbonImmutable $now): void
+    {
+        Cache::put($this->key($user, $text), ['lead' => $assisted['lead'], 'places' => $assisted['places'], 'listings' => [
+            'events' => $assisted['events'], 'weather' => $assisted['weather'] ?? $this->weatherNow(),
+            'when' => $now->setTimezone('Europe/Berlin')->format('H:i') >= '18:00' ? 'tonight' : 'today', 'items' => [],
+        ]], now()->addMinutes(self::KEEP_MINUTES));
+    }
+
+    /**
      * The sentences that hold what their cited items say, joined; empty when none does.
      * The time and the weather are one fact each, shown with every answer, so any
      * sentence may use them; a listing only when the sentence cites it.
@@ -152,6 +166,8 @@ final class AroundNow
             'kind' => 'around',
             'written' => is_array($kept) ? 'ai' : 'listings',
             'events' => $listings['events'] ?: null,
+            // What the assistant suggests besides listings (Assistant), as the activity places are drawn.
+            'places' => is_array($kept) ? ($kept['places'] ?? []) ?: null : null,
             'facts' => $facts ?: null,
             // One link each: KVB's live notices share one page.
             'sources' => collect([
