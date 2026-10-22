@@ -46,7 +46,7 @@ enum ProcessingPurpose: string
             }
         }
 
-        return $this->dailyLimit() > 0 && (int) config($prefix.'.timeout', 10) > 0;
+        return (int) config($prefix.'.timeout', 10) > 0;
     }
 
     public function disclosure(): array
@@ -76,12 +76,19 @@ enum ProcessingPurpose: string
         };
     }
 
-    public function dailyLimit(): int
+    /**
+     * The most requests of this kind one person may send in 24 hours, or null for no limit.
+     * No limit is the owner's default (22 Oct 2026: "lift the sanctions"); each can be set
+     * again with its env, and 0 or empty means none.
+     */
+    public function dailyLimit(): ?int
     {
-        return max(0, (int) match ($this) {
-            self::FactExtraction => config('services.bureaucracy_llm.daily_limit', 20),
-            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit', 20),
-            default => config('bureaucracy_privacy.daily_limits.'.$this->value, 20),
-        });
+        $limit = (int) match ($this) {
+            self::FactExtraction => config('services.bureaucracy_llm.daily_limit'),
+            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit'),
+            default => config('bureaucracy_privacy.daily_limits.'.$this->value),
+        };
+
+        return $limit > 0 ? $limit : null;
     }
 }
