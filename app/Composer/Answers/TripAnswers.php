@@ -3,8 +3,12 @@
 namespace App\Composer\Answers;
 
 use App\Day\DayProjection;
+use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
 use App\Models\User;
+use App\Services\UserLocationService;
+use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\GeoPoint;
 use Carbon\CarbonImmutable;
 
 /**
@@ -15,7 +19,9 @@ use Carbon\CarbonImmutable;
  *    routes (DayProjection's next trip, App\Day\NextTrip): the same trip Today and Your day
  *    show;
  *  - once you're on your way (Travel's "I'm on my way", ActiveTrip), where you get off,
- *    when you'll be there and what's next, at the trip's own times.
+ *    when you'll be there and what's next, at the trip's own times;
+ *  - a trip to a place named ("show me departures to Cafe Nova"), from where you are,
+ *    by Travel's own routes, with Travel's Plan a trip to it.
  *
  * Every time is the trip's own; nothing is estimated, and a time is said to be live only
  * when its journey is. The message carries the journey, and the page draws the way with
@@ -26,7 +32,87 @@ final class TripAnswers
 {
     private const TIMEZONE = 'Europe/Berlin';
 
-    public function __construct(private DayProjection $day) {}
+    /** How long a trip to a named place may take to plan, in seconds. */
+    private const BUDGET_SECONDS = 8.0;
+
+    public function __construct(
+        private DayProjection $day,
+        private Destinations $destinations,
+        private RouteService $routes,
+        private UserLocationService $locations,
+    ) {}
+
+    /**
+     * "Show me departures to Cafe Nova in City Center" (owner's staging test, 22 Oct 2026):
+     * the place named, then the next way there from where you are, by Travel's routes. When
+     * the name means several places, which one; when it means none, Travel's search.
+     *
+     * @param  array<string, mixed>  $request  the router's journey request (place, area)
+     * @return array{text: string, extra: array<string, mixed>}
+     */
+    public function toPlace(User $user, array $request, CarbonImmutable $now): array
+    {
+        $now = $now->setTimezone(self::TIMEZONE);
+        // Where you are; else your home Veedel, and the answer says so.
+        $location = $this->locations->context($user, request(), $user->veedel);
+        $origin = $location->hasOrigin() ? new GeoPoint((float) $location->lat, (float) $location->lng) : null;
+        $from = $location->source === LocationSource::Area ? "From your home area, {$location->label}: l" : 'L';
+        $named = (string) $request['place'];
+        $found = $this->destinations->find($named, $request['area'] ?? null, $origin);
+        $search = ['label' => 'Search in Travel', 'href' => '/timetable'];
+
+        if ($found === []) {
+            return $this->reply("I can’t find “{$named}” in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
+        }
+        if (count($found) > 1) {
+            return ['text' => 'There’s more than one by that name. Which do you mean?', 'extra' => [
+                'kind' => 'places',
+                'places' => array_map(fn (array $place, int $i): array => ['id' => $place['spot'] ?? -1 - $i, 'name' => $place['name'],
+                    'kind' => $place['kind'], 'distance' => null, 'area' => $place['area'], 'href' => $this->planHref($place)], $found, array_keys($found)),
+            ]];
+        }
+
+        $to = $found[0];
+        $name = $to['name'].($to['area'] !== null ? " in {$to['area']}" : '');
+        $plan = ['label' => 'Plan it in Travel', 'href' => $this->planHref($to)];
+        if ($origin === null) {
+            return $this->reply("{$name}: I don’t know where you’re starting from, so I can’t time the trip. Travel plans it from where you are.", null, null, [$plan]);
+        }
+        // Leaving at the time named, when it's still to come; otherwise now.
+        $leave = isset($request['at']) ? $now->setTimeFromTimeString($request['at']) : $now;
+        $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), 3);
+        $journey = $result->source === 'degraded' ? null : ($result->journeys[0] ?? null)?->toArray();
+        if ($journey === null) {
+            return $this->reply("I can’t find a connection to {$name} right now. Travel can look again.", null, null, [$plan]);
+        }
+
+        $ride = collect($journey['legs'])->first(fn (array $leg): bool => $this->rides($leg));
+        $city = config('geocoding.search_default.city');
+        $changes = $journey['transfers'] > 0 ? ', with '.$journey['transfers'].' change'.($journey['transfers'] > 1 ? 's' : '') : '';
+        $title = $ride !== null
+            ? "{$this->vehicle($ride['mode'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
+            : "Walk: {$journey['duration_min']} min.";
+
+        return $this->reply("{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}."
+            .($ride !== null ? ' '.$this->running($ride) : ''), $title, [
+                'journey' => $journey,
+                'for' => $this->for($to['name'], null, null, null, false, null),
+                'city' => $city,
+                'link' => 'plan',
+                'label' => 'Open in Travel',
+                'basis' => collect($journey['legs'])->contains(fn (array $leg): bool => $this->rides($leg) && ($leg['realtime'] ?? false)) ? 'live' : 'scheduled',
+            ]);
+    }
+
+    /**
+     * Travel's Plan a trip to a public place (travel-request.ts `travelDestinationParams`).
+     *
+     * @param  array{name: string, point: GeoPoint}  $place
+     */
+    private function planHref(array $place): string
+    {
+        return '/timetable?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng]);
+    }
 
     /** The trip under way, when it's to the plan starting at this time (the appointment). */
     public function onWayTo(User $user, ?string $start): bool
