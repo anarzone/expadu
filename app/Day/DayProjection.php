@@ -9,7 +9,9 @@ use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
+use App\Transit\Dto\Journey;
 use App\Transit\TripConditions;
+use App\Transit\TripDisruptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\DeferProp;
@@ -43,6 +45,7 @@ class DayProjection
         private readonly PlanLinks $links,
         private readonly UserLocationService $locations,
         private readonly TripConditions $conditions,
+        private readonly TripDisruptions $disruptions,
     ) {}
 
     /** Today's projection as a deferred Inertia prop, for the pages that show it. */
@@ -93,6 +96,13 @@ class DayProjection
                 // Their own step-free need: a lift out on the way is then
                 // no step-free way, not just a station's notice.
                 $nextTrip['step_free_need'] = (bool) $user->needs_step_free;
+                // A major problem on the trip's lines: the card becomes its
+                // headline (the delays canvas, 22 Oct 2026). Its boarding
+                // stop's live runs are read only within the hour before it.
+                $nextTrip['major'] = $nextTrip['journey'] === null ? null : $this->disruptions->forTrip(
+                    Journey::fromArray($nextTrip['journey']),
+                    boards: ($nextTrip['leave_in_min'] ?? PHP_INT_MAX) <= 60,
+                );
             }
         }
 
