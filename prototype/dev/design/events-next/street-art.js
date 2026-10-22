@@ -61,11 +61,11 @@
   <div data-wall-zone="" style="position:absolute;left:548px;right:24px;top:250px;bottom:80px;overflow:hidden">
     <div style="position:absolute;left:0;top:-250px;height:960px;width:5000px;${h.e(v.stripStyle)}">
       <div class="wall-board" style="display:contents"><div class="wall-view wall-view--wall" style="display:contents">${(v.bays || []).map((b, $index) => `
-        <div class="st-bay" style="position:absolute;top:0;bottom:0;left:${h.e(b?.["x"])}px;width:${h.e(b?.["w"])}px;opacity:${h.e(b?.["op"])}">
-          <span style="position:absolute;left:${h.e(b?.["labelX"])}px;top:262px;display:flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;background:#211d15;color:#fffdf8;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums">${h.t(b?.["label"])}</span>
+        <div class="st-bay" style="position:absolute;top:0;bottom:0;left:${h.e(b?.["x"])}px;width:${h.e(b?.["w"])}px;filter:${h.e(b?.["wash"])};z-index:${h.e(b?.["z"])}">
+          <span style="position:absolute;left:${h.e(b?.["labelX"])}px;top:262px;display:flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;background:#211d15;color:#fffdf8;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;${h.e(b?.["tagStyle"])}">${h.t(b?.["label"])}</span>
           ${(b?.["isNow"]) ? `<span style="position:absolute;left:82px;top:262px;display:flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#c23b0e;color:#fff;font-size:12px;font-weight:700">Now 13:10</span>` : ``}
-          ${(b?.["hasMore"]) ? `<a${h.a("href", b?.["moreHref"])} data-on-click="${h.on(b?.["more"])}" style="position:absolute;right:16px;top:262px;display:flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:#fff6c9;color:#211d15;font-size:12.5px;font-weight:700;text-decoration:none;box-shadow:0 2px 6px -3px #0006">${h.t(b?.["moreLabel"])}</a>` : ``}
-          ${(b?.["empty"]) ? `<span style="position:absolute;left:12px;right:12px;top:322px;padding:10px 12px;border:2px dashed #b9ab90;border-radius:10px;color:#6e6657;font-size:12.5px;text-align:center">${h.t(b?.["emptyLabel"])}</span>` : ``}
+          ${(b?.["hasMore"]) ? `<a${h.a("href", b?.["moreHref"])} data-on-click="${h.on(b?.["more"])}" style="position:absolute;${h.e(b?.["morePos"])};top:262px;display:flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:#fff6c9;color:#211d15;font-size:12.5px;font-weight:700;text-decoration:none;box-shadow:0 2px 6px -3px #0006">${h.t(b?.["moreLabel"])}</a>` : ``}
+          ${(b?.["empty"]) ? `<div style="position:absolute;left:12px;right:12px;top:322px;display:grid;gap:12px;justify-items:center;padding:18px 14px;border:2px dashed #b9ab90;border-radius:12px;background:#fffdf8e6;color:#3a352b;font-size:14px;line-height:1.4;text-align:center"><span>${h.t(b?.["emptyLabel"])}</span>${(b?.["emptyAction"]) ? `<a href="#" data-on-click="${h.on(b?.["emptyAction"])}" style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;background:#211d15;color:#fffdf8;font-weight:700;text-decoration:none">${h.t(b?.["emptyActionLabel"])}</a>` : ``}</div>` : ``}
           ${(b?.["posters"] || []).map((P, $index) => `<div class="wall-day st-slot" style="position:absolute;left:${h.e(P?.["x"])}px;top:${h.e(P?.["y"])}px">${h.poster(P, "wall")}</div>`).join(``)}
         </div>
       `).join(``)}</div></div>
@@ -132,7 +132,7 @@
       ${(v.st?.["bars"] || []).map((b, $index) => `<span style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden"><i style="display:block;height:100%;${h.e(b?.["w"])};background:#fff"></i></span>`).join(``)}
     </div>
     <div style="display:flex;align-items:center;gap:10px;padding:12px 8px 0 14px">
-      <span style="display:flex;align-items:center;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums">${h.t(v.st?.["title"])}</span>
+      <span style="display:flex;align-items:center;flex:none;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap">${h.t(v.st?.["title"])}</span>
       <span style="font-size:13px;line-height:1.2;text-shadow:0 1px 2px #0006"><strong>${h.t(v.st?.["count"])}</strong><br>${h.t(v.st?.["weather"])} · sample weather</span>
       <button type="button"${h.a("aria-label", v.st?.["pauseLabel"])}${h.a("aria-pressed", v.st?.["pausePressed"])} data-on-click="${h.on(v.st?.["pause"])}" style="margin-left:auto;display:grid;place-items:center;width:44px;height:44px;border:0;background:none;color:#fff;cursor:pointer;filter:drop-shadow(0 1px 2px #0006)">${(v.st?.["paused"]) ? `<svg viewbox="0 0 24 24" width="22" height="22" aria-hidden="true" style="width:22px;height:22px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;display:block;fill:currentColor" data-s="24">${h.s(24)}</svg>` : ``}${(v.st?.["playing"]) ? `<svg viewbox="0 0 24 24" width="22" height="22" aria-hidden="true" style="width:22px;height:22px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;display:block;fill:currentColor" data-s="25">${h.s(25)}</svg>` : ``}</button>
       <button type="button" aria-label="Close stories" data-on-click="${h.on(v.st?.["close"])}" style="width:44px;height:44px;border:0;background:none;color:#fff;font-size:26px;cursor:pointer">×</button>
@@ -140,7 +140,7 @@
     <div style="position:relative;flex:1;display:grid;place-items:center;touch-action:none" data-on-pointerdown="${h.on(v.st?.["hold"])}" data-on-pointerup="${h.on(v.st?.["letgo"])}" data-on-pointerleave="${h.on(v.st?.["letgo"])}">
       <button type="button" aria-label="Previous poster" data-on-click="${h.on(v.st?.["prev"])}" style="position:absolute;left:0;top:0;bottom:0;width:calc((100% - 380px) / 2);border:0;background:none;cursor:pointer"></button>
       <button type="button" aria-label="Next poster" data-on-click="${h.on(v.st?.["next"])}" style="position:absolute;right:0;top:0;bottom:0;width:calc((100% - 380px) / 2);border:0;background:none;cursor:pointer"></button>
-      <div class="st-story-poster" style="position:relative;width:380px;height:532px;filter:drop-shadow(0 20px 30px rgba(0,0,0,.4))">${h.poster(v.st?.["p"], "story")}</div>
+      <div class="st-story-poster" style="position:relative;width:380px;height:532px;filter:drop-shadow(0 20px 30px rgba(0,0,0,.4)) ${h.e(v.st?.["wash"])}">${h.poster(v.st?.["p"], "story")}</div>
     </div>
   </div>
 ` : ``}`; },
@@ -265,7 +265,7 @@
       ${(v.st?.["bars"] || []).map((b, $index) => `<span style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden"><i style="display:block;height:100%;${h.e(b?.["w"])};background:#fff"></i></span>`).join(``)}
     </div>
     <div style="display:flex;align-items:center;gap:10px;padding:12px 8px 0 14px">
-      <span style="display:flex;align-items:center;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums">${h.t(v.st?.["title"])}</span>
+      <span style="display:flex;align-items:center;flex:none;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap">${h.t(v.st?.["title"])}</span>
       <span style="font-size:13px;line-height:1.2;text-shadow:0 1px 2px #0006"><strong>${h.t(v.st?.["count"])}</strong><br>${h.t(v.st?.["weather"])} · sample weather</span>
       <button type="button"${h.a("aria-label", v.st?.["pauseLabel"])}${h.a("aria-pressed", v.st?.["pausePressed"])} data-on-click="${h.on(v.st?.["pause"])}" style="margin-left:auto;display:grid;place-items:center;width:44px;height:44px;border:0;background:none;color:#fff;cursor:pointer;filter:drop-shadow(0 1px 2px #0006)">${(v.st?.["paused"]) ? `<svg viewbox="0 0 24 24" width="22" height="22" aria-hidden="true" style="width:22px;height:22px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;display:block;fill:currentColor" data-s="49">${h.s(49)}</svg>` : ``}${(v.st?.["playing"]) ? `<svg viewbox="0 0 24 24" width="22" height="22" aria-hidden="true" style="width:22px;height:22px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;display:block;fill:currentColor" data-s="50">${h.s(50)}</svg>` : ``}</button>
       <button type="button" aria-label="Close stories" data-on-click="${h.on(v.st?.["close"])}" style="width:44px;height:44px;border:0;background:none;color:#fff;font-size:26px;cursor:pointer">×</button>
@@ -273,11 +273,23 @@
     <div style="position:relative;flex:1;display:grid;place-items:center;touch-action:none" data-on-pointerdown="${h.on(v.st?.["hold"])}" data-on-pointerup="${h.on(v.st?.["letgo"])}" data-on-pointerleave="${h.on(v.st?.["letgo"])}">
       <button type="button" aria-label="Previous poster" data-on-click="${h.on(v.st?.["prev"])}" style="position:absolute;left:0;top:0;bottom:0;width:calc((100% - 300px) / 2);border:0;background:none;cursor:pointer"></button>
       <button type="button" aria-label="Next poster" data-on-click="${h.on(v.st?.["next"])}" style="position:absolute;right:0;top:0;bottom:0;width:calc((100% - 300px) / 2);border:0;background:none;cursor:pointer"></button>
-      <div class="st-story-poster" style="position:relative;width:300px;height:420px;filter:drop-shadow(0 20px 30px rgba(0,0,0,.4))">${h.poster(v.st?.["p"], "story")}</div>
+      <div class="st-story-poster" style="position:relative;width:300px;height:420px;filter:drop-shadow(0 20px 30px rgba(0,0,0,.4)) ${h.e(v.st?.["wash"])}">${h.poster(v.st?.["p"], "story")}</div>
     </div>
   </div>
 ` : ``}`; },
     };
+    // The sample day's clock. For review, ?now=23:58 shows the wall at
+    // another time of that day (all of today's events over, say).
+    const NOW = (() => {
+      const asked = new URLSearchParams((root.location && root.location.search) || '').get('now');
+      const t = /^\d{1,2}:\d{2}$/.test(asked || '') ? asked : (root.ExpaduSampleDay && root.ExpaduSampleDay.time) || '13:10';
+      const [h, m] = t.split(':').map(Number);
+      return h + m / 60;
+    })();
+    // A poster whose event is over is washed, not faded: it stays solid, so
+    // posters that overlap never show through each other (owner chose A on
+    // the busy-day canvas, 22 Oct 2026).
+    const WASH = 'grayscale(.75) sepia(.18) brightness(1.08) contrast(.86)';
     art.logic = (Base) => class extends Base {
   cfg() { return this.__cfg; }
   asset(f) { return ({})[f] || ('assets/' + f); }
@@ -713,15 +725,19 @@
         const left = it.x - x;
         if (left + it.w > 30 && left < c.zoneW - 30) visibleHours.push(it.h);
         // Saved posters take the hour's spots first, then the earliest.
-        const here = ev.filter((e) => e.h === it.h && this.match(e)).sort((a, b) => (s.saved[b.n] ? 1 : 0) - (s.saved[a.n] ? 1 : 0) || a.n - b.n);
-        const posters = here.slice(0, c.spots || 2).map((e, i) => dress(e, { x: c.px, y: c.rows[i], w: c.pw, h: c.ph, rot: [-1.2, 0.8, -0.5, 1.1][(e.n + i) % 4] }));
+        const inBay = (e) => (it.hs ? it.hs.indexOf(e.h) >= 0 : e.h === it.h);
+        const here = ev.filter((e) => inBay(e) && this.match(e)).sort((a, b) => (s.saved[b.n] ? 1 : 0) - (s.saved[a.n] ? 1 : 0) || (it.latestFirst ? b.n - a.n : a.n - b.n));
+        const spots = it.spots !== undefined ? it.spots : (c.spots || 2);
+        const posters = here.slice(0, spots).map((e, i) => dress(e, { x: it.px !== undefined ? it.px : c.px, y: (it.py || 0) + c.rows[i], w: c.pw, h: c.ph, rot: [-1.2, 0.8, -0.5, 1.1][(e.n + i) % 4] }));
         const more = here.length - posters.length;
+        const today = typeof this.day !== 'function' || this.day() === this.today();
+        const ended = it.ended !== undefined ? it.ended : today && it.h < Math.floor(NOW);
         return Object.assign({}, it, {
-          label: two(it.h) + ':00', isNow: it.h === 13 && c.nowPill !== false, op: it.h < 13 ? 0.72 : 1, posters,
-          empty: posters.length === 0, emptyLabel: 'Nothing at ' + two(it.h) + ':00 matches',
-          hasMore: more > 0, moreLabel: '+' + more + ' more', moreHref: c.oneWall ? '#' : '#g' + it.h,
+          label: it.label || two(it.h) + ':00', isNow: !it.hs && it.h === Math.floor(NOW) && c.nowPill !== false, wash: ended ? WASH : 'none', z: it.z || 0, tagStyle: it.emptyLabel ? 'display:none' : '', morePos: it.morePos || 'right:16px', posters,
+          empty: it.emptyLabel ? true : posters.length === 0, emptyLabel: it.emptyLabel || 'Nothing at ' + two(it.h) + ':00 matches', emptyAction: it.emptyAction, emptyActionLabel: it.emptyActionLabel,
+          hasMore: more > 0, moreLabel: it.moreLabel || '+' + more + ' more', moreHref: c.oneWall ? '#' : '#g' + it.h,
           // On one wall, "+N more" opens the hour's stories.
-          more: c.oneWall ? (ev2) => { if (ev2 && ev2.preventDefault) ev2.preventDefault(); const seen = Object.assign({}, s.seen); seen[it.h] = true; this.setState({ story: { h: it.h, i: 0, t: Date.now() }, seen, sel: 0, stPause: false }); } : openHour(it.h),
+          more: c.oneWall ? (ev2) => { if (ev2 && ev2.preventDefault) ev2.preventDefault(); const seen = Object.assign({}, s.seen); seen[it.h] = true; const group = it.hs ? { hs: it.hs, label: it.storyLabel || it.label } : {}; const list = this.storyItems(Object.assign({ h: it.h }, group)); const onWall = posters.map((q) => q.n); const first = it.hs ? Math.max(0, list.findIndex((q) => onWall.indexOf(q.n) < 0)) : 0; this.setState({ story: Object.assign({ h: it.h, i: first, t: Date.now() }, group), seen, sel: 0, stPause: false }); } : openHour(it.h),
         });
       });
       const settledFirst = its.find((it) => it.x >= this.offset() - 1);
@@ -886,12 +902,21 @@
     const cat = s.cat || 'all';
     return ev.filter((e) => e.h === h && (cat === 'all' || this.catOf(e) === cat));
   }
+  storyItems(st) { return st.hs ? st.hs.reduce((all, h) => all.concat(this.storyList(h)), []) : this.storyList(st.h); }
   storyStep(dir) {
     this._held = null;
     const s = this.state || {};
     const st = s.story;
     if (!st) return;
-    const list = this.storyList(st.h);
+    const list = this.storyItems(st);
+    // A group (a part of the day, or a stub's hours) ends where it ends.
+    if (st.hs) {
+      const i = st.i + dir;
+      if (i >= list.length) { this.setState({ story: null }); return; }
+      const turned = Object.assign({}, s.turned); delete turned['story:0'];
+      this.setState({ story: Object.assign({}, st, { i: Math.max(0, i), t: Date.now() }), sel: 0, plan: false, turned });
+      return;
+    }
     const hours = this.storyHours().filter((h) => this.storyList(h).length);
     let { h, i } = st;
     i += dir;
@@ -1033,8 +1058,9 @@
       v.storyOpen = !!s.story;
       if (!s.story) this._held = null;
       if (s.story) {
-        const list = this.storyList(s.story.h);
+        const list = this.storyItems(s.story);
         const e = list[Math.min(s.story.i, list.length - 1)] || ev[0];
+        const over = (typeof this.day !== 'function' || this.day() === this.today()) && e.h < Math.floor(NOW);
         const pausedNow = !s.press && this.storyPaused();
         if (pausedNow && this._held == null) this._held = Date.now() - s.story.t;
         // Paused, or just resumed (the tick moves the start on): the held time.
@@ -1047,9 +1073,9 @@
         v.st = {
           bars: list.map((x, j) => ({ w: j < s.story.i ? 'width:100%' : j === s.story.i ? run : 'width:0%' })),
           bg: 'linear-gradient(180deg,' + k.s1 + ',' + k.s2 + ' 30%,' + k.s3 + ' 60%,' + k.s5 + ')',
-          title: two(s.story.h) + ':00', count: (s.story.i + 1) + ' of ' + list.length, weather: k.temp + ' ' + k.name,
+          title: s.story.label || two(s.story.h) + ':00', count: (over ? 'Over · ' : '') + (s.story.i + 1) + ' of ' + list.length, wash: over ? WASH : '', weather: k.temp + ' ' + k.name,
           p: thumb(e, c.storyW, c.storyH), line1: e.ph ? 'Layout placeholder #' + e.n : e.title,
-          line2: e.ph ? 'Not a real event · one of 100 on a busy day' : e.time + ' · ' + e.until + ' · ' + e.place + ' · ' + e.price + (e.titleEnglish ? ' · ' + e.titleEnglish : ''),
+          line2: e.ph ? 'Not a real event · one of 100 on a busy day' : (over ? 'Over · ' : '') + e.time + ' · ' + e.until + ' · ' + e.place + ' · ' + e.price + (e.titleEnglish ? ' · ' + e.titleEnglish : ''),
           saveLabel: s.saved[e.n] ? 'Saved' : 'Save', saveStyle: s.saved[e.n] ? 'background:#c23b0e;color:#fff;border-color:#c23b0e' : 'background:#ffffff1f;color:#fff;border-color:#ffffff99',
           save: (x) => this.mxSave(e, x),
           more: () => this.mxOpen(e, 'about'),
@@ -1275,18 +1301,65 @@
     const c = this.cfg();
     const { ev } = this.events();
     const hours = Array.from(new Set(ev.filter((e) => this.match(e)).map((e) => e.h))).sort((a, b) => a - b);
-    if (c.oneWall) {
-      // The whole day on one wall (owner, 13 Oct 2026): the hours share
-      // it out; when more hours than fit, their posters overlap, the last
-      // one ending at the wall's end.
-      const n = hours.length, fits = n * c.bayW <= c.zoneW;
-      const step = fits ? c.zoneW / Math.max(1, n) : (c.zoneW - c.bayW) / Math.max(1, n - 1);
-      this._total = c.zoneW;
-      return hours.map((h, i) => ({ h, w: c.bayW, x: Math.round(fits ? i * step + (step - c.bayW) / 2 : i * step) }));
-    }
+    if (c.oneWall) return this.dayItems(hours);
     let x = 0;
     const list = hours.map((h) => { const it = { h, w: c.bayW, x }; x += c.bayW; return it; });
     this._total = x;
+    return list;
+  }
+  // The whole day on one wall (owner, 13 Oct 2026), and on a busy day its
+  // hours never overlap (owner chose A, 22 Oct 2026): today's ended hours
+  // fold into an "Ended" stack at the wall's start, as many hours as fit
+  // show at full size from now, and the rest fold into a "Later" stack at
+  // its end. Each stack's count opens its events as stories. When all of
+  // today's events are over, the wall says so and offers tomorrow.
+  dayItems(hours) {
+    const c = this.cfg();
+    const { ev } = this.events();
+    const two = (h) => (h < 10 ? '0' : '') + h;
+    const now = Math.floor(NOW);
+    const count = (hs) => ev.filter((e) => hs.indexOf(e.h) >= 0 && this.match(e)).length;
+    const events = (n) => n + (n === 1 ? ' event' : ' events');
+    const gap = 14, stubW = 118;
+    const today = this.day() === this.today();
+    const ended = today ? hours.filter((h) => h < now) : [];
+    const coming = hours.filter((h) => ended.indexOf(h) < 0);
+    this._total = c.zoneW;
+    const allOver = today && !coming.length && ended.length > 0;
+    const tomorrow = (ev2) => {
+      if (ev2 && ev2.preventDefault) ev2.preventDefault();
+      const d = new Date(this.day() + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      const url = new URL(location.href);
+      url.searchParams.set('date', d.toISOString().slice(0, 10));
+      location.href = url.href;
+    };
+    const over = allOver ? [{ h: -1, w: c.bayW, emptyLabel: 'Today’s events have ended.', emptyAction: tomorrow, emptyActionLabel: 'See tomorrow', posters: [], spots: 0, ended: false }] : [];
+    // Nothing to fold: the hours share the wall out evenly, as before.
+    if (!ended.length && hours.length * c.bayW <= c.zoneW) {
+      const step = c.zoneW / Math.max(1, hours.length);
+      return hours.map((h, i) => ({ h, w: c.bayW, x: Math.round(i * step + (step - c.bayW) / 2) }));
+    }
+    const list = [];
+    let x = 0;
+    if (ended.length) {
+      const w = allOver ? c.bayW : stubW;
+      list.push({ h: ended[0], hs: ended, w, x, label: 'Ended', storyLabel: 'Ended', ended: true, latestFirst: true, spots: 1, px: Math.round((w - c.pw * 0.55) / 2), py: 40, stub: true,
+        moreLabel: events(count(ended)), morePos: 'left:12px;top:300px !important' });
+      x += w + gap;
+    }
+    if (allOver) return list.concat(over.map((o) => Object.assign(o, { x })));
+    let room = c.zoneW - x;
+    let fit = Math.max(1, Math.floor((room + gap) / (c.bayW + gap)));
+    let shown = coming, later = [];
+    if (coming.length > fit) {
+      fit = Math.max(1, Math.floor((room - stubW) / (c.bayW + gap)));
+      shown = coming.slice(0, fit); later = coming.slice(fit);
+    }
+    shown.forEach((h) => { list.push({ h, w: c.bayW, x }); x += c.bayW + gap; });
+    if (later.length)
+      list.push({ h: later[0], hs: later, w: stubW, x, label: 'Later · ' + two(later[0]) + '–' + two(later[later.length - 1] + 1), storyLabel: two(later[0]) + ':00–' + two(later[later.length - 1] + 1) + ':00', spots: 1, px: Math.round((stubW - c.pw * 0.55) / 2), py: 40, stub: true, ended: false,
+        moreLabel: events(count(later)), morePos: 'left:12px;top:300px !important' });
     return list;
   }
   nowX() {
@@ -1840,7 +1913,7 @@
     if (v.bays && c.oneWall) {
       const xs = v.bays.map((b) => b.x);
       v.bays = v.bays.map((b, i) => {
-        if (b.posters.length !== 1 || b.hasMore) return b;
+        if (b.posters.length !== 1 || b.hasMore || b.stub || b.hs) return b;
         const p = b.posters[0];
         const near = Math.min(Infinity, ...xs.filter((x, j) => j !== i).map((x) => Math.abs(x - b.x)));
         const g = Math.max(1, Math.min(1.95, (c.wallBase - 36 - p.y) / c.ph, (near - 28) / c.pw));
@@ -1850,7 +1923,11 @@
         return Object.assign({}, b, { labelX: x - 24, posters: [Object.assign({}, p, { x, mxStyle: style })] });
       });
     }
-    if (v.strip) v.strip = v.strip.map((q, i) => Object.assign({}, q, { mxKey: 'column:' + i + ':' + q.id, mxStyle: z.colW ? 'width:' + z.colW + 'px;height:' + z.colH + 'px' : 'width:364px;height:560px;zoom:' + z.colZoom }));
+    // A stub shows its first poster small, under its tag.
+    if (v.bays) v.bays = v.bays.map((b) => (!b.stub ? b : Object.assign({}, b, { posters: b.posters.map((p) => Object.assign({}, p, { mxStyle: p.mxStyle.replace(/zoom:([\d.]+)/, (m, zm) => 'zoom:' + (zm * 0.55).toFixed(4)) })) })));
+    // The column washes an event that's over, as the wall does.
+    const over = (q) => this.day() === this.today() && parseInt(q.start, 10) < Math.floor(NOW);
+    if (v.strip) v.strip = v.strip.map((q, i) => Object.assign({}, q, { mxKey: 'column:' + i + ':' + q.id, mxStyle: (z.colW ? 'width:' + z.colW + 'px;height:' + z.colH + 'px' : 'width:364px;height:560px;zoom:' + z.colZoom) + (over(q) ? ';filter:' + WASH : '') }));
     if (v.st && v.st.p && v.storyOpen) {
       v.st.id = v.st.p.id;
       v.st.p = Object.assign({}, v.st.p, { mxKey: 'story:' + v.st.p.id, mxStyle: c.phone ? 'width:300px;height:420px' : 'zoom:' + z.storyZoom });
