@@ -64,6 +64,9 @@ final class AssistantTools
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
 
+    /** @var list<array{0: string, 1: int}> each lookup and its milliseconds, in order (composer:eval reads where the time goes) */
+    public array $timings = [];
+
     /** @var list<string> the lookups made, by the page's names for them */
     private array $looked = [];
 
@@ -188,6 +191,7 @@ final class AssistantTools
             'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans', default => $name,
         };
+        $started = hrtime(true);
         try {
             return match ($name) {
                 'where_am_i' => $this->whereAmI(),
@@ -209,6 +213,8 @@ final class AssistantTools
             };
         } catch (Throwable) {
             return 'Nothing found: the lookup failed.';
+        } finally {
+            $this->timings[] = [$name, (int) round((hrtime(true) - $started) / 1e6)];
         }
     }
 
@@ -415,15 +421,16 @@ final class AssistantTools
         }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         [$lat, $lng] = $this->location->hasOrigin() ? [(float) $this->location->lat, (float) $this->location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
-        $found = collect($this->catalogue->candidatesFor(new Constraints(
+        // The nearest that fit, two of a kind, and a few spare for the filters below.
+        $found = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
             areas: array_values(array_filter([$area])),
             categories: array_values(array_filter([is_string($input['kind'] ?? null) ? $input['kind'] : null])),
             activities: array_values(array_filter([is_string($input['activity'] ?? null) ? $input['activity'] : null])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
-        ), $lat, $lng))
-            ->filter(fn (Candidate $c): bool => $c->type === 'spot' && ! $c->closedToday
+        ), $lat, $lng, 2, self::SHOWN * 3))
+            ->filter(fn (Candidate $c): bool => ! $c->closedToday
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)

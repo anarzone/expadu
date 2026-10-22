@@ -80,6 +80,20 @@ class CandidateRepository
     }
 
     /**
+     * The places nearest a point that fit, at most `$perCategory` of each kind, nearest first,
+     * stopping once `$enough` are found and no place left can be nearer: what Composer's
+     * assistant suggests from (its search_places), without the planner's whole pool of a
+     * dozen a kind plus the listings, which it doesn't use (owner, 22 Oct 2026: every reply
+     * under 6 s).
+     *
+     * @return list<Candidate>
+     */
+    public function nearestSpots(Constraints $constraints, float $originLat, float $originLng, int $perCategory = 2, int $enough = 24): array
+    {
+        return $this->spotCandidates($constraints, $originLat, $originLng, $perCategory, $enough);
+    }
+
+    /**
      * A diverse, bounded, LOCAL pool: the nearest ~12 per category to the plan's
      * origin. Per-category keeps it varied (2,000 playgrounds can't drown out
      * the museums and cafés); nearest-first makes it reflect where the day
@@ -90,7 +104,7 @@ class CandidateRepository
      *
      * @return list<Candidate>
      */
-    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng): array
+    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng, int $perCategory = self::PER_CATEGORY, ?int $enough = null): array
     {
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
@@ -123,11 +137,19 @@ class CandidateRepository
         $hints = app(PlaceSearchHints::class)->ordered(clone $query, $constraints, $originLat, $originLng);
         $offset = 0;
         while ($offset < count($hints)) {
+            // Enough already, and every place left is farther than the last of them.
+            if ($enough !== null && $offset > 0) {
+                $distances = array_map(fn (Candidate $c): float => (float) $c->distanceKmFromOrigin, array_merge([], ...array_values($selected)));
+                sort($distances);
+                if (count($distances) >= $enough && $hints[$offset]['minimum_km'] > $distances[$enough - 1]) {
+                    break;
+                }
+            }
             $ids = [];
             while ($offset < count($hints) && count($ids) < 64) {
                 $hint = $hints[$offset++];
                 $pool = $selected[$hint['category']] ?? [];
-                if (count($pool) >= self::PER_CATEGORY && $hint['minimum_km'] > $pool[array_key_last($pool)]->distanceKmFromOrigin) {
+                if (count($pool) >= $perCategory && $hint['minimum_km'] > $pool[array_key_last($pool)]->distanceKmFromOrigin) {
                     continue;
                 }
                 $ids[] = $hint['id'];
@@ -149,7 +171,7 @@ class CandidateRepository
                 }
                 $selected[$candidate->category][] = $candidate;
                 usort($selected[$candidate->category], fn (Candidate $a, Candidate $b): int => [$a->distanceKmFromOrigin, (int) substr($a->id, 5)] <=> [$b->distanceKmFromOrigin, (int) substr($b->id, 5)]);
-                $selected[$candidate->category] = array_slice($selected[$candidate->category], 0, self::PER_CATEGORY);
+                $selected[$candidate->category] = array_slice($selected[$candidate->category], 0, $perCategory);
             }
         }
         $candidates = array_merge([], ...array_values($selected));
