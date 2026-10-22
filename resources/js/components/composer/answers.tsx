@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { travelDestinationParams } from '@/components/departures/travel-request';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf } from '@/components/travel/line-look';
@@ -13,13 +13,17 @@ import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
 import { timetable } from '@/routes';
 import type { Journey } from '@/types/transit';
+import { DeparturesAnswer } from './departures-answer';
+import type { AnsweredBoard } from './departures-answer';
 import { EventAnswer } from './event-answer';
 import type { AnsweredEvent } from './event-answer';
 import type { Panel } from './frame';
+import { Guidance } from './guidance';
 import { notThis } from './not-this';
 import { PersonaliseInvite } from './personalise-invite';
 import { PlaceAnswer } from './place-answer';
 import type { AnsweredPlace } from './place-answer';
+import { readList } from './read-words';
 import type { Message } from './types';
 
 /*
@@ -62,8 +66,46 @@ type TripAnswer = {
     folded?: boolean;
 };
 
+/**
+ * One card of an assistant's answer (App\Composer\Assistant\Ask::message), drawn
+ * by its type in the order it came. A plan it showed isn't one: it arrives as
+ * the usual change and plan messages.
+ */
+type Block =
+    | {
+          type: 'where';
+          area?: string;
+          stop?: { name: string; walk_min: number; lines: string[] };
+      }
+    | { type: 'departures'; board: AnsweredBoard }
+    | {
+          type: 'trip';
+          title?: string;
+          text: string;
+          trip: TripAnswer;
+          private?: boolean;
+      }
+    | { type: 'choices'; text: string }
+    | { type: 'events'; events: AnsweredEvent[] }
+    | { type: 'places'; places: AnsweredPlace[] }
+    | {
+          type: 'checklist';
+          text: string;
+          title: string;
+          record: Checklist;
+          facts?: Fact[];
+          private?: boolean;
+      }
+    | { type: 'note'; text: string; private?: boolean }
+    | { type: 'facts'; facts: Fact[] }
+    | { type: 'guidance'; query: string };
+
 export type AnswerMessage = Message & {
     request?: string;
+    /** The AI's checked words (request 'ask'); may be empty. */
+    lead?: string;
+    /** Its cards, in order (request 'ask'). */
+    blocks?: Block[];
     title?: string;
     suggestions?: Suggestion[];
     record?: Checklist;
@@ -74,54 +116,16 @@ export type AnswerMessage = Message & {
     /** Where an "around you now" answer's sentences come from, to check them. */
     sources?: { label: string; href: string }[];
     /** Whether the AI wrote the sentences ('ai') or Composer's own words did. */
-    written?: 'ai' | 'listings';
+    written?: 'ai' | 'code' | 'listings';
     /** Some "because" came from the person's taste (opt-in). */
     taste?: boolean;
     /** Personalisation is off and would have changed this: invite, once. */
     invite?: boolean;
-    /** Exactly what the AI was given; absent when Composer wrote it. */
-    read?: Read[];
+    /** Exactly what the AI was given, by name; absent when Composer wrote it. */
+    read?: string[];
+    /** The same, in plain words ("your nearest stop and Veedel"), for the fine print. */
+    looked_at?: string[];
 };
-
-type Read = 'listings' | 'places' | 'weather' | 'plans' | 'taste';
-
-const READ: Record<Read, string> = {
-    listings: 'the listings',
-    places: 'places',
-    weather: 'the weather',
-    plans: 'your plans',
-    taste: 'what you like',
-};
-
-/** "the listings, places and the weather": only what the AI was given (#330). */
-function readList(read: Read[] | undefined): string {
-    const named = (Object.keys(READ) as Read[])
-        .filter((key) => (read ?? ['listings', 'weather']).includes(key))
-        .map((key) => READ[key]);
-
-    return named.length > 1
-        ? `${named.slice(0, -1).join(', ')} and ${named.at(-1)}`
-        : (named[0] ?? '');
-}
-
-const READER: Record<NonNullable<Message['reader']>, string> = {
-    limited:
-        'AI reading is paused for today, so this answer comes from Composer’s simpler reader.',
-    off: 'The AI reader is off right now, so this answer comes from Composer’s simpler reader.',
-    failed: 'The AI reader couldn’t read this one, so this answer comes from Composer’s simpler reader.',
-    unpermitted:
-        'This was read without the AI service, so this answer comes from Composer’s simpler reader.',
-};
-
-/**
- * A reply to a request read without the AI says so, quietly (nothing fake, 22 Oct
- * 2026): why, in the fine print, on the page and in the tray's card alike.
- */
-export function ReaderNote({ message }: { message: Message }) {
-    return message.reader ? (
-        <p className="answer-fine">{READER[message.reader]}</p>
-    ) : null;
-}
 
 /** The person's facts, word for word as recorded; an unknown says so. */
 function FactList({ facts }: { facts: Fact[] }) {
@@ -206,6 +210,176 @@ function TripWay({ trip }: { trip: TripAnswer }) {
     );
 }
 
+/** A trip: the way as Travel draws it, its words, and on to Travel. */
+function TripBlock({
+    trip,
+    text,
+}: {
+    trip: TripAnswer;
+    text: string | undefined;
+}) {
+    const paragraph = text ? <p>{text}</p> : null;
+
+    return (
+        <>
+            {trip.folded ? (
+                // "How far is it?": the line answers; the way opens on a tap.
+                <>
+                    {paragraph}
+                    <details className="answer-trip-fold">
+                        <summary>Show the way</summary>
+                        <TripWay trip={trip} />
+                    </details>
+                </>
+            ) : (
+                <>
+                    <TripWay trip={trip} />
+                    {paragraph}
+                </>
+            )}
+            <div className="answer-actions">
+                <Link className="answer-button" href={tripHref(trip)}>
+                    {trip.label}
+                    <Icon name="arrow" variant="line" />
+                </Link>
+                <span>
+                    {trip.basis === 'live'
+                        ? 'Live times.'
+                        : 'Scheduled times, not live.'}
+                </span>
+            </div>
+        </>
+    );
+}
+
+/** Your checklist from Paperwork, as recorded, then its words. */
+function ChecklistBlock({
+    record,
+    text,
+}: {
+    record: Checklist;
+    text: string | undefined;
+}) {
+    const share = record.total
+        ? Math.round((record.prepared / record.total) * 100)
+        : 0;
+
+    return (
+        <>
+            <Link className="answer-block answer-checklist" href={record.href}>
+                <span className="answer-tile">
+                    <Icon name="document" variant="line" />
+                </span>
+                <span>
+                    <small>{`Your ${record.title} checklist · your records`}</small>
+                    <strong>{`${record.prepared} of ${record.total} ready`}</strong>
+                    <span className="answer-progress" aria-hidden="true">
+                        <i style={{ width: `${share}%` }} />
+                    </span>
+                </span>
+                <Icon name="arrow" variant="line" />
+            </Link>
+            {record.documents.length > 0 && (
+                <ul className="answer-block answer-docs">
+                    {record.documents.map((document, index) => (
+                        <li
+                            key={index}
+                            className={document.ready ? 'is-ready' : undefined}
+                        >
+                            <span>{document.label}</span>
+                            <small>{document.state}</small>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {text && <p>{text}</p>}
+        </>
+    );
+}
+
+/** "a, b and c". */
+const listed = (words: string[]) =>
+    words.length > 1
+        ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`
+        : (words[0] ?? '');
+
+/**
+ * Who wrote it and where to check it: the AI, naming only what it was given
+ * (`looked_at`, in the server's words; older answers have only `read`, and
+ * those before #330 read the listings and the weather). Nothing named, no
+ * "from". The person's own items are Composer's words, as recorded.
+ */
+function FinePrint({ message }: { message: AnswerMessage }) {
+    if (message.written !== 'ai' && !message.sources?.length) {
+        return null;
+    }
+
+    const from =
+        message.looked_at !== undefined
+            ? listed(message.looked_at)
+            : readList(message.read ?? ['listings', 'weather']);
+
+    return (
+        <p className="answer-fine">
+            {message.written === 'ai' &&
+                `Written by AI${from ? ` from ${from}` : ''}; your own items are as recorded. `}
+            {!!message.sources?.length && (
+                <>
+                    From:{' '}
+                    {message.sources.map((source, index) => (
+                        <span key={source.href}>
+                            {index > 0 && ' · '}
+                            <Link href={source.href}>{source.label}</Link>
+                        </span>
+                    ))}
+                    .
+                </>
+            )}
+        </p>
+    );
+}
+
+/** What to do next, on the latest reply only, so they don't pile up. */
+function Suggestions({
+    suggestions,
+    onAsk,
+    onPanel,
+}: {
+    suggestions: Suggestion[];
+    onAsk: (prompt: string) => void;
+    onPanel: (panel: Panel) => void;
+}) {
+    return (
+        <div className="reply-suggestions">
+            {suggestions.map((suggestion) =>
+                suggestion.href ? (
+                    <Link
+                        key={suggestion.label}
+                        className="suggestion-chip"
+                        href={suggestion.href}
+                    >
+                        {suggestion.label}
+                        <Icon name="arrow" variant="line" />
+                    </Link>
+                ) : (
+                    <button
+                        type="button"
+                        key={suggestion.label}
+                        className="suggestion-chip"
+                        onClick={() =>
+                            suggestion.nav
+                                ? onPanel(suggestion.nav)
+                                : onAsk(suggestion.prompt ?? suggestion.label)
+                        }
+                    >
+                        {suggestion.label}
+                    </button>
+                ),
+            )}
+        </div>
+    );
+}
+
 export function AnswerBody({
     message,
     latest,
@@ -223,12 +397,6 @@ export function AnswerBody({
     planned: (event: AnsweredEvent) => boolean;
     onAddEvent: (event: AnsweredEvent) => void;
 }) {
-    const record = message.kind === 'checklist' ? message.record : undefined;
-    const trip = message.kind === 'trip' ? message.trip : undefined;
-    const paragraph = message.text ? <p>{message.text}</p> : null;
-    const share = record?.total
-        ? Math.round((record.prepared / record.total) * 100)
-        : 0;
     // "Not this" on an assistant's suggestions, for people who turned learning on
     // (only then is it kept): the card goes at once, with Undo.
     const personalised =
@@ -245,16 +413,182 @@ export function AnswerBody({
         setLeft((keys) => [...keys, key]);
         notThis(item, () => setLeft((keys) => keys.filter((k) => k !== key)));
     };
-    const suggesting = message.kind === 'around' && personalised;
+    const asked = message.request === 'ask';
+    const suggesting = (asked || message.kind === 'around') && personalised;
     // The invitation stays once shown, so turning it on there can say it's on.
     const [inviting] = useState(!personalised);
-    const events = message.events?.filter(
-        (event) =>
-            !left.includes(`event:${event.id}:${event.occurrence_start}`),
+    const shownEvents = (events: AnsweredEvent[] | undefined) =>
+        events?.filter(
+            (event) =>
+                !left.includes(`event:${event.id}:${event.occurrence_start}`),
+        );
+    const shownPlaces = (places: AnsweredPlace[] | undefined) =>
+        places?.filter((place) => !left.includes(`spot:${place.id}`));
+    const eventsCard = (list: AnsweredEvent[] | undefined) => {
+        const events = shownEvents(list);
+
+        return events?.length ? (
+            <EventAnswer
+                events={events}
+                planned={planned}
+                onAdd={onAddEvent}
+                onNotThis={
+                    suggesting
+                        ? (event) =>
+                              leave(
+                                  `event:${event.id}:${event.occurrence_start}`,
+                                  { type: 'event', id: event.id },
+                              )
+                        : undefined
+                }
+            />
+        ) : null;
+    };
+    const placesCard = (list: AnsweredPlace[] | undefined) => {
+        const places = shownPlaces(list);
+
+        return places?.length ? (
+            <PlaceAnswer
+                places={places}
+                onNotThis={
+                    suggesting
+                        ? (place) =>
+                              leave(`spot:${place.id}`, {
+                                  type: 'spot',
+                                  id: place.id,
+                              })
+                        : undefined
+                }
+            />
+        ) : null;
+    };
+    const after = (
+        <>
+            {message.taste && (
+                <p className="answer-fine">
+                    Suggested from what you’ve saved and opened.
+                </p>
+            )}
+            {latest && message.invite && inviting && <PersonaliseInvite />}
+            <FinePrint message={message} />
+        </>
     );
-    const places = message.places?.filter(
-        (place) => !left.includes(`spot:${place.id}`),
+    const next = latest && !!message.suggestions?.length && (
+        <Suggestions
+            suggestions={message.suggestions}
+            onAsk={onAsk}
+            onPanel={onPanel}
+        />
     );
+
+    // The assistant's answer: its checked words first, then each card in the
+    // order it came. Composer's own words for a card are on the card.
+    if (asked) {
+        const blocks = message.blocks ?? [];
+        // One voice: a card's own words show when they're the person's own
+        // records (`private`, which the AI never reads) or there's no lead;
+        // otherwise the lead has said it.
+        const own = (block: { text?: string; private?: boolean }) =>
+            block.private || !message.lead ? block.text : undefined;
+        const card = (block: Block, index: number) => {
+            switch (block.type) {
+                case 'where':
+                    return (
+                        <FactList
+                            key={index}
+                            facts={[
+                                {
+                                    label: 'Your area',
+                                    value:
+                                        block.area ??
+                                        'Outside the Veedel Expadu knows',
+                                    known: !!block.area,
+                                },
+                                ...(block.stop
+                                    ? [
+                                          {
+                                              label: 'Nearest stop',
+                                              value: `${block.stop.name} · ${block.stop.walk_min} min walk · ${block.stop.lines.join(', ')}`,
+                                              known: true,
+                                          },
+                                      ]
+                                    : []),
+                            ]}
+                        />
+                    );
+                case 'departures':
+                    return <DeparturesAnswer key={index} board={block.board} />;
+                case 'trip':
+                    return (
+                        <Fragment key={index}>
+                            {block.title && (
+                                <h3 className="chat-answer-title">
+                                    {block.title}
+                                </h3>
+                            )}
+                            <TripBlock trip={block.trip} text={own(block)} />
+                        </Fragment>
+                    );
+                case 'choices':
+                    // The code's own question, when the AI didn't ask it; its
+                    // options are the suggestions under the answer.
+                    return message.lead ? null : (
+                        <p key={index}>{block.text}</p>
+                    );
+                case 'events':
+                    return (
+                        <Fragment key={index}>
+                            {eventsCard(block.events)}
+                        </Fragment>
+                    );
+                case 'places':
+                    return (
+                        <Fragment key={index}>
+                            {placesCard(block.places)}
+                        </Fragment>
+                    );
+                case 'checklist':
+                    return (
+                        <Fragment key={index}>
+                            {block.title && (
+                                <h3 className="chat-answer-title">
+                                    {block.title}
+                                </h3>
+                            )}
+                            <ChecklistBlock
+                                record={block.record}
+                                text={own(block)}
+                            />
+                            {!!block.facts?.length && (
+                                <FactList facts={block.facts} />
+                            )}
+                        </Fragment>
+                    );
+                case 'note':
+                    return own(block) ? <p key={index}>{block.text}</p> : null;
+                case 'facts':
+                    return <FactList key={index} facts={block.facts} />;
+                case 'guidance':
+                    return <Guidance key={index} query={block.query} />;
+                default:
+                    return null;
+            }
+        };
+
+        return (
+            <>
+                {message.lead && <p>{message.lead}</p>}
+                {blocks.map(card)}
+                {after}
+                {next}
+            </>
+        );
+    }
+
+    // Answers kept from before the assistant (their kind says which card).
+    const record = message.kind === 'checklist' ? message.record : undefined;
+    const trip = message.kind === 'trip' ? message.trip : undefined;
+    const paragraph = message.text ? <p>{message.text}</p> : null;
 
     return (
         <>
@@ -270,68 +604,9 @@ export function AnswerBody({
                     {!!message.facts?.length && (
                         <FactList facts={message.facts} />
                     )}
-                    {!!events?.length && (
-                        <EventAnswer
-                            events={events}
-                            planned={planned}
-                            onAdd={onAddEvent}
-                            onNotThis={
-                                suggesting
-                                    ? (event) =>
-                                          leave(
-                                              `event:${event.id}:${event.occurrence_start}`,
-                                              { type: 'event', id: event.id },
-                                          )
-                                    : undefined
-                            }
-                        />
-                    )}
-                    {!!places?.length && (
-                        <PlaceAnswer
-                            places={places}
-                            onNotThis={
-                                suggesting
-                                    ? (place) =>
-                                          leave(`spot:${place.id}`, {
-                                              type: 'spot',
-                                              id: place.id,
-                                          })
-                                    : undefined
-                            }
-                        />
-                    )}
-                    {message.taste && (
-                        <p className="answer-fine">
-                            Suggested from what you’ve saved and opened.
-                        </p>
-                    )}
-                    {latest && message.invite && inviting && (
-                        <PersonaliseInvite />
-                    )}
-                    {(message.written === 'ai' ||
-                        !!message.sources?.length) && (
-                        <p className="answer-fine">
-                            {/* Names what the AI read; answers stored before #330 read
-                                only the listings and the weather. The person's own
-                                items are Composer's words, as recorded. */}
-                            {message.written === 'ai' &&
-                                `Written by AI from ${readList(message.read)}; your own items are as recorded. `}
-                            {!!message.sources?.length && (
-                                <>
-                                    From:{' '}
-                                    {message.sources.map((source, index) => (
-                                        <span key={source.href}>
-                                            {index > 0 && ' · '}
-                                            <Link href={source.href}>
-                                                {source.label}
-                                            </Link>
-                                        </span>
-                                    ))}
-                                    .
-                                </>
-                            )}
-                        </p>
-                    )}
+                    {eventsCard(message.events)}
+                    {placesCard(message.places)}
+                    {after}
                 </>
             )}
             {message.kind === 'event' && !!message.events?.length && (
@@ -344,110 +619,17 @@ export function AnswerBody({
             {message.kind === 'places' && !!message.places?.length && (
                 <PlaceAnswer places={message.places} />
             )}
-            {trip && (
-                <>
-                    {trip.folded ? (
-                        // "How far is it?": the line answers; the way opens on a tap.
-                        <>
-                            {paragraph}
-                            <details className="answer-trip-fold">
-                                <summary>Show the way</summary>
-                                <TripWay trip={trip} />
-                            </details>
-                        </>
-                    ) : (
-                        <>
-                            <TripWay trip={trip} />
-                            {paragraph}
-                        </>
-                    )}
-                    <div className="answer-actions">
-                        <Link className="answer-button" href={tripHref(trip)}>
-                            {trip.label}
-                            <Icon name="arrow" variant="line" />
-                        </Link>
-                        <span>
-                            {trip.basis === 'live'
-                                ? 'Live times.'
-                                : 'Scheduled times, not live.'}
-                        </span>
-                    </div>
-                </>
-            )}
-            {record && (
-                <>
-                    <Link
-                        className="answer-block answer-checklist"
-                        href={record.href}
-                    >
-                        <span className="answer-tile">
-                            <Icon name="document" variant="line" />
-                        </span>
-                        <span>
-                            <small>{`Your ${record.title} checklist · your records`}</small>
-                            <strong>{`${record.prepared} of ${record.total} ready`}</strong>
-                            <span
-                                className="answer-progress"
-                                aria-hidden="true"
-                            >
-                                <i style={{ width: `${share}%` }} />
-                            </span>
-                        </span>
-                        <Icon name="arrow" variant="line" />
-                    </Link>
-                    {record.documents.length > 0 && (
-                        <ul className="answer-block answer-docs">
-                            {record.documents.map((document, index) => (
-                                <li
-                                    key={index}
-                                    className={
-                                        document.ready ? 'is-ready' : undefined
-                                    }
-                                >
-                                    <span>{document.label}</span>
-                                    <small>{document.state}</small>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    {paragraph}
-                </>
-            )}
+            {trip && <TripBlock trip={trip} text={message.text} />}
+            {record && <ChecklistBlock record={record} text={message.text} />}
             {message.kind === 'facts' && !!message.facts?.length && (
                 <FactList facts={message.facts} />
             )}
-            {latest && !!message.suggestions?.length && (
-                <div className="reply-suggestions">
-                    {message.suggestions.map((suggestion) =>
-                        suggestion.href ? (
-                            <Link
-                                key={suggestion.label}
-                                className="suggestion-chip"
-                                href={suggestion.href}
-                            >
-                                {suggestion.label}
-                                <Icon name="arrow" variant="line" />
-                            </Link>
-                        ) : (
-                            <button
-                                type="button"
-                                key={suggestion.label}
-                                className="suggestion-chip"
-                                onClick={() =>
-                                    suggestion.nav
-                                        ? onPanel(suggestion.nav)
-                                        : onAsk(
-                                              suggestion.prompt ??
-                                                  suggestion.label,
-                                          )
-                                }
-                            >
-                                {suggestion.label}
-                            </button>
-                        ),
-                    )}
-                </div>
-            )}
+            {next}
         </>
     );
 }
+
+/** Reviewed guidance under a reply: an assistant's answer draws its own, in its place. */
+export const guided = (message: Message) =>
+    message.kind === 'bureaucracy' &&
+    (message as AnswerMessage).request !== 'ask';
