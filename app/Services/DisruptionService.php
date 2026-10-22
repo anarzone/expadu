@@ -85,7 +85,7 @@ class DisruptionService
                     'source' => $n->source,
                     // KVB's own page for it: the German source, one tap from the brief.
                     'url' => self::kvbPage($n->source_url),
-                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact] : null,
+                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact, 'kind' => $brief->kind ?? 'brief'] : null,
                 ];
             })
             ->all();

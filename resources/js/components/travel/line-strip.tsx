@@ -63,6 +63,8 @@ export type StripEnd = {
     via?: string[];
     /** The time and any label beside it (StripTime, a delay chip). */
     when: ReactNode;
+    /** One quiet line under it: why it's cancelled, when a notice says. */
+    note?: ReactNode;
 };
 
 function End({
@@ -93,6 +95,7 @@ function End({
                 <small className="strip-via">via {end.via.join(' · ')}</small>
             ) : null}
             <span className="strip-when">{end.when}</span>
+            {end.note ? <small className="strip-note">{end.note}</small> : null}
         </span>
     );
 }

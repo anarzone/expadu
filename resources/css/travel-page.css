@@ -2573,6 +2573,64 @@
 :where(.travel-page) .nearby-line.is-inline .nearby-detail-dir {
     padding-inline: var(--space-14);
 }
+/* A cancelled run's reason: the whole line under its direction, a tap for
+   the notice in full (inside the detail, so the slot's height follows). */
+:where(.travel-page) .nearby-detail-dir:has(.nearby-reason) {
+    flex-wrap: wrap;
+}
+:where(.travel-page) .nearby-reason {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: flex-start;
+    gap: var(--space-8);
+    min-height: 44px;
+    padding: var(--space-8) var(--space-10);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+    cursor: pointer;
+}
+:where(.travel-page) .nearby-reason svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+}
+:where(.travel-page) .nearby-reason:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.nearby-reason-sheet {
+    display: grid;
+    gap: var(--space-12);
+}
+.nearby-reason-sheet > p {
+    margin: 0;
+    line-height: 1.5;
+}
+.nearby-reason-sheet .tl-chip {
+    justify-self: start;
+}
+.nearby-reason-lines {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.nearby-reason-german summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.nearby-reason-german p {
+    margin: 0 0 var(--space-8);
+    color: var(--color-text-soft);
+}
 :where(.travel-page) .nearby-detail-dir > span:first-child {
     flex: 1 1 0%;
     min-width: 0px;

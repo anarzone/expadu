@@ -7,6 +7,7 @@ import {
     useState,
 } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { Sheet } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { CardStrip, TravelBanner, TravelChip } from '../labels';
@@ -247,6 +248,9 @@ export function NearbyView({
     }));
     const [panel, setPanel] = useState<Panel>('');
     const [stopsOpen, setStopsOpen] = useState(false);
+    // The notice a cancelled run's reason opens; kept while its sheet slides away.
+    const [reasonId, setReasonId] = useState('');
+    const [reasonOpen, setReasonOpen] = useState(false);
     const [picked, setPicked] = useState('');
     // A picked line that left the board closes.
     const openLine = station.lines.some((l) => l.line === picked) ? picked : '';
@@ -610,6 +614,32 @@ export function NearbyView({
             </TravelChip>
         ) : null;
 
+    // Why a run is cancelled or disrupted: the notice the server matched to
+    // its line, stop and time (VRS's, DELFI's or KVB's). None, nothing more.
+    const reasonOf = (dir: ShownDir) => {
+        const id =
+            [dir.next, ...dir.later].find((r) => r?.cancelled && r.notice)
+                ?.notice ??
+            dir.next?.notice ??
+            null;
+
+        return id ? (station.notices.find((n) => n.id === id) ?? null) : null;
+    };
+
+    // Its headline, under the time: in English when a brief or translation
+    // passed its checks, else the notice's own (German) words.
+    const reasonNote = (dir: ShownDir) => {
+        const notice = reasonOf(dir);
+
+        if (!notice) {
+            return null;
+        }
+
+        const { headline, lang } = noticeWords(notice);
+
+        return <span lang={lang}>{headline}</span>;
+    };
+
     const time = (dir: ShownDir) => {
         if (dir.cancelled) {
             return (
@@ -650,6 +680,7 @@ export function NearbyView({
                               {cancelTag(d)}
                           </>
                       ),
+                      note: reasonNote(d),
                   }
                 : null;
         const kind =
@@ -770,6 +801,8 @@ export function NearbyView({
                 </div>
                 {l.shown.map((d) => {
                     const t = whenOf(d);
+                    const reason = reasonOf(d);
+                    const reasonWords = reason ? noticeWords(reason) : null;
 
                     return (
                         <div key={d.id} className="nearby-detail-dir">
@@ -809,6 +842,21 @@ export function NearbyView({
                                 {delayTag(d, true)}
                                 {cancelTag(d)}
                             </span>
+                            {reason ? (
+                                <button
+                                    type="button"
+                                    className="nearby-reason"
+                                    onClick={() => {
+                                        setReasonId(reason.id);
+                                        setReasonOpen(true);
+                                    }}
+                                >
+                                    <TravelIcon name="alert" />
+                                    <span lang={reasonWords?.lang}>
+                                        {reasonWords?.headline}
+                                    </span>
+                                </button>
+                            ) : null}
                         </div>
                     );
                 })}
@@ -912,6 +960,11 @@ export function NearbyView({
                     </TravelBanner>
                 </div>
             ) : null}
+            <ReasonSheet
+                notice={station.notices.find((n) => n.id === reasonId) ?? null}
+                open={reasonOpen}
+                onClose={() => setReasonOpen(false)}
+            />
             {station.notices.slice(0, 2).map((notice) => {
                 const { headline, text, lang } = noticeWords(notice);
                 const kvb = notice.source?.startsWith('kvb') ?? false;
@@ -1196,5 +1249,62 @@ export function NearbyView({
                 </p>
             ))}
         </div>
+    );
+}
+
+/**
+ * A cancelled run's reason, in full: the brief (or the checked literal
+ * translation, labelled so), and the notice's German original one tap
+ * further, with KVB's page when it's KVB's.
+ */
+function ReasonSheet({
+    notice,
+    open,
+    onClose,
+}: {
+    notice: Station['notices'][number] | null;
+    open: boolean;
+    onClose: () => void;
+}) {
+    const words = notice ? noticeWords(notice) : null;
+    const kvb = notice?.source?.startsWith('kvb') ?? false;
+
+    return (
+        <Sheet
+            open={open && notice !== null}
+            onClose={onClose}
+            title={words?.headline ?? ''}
+        >
+            {notice && words ? (
+                <div className="nearby-reason-sheet">
+                    {words.lang === 'de' ? (
+                        <InGermanChip fromKvb={kvb} />
+                    ) : notice.brief?.kind === 'translation' ? (
+                        <TravelChip
+                            kind="unsure"
+                            icon={<TravelIcon name="info" />}
+                        >
+                            Translated from German
+                        </TravelChip>
+                    ) : null}
+                    {words.text ? <p lang={words.lang}>{words.text}</p> : null}
+                    <p className="nearby-reason-lines">
+                        {`Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}`}
+                    </p>
+                    {words.lang === 'en' ? (
+                        <details className="nearby-reason-german">
+                            <summary>German original</summary>
+                            <p lang="de">
+                                <strong>{notice.title}</strong>
+                            </p>
+                            {notice.details ? (
+                                <p lang="de">{notice.details}</p>
+                            ) : null}
+                        </details>
+                    ) : null}
+                    {notice.url ? <KvbNoticeLink url={notice.url} /> : null}
+                </div>
+            ) : null}
+        </Sheet>
     );
 }

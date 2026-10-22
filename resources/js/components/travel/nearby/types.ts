@@ -12,6 +12,8 @@ export type StationRun = {
     delay: number;
     cancelled: boolean;
     time_basis: TimeBasis;
+    /** The notice that explains it (an id in the station's `notices`), when one matches. */
+    notice?: string | null;
 };
 
 export type StationDir = {
@@ -138,6 +140,8 @@ export type NoticeBrief = {
     headline: string;
     text: string | null;
     impact?: string | null;
+    /** A brief, or (when no brief passed its checks) a literal translation. */
+    kind?: 'brief' | 'translation';
 };
 
 /**
