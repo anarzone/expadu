@@ -10,6 +10,7 @@ import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { MyDay } from '@/components/travel/day/my-day';
 import type { DayWeather } from '@/components/travel/day/my-day';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
+import { majorsOf } from '@/components/travel/nearby/notices';
 import { closestNow } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { NextTripCard } from '@/components/travel/next-trip-card';
@@ -257,6 +258,16 @@ export default function Timetable() {
     }
 
     const shown = station ?? lastStation.current;
+    // What the board heads with: on a laptop, beside the planner, Plan a
+    // trip doesn't repeat it (one headline a screen).
+    const boardHeads = shown ? majorsOf(shown) : null;
+    const boardMajors =
+        desktop && boardHeads
+            ? {
+                  notices: boardHeads.notices.map((n) => n.id),
+                  lines: boardHeads.trouble.map((t) => t.line),
+              }
+            : null;
     const lastDay = useRef<DayProjection | null | undefined>(day);
 
     if (day !== undefined) {
@@ -552,6 +563,7 @@ export default function Timetable() {
                     nearName={shown && closestNow(shown) ? shown.name : null}
                     clock={todayLabel}
                     desktop={desktop}
+                    boardMajors={boardMajors}
                     hidden={
                         view === 'route' ||
                         view === 'day' ||

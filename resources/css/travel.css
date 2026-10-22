@@ -1496,3 +1496,98 @@
     transform: scale(0.98);
     background: var(--color-action-hover);
 }
+
+/* Delays and disruptions in two tiers (the delays canvas the owner agreed,
+   22 Oct 2026). Everyday ones stay small and in place: a cancelled run is
+   its time struck through with "Cancelled", never a filled pill. */
+.tl-cancelled {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.tl-cancelled s {
+    text-decoration-thickness: 1.5px;
+}
+/* A major one: the one headline on a screen. */
+.tl-headline {
+    display: grid;
+    gap: 8px;
+    padding: 18px 20px;
+    border: 1px solid var(--color-conflict-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-conflict-bg);
+    color: var(--color-text);
+}
+.tl-headline-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.tl-headline-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-right: 4px;
+    border-radius: var(--radius-round);
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-headline-mark svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+.tl-headline h2 {
+    margin: 0;
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+    text-wrap: balance;
+}
+.tl-headline p {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: 1.5;
+}
+.tl-headline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin-top: 4px;
+}
+.tl-german {
+    justify-self: start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.tl-german-text {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.tl-german-text p {
+    margin: 0;
+}
+.tl-source {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
