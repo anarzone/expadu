@@ -344,6 +344,8 @@ final class Assistant
             ->unique()->values();
         $events = $tools->occurrences($shown->filter(fn (string $id): bool => isset($tools->events[$id]))->take(self::SHOWN)->all());
         $places = $shown->filter(fn (string $id): bool => isset($tools->places[$id]))->take(self::SHOWN)->map(fn (string $id): Candidate => $tools->places[$id])->values();
+        // A card that goes with one shown comes right after it.
+        $shown = $shown->flatMap(fn (string $id): array => isset($tools->cards[$id.'-also']) ? [$id, $id.'-also'] : [$id])->unique()->values();
         $blocks = [];
         $token = null;
         foreach ($shown as $id) {

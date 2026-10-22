@@ -313,9 +313,11 @@ final class AssistantTools
         if ($area === null && preg_match('/^(.+?)\s+in\s+(.+)$/iu', $to, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
             [$to, $area] = [trim($m[1]), PlanDay::areas([$m[2]])[0]];
         }
-        // A place this conversation already went to ("how far is it?") is that one, by its name and area.
+        // "How far is it?" is about the place this conversation's last trip went to, by its name and
+        // area. Asked for by name again, the place finder picks the one meant before and offers the others.
         $key = fn (string $name): string => Destinations::key($name);
-        $before = collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area));
+        $before = ($input['how_far'] ?? false) === true
+            ? collect($this->earlier['places'] ?? [])->first(fn (array $p): bool => $key($p['name']) === $key($to) && ($area === null || $p['area'] === $area)) : null;
         $area ??= $before['area'] ?? null;
         $answer = app(TripAnswers::class)->toPlace($this->user, [
             'place' => $to,
@@ -334,7 +336,12 @@ final class AssistantTools
             return $this->line($id, $answer['text'].' The places: '.collect($extra['suggestions'])->pluck('label')->implode('; ').'.');
         }
         $id = 'r'.(++$this->count);
-        $this->cards[$id] = [...$extra, 'type' => isset($extra['trip']) ? 'trip' : 'note', 'text' => $answer['text']];
+        $this->cards[$id] = [...array_diff_key($extra, ['also' => true]), 'type' => isset($extra['trip']) ? 'trip' : 'note', 'text' => $answer['text']];
+        // Planned to the one this conversation meant: "There's also one in Altstadt-Nord", with its
+        // tap, is Composer's own line, said whatever the AI says, and shown with the trip.
+        if (isset($extra['also'])) {
+            $this->cards[$id.'-also'] = ['type' => 'choices', 'text' => $extra['also']['text'], 'options' => $extra['also']['options'], 'private' => true];
+        }
 
         // The place it's to, by name, so the answer may name it ("Café Nova in Deutz is about 4.4 km away").
         $to = isset($extra['destination']['name']) ? "Trip to \"{$extra['destination']['name']}\"".(isset($extra['destination']['area']) ? " in {$extra['destination']['area']}" : '').': ' : '';
