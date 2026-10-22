@@ -226,8 +226,7 @@ class ComposerController extends Controller
         if ($around !== null) {
             app(AroundNow::class)->keep($request->user(), $validated['text'], $around, $parsed->reply);
         }
-        // A lead the AI wrote means it read the message as open ("wat do"), whatever its intent.
-        $answered = Answers::handles($routed, $parsed->intent) || ($around !== null && $parsed->reply !== []);
+        $answered = Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }

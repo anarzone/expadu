@@ -162,7 +162,7 @@ class EvaluateComposer extends Command
         $row['tokens'] = $parser->usage ?? null;
         $row['parse'] = ['intent' => $parsed->intent->value, 'source' => $parsed->source, 'kind' => $routed['kind'], 'constraints' => $parsed->plan?->toArray()];
         // The same rule ComposerController::parse() applies.
-        $answered = Answers::handles($routed, $parsed->intent) || ($around !== null && $parsed->reply !== []);
+        $answered = Answers::handles($routed, $parsed->intent);
         $row['routed'] = $answered ? 'answer' : ($parsed->intent === PromptIntent::PlanDay && $parsed->plan !== null ? 'compose' : 'reply:'.$parsed->intent->value);
 
         // Where a request should go ("What's on tonight?" → an answer), checked apart from any plan.

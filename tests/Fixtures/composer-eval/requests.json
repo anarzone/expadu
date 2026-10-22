@@ -4289,7 +4289,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4306,7 +4307,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4568,8 +4570,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1,
-    "kid_safe": true
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4586,8 +4588,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1,
-    "kid_safe": true
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4871,7 +4873,8 @@
    "weather": "dry",
    "text": "im bored, any ideas??",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {
@@ -4888,7 +4891,8 @@
    "weather": "dry",
    "text": "anything fun to do rn",
    "expect": {
-    "min_slots": 1
+    "routed": "answer",
+    "around": true
    }
   },
   {

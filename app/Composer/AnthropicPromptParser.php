@@ -39,8 +39,8 @@ class AnthropicPromptParser implements ParsesPrompt
             'properties' => [
                 'intent' => [
                     'type' => 'string',
-                    'enum' => ['plan_day', 'bureaucracy_q', 'find', 'take_me_there', 'unknown'],
-                    'description' => 'plan_day = compose free time; bureaucracy_q = a German-paperwork question; find = search a place/event; take_me_there = navigation request',
+                    'enum' => ['plan_day', 'bureaucracy_q', 'find', 'take_me_there', 'open', 'unknown'],
+                    'description' => 'plan_day = compose free time; bureaucracy_q = a German-paperwork question; find = search a place/event; take_me_there = navigation request; open = casual or open, nothing concrete asked, or something Composer can\'t do',
                 ],
                 'window_start' => ['type' => 'string', 'description' => 'plan_day only: ISO 8601 local datetime the free time starts'],
                 'window_end' => ['type' => 'string', 'description' => 'plan_day only: ISO 8601 local datetime the free time ends'],
@@ -57,7 +57,7 @@ class AnthropicPromptParser implements ParsesPrompt
                 'needs' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => Constraints::NEEDS], 'description' => 'step_free only when the user says wheelchair, step-free, barrier-free, barrierefrei or no stairs.'],
                 'reply' => [
                     'type' => 'array',
-                    'description' => 'Only with an "Around now" block: up to three short sentences to the person, each with the ids of the items it uses. Empty otherwise.',
+                    'description' => 'Only with an "Around now" block and intent open: up to three short sentences to the person, each with the ids of the items it uses. Empty otherwise.',
                     'items' => [
                         'type' => 'object',
                         'properties' => [
@@ -84,6 +84,7 @@ class AnthropicPromptParser implements ParsesPrompt
         - find: one kind of place wanted now or as a list, with no outing around it ("a pharmacy that's open now", "nearest cash machine", "list every bar").
         - take_me_there: directions to a named place.
         - bureaucracy_q: a question about German paperwork (registration, visas, tax, insurance).
+        - open: casual or open, with no time, place, activity or outing asked for ("what's up", "hi", "I'm bored", "wat do", "anything fun?", "what should I do?"), or something you can't do (a joke, a booking, an order, general knowledge). A time, an area, a kind of place or an activity named makes it plan_day instead ("I'm bored, plan my evening", "something to do in Ehrenfeld tonight").
         - unknown: anything else.
 
         For plan_day:
@@ -94,8 +95,7 @@ class AnthropicPromptParser implements ParsesPrompt
         - radius_km: an explicit distance; "nearby", "not too far", "nicht zu weit" or "in der Nähe" is 2.5.
         - areas: Cologne Veedel named in the request (Südstadt is Neustadt-Süd, the old town is Altstadt-Nord). Never the home Veedel unless the request names it.
 
-        reply: only when the message has an "Around now" block; otherwise leave it empty.
-        - Write it when the request is casual or open ("what's up", "hi", "I'm bored", "anything fun?", "what should I do"), or asks for something Composer can't do. Leave it empty for a clear plan, search, directions or paperwork question.
+        reply: only when the message has an "Around now" block and the intent is open; otherwise leave it empty.
         - Two or three short, friendly sentences in English, to the person, as Composer in the first person ("I can plan…"): one sentence per reply item, with the ids of the items it relies on in uses.
         - Lead with what's on, or with the weather when nothing is. Say what you can do in one short clause at most, unless the request is "what can you do" or something you can't do. Don't read back the date, the time or the person's words.
         - Use only the facts in the Around now block. Copy names, times and numbers exactly as written there, with 24-hour times. Add nothing else: no prices, opening hours, crowds, travel times, counts ("two events"), indoor or outdoor labels, or weather beyond the block, and never the person's own plans, which you aren't given. State facts plainly, without "might", "may" or "probably".
@@ -181,9 +181,10 @@ class AnthropicPromptParser implements ParsesPrompt
             $this->usage = ['input' => (int) data_get($body, 'usage.input_tokens', 0) + (int) data_get($body, 'usage.cache_read_input_tokens', 0)
                 + (int) data_get($body, 'usage.cache_creation_input_tokens', 0), 'output' => (int) data_get($body, 'usage.output_tokens', 0)];
             $args = $this->arguments($body);
-            $reply = $around !== null ? $this->reply($args['reply'] ?? null) : [];
-            $explicit = $this->fallback->explicitPlaceRequirements($text);
             $intent = PromptIntent::tryFrom((string) ($args['intent'] ?? '')) ?? PromptIntent::Find;
+            // A lead only for an open request; a plan, a search or a trip is answered as one.
+            $reply = $around !== null && $intent === PromptIntent::Open ? $this->reply($args['reply'] ?? null) : [];
+            $explicit = $this->fallback->explicitPlaceRequirements($text);
 
             // A plan with no time named ("I want to play football") starts now.
             if ($intent === PromptIntent::PlanDay && ! isset($args['window_start'], $args['window_end'])) {
@@ -223,7 +224,7 @@ class AnthropicPromptParser implements ParsesPrompt
                 return $this->fallback->parse($text, $profile, $now);
             }
 
-            return new ParsedPrompt($intent, query: $args['query'] ?? $text, source: 'llm', reply: $reply);
+            return new ParsedPrompt($intent, query: $intent === PromptIntent::Open ? null : ($args['query'] ?? $text), source: 'llm', reply: $reply);
         } catch (\Throwable $e) {
             Log::warning('llm prompt parse failed, using heuristic', ['error_type' => $e::class]);
             $this->recordCall($startedAt, 'fallback:'.class_basename($e), around: $around !== null);

@@ -72,11 +72,12 @@ final class Answers
      * A plan the parser understood is planned: only questions about your own day, trip and
      * records answer instead. A journey when it's the appointment's ("When should I leave
      * for my 14:00?", "Is my tram on time?") or to a place named ("show me departures to
-     * Cafe Nova"); other journeys keep the page's reply until their part of CO3. A casual or open message ("What's up?", "I'm bored") is
-     * answered with what's around you now, whatever the parser made of it. What nothing
-     * understood is answered too (what's around you, and what Composer can do), as is a
-     * search nothing more specific matched; "the listings can't vouch for it" only when
-     * the parser understood nothing. A preference about a listing is the places' to answer.
+     * Cafe Nova"); other journeys keep the page's reply until their part of CO3. A casual
+     * or open message ("What's up?", "I'm bored", or what the parser reads as open: "wat
+     * do") is answered with what's around you now. What nothing understood is answered too
+     * (what's around you, and what Composer can do), as is a search nothing more specific
+     * matched; "the listings can't vouch for it" only when the parser understood nothing.
+     * A preference about a listing is the places' to answer.
      *
      * @param  array<string, mixed>  $request
      */
@@ -84,7 +85,7 @@ final class Answers
     {
         $kind = $request['kind'];
 
-        return $intent === PromptIntent::Unknown || $kind === 'around' || (in_array($kind, self::KINDS, true)
+        return in_array($intent, [PromptIntent::Open, PromptIntent::Unknown], true) || $kind === 'around' || (in_array($kind, self::KINDS, true)
             && ($kind !== 'journey' || ($request['to'] ?? null) === 'appointment' || isset($request['place']))
             && ($intent !== PromptIntent::PlanDay || in_array($kind, [...self::ABOUT_YOUR_DAY, ...self::LISTINGS], true))
             && ($kind !== 'clarify' || $intent === PromptIntent::Find)
