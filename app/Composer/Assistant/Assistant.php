@@ -154,8 +154,9 @@ final class Assistant
 
         $built = $this->built($result['answer'], $tools, $now);
 
-        // Without the opt-in, the answer invites it (session 2 shows the line).
-        return $built === null ? null : [...$built, 'invite' => ! $personal];
+        // Without the opt-in, the answer invites it (session 2 shows the line); `looked` says what
+        // the AI was given (listings, places, weather, and with the opt-in plans, taste).
+        return $built === null ? null : [...$built, 'invite' => ! $personal, 'looked' => $tools->looked()];
     }
 
     /**

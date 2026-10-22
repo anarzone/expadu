@@ -68,12 +68,18 @@ final class AssistantTools
     public function progress(string $step): void
     {
         if ($this->progress !== null) {
-            Cache::put($this->progress, ['step' => $step, 'looked' => array_values(array_unique($this->looked)), 'at' => now()->getTimestamp()], 60);
+            Cache::put($this->progress, ['step' => $step, 'looked' => $this->looked(), 'at' => now()->getTimestamp()], 60);
         }
     }
 
     /** @var list<string> the lookups made, by the page's names for them */
     private array $looked = [];
+
+    /** @return list<string> what it looked at (listings, places, weather, plans, taste), once each */
+    public function looked(): array
+    {
+        return array_values(array_unique($this->looked));
+    }
 
     /**
      * @param  bool  $personal  with the opt-in: the person's taste and day too
