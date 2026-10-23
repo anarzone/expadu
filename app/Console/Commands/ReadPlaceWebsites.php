@@ -311,9 +311,10 @@ class ReadPlaceWebsites extends Command
             'input_schema' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['wifi', 'power_sockets', 'laptops', 'opening_hours'], 'properties' => [
                 'wifi' => $fact($nullable(['yes', 'no'])),
                 'power_sockets' => $fact($nullable(['yes', 'no'])),
-                'laptops' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['value', 'times', 'quote'], 'properties' => [
+                'laptops' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['value', 'times', 'at_those_times', 'quote'], 'properties' => [
                     'value' => $nullable(['allowed', 'not_allowed', 'restricted']),
-                    'times' => ['type' => ['string', 'null'], 'description' => 'when laptops are not allowed, e.g. "Sa-Su", "weekends 10-16"'],
+                    'times' => ['type' => ['string', 'null'], 'description' => 'when laptops are not allowed or only partly allowed, e.g. "Sa-Su", "weekends 10-16"'],
+                    'at_those_times' => array_merge($nullable(['not_allowed', 'partly_allowed']), ['description' => 'at those times: not allowed at all, or only allowed in some areas or ways (e.g. only in the library room)']),
                     'quote' => ['type' => ['string', 'null']],
                 ]],
                 'opening_hours' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['osm', 'quote'], 'properties' => [
@@ -400,8 +401,11 @@ class ReadPlaceWebsites extends Command
         $keep('laptops', match ($found['laptops']['value'] ?? null) {
             'allowed' => 'yes', 'not_allowed' => 'no', 'restricted' => 'limited', default => null
         }, $found['laptops']['quote'] ?? null);
+        // OSM's conditional form: "no @ (Sa-Su)", or "limited @ (Sa-Su)" when the
+        // page allows laptops then only in some areas or ways.
         if (isset($practical['laptops']) && $practical['laptops'] === 'limited' && trim((string) ($found['laptops']['times'] ?? '')) !== '') {
-            $practical['laptops:conditional'] = self::days((string) $found['laptops']['times']);
+            $then = ($found['laptops']['at_those_times'] ?? null) === 'partly_allowed' ? 'limited' : 'no';
+            $practical['laptops:conditional'] = $then.' @ ('.self::days((string) $found['laptops']['times']).')';
         }
 
         $payload = $practical === [] ? [] : ['practical' => $practical];
