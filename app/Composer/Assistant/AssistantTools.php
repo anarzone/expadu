@@ -242,6 +242,7 @@ final class AssistantTools
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
+                    'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
@@ -598,8 +599,9 @@ final class AssistantTools
         $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
-        // Few places list hours, facts or a playground's goals: for those, the search reads further.
-        $deep = $mustBeOpen || $features !== [] || $plays !== null;
+        $work = ($input['to_work'] ?? false) === true;
+        // Few places list hours, facts, a playground's goals or what they say of laptops: for those, the search reads further.
+        $deep = $mustBeOpen || $features !== [] || $plays !== null || $work;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $nearest = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
@@ -625,19 +627,23 @@ final class AssistantTools
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true) && ! in_array($park($c), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
+                // To work there: never a place that says no laptops then (places session's website facts).
+                && (! $work || self::laptopsWelcome($c, $at) !== false)
                 && (($input['free'] ?? false) !== true || $c->costTier === 'free'))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
@@ -793,6 +799,52 @@ final class AssistantTools
             $c->category === 'playground' && in_array('soccer', $sports, true) => 'Playground with football goals',
             default => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
         };
+    }
+
+    /**
+     * Whether a place says laptops are welcome at a time, from its listed facts (OSM laptops,
+     * laptops:conditional): false for "no", or "limited" on a day its condition names ("Sa-Su");
+     * null when it says nothing.
+     */
+    public static function laptopsWelcome(Candidate $c, CarbonImmutable $at): ?bool
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+        $laptops = mb_strtolower((string) ($practical['laptops']['value'] ?? ''));
+        if ($laptops === 'no') {
+            return false;
+        }
+        if ($laptops === 'limited') {
+            return ! self::onDays((string) ($practical['laptops:conditional']['value'] ?? ''), $at);
+        }
+
+        return $laptops === 'yes' ? true : null;
+    }
+
+    /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
+    private static function workFriendly(Candidate $c): bool
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+
+        return PlaceAmenities::has($practical, 'wifi') || mb_strtolower((string) ($practical['power_supply']['value'] ?? '')) === 'yes'
+            || mb_strtolower((string) ($practical['laptops']['value'] ?? '')) === 'yes';
+    }
+
+    /** Whether a condition's days ("Sa-Su", "Mo-Fr", "Sa,Su", "no @ (Sa-Su)") include the day of `$at`. */
+    private static function onDays(string $condition, CarbonImmutable $at): bool
+    {
+        $days = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+        $today = $days[$at->setTimezone('Europe/Berlin')->dayOfWeekIso - 1];
+        preg_match_all('/\b(mo|tu|we|th|fr|sa|su)\b(?:\s*-\s*\b(mo|tu|we|th|fr|sa|su)\b)?/i', $condition, $ranges, PREG_SET_ORDER);
+        foreach ($ranges as $range) {
+            $from = array_search(mb_strtolower($range[1]), $days, true);
+            $to = array_search(mb_strtolower($range[2] ?? $range[1]), $days, true);
+            $index = array_search($today, $days, true);
+            if ($from <= $to ? ($index >= $from && $index <= $to) : ($index >= $from || $index <= $to)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** A name without an import's bracket artefacts ("Headquarter[s]"). */
