@@ -123,8 +123,9 @@ final class AssistantTools
     /** @var array<string, true> places searched for in an area they named ("in Merkenich"), not near them */
     public array $within = [];
 
-    /** @var array<string, array{member: int, matched: string, has: ?string}> a park answered for a facility in it: the
-     *      facility it was found by (its row is measured to it), what that is ("Football pitch") and what the park has */
+    /** @var array<string, array{member: int, matched: string, part: ?string, has: ?string}> a park answered for a facility in it: the
+     *      facility it was found by (its row is measured to it), what that is ("Football pitch"), its part (a large
+     *      park's Veedel) and what the park, or that part, has */
     public array $parks = [];
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
@@ -615,6 +616,9 @@ final class AssistantTools
         // A pitch or a playground in a named park is that park, once, with what it has (places
         // session's FacilityGroups, 23 Oct 2026: "Carola-Williams-Park · Football pitch · 2 playgrounds").
         $parents = app(FacilityGroups::class)->parents($nearest->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all());
+        // A park too big to walk round is one place per Veedel (places session, 23 Oct 2026): its part.
+        $large = app(FacilityGroups::class)->large(array_values(array_unique($parents)));
+        $part = fn (Candidate $c): ?string => isset($large[$parents[(int) substr($c->id, 5)] ?? 0]) ? $c->veedel : null;
         $park = fn (Candidate $c): int => $parents[(int) substr($c->id, 5)] ?? (int) substr($c->id, 5);
         $matches = $nearest
             ->filter(fn (Candidate $c): bool => ($areas === [] || in_array($c->veedel, $areas, true))
@@ -630,12 +634,12 @@ final class AssistantTools
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
-            ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
+            ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             ->take(self::SHOWN)->values();
-        $found = $this->asParks($found, $parents, $at, $lat, $lng);
+        $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
             $areas === PlanDay::CENTRE => 'in the city centre',
             $areas !== [] => 'in '.implode(', ', $areas),
@@ -688,7 +692,7 @@ final class AssistantTools
      * @param  array<int, int>  $parents  facility id => park id
      * @return Collection<int, Candidate>
      */
-    private function asParks(Collection $found, array $parents, CarbonImmutable $at, float $lat, float $lng): Collection
+    private function asParks(Collection $found, array $parents, array $large, CarbonImmutable $at, float $lat, float $lng): Collection
     {
         $folded = $found->filter(fn (Candidate $c): bool => isset($parents[(int) substr($c->id, 5)]));
         if ($folded->isEmpty()) {
@@ -701,18 +705,25 @@ final class AssistantTools
 
             return $this->catalogue->byIds(array_map(fn (int $id): string => "spot:{$id}", $ids), $at, $lat, $lng);
         }))->keyBy('id');
-        $counts = app(FacilityGroups::class)->counts($ids);
+        $groups = app(FacilityGroups::class);
+        $counts = $groups->counts($ids);
 
-        return $found->map(function (Candidate $c) use ($parents, $parks, $counts): Candidate {
+        return $found->map(function (Candidate $c) use ($parents, $parks, $counts, $large, $groups): Candidate {
             $member = (int) substr($c->id, 5);
             $park = isset($parents[$member]) ? $parks->get('spot:'.$parents[$member]) : null;
             if (! $park instanceof Candidate) {
                 return $c;
             }
             $matched = PlaceDisplayName::kind($c->category, $c->placeFacts['practical']['sport']['value'] ?? null);
-            $this->parks[$park->id] = ['member' => $member, 'matched' => $matched, 'has' => FacilityGroups::summary($counts[$parents[$member]] ?? [], [$matched])];
+            // A large park's part is its own place: "Äußerer Grüngürtel (Klettenberg)", with what that part has,
+            // its id the park's and its part ("spot:12#Klettenberg"), so two parts are two cards and two rows.
+            $part = isset($large[$parents[$member]]) ? $c->veedel : null;
+            $id = $part === null ? $park->id : "{$park->id}#{$part}";
+            $this->parks[$id] = ['member' => $member, 'matched' => $matched, 'part' => $part,
+                'has' => FacilityGroups::summary($part !== null ? $groups->partCounts($parents[$member], $part) : ($counts[$parents[$member]] ?? []), [$matched])];
 
-            return new Candidate(...[...get_object_vars($park), 'lat' => $c->lat, 'lng' => $c->lng,
+            return new Candidate(...[...get_object_vars($park), 'id' => $id, 'name' => $part === null ? $park->name : "{$park->name} ({$part})",
+                'veedel' => $part ?? $park->veedel, 'lat' => $c->lat, 'lng' => $c->lng,
                 'distanceKmFromOrigin' => $c->distanceKmFromOrigin, 'travelMinutesFromOrigin' => $c->travelMinutesFromOrigin]);
         })->unique('id')->values();
     }

@@ -481,21 +481,23 @@ final class Assistant
         // measured to the pitch, with what fitted first ("Football pitch · 2 playgrounds").
         $read = $places->map(fn (Candidate $c): int => $tools->parks[$c->id]['member'] ?? (int) substr($c->id, 5))->values()->all();
         $row = fn (array $ids): Collection => app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $now, $tools->person());
+        // A row is its place and, for a park too big to walk round, its part (its Veedel): two parts, two rows.
+        $key = fn (Candidate $c): string => (int) substr($c->id, 5).'|'.($tools->parks[$c->id]['part'] ?? '');
         try {
-            $rows = $ids === [] ? collect() : $row($read)->keyBy('id');
+            $rows = $ids === [] ? collect() : $row($read)->keyBy(fn (array $r): string => $r['id'].'|'.($r['part'] ?? ''));
             // One it merged with a like-named row nearby is read on its own, so every card has its row.
-            foreach ($ids as $i => $id) {
-                if (! $rows->has($id) && ($one = $row([$read[$i]])->first()) !== null) {
-                    $rows->put($id, $one);
+            foreach ($places->values() as $i => $c) {
+                if (! $rows->has($key($c)) && ($one = $row([$read[$i]])->first()) !== null) {
+                    $rows->put($key($c), $one);
                 }
             }
             // The cards draw as Around here's rows only when all have one: a place without is left out.
-            $places = $places->filter(fn (Candidate $c): bool => $rows->has((int) substr($c->id, 5)))->values();
+            $places = $places->filter(fn (Candidate $c): bool => $rows->has($key($c)))->values();
         } catch (Throwable) {
             $rows = collect();
         }
 
-        return ['from' => $from, 'places' => $places->map(function (Candidate $c) use ($sources, $because, $tools, $now, $rows): array {
+        return ['from' => $from, 'places' => $places->map(function (Candidate $c) use ($sources, $because, $tools, $now, $rows, $key): array {
             $id = (int) substr($c->id, 5);
             $open = OpeningAnswer::isOpenAt($c, $now);
             $km = $c->distanceKmFromOrigin;
@@ -517,7 +519,9 @@ final class Assistant
                 'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
                 // Around here's PlaceRow: the card draws it when every place has one.
                 // Its row's label says so too ("Playground with football goals").
-                'row' => ($row = $rows->get($id)) !== null && AssistantTools::kindOf($c) === 'Playground with football goals' ? [...$row, 'label' => AssistantTools::kindOf($c)] : $row],
+                'row' => ($row = $rows->get($key($c))) !== null && AssistantTools::kindOf($c) === 'Playground with football goals' ? [...$row, 'label' => AssistantTools::kindOf($c)] : $row,
+                // A large park's part: the card is its id and its part.
+                'part' => $tools->parks[$c->id]['part'] ?? null],
                 // Every card has its distance, even when it's unknown (null).
                 fn (mixed $value, string $key): bool => $value !== null || $key === 'distance', ARRAY_FILTER_USE_BOTH);
         })->all()];
