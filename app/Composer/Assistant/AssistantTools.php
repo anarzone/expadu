@@ -635,8 +635,9 @@ final class AssistantTools
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
                 // To work there: never a place that says no laptops then (places session's website facts).
                 && (! $work || self::laptopsWelcome($c, $at) !== false)
-                // Free: only a listed fee leaves a place out; most public pitches list none (owner, 23 Oct 2026).
-                && (! $free || ! in_array($c->costTier, ['low', 'normal'], true)))
+                // Free (coordinator's call, 23 Oct 2026): public use, by the places session's public_use. A place
+                // that's restricted or lists a fee is left out; one that lists nothing stays, after the public ones.
+                && (! $free || (self::publicUse($c)['value'] !== 'no' && self::publicUse($c)['free'] !== 'no')))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         // Open: listed open, or an open-air place with no set hours (a public pitch), after those; never one listed closed.
@@ -648,7 +649,7 @@ final class AssistantTools
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
                 // What's certain first: listed open, then listed free, then public access, then neither listed.
                 + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
-                + ($free ? ($c->costTier === 'free' ? 0 : ($c->access === 'public' ? 0.3 : 0.6)) : 0))
+                + ($free ? self::freeRank($c) : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
@@ -658,7 +659,7 @@ final class AssistantTools
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
                 // What's certain first: listed open, then listed free, then public access, then neither listed.
                 + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
-                + ($free ? ($c->costTier === 'free' ? 0 : ($c->access === 'public' ? 0.3 : 0.6)) : 0))
+                + ($free ? self::freeRank($c) : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
@@ -705,7 +706,7 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free)
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
                 .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
@@ -756,6 +757,7 @@ final class AssistantTools
                 // What the pitch lists (public, free) holds for the park answered for it, when the park lists none.
                 'access' => $park->access === 'unknown' ? $c->access : $park->access,
                 'costTier' => $park->costTier === 'unknown' ? $c->costTier : $park->costTier,
+                'placeFacts' => [...$park->placeFacts, 'public_use' => self::publicUse($park)['value'] === 'unknown' ? self::publicUse($c) : self::publicUse($park)],
                 'distanceKmFromOrigin' => $c->distanceKmFromOrigin, 'travelMinutesFromOrigin' => $c->travelMinutesFromOrigin]);
         })->unique('id')->values();
     }
@@ -907,6 +909,32 @@ final class AssistantTools
         }
 
         return $said === [] ? 'Laptop work isn\'t listed yet.' : implode(' ', $said);
+    }
+
+    /**
+     * Who may use a place and whether it's free (PlaceFacts::publicUse): the city's register of public
+     * play areas, an access tag, or a fee=no; unknown when nothing says.
+     *
+     * @return array{value: string, free: string, basis: ?string, source_url: ?string}
+     */
+    public static function publicUse(Candidate $c): array
+    {
+        $use = $c->placeFacts['public_use'] ?? null;
+
+        return is_array($use) ? $use : ['value' => 'unknown', 'free' => 'unknown', 'basis' => null, 'source_url' => null];
+    }
+
+    /** For a free ask, what's certain first: listed free, public by the city's register, public otherwise, nothing listed. */
+    private static function freeRank(Candidate $c): float
+    {
+        $use = self::publicUse($c);
+
+        return match (true) {
+            $use['free'] === 'yes' => 0.0,
+            $use['value'] === 'yes' && $use['basis'] === 'city_register' => 0.1,
+            $use['value'] === 'yes' => 0.3,
+            default => 0.6,
+        };
     }
 
     /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
@@ -1242,7 +1270,8 @@ final class AssistantTools
     }
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
-    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null, bool $free = false): string
+    /** @param  ?string  $matched  for a park answered for a facility in it, that facility ("Football pitch"), which its public use is about */
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null, bool $free = false, ?string $matched = null): string
     {
         $kind = self::kindOf($c);
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
@@ -1262,10 +1291,11 @@ final class AssistantTools
             .($has !== null ? ' Has: '.$has.'.' : '')
             .($lists !== [] ? ' Lists: '.implode(', ', $lists).'.' : '')
             .$hours
-            // What's listed of its cost: free, or (asked for free) public with no fee listed, or not listed.
+            // Who may use it and whether it's free, by its basis (public_use): never more than is listed.
             .match (true) {
-                $c->costTier === 'free' => ' Free to use (listed).',
-                $free && $c->access === 'public' => ' Public, no fee listed.',
+                self::publicUse($c)['free'] === 'yes' => ' Free to use (listed).',
+                $free && self::publicUse($c)['value'] === 'yes' && self::publicUse($c)['basis'] === 'city_register' => ' Public '.mb_strtolower($matched ?? self::kindOf($c)).' (City of Cologne register), no fee listed.',
+                $free && self::publicUse($c)['value'] === 'yes' => ' Public, no fee listed.',
                 $free => ' Fee not listed.',
                 default => '',
             }
