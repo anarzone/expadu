@@ -12,9 +12,12 @@ use App\Composer\Constraints;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Models\Event;
+use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
+use App\Places\DestinationGrouping;
+use App\Places\OpeningAnswer;
 use App\Places\PlaceCapabilities;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
@@ -61,6 +64,9 @@ final class AssistantTools
 
     /** @var array<string, Candidate> places found, by id */
     public array $places = [];
+
+    /** @var array<string, bool> whether a place's distance was measured from where the person is (so its card may show it) */
+    public array $measured = [];
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
@@ -128,7 +134,7 @@ final class AssistantTools
      */
     public static function definitions(bool $personal = false, bool $weather = true): array
     {
-        $kinds = array_values(array_unique([...array_map(fn (SpotCategory $c): string => $c->value, SpotCategory::cases()), ...SpotCategory::placesCoarse()]));
+        $kinds = self::kindsWithPlaces();
         $none = ['type' => 'object', 'properties' => (object) []];
 
         return [
@@ -159,11 +165,13 @@ final class AssistantTools
                 ], 'required' => ['day']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $kinds], 'description' => 'kinds of place; "a place to work" or "laptop" is cafe, library and coworking; "coffee shop" is cafe'],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists; "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
+                    'open_now' => ['type' => 'boolean', 'description' => 'only places open now, by their listed hours'],
+                    'step_free' => ['type' => 'boolean', 'description' => 'only places whose step-free access is listed'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
-                    'open_at' => ['type' => 'string', 'description' => 'HH:MM today, optional'],
+                    'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'leave out what you suggested earlier in this conversation (they turned it down)'],
@@ -457,14 +465,26 @@ final class AssistantTools
 
     private function searchPlaces(array $input): string
     {
-        $at = $this->clock($input['open_at'] ?? null, $this->now) ?? $this->now;
+        $asked = $this->clock($input['open_at'] ?? null, $this->now);
+        $at = $asked ?? $this->now;
+        // "Open now" or "open at 19:30": only places whose listed hours say so (OpeningAnswer).
+        $mustBeOpen = $asked !== null || ($input['open_now'] ?? false) === true;
         $named = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
         $areas = $named !== null ? PlanDay::areas([$named]) : [];
         if ($named !== null && $areas === []) {
-            return "No Veedel is called \"{$named}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt), or the city centre.";
+            return $this->line('n'.(++$this->count), "No Veedel is called \"{$named}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt), or the city centre.");
         }
-        $kinds = array_values(array_unique(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string')));
+        $wanted = array_values(array_unique(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string')));
+        // Only kinds Expadu has places of: an empty one ("coffee_tea_shop", a shop) would say "nothing" while there are hundreds of cafés.
+        $kinds = array_values(array_intersect($wanted, self::kindsWithPlaces()));
+        if ($wanted !== [] && $kinds === []) {
+            return $this->line('n'.(++$this->count), 'Expadu lists no '.implode(' or ', array_map(fn (string $k): string => self::kindName($k, plural: true), $wanted)).' yet.');
+        }
         $activity = is_string($input['activity'] ?? null) ? $input['activity'] : null;
+        // An activity that's also a kind of place ("swimming": pools and baths) is searched as the kind.
+        if ($activity !== null && $kinds === [] && in_array($activity, self::kindsWithPlaces(), true)) {
+            [$kinds, $activity] = [[$activity], null];
+        }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         // In an area named, from its middle (owner's test, 23 Oct 2026: "places to work in city center"
         // were sorted by the home Veedel at the city's edge); else nearest to the person.
@@ -475,6 +495,8 @@ final class AssistantTools
             $this->location->hasOrigin() => [(float) $this->location->lat, (float) $this->location->lng],
             default => [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
         };
+        // How far a place is, shown on its card, only from where the person really is or starts.
+        $measured = $middle?->lat === null && $this->location->hasOrigin() && $this->location->source !== LocationSource::Area;
         // Asked for one kind or a sport: up to the whole list of it; for several ("a place to work": cafés,
         // libraries, coworking), a share of each; for anything, two of a kind, for variety.
         $perKind = match (true) {
@@ -482,26 +504,30 @@ final class AssistantTools
             $kinds !== [] || $activity !== null => self::SHOWN,
             default => 2,
         };
-        $found = collect($this->catalogue->nearestSpots(new Constraints(
+        $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
+        $matches = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
             areas: $areas,
             categories: $kinds,
             activities: array_values(array_filter([$activity])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
-            // Their own step-free need, from their settings: only places with it verified (never told to the AI).
-            needs: $this->user->needs_step_free ? ['step_free'] : [],
-        ), $lat, $lng, $perKind, self::SHOWN * 3))
-            ->filter(fn (Candidate $c): bool => ! $c->closedToday
-                && ($areas === [] || in_array($c->veedel, $areas, true))
+            // Their own step-free need, from their settings (never told to the AI), or asked for in words.
+            needs: $stepFree ? ['step_free'] : [],
+            // When it must be open then, more of each kind are read: most have no listed hours or are closed.
+        ), $lat, $lng, $mustBeOpen ? max($perKind * 4, 12) : $perKind, $mustBeOpen ? self::SHOWN * 8 : self::SHOWN * 3))
+            ->filter(fn (Candidate $c): bool => ($areas === [] || in_array($c->veedel, $areas, true))
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
-                && (($input['free'] ?? false) !== true || $c->costTier === 'free')
-                && ($c->hoursAssumed || $c->opensAt === null || ($c->opensAt->lessThanOrEqualTo($at) && $c->closesAt?->greaterThan($at))))
-            ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
+                && (($input['free'] ?? false) !== true || $c->costTier === 'free'))
+            ->values();
+        // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
+        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
+            // Nearest first, and a place with its own name before a generic one ("Bolzplatz") at a like distance.
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + (($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
-            ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + (($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
             ->take(self::SHOWN)->values();
         $where = match (true) {
             $areas === PlanDay::CENTRE => 'in the city centre',
@@ -509,7 +535,10 @@ final class AssistantTools
             default => null,
         };
         if ($found->isEmpty()) {
-            return $this->line('n'.(++$this->count), 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '').' place is listed for that'
+            // Places of that kind, none open then: why ("closed on Sundays", "no hours listed").
+            $why = $mustBeOpen ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
+
+            return $this->line('n'.(++$this->count), $why ?? 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '').' place is listed for that'
                 .($where !== null ? " {$where}" : '').'.');
         }
 
@@ -518,11 +547,41 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured): string {
             $this->places[$c->id] = $c;
+            $this->measured[$c->id] = $measured;
 
-            return $this->line($c->id, self::placeText($c).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now)).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
+    }
+
+    /**
+     * The kinds of place Expadu has at least one suggestable place of, and the broad
+     * kinds holding them; cached for the hour as plain strings.
+     *
+     * @return list<string>
+     */
+    public static function kindsWithPlaces(): array
+    {
+        return Cache::remember('composer:place-kinds', now()->addHour(), function (): array {
+            $have = app(DestinationGrouping::class)->eligible(Spot::query(), true)->distinct()->pluck('spots.category')
+                ->map(fn ($category): string => $category instanceof SpotCategory ? $category->value : (string) $category)->all();
+            $coarse = array_values(array_filter(SpotCategory::placesCoarse(), fn (string $selector): bool => array_intersect(SpotCategory::finesForSelector($selector), $have) !== []));
+
+            return array_values(array_unique([...$have, ...$coarse]));
+        });
+    }
+
+    /** A kind as said: "supermarkets", "Café". */
+    private static function kindName(string $kind, bool $plural = false): string
+    {
+        $label = mb_strtolower(SpotCategory::tryFrom($kind)?->label() ?? str_replace('_', ' ', $kind));
+
+        return match (true) {
+            ! $plural || str_ends_with($label, 's') => $label,
+            preg_match('/[^aeiou]y$/', $label) === 1 => substr($label, 0, -1).'ies',
+            default => $label.'s',
+        };
     }
 
     private function weatherNow(): string
@@ -649,13 +708,21 @@ final class AssistantTools
     }
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
-    public static function placeText(Candidate $c): string
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true): string
     {
         $kind = SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category));
+        // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
+        $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $at);
+        $hours = match (true) {
+            $open === true => ' Open '.($now ? 'now' : 'at '.$at->setTimezone('Europe/Berlin')->format('H:i')).($c->closesAt !== null ? ', until '.$c->closesAt->setTimezone('Europe/Berlin')->format('H:i').' today' : '').'.',
+            $open === null => ' Opening hours not listed.',
+            default => '',
+        };
 
         return "\"{$c->name}\" ({$kind}".($c->outdoor ? ', outdoors' : ', indoors').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
-            .(! $c->hoursAssumed && $c->closesAt !== null ? " Open until {$c->closesAt->setTimezone('Europe/Berlin')->format('H:i')} today." : '')
+            .$hours
             .($c->costTier === 'free' ? ' Free.' : '')
+            .($c->stepFree() ? ' Step-free access listed.' : '')
             .($c->vibeTags !== [] ? ' Listed as '.implode(', ', array_slice($c->vibeTags, 0, 3)).'.' : '');
     }
 

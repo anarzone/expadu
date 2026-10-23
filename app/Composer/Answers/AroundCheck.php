@@ -30,7 +30,10 @@ final class AroundCheck
         'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride',
         // Order and place words a sentence starts with ("After that…", "Near you…", "Everything I found…").
         'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything',
-        'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we'];
+        'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we',
+        // Kinds of place a sentence may start with ("Places can't be filtered…", "Cafés near you…").
+        'places', 'restaurants', 'cafés', 'cafes', 'bars', 'pubs', 'libraries', 'museums', 'parks', 'playgrounds', 'pitches', 'gyms',
+        'shops', 'bakeries', 'pharmacies', 'supermarkets', 'events', 'concerts', 'listings'];
 
     /** Claims a sentence may make only when its items make them too. */
     private const CLAIMS = ['/\bfree\b/u', '/\bcheap\w*/u', '/\bexpensive\b/u', '/\bsold[ -]?out\b/u', '/\btickets?\b/u', '/€|\beuros?\b/u',
@@ -40,7 +43,17 @@ final class AroundCheck
         '/\bpopular\b/u', '/\bfamous\b/u', '/\bbest\b/u', '/\biconic\b/u', '/\blegendary\b/u', '/\baward\w*/u', '/\bpremiere\b/u',
         '/\boutdoors?\b/u', '/\bindoors?\b/u', '/\bopen[ -]air\b/u', '/\blast chance\b/u', '/\bfamil(y|ies)\b/u', '/\bkids?\b/u', '/\bchildren\b/u',
         // Access is a fact only a listing can state (the assistant called a museum "step-free", 22 Oct 2026).
-        '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u'];
+        '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u',
+    ];
+
+    /**
+     * Facts the places don't hold yet, and "open" without listed hours (owner's test, 23 Oct 2026): a
+     * sentence may say them only as its results do, or say they aren't listed or known ("wifi isn't
+     * listed", "I can't confirm which are open late").
+     */
+    private const UNLISTED = '/\b(wi-?fi|vegan|vegetarian|gluten[- ]free|live music|outdoor seating|terrace|open (right )?now|open (all day|late|24))\b/u';
+
+    private const NOT = '/\b(not|no|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
 
     /** Counts are claims too: kept only as the number of things the sentence itself names (`$named`). */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';
@@ -82,12 +95,18 @@ final class AroundCheck
             return false;
         }
 
+        if (preg_match(self::UNLISTED, $lower) === 1 && preg_match(self::UNLISTED, $source) !== 1 && preg_match(self::NOT, $lower) !== 1) {
+            return false;
+        }
         foreach (self::CLAIMS as $claim) {
             if (preg_match($claim, $lower) && ! preg_match($claim, $source)) {
                 return false;
             }
         }
 
+        // The words of an unlisted fact it names ("Live music isn't listed") are words, not names.
+        preg_match_all(self::UNLISTED, $lower, $phrases);
+        $unlisted = array_merge([], ...array_map(fn (string $phrase): array => preg_split('/[\s-]+/u', $phrase), $phrases[0]));
         // Every name: a capitalised word the items hold, unless it's the speaker, the
         // app, the city, a day or month, or an ordinary word starting a sentence.
         preg_match_all("/\p{Lu}[\p{L}'-]*/u", $sentence, $names, PREG_OFFSET_CAPTURE);
@@ -96,7 +115,7 @@ final class AroundCheck
             $word = preg_replace("/'s$/u", '', rtrim(mb_strtolower($name), "'-"));
             $before = rtrim(substr($sentence, 0, $offset), " \t\"'(“");
             $first = $before === '' || preg_match('/[.!?:;–—]$/u', $before) === 1;
-            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true)) || str_contains($source, $word)) {
+            if (in_array($word, self::ALWAYS, true) || ($first && in_array($word, self::STARTERS, true)) || str_contains($source, $word) || in_array($word, $unlisted, true)) {
                 continue;
             }
 
