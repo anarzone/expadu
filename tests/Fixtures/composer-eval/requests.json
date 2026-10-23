@@ -8249,6 +8249,46 @@
      "Football pitch"
     ]
    }
+  },
+  {
+   "id": "places_matrix.laptop_deutz",
+   "persona": "places_matrix",
+   "home_veedel": "Deutz",
+   "origin": {
+    "lat": 50.9381,
+    "lng": 6.9746
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "a café in Deutz where I can work on my laptop",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_not": [
+     "Kaffebar"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.laptop_honest",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "which cafés near me are good for laptop work?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "(isn.t|not) listed|lists? wi-?fi|website says|laptop"
+   }
   }
  ]
 }

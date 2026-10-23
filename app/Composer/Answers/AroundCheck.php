@@ -51,9 +51,9 @@ final class AroundCheck
      * sentence may say them only as its results do, or say they aren't listed or known ("wifi isn't
      * listed", "I can't confirm which are open late").
      */
-    private const UNLISTED = '/\b(wi-?fi|vegan|vegetarian|gluten[- ]free|live music|outdoor seating|terrace|open (right )?now|open (all day|late|24))\b/u';
+    private const UNLISTED = '/\b(wi-?fi|laptops?|sockets?|vegan|vegetarian|gluten[- ]free|live music|outdoor seating|terrace|open (right )?now|open (all day|late|24))\b/u';
 
-    private const NOT = '/\b(not|no|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
+    private const NOT = '/\b(not|no|neither|nor|never|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
 
     /** Counts are claims too: kept only as the number of things the sentence itself names (`$named`). */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';
@@ -97,7 +97,15 @@ final class AroundCheck
             return false;
         }
 
-        if (preg_match(self::UNLISTED, $lower) === 1 && preg_match(self::UNLISTED, $source) !== 1 && preg_match(self::NOT, $lower) !== 1) {
+        // An unlisted fact ("has Wi-Fi", "good for laptops") holds only where a source says it, not where
+        // one says it isn't ("Laptop work isn't listed."); saying it isn't listed always holds.
+        $said = implode("\n", array_filter(preg_split('/(?<=[.!?])\s+|\n/u', mb_strtolower($source)) ?: [], fn (string $part): bool => preg_match(self::NOT, $part) !== 1));
+        // Each such fact by itself: Wi-Fi listed doesn't back "good for laptops".
+        $fact = fn (string $phrase): string => preg_replace(['/wi-?fi/u', '/s$/u'], ['wifi', ''], $phrase);
+        preg_match_all(self::UNLISTED, $said, $listed);
+        $listed = array_map($fact, $listed[0]);
+        preg_match_all(self::UNLISTED, $lower, $claimed);
+        if (preg_match(self::NOT, $lower) !== 1 && collect($claimed[0])->contains(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) {
             return false;
         }
         foreach (self::CLAIMS as $claim) {

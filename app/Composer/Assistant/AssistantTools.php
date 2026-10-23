@@ -667,7 +667,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             if ($areas !== []) {
@@ -685,6 +685,8 @@ final class AssistantTools
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
             return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null)
+                // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
+                .($work ? ' '.self::laptopSaid($c) : '')
                 .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
     }
@@ -818,6 +820,35 @@ final class AssistantTools
         }
 
         return $laptops === 'yes' ? true : null;
+    }
+
+    /**
+     * What a place's sources say of laptop work, by source (laptop answers design, 23 Oct 2026):
+     * its website ("Its website says laptops aren't allowed at weekends."), its listing ("It lists
+     * laptops welcome."), or that nothing is listed. People's answers come as their count summary
+     * when the places session's `people` facts land.
+     */
+    public static function laptopSaid(Candidate $c): string
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+        $laptops = mb_strtolower((string) ($practical['laptops']['value'] ?? ''));
+        if (! in_array($laptops, ['yes', 'no', 'limited'], true)) {
+            return 'Laptop work isn\'t listed.';
+        }
+        $who = str_contains((string) ($practical['laptops']['source_url'] ?? ''), 'openstreetmap.org') ? 'It lists' : 'Its website says';
+        $days = (string) ($practical['laptops:conditional']['value'] ?? '');
+        $when = match (true) {
+            preg_match('/\bsa\s*-\s*su\b/i', $days) === 1 => 'at weekends',
+            preg_match('/\bmo\s*-\s*fr\b/i', $days) === 1 => 'on weekdays',
+            $days !== '' => "on {$days}",
+            default => 'at some times',
+        };
+
+        return match ($laptops) {
+            'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
+            'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
+            default => ($who === 'It lists' ? 'It lists' : 'Its website says')." laptops aren't allowed {$when}.",
+        };
     }
 
     /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
