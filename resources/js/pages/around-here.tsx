@@ -39,6 +39,17 @@ const CLOSE_KM = 2;
 /** Each kind's icon on its chip ("Parks & nature" takes the park's). */
 const chipIcon = (id: string) => (id === 'green' ? 'park' : id);
 
+/** The place the link opens (?place=), if it names one. */
+function linkPlace(): number | null {
+    const id = Number(
+        new URLSearchParams(
+            typeof location === 'undefined' ? '' : location.search,
+        ).get('place'),
+    );
+
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 export default function AroundHere({
     point,
     kind,
@@ -47,7 +58,8 @@ export default function AroundHere({
     kinds,
     places: listed,
 }: Props) {
-    const [selected, setSelected] = useState<number | null>(null);
+    // The place the link opens (?place=) starts picked in the list too.
+    const [selected, setSelected] = useState<number | null>(() => linkPlace());
     const shown = useImpressions('places', 'spot');
     // Less what was put away with Not now this week.
     const hidden = useHidden();
@@ -56,15 +68,7 @@ export default function AroundHere({
     const [flyTo, setFlyTo] = useState<{ id: number; at: number } | null>(null);
     const [saved, setSaved] = useState<Record<number, boolean>>({});
     // The place open in its sheet: a row's, or the link's (?place=).
-    const [sheet, setSheet] = useState<number | null>(() => {
-        const id = Number(
-            new URLSearchParams(
-                typeof location === 'undefined' ? '' : location.search,
-            ).get('place'),
-        );
-
-        return Number.isInteger(id) && id > 0 ? id : null;
-    });
+    const [sheet, setSheet] = useState<number | null>(() => linkPlace());
     // Back goes back when you came from inside the app, else to Composer.
     const [cameBack] = useState(() => {
         try {

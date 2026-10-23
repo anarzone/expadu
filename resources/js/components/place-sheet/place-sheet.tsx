@@ -9,7 +9,6 @@ import { Link } from '@inertiajs/react';
 import { IconShare2 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { PlaceIcon } from '@/components/around-here/place-icon';
-import { cuisineNames, dietText } from '@/components/around-here/place-model';
 import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
@@ -49,6 +48,8 @@ type Detail = {
     lng: number | null;
     kind_icon: string;
     feedback_state: string | null;
+    /** What it lists: "Italian", "Wi-Fi", "outdoor seating", "vegan options". */
+    amenities: string[];
     /** Whether it can be recommended and planned to (active, open to all). */
     recommendation_status?: 'available' | 'unavailable';
     hours_at?:
@@ -419,8 +420,6 @@ function About({ detail: d }: { detail: Detail }) {
           })
         : null;
     const wheelchair = known(practical.wheelchair);
-    const outdoor = known(practical.outdoor_seating);
-    const wifi = known(practical.internet_access);
 
     return (
         <>
@@ -431,51 +430,15 @@ function About({ detail: d }: { detail: Detail }) {
                 {area ? null : (
                     <Row label="Address" value={known(facts.contact.address)} />
                 )}
-                {['restaurant', 'fastfood'].includes(kind) ||
-                (EATING.includes(kind) &&
-                    cuisineNames(known(practical.cuisine))) ? (
+                {/* What it lists (PlaceAmenities::listed): cuisine, Wi-Fi,
+                    outdoor seating, diets. Somewhere to eat says when none is. */}
+                {d.amenities.length || EATING.includes(kind) ? (
                     <Row
-                        label="Cuisine"
-                        value={cuisineNames(known(practical.cuisine)) || null}
-                    />
-                ) : null}
-                {EATING.includes(kind) ? (
-                    <Row
-                        label="Outdoor seating"
+                        label="Also listed"
                         value={
-                            outdoor
-                                ? outdoor.toLowerCase() === 'no'
-                                    ? 'No'
-                                    : outdoor.toLowerCase() === 'yes'
-                                      ? 'Yes'
-                                      : `Yes, ${outdoor.replace(/_/g, ' ')}`
-                                : null
-                        }
-                    />
-                ) : null}
-                {EATING.includes(kind) ? (
-                    <Row
-                        label="Diet"
-                        value={
-                            dietText({
-                                vegetarian: known(practical['diet:vegetarian']),
-                                vegan: known(practical['diet:vegan']),
-                            }) || null
-                        }
-                    />
-                ) : null}
-                {kind === 'library' ? (
-                    <Row
-                        label="Wi-Fi"
-                        value={
-                            wifi
-                                ? ({
-                                      wlan: 'Yes',
-                                      yes: 'Yes',
-                                      terminal: 'Public computers',
-                                      no: 'No',
-                                  }[wifi] ?? null)
-                                : null
+                            d.amenities
+                                .join(' · ')
+                                .replace(/^./, (c) => c.toUpperCase()) || null
                         }
                     />
                 ) : null}

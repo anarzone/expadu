@@ -185,32 +185,6 @@ export function cuisineNames(raw: string | null): string {
         .join(' · ');
 }
 
-/** What a listing records about diets, "Vegetarian options · No vegan
-    options" (the sheet lists the noes too). */
-export function dietText(diets: {
-    vegetarian?: string | null;
-    vegan?: string | null;
-}): string {
-    return (['vegetarian', 'vegan'] as const)
-        .map((word) => {
-            const value = diets[word];
-            const name = word.replace(/^./, (c) => c.toUpperCase());
-
-            return (
-                (
-                    {
-                        yes: `${name} options`,
-                        only: `${name} only`,
-                        limited: `Some ${word} options`,
-                        no: `No ${word} options`,
-                    } as Record<string, string>
-                )[value ?? ''] ?? null
-            );
-        })
-        .filter(Boolean)
-        .join(' · ');
-}
-
 /** "Italian · Pizza" for a restaurant or fast food; "Cuisine not listed". */
 export function cuisineText(place: AroundPlace): {
     text: string;

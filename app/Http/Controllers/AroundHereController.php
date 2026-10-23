@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
 use App\Enums\SpotFeedbackState;
+use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Places\AroundKinds;
@@ -26,7 +27,9 @@ use Inertia\Response;
  *  - a public point another page names, `<lat>,<lng>` with `name` (a stop
  *    on a way);
  *  - a district, stop or venue by its name, or `home` / `work`
- *    (EventStartingPoint).
+ *    (EventStartingPoint);
+ *  - with no `near`, the place the link opens (`place`, a place's id: a
+ *    Composer card), so the page shows what's near it behind its sheet.
  * 🔒 Bare coordinates only ever name a public point. The person's own
  * position never goes in a URL: their saved places go by their keys and
  * their plans by their ids, resolved here, and a live position would need
@@ -55,7 +58,8 @@ class AroundHereController extends Controller
         $at = CarbonImmutable::parse($now->toDateString().' '.$time, 'Europe/Berlin');
         $kind = AroundKinds::has((string) $request->query('kind')) ? (string) $request->query('kind') : '';
         $open = $request->query('open') === '1';
-        $point = $this->point((string) $request->query('near'), (string) $request->query('name'), $user, $points, $now);
+        $point = $this->point((string) $request->query('near'), (string) $request->query('name'), $user, $points, $now)
+            ?? ($request->query('near', '') === '' ? $this->placePoint((string) $request->query('place')) : null);
 
         return Inertia::render('around-here', [
             'point' => $point,
@@ -98,6 +102,23 @@ class AroundHereController extends Controller
         $named = $near !== '' ? $points->resolve($near, $user) : null;
 
         return $named === null ? null : ['name' => $named['name'], 'lat' => $named['lat'], 'lng' => $named['lng']];
+    }
+
+    /**
+     * A place opened by its id, as the point to look around: a venue's own
+     * name and position, public like any place's.
+     *
+     * @return array{name: string, lat: float, lng: float}|null
+     */
+    private function placePoint(string $place): ?array
+    {
+        if (preg_match('/^[1-9]\d{0,9}$/', $place) !== 1) {
+            return null;
+        }
+
+        $spot = Spot::query()->whereKey((int) $place)->whereNotNull('lat')->whereNotNull('lng')->first(['id', 'name', 'lat', 'lng']);
+
+        return $spot === null ? null : ['name' => (string) $spot->name, 'lat' => (float) $spot->lat, 'lng' => (float) $spot->lng];
     }
 
     /**
