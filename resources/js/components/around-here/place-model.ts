@@ -197,11 +197,17 @@ const CUISINE: Record<string, string> = {
 };
 
 /** A sports centre's sports in words: "Fencing, tai chi, qi gong" ('' when none). */
-export function sportNames(raw: string | null | undefined): string {
+export function sportNames(
+    raw: string | null | undefined,
+    /** The kind the line already names ("Climbing"): a sport that repeats it is left out. */
+    kind?: string | null,
+): string {
+    const same = (kind ?? '').trim().toLowerCase();
+
     return (raw ?? '')
         .split(';')
         .map((value) => value.trim().replace(/_/g, ' '))
-        .filter(Boolean)
+        .filter((value) => value && value.toLowerCase() !== same)
         .join(', ')
         .replace(/^./, (c) => c.toUpperCase());
 }

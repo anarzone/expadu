@@ -48,7 +48,7 @@ export function PlaceRow({
     const away = distanceText(place);
     const kindLine = [
         place.label,
-        sportNames(place.sport) || cuisineNames(place.cuisine),
+        sportNames(place.sport, place.label) || cuisineNames(place.cuisine),
     ]
         .filter(Boolean)
         .join(' · ');

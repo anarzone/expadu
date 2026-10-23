@@ -390,7 +390,7 @@ export function PlaceSheet({
 function PreviewDetail({ place }: { place: AroundPlace }) {
     const kindLine = [
         place.label,
-        sportNames(place.sport) || cuisineNames(place.cuisine),
+        sportNames(place.sport, place.label) || cuisineNames(place.cuisine),
         place.veedel,
         place.km !== null && place.km >= 0.025 ? distanceText(place) : '',
     ]
@@ -570,7 +570,7 @@ function PlaceDetail({
         km !== null && km >= 0.025 ? distanceText({ km, area: largeArea }) : '';
     const kindLine = [
         d.fine_label,
-        sportNames(known(practical.sport)) ||
+        sportNames(known(practical.sport), d.fine_label) ||
             cuisineNames(known(practical.cuisine)),
         d.veedel,
         away,
