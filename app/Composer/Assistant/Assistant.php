@@ -8,7 +8,6 @@ use App\Composer\Answers\AroundNow;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
-use App\Enums\SpotCategory;
 use App\Models\Spot;
 use App\Models\User;
 use App\Personalisation\Affinities;
@@ -71,7 +70,7 @@ final class Assistant
 
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
-        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with kinds cafe, library and coworking. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
+        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with kinds cafe, library and coworking. For children ("my kid", "for the kids"): search_places with for_children, and the activity they named. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
@@ -497,7 +496,7 @@ final class Assistant
 
             return array_filter(['id' => $id, 'name' => AssistantTools::name($c),
                 // A park found for its pitch is counted as what was looked for ("6 football pitches").
-                'kind' => $tools->parks[$c->id]['matched'] ?? SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
+                'kind' => $tools->parks[$c->id]['matched'] ?? AssistantTools::kindOf($c),
                 // How far, in a straight line, only from where the person is or starts (never sent to the AI).
                 'distance' => ($tools->measured[$c->id] ?? false) && $km !== null ? ($km < 1 ? (int) (round($km * 1000 / 50) * 50).' m' : number_format($km, 1).' km') : null,
                 'area' => $c->veedel, 'href' => route('explore', ['place' => $id], false),
@@ -511,7 +510,8 @@ final class Assistant
                 },
                 'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
                 // Around here's PlaceRow: the card draws it when every place has one.
-                'row' => $rows->get($id)],
+                // Its row's label says so too ("Playground with football goals").
+                'row' => ($row = $rows->get($id)) !== null && AssistantTools::kindOf($c) === 'Playground with football goals' ? [...$row, 'label' => AssistantTools::kindOf($c)] : $row],
                 // Every card has its distance, even when it's unknown (null).
                 fn (mixed $value, string $key): bool => $value !== null || $key === 'distance', ARRAY_FILTER_USE_BOTH);
         })->all()];

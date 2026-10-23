@@ -205,6 +205,7 @@ final class AssistantTools
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
+                    'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
@@ -530,6 +531,15 @@ final class AssistantTools
         if ($activity !== null && $kinds === [] && in_array($activity, self::kindsWithPlaces(), true)) {
             [$kinds, $activity] = [[$activity], null];
         }
+        // Playgrounds answer no activity (places session, 23 Oct 2026: a child's ask, never an adult's):
+        // asked for with one ("my kid, football"), those listing it come first ("with football goals").
+        $plays = null;
+        if (($input['for_children'] ?? false) === true) {
+            $kinds = ['playground'];
+        }
+        if ($activity !== null && $kinds === ['playground']) {
+            [$plays, $activity] = [$activity, null];
+        }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         // In an area named, from its middle (owner's test, 23 Oct 2026: "places to work in city center"
         // were sorted by the home Veedel at the city's edge); else nearest to the person.
@@ -552,7 +562,8 @@ final class AssistantTools
         $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
-        $deep = $mustBeOpen || $features !== [];
+        // Few places list hours, facts or a playground's goals: for those, the search reads further.
+        $deep = $mustBeOpen || $features !== [] || $plays !== null;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $nearest = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
@@ -580,12 +591,14 @@ final class AssistantTools
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $at, $lat, $lng);
         $where = match (true) {
@@ -720,6 +733,20 @@ final class AssistantTools
             $f === 'wifi' => 'Wi-Fi', $f === 'outdoor_seating' => 'outdoor seating', $f === 'wheelchair' => 'step-free access',
             str_starts_with($f, 'diet:') => str_replace('_', '-', substr($f, 5)).' food', default => ucfirst(str_replace('_', ' ', substr($f, 8))).' food',
         }, $features));
+    }
+
+    /**
+     * What a place is, as said: its kind, and a playground the city lists with goals as one
+     * ("Playground with football goals": where a child plays football, never an adult pitch).
+     */
+    public static function kindOf(Candidate $c): string
+    {
+        $sports = array_map('trim', explode(';', mb_strtolower((string) ($c->placeFacts['practical']['sport']['value'] ?? ''))));
+
+        return match (true) {
+            $c->category === 'playground' && in_array('soccer', $sports, true) => 'Playground with football goals',
+            default => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
+        };
     }
 
     /** A name without an import's bracket artefacts ("Headquarter[s]"). */
@@ -1017,7 +1044,7 @@ final class AssistantTools
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
     public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null): string
     {
-        $kind = SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category));
+        $kind = self::kindOf($c);
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
         $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $at);
         $hours = match (true) {
