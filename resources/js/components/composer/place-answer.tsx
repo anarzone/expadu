@@ -1,4 +1,11 @@
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
+import type { AroundPlace } from '@/components/around-here/place-model';
+import { PlaceRow } from '@/components/around-here/place-row';
+import { api } from '@/components/composer/types';
+import { PlaceSheet } from '@/components/place-sheet/place-sheet';
+import { showToast } from '@/components/ui/toast';
+import '@/components/around-here/around-here.css';
 
 /** A place as the answer carries it (App\Composer\Answers\PlaceAnswers). */
 export type AnsweredPlace = {
@@ -13,6 +20,12 @@ export type AnsweredPlace = {
     source?: 'osm' | 'overture' | 'transit';
     /** Why the assistant suggests it, from the person's own taste (opt-in only). */
     because?: string | null;
+    /**
+     * Around here's own row for it (App\Places\OpenNearby::rows, with its icon
+     * and label): hours at the time, how far from where it searched, its street,
+     * a photo when one is cleared, what it lists. Older answers have none.
+     */
+    row?: Omit<AroundPlace, 'saved'> & { saved?: boolean };
 };
 
 /** Each source asks for its own credit where it's shown; timetable stops need none. */
@@ -22,10 +35,10 @@ const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
 };
 
 /*
- * "Somewhere nearby to play football" as the approved nearby answer draws it
- * (composer-studio app.js `nearbyCards`): compact cards, nearest first, each
- * with its kind and distance, opening the place in Around here (or Travel).
- * Each source the cards come from is credited once, as each asks.
+ * "Somewhere nearby to play football": each place as Around here draws it
+ * (its PlaceRow, the places session's), opening its place sheet here, with
+ * Save; answers kept from before carry only their kind and Veedel, as cards.
+ * Each source the places come from is credited once, as each asks.
  */
 export function PlaceAnswer({
     places,
@@ -35,6 +48,38 @@ export function PlaceAnswer({
     /** "Not this" on an assistant's suggestion. */
     onNotThis?: (place: AnsweredPlace) => void;
 }) {
+    const [open, setOpen] = useState<number | null>(null);
+    const [saved, setSaved] = useState<Record<number, boolean>>({});
+    const isSaved = (row: NonNullable<AnsweredPlace['row']>) =>
+        saved[row.id] ?? row.saved ?? false;
+    // As Around here saves it: at once, undone with a toast when it fails.
+    const save = (row: NonNullable<AnsweredPlace['row']>) => {
+        const next = !isSaved(row);
+        setSaved((all) => ({ ...all, [row.id]: next }));
+        api(`/api/places/${row.id}/feedback`, {
+            action: next ? 'saved' : 'clear',
+        }).catch(() => {
+            setSaved((all) => ({ ...all, [row.id]: !next }));
+            showToast('That place wasn’t saved. Please try again.', {
+                error: true,
+            });
+        });
+    };
+    const after = (place: AnsweredPlace) => (
+        <>
+            {place.because && <p className="answer-fine">{place.because}</p>}
+            {onNotThis && (
+                <button
+                    type="button"
+                    className="composer-text-button"
+                    aria-label={`Not this: ${place.name}`}
+                    onClick={() => onNotThis(place)}
+                >
+                    Not this
+                </button>
+            )}
+        </>
+    );
     const credits = [
         ...new Set(
             places.flatMap((place) => {
@@ -45,56 +90,73 @@ export function PlaceAnswer({
         ),
     ];
 
+    const rows = places.every((place) => place.row);
+
     return (
         <>
-            <ul className="nearby-answer" role="list">
-                {places.map((place) => {
-                    const kind = place.distance
-                        ? `${place.kind} · ${place.distance}`
-                        : place.kind;
-
-                    return (
-                        <li
-                            key={place.id}
-                            className={
-                                place.because || onNotThis
-                                    ? 'nearby-answer-item'
-                                    : undefined
-                            }
-                        >
-                            <Link
-                                className="nearby-answer-card"
-                                href={place.href}
-                                aria-label={`${place.name}, ${kind}`}
-                            >
-                                <span className="nearby-answer-copy">
-                                    <small>{kind}</small>
-                                    <strong>{place.name}</strong>
-                                    {place.area && <small>{place.area}</small>}
-                                </span>
-                            </Link>
-                            {place.because && (
-                                <p className="answer-fine">{place.because}</p>
-                            )}
-                            {onNotThis && (
-                                <button
-                                    type="button"
-                                    className="composer-text-button"
-                                    aria-label={`Not this: ${place.name}`}
-                                    onClick={() => onNotThis(place)}
-                                >
-                                    Not this
-                                </button>
-                            )}
+            {rows ? (
+                <ul className="around answer-place-rows" role="list">
+                    {places.map((place) => (
+                        <li key={place.id}>
+                            <PlaceRow
+                                place={{
+                                    ...place.row!,
+                                    saved: isSaved(place.row!),
+                                }}
+                                selected={open === place.id}
+                                onOpen={() => setOpen(place.id)}
+                                onHover={() => undefined}
+                                onSave={() => save(place.row!)}
+                            />
+                            {after(place)}
                         </li>
-                    );
-                })}
-            </ul>
+                    ))}
+                </ul>
+            ) : (
+                <ul className="nearby-answer" role="list">
+                    {places.map((place) => {
+                        const kind = place.distance
+                            ? `${place.kind} · ${place.distance}`
+                            : place.kind;
+
+                        return (
+                            <li
+                                key={place.id}
+                                className={
+                                    place.because || onNotThis
+                                        ? 'nearby-answer-item'
+                                        : undefined
+                                }
+                            >
+                                <Link
+                                    className="nearby-answer-card"
+                                    href={place.href}
+                                    aria-label={`${place.name}, ${kind}`}
+                                >
+                                    <span className="nearby-answer-copy">
+                                        <small>{kind}</small>
+                                        <strong>{place.name}</strong>
+                                        {place.area && (
+                                            <small>{place.area}</small>
+                                        )}
+                                    </span>
+                                </Link>
+                                {after(place)}
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
             {credits.length > 0 && (
                 <div className="answer-actions place-answer-actions">
                     <span>From {credits.join(' and ')}</span>
                 </div>
             )}
+            <PlaceSheet
+                place={open}
+                onClose={() => setOpen(null)}
+                onSaved={(id, on) => setSaved((all) => ({ ...all, [id]: on }))}
+            />
         </>
     );
 }
