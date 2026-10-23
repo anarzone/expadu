@@ -39,13 +39,13 @@ one observation per place: provider `people`, `provider_record_id` = spot id, pa
 
 ## 2. Aggregation
 
-Per question, over answers in the last **12 months**, weighted by age: weight 1 for answers up to
-6 months old, 0.5 from 6 to 12 months, ignored after 12 months (cafés change owners, Wi-Fi and
-rules).
+Per question, over answers in the last **12 months**; older answers are ignored (cafés change
+owners, Wi-Fi and rules).
 
-- **Minimum to show anything (owner, 23 Oct): 3 answers from 3 different people**, counted after
-  the age weighting below (weighted count ≥ 3). Below that the fact stays unknown — "Not listed yet".
-- **Shown fact** (yes share = weighted yes / weighted total):
+- **Minimum to show anything (owner, 23 Oct): 3 real answers from 3 different people** within the
+  12 months, **counted unweighted**. Below that the fact stays unknown — "Not listed yet".
+- **Shown fact:** the age weighting applies only to the yes share — weight 1 for answers up to
+  6 months old, 0.5 from 6 to 12 months. Yes share = weighted yes / weighted total:
   - ≥ 70% yes → `yes` ("Good for laptop work").
   - ≤ 30% yes → `no` ("Not good for laptop work").
   - In between → `mixed`. Shown as "Mixed reports"; it doesn't count as work-friendly and isn't excluded.
