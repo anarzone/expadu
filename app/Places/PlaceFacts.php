@@ -589,27 +589,57 @@ class PlaceFacts
      */
     private function resolveContact(Spot $spot, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'contact');
-        $source = is_array($row?->payload['contact'] ?? null) ? $row->payload['contact'] : [];
-        $values = collect(['website', 'phone', 'address'])->mapWithKeys(fn (string $field): array => [
-            $field => $row !== null
-                ? $this->stringValue(array_key_exists($field, $source) ? $source[$field] : null)
-                : ($useLegacyProjection ? $this->stringValue($spot->{$field}) : null),
-        ])->all();
-
+        // Field by field: the place's own source (OSM) decides when it lists a value;
+        // another provider (Overture, a website) only fills a gap. A real disagreement
+        // (another website domain, another number) stays conflicting, never swapped.
+        $withContact = $observations->filter(fn (PlaceFactObservation $row): bool => is_array($row->payload['contact'] ?? null))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $isOwn = fn (PlaceFactObservation $row): bool => $spot->source === null || ($row->provider === $spot->source && $row->provider_record_id === $spot->source_id);
+        $latestByProvider = $withContact->reject($isOwn)
+            ->groupBy(fn (PlaceFactObservation $row): string => $row->provider.'|'.$row->provider_record_id)
+            ->map(fn (Collection $rows): PlaceFactObservation => $rows->last());
         $correction = $corrections->last();
 
-        return collect($values)->map(function (?string $value, string $field) use ($correction, $corrections, $row, $legacySourceUrl): array {
-            if ($correction !== null && array_key_exists($field, $correction->value)) {
-                $value = $this->stringValue($correction->value[$field]);
+        return collect(['website', 'phone', 'address'])->mapWithKeys(function (string $field) use ($spot, $isOwn, $withContact, $latestByProvider, $useLegacyProjection, $legacySourceUrl, $correction, $corrections): array {
+            // The latest own record that states this field (null = removed); one silent on it doesn't erase it.
+            $primary = $withContact->filter(fn (PlaceFactObservation $row): bool => $isOwn($row) && array_key_exists($field, $row->payload['contact']))->last();
+            $own = $primary !== null ? $this->stringValue($primary->payload['contact'][$field] ?? null) : null;
+            if ($primary === null && $useLegacyProjection) {
+                $own = $this->stringValue($spot->{$field});
             }
+            $others = $latestByProvider->map(fn (PlaceFactObservation $row): array => [$row, $this->stringValue($row->payload['contact'][$field] ?? null)])
+                ->filter(fn (array $pair): bool => $pair[1] !== null)->values();
+            [$row, $value] = $own !== null ? [$primary, $own] : ($others->last() ?? [$primary, null]);
+            $differs = fn (string $a, string $b): bool => $this->contactKey($field, $a) !== $this->contactKey($field, $b);
+            // OSM's own value stays shown; another provider saying otherwise is noted, not
+            // allowed to hide it (Overture is often the stale side). Without an own value,
+            // two other providers disagreeing leave it conflicting.
+            $disputedBy = $value !== null ? $others->filter(fn (array $pair): bool => $differs($pair[1], $value))->map(fn (array $pair): string => $pair[0]->provider)->unique()->values()->all() : [];
+            $conflicting = $own === null && $disputedBy !== [];
 
-            return [
-                ...$this->fact($value, $corrections->count() > 1 ? 'conflicting' : ($value !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($value !== null ? $legacySourceUrl : null))),
+            if ($correction !== null && array_key_exists($field, $correction->value)) {
+                [$value, $conflicting] = [$this->stringValue($correction->value[$field]), false];
+            }
+            $status = $corrections->count() > 1 || $conflicting ? 'conflicting' : ($value !== null ? 'known' : 'unknown');
+
+            return [$field => [
+                ...$this->fact($value, $status, $correction?->evidence_url ?? ($row?->source_url ?? ($value !== null ? $legacySourceUrl : null))),
                 'observed_at' => $row?->observed_at?->toIso8601String(),
                 'reviewed_at' => $correction?->reviewed_at?->toIso8601String(),
-            ];
+                ...($disputedBy !== [] && $correction === null ? ['disputed_by' => $disputedBy] : []),
+            ]];
         })->all();
+    }
+
+    /** What makes two contact values the same: a website's host, a number's digits, an address's letters. */
+    private function contactKey(string $field, string $value): string
+    {
+        return match ($field) {
+            // The registrable domain: shop.rewe.de and www.rewe.de are the same business.
+            'website' => implode('.', array_slice(explode('.', mb_strtolower((string) (parse_url(str_contains($value, '://') ? $value : 'https://'.$value, PHP_URL_HOST) ?? $value))), -2)),
+            'phone' => substr((string) preg_replace('/^(?:00)?49|^0/', '', (string) preg_replace('/\D+/', '', $value)), -9),
+            default => (string) preg_replace('/[^a-z0-9]+/', '', mb_strtolower($value)),
+        };
     }
 
     /**
