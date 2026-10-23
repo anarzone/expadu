@@ -3702,6 +3702,37 @@
     width: 18px;
     height: 18px;
 }
+/* A cancelled run stays where it was among the options, struck through;
+   the next one moved up (the delays canvas, 22 Oct 2026). */
+:where(.travel-page) .plan-gone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) .plan-gone .tl-line {
+    opacity: 0.6;
+}
+:where(.travel-page) .plan-gone > span:last-child {
+    margin-left: auto;
+}
+/* A major one in What we checked: the conflict colours, light, as the
+   headline it goes with (a filled pill is for nothing now). */
+:where(.travel-page) .plan-checks .tl-chip.is-conflict {
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    box-shadow: inset 0 0 0 1px var(--color-conflict-border);
+}
+:where(.travel-page) #results > .tl-headline {
+    margin-bottom: var(--space-12);
+}
 :where(.travel-page) .plan-option-actions .plan-go {
     flex: 1.5 1 0px;
     min-width: 0px;
@@ -4316,6 +4347,13 @@
         column-gap: var(--space-32);
         align-items: start;
         transition: grid-template-columns 460ms var(--ease);
+    }
+}
+/* Bigger: Plan a trip takes two thirds, the board the rest, and its
+   options sit beside the form (departures-next hub.css). */
+@media (min-width: 1000px) {
+    .travel-page.plan-big {
+        grid-template-columns: calc(66.6% - 16px) minmax(0px, 1fr);
     }
 }
 @media (min-width: 1000px) {

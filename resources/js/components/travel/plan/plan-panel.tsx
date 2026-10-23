@@ -16,6 +16,8 @@ import type { TripFor } from '../trip/trip-model';
 import type { LocateError } from '../use-travel-location';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
+import { PlanHeadline } from './plan-headline';
+import type { BoardMajors } from './plan-headline';
 import {
     PREFS,
     SORTS,
@@ -30,6 +32,7 @@ import {
 } from './plan-model';
 import type {
     PlanAnswer,
+    PlanGone,
     PlanOption,
     PlanPlace,
     PlanTarget,
@@ -178,6 +181,8 @@ type PlanPanelProps = {
     nearName: string | null;
     clock: string;
     desktop: boolean;
+    /** On a laptop, the majors the board beside the planner already heads with. */
+    boardMajors?: BoardMajors | null;
     hidden: boolean;
     onStage: (stage: PlanStage) => void;
     /** Fold the planner away (phones): back to Nearby. */
@@ -224,6 +229,7 @@ export function PlanPanel({
     nearName,
     clock,
     desktop,
+    boardMajors = null,
     hidden,
     onStage,
     onFold,
@@ -980,6 +986,26 @@ export function PlanPanel({
         [options, sort, prefs, deadline],
     );
     const shown = more ? ranked : ranked.slice(0, 3);
+    // A cancelled run stays where it was: before the first way that rides
+    // its line after it (the next one moved up).
+    const goneBefore = new Map<string, PlanGone[]>();
+
+    for (const run of answer?.gone ?? []) {
+        const next = shown.find((option) => {
+            const ride = option.journey.legs.find((leg) => leg.line);
+
+            return (
+                ride?.line === run.line &&
+                Date.parse(ride.scheduled_depart_at ?? ride.depart_at) >
+                    Date.parse(run.at)
+            );
+        });
+
+        if (next) {
+            goneBefore.set(next.id, [...(goneBefore.get(next.id) ?? []), run]);
+        }
+    }
+
     const openOption = shown.some((option) => option.id === selected)
         ? selected
         : null;
@@ -1995,6 +2021,13 @@ export function PlanPanel({
                                         </div>
                                     ) : answer && ranked.length ? (
                                         <>
+                                            <PlanHeadline
+                                                answer={answer}
+                                                options={shown}
+                                                board={
+                                                    desktop ? boardMajors : null
+                                                }
+                                            />
                                             <PlanChecks
                                                 onTicket={(held) =>
                                                     void sayTicket(held)
@@ -2024,6 +2057,7 @@ export function PlanPanel({
                                                         to.text
                                                     }
                                                     planned={isPlanned}
+                                                    gone={goneBefore}
                                                     onBoardStop={onBoardStop}
                                                     expanded={
                                                         new Set(
