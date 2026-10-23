@@ -157,7 +157,7 @@ test("a café's own website rule and OSM outrank people", function () {
     app(RecordPlaceObservation::class)->record($spot, [
         'provider' => 'website', 'provider_record_id' => 'cafe.test', 'source_url' => 'https://cafe.test/',
         'observed_at' => now()->subDay()->toIso8601String(), 'ingestion_key' => 'website:test:'.$spot->id,
-        'payload' => ['practical' => ['laptops' => 'limited', 'laptops:conditional' => 'Sa-Su'], 'evidence' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt.']],
+        'payload' => ['practical' => ['laptops' => 'limited', 'laptops:conditional' => 'no @ (Sa-Su)'], 'evidence' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt.']],
     ]);
 
     expect(laptopsFact($spot))->toMatchArray(['value' => 'limited', 'status' => 'known', 'provider' => 'website', 'disputed_by' => ['people'], 'quote' => 'Laptops sind am Wochenende nicht erlaubt.', 'source_url' => 'https://cafe.test/']);
@@ -166,7 +166,7 @@ test("a café's own website rule and OSM outrank people", function () {
     $row = app(OpenNearby::class)->listed(50.94, 6.95, CarbonImmutable::now(), ['cafe'])->firstWhere('id', $spot->id);
     expect($row['laptop'])->toBe([
         'people' => ['value' => 'yes', 'yes' => 3, 'total' => 3],
-        'rule' => ['value' => 'limited', 'days' => 'Sa-Su'],
+        'rule' => ['value' => 'no', 'days' => 'Sa-Su'],
     ]);
 });
 

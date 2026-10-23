@@ -132,9 +132,14 @@ final class OpenNearby
     private static function laptop(array $practical, ?array $people): ?array
     {
         $fact = $practical['laptops'] ?? [];
-        $rule = ($fact['provider'] ?? null) === 'website' && ($fact['status'] ?? null) === 'known' && is_string($fact['value'] ?? null)
-            ? ['value' => $fact['value'], 'days' => ($practical['laptops:conditional']['status'] ?? null) === 'known' ? $practical['laptops:conditional']['value'] : null]
-            : null;
+        $rule = null;
+        if (($fact['provider'] ?? null) === 'website' && ($fact['status'] ?? null) === 'known' && is_string($fact['value'] ?? null)) {
+            // "no @ (Sa-Su)": the rule is what applies on those days.
+            $conditional = ($practical['laptops:conditional']['status'] ?? null) === 'known' ? (string) $practical['laptops:conditional']['value'] : '';
+            $rule = preg_match('/^\s*(no|limited|yes)\s*@\s*\((.+)\)\s*$/i', $conditional, $m) === 1
+                ? ['value' => mb_strtolower($m[1]), 'days' => trim($m[2])]
+                : ['value' => $fact['value'], 'days' => null];
+        }
 
         return $people === null && $rule === null ? null : ['people' => $people, 'rule' => $rule];
     }
