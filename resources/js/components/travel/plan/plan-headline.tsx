@@ -1,7 +1,8 @@
 import { Headline } from '../headline';
 import { noticeWords } from '../nearby/types';
 import { stopName } from '../stop-name';
-import { lateBy, linesOf, majorOf } from './plan-model';
+import { TravelIcon } from '../travel-icon';
+import { lateBy, linesOf, majorOf, troubleShort } from './plan-model';
 import type { PlanAnswer, PlanNotice, PlanOption } from './plan-model';
 
 /**
@@ -9,8 +10,8 @@ import type { PlanAnswer, PlanNotice, PlanOption } from './plan-model';
  * 2026): a major problem on a line the ways ride, or a major notice on the
  * From or To stop's lines, above What we checked. Its "What to do" points
  * only at what the ways below really offer. On a laptop the board beside the
- * planner may already head with it: one headline a screen, so then the
- * check says it alone.
+ * planner may already head with it: one headline a screen, so then a pill
+ * points at the board's ("Head-desk", 23 Oct 2026).
  */
 
 /** The majors the board beside the planner already heads with. */
@@ -50,6 +51,29 @@ const day = (iso: string | null | undefined) =>
 const rides = (option: PlanOption, lines: string[]) =>
     linesOf(option.journey).some((line) => lines.includes(line));
 
+/** "1 major notice · on the board →": opens on the board's headline. */
+function OnTheBoard({ label }: { label: string }) {
+    return (
+        <button
+            type="button"
+            className="plan-on-board"
+            onClick={() => {
+                const bar = document.querySelector<HTMLButtonElement>(
+                    '#departures .tl-headline-bar',
+                );
+
+                bar?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                bar?.focus({ preventScroll: true });
+            }}
+        >
+            <span className="tl-headline-mark" aria-hidden="true">
+                <TravelIcon name="alert" />
+            </span>
+            {label} · on the board →
+        </button>
+    );
+}
+
 export function PlanHeadline({
     answer,
     options,
@@ -73,7 +97,16 @@ export function PlanHeadline({
         const notice: PlanNotice = major.notice;
 
         if (notice.id && board?.notices.includes(notice.id)) {
-            return null;
+            const count = answer.disruptions.filter(
+                (n) =>
+                    n.scale === 'major' && n.id && board.notices.includes(n.id),
+            ).length;
+
+            return (
+                <OnTheBoard
+                    label={`${count} major notice${count === 1 ? '' : 's'}`}
+                />
+            );
         }
 
         const words = noticeWords(notice);
@@ -106,7 +139,7 @@ export function PlanHeadline({
     const { trouble } = major;
 
     if (board?.lines.includes(trouble.line)) {
-        return null;
+        return <OnTheBoard label={troubleShort(trouble)} />;
     }
 
     const stop = stopName(trouble.stop, answer.city);
