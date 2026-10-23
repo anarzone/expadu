@@ -66,19 +66,27 @@ export function usePlanVisit(placeId: number, name: string, active: boolean) {
             .then((response) =>
                 response.ok ? response.json() : Promise.reject(new Error()),
             )
-            .then((projection: DayProjection) =>
-                setDay({
-                    date,
-                    items: projection.items
-                        .filter((item) => !item.completed)
-                        .map((item) => ({
-                            id: item.id,
-                            title: item.title,
-                            start: item.start_time,
-                            end: item.end_time,
-                        })),
-                }),
-            )
+            .then((projection: DayProjection) => {
+                const entries = projection.items
+                    .filter((item) => !item.completed)
+                    .map((item) => ({
+                        id: item.id,
+                        title: item.title,
+                        start: item.start_time,
+                        end: item.end_time,
+                    }));
+                setDay({ date, items: entries });
+                // From and Until start at the first suggested time, never
+                // an example one (13:00 at 18:44).
+                const now = berlinNow();
+                const first = suggestTimes(
+                    entries,
+                    date === now.date ? minutesOf(now.time)! + 1 : 0,
+                )[0];
+                setTimes((current) =>
+                    current.start || current.end || !first ? current : first,
+                );
+            })
             .catch(() => {});
 
         return () => controller.abort();
@@ -246,7 +254,7 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                         From
                         <TimeField
                             label="Start time"
-                            placeholder="13:00"
+                            placeholder="HH:MM"
                             value={times.start}
                             invalid={!!error}
                             onChange={(start) =>
@@ -259,7 +267,7 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
                         Until
                         <TimeField
                             label="End time"
-                            placeholder="14:00"
+                            placeholder="HH:MM"
                             value={times.end}
                             invalid={!!error}
                             onChange={(end) =>

@@ -49,7 +49,7 @@
 
 /* The head lies over the band: its close button on the band's corner, the
    band itself a handle to drag the sheet down on a phone. */
-.place-sheet .ui-sheet-head {
+.ui-sheet.place-sheet .ui-sheet-head {
     position: absolute;
     inset: 0 0 auto;
     z-index: 3;
@@ -61,11 +61,11 @@
     background: none;
 }
 
-.place-sheet .ui-sheet-head::before {
+.ui-sheet.place-sheet .ui-sheet-head::before {
     content: none;
 }
 
-.place-sheet .ui-sheet-head h2 {
+.ui-sheet.place-sheet .ui-sheet-head h2 {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -74,7 +74,7 @@
     white-space: nowrap;
 }
 
-.place-sheet .ui-sheet-close {
+.ui-sheet.place-sheet .ui-sheet-close {
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -82,7 +82,7 @@
     box-shadow: 0 2px 8px #211d1533;
 }
 
-.place-sheet .ui-sheet-body {
+.ui-sheet.place-sheet .ui-sheet-body {
     position: relative;
     display: flex;
     flex: 1;
@@ -93,7 +93,7 @@
 }
 
 /* Loading, or a place that couldn't open: under the head. */
-.place-sheet-status {
+.ui-sheet.place-sheet .place-sheet-status {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -103,12 +103,12 @@
     font-size: var(--text-small);
 }
 
-.place-sheet-status .place-icon {
+.ui-sheet.place-sheet .place-sheet-status .place-icon {
     width: 18px;
     height: 18px;
 }
 
-.place-sheet .place-icon {
+.ui-sheet.place-sheet .place-icon {
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
@@ -116,7 +116,7 @@
     stroke-linejoin: round;
 }
 
-.place-sheet-scroll {
+.ui-sheet.place-sheet .place-sheet-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -124,7 +124,7 @@
 }
 
 /* A rights-checked photo, or the kind's colour, its icon and "No photo yet". */
-.place-sheet-band {
+.ui-sheet.place-sheet .place-sheet-band {
     --band: #ece6da;
     --band-ink: #4d463a;
     position: relative;
@@ -133,13 +133,13 @@
     background: var(--band);
 }
 
-.place-sheet-band.has-photo img {
+.ui-sheet.place-sheet .place-sheet-band.has-photo img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.place-sheet-band-art {
+.ui-sheet.place-sheet .place-sheet-band-art {
     position: absolute;
     inset: 0;
     display: flex;
@@ -150,18 +150,18 @@
     opacity: 0.16;
 }
 
-.place-sheet-band-art .place-icon {
+.ui-sheet.place-sheet .place-sheet-band-art .place-icon {
     width: 64px;
     height: 64px;
     stroke-width: 1.2;
 }
 
-.place-sheet-band-art .place-icon:nth-child(2) {
+.ui-sheet.place-sheet .place-sheet-band-art .place-icon:nth-child(2) {
     width: 92px;
     height: 92px;
 }
 
-.place-sheet-band-note {
+.ui-sheet.place-sheet .place-sheet-band-note {
     position: absolute;
     bottom: 12px;
     left: 16px;
@@ -172,81 +172,84 @@
     font-size: var(--text-caption);
 }
 
-.place-sheet-band:is([data-kind='restaurant'], [data-kind='fastfood']) {
+.ui-sheet.place-sheet
+    .place-sheet-band:is([data-kind='restaurant'], [data-kind='fastfood']) {
     --band: #f8e8e0;
     --band-ink: #b4441c;
 }
 
-.place-sheet-band:is([data-kind='cafe'], [data-kind='bakery']) {
+.ui-sheet.place-sheet
+    .place-sheet-band:is([data-kind='cafe'], [data-kind='bakery']) {
     --band: #f4ebdf;
     --band-ink: #8a5a1e;
 }
 
-.place-sheet-band[data-kind='grocery'] {
+.ui-sheet.place-sheet .place-sheet-band[data-kind='grocery'] {
     --band: #ddeff1;
     --band-ink: #00687b;
 }
 
-.place-sheet-band[data-kind='pharmacy'] {
+.ui-sheet.place-sheet .place-sheet-band[data-kind='pharmacy'] {
     --band: #e2f0e6;
     --band-ink: #2f7d4f;
 }
 
-.place-sheet-band:is(
-    [data-kind='park'],
-    [data-kind='nature'],
-    [data-kind='playground']
-) {
+.ui-sheet.place-sheet
+    .place-sheet-band:is(
+        [data-kind='park'],
+        [data-kind='nature'],
+        [data-kind='playground']
+    ) {
     --band: #eaf1dc;
     --band-ink: #4e7a12;
 }
 
-.place-sheet-band[data-kind='sports'] {
+.ui-sheet.place-sheet .place-sheet-band[data-kind='sports'] {
     --band: #e1eaf6;
     --band-ink: #1f5fa8;
 }
 
-.place-sheet-band[data-kind='library'] {
+.ui-sheet.place-sheet .place-sheet-band[data-kind='library'] {
     --band: #ece6f4;
     --band-ink: #6b4fa0;
 }
 
-.place-sheet-band[data-kind='culture'] {
+.ui-sheet.place-sheet .place-sheet-band[data-kind='culture'] {
     --band: #f3e4ee;
     --band-ink: #8a3c6e;
 }
 
-.place-sheet-body {
+.ui-sheet.place-sheet .place-sheet-body {
     display: flex;
     flex-direction: column;
     gap: 16px;
     padding: 18px 22px 16px;
 }
 
-.place-sheet-name {
+.ui-sheet.place-sheet .place-sheet-name {
     display: grid;
     gap: 4px;
 }
 
-.place-sheet-name strong {
+.ui-sheet.place-sheet .place-sheet-name strong {
     font-size: 26px;
     line-height: 1.15;
     letter-spacing: -0.5px;
 }
 
-.place-sheet-name span {
+.ui-sheet.place-sheet .place-sheet-name span {
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
 
-.place-chips {
+.ui-sheet.place-sheet .place-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: -6px;
 }
 
-.place-chip {
+.ui-sheet.place-sheet .place-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -259,13 +262,13 @@
     font-weight: var(--weight-semibold);
 }
 
-.place-chip.is-open {
+.ui-sheet.place-sheet .place-chip.is-open {
     background: #e2f0e6;
     color: #2b6b3f;
     font-weight: var(--weight-bold);
 }
 
-.place-chip.is-open i {
+.ui-sheet.place-sheet .place-chip.is-open i {
     width: 7px;
     height: 7px;
     border-radius: 50%;
@@ -273,13 +276,13 @@
 }
 
 /* Only the rows the listing has. */
-.place-known {
+.ui-sheet.place-sheet .place-known {
     display: grid;
     margin: 0;
     border-top: 1px solid var(--color-border);
 }
 
-.place-known > div {
+.ui-sheet.place-sheet .place-known > div {
     display: grid;
     grid-template-columns: 96px 1fr;
     gap: 12px;
@@ -288,11 +291,11 @@
     font-size: var(--text-small);
 }
 
-.place-known dt {
+.ui-sheet.place-sheet .place-known dt {
     color: var(--color-text-soft);
 }
 
-.place-known dd {
+.ui-sheet.place-sheet .place-known dd {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -302,12 +305,12 @@
     font-weight: var(--weight-semibold);
 }
 
-.place-known dd a {
+.ui-sheet.place-sheet .place-known dd a {
     color: var(--color-text);
     overflow-wrap: anywhere;
 }
 
-.place-copy {
+.ui-sheet.place-sheet .place-copy {
     flex: none;
     min-height: 32px;
     padding: 0 10px;
@@ -320,32 +323,32 @@
     font-weight: var(--weight-medium);
 }
 
-.place-week-lines {
+.ui-sheet.place-sheet .place-week-lines {
     display: grid;
     gap: 2px;
     font-weight: var(--weight-regular);
     font-variant-numeric: tabular-nums;
 }
 
-.place-week-lines b {
+.ui-sheet.place-sheet .place-week-lines b {
     display: inline-block;
     min-width: 92px;
     font-weight: var(--weight-semibold);
 }
 
-.place-week-lines .is-today {
+.ui-sheet.place-sheet .place-week-lines .is-today {
     font-weight: var(--weight-bold);
 }
 
-.place-week-lines .is-today::after {
+.ui-sheet.place-sheet .place-week-lines .is-today::after {
     content: ' · today';
     color: var(--color-text-soft);
     font-weight: var(--weight-regular);
 }
 
-.place-contents h3,
-.place-sheet-way h3,
-.place-sheet-plan h3 {
+.ui-sheet.place-sheet .place-contents h3,
+.ui-sheet.place-sheet .place-sheet-way h3,
+.ui-sheet.place-sheet .place-sheet-plan h3 {
     margin: 0 0 8px;
     color: var(--color-text-soft);
     font-size: 12px;
@@ -354,14 +357,14 @@
     text-transform: uppercase;
 }
 
-.place-contents ul {
+.ui-sheet.place-sheet .place-contents ul {
     display: grid;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.place-contents li {
+.ui-sheet.place-sheet .place-contents li {
     display: grid;
     grid-template-columns: 36px 1fr auto;
     gap: 12px;
@@ -371,7 +374,7 @@
     font-size: var(--text-small);
 }
 
-.place-contents-icon {
+.ui-sheet.place-sheet .place-contents-icon {
     display: grid;
     place-items: center;
     width: 36px;
@@ -381,46 +384,46 @@
     color: #4e7a12;
 }
 
-.place-contents-icon .place-icon {
+.ui-sheet.place-sheet .place-contents-icon .place-icon {
     width: 20px;
     height: 20px;
 }
 
-.place-contents li > span:nth-child(2) {
+.ui-sheet.place-sheet .place-contents li > span:nth-child(2) {
     display: grid;
 }
 
-.place-contents small {
+.ui-sheet.place-sheet .place-contents small {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 
-.place-contents em {
+.ui-sheet.place-sheet .place-contents em {
     color: var(--color-text-soft);
     font-size: var(--text-small);
     font-style: normal;
     font-weight: var(--weight-semibold);
 }
 
-.place-sheet-wait {
+.ui-sheet.place-sheet .place-sheet-wait {
     margin: 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 
-.place-sheet-actions button:disabled {
+.ui-sheet.place-sheet .place-sheet-actions button:disabled {
     opacity: 0.5;
     cursor: default;
 }
 
-.place-missing {
+.ui-sheet.place-sheet .place-missing {
     margin: 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
     line-height: 1.45;
 }
 
-.place-sheet-way > div {
+.ui-sheet.place-sheet .place-sheet-way > div {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -429,19 +432,19 @@
     background: #f6f0e4;
 }
 
-.place-sheet-way > div > span .place-icon {
+.ui-sheet.place-sheet .place-sheet-way > div > span .place-icon {
     width: 22px;
     height: 22px;
 }
 
-.place-sheet-way p {
+.ui-sheet.place-sheet .place-sheet-way p {
     flex: 1;
     margin: 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 
-.place-way {
+.ui-sheet.place-sheet .place-way {
     display: inline-flex;
     flex: none;
     align-items: center;
@@ -456,38 +459,38 @@
     text-decoration: none;
 }
 
-.place-sheet-source,
-.place-photo-credit {
+.ui-sheet.place-sheet .place-sheet-source,
+.ui-sheet.place-sheet .place-photo-credit {
     margin: 0;
     color: #8a8173;
     font-size: 11.5px;
 }
 
-.place-sheet-source a,
-.place-photo-credit a {
+.ui-sheet.place-sheet .place-sheet-source a,
+.ui-sheet.place-sheet .place-photo-credit a {
     color: inherit;
 }
 
 /* Slide (Travel's one way to open and close in place): 0fr→1fr in 180 ms
    ease-out, the words fading in and dropping 10 px over 250 ms; it folds
    in 200 ms ease-in. */
-.place-sheet-plan {
+.ui-sheet.place-sheet .place-sheet-plan {
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 
-.place-sheet-plan[data-open='true'] {
+.ui-sheet.place-sheet .place-sheet-plan[data-open='true'] {
     grid-template-rows: 1fr;
     transition: grid-template-rows 180ms ease-out;
 }
 
-.place-sheet-plan-in {
+.ui-sheet.place-sheet .place-sheet-plan-in {
     min-height: 0;
     overflow: hidden;
 }
 
-.place-sheet-plan-in > * {
+.ui-sheet.place-sheet .place-sheet-plan-in > * {
     opacity: 0;
     transform: translateY(-10px);
     transition:
@@ -495,7 +498,10 @@
         transform 120ms ease-in;
 }
 
-.place-sheet-plan[data-open='true'] > .place-sheet-plan-in > * {
+.ui-sheet.place-sheet
+    .place-sheet-plan[data-open='true']
+    > .place-sheet-plan-in
+    > * {
     opacity: 1;
     transform: none;
     transition:
@@ -503,14 +509,14 @@
         transform 250ms ease-out;
 }
 
-.place-sheet-plan-inner {
+.ui-sheet.place-sheet .place-sheet-plan-inner {
     padding: 14px;
     border: 1px solid var(--color-border);
     border-radius: 18px;
 }
 
 /* Plan a visit's own buttons, under its form. */
-.place-sheet-plan .place-sheet-footer {
+.ui-sheet.place-sheet .place-sheet-plan .place-sheet-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -518,29 +524,29 @@
     padding: 12px 0 0;
 }
 
-.place-sheet-plan .place-sheet-footer.is-end {
+.ui-sheet.place-sheet .place-sheet-plan .place-sheet-footer.is-end {
     justify-content: flex-end;
 }
 
-.place-sheet-save {
+.ui-sheet.place-sheet .place-sheet-save {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 40px;
     padding: 8px 12px;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     background: var(--color-bg-surface);
     color: var(--color-text);
     font: inherit;
-    font-size: var(--text-caption);
-    font-weight: var(--weight-medium);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
     white-space: nowrap;
     cursor: pointer;
 }
 
 /* Save / Share / Plan a visit at the foot. */
-.place-sheet-actions {
+.ui-sheet.place-sheet .place-sheet-actions {
     display: flex;
     flex: none;
     align-items: center;
@@ -550,15 +556,17 @@
     background: var(--color-bg-surface);
 }
 
-.place-sheet-secondary,
-.place-sheet-primary {
+/* Buttons that read as buttons (owner, 23 Oct 2026): Save and Share
+   outlined, the one main action filled, 40px. */
+.ui-sheet.place-sheet .place-sheet-secondary,
+.ui-sheet.place-sheet .place-sheet-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 44px;
+    min-height: 40px;
     padding: 0 14px;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
     font: inherit;
     font-size: var(--text-small);
@@ -566,54 +574,62 @@
     cursor: pointer;
 }
 
-.place-sheet-secondary {
+.ui-sheet.place-sheet .place-sheet-secondary {
+    border-color: var(--color-border-strong);
     background: var(--color-bg-surface);
     color: var(--color-text);
     font-weight: var(--weight-semibold);
 }
 
-.place-sheet-secondary .place-icon {
+.ui-sheet.place-sheet .place-sheet-secondary .place-icon {
     width: 18px;
     height: 18px;
 }
 
-.place-sheet-secondary[aria-pressed='true'] .place-icon {
+.ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] .place-icon {
     fill: currentColor;
 }
 
-.place-sheet-primary {
-    background: var(--color-text);
-    color: var(--color-bg-surface);
+.ui-sheet.place-sheet .place-sheet-primary {
+    background: var(--color-action);
+    color: var(--color-text-on-action);
     font-weight: var(--weight-bold);
 }
 
-.place-sheet-primary:disabled {
+.ui-sheet.place-sheet .place-sheet-primary:disabled {
     opacity: 0.6;
     cursor: default;
 }
 
-.place-sheet-actions > :last-child[aria-expanded] {
+.ui-sheet.place-sheet .place-sheet-actions > :last-child[aria-expanded] {
     margin-left: auto;
 }
 
+/* Plan a visit open: the same button, outlined; a tap folds it back. */
+.ui-sheet.place-sheet .place-sheet-actions > [aria-expanded='true'] {
+    border-color: var(--color-border-strong);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+
 @media (max-width: 700px) {
-    .place-sheet .ui-sheet-head,
-    .place-sheet-band {
+    .ui-sheet.place-sheet .ui-sheet-head,
+    .ui-sheet.place-sheet .place-sheet-band {
         height: 118px;
     }
 
-    .place-sheet-body {
+    .ui-sheet.place-sheet .place-sheet-body {
         padding: 14px 16px 12px;
     }
 
-    .place-sheet-name strong {
+    .ui-sheet.place-sheet .place-sheet-name strong {
         font-size: 24px;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .place-sheet-plan,
-    .place-sheet-plan-in > * {
+    .ui-sheet.place-sheet .place-sheet-plan,
+    .ui-sheet.place-sheet .place-sheet-plan-in > * {
         transition: none;
     }
 }

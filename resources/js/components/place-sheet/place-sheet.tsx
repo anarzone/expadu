@@ -597,7 +597,10 @@ function PlaceDetail({
     const missing = openSpace
         ? []
         : [
-              week ? '' : 'hours',
+              // The "No hours listed" chip says it already.
+              week || chips.some((c) => c.text === 'No hours listed')
+                  ? ''
+                  : 'hours',
               address || area ? '' : 'address',
               wheelchair ? '' : 'wheelchair access',
               website ? '' : 'website',
@@ -913,15 +916,11 @@ function PlaceDetail({
                 {d.recommendation_status !== 'unavailable' ? (
                     <button
                         type="button"
-                        className={cn(
-                            planning
-                                ? 'place-sheet-secondary'
-                                : 'place-sheet-primary',
-                        )}
+                        className="place-sheet-primary"
                         aria-expanded={planning}
                         onClick={() => setPlanning(!planning)}
                     >
-                        {planning ? 'Hide planning' : 'Plan a visit'}
+                        Plan a visit
                     </button>
                 ) : null}
             </div>
