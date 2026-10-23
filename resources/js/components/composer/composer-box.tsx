@@ -97,6 +97,30 @@ export function ComposerBox({
         box.style.height = `${Math.min(box.scrollHeight, 120)}px`;
     }, [value, fieldRef]);
 
+    // Measured again when its width changes (a panel that opened hidden, a
+    // rotated phone), so a waiting request never keeps a stale height.
+    useEffect(() => {
+        const box = fieldRef.current;
+
+        if (!box) {
+            return;
+        }
+
+        let width = box.clientWidth;
+        const observer = new ResizeObserver(() => {
+            if (box.clientWidth === width) {
+                return;
+            }
+
+            width = box.clientWidth;
+            box.style.height = 'auto';
+            box.style.height = `${Math.min(box.scrollHeight, 120)}px`;
+        });
+        observer.observe(box);
+
+        return () => observer.disconnect();
+    }, [fieldRef]);
+
     // A tap or focus outside closes the menu.
     useEffect(() => {
         if (!open) {

@@ -723,14 +723,12 @@ html {
         outline: 2px solid var(--color-focus);
         outline-offset: 3px;
     }
-    /* Scrolling down: the menu and Composer's button step away (the
-       shell's, or Composer's own on its page, as the mock's section-bar.css
-       has it), so Composer's text box can take the menu's place; moving
+    /* Scrolling down: the menu and Composer's button step away (as the
+       mock's section-bar.css has it), so Composer's text box can take the menu's place; moving
        into the menu with the keyboard keeps it. Out of the way while the
        keyboard is open, back as it closes. */
     body.menu-away .shell-nav:not(:focus-within),
     body.menu-away .shell-composer-round:not(:focus),
-    body.menu-away .composer-here:not(:focus),
     :root.keyboard-open :is(.shell-nav, .shell-composer-round) {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
@@ -757,7 +755,7 @@ html {
 }
 
 /* ── Composer's tray: one panel to ask in from any page, the box at its foot
-   (owner, 22 Oct 2026: "anchor at the bottom"). On phones it opens above the
+   (owner, 22 Oct 2026: "anchor at the bottom"). On phones it takes the screen over the
    floating sections; from 701px it rises at the foot of the screen, centred,
    with the page dimmed behind it. The panel grows up from the box. ─────── */
 .composer-tray {
@@ -794,6 +792,13 @@ html {
 :is(.composer-tray, .composer-box) svg {
     width: 20px;
     height: 20px;
+}
+/* On a phone the panel is Full Composer (owner, 23 Oct 2026): over the
+   floating sections too, its foot at the screen's. */
+@media (max-width: 700px) {
+    .composer-tray {
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
 }
 :root.keyboard-open .composer-tray {
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
@@ -982,7 +987,7 @@ html {
     background: var(--color-select-text);
     color: var(--color-text-on-action);
 }
-.composer-tray .composer-tray-mark svg {
+:is(.composer-tray, .composer-full-head) .composer-tray-mark svg {
     width: 14px;
     height: 14px;
 }
@@ -1003,6 +1008,17 @@ html {
     white-space: nowrap;
     text-overflow: ellipsis;
     text-decoration: none;
+}
+.composer-mode-short {
+    display: none;
+}
+@media (max-width: 700px) {
+    .composer-mode-long {
+        display: none;
+    }
+    .composer-mode-short {
+        display: inline;
+    }
 }
 .composer-mode-chip:active {
     background: var(--color-bg-hover, var(--color-border));
@@ -1039,7 +1055,9 @@ html {
     height: 40px;
     margin-left: -8px;
 }
-.composer-tray :is(.composer-tray-full, .composer-tray-head-button) svg {
+:is(.composer-tray, .composer-full-head)
+    :is(.composer-tray-full, .composer-tray-head-button)
+    svg {
     width: 17px;
     height: 17px;
 }

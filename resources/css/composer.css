@@ -94,98 +94,72 @@
     min-height: 32px;
     flex: none;
 }
-.composer-empty {
-    display: block !important;
-    font-size: 13px;
-    color: var(--muted-foreground);
-    line-height: 1.7;
-    padding: 18px 0;
-}
 .composer-search {
     display: flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    padding: 10px 13px;
-    color: #647c84;
-    background: var(--card);
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+}
+.composer-search svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
 }
 .composer-search input {
-    outline: 0;
     width: 100%;
-    background: transparent;
-    font-size: 14px;
     min-height: 24px;
+    border: 0;
+    outline-offset: 4px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 16px;
 }
-.composer-category-rail {
+/* Add a place or event: the kinds as the app names them, then the rows. */
+.composer-catalogue {
     display: flex;
-    overflow-x: auto;
-    gap: 7px;
-    margin: 12px 0 16px;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
+    flex-direction: column;
+    gap: 12px;
 }
-.composer-category-rail button {
+.composer-kinds {
+    display: flex;
+    gap: 6px;
+    margin: 0 calc(-1 * var(--gutter, 0px));
+    padding: 0 var(--gutter, 0px) 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.composer-page .composer-kinds button {
     flex: none;
     min-height: 36px;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 30px;
-    font-size: 11px;
-    text-transform: capitalize;
-}
-.composer-category-rail button[aria-pressed='true'] {
-    background: #e4f1f4;
-    border-color: #9dcbd7;
-    color: #356774;
-}
-.composer-options {
-    display: grid;
-    gap: 8px;
-}
-.composer-catalogue.is-compact .composer-options {
-    max-height: 252px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 3px 5px 3px 0;
-    scrollbar-width: thin;
-}
-.composer-option {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    border: 1px solid var(--composer-line, var(--border));
-    border-radius: 14px;
-    background: var(--composer-paper, var(--card));
-}
-.composer-option-choose {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-    padding: 13px;
-    min-width: 0;
-    color: var(--composer-blue, #356774);
-}
-.composer-option-choose > span {
-    flex: 1;
-    min-width: 0;
-}
-.composer-option strong {
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
     font-size: 13px;
     font-weight: 600;
-    display: block;
-    overflow-wrap: anywhere;
+    cursor: pointer;
 }
-.composer-option small {
-    font-size: 11px;
-    margin-top: 5px;
-    color: var(--composer-muted, #647c84);
-    display: block;
+.composer-page .composer-kinds button[aria-pressed='true'] {
+    border-color: var(--color-select-text);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
 }
-.composer-option > .composer-preview-trigger {
+.composer-page .composer-icon-button.is-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+.composer-page .composer-icon-button.is-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.composer-preview-trigger {
     padding: 10px;
     min-height: 42px;
     color: var(--composer-muted, #647c84);
@@ -1743,9 +1717,11 @@
     background: var(--color-bg-canvas);
     animation: place-map-in 250ms var(--ease-settle);
 }
+/* Slide (the canvas's): it fades in, dropping 10px into place. */
 @keyframes place-map-in {
     from {
-        transform: translateX(100%);
+        opacity: 0;
+        transform: translateY(-10px);
     }
 }
 .place-map-bar {
@@ -1760,7 +1736,7 @@
     font-size: 15px;
     font-weight: 700;
 }
-.place-map-close {
+.place-map-layer .place-map-close {
     flex: none;
     min-height: 44px;
     padding: 0 14px;
@@ -2169,9 +2145,13 @@
 }
 .composer-page .composer-paper-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 4px 10px;
+}
+.composer-page .composer-paper-head > * {
+    white-space: nowrap;
 }
 .composer-page .composer-in-plans {
     display: inline-flex;
@@ -2803,19 +2783,24 @@
     color: var(--color-text-soft);
     font-size: 12px;
 }
+/* A phone: Full Composer is the panel at full height (owner, 23 Oct 2026;
+   the canvas, phone): its own head, no app header or floating sections. */
 @media (max-width: 700px) {
+    :root:has(#composer-page) .shell-header {
+        display: none;
+    }
     .composer-full {
         padding: 0;
+    }
+    .composer-full .composer-full-head {
+        align-self: stretch;
+        background: var(--color-bg-canvas);
     }
     .composer-full .composer-column-scroll {
         --gutter: 16px;
         padding: 18px var(--gutter) 16px;
     }
     .composer-full .composer-column-foot {
-        padding: 0 12px
-            calc(var(--menu-gap, 16px) + var(--menu-height, 0px) + 10px);
-    }
-    :root.keyboard-open .composer-full .composer-column-foot {
-        padding-bottom: 12px;
+        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
     }
 }

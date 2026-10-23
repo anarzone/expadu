@@ -23,36 +23,70 @@ let map: Promise<MaplibreMap> | null = null;
 let queue: Promise<unknown> = Promise.resolve();
 
 function hiddenMap(): Promise<MaplibreMap> {
-    map ??= loadBasemap().then(
-        (basemap) =>
-            new Promise<MaplibreMap>((resolve, reject) => {
-                const box = document.createElement('div');
-                box.setAttribute('aria-hidden', 'true');
-                Object.assign(box.style, {
-                    position: 'fixed',
-                    left: '-10000px',
-                    top: '0',
-                    width: `${WIDTH}px`,
-                    height: `${HEIGHT}px`,
-                    opacity: '0',
-                    pointerEvents: 'none',
-                });
-                document.body.append(box);
-                const created = new basemap.maplibregl.Map({
-                    container: box,
-                    style: basemap.style(false),
-                    center: [6.957, 50.938],
-                    zoom: ZOOM,
-                    interactive: false,
-                    attributionControl: false,
-                    canvasContextAttributes: { preserveDrawingBuffer: true },
-                });
-                created.once('load', () => resolve(created));
-                created.once('error', () => reject(new Error('map')));
-            }),
-    );
+    map ??= loadBasemap()
+        .then(
+            (basemap) =>
+                new Promise<MaplibreMap>((resolve, reject) => {
+                    const box = document.createElement('div');
+                    box.setAttribute('aria-hidden', 'true');
+                    Object.assign(box.style, {
+                        position: 'fixed',
+                        left: '-10000px',
+                        top: '0',
+                        width: `${WIDTH}px`,
+                        height: `${HEIGHT}px`,
+                        opacity: '0',
+                        pointerEvents: 'none',
+                    });
+                    document.body.append(box);
+                    const created = new basemap.maplibregl.Map({
+                        container: box,
+                        style: basemap.style(false),
+                        center: [6.957, 50.938],
+                        zoom: ZOOM,
+                        interactive: false,
+                        attributionControl: false,
+                        canvasContextAttributes: {
+                            preserveDrawingBuffer: true,
+                        },
+                    });
+                    created.once('load', () => resolve(created));
+                    created.once('error', () => reject(new Error('map')));
+                }),
+        )
+        .catch((reason) => {
+            // Offline or refused: the next try starts a new map.
+            map = null;
+
+            throw reason;
+        });
 
     return map;
+}
+
+/** Whether the map came out as one flat colour (its tiles hadn't painted). */
+function blank(canvas: HTMLCanvasElement): boolean {
+    const probe = document.createElement('canvas');
+    probe.width = 24;
+    probe.height = 16;
+    const context = probe.getContext('2d', { willReadFrequently: true });
+
+    if (!context) {
+        return false;
+    }
+
+    context.drawImage(canvas, 0, 0, probe.width, probe.height);
+    const { data } = context.getImageData(0, 0, probe.width, probe.height);
+    let low = 255;
+    let high = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const light = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        low = Math.min(low, light);
+        high = Math.max(high, light);
+    }
+
+    return high - low < 6;
 }
 
 /** The place's spot, drawn once and kept for as long as the page is open. */
@@ -86,6 +120,12 @@ function draw(key: string, lat: number, lng: number): Promise<string> {
                 });
                 m.triggerRepaint();
             });
+
+            // A page out of sight paints nothing: a canvas without its streets
+            // is never kept, so the card tries again once it can be seen.
+            if (!m.areTilesLoaded() || blank(m.getCanvas())) {
+                throw new Error('blank');
+            }
 
             const image = m.getCanvas().toDataURL('image/webp', 0.82);
             done.set(key, image);
@@ -130,10 +170,27 @@ export function usePlacePreview(
 
                 observer.disconnect();
                 // After the answer has painted: the map waits for an idle moment.
+                // A blank one (the page out of sight) tries again when it's seen,
+                // a few times at most; offline, the tinted band stays.
+                let tries = 0;
                 const start = () =>
                     void draw(key, lat, lng)
                         .then((url) => live && setImage(url))
-                        .catch(() => undefined);
+                        .catch(() => {
+                            if (!live || ++tries > 3) {
+                                return;
+                            }
+
+                            if (document.visibilityState !== 'visible') {
+                                document.addEventListener(
+                                    'visibilitychange',
+                                    start,
+                                    { once: true },
+                                );
+                            } else {
+                                window.setTimeout(start, 4000);
+                            }
+                        });
 
                 if (typeof window.requestIdleCallback === 'function') {
                     window.requestIdleCallback(start, { timeout: 1500 });

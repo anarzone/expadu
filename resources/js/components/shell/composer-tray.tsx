@@ -12,12 +12,14 @@ import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
 import { AskFirstChip } from '@/components/composer/ask-first-chip';
 import { ComposerBox } from '@/components/composer/composer-box';
+import type { MenuPick } from '@/components/composer/composer-box';
 import { useComposerStart } from '@/components/composer/origin-store';
 import type {
     TrayAsked,
     TrayPick,
     TrayView,
 } from '@/components/composer/tray-body';
+import type { ComposerView } from '@/components/composer/views';
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 
@@ -53,6 +55,21 @@ let stopClosing: (() => void) | null = null;
 export function openComposerTray(): void {
     stopClosing?.();
     setOpen(true);
+}
+
+// A view to open with it (the header's bookmark: Saved, in place), taken once.
+const opening: { view: MenuPick | null } = { view: null };
+const takeOpening = (): MenuPick | null => {
+    const view = opening.view;
+    opening.view = null;
+
+    return view;
+};
+
+/** Opens Composer at one of its views: in the panel, or in place on Composer's own page. */
+export function openComposerView(view: MenuPick): void {
+    opening.view = view;
+    openComposerTray();
 }
 
 // A conversation kept after closing (B): the dot on what opens Composer, and the way back.
@@ -122,6 +139,8 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const backed = useRef(false);
     // The conversation's day in focus, once the answer has loaded it.
     const [focusDay, setFocusDay] = useState<string | null>(null);
+    // What the conversation's place shows: a view's ‹ goes back to the conversation.
+    const [inner, setInner] = useState<ComposerView>('chat');
     const talked = useComposerKept();
     // Where the dim starts (under the header when Composer opens from it), and
     // where the way back sits (under the header's button, or in the corner).
@@ -369,8 +388,8 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         return () => document.removeEventListener('pointerdown', onPointer);
     }, [isOpen]);
 
-    // The panel grows up from the box, at most to 12px under the page's header;
-    // the keyboard counts.
+    // The panel grows up from the box, at most to 12px under the page's header
+    // (on a phone, all the way); the keyboard counts.
     useLayoutEffect(() => {
         const box = tray.current;
         const element = panel.current;
@@ -383,10 +402,16 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             const header =
                 document.querySelector('.shell-header')?.getBoundingClientRect()
                     .bottom ?? 0;
-            element.style.maxHeight = `${Math.max(
+            const room = `${Math.max(
                 160,
                 box.getBoundingClientRect().top - Math.max(12, header + 12),
             )}px`;
+            element.style.maxHeight = room;
+            // On a phone the panel is Full Composer: it takes all of that room.
+            element.style.height = window.matchMedia('(max-width: 700px)')
+                .matches
+                ? room
+                : '';
         };
 
         fit();
@@ -453,11 +478,33 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         close();
     };
 
-    // On Composer's own page there is no tray: asking Composer means its box.
+    // On Composer's own page there is no tray: asking Composer means its box,
+    // and a view opens there in place.
     useEffect(() => {
         if (onComposer && isOpen) {
-            document.getElementById('studio-request')?.focus();
+            const view = takeOpening();
+
+            if (view) {
+                window.dispatchEvent(
+                    new CustomEvent('composer:view', { detail: view }),
+                );
+            } else {
+                document.getElementById('studio-request')?.focus();
+            }
+
             setOpen(false);
+        }
+    }, [onComposer, isOpen]);
+
+    // Opened at a view: it opens in the panel, as the + menu opens it.
+    useEffect(() => {
+        const view = !onComposer && isOpen ? takeOpening() : null;
+
+        if (view) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- A request from outside React (the header's bookmark), taken once.
+            setPick({ id: Date.now(), pick: view });
+            setView('talk');
+            setKept(true);
         }
     }, [onComposer, isOpen]);
 
@@ -543,8 +590,21 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 <button
                                     type="button"
                                     className="composer-tray-head-button"
-                                    aria-label="Back to recent conversations"
+                                    aria-label={
+                                        inner === 'chat'
+                                            ? 'Back to recent conversations'
+                                            : 'Back to the conversation'
+                                    }
                                     onClick={() => {
+                                        if (inner !== 'chat') {
+                                            setPick({
+                                                id: Date.now(),
+                                                pick: 'chat',
+                                            });
+
+                                            return;
+                                        }
+
                                         backed.current = true;
                                         setView('start');
                                     }}
@@ -591,6 +651,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                     });
                                 }}
                                 onFocus={setFocusDay}
+                                onView={setInner}
                                 onDraft={(words) => {
                                     setText(words);
                                     field.current?.focus({

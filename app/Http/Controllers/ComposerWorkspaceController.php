@@ -15,6 +15,7 @@ use App\Http\Requests\Composer\WorkspaceCommandRequest;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\Task;
+use App\Places\AroundKinds;
 use App\Services\UserLocationService;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
@@ -101,10 +102,22 @@ class ComposerWorkspaceController extends Controller
         return response()->json(['items' => array_values(array_map(function (Candidate $candidate) use ($day, $saved): array {
             $start = $candidate->fixedStart ?? $day->setTime(10, 0);
 
+            $spot = $candidate->type === 'spot';
+
             return (new PlanSlot($candidate, $start, $start->addMinutes($candidate->typicalDurationMin), 0))->toArray() + [
                 'summary' => $candidate->description,
                 'saved' => in_array($candidate->id, $saved, true),
                 'available' => ! $candidate->closedToday,
+                // As Around here names and colours it: "Café", in its kind's group ("Cafés").
+                'label' => $spot ? AroundKinds::label($candidate->category) : 'Event',
+                'kind' => $spot ? AroundKinds::icon($candidate->category) : 'event',
+                'group' => $spot ? (AroundKinds::group($candidate->category) ?: AroundKinds::label($candidate->category)) : 'Events',
+                // The day's listed hours only: category defaults are "not listed", never shown as hours.
+                'hours' => ! $spot ? null : match (true) {
+                    $candidate->closedToday => 'Closed on this day',
+                    $candidate->hoursAssumed || $candidate->opensAt === null || $candidate->closesAt === null => 'Hours not listed',
+                    default => 'Open '.$candidate->opensAt->setTimezone('Europe/Berlin')->format('H:i').'–'.$candidate->closesAt->setTimezone('Europe/Berlin')->format('H:i'),
+                },
             ];
         }, $pool))]);
     }

@@ -1,9 +1,18 @@
 import { Head, Link, router, usePage, useRemember } from '@inertiajs/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from 'react';
 import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
+import { AskFirstChip } from '@/components/composer/ask-first-chip';
 import { ComposerBox } from '@/components/composer/composer-box';
+import type { MenuPick } from '@/components/composer/composer-box';
 import type { DayAround, PaperworkGlance } from '@/components/composer/day';
+import { useComposerOrigin } from '@/components/composer/day';
 import {
     readComposerEntry,
     eventCandidate,
@@ -35,6 +44,21 @@ import { timetable } from '@/routes';
 import type { DayProjection } from '@/types/day';
 import '../../css/composer.css';
 import '../../css/composer-page.css';
+
+/** A phone (the app's 700px): Full Composer is the panel at full height there. */
+const PHONE = '(max-width: 700px)';
+function usePhone(): boolean {
+    return useSyncExternalStore(
+        (notify) => {
+            const query = window.matchMedia(PHONE);
+            query.addEventListener('change', notify);
+
+            return () => query.removeEventListener('change', notify);
+        },
+        () => window.matchMedia(PHONE).matches,
+        () => false,
+    );
+}
 
 const weekday = (date: string) =>
     new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(
@@ -88,6 +112,8 @@ export default function ComposerPage({
     const root = useRef<HTMLDivElement>(null);
     const textarea = useRef<HTMLTextAreaElement>(null);
     const isMobile = useIsMobile();
+    const phone = usePhone();
+    const cameFrom = useComposerOrigin();
     const [entry, setEntry] = useState<ComposerEntry | null>(() =>
         readComposerEntry(page.url),
     );
@@ -124,7 +150,7 @@ export default function ComposerPage({
         onFailed: (text) => setInput((existing) => existing || text),
         focusBox,
     });
-    const { engine, view, setView, openAppointment } = surface;
+    const { engine, view, setView, openAppointment, fresh } = surface;
     const { workspace, busy, command, send, stateRef } = engine;
     const conversation = workspace.conversations.find(
         (item) => item.id === workspace.active,
@@ -160,6 +186,22 @@ export default function ComposerPage({
             window.visualViewport?.removeEventListener('resize', measure);
         };
     }, []);
+
+    // The header's bookmark opens Saved here, in place.
+    useEffect(() => {
+        const open = (event: Event) => {
+            const pick = (event as CustomEvent<MenuPick>).detail;
+
+            if (pick === 'fresh') {
+                void fresh();
+            } else {
+                setView(pick);
+            }
+        };
+        window.addEventListener('composer:view', open);
+
+        return () => window.removeEventListener('composer:view', open);
+    }, [setView, fresh]);
 
     // My Plans, Saved and History keep `?panel=` in the address.
     useEffect(() => {
@@ -307,11 +349,7 @@ export default function ComposerPage({
             fieldRef={textarea}
             fieldId="studio-request"
             value={input}
-            label={
-                conversation?.messages.length
-                    ? 'Continue with Composer'
-                    : 'What can I help you with?'
-            }
+            label="Your request to Composer"
             placeholder={
                 !conversation?.messages.length
                     ? 'Ask, discover, or plan…'
@@ -352,7 +390,40 @@ export default function ComposerPage({
                     className="composer-column"
                     data-layer-host
                 >
+                    {phone && (
+                        // The panel's head (the canvas, phone): ‹ back from a
+                        // view, and ✕ to the page Composer was opened from.
+                        <header className="composer-tray-head composer-full-head">
+                            {view !== 'chat' && (
+                                <button
+                                    type="button"
+                                    className="composer-tray-head-button"
+                                    aria-label="Back to the conversation"
+                                    onClick={() => setView('chat')}
+                                >
+                                    <Icon name="back" variant="line" />
+                                </button>
+                            )}
+                            <span
+                                className="composer-tray-mark"
+                                aria-hidden="true"
+                            >
+                                <Icon name="spark" variant="line" />
+                            </span>
+                            <strong>Composer</strong>
+                            <AskFirstChip />
+                            <button
+                                type="button"
+                                className="composer-tray-head-button"
+                                aria-label={`Close Composer, back to ${cameFrom.name}`}
+                                onClick={() => router.visit(cameFrom.url)}
+                            >
+                                <Icon name="close" variant="line" />
+                            </button>
+                        </header>
+                    )}
                     <ComposerSurface
+                        backLink={!phone}
                         surface={surface}
                         context={{ day, paperwork, around, savedPlaces }}
                         className="composer-column-scroll"
@@ -403,17 +474,6 @@ export default function ComposerPage({
                         {box}
                     </div>
                 </main>
-                {/* Phones: Composer's round button, where you are (focuses the box). */}
-                <button
-                    type="button"
-                    className="composer-here"
-                    aria-current="page"
-                    aria-label="Composer, where you are. Write your request"
-                    title="Composer"
-                    onClick={focusBox}
-                >
-                    <Icon name="spark" variant="line" />
-                </button>
             </div>
         </>
     );

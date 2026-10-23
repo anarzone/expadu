@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
 import { catalogue } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
@@ -77,6 +77,12 @@ export function conversationMeta(conversation: Conversation): string {
     return `${day} · ${plural(asked, 'message')}`;
 }
 
+/**
+ * Whether a view draws its own way back: Full Composer's column does; the
+ * panel and a phone have the head's ‹ instead (one way back, not two).
+ */
+export const ViewBackLink = createContext(true);
+
 /** A view's top: the way back to the conversation, its title and what it's for. */
 function ViewTop({
     title,
@@ -89,26 +95,32 @@ function ViewTop({
     onBack: () => void;
     aside?: ReactNode;
 }) {
+    const link = useContext(ViewBackLink);
     const back = useRef<HTMLButtonElement>(null);
+    const heading = useRef<HTMLHeadingElement>(null);
 
-    // Opening a view puts the focus on its way back, as a new page would.
+    // Opening a view puts the focus on its way back (or its title), as a new page would.
     useEffect(() => {
-        back.current?.focus({ preventScroll: true });
+        (back.current ?? heading.current)?.focus({ preventScroll: true });
     }, []);
 
     return (
         <>
-            <button
-                ref={back}
-                type="button"
-                className="composer-view-back"
-                onClick={onBack}
-            >
-                <Icon name="back" variant="line" />
-                Back to the conversation
-            </button>
+            {link && (
+                <button
+                    ref={back}
+                    type="button"
+                    className="composer-view-back"
+                    onClick={onBack}
+                >
+                    <Icon name="back" variant="line" />
+                    Back to the conversation
+                </button>
+            )}
             <div className="composer-view-head">
-                <h2>{title}</h2>
+                <h2 ref={heading} tabIndex={-1}>
+                    {title}
+                </h2>
                 {aside}
             </div>
             {sub && <p className="composer-view-sub">{sub}</p>}

@@ -12,14 +12,15 @@ import type { SurfaceContext } from './surface';
 import { api } from './types';
 import type { Conversation, Workspace } from './types';
 import { conversationMeta } from './views';
+import type { ComposerView } from './views';
 import '../../../css/composer.css';
 import '../../../css/composer-page.css';
 
 /** A request the tray sent: asked once, by its id; `fresh` from the panel's start. */
 export type TrayAsked = { id: number; text: string; fresh: boolean };
 
-/** A + menu choice, made once, by its id. */
-export type TrayPick = { id: number; pick: MenuPick };
+/** A + menu choice (or the head's ‹ back to the conversation), made once, by its id. */
+export type TrayPick = { id: number; pick: MenuPick | 'chat' };
 
 /** What the panel shows: its start, or the conversation (and what the menu opened there). */
 export type TrayView = 'start' | 'talk';
@@ -41,10 +42,13 @@ export default function TrayBody({
     onOpen,
     onFocus,
     onDraft,
+    onView,
 }: {
     view: TrayView;
     asked: TrayAsked | null;
     pick: TrayPick | null;
+    /** What the conversation's place shows: the conversation or a view (the head's ‹ follows). */
+    onView: (view: ComposerView) => void;
     /** The AI line the tray shows: every request sent from it is under it. */
     notice: AiNotice | null;
     /** A conversation (or a view) opened from the start: the panel shows it. */
@@ -104,6 +108,7 @@ export default function TrayBody({
             onOpen={onOpen}
             onFocus={onFocus}
             onDraft={onDraft}
+            onView={onView}
         />
     );
 }
@@ -127,6 +132,7 @@ function Body({
     onOpen,
     onFocus,
     onDraft,
+    onView,
 }: {
     initial: Workspace;
     context: SurfaceContext;
@@ -137,6 +143,7 @@ function Body({
     onOpen: () => void;
     onFocus: (date: string | null) => void;
     onDraft: (text: string) => void;
+    onView: (view: ComposerView) => void;
 }) {
     const surface = useComposerSurface(initial, notice, {
         focusBox,
@@ -154,6 +161,9 @@ function Body({
     useEffect(() => {
         onFocus(focus);
     }, [focus, onFocus]);
+    useEffect(() => {
+        onView(surface.view);
+    }, [surface.view, onView]);
 
     // Each request the tray sends, asked once. From the start it's a new
     // conversation, as an empty box suggests; the one before stays in History.
@@ -290,6 +300,7 @@ function Body({
             className="composer-tray-body composer-page"
             focusBox={focusBox}
             draft={onDraft}
+            backLink={false}
         />
     );
 }

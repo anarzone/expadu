@@ -28,6 +28,7 @@ import {
     OriginView,
     PlansView,
     SavedView,
+    ViewBackLink,
 } from './views';
 import type { Collection, ComposerView } from './views';
 
@@ -166,10 +167,13 @@ export function ComposerSurface({
     className,
     focusBox,
     draft,
+    backLink = true,
 }: {
     surface: Surface;
     context: SurfaceContext;
     className: string;
+    /** Whether a view draws its own way back (Full Composer on a laptop). */
+    backLink?: boolean;
     focusBox: () => void;
     /** Words in the box for them to finish. */
     draft: (text: string) => void;
@@ -605,7 +609,9 @@ export function ComposerSurface({
                     }
                 }}
             >
-                {body}
+                <ViewBackLink.Provider value={backLink}>
+                    {body}
+                </ViewBackLink.Provider>
             </div>
             {detail?.place && !destination && (
                 <PlaceDetailModal

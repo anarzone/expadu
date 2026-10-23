@@ -348,6 +348,11 @@ export function PlaceMapLayer({
                 });
                 map.current = m;
                 m.on('load', () => {
+                    // The credit folds to its ⓘ, so it never covers a pin.
+                    box.current
+                        ?.querySelector('.maplibregl-ctrl-attrib')
+                        ?.classList.remove('maplibregl-compact-show');
+
                     const points = [
                         ...pinned.map((c) => c.point!),
                         ...(from ? [from] : []),

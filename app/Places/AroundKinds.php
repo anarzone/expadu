@@ -88,6 +88,12 @@ final class AroundKinds
         return $kind === 'green' ? ($category === SpotCategory::Nature->value ? 'nature' : 'park') : $kind;
     }
 
+    /** What the category's kind is called as a group ("Cafés", "Parks & nature"); '' when it has none. */
+    public static function group(string $category): string
+    {
+        return self::KINDS[self::of($category)][0] ?? '';
+    }
+
     /** What one place of the category is called. */
     public static function label(string $category): string
     {
