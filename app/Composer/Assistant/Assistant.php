@@ -126,7 +126,7 @@ final class Assistant
     private const LEANS = '/^(also|or|and|but|so|then)\b|\b(the same|that one)\b/iu';
 
     /** Cards of the person's own and questions back: shown whenever they were looked up. */
-    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+)$/';
+    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+b?)$/';
 
     /** The last answer as written, before the checks (composer:eval reads what was dropped). */
     public ?array $written = null;

@@ -31,8 +31,11 @@ final class AroundCheck
         // Order and place words a sentence starts with ("After that…", "Near you…", "Everything I found…").
         'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything',
         'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we',
+        // "Other options…", "None of these…", "Opening hours aren't listed…", "Their hours…", "Eight pharmacies…".
+        'other', 'others', 'another', 'none', 'opening', 'their', 'its', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'many', 'several', 'more',
         // Kinds of place a sentence may start with ("Places can't be filtered…", "Cafés near you…").
-        'places', 'restaurants', 'cafés', 'cafes', 'bars', 'pubs', 'libraries', 'museums', 'parks', 'playgrounds', 'pitches', 'gyms',
+        'places', 'restaurants', 'cafés', 'cafes', 'bars', 'pubs', 'libraries', 'museums', 'parks', 'playgrounds', 'pitches', 'gyms', 'gym',
+        'coworking', 'pools', 'climbing',
         'shops', 'bakeries', 'pharmacies', 'supermarkets', 'events', 'concerts', 'listings'];
 
     /** Claims a sentence may make only when its items make them too. */

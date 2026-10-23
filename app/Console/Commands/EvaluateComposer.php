@@ -224,7 +224,8 @@ class EvaluateComposer extends Command
         $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
         $routing += isset($expect['acted']) ? ['acted' => $called($expect['acted'])] : [];
         $routing += isset($expect['changed']) ? ['changed' => $changed->contains('state', $expect['changed'])] : [];
-        $routing += isset($expect['handoff']) ? ['handoff' => collect($answer['blocks'] ?? [])->contains(fn (array $b): bool => ($b['type'] ?? null) === 'handoff' && $b['what'] === $expect['handoff'])] : [];
+        // Every place handed over that's expected (one, or both ways of stopping).
+        $routing += isset($expect['handoff']) ? ['handoff' => array_diff((array) $expect['handoff'], array_column(array_filter($answer['blocks'] ?? [], fn (array $b): bool => ($b['type'] ?? null) === 'handoff'), 'what')) === []] : [];
         $routing += ($expect['no_change'] ?? false) ? ['no_change' => $changed->isEmpty()] : [];
         // What the answer must say (a fact that isn't listed, why nothing is open), as a pattern over its words.
         $routing += isset($expect['says']) ? ['says' => preg_match('/'.$expect['says'].'/iu', (string) ($answer['text'] ?? '')) === 1] : [];

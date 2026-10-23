@@ -293,8 +293,12 @@ final class AssistantTools
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'guidance' => $this->guidance($input),
-                'paperwork' => $this->paperwork ? $this->paperworkRecord() : $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record')
-                    .($this->askPaperworkPermission() ? ' A card asks whether they let Composer read and change it for this message.' : ''),
+                'paperwork' => match (true) {
+                    $this->paperwork => $this->paperworkRecord(),
+                    // The card asking for their permission says what's needed: no pointer to Paperwork above it.
+                    $this->askPaperworkPermission() => $this->line('pp', 'Their Paperwork record can be read only with their permission for this message: a card asks them for it.'),
+                    default => $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record'),
+                },
                 'place_feedback', 'set_my_place', 'add_to_day', 'remove_from_day', 'swap_in_day', 'clear_day',
                 'change_paperwork_fact', 'paperwork_step', 'paperwork_report' => $this->act($name, $input),
                 'open_in_app' => $this->openInApp($input),
@@ -995,7 +999,7 @@ final class AssistantTools
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
-            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
@@ -1074,6 +1078,8 @@ final class AssistantTools
         }
         $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::ComposerPaperwork->value,
             'title' => 'Let Composer read and change your Paperwork record for this message?',
+            // Composer's own words, said when the AI said nothing.
+            'text' => 'To read or change your Paperwork record, Composer needs your permission for this message.',
             'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
             // Its own notice, in words (disclosure.notice), from what Composer's request carries.
             'disclosure' => ProcessingPurpose::ComposerPaperwork->disclosure()];
@@ -1084,14 +1090,21 @@ final class AssistantTools
     /** What Composer never does itself, and the exact place that does it (InAppPlaces). */
     private function openInApp(array $input): string
     {
-        $card = InAppPlaces::card(is_string($input['what'] ?? null) ? $input['what'] : '');
-        if ($card === null) {
+        $what = is_string($input['what'] ?? null) ? $input['what'] : '';
+        if (InAppPlaces::card($what) === null) {
             return 'Nothing to open for that.';
         }
+        // "Stop using my Paperwork data" means one of two things: both are offered, the one meant first.
+        $both = InAppPlaces::STOPPING[$what] ?? null;
         $id = 'o'.(++$this->count);
-        $this->cards[$id] = $card;
+        // Each place once, however often it's asked for.
+        $shown = array_column(array_filter($this->cards, fn (array $card): bool => ($card['type'] ?? null) === 'handoff'), 'what');
+        foreach (array_diff($both === null ? [$what] : [$what, $both], $shown) as $i => $place) {
+            $this->cards[$id.($i === 0 ? '' : 'b')] = InAppPlaces::card($place);
+        }
 
-        return $this->line($id, 'Shown to them as a card with where to do it and why Composer doesn\'t. Say one short line at most.');
+        return $this->line($id, $both === null ? 'Shown to them as a card with where to do it and why Composer doesn\'t. Say one short line at most.'
+            : 'Shown to them as two cards: stopping Composer reading their Paperwork, and stopping Paperwork processing their record. Say in one short line that they can choose either.');
     }
 
     /** Their Paperwork record, read with their permission for this message, and shown as its card. */

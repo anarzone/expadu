@@ -8289,6 +8289,59 @@
     "min_places": 3,
     "says": "(isn.t|not) listed|lists? wi-?fi|website says|laptop"
    }
+  },
+  {
+   "id": "actions.update_paperwork_no_pointer",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "Can you update my paperwork details?",
+   "expect": {
+    "open": true,
+    "answer_kind": "permission",
+    "not_says": "That.s from your own Paperwork record"
+   }
+  },
+  {
+   "id": "actions.stop_using_paperwork",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "stop using my paperwork data",
+   "expect": {
+    "open": true,
+    "handoff": [
+     "withdraw_paperwork_permission",
+     "stop_paperwork_processing"
+    ],
+    "no_change": true
+   }
   }
  ]
 }
