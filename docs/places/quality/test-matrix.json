@@ -1,5 +1,5 @@
 {
-  "about": "Places quality gate: 20 real asks, run through Composer's search_places tool without the AI (php artisan places:check-matrix). 'input' is the tool call the AI should make for the ask; the AI session's own eval checks that mapping. Times are Europe/Berlin; the person is at the Dom unless 'from' says otherwise.",
+  "about": "Places quality gate: 21 real asks, run through Composer's search_places tool without the AI (php artisan places:check-matrix). 'input' is the tool call the AI should make for the ask; the AI session's own eval checks that mapping. Times are Europe/Berlin; the person is at the Dom unless 'from' says otherwise.",
   "defaults": {
     "at": "2026-10-23 14:00",
     "from": [
@@ -275,16 +275,30 @@
     {
       "ask": "climbing / gym",
       "input": {
-        "activity": "climbing"
+        "kinds": [
+          "climbing",
+          "fitness_centre"
+        ]
       },
       "kinds": [
-        "Sports centre",
+        "Climbing",
         "Gym",
+        "Sports centre"
+      ],
+      "min_results": 3,
+      "note": "gyms and climbing/bouldering halls import as Gym and Climbing (feat/places-fitness-climbing-dance, owner yes 23 Oct)"
+    },
+    {
+      "ask": "dance studio",
+      "input": {
+        "kinds": [
+          "dance_studio"
+        ]
+      },
+      "kinds": [
         "Dance studio"
       ],
-      "min_results": 1,
-      "if_empty_says": "No",
-      "note": "gyms and climbing halls are filed as sports centres with sport=climbing/fitness (AI session, 23 Oct)"
+      "min_results": 3
     },
     {
       "ask": "bar with live music tonight",
