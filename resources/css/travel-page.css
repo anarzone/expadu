@@ -2566,11 +2566,9 @@
     background: var(--color-attention);
     font-weight: var(--weight-bold);
 }
-/* The board's one headline (tl-headline, travel.css) and, when there are
-   more, "and N more" under it. */
+/* The board's one headline (tl-headline, travel.css); its other majors
+   are in its fold. */
 :where(.travel-page) .nearby-major {
-    display: grid;
-    gap: var(--space-8);
     margin-bottom: var(--space-12);
 }
 :where(.travel-page) .nearby-cards > .tl-reason,
