@@ -572,15 +572,18 @@ export function NearbyView({
             }
 
             const t = whenOf(d);
+            // Said as the strip says it: a paused board's clock, else minutes.
+            const shown =
+                stale || (!d.live && t.big === 'now')
+                    ? d.clock
+                    : `${t.big}${t.unit ? ` ${t.unit}` : ''}`;
 
             return (
                 <>
                     <strong className="line-row-lead">
                         → {d.dest}{' '}
                         <span>
-                            {d.cancelled
-                                ? `${d.clock} cancelled`
-                                : `${t.big}${t.unit ? ` ${t.unit}` : ''}`}
+                            {d.cancelled ? `${d.clock} cancelled` : shown}
                         </span>
                     </strong>
                     {thenLine(d)}
