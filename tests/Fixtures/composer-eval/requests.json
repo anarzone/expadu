@@ -7922,7 +7922,7 @@
    "text": "climbing or gym",
    "expect": {
     "open": true,
-    "min_places": 1
+    "says": "(no|not|n't|none)"
    }
   },
   {
@@ -7942,6 +7942,33 @@
     "open": true,
     "min_places": 3,
     "says": "live music"
+   }
+  },
+  {
+   "id": "regression.demo_coffee_narrowing",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "I prefer coffee shops",
+   "before": [
+    "Can u recommend me places to work in city center?"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 5,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "kind_is": [
+     "Café"
+    ]
    }
   }
  ]

@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Personalisation\Affinities;
 use App\Personalisation\TasteFacts;
 use App\Places\OpeningAnswer;
+use App\Places\OpenNearby;
 use App\Privacy\ExternalProcessingGate;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
@@ -60,6 +61,9 @@ final class Assistant
     /** Suggestions shown, of each kind. */
     private const SHOWN = 3;
 
+    /** Places shown: every one the answer names gets its card (coordinator's preview check, 23 Oct 2026). */
+    private const PLACES_SHOWN = 6;
+
     private const SYSTEM = <<<'TXT'
         You are Composer, the assistant in Expadu, an app for people new to Cologne. Answer every message: look things up with the tools, then answer with the answer tool, in English.
 
@@ -68,7 +72,7 @@ final class Assistant
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
         - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with kinds cafe, library and coworking. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
-        - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("nope", "something else"), look again with leave_out_earlier and suggest something of another kind or in another area. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
+        - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier and suggest something of another kind or in another area. Narrowing ("I prefer coffee shops") isn't turning down: search again without leave_out_earlier, in the same area. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
@@ -80,7 +84,7 @@ final class Assistant
         - sentences: one to three short, friendly sentences in the first person, 50 words at most in all, each with the ids of the results it relies on in uses. The cards give the details, so don't read out a whole trip, board, plan or list: say what matters most.
         - Use only facts from the results: copy names, times and numbers exactly, with 24-hour times. Add nothing they don't say: no prices, opening hours, distances, crowds, travel times, counts or weather beyond them. State facts plainly, without "might", "may" or "probably". Don't read back today's date or the time.
         - You know nothing about the person beyond their words and what the tools return: never guess their plans, tastes or where they are.
-        - show: the ids of the results to show as cards, best first: at most three listings and three places, and the trip, board, plan, choice, guide or notice the answer is about. Always show the cards of their own you looked up (paperwork, my_trip, my_next).
+        - show: the ids of the results to show as cards, best first: at most three listings and six places (every place you name gets a card), and the trip, board, plan, choice, guide or notice the answer is about. Always show the cards of their own you looked up (paperwork, my_trip, my_next).
         - If nothing fits, say plainly what you looked at and offer to plan something.
         TXT;
 
@@ -357,7 +361,7 @@ final class Assistant
                 || preg_match(self::ALWAYS_SHOWN, $id) === 1)
             ->unique()->values();
         $events = $tools->occurrences($shown->filter(fn (string $id): bool => isset($tools->events[$id]))->take(self::SHOWN)->all());
-        $places = $shown->filter(fn (string $id): bool => isset($tools->places[$id]))->take(self::SHOWN)->map(fn (string $id): Candidate => $tools->places[$id])->values();
+        $places = $shown->filter(fn (string $id): bool => isset($tools->places[$id]))->take(self::PLACES_SHOWN)->map(fn (string $id): Candidate => $tools->places[$id])->values();
         // A card that goes with one shown comes right after it.
         $shown = $shown->flatMap(fn (string $id): array => isset($tools->cards[$id.'-also']) ? [$id, $id.'-also'] : [$id])->unique()->values();
         $blocks = [];
@@ -368,7 +372,7 @@ final class Assistant
                     'because' => $because['e'.$poster['id'].'@'.CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp()] ?? null], fn ($v) => $v !== null),
                     $this->listings->posters($events, self::SHOWN))];
             } elseif (isset($tools->places[$id]) && ! isset($blocks['places'])) {
-                $blocks['places'] = ['type' => 'places', 'places' => $this->places($places, $because, $tools, $now)];
+                $blocks['places'] = ['type' => 'places', ...$this->places($places, $because, $tools, $now)];
             } elseif (isset($tools->cards[$id])) {
                 $card = $tools->cards[$id];
                 // A plan is added to their plans, which draws it; one per answer.
@@ -384,9 +388,8 @@ final class Assistant
         // in its lookups' order, under Composer's own line (owner, 23 Oct 2026: never an unrelated
         // "what's on" when places of the kind asked for exist).
         if ($lead === '' && $blocks === [] && $token === null && ($tools->places !== [] || $tools->events !== [])) {
-            $lead = 'Here’s what I found.';
             if ($tools->places !== []) {
-                $blocks['places'] = ['type' => 'places', 'places' => $this->places(collect(array_slice($tools->places, 0, self::SHOWN)), [], $tools, $now)];
+                $blocks['places'] = ['type' => 'places', ...$this->places(collect(array_slice($tools->places, 0, self::PLACES_SHOWN)), [], $tools, $now)];
             }
             if ($tools->events !== []) {
                 $blocks['events'] = ['type' => 'events', 'events' => $this->listings->posters($tools->occurrences(array_slice(array_keys($tools->events), 0, self::SHOWN)), self::SHOWN)];
@@ -394,6 +397,12 @@ final class Assistant
         }
         if ($lead === '' && $blocks === [] && $token === null) {
             return null;
+        }
+        // Never an empty answer: when none of its sentences held, Composer's own short line leads the cards.
+        if ($lead === '' && isset($blocks['places'])) {
+            $lead = self::countLead($blocks['places']['places'], $blocks['places']['from']['name'] ?? null);
+        } elseif ($lead === '' && isset($blocks['events'])) {
+            $lead = 'Here’s what’s on.';
         }
 
         return [
@@ -415,19 +424,36 @@ final class Assistant
      * @param  array<string, string>  $because
      * @return list<array<string, mixed>>
      */
+    /**
+     * The places block: each place as the answer card has it, with its row as Around here's
+     * PlaceRow draws it (OpenNearby::rows: listed facts only, a photo only with its rights),
+     * and the point they were searched from, which their distances and Get there use.
+     *
+     * @param  Collection<int, Candidate>  $places
+     * @param  array<string, string>  $because
+     * @return array{places: list<array<string, mixed>>, from: ?array{name: string, lat: float, lng: float}}
+     */
     private function places($places, array $because, AssistantTools $tools, CarbonImmutable $now): array
     {
-        $sources = $places->isEmpty() ? collect() : Spot::query()->whereKey($places->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all())->pluck('source', 'id');
+        $ids = $places->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all();
+        $from = $places->isEmpty() ? null : ($tools->from[$places->first()->id] ?? null);
+        $sources = $ids === [] ? collect() : Spot::query()->whereKey($ids)->pluck('source', 'id');
+        try {
+            $rows = $ids === [] ? collect() : app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $now, $tools->person())->keyBy('id');
+        } catch (Throwable) {
+            $rows = collect();
+        }
 
-        return $places->map(function (Candidate $c) use ($sources, $because, $tools, $now): array {
+        return ['from' => $from, 'places' => $places->map(function (Candidate $c) use ($sources, $because, $tools, $now, $rows): array {
+            $id = (int) substr($c->id, 5);
             $open = OpeningAnswer::isOpenAt($c, $now);
             $km = $c->distanceKmFromOrigin;
 
-            return array_filter(['id' => (int) substr($c->id, 5), 'name' => $c->name,
+            return array_filter(['id' => $id, 'name' => AssistantTools::name($c),
                 'kind' => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
                 // How far, in a straight line, only from where the person is or starts (never sent to the AI).
                 'distance' => ($tools->measured[$c->id] ?? false) && $km !== null ? ($km < 1 ? (int) (round($km * 1000 / 50) * 50).' m' : number_format($km, 1).' km') : null,
-                'area' => $c->veedel, 'href' => route('explore', ['place' => (int) substr($c->id, 5)], false),
+                'area' => $c->veedel, 'href' => route('explore', ['place' => $id], false),
                 // Its own public address, and whether it's open from its listed hours only.
                 'street' => $c->placeFacts['contact']['address']['value'] ?? null,
                 'hours' => match (true) {
@@ -435,10 +461,31 @@ final class Assistant
                     $open === false => 'Closed now',
                     default => 'Hours not listed',
                 },
-                'source' => $sources[(int) substr($c->id, 5)] ?? null, 'because' => $because[$c->id] ?? null],
+                'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
+                // Around here's PlaceRow: the card draws it when every place has one.
+                'row' => $rows->get($id)],
                 // Every card has its distance, even when it's unknown (null).
                 fn (mixed $value, string $key): bool => $value !== null || $key === 'distance', ARRAY_FILTER_USE_BOTH);
-        })->all();
+        })->all()];
+    }
+
+    /**
+     * Composer's own line over places when none of the AI's sentences held: how many, of what,
+     * and from where ("3 pitches near Ehrenfeld:").
+     *
+     * @param  list<array<string, mixed>>  $places
+     */
+    private static function countLead(array $places, ?string $from): string
+    {
+        $kinds = array_values(array_unique(array_map(fn (array $p): string => mb_strtolower((string) $p['kind']), $places)));
+        $kind = count($kinds) === 1 ? $kinds[0] : 'place';
+        $many = count($places) === 1 ? $kind : match (true) {
+            preg_match('/(s|x|ch|sh)$/', $kind) === 1 => $kind.'es',
+            preg_match('/[^aeiou]y$/', $kind) === 1 => substr($kind, 0, -1).'ies',
+            default => $kind.'s',
+        };
+
+        return count($places).' '.$many.($from !== null && $from !== '' ? ' near '.$from : '').':';
     }
 
     /** One call's tokens and time, counted as the assistant's. */
