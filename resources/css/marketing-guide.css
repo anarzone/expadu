@@ -331,6 +331,9 @@ h3 {
 .article-body tr:last-child td {
     border-bottom: 0;
 }
+.article-body :is(th, td):last-child {
+    padding-right: 0;
+}
 .article-body td:first-child {
     font-weight: 700;
 }
@@ -339,16 +342,11 @@ h3 {
 }
 /* On phones a 4-column table becomes one stacked card per row. */
 @media (max-width: 600px) {
+    /* Cells shrink to their longest word; words only break between words. */
     .article-body th,
     .article-body td {
         min-width: 0;
         padding-right: 12px;
-        overflow-wrap: anywhere;
-    }
-    /* Headers and the first column (names) only break between words. */
-    .article-body th,
-    .article-body td:first-child {
-        overflow-wrap: normal;
     }
     /* Narrow cells may wrap a phone number; stacked cards have room anyway. */
     .article-body a[href^='tel:'] {
