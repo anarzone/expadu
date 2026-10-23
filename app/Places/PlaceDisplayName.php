@@ -26,7 +26,7 @@ class PlaceDisplayName
 
     public static function for(?string $name, ?string $parkName, ?string $address, ?string $veedel): string
     {
-        $name = trim((string) $name);
+        $name = self::clean((string) $name);
         if (! self::isGeneric($name)) {
             return $name;
         }
@@ -35,6 +35,12 @@ class PlaceDisplayName
             ->first(fn (string $part): bool => $part !== '' && mb_strtolower($part) !== mb_strtolower($name));
 
         return $where === null ? $name : "{$name} · {$where}";
+    }
+
+    /** A name without an import's bracket artefacts: "Headquarter[s]" → "Headquarters". */
+    public static function clean(string $name): string
+    {
+        return trim((string) preg_replace('/\[(\w{1,3})\]/u', '$1', $name));
     }
 
     /** "Venloer Straße 12, 50823 Köln" → "Venloer Straße". */

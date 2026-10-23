@@ -7664,6 +7664,7 @@
    "weather": "dry",
    "text": "quiet café with wifi near me",
    "expect": {
+    "says": "wi-?fi",
     "open": true,
     "min_places": 3
    }
@@ -7682,6 +7683,7 @@
    "weather": "dry",
    "text": "vegan restaurant in Ehrenfeld",
    "expect": {
+    "says": "vegan",
     "open": true,
     "places_in": [
      "Ehrenfeld"
@@ -7851,6 +7853,7 @@
    "weather": "dry",
    "text": "wheelchair-accessible restaurant",
    "expect": {
+    "says": "step-?free|wheelchair",
     "open": true,
     "min_places": 3
    }

@@ -20,6 +20,7 @@ use App\Places\DestinationGrouping;
 use App\Places\OpeningAnswer;
 use App\Places\PlaceAmenities;
 use App\Places\PlaceCapabilities;
+use App\Places\PlaceDisplayName;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
@@ -71,6 +72,9 @@ final class AssistantTools
 
     /** @var array<string, array{name: string, lat: float, lng: float}> the point each place was searched from (its card's distance and Get there) */
     public array $from = [];
+
+    /** @var array<string, string> what a place was searched for and lists, by id ("Wi-Fi", "vegan food") */
+    public array $featured = [];
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
@@ -554,23 +558,23 @@ final class AssistantTools
             $why = $mustBeOpen ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
 
             $thing = $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0]) : 'place';
-            $lists = $features !== [] ? ' lists '.implode(' and ', array_map(fn (string $f): string => match (true) {
-                $f === 'wifi' => 'Wi-Fi', $f === 'outdoor_seating' => 'outdoor seating', $f === 'wheelchair' => 'step-free access',
-                str_starts_with($f, 'diet:') => str_replace('_', '-', substr($f, 5)).' food', default => ucfirst(str_replace('_', ' ', substr($f, 8))).' food',
-            }, $features)) : ' is listed for that';
+            $lists = $features !== [] ? ' lists '.self::featureWords($features) : ' is listed for that';
 
             return $this->line('n'.(++$this->count), $why ?? 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '')." {$thing}"
                 .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : '')).$lists.'.');
         }
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
-        return match (true) {
+        return ($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
+            if ($features !== []) {
+                $this->featured[$c->id] = self::featureWords($features);
+            }
             // Where its card measures from: the area's middle, or where the person is or starts.
             $this->from[$c->id] = ['name' => match (true) {
                 $areas === PlanDay::CENTRE => 'City centre',
@@ -623,10 +627,23 @@ final class AssistantTools
         return self::clean($c->name);
     }
 
+    /**
+     * Facts searched for, as said: "Wi-Fi and vegan food".
+     *
+     * @param  list<string>  $features  PlaceAmenities keys
+     */
+    public static function featureWords(array $features): string
+    {
+        return implode(' and ', array_map(fn (string $f): string => match (true) {
+            $f === 'wifi' => 'Wi-Fi', $f === 'outdoor_seating' => 'outdoor seating', $f === 'wheelchair' => 'step-free access',
+            str_starts_with($f, 'diet:') => str_replace('_', '-', substr($f, 5)).' food', default => ucfirst(str_replace('_', ' ', substr($f, 8))).' food',
+        }, $features));
+    }
+
     /** A name without an import's bracket artefacts ("Headquarter[s]"). */
     public static function clean(string $name): string
     {
-        return trim((string) preg_replace('/\[(\w{1,3})\]/u', '$1', $name));
+        return PlaceDisplayName::clean($name);
     }
 
     /** A kind as said: "supermarkets", "Café". */
