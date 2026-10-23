@@ -1161,3 +1161,7 @@
 .composer-page .answer-place-rows .answer-fine {
     margin: 0;
 }
+.composer-page .nearby-answer-copy .nearby-answer-hours {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}

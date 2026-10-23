@@ -15,6 +15,10 @@ export type AnsweredPlace = {
     /** "1.2 km", in a straight line; null when the starting point is unknown. */
     distance: string | null;
     area: string | null;
+    /** Its own public street address, when known. */
+    street?: string | null;
+    /** "Open until 22:00", "Closed now", "Hours not listed": listed hours only. */
+    hours?: string | null;
     href: string;
     /** Where the place comes from, for its credit; cards stored without it were OSM's. */
     source?: 'osm' | 'overture' | 'transit';
@@ -28,6 +32,9 @@ export type AnsweredPlace = {
     row?: Omit<AroundPlace, 'saved'> & { saved?: boolean };
 };
 
+/** Where the answer searched from: the place sheet's Get there starts there. */
+export type PlaceFrom = { name: string; lat: number; lng: number };
+
 /** Each source asks for its own credit where it's shown; timetable stops need none. */
 const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
     osm: 'OpenStreetMap contributors (ODbL)',
@@ -37,14 +44,18 @@ const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
 /*
  * "Somewhere nearby to play football": each place as Around here draws it
  * (its PlaceRow, the places session's), opening its place sheet here, with
- * Save; answers kept from before carry only their kind and Veedel, as cards.
+ * Save; without a row, a compact card: its kind and distance, name, street
+ * and Veedel, and its listed hours.
  * Each source the places come from is credited once, as each asks.
  */
 export function PlaceAnswer({
     places,
+    from = null,
     onNotThis,
 }: {
     places: AnsweredPlace[];
+    /** Where the answer searched from, so the sheet's distances match the rows'. */
+    from?: PlaceFrom | null;
     /** "Not this" on an assistant's suggestion. */
     onNotThis?: (place: AnsweredPlace) => void;
 }) {
@@ -136,8 +147,17 @@ export function PlaceAnswer({
                                     <span className="nearby-answer-copy">
                                         <small>{kind}</small>
                                         <strong>{place.name}</strong>
-                                        {place.area && (
-                                            <small>{place.area}</small>
+                                        {(place.street || place.area) && (
+                                            <small>
+                                                {[place.street, place.area]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
+                                            </small>
+                                        )}
+                                        {place.hours && (
+                                            <small className="nearby-answer-hours">
+                                                {place.hours}
+                                            </small>
                                         )}
                                     </span>
                                 </Link>
@@ -154,6 +174,7 @@ export function PlaceAnswer({
             )}
             <PlaceSheet
                 place={open}
+                from={from}
                 onClose={() => setOpen(null)}
                 onSaved={(id, on) => setSaved((all) => ({ ...all, [id]: on }))}
             />

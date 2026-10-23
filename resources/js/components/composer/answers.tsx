@@ -29,7 +29,7 @@ import { Guidance } from './guidance';
 import { notThis } from './not-this';
 import { PersonaliseInvite } from './personalise-invite';
 import { PlaceAnswer } from './place-answer';
-import type { AnsweredPlace } from './place-answer';
+import type { AnsweredPlace, PlaceFrom } from './place-answer';
 import { readList } from './read-words';
 import type { Message } from './types';
 
@@ -146,7 +146,12 @@ type Block =
       }
     | { type: 'choices'; text: string; private?: boolean }
     | { type: 'events'; events: AnsweredEvent[] }
-    | { type: 'places'; places: AnsweredPlace[] }
+    | {
+          type: 'places';
+          places: AnsweredPlace[];
+          /** Where it searched from (the person, or the area's middle). */
+          from?: PlaceFrom | null;
+      }
     | {
           type: 'checklist';
           text: string;
@@ -556,12 +561,16 @@ export function AnswerBody({
             />
         ) : null;
     };
-    const placesCard = (list: AnsweredPlace[] | undefined) => {
+    const placesCard = (
+        list: AnsweredPlace[] | undefined,
+        from?: PlaceFrom | null,
+    ) => {
         const places = shownPlaces(list);
 
         return places?.length ? (
             <PlaceAnswer
                 places={places}
+                from={from}
                 onNotThis={
                     suggesting
                         ? (place) =>
@@ -655,7 +664,7 @@ export function AnswerBody({
                 case 'places':
                     return (
                         <Fragment key={index}>
-                            {placesCard(block.places)}
+                            {placesCard(block.places, block.from)}
                         </Fragment>
                     );
                 case 'checklist':
