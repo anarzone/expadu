@@ -8,8 +8,8 @@
    opens it from a row (beside its map on a laptop); Composer opens it by a
    place's id. */
 
-import { Link } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { Link, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PlaceIcon } from '@/components/around-here/place-icon';
 import {
     cuisineNames,
@@ -21,10 +21,13 @@ import type { AroundPlace } from '@/components/around-here/place-model';
 import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
+import { usePhone } from '@/hooks/use-phone';
 import { shareItem, useCanShare } from '@/lib/share';
 import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 import { timetable } from '@/routes';
+import { LaptopWork } from './laptop-work';
+import type { WorkFact } from './laptop-work';
 import { PlanVisitFooter, PlanVisitPanel, usePlanVisit } from './plan-visit';
 import '@/components/around-here/place-row.css';
 import './place-sheet.css';
@@ -47,7 +50,10 @@ export type PlaceSheetProps = {
     onSaved?: (place: number, saved: boolean) => void;
 };
 
-type Fact = { value: string | null; status: string };
+type Fact = WorkFact;
+
+/** A mark just turned on, for its bar over the footer. */
+type Marked = { text: string; mark: 'saved' | 'been'; at: number };
 
 type Detail = {
     id: number;
@@ -58,6 +64,8 @@ type Detail = {
     lng: number | null;
     kind_icon: string;
     feedback_state: string | null;
+    /** Been there, kept apart from the choice (saved…) since 23 Oct 2026. */
+    feedback_been?: boolean;
     /** Whether it can be recommended and planned to (active, open to all). */
     recommendation_status?: 'available' | 'unavailable';
     hours_at?:
@@ -235,6 +243,11 @@ export function PlaceSheet({
     // The place whose details couldn't load, if it's the one asked for.
     const [failedFor, setFailedFor] = useState<number | null>(null);
     const [saved, setSaved] = useState(false);
+    const [been, setBeen] = useState(false);
+    // "Saved to your places." or "Marked as been there." over the footer,
+    // with Undo, after turning it on.
+    const [marked, setMarked] = useState<Marked | null>(null);
+    const clearMarked = useCallback(() => setMarked(null), []);
     useDwell('place_sheet', 'spot', place);
 
     useEffect(() => {
@@ -257,6 +270,7 @@ export function PlaceSheet({
             .then((json: { data: Detail }) => {
                 setDetail(json.data);
                 setSaved(json.data.feedback_state === 'saved');
+                setBeen(!!json.data.feedback_been);
             })
             .catch(
                 (error: Error) =>
@@ -276,16 +290,53 @@ export function PlaceSheet({
 
         const next = !saved;
         setSaved(next);
+        setMarked(
+            next
+                ? {
+                      text: 'Saved to your places.',
+                      mark: 'saved',
+                      at: Date.now(),
+                  }
+                : null,
+        );
         api(`/api/places/${d.id}/feedback`, {
             action: next ? 'saved' : 'clear',
         })
             .then(() => onSaved?.(d.id, next))
             .catch(() => {
                 setSaved(!next);
+                setMarked(null);
                 showToast('That place wasn’t saved. Please try again.', {
                     error: true,
                 });
             });
+    };
+
+    const toggleBeen = () => {
+        if (!d) {
+            return;
+        }
+
+        const next = !been;
+        setBeen(next);
+        setMarked(
+            next
+                ? {
+                      text: 'Marked as been there.',
+                      mark: 'been',
+                      at: Date.now(),
+                  }
+                : null,
+        );
+        api(`/api/places/${d.id}/been`, {
+            _method: next ? 'PUT' : 'DELETE',
+        }).catch(() => {
+            setBeen(!next);
+            setMarked(null);
+            showToast('That wasn’t marked. Please try again.', {
+                error: true,
+            });
+        });
     };
 
     return (
@@ -307,6 +358,10 @@ export function PlaceSheet({
                     initial={initial}
                     saved={saved}
                     onSave={save}
+                    been={been}
+                    onBeen={toggleBeen}
+                    marked={marked}
+                    onMarkedDone={clearMarked}
                 />
             ) : preview && preview.id === place ? (
                 <PreviewDetail place={preview} />
@@ -430,12 +485,21 @@ function PlaceDetail({
     initial,
     saved,
     onSave,
+    been,
+    onBeen,
+    marked,
+    onMarkedDone,
 }: {
     detail: Detail;
     from: { name: string; lat: number; lng: number } | null;
     initial: 'about' | 'plan';
     saved: boolean;
     onSave: () => void;
+    been: boolean;
+    onBeen: () => void;
+    /** A mark just turned on, shown over the footer with Undo. */
+    marked: Marked | null;
+    onMarkedDone: () => void;
 }) {
     const [planning, setPlanning] = useState(initial === 'plan');
     const plan = useRef<HTMLElement>(null);
@@ -463,6 +527,19 @@ function PlaceDetail({
     }, [planning]);
     const visit = usePlanVisit(d.id, d.name, planning);
     const canShare = useCanShare();
+    const onPhone = usePhone();
+    const user = usePage().props.auth?.user;
+
+    // The mark's bar goes after a few seconds; Undo is in it until then.
+    useEffect(() => {
+        if (!marked) {
+            return;
+        }
+
+        const timer = window.setTimeout(onMarkedDone, 6000);
+
+        return () => window.clearTimeout(timer);
+    }, [marked, onMarkedDone]);
     const facts = d.place_facts;
     const practical = facts.practical;
     const kind = d.kind_icon;
@@ -642,6 +719,20 @@ function PlaceDetail({
         }
     };
 
+    // Cafés only. On a phone it sits under the chips, so it's on screen
+    // when the sheet opens; on a laptop after the details.
+    const laptop =
+        kind === 'cafe' ? (
+            <LaptopWork
+                place={d.id}
+                laptops={practical.laptops}
+                conditional={practical['laptops:conditional']}
+                saved={saved}
+                been={been}
+                canAsk={!!user?.email_verified_at}
+            />
+        ) : null;
+
     const copy = async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -678,6 +769,7 @@ function PlaceDetail({
                             ))}
                         </div>
                     ) : null}
+                    {onPhone ? laptop : null}
                     {address || week || website || phone ? (
                         <dl className="place-known">
                             {address ? (
@@ -751,6 +843,7 @@ function PlaceDetail({
                             ) : null}
                         </dl>
                     ) : null}
+                    {onPhone ? null : laptop}
                     {facilities.length ? (
                         <section
                             className="place-contents"
@@ -895,19 +988,54 @@ function PlaceDetail({
                     </section>
                 </div>
             </div>
+            {marked ? (
+                <div
+                    key={marked.at}
+                    className="place-sheet-marked"
+                    role="status"
+                >
+                    {marked.text}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            onMarkedDone();
+
+                            if (marked.mark === 'been') {
+                                onBeen();
+                            } else {
+                                onSave();
+                            }
+                        }}
+                    >
+                        Undo
+                    </button>
+                </div>
+            ) : null}
             <div className="place-sheet-actions">
                 <button
                     type="button"
-                    className="place-sheet-secondary"
+                    className="place-sheet-secondary place-sheet-save"
                     aria-pressed={saved}
                     onClick={onSave}
                 >
                     <PlaceIcon name="bookmark" />
                     <span>{saved ? 'Saved' : 'Save'}</span>
                 </button>
+                {user ? (
+                    <button
+                        type="button"
+                        className="place-sheet-secondary"
+                        aria-pressed={been}
+                        onClick={onBeen}
+                    >
+                        <PlaceIcon name="been" />
+                        <span>Been there</span>
+                    </button>
+                ) : null}
                 <button
                     type="button"
-                    className="place-sheet-secondary"
+                    className="place-sheet-secondary place-sheet-share"
+                    aria-label="Share"
                     onClick={() => void share()}
                 >
                     <PlaceIcon name="share" />

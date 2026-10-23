@@ -1,0 +1,396 @@
+/* "Laptop work" on a café's sheet (laptop-work.tsx; the Designer's canvas,
+   23 Oct 2026). Scoped to the sheet like place-sheet.css, so a page's own
+   rules (Composer's buttons and headings) don't reach it. The verdicts'
+   colours are this section's own, like the kinds' in place-row.css. */
+
+.ui-sheet.place-sheet .laptop-work {
+    --laptop-good-bg: #e6f2e6;
+    --laptop-good: #2b6b3f;
+    --laptop-good-ink: #1f5530;
+    --laptop-mixed-bg: #efe8da;
+    --laptop-mixed: #5c5446;
+    --laptop-not-bg: #f3e1da;
+    --laptop-not: #8a3413;
+    --laptop-rule-bg: #fbeadf;
+    --laptop-done-bg: #f1f7f0;
+    --laptop-done-line: #cfe5d3;
+    --laptop-control-line: #d9cdb5;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-canvas);
+}
+
+.ui-sheet.place-sheet .laptop-work h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+.ui-sheet.place-sheet .laptop-work svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ui-sheet.place-sheet .laptop-verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ui-sheet.place-sheet .laptop-verdict strong {
+    display: block;
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+}
+
+.ui-sheet.place-sheet .laptop-verdict span span {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+
+.ui-sheet.place-sheet .laptop-mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.ui-sheet.place-sheet .laptop-mark svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+}
+
+.ui-sheet.place-sheet .laptop-mark.is-good {
+    background: var(--laptop-good-bg);
+    color: var(--laptop-good);
+}
+
+.ui-sheet.place-sheet .laptop-mark.is-mixed {
+    background: var(--laptop-mixed-bg);
+    color: var(--laptop-mixed);
+}
+
+.ui-sheet.place-sheet .laptop-mark.is-not {
+    background: var(--laptop-not-bg);
+    color: var(--laptop-not);
+}
+
+.ui-sheet.place-sheet .laptop-mark.is-rule {
+    background: var(--laptop-rule-bg);
+    color: var(--laptop-not);
+}
+
+.ui-sheet.place-sheet .laptop-mark.is-none {
+    background: var(--laptop-mixed-bg);
+    color: var(--color-text-soft);
+}
+
+.ui-sheet.place-sheet .laptop-quote {
+    margin: 2px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--color-bg-surface);
+    font-size: var(--text-small);
+    font-style: italic;
+    line-height: 1.45;
+}
+
+.ui-sheet.place-sheet .laptop-soft {
+    display: block;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    line-height: 1.45;
+}
+
+.ui-sheet.place-sheet .laptop-soft a {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+
+.ui-sheet.place-sheet .laptop-hint {
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+
+.ui-sheet.place-sheet .laptop-ask {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+}
+
+.ui-sheet.place-sheet .laptop-ask > strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+}
+
+.ui-sheet.place-sheet .laptop-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-sheet.place-sheet .laptop-yn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 96px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 12px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: var(--weight-bold);
+    cursor: pointer;
+}
+
+.ui-sheet.place-sheet .laptop-yn[aria-pressed='true'] {
+    border-color: var(--color-text);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+
+.ui-sheet.place-sheet .laptop-text-button {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.ui-sheet.place-sheet .laptop-done {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 6px 10px 12px;
+    border: 1px solid var(--laptop-done-line);
+    border-radius: 14px;
+    background: var(--laptop-done-bg);
+}
+
+.ui-sheet.place-sheet .laptop-done > span:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ui-sheet.place-sheet .laptop-done strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+
+.ui-sheet.place-sheet .laptop-tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--laptop-good);
+    color: #fff;
+}
+
+.ui-sheet.place-sheet .laptop-tick svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.6;
+}
+
+.ui-sheet.place-sheet .laptop-undo {
+    flex: none;
+    min-height: 44px;
+    margin-left: auto;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.ui-sheet.place-sheet .laptop-follow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ui-sheet.place-sheet .laptop-follow > span {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+.ui-sheet.place-sheet .laptop-follow small {
+    color: var(--color-text-soft);
+    font-size: inherit;
+    font-weight: var(--weight-medium);
+}
+
+.ui-sheet.place-sheet .laptop-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+
+.ui-sheet.place-sheet .laptop-chip[aria-pressed='true'] {
+    border-color: var(--laptop-good);
+    background: var(--laptop-good-bg);
+    color: var(--laptop-good-ink);
+}
+
+.ui-sheet.place-sheet .laptop-chip svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.4;
+}
+
+.ui-sheet.place-sheet .laptop-mine {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+}
+
+.ui-sheet.place-sheet .laptop-mine > span {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    font-size: var(--text-small);
+}
+
+.ui-sheet.place-sheet .laptop-mine > span > span {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
+.ui-sheet.place-sheet .laptop-ghost {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 12px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+
+.ui-sheet.place-sheet .laptop-withdrawn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.ui-sheet.place-sheet .laptop-work button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.ui-sheet.place-sheet .laptop-work button:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+    .ui-sheet.place-sheet .laptop-work {
+        padding: 12px 14px;
+    }
+
+    .ui-sheet.place-sheet .laptop-ask .laptop-yn {
+        flex: 1 1 0;
+    }
+}
+
+/* Slide: what appears comes down 10px and fades in. */
+@keyframes laptop-slide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .ui-sheet.place-sheet .laptop-ask,
+    .ui-sheet.place-sheet .laptop-done,
+    .ui-sheet.place-sheet .laptop-withdrawn {
+        animation: laptop-slide 250ms ease-out both;
+    }
+
+    .ui-sheet.place-sheet .laptop-follow {
+        animation: laptop-slide 250ms 60ms ease-out both;
+    }
+
+    .ui-sheet.place-sheet .laptop-work button {
+        transition:
+            background 160ms ease,
+            border-color 160ms ease,
+            color 160ms ease;
+    }
+}

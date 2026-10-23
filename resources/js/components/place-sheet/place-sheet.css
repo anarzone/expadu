@@ -557,14 +557,14 @@
 }
 
 /* Buttons that read as buttons (owner, 23 Oct 2026): Save and Share
-   outlined, the one main action filled, 40px. */
+   outlined, the one main action filled, 44px (the laptop canvas). */
 .ui-sheet.place-sheet .place-sheet-secondary,
 .ui-sheet.place-sheet .place-sheet-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 14px;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
@@ -586,8 +586,73 @@
     height: 18px;
 }
 
+/* A mark that's on (Saved): green, its icon filled. */
+.ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] {
+    border-color: #2b6b3f;
+    background: #e6f2e6;
+    color: #1f5530;
+}
+
 .ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] .place-icon {
     fill: currentColor;
+}
+
+/* On a phone Share is its icon, so the footer fits. */
+@media (max-width: 700px) {
+    .ui-sheet.place-sheet .place-sheet-share {
+        padding: 0 12px;
+    }
+
+    .ui-sheet.place-sheet .place-sheet-share span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+}
+
+/* "Saved to your places." just above the footer, with Undo. */
+.ui-sheet.place-sheet .place-sheet-marked {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+    margin: 0 14px 8px;
+    padding: 0 6px 0 14px;
+    border-radius: 12px;
+    background: var(--color-text);
+    color: #fff;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+.ui-sheet.place-sheet .place-sheet-marked button {
+    min-height: 44px;
+    margin-left: auto;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .ui-sheet.place-sheet .place-sheet-marked {
+        animation: place-sheet-marked 250ms ease-out both;
+    }
+}
+
+@keyframes place-sheet-marked {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
 }
 
 .ui-sheet.place-sheet .place-sheet-primary {
