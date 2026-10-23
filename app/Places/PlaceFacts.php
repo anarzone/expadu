@@ -344,6 +344,20 @@ class PlaceFacts
         }
 
         $sourceValue = $latestSource !== null ? $this->stringValue($latestSource->payload['name'] ?? null) : null;
+        // The place's own source names it; another provider (the city's register) only names
+        // what its own source calls by a generic label ("Spielplatz"), so refreshes don't flip it.
+        $own = $effectiveObservations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('name', $row->payload)
+            && $row->provider === $spot->source && $row->provider_record_id === $spot->source_id)
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])->last();
+        if ($own !== null) {
+            $ownName = $this->stringValue($own->payload['name'] ?? null);
+            $named = $effectiveObservations->filter(fn (PlaceFactObservation $row): bool => $row !== $own
+                && ($name = $this->stringValue($row->payload['name'] ?? null)) !== null && ! $this->isDescriptiveName($name))
+                ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])->last();
+            [$latestSource, $sourceValue] = $ownName !== null && ! $this->isDescriptiveName($ownName)
+                ? [$own, $ownName]
+                : ($named !== null ? [$named, $this->stringValue($named->payload['name'])] : [$own, $ownName]);
+        }
         $latestObservation = $effectiveObservations
             ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])
             ->last();
