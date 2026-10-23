@@ -1,7 +1,9 @@
 <?php
 
+use App\Composer\Actions\ComposerActions;
 use App\Composer\Assistant\Assistant;
 use App\Composer\Assistant\AssistantTools;
+use App\Composer\WorkspaceStore;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\Spot;
 use App\Models\User;
@@ -139,6 +141,22 @@ test('🔒 a Paperwork message sends only what Composer’s Paperwork notice nam
     expect($sent)->not->toContain('50.94721')->not->toContain('6.91573')->not->toContain('Venloer Straße 210')
         ->and($notice)->toContain('Anthropic PBC (Claude Haiku)')
         ->and($notice)->toContain('It never sends your coordinates, the addresses of your saved places, your documents or evidence');
+
+    // What it says is kept is what the code keeps: the answer and its cards in their History, the change's
+    // Undo for ComposerActions::HOURS, the permission for the request's minutes; never "15 minutes" for an answer.
+    $workspace = app(WorkspaceStore::class)->read($this->user);
+    $proposal = collect(collect($workspace['conversations'][0]['messages'])->last()['blocks'] ?? [])->firstWhere('type', 'proposal');
+    $record = app(WorkspaceStore::class)->action($this->user, $proposal['token']);
+    expect($notice)->toContain('Composer keeps this conversation, its answers and cards, in your History until you delete it')
+        ->toContain('can be undone for '.ComposerActions::HOURS.' hours')
+        ->toContain('lasts '.ProcessingPurpose::requestMinutes().' minutes')
+        ->toContain('Deleting your Paperwork record removes Composer’s copies of it')
+        ->not->toContain('keeps its answer')
+        ->and($disclosure['kept'])->toBe(['history' => 'until_you_delete_it', 'undo_hours' => ComposerActions::HOURS, 'permission_minutes' => ProcessingPurpose::requestMinutes()])
+        ->and($disclosure)->not->toHaveKey('response_retention_minutes')
+        ->and((int) round(CarbonImmutable::now()->diffInHours(CarbonImmutable::parse($record['expires_at']))))->toBe(ComposerActions::HOURS)
+        ->and(BureaucracyProcessingConsent::query()->where('actor_id', $this->user->id)->where('purpose', 'composer_paperwork')->value('expires_at')
+            ->diffInMinutes(now()))->toBeLessThanOrEqual(ProcessingPurpose::requestMinutes());
 
     // The exchange ran under the Paperwork permission, bound to their own record.
     $permit = BureaucracyProcessingConsent::query()->where('actor_id', $this->user->id)->where('purpose', 'composer_paperwork')->sole();

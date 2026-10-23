@@ -141,8 +141,10 @@
             to like and skip (kinds of places and events, areas and times of day, never place names or
             your history) and your own plans and appointments for today and tomorrow, including those
             recorded in Paperwork, so the suggestions fit you. The line next to the box says so;
-            sending is your consent for that one request (Art. 6(1)(a) GDPR). Nothing else from your
-            account is sent.
+            sending is your consent for that one request (Art. 6(1)(a) GDPR), and it lasts 15 minutes.
+            Nothing else from your account is sent. Composer keeps the conversation, its answers and
+            their cards, in your History until you delete it; a change it makes for you can be undone
+            for 24 hours.
         </li>
         <li>
             <strong>Composer with your Paperwork.</strong> Composer reads your Paperwork record, and
@@ -151,8 +153,12 @@
             Paperwork answers (such as your residence title and the dates it keeps), your open
             Paperwork tasks with their steps and dates, and the changes to your Paperwork you ask for
             and what they change in your plan. A change to your answers always waits for you to tap
-            Apply; nothing is sent to an authority. You can withdraw the permission in the notice
-            under Composer’s box, and withdrawing Composer’s AI withdraws it too.
+            Apply; nothing is sent to an authority. The permission lasts 15 minutes, for that message.
+            Composer keeps that conversation, with its Paperwork cards, in your History until you
+            delete it, and its changes can be undone for 24 hours; deleting your Paperwork record
+            removes Composer’s copies of it, and stopping its processing ends the permission. You can
+            withdraw the permission in the notice under Composer’s box, and withdrawing Composer’s AI
+            withdraws it too.
         </li>
         <li>
             <strong>Paperwork: your own words and questions.</strong> When you tap “Suggest an
@@ -170,7 +176,8 @@
         </li>
     </ul>
     <p>
-        Anthropic’s reply is kept by us for at most 15 minutes for that request. Transfers to the
+        For Paperwork’s own suggestions and answers, Anthropic’s reply is kept by us for at most
+        15 minutes for that request; Composer keeps its conversations as described above. Transfers to the
         USA are covered by the European Commission’s standard contractual clauses in Anthropic’s
         data processing addendum. You can withdraw your consent at any time; it then ends for any
         request not yet sent.

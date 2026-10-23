@@ -2,6 +2,7 @@
 
 namespace App\Privacy;
 
+use App\Composer\Actions\ComposerActions;
 use App\Composer\Assistant\AssistantTools;
 
 enum ProcessingPurpose: string
@@ -101,7 +102,8 @@ enum ProcessingPurpose: string
             'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
-            'response_retention_minutes' => min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15))),
+            // Paperwork's own responses; Composer says what it keeps under `kept`.
+            ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
             'payload_categories' => match ($this) {
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 // Everything Composer's request can carry, from its own map of what each part is
@@ -114,9 +116,18 @@ enum ProcessingPurpose: string
             ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork], true) ? [
                 'model' => config($this->configPrefix().'.model'),
                 'never_sent' => array_keys(self::NEVER),
+                // What Composer keeps (coordinator, 23 Oct 2026): the conversation in their History until they
+                // delete it, Undo for ComposerActions::HOURS, the permission for the request's minutes.
+                'kept' => ['history' => 'until_you_delete_it', 'undo_hours' => ComposerActions::HOURS, 'permission_minutes' => self::requestMinutes()],
                 'notice' => $this->notice(),
             ] : []),
         ];
+    }
+
+    /** How long one request's permission lasts (ProcessingConsentStore: its expiry). */
+    public static function requestMinutes(): int
+    {
+        return min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15)));
     }
 
     /**
@@ -128,7 +139,8 @@ enum ProcessingPurpose: string
     public function notice(): array
     {
         $paperwork = $this === self::ComposerPaperwork;
-        $minutes = min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15)));
+        $minutes = self::requestMinutes();
+        $hours = ComposerActions::HOURS;
         $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
 
         return [
@@ -137,9 +149,11 @@ enum ProcessingPurpose: string
                 .implode('; ', array_map(fn (string $category): string => self::WORDS[$category], self::categoryOrder($paperwork))).'.',
             'It never sends '.self::either([...array_values(self::NEVER), ...($paperwork ? [] : ['your Paperwork record without its own permission'])]).'. Nothing is sent to an authority.',
             ...($paperwork ? ['A change to your Paperwork answers always waits for your Apply.'] : []),
-            "The AI service doesn’t use it to train its models. Expadu keeps its answer for at most {$minutes} minutes.",
-            $paperwork ? 'This permission is for this one message. You can withdraw it in the notice under Composer’s box; withdrawing Composer’s AI withdraws it too.'
-                : 'Sending is your permission for that one message. You can withdraw it in the notice under Composer’s box.',
+            'The AI service doesn’t use it to train its models.',
+            "Composer keeps this conversation, its answers and cards, in your History until you delete it; a change it makes can be undone for {$hours} hours."
+                .($paperwork ? ' Deleting your Paperwork record removes Composer’s copies of it; stopping its processing ends this permission.' : ''),
+            $paperwork ? "This permission is for this one message and lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box; withdrawing Composer’s AI withdraws it too."
+                : "Sending is your permission for that one message, and it lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box.",
         ];
     }
 
