@@ -2457,12 +2457,11 @@
 }
 :where(.travel-page) .nearby-pinned {
     display: grid;
-    margin-left: auto;
     color: var(--color-text);
 }
 :where(.travel-page) .nearby-pinned svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     fill: currentColor;
 }
 :where(.travel-page) .nearby-empty {
