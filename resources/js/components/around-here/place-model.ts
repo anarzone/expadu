@@ -68,10 +68,13 @@ export function hoursText(hours: ListedHours): string {
 
 /** "50 m", "about 600 m" for the middle of an area, "1.4 km", "12 km". */
 export function distanceText(place: Pick<AroundPlace, 'km' | 'area'>): string {
+    // Rounded before it's said in m or km: 999.6 m is "1.0 km", 9.97 km "10 km".
+    const metres = Math.round(place.km * 20) * 50;
+    const tenths = Math.round(place.km * 10) / 10;
     const text =
-        place.km < 1
-            ? `${Math.max(50, Math.round(place.km * 20) * 50)} m`
-            : `${place.km < 10 ? place.km.toFixed(1) : Math.round(place.km)} km`;
+        metres < 1000
+            ? `${Math.max(50, metres)} m`
+            : `${tenths < 10 ? tenths.toFixed(1) : Math.round(place.km)} km`;
 
     return place.area ? `about ${text}` : text;
 }
@@ -135,9 +138,16 @@ export function dietChip(place: AroundPlace): string {
     return options[0] ?? '';
 }
 
-/** A library's Wi-Fi or public computers, when recorded. */
-export function libraryNet(place: AroundPlace): string {
-    if (place.icon !== 'library') {
+/** Places people go to sit and work, whose rows say Wi-Fi when listed. */
+const NET = ['cafe', 'coworking', 'library'];
+
+/**
+ * A café's, a coworking space's or a library's Wi-Fi (a library's public
+ * computers too), when listed: the values search counts as Wi-Fi
+ * (PlaceAmenities::has), never a guess.
+ */
+export function placeNet(place: AroundPlace): string {
+    if (!NET.includes(place.kind) && !NET.includes(place.icon)) {
         return '';
     }
 
@@ -146,9 +156,10 @@ export function libraryNet(place: AroundPlace): string {
             {
                 wlan: 'Wi-Fi',
                 yes: 'Wi-Fi',
-                terminal: 'Public computers',
+                wifi: 'Wi-Fi',
+                terminal: place.icon === 'library' ? 'Public computers' : '',
             } as Record<string, string>
-        )[place.internet_access ?? ''] ?? ''
+        )[(place.internet_access ?? '').toLowerCase()] ?? ''
     );
 }
 

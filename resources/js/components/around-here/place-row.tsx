@@ -6,7 +6,7 @@ import {
     dietChip,
     distanceText,
     hoursText,
-    libraryNet,
+    placeNet,
     outdoorSeating,
     wheelchairText,
 } from './place-model';
@@ -36,7 +36,7 @@ export function PlaceRow({
     const hours = place.icon === 'nature' ? null : place.hours;
     const dish = cuisineText(place);
     const diet = dietChip(place);
-    const net = libraryNet(place);
+    const net = placeNet(place);
     const access = wheelchairText(place.wheelchair);
 
     return (
