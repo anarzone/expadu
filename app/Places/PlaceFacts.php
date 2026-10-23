@@ -274,6 +274,13 @@ class PlaceFacts
             'identity' => ['canonical_id' => $spot->id, 'provider' => $spot->source, 'provider_record_id' => $spot->source_id],
             'name' => $name['fact'],
             'name_kind' => $name['kind'],
+            // What people see: generic facility labels gain their park, street or Veedel.
+            'display_name' => PlaceDisplayName::for(
+                $name['fact']['value'] ?? $spot->name, $spot->park_name, $contact['address']['value'] ?? $spot->address, $spot->veedel,
+                $spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category,
+                $practical['sport']['value'] ?? null, $spot->lat !== null ? (float) $spot->lat : null, $spot->lng !== null ? (float) $spot->lng : null,
+            ),
+            'generic_name' => PlaceDisplayName::isGeneric($name['fact']['value'] ?? $spot->name),
             'aliases' => $name['aliases'],
             'location' => $location,
             'access' => $access['fact'],

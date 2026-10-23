@@ -6,13 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Gtfs\GtfsStop;
 use App\Models\JourneyRecent;
 use App\Personalisation\SignalRecorder;
-use App\Services\DisruptionService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
 use App\Transit\TripConditions;
+use App\Transit\TripDisruptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,12 +58,15 @@ class TakeMeThereController extends Controller
     /** The tight option is a second full plan; only start it with this much budget left. */
     private const TIGHT_MIN_SECONDS = 4.0;
 
+    /** The boarding stops' boards (live trouble, cancelled runs): only with this much budget left. */
+    private const BOARDS_MIN_SECONDS = 1.5;
+
     public function __invoke(
         Request $request,
         RouteService $routes,
         FareAdvisor $fareAdvisor,
-        DisruptionService $disruptions,
         TripConditions $conditions,
+        TripDisruptions $tripDisruptions,
     ): JsonResponse {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -182,28 +185,16 @@ class TakeMeThereController extends Controller
             )->toArray();
         }
 
-        $journeyLines = collect($result->journeys)
-            ->flatMap(fn ($journey) => $journey->lines())
-            ->unique()
-            ->values();
-
-        $relevantDisruptions = collect($disruptions->getLineDisruptions())
-            ->filter(fn ($d) => collect($d['affected_lines'] ?? [])
-                ->map(fn ($l) => (string) $l)
-                ->intersect($journeyLines)
-                ->isNotEmpty())
-            ->map(fn ($d) => [
-                'title' => $d['title'] ?? '',
-                'severity' => $d['severity'] ?? 'minor',
-                'lines' => $d['affected_lines'] ?? [],
-                // KVB's notice in plain English, when one is written; else its
-                // own words (German), and its page either way.
-                'brief' => $d['brief'] ?? null,
-                'details' => ($d['description'] ?? '') !== '' ? $d['description'] : null,
-                'url' => $d['url'] ?? null,
-            ])
-            ->values()
-            ->all();
+        // Delays and disruptions for these ways, in two tiers: the notices on
+        // their lines (and majors on the From or To stop's), live trouble and
+        // cancelled runs at the stops they board. The boards are read only
+        // while there's time left.
+        $trip = $tripDisruptions->for(
+            array_values($result->journeys),
+            $from,
+            $to,
+            boards: $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS,
+        );
 
         return response()->json([
             'source' => $result->source,
@@ -212,7 +203,9 @@ class TakeMeThereController extends Controller
             'from' => ['name' => $fromName, 'lat' => $from->lat, 'lng' => $from->lng],
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
             'ticket' => $ticket,
-            'disruptions' => $relevantDisruptions,
+            'disruptions' => $trip['notices'],
+            'trouble' => $trip['trouble'],
+            'gone' => $trip['gone'],
             // Plan a trip's "We checked": the weather on the way, lifts out.
             'conditions' => $conditions->for($journeys),
             // Stop names carry the city ("Köln Neumarkt"); Plan a trip shows

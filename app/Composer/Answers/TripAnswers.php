@@ -7,10 +7,13 @@ use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
 use App\Models\User;
+use App\Personalisation\Pseudonym;
+use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Composer's answers about a trip, as the approved Composer gives them (composer-studio/
@@ -33,75 +36,125 @@ final class TripAnswers
 {
     private const TIMEZONE = 'Europe/Berlin';
 
-    /** How long a trip to a named place may take to plan, in seconds. */
-    private const BUDGET_SECONDS = 8.0;
+    /** Ways of travelling a person may ask for or rule out ("by tram", "without trains"). */
+    public const KINDS = ['tram', 'bus', 'train'];
+
+    /** How long a trip to a named place may take to plan, in seconds: Composer's replies stay under 6 s. */
+    private const BUDGET_SECONDS = 3.5;
+
+    /** Past this many seconds of planning, the boarding stops' live boards aren't read (the notices still are). */
+    private const BOARDS_WITHIN_SECONDS = 2.0;
+
+    /** Whether there's time to read the boarding stops' boards for this answer. */
+    private bool $boards = true;
 
     public function __construct(
         private DayProjection $day,
         private Destinations $destinations,
         private RouteService $routes,
         private UserLocationService $locations,
+        private TripTrouble $trouble,
     ) {}
 
     /**
      * "Show me departures to Cafe Nova in City Center" (owner's staging test, 22 Oct 2026):
-     * the place named, then the next way there from where you are, by Travel's routes. When
-     * the name means several places, which one; when it means none, Travel's search.
+     * the place named, then the next way there from where you are, or from the start named
+     * ("from Neumarkt"), by Travel's routes. When a name means several places, which one,
+     * and the tap keeps both ends; when it means none, Travel's search. A way of travelling
+     * asked for ("by tram", "without trains") picks among Travel's ways, and says so when none fits.
      *
-     * @param  array<string, mixed>  $request  the router's journey request (place, area)
+     * @param  array<string, mixed>  $request  the place named (place, area), the start named (from, from_area), a time to
+     *                                         leave (at), modes wanted (by) or not (avoid), and what this conversation named before
      * @return array{text: string, extra: array<string, mixed>}
      */
-    public function toPlace(User $user, array $request, CarbonImmutable $now): array
+    public function toPlace(User $user, array $request, CarbonImmutable $now, ?LocationContext $location = null): array
     {
         $now = $now->setTimezone(self::TIMEZONE);
-        // Where you are; else your home Veedel, and the answer says so.
-        $location = $this->locations->context($user, request(), $user->veedel);
-        $origin = $location->hasOrigin() ? new GeoPoint((float) $location->lat, (float) $location->lng) : null;
-        $from = $location->source === LocationSource::Area ? "From your home area, {$location->label}: l" : 'L';
-        $named = (string) $request['place'];
-        $found = $this->destinations->find($named, $request['area'] ?? null, $origin);
+        // Where you are (as the assistant's other lookups have it); else your home Veedel, and the answer says so.
+        $location ??= $this->locations->context($user, request(), $user->veedel);
+        $here = $location->hasOrigin() ? new GeoPoint((float) $location->lat, (float) $location->lng) : null;
         $search = ['label' => 'Search in Travel', 'href' => '/timetable'];
 
+        // The start named ("from Neumarkt"), found as the place is; else where you are.
+        $start = null;
+        if (filled($request['from'] ?? null)) {
+            $starts = $this->destinations->find((string) $request['from'], $request['from_area'] ?? null, $here);
+            if ($starts === []) {
+                return $this->reply("I can’t find “{$request['from']}” to start from, in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
+            }
+            if (count($starts) > 1 && ($pick = $this->known($user, $starts, $request['mentioned'] ?? [])) === null) {
+                return $this->reply('There’s more than one '.$starts[0]['name'].' to start from. Which do you mean?', null, null,
+                    array_map(fn (array $place): array => ['label' => $place['name'].($place['area'] !== null ? " · {$place['area']}" : ''),
+                        'prompt' => 'Take me from '.$place['name'].($place['area'] !== null ? " in {$place['area']}" : '').' to '.$request['place'].(filled($request['area'] ?? null) ? " in {$request['area']}" : '')], $starts));
+            }
+            $start = $starts[$pick ?? 0];
+        }
+        $origin = $start['point'] ?? $here;
+        $from = match (true) {
+            $start !== null => 'From '.$start['name'].($start['area'] !== null ? " in {$start['area']}" : '').': l',
+            $location->source === LocationSource::Area => "From your home area, {$location->label}: l",
+            default => 'L',
+        };
+
+        $named = (string) $request['place'];
+        $found = $this->destinations->find($named, $request['area'] ?? null, $origin);
         if ($found === []) {
             return $this->reply("I can’t find “{$named}” in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
         }
+        // One name, several places (owner, 22 Oct 2026: "it forgot that there are more than one
+        // Cafe Nova; it should have asked"): never picked silently. The one this conversation or
+        // the person's own history points to is planned, with the others offered; otherwise it asks.
+        $others = [];
         if (count($found) > 1) {
-            return ['text' => 'There’s more than one by that name. Which do you mean?', 'extra' => [
-                'kind' => 'places',
-                'places' => array_map(fn (array $place, int $i): array => ['id' => $place['spot'] ?? -1 - $i, 'name' => $place['name'],
-                    'kind' => $place['kind'], 'distance' => null, 'area' => $place['area'], 'href' => $this->planHref($place),
-                    // Where the place comes from (osm, overture, transit), for the cards' credit.
-                    'source' => $place['source']], $found, array_keys($found)),
-            ]];
+            $pick = $this->known($user, $found, $request['mentioned'] ?? []);
+            if ($pick === null) {
+                return $this->reply('There’s more than one '.$found[0]['name'].'. Which do you mean?', null, null,
+                    array_map(fn (array $place): array => $this->choice($place, $start), $found));
+            }
+            $others = array_values(array_filter($found, fn (array $place, int $i): bool => $i !== $pick, ARRAY_FILTER_USE_BOTH));
+            $found = [$found[$pick]];
         }
 
         $to = $found[0];
         $name = $to['name'].($to['area'] !== null ? " in {$to['area']}" : '');
-        $plan = ['label' => 'Plan it in Travel', 'href' => $this->planHref($to)];
+        $plan = ['label' => 'Plan it in Travel', 'href' => $this->planHref($to, $start)];
         if ($origin === null) {
             return $this->reply("{$name}: I don’t know where you’re starting from, so I can’t time the trip. Travel plans it from where you are.", null, null, [$plan]);
         }
         // Leaving at the time named, when it's still to come; otherwise now.
         $leave = isset($request['at']) ? $now->setTimeFromTimeString($request['at']) : $now;
-        $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), 3);
-        $journey = $result->source === 'degraded' ? null : ($result->journeys[0] ?? null)?->toArray();
+        $wanted = array_values(array_intersect((array) ($request['by'] ?? []), self::KINDS));
+        $avoided = array_values(array_intersect((array) ($request['avoid'] ?? []), self::KINDS));
+        $planning = hrtime(true);
+        $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), $wanted !== [] || $avoided !== [] ? 6 : 3);
+        $this->boards = (hrtime(true) - $planning) / 1e9 < self::BOARDS_WITHIN_SECONDS;
+        $journeys = $result->source === 'degraded' ? [] : array_map(fn ($journey): ?array => self::named($journey->toArray()), $result->journeys);
+        // A way of travelling asked for picks among Travel's ways; none that fits is said, never hidden.
+        $fits = array_values(array_filter($journeys, fn (array $j): bool => collect($j['legs'])->filter(fn (array $leg): bool => $this->rides($leg))
+            ->every(fn (array $leg): bool => ($wanted === [] || in_array(self::kind($leg), $wanted, true)) && ! in_array(self::kind($leg), $avoided, true))));
+        $journey = $fits[0] ?? $journeys[0] ?? null;
         if ($journey === null) {
             return $this->reply("I can’t find a connection to {$name} right now. Travel can look again.", null, null, [$plan]);
         }
+        $asked = array_filter([$wanted !== [] ? 'by '.implode(' or ', $wanted) : null, $avoided !== [] ? 'without '.implode(' or ', array_map(fn (string $k): string => "{$k}s", $avoided)) : null]);
+        $unmet = ($wanted !== [] || $avoided !== []) && $fits === []
+            ? ' None of Travel’s ways there goes '.implode(' and ', $asked).'; this one takes '.collect($journey['legs'])->filter(fn (array $leg): bool => $this->rides($leg))
+                ->map(fn (array $leg): string => self::lower($this->vehicle($leg['mode'], $leg['line'])).' '.$leg['line'])->unique()->implode(', then ').'.'
+            : '';
 
         $ride = collect($journey['legs'])->first(fn (array $leg): bool => $this->rides($leg));
         $city = config('geocoding.search_default.city');
         $changes = $journey['transfers'] > 0 ? ', with '.$journey['transfers'].' change'.($journey['transfers'] > 1 ? 's' : '') : '';
         $title = $ride !== null
-            ? "{$this->vehicle($ride['mode'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
+            ? "{$this->vehicle($ride['mode'], $ride['line'])} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}."
             : "Walk: {$journey['duration_min']} min.";
 
         // "How far is it?": the distance and the time in one line, the way folded under it.
         $distance = ($request['ask'] ?? null) === 'distance';
         $km = app(TravelEstimator::class)->haversineKm($origin->lat, $origin->lng, $to['point']->lat, $to['point']->lng);
-        $text = $distance
+        $text = ($distance
             ? ($from === 'L' ? 'A' : substr($from, 0, -1).'a').'bout '.($km < 10 ? number_format($km, 1) : (string) round($km))." km away in a straight line, {$journey['duration_min']} min door to door; leave at {$journey['depart_time']}."
-            : "{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}.".($ride !== null ? ' '.$this->running($ride) : '');
+            : "{$from}eave at {$journey['depart_time']} to be at {$name} by {$journey['arrive_time']}{$changes}.".($ride !== null ? ' '.$this->running($ride) : '')).$unmet;
 
         $answer = $this->reply($text, $distance ? null : $title, [
             'folded' => $distance,
@@ -112,10 +165,53 @@ final class TripAnswers
             'label' => 'Open in Travel',
             'basis' => collect($journey['legs'])->contains(fn (array $leg): bool => $this->rides($leg) && ($leg['realtime'] ?? false)) ? 'live' : 'scheduled',
         ]);
-        // The place, for a follow-up about it ("how far is it?").
+        // The place and the start named, for a follow-up about them ("how far is it?").
         $answer['extra']['destination'] = ['name' => $to['name'], 'area' => $to['area']];
+        if ($start !== null) {
+            $answer['extra']['start'] = ['name' => $start['name'], 'area' => $start['area']];
+        }
+        // Picked from this conversation, the others of that name are offered beside it, each with its tap.
+        if ($others !== []) {
+            $other = $others[0];
+            $answer['extra']['also'] = ['text' => "There’s also a {$other['name']}".($other['area'] !== null ? " in {$other['area']}" : '').'. Did you mean that one?',
+                'options' => array_map(fn (array $place): array => $this->choice($place, $start), $others)];
+        }
 
         return $answer;
+    }
+
+    /**
+     * Which of several places of one name the person means, when it's known: the one this
+     * conversation already named (a trip or a suggestion), else, with their opt-in, the one
+     * they saved, opened or went to before. Null when nothing (or more than one) says so.
+     *
+     * @param  list<array{name: string, area: ?string, spot: ?int}>  $found
+     * @param  array{spots?: list<int>, areas?: list<string>}  $mentioned  from this conversation (WorkspaceStore)
+     */
+    private function known(User $user, array $found, array $mentioned): ?int
+    {
+        $only = fn (array $hits): ?int => count($hits) === 1 ? array_key_first($hits) : null;
+        $pick = $only(array_filter($found, fn (array $place): bool => $place['spot'] !== null && in_array($place['spot'], $mentioned['spots'] ?? [], true)))
+            ?? $only(array_filter($found, fn (array $place): bool => $place['area'] !== null && in_array($place['area'], $mentioned['areas'] ?? [], true)));
+        if ($pick !== null || ! $user->personalises()) {
+            return $pick;
+        }
+        $spots = array_values(array_filter(array_column($found, 'spot')));
+        $been = $spots === [] ? [] : DB::table('user_signals')->where('subject_key', Pseudonym::for($user))->where('item_type', 'spot')
+            ->whereIn('item_id', $spots)->whereIn('action', ['saved', 'detail_viewed', 'get_there', 'trip_taken', 'been_liked'])
+            ->distinct()->pluck('item_id')->map(fn ($id): int => (int) $id)->all();
+
+        return $only(array_filter($found, fn (array $place): bool => in_array($place['spot'], $been, true)));
+    }
+
+    /** A tap that plans the trip to this one: "Take me to Café Nova in Deutz". */
+    private function choice(array $place, ?array $start = null): array
+    {
+        $in = fn (array $p): string => $p['name'].(($p['area'] ?? null) !== null ? " in {$p['area']}" : '');
+
+        // The tap keeps both ends: "Take me from Neumarkt to Köln Weiden West in Lövenich".
+        return ['label' => $place['name'].($place['area'] !== null ? " · {$place['area']}" : ''),
+            'prompt' => 'Take me '.($start !== null ? 'from '.$in($start).' ' : '')."to {$in($place)}"];
     }
 
     /**
@@ -123,9 +219,28 @@ final class TripAnswers
      *
      * @param  array{name: string, point: GeoPoint}  $place
      */
-    private function planHref(array $place): string
+    private function planHref(array $place, ?array $start = null): string
     {
-        return '/timetable?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng]);
+        return '/timetable?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng,
+            ...($start !== null ? ['from_name' => $start['name'], 'from_lat' => $start['point']->lat, 'from_lng' => $start['point']->lng] : [])]);
+    }
+
+    /**
+     * The journey with each line as riders read it: "RB27", not the feed's "RB27 (10635)"
+     * with its train's run number (owner's preview, 22 Oct 2026).
+     *
+     * @param  array<string, mixed>|null  $journey
+     * @return array<string, mixed>|null
+     */
+    private static function named(?array $journey): ?array
+    {
+        if (! is_array($journey) || ! is_array($journey['legs'] ?? null)) {
+            return $journey;
+        }
+        $journey['legs'] = array_map(fn (mixed $leg): mixed => is_array($leg) && is_string($leg['line'] ?? null)
+            ? [...$leg, 'line' => trim((string) preg_replace('/\s*\(\d+\)$/', '', $leg['line']))] : $leg, $journey['legs']);
+
+        return $journey;
     }
 
     /** The trip under way, when it's to the plan starting at this time (the appointment). */
@@ -165,17 +280,18 @@ final class TripAnswers
             return $text === null ? null : $this->reply($text, null, null, [['label' => 'Open Travel', 'href' => '/timetable']]);
         }
 
+        $trip['journey'] = self::named($trip['journey'] ?? null);
         $legs = $trip['journey']['legs'] ?? [];
         $ride = collect($legs)->first(fn (array $leg): bool => $this->rides($leg));
         $city = $trip['city'] ?? null;
-        $vehicle = $ride === null ? null : $this->vehicle($ride['mode']);
+        $vehicle = $ride === null ? null : $this->vehicle($ride['mode'], $ride['line']);
         $unnamed = ($request['unnamed'] ?? false) ? "That’s for {$which}. " : '';
         $official = (bool) $target['official'];
         $needs = ($official ? 'official appointments need ' : 'plans need ').$trip['margin_min'];
 
         if (($request['status'] ?? false) && $ride !== null) {
             $title = "{$vehicle} {$ride['line']} at {$ride['depart_time']} from {$this->stop($ride['from']['name'], $city)}.";
-            $text = $this->running($ride).' It’s the '.mb_strtolower($vehicle)." for {$which}.";
+            $text = $this->running($ride).' It’s the '.self::lower($vehicle)." for {$which}.";
         } else {
             $title = $trip['leave_in_min'] <= 0 ? "Leave now — it’s {$now->format('H:i')}." : "Leave by {$trip['leave_time']}.";
             $skipped = $trip['skipped'];
@@ -211,7 +327,7 @@ final class TripAnswers
     public function onTheWay(User $user, string $ask, CarbonImmutable $now): ?array
     {
         $active = ActiveTrip::currentFor($user);
-        $journey = $active?->journey;
+        $journey = self::named($active?->journey);
         if (! is_array($journey) || ($journey['legs'] ?? []) === []) {
             return null;
         }
@@ -243,8 +359,8 @@ final class TripAnswers
 
         $boarding = $board === null ? null : $steps[$board];
         $leg = $boarding['leg'] ?? null;
-        $vehicle = $leg === null ? 'Line' : $this->vehicle($leg['mode']);
-        $ride = trim(mb_strtolower($vehicle).' '.($leg['line'] ?? ''));
+        $vehicle = $leg === null ? 'Line' : $this->vehicle($leg['mode'], $leg['line'] ?? null);
+        $ride = trim(self::lower($vehicle).' '.($leg['line'] ?? ''));
         $Ride = ucfirst($ride);
         $towards = $leg !== null && $leg['headsign'] ? ' towards '.$this->stop($leg['headsign'], $city) : '';
         $arrive = $journey['arrive_time'] ?? null;
@@ -267,7 +383,7 @@ final class TripAnswers
             $heading = match ($stage) {
                 'before' => "{$Ride} at {$boarding['time']} from {$boarding['place']}.",
                 'riding' => "You’re on {$ride}{$towards}.",
-                default => 'You’re off the '.mb_strtolower($vehicle).'.',
+                default => 'You’re off the '.self::lower($vehicle).'.',
             };
             $text = in_array($stage, ['before', 'riding'], true) ? $join($this->running($leg), $stage === 'riding' ? $offAt : '') : $join($where, $there);
         } elseif ($ask === 'stop' && $leaving !== null) {
@@ -322,7 +438,7 @@ final class TripAnswers
                 continue;
             }
             $steps[] = ['kind' => 'transit', 'time' => $leg['depart_time'], 'at' => $at,
-                'title' => "{$this->vehicle($leg['mode'])} {$leg['line']} to {$this->stop($leg['to']['name'], $city)}",
+                'title' => "{$this->vehicle($leg['mode'], $leg['line'])} {$leg['line']} to {$this->stop($leg['to']['name'], $city)}",
                 'detail' => 'From '.$this->stop($leg['from']['name'], $city), 'place' => $this->stop($leg['from']['name'], $city), 'leg' => $leg];
             $steps[] = ['kind' => 'alight', 'time' => $leg['arrive_time'], 'at' => CarbonImmutable::parse($leg['arrive_at'])->getTimestamp(),
                 'title' => 'Get off at '.$this->stop($leg['to']['name'], $city), 'detail' => $last ? 'You’re there' : 'Your stop',
@@ -363,14 +479,37 @@ final class TripAnswers
     }
 
     /** Travel's word for a leg's vehicle (line-look.ts `vehicleWord`, `vehicleOf`). */
-    private function vehicle(?string $mode): string
+    /** Which way of travelling a ride is, as a person asks for it: S-Bahn and regional lines are trains. */
+    private static function kind(array $leg): string
     {
+        return match (true) {
+            in_array($leg['mode'] ?? null, ['rail', 'train'], true) || preg_match('/^(S|RE|RB|IC|ICE|EC)\s?\d+$/i', trim((string) ($leg['line'] ?? ''))) === 1 => 'train',
+            ($leg['mode'] ?? null) === 'bus' => 'bus',
+            ($leg['mode'] ?? null) === 'ferry' => 'ferry',
+            default => 'tram',
+        };
+    }
+
+    /** A vehicle mid-sentence: "the tram", but "the S-Bahn". */
+    private static function lower(string $vehicle): string
+    {
+        return $vehicle === 'S-Bahn' ? $vehicle : mb_strtolower($vehicle);
+    }
+
+    private function vehicle(?string $mode, ?string $line = null): string
+    {
+        // The feed reports S-Bahn lines as "subway", like the Stadtbahn: the line's name says which
+        // (owner's preview, 22 Oct 2026: "take tram S12").
+        if (preg_match('/^S\s?\d+$/i', trim((string) $line)) === 1) {
+            return 'S-Bahn';
+        }
+
         return match ($mode) {
             'bus' => 'Bus',
             'rail', 'train' => 'Train',
             'ferry' => 'Ferry',
             // Cologne's Stadtbahn is reported as "subway": a tram.
-            default => 'Tram',
+            default => preg_match('/^(RE|RB|IC|ICE|EC)\s?\d+$/i', trim((string) $line)) === 1 ? 'Train' : 'Tram',
         };
     }
 
@@ -415,6 +554,8 @@ final class TripAnswers
             'kind' => $trip === null ? 'text' : 'trip',
             'title' => $title,
             'trip' => $trip,
+            // A major problem on the way leads the answer (TripTrouble); everyday delays stay on the legs.
+            'major' => is_array($trip['journey'] ?? null) ? $this->trouble->major($trip['journey'], $trip['city'] ?? null, $this->boards) : null,
             'suggestions' => $suggestions ?: null,
         ], fn ($value) => $value !== null)];
     }

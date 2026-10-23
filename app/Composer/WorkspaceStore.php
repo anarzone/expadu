@@ -2,7 +2,6 @@
 
 namespace App\Composer;
 
-use App\Composer\Answers\Answers;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Personalisation\SignalAction;
@@ -24,13 +23,8 @@ class WorkspaceStore
     /** Undo stays available for this many of the newest changes. */
     public const CHANGE_LIMIT = 50;
 
-    /** The page's general replies, by kind. */
-    private const REPLIES = [
-        'bureaucracy' => 'For paperwork, use our reviewed guidance. Composer does not generate legal answers.',
-        'find' => 'Browse places and events below. Pick a date before adding something to your plan.',
-        'journey' => 'Choose a place below to check a journey from your current location.',
-        'failed' => 'I could not finish that request. Your plan is unchanged. You can retry your message.',
-    ];
+    /** What the conversation says when the page couldn't get an answer to a message. */
+    private const FAILED = 'I could not finish that request. Your plan is unchanged. You can retry your message.';
 
     public function __construct(private CandidateRepository $catalogue, private WorkspaceUpgrade $upgrade) {}
 
@@ -68,10 +62,8 @@ class WorkspaceStore
             $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
             abort_if($row->revision !== $input['revision'], 409, 'Your plan changed in another tab. The latest version has been loaded; review it before trying again.');
             $s = $this->state($row);
-            $before = count(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? []);
             try {
                 $displaced = $this->run($s, $user, $input);
-                $this->markReader($s, $before, $input['reader'] ?? null);
             } catch (WorkspaceRefusal $error) {
                 // A change that can't go in changes nothing, not even the revision;
                 // the reply says why, and the workspace comes back as it was.
@@ -91,6 +83,38 @@ class WorkspaceStore
         });
     }
 
+    /**
+     * Composer's answer to a message (Assistant\Ask): it goes into the conversation that
+     * asked, even if another was opened meanwhile, and a plan it showed is added to the
+     * person's plans after it, with its own Undo. A plan that can't go in says why there.
+     *
+     * @param  array{text: string, extra: array<string, mixed>}  $answer
+     * @return array<string, mixed> the projected workspace
+     */
+    public function answer(User $user, string $conversation, array $answer, ?string $token): array
+    {
+        return DB::transaction(function () use ($user, $conversation, $answer, $token): array {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
+            $s = $this->state($row);
+            $active = $s['active'];
+            $s['active'] = collect($s['conversations'])->contains('id', $conversation) ? $conversation : $active;
+            $this->message($s, 'assistant', $answer['text'], $this->withoutRepeatedFacts($s, $answer['extra']));
+            if ($token !== null) {
+                try {
+                    $this->run($s, $user, ['action' => 'proposal', 'token' => $token]);
+                    DB::afterCommit(fn () => app(PrivatePlanCache::class)->forgetHandoff($user, $token));
+                } catch (WorkspaceRefusal $refusal) {
+                    $this->message($s, 'assistant', $refusal->getMessage(), ['kind' => 'refusal']);
+                }
+            }
+            $s['active'] = $active;
+            $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+
+            return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => null];
+        });
+    }
+
     /** @return array<string, mixed>|null the slot a remove or replace took out of the plan */
     private function run(array &$s, User $user, array $input): ?array
     {
@@ -100,46 +124,8 @@ class WorkspaceStore
 
                 return null;
             case 'reply':
-                $conversation = collect($s['conversations'])->firstWhere('id', $s['active']);
-                $query = collect($conversation['messages'])->last(fn ($message) => $message['role'] === 'user')['text'] ?? '';
-                if ($input['kind'] === 'unknown') {
-                    // Not understood: what's around you and what Composer can do, never a dead end.
-                    $this->around($s, $user, $query, ['kind' => 'clarify']);
-                } else {
-                    $this->message($s, 'assistant', self::REPLIES[$input['kind']], ['kind' => $input['kind'], 'query' => $query]);
-                }
-                if (in_array($input['kind'], ['bureaucracy', 'unknown'])) {
-                    $s['focus'] = null;
-                }
-
-                return null;
-            case 'answer':
-                // The answer to the person's last request, worked out here from what they
-                // wrote (never text the page sends), and changing no plan.
-                $messages = collect(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? []);
-                $asked = $messages->last(fn ($message) => $message['role'] === 'user');
-                $this->require($asked !== null, 'not_found', 'Ask something first.');
-                $answers = app(Answers::class);
-                $now = CarbonImmutable::now('Europe/Berlin');
-                $request = $answers->route($user, $asked['text'], $now, $s['focus']);
-                if (($request['again'] ?? false) && ! isset($request['place'])) {
-                    // "How do I get there?": the place this conversation's last trip was to.
-                    $last = $messages->last(fn ($message) => isset($message['destination']['name']))['destination'] ?? null;
-                    $request = $last === null ? array_diff_key($request, ['again' => true]) : [...$request, 'place' => $last['name'], 'area' => $last['area'] ?? null];
-                }
-                $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now);
-                if ($reply === null && ! in_array($request['kind'], ['checklist', 'bureaucracy', 'journey', 'onway'], true)) {
-                    // No answer of its own: what's around you and what Composer can do.
-                    $this->around($s, $user, $asked['text'], $request);
-                } elseif ($reply === null) {
-                    // The page's own reply for the kind: no checklist is a paperwork question; a
-                    // trip it can't time is a journey to look up.
-                    $kind = in_array($request['kind'], ['checklist', 'bureaucracy'], true) ? 'bureaucracy' : 'journey';
-                    $this->message($s, 'assistant', self::REPLIES[$kind], ['kind' => $kind, 'query' => $asked['text']]);
-                } else {
-                    $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
-                }
-                $s['focus'] = null;
+                // The page couldn't get an answer (Ask failed or didn't respond): the conversation says so.
+                $this->message($s, 'assistant', self::FAILED, ['kind' => 'failed']);
 
                 return null;
             case 'proposal':
@@ -617,11 +603,31 @@ class WorkspaceStore
         }
     }
 
-    /** What's around you now (Answers::around), as the reply to `$text`. */
-    private function around(array &$s, User $user, string $text, array $request): void
+    /**
+     * An answer's facts less those this conversation already showed (owner's preview test,
+     * 22 Oct 2026: "Visa expires" under every answer). Each shows once per conversation.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function withoutRepeatedFacts(array $s, array $extra): array
     {
-        $reply = app(Answers::class)->around($user, $text, $request, $s['plans'], CarbonImmutable::now('Europe/Berlin'));
-        $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
+        $shown = collect(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? [])
+            ->filter(fn (array $m): bool => $m['role'] === 'assistant' && is_array($m['facts'] ?? null))
+            ->flatMap(fn (array $m): array => array_map(fn (array $f): string => "{$f['label']}|{$f['value']}", $m['facts']))->flip();
+        $blocks = collect($extra['blocks'] ?? [])->map(function (array $block) use ($shown): ?array {
+            if (! is_array($block['facts'] ?? null)) {
+                return $block;
+            }
+            $facts = array_values(array_filter($block['facts'], fn (array $f): bool => ! $shown->has("{$f['label']}|{$f['value']}")));
+
+            // A card of facts alone goes once they've all been shown, and its "From:" link with it.
+            return $facts === [] && $block['type'] === 'facts' ? null : array_filter([...$block, 'facts' => $facts ?: null], fn ($v) => $v !== null);
+        })->filter()->values()->all();
+        $facts = collect($blocks)->flatMap(fn (array $b): array => $b['facts'] ?? [])->values()->all();
+        $sources = collect($blocks)->flatMap(fn (array $b): array => $b['sources'] ?? [])->unique('href')->values()->all();
+
+        return array_filter([...$extra, 'blocks' => $blocks ?: null, 'facts' => $facts ?: null, 'sources' => $sources ?: null], fn ($v) => $v !== null);
     }
 
     private function message(array &$s, string $role, string $text, array $extra = []): void
@@ -648,28 +654,6 @@ class WorkspaceStore
         return $candidate->opensAt !== null && $candidate->closesAt !== null
             ? "Opening hours aren’t listed for {$candidate->name}, so Composer plans it between {$candidate->opensAt->format('H:i')} and {$candidate->closesAt->format('H:i')}, as is usual for its kind. Choose a time then."
             : "Opening hours aren’t listed for {$candidate->name}, so Composer can’t plan it for that time.";
-    }
-
-    /**
-     * The request was read without the AI: its reply says so (the parse's `reader`),
-     * on the reply this command added, never an earlier one.
-     */
-    private function markReader(array &$s, int $before, ?string $reader): void
-    {
-        if ($reader === null) {
-            return;
-        }
-        foreach ($s['conversations'] as &$conversation) {
-            if ($conversation['id'] !== $s['active']) {
-                continue;
-            }
-            for ($i = count($conversation['messages']) - 1; $i >= $before; $i--) {
-                if ($conversation['messages'][$i]['role'] === 'assistant') {
-                    $conversation['messages'][$i]['reader'] = $reader;
-                    break;
-                }
-            }
-        }
     }
 
     private function weekday(string $date): string

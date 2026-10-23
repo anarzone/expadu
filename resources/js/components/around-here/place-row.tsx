@@ -94,8 +94,18 @@ export function PlaceRow({
                             </>
                         ) : null}
                     </small>
-                    {hours || access || outdoorSeating(place) || diet || net ? (
+                    {hours ||
+                    access ||
+                    outdoorSeating(place) ||
+                    diet ||
+                    net ||
+                    place.facilities ? (
                         <span className="nearby-place-facts">
+                            {place.facilities ? (
+                                <span className="place-detail">
+                                    {place.facilities}
+                                </span>
+                            ) : null}
                             {hours ? (
                                 <span
                                     className={cn(

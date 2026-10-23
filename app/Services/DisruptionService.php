@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CityNews;
 use App\Models\NoticeBrief;
+use App\Transit\NoticeScale;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -70,14 +71,25 @@ class DisruptionService
         return $notices
             ->map(function (CityNews $n) use ($briefs) {
                 $brief = $briefs->get(NoticeBrief::hashFor((string) $n->title, $n->summary));
+                $scale = NoticeScale::of((string) $n->title, $n->summary,
+                    array_map('strval', $n->affected_lines ?? []), $n->severity);
+                // Major from its start to its end: one announced ahead is everyday until then.
+                if ($n->source !== 'kvb-betriebslage' && $n->published_at?->isFuture()) {
+                    $scale = ['scale' => 'minor', 'reasons' => [...$scale['reasons'], 'not_started']];
+                }
 
                 return [
                     'id' => 'news_'.$n->id,
                     'title' => $n->title,
                     'description' => $n->summary ?? '',
                     'severity' => $n->severity ?? 'minor',
+                    // A major line problem (a headline) or an everyday one (in place), and why.
+                    'scale' => $scale['scale'],
+                    'scale_reasons' => $scale['reasons'],
                     'type' => 'line',
                     'affected_lines' => $n->affected_lines ?? [],
+                    // The stops it names (VRS's and DELFI's notices), for a trip's From and To.
+                    'affected_stops' => $n->affected_stops ?? [],
                     // A live KVB notice's published_at is when it was last seen
                     // (every scrape); it started when it was first seen.
                     'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
@@ -85,7 +97,7 @@ class DisruptionService
                     'source' => $n->source,
                     // KVB's own page for it: the German source, one tap from the brief.
                     'url' => self::kvbPage($n->source_url),
-                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact] : null,
+                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact, 'kind' => $brief->kind ?? 'brief'] : null,
                 ];
             })
             ->all();
