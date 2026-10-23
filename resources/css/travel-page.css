@@ -4349,6 +4349,13 @@
         transition: grid-template-columns 460ms var(--ease);
     }
 }
+/* Bigger: Plan a trip takes two thirds, the board the rest, and its
+   options sit beside the form (departures-next hub.css). */
+@media (min-width: 1000px) {
+    .travel-page.plan-big {
+        grid-template-columns: calc(66.6% - 16px) minmax(0px, 1fr);
+    }
+}
 @media (min-width: 1000px) {
     .travel-page > :not(#journey-view) {
         grid-column: 2;
