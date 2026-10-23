@@ -16,6 +16,7 @@ import {
     AnswerBody,
     isAnswer,
     guided,
+    NotAnswered,
     TryAgain,
     unanswered,
 } from '@/components/composer/answers';
@@ -193,6 +194,7 @@ export default function ComposerPage({
         send,
         again,
         retry,
+        leftUnanswered,
     } = useComposerEngine(initial, aiNotice, {
         origin,
         pins,
@@ -777,6 +779,12 @@ export default function ComposerPage({
                                 </article>
                             );
                         })}
+                        {leftUnanswered() && (
+                            <NotAnswered
+                                onAgain={() => void again()}
+                                disabled={!!busy}
+                            />
+                        )}
                         {pendingText && (
                             <article className="chat-entry chat-user">
                                 <span className="chat-speaker">You</span>

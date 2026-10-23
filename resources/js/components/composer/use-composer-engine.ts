@@ -94,6 +94,10 @@ export function useComposerEngine(
     const [pendingText, setPendingText] = useState('');
     // The last request's message is in but unanswered: Retry asks again.
     const againRef = useRef(false);
+    // The messages this page sent and saw through (answered, or handled here:
+    // a plan opened, a swap), so only one left behind (a reload mid-answer)
+    // reads as unanswered.
+    const handled = useRef(new Set<string>());
     const on = useRef(hooks);
     useEffect(() => {
         on.current = hooks;
@@ -384,11 +388,38 @@ export function useComposerEngine(
                 on.current.onFailed?.(text);
             }
         } finally {
+            const messages =
+                stateRef.current.conversations.find(
+                    (item) => item.id === stateRef.current.active,
+                )?.messages ?? [];
+            const last = messages.findLast(
+                (message) => message.role === 'user',
+            );
+
+            if (last) {
+                handled.current.add(last.id);
+            }
+
             setPendingText('');
             setBusy('');
             busyRef.current = false;
             on.current.onSettled?.();
         }
+    }
+
+    /** Whether the person's newest message was left without a reply, not handled here. */
+    function leftUnanswered(): boolean {
+        const messages =
+            workspace.conversations.find((item) => item.id === workspace.active)
+                ?.messages ?? [];
+        const last = messages.at(-1);
+
+        return (
+            !busy &&
+            !pendingText &&
+            last?.role === 'user' &&
+            !handled.current.has(last.id)
+        );
     }
 
     return {
@@ -409,5 +440,6 @@ export function useComposerEngine(
         send,
         again,
         retry,
+        leftUnanswered,
     };
 }

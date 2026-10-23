@@ -4,7 +4,14 @@ import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 import type { AiNotice } from './ai-notice';
-import { AnswerBody, guided, isAnswer, TryAgain, unanswered } from './answers';
+import {
+    AnswerBody,
+    guided,
+    isAnswer,
+    NotAnswered,
+    TryAgain,
+    unanswered,
+} from './answers';
 import { Guidance } from './guidance';
 import { ComposerLoading } from './loading';
 import { PlanCard } from './plan-card';
@@ -375,6 +382,12 @@ function Talk({
             </p>
             <div className="chat-feed" aria-label="Conversation">
                 {messages.map(entry)}
+                {engine.leftUnanswered() && (
+                    <NotAnswered
+                        onAgain={() => void engine.again()}
+                        disabled={!!busy}
+                    />
+                )}
                 {pendingText && (
                     <article className="chat-entry chat-user">
                         <span className="chat-speaker">You</span>

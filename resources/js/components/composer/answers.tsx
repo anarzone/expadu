@@ -788,6 +788,29 @@ export function TryAgain({
     );
 }
 
+/**
+ * The person's newest message with no reply after it, the request gone (the
+ * page reloaded or closed mid-answer): said, with Try again, never a gap.
+ */
+export function NotAnswered({
+    onAgain,
+    disabled,
+}: {
+    onAgain: () => void;
+    disabled: boolean;
+}) {
+    return (
+        <article className="chat-entry chat-assistant">
+            <span className="chat-speaker">
+                <Icon name="spark" variant="line" />
+                Composer
+            </span>
+            <p>This one didn’t get an answer.</p>
+            <TryAgain onAgain={onAgain} disabled={disabled} />
+        </article>
+    );
+}
+
 /** Reviewed guidance under a reply: an assistant's answer draws its own, in its place. */
 export const guided = (message: Message) =>
     message.kind === 'bureaucracy' &&
