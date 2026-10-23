@@ -278,6 +278,7 @@ class PlaceFacts
             'location' => $location,
             'access' => $access['fact'],
             'fee' => $fee,
+            'public_use' => self::publicUse($access['fact'], $fee),
             'hours' => $hours,
             'contact' => $contact,
             'description' => $description,
@@ -295,6 +296,36 @@ class PlaceFacts
             ])),
             'revision' => $revision,
         ];
+    }
+
+    /**
+     * Whether anyone may use the place, and whether it's listed as free, from
+     * its resolved access and fee: the city's register of public play areas,
+     * an OSM access tag, or fee=no. `free` is only ever what a fee tag says;
+     * a public place with no fee listed stays free "unknown", never assumed.
+     *
+     * @param  array<string, mixed>  $access
+     * @param  array<string, mixed>  $fee
+     * @return array{value: string, free: string, basis: ?string, source_url: ?string}
+     */
+    public static function publicUse(array $access, array $fee): array
+    {
+        $free = match ($fee['value'] ?? 'unknown') {
+            'free' => 'yes', 'paid' => 'no', default => 'unknown',
+        };
+        $from = static fn (?string $url): string => match (true) {
+            str_contains((string) $url, 'offenedaten-koeln.de') => 'city_register',
+            str_contains((string) $url, 'openstreetmap.org') => 'osm_access',
+            default => 'listed_access',
+        };
+        $known = ($access['status'] ?? null) === 'known';
+
+        return match (true) {
+            $known && in_array($access['value'] ?? null, self::RESTRICTED_ACCESS, true) => ['value' => 'no', 'free' => $free, 'basis' => $from($access['source_url'] ?? null), 'source_url' => $access['source_url'] ?? null],
+            $known && ($access['value'] ?? null) === 'public' => ['value' => 'yes', 'free' => $free, 'basis' => $from($access['source_url'] ?? null), 'source_url' => $access['source_url'] ?? null],
+            $free === 'yes' => ['value' => 'yes', 'free' => 'yes', 'basis' => 'no_fee', 'source_url' => $fee['source_url'] ?? null],
+            default => ['value' => 'unknown', 'free' => $free, 'basis' => null, 'source_url' => null],
+        };
     }
 
     public function revision(): int
