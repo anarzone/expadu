@@ -4386,15 +4386,10 @@
         text-align: left;
         font: inherit;
         cursor: pointer;
-        transition:
-            transform var(--duration-fast) var(--ease-settle),
-            box-shadow var(--duration-base) var(--ease-settle);
+        transition: box-shadow var(--duration-base) var(--ease-settle);
     }
     .starter-card:hover {
         box-shadow: 0 12px 26px -18px #2a201499;
-    }
-    .starter-card:active {
-        transform: scale(0.98);
     }
     .starter-card:focus-visible,
     .starter-chip:focus-visible,
@@ -4493,9 +4488,7 @@
         font-size: var(--text-control);
         font-weight: var(--weight-medium);
         cursor: pointer;
-        transition:
-            background-color var(--duration-fast) var(--ease-settle),
-            transform var(--duration-fast) var(--ease-settle);
+        transition: background-color var(--duration-fast) var(--ease-settle);
     }
     .starter-chip svg {
         width: 16px;
@@ -4504,9 +4497,6 @@
     }
     .starter-chip:hover {
         background: var(--color-bg-quiet);
-    }
-    .starter-chip:active {
-        transform: scale(0.97);
     }
 
     /* Phones: your day's facts in one scrolling row above the starters. */
@@ -4648,15 +4638,10 @@
             text-align: left;
             text-decoration: none;
             cursor: pointer;
-            transition:
-                border-color var(--duration-fast) var(--ease-settle),
-                transform var(--duration-fast) var(--ease-settle);
+            transition: border-color var(--duration-fast) var(--ease-settle);
         }
         .day-item:hover {
             border-color: var(--color-border-strong);
-        }
-        .day-item:active {
-            transform: scale(0.99);
         }
         .day-item > span:last-child {
             display: grid;
@@ -5824,8 +5809,7 @@
         color: var(--color-text-on-action);
         transition:
             background-color 160ms ease,
-            color 160ms ease,
-            transform 160ms ease;
+            color 160ms ease;
     }
     &.composer-page .composer-tools .send svg {
         width: 20px;
@@ -5833,9 +5817,6 @@
     }
     &.composer-page .composer-tools .send:hover:not(:disabled) {
         background-color: var(--color-action-hover);
-    }
-    &.composer-page .composer-tools .send:active:not(:disabled) {
-        transform: scale(0.94);
     }
     &.composer-page .composer-tools .send:disabled {
         background-color: transparent;
@@ -6219,10 +6200,6 @@
         background: var(--color-paper-bg-quiet);
         color: var(--color-text);
         text-decoration: none;
-        transition: transform var(--duration-fast) var(--ease-settle);
-    }
-    &.composer-page .answer-checklist:active {
-        transform: scale(0.99);
     }
     &.composer-page .answer-checklist > svg {
         width: 18px;
@@ -7582,15 +7559,10 @@
         font: inherit;
         text-align: left;
         cursor: pointer;
-        transition:
-            border-color var(--duration-fast) var(--ease-settle),
-            transform var(--duration-fast) var(--ease-settle);
+        transition: border-color var(--duration-fast) var(--ease-settle);
     }
     &.composer-page .nearby-answer-card:hover {
         border-color: var(--color-border-strong);
-    }
-    &.composer-page .nearby-answer-card:active {
-        transform: scale(0.99);
     }
     &.composer-page .nearby-answer-copy {
         display: grid;
