@@ -236,7 +236,7 @@ final class AssistantTools
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists; "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
-                    'open_now' => ['type' => 'boolean', 'description' => 'only places open now, by their listed hours; only when they ask for open now'],
+                    'open_now' => ['type' => 'boolean', 'description' => 'places open now by their listed hours, then open-air ones with no set hours; only when they ask for open now'],
                     'step_free' => ['type' => 'boolean', 'description' => 'only places whose step-free access is listed'],
                     'features' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'only places that list these, and only when they asked for that fact: wifi, outdoor_seating, wheelchair, diet:vegan|vegetarian|halal|kosher|gluten_free, cuisine:<word> (italian, pizza, turkish, vietnamese, burger…)'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
@@ -246,7 +246,7 @@ final class AssistantTools
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
-                    'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
+                    'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee is left out; listed free first, then public ones with no fee listed'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
@@ -605,6 +605,7 @@ final class AssistantTools
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
         $work = ($input['to_work'] ?? false) === true;
+        $free = ($input['free'] ?? false) === true;
         // Few places list hours, facts, a playground's goals or what they say of laptops: for those, the search reads further.
         $deep = $mustBeOpen || $features !== [] || $plays !== null || $work;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
@@ -634,21 +635,30 @@ final class AssistantTools
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
                 // To work there: never a place that says no laptops then (places session's website facts).
                 && (! $work || self::laptopsWelcome($c, $at) !== false)
-                && (($input['free'] ?? false) !== true || $c->costTier === 'free'))
+                // Free: only a listed fee leaves a place out; most public pitches list none (owner, 23 Oct 2026).
+                && (! $free || ! in_array($c->costTier, ['low', 'normal'], true)))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
-        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
+        // Open: listed open, or an open-air place with no set hours (a public pitch), after those; never one listed closed.
+        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true || ($c->outdoor && OpeningAnswer::isOpenAt($c, $at) === null)
+            : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
-                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0)
+                // What's certain first: listed open, then listed free, then public access, then neither listed.
+                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
+                + ($free ? ($c->costTier === 'free' ? 0 : ($c->access === 'public' ? 0.3 : 0.6)) : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
-                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0)
+                // What's certain first: listed open, then listed free, then public access, then neither listed.
+                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
+                + ($free ? ($c->costTier === 'free' ? 0 : ($c->access === 'public' ? 0.3 : 0.6)) : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
@@ -678,7 +688,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work, $free): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             if ($areas !== []) {
@@ -695,7 +705,7 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null)
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
                 .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
@@ -743,6 +753,9 @@ final class AssistantTools
 
             return new Candidate(...[...get_object_vars($park), 'id' => $id, 'name' => $part === null ? $park->name : "{$park->name} ({$part})",
                 'veedel' => $part ?? $park->veedel, 'lat' => $c->lat, 'lng' => $c->lng,
+                // What the pitch lists (public, free) holds for the park answered for it, when the park lists none.
+                'access' => $park->access === 'unknown' ? $c->access : $park->access,
+                'costTier' => $park->costTier === 'unknown' ? $c->costTier : $park->costTier,
                 'distanceKmFromOrigin' => $c->distanceKmFromOrigin, 'travelMinutesFromOrigin' => $c->travelMinutesFromOrigin]);
         })->unique('id')->values();
     }
@@ -1229,14 +1242,15 @@ final class AssistantTools
     }
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
-    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null): string
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null, bool $free = false): string
     {
         $kind = self::kindOf($c);
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
         $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $at);
         $hours = match (true) {
             $open === true => ' Open '.($now ? 'now' : 'at '.$at->setTimezone('Europe/Berlin')->format('H:i')).($c->closesAt !== null ? ', until '.$c->closesAt->setTimezone('Europe/Berlin')->format('H:i').' today' : '').'.',
-            $open === null => ' Opening hours not listed.',
+            // A public pitch or park has no opening hours to list: it's said as what it is.
+            $open === null => $c->outdoor ? ' Open-air, no set hours listed.' : ' Opening hours not listed.',
             default => '',
         };
 
@@ -1248,9 +1262,15 @@ final class AssistantTools
             .($has !== null ? ' Has: '.$has.'.' : '')
             .($lists !== [] ? ' Lists: '.implode(', ', $lists).'.' : '')
             .$hours
-            .($c->costTier === 'free' ? ' Free.' : '')
-            .($stepFree && $c->stepFree() ? ' Step-free access listed.' : '')
-            .($c->vibeTags !== [] ? ' Listed as '.implode(', ', array_slice($c->vibeTags, 0, 3)).'.' : '');
+            // What's listed of its cost: free, or (asked for free) public with no fee listed, or not listed.
+            .match (true) {
+                $c->costTier === 'free' => ' Free to use (listed).',
+                $free && $c->access === 'public' => ' Public, no fee listed.',
+                $free => ' Fee not listed.',
+                default => '',
+            }
+        .($stepFree && $c->stepFree() ? ' Step-free access listed.' : '')
+        .($c->vibeTags !== [] ? ' Listed as '.implode(', ', array_slice($c->vibeTags, 0, 3)).'.' : '');
     }
 
     private function line(string $id, string $text): string
