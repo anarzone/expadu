@@ -969,6 +969,27 @@ html {
     width: 14px;
     height: 14px;
 }
+/* Composer's mode (Ask first), to Settings › Composer. */
+.composer-mode-chip {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 28px;
+    margin-left: 4px;
+    padding: 0 10px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-decoration: none;
+}
+.composer-mode-chip:active {
+    background: var(--color-bg-hover, var(--color-border));
+}
 .composer-tray-full,
 .composer-tray-head-button {
     display: inline-flex;

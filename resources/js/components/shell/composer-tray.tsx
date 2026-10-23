@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
+import { AskFirstChip } from '@/components/composer/ask-first-chip';
 import type { TrayAsked, TrayView } from '@/components/composer/tray-body';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
@@ -612,6 +613,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 <Icon name="spark" variant="line" />
                             </span>
                             <strong>Composer</strong>
+                            <AskFirstChip />
                             <Link
                                 className="composer-tray-full"
                                 href={composer.url()}
