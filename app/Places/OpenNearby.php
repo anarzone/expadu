@@ -4,6 +4,7 @@ namespace App\Places;
 
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
+use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -87,34 +88,100 @@ final class OpenNearby
         [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for);
         $local = $at->setTimezone('Europe/Berlin');
 
-        return $spots->map(function (Spot $spot) use ($facts, $local, $lat, $lng): array {
-            $fact = $facts->get($spot->id) ?? [];
-            $practical = fn (string $key): ?string => ($fact['practical'][$key]['status'] ?? null) === 'known' && is_scalar($fact['practical'][$key]['value'] ?? null)
-                ? (string) $fact['practical'][$key]['value']
-                : null;
-            $point = $fact['location']['map_point'] ?? [];
+        return $spots->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $lat, $lng))->values();
+    }
 
-            return [
-                'id' => (int) $spot->id,
-                'name' => (string) ($fact['name']['value'] ?? $spot->name),
-                'kind' => $spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category,
-                'veedel' => $spot->veedel,
-                'lat' => (float) ($point['lat'] ?? $spot->lat),
-                'lng' => (float) ($point['lng'] ?? $spot->lng),
-                'km' => round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3),
-                // A park or a wood is measured to its middle: "about".
-                'area' => ($point['kind'] ?? null) === 'area',
-                'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
-                'wheelchair' => $practical('wheelchair'),
-                'outdoor_seating' => $practical('outdoor_seating'),
-                'cuisine' => $practical('cuisine'),
-                'diets' => array_filter([
-                    'vegetarian' => $practical('diet:vegetarian'),
-                    'vegan' => $practical('diet:vegan'),
-                ]),
-                'internet_access' => $practical('internet_access'),
-            ];
-        })->values();
+    /**
+     * The same rows for places already chosen (a Composer answer), in the order
+     * given: distance from where they were searched from, when known.
+     *
+     * @param  list<int>  $spotIds
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function rows(array $spotIds, ?float $fromLat, ?float $fromLng, CarbonImmutable $at, ?User $for = null): Collection
+    {
+        $saved = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
+            ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
+            ->keys()->map(fn (mixed $id): int => (int) $id)->all();
+        $spots = Spot::query()->whereIn('id', $spotIds)
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
+            ->get()->keyBy('id');
+        $facts = $this->facts->resolveMany($spots->values());
+        $local = $at->setTimezone('Europe/Berlin');
+
+        return collect($spotIds)->map(fn (int $id): ?Spot => $spots->get($id))->filter()
+            ->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $fromLat, $fromLng))
+            // What Around here's PlaceRow needs besides the facts: its icon, label and saved state.
+            ->map(fn (array $row): array => [
+                ...$row,
+                'icon' => AroundKinds::icon($row['kind']),
+                'label' => AroundKinds::label($row['kind']),
+                'saved' => in_array($row['id'], $saved, true),
+            ])->values();
+    }
+
+    /** "Frankenwerft 35, 50667 Köln" → "Frankenwerft 35"; a postcode or town alone is no street. */
+    public static function street(?string $address): ?string
+    {
+        $first = trim(explode(',', (string) $address)[0]);
+
+        return $first === '' || preg_match('/^\d{5}\b/u', $first) === 1 || preg_match('/^(köln|cologne)$/iu', $first) === 1 ? null : $first;
+    }
+
+    /** "IMG_1.jpg — Molgreen — CC BY-SA 4.0" → "Molgreen · CC BY-SA 4.0": author and licence, no file name. */
+    public static function shortCredit(?string $attribution): ?string
+    {
+        $parts = collect(preg_split('/\s+[—·|]\s+/u', trim((string) $attribution)) ?: [])
+            ->map(fn (string $part): string => trim($part))
+            ->reject(fn (string $part): bool => $part === '' || preg_match('/\.(jpe?g|png|webp|gif|tiff?)$/iu', $part) === 1 || $part === 'Wikimedia Commons');
+
+        return $parts->isEmpty() ? null : $parts->implode(' · ');
+    }
+
+    /**
+     * A place as Around here and Composer show it: only listed facts, a photo
+     * only when its rights are cleared, never a placeholder.
+     *
+     * @param  array<string, mixed>  $fact  its resolved PlaceFacts
+     * @return array<string, mixed>
+     */
+    private function row(Spot $spot, array $fact, CarbonImmutable $local, ?float $lat, ?float $lng): array
+    {
+        $practical = fn (string $key): ?string => ($fact['practical'][$key]['status'] ?? null) === 'known' && is_scalar($fact['practical'][$key]['value'] ?? null)
+            ? (string) $fact['practical'][$key]['value']
+            : null;
+        $point = $fact['location']['map_point'] ?? [];
+        $address = ($fact['contact']['address']['status'] ?? null) === 'known' ? (string) $fact['contact']['address']['value'] : null;
+        $photo = app(PublishedMediaSelector::class)->select($spot, 'hero');
+
+        return [
+            'id' => (int) $spot->id,
+            // Generic facility names carry their park, street or Veedel ("Bolzplatz · Merkenich").
+            'name' => (string) ($fact['display_name'] ?? $fact['name']['value'] ?? $spot->name),
+            'kind' => $spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category,
+            'veedel' => $spot->veedel,
+            'lat' => (float) ($point['lat'] ?? $spot->lat),
+            'lng' => (float) ($point['lng'] ?? $spot->lng),
+            'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3) : null,
+            // A park or a wood is measured to its middle: "about".
+            'area' => ($point['kind'] ?? null) === 'area',
+            'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
+            'street' => self::street($address),
+            'photo' => $photo === null ? null : [
+                'url' => $photo->remote_url,
+                'credit' => self::shortCredit($photo->attribution),
+                'source_url' => $photo->source_page_url,
+                'licence_url' => $photo->license_url,
+            ],
+            'wheelchair' => $practical('wheelchair'),
+            'outdoor_seating' => $practical('outdoor_seating'),
+            'cuisine' => $practical('cuisine'),
+            'diets' => array_filter([
+                'vegetarian' => $practical('diet:vegetarian'),
+                'vegan' => $practical('diet:vegan'),
+            ]),
+            'internet_access' => $practical('internet_access'),
+        ];
     }
 
     /**
@@ -172,6 +239,8 @@ final class OpenNearby
             ->when($hidden !== [], fn ($q) => $q->whereNotIn(DB::raw('coalesce(spots.canonical_spot_id, spots.id)'), $hidden));
         $spots = $this->nearby->orderByDistance($this->nearby->withinKm($query, $lat, $lng, $radiusKm), $lat, $lng)
             ->limit($take)
+            // Each row looks for a rights-cleared photo: load them with the places.
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
             ->get();
 
         return [$spots, $this->facts->resolveMany($spots)];
