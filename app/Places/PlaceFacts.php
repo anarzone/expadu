@@ -283,7 +283,11 @@ class PlaceFacts
             'description' => $description,
             'negative_facts' => $negativeFacts,
             'practical' => $practical,
-            'activities' => PlaceCapabilities::activities($practical['sport']['value']),
+            // A playground with goals or a ball wall is a children's play area, not where adults
+            // go to play football: its equipment stays in practical, but it answers no activity ask.
+            'activities' => ($spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category) === 'playground'
+                ? []
+                : PlaceCapabilities::activities($practical['sport']['value']),
             'conflicts' => array_values(array_filter([
                 $access['conflicting'] ? 'access' : null,
                 $fee['status'] === 'conflicting' ? 'fee' : null,
