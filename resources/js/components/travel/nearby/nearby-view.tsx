@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Fragment,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { TravelBanner, TravelChip } from '../labels';
@@ -10,6 +17,7 @@ import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
 import { LiftLine, MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
+import { StationMap, useLinesMap } from './station-map';
 import { StopPicker } from './stop-picker';
 import { closestNow, closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
@@ -111,6 +119,20 @@ export function NearbyView({
     const v = useMemo(
         () => nearbyView(station, filters, { pinned, now, cancelled: true }),
         [station, filters, pinned, now],
+    );
+    // List | Map: the map once the timetable knows the station.
+    const linesMap = useLinesMap(station);
+    const [view, setView] = useState<'list' | 'map'>('list');
+    const mapOpen = view === 'map' && !!linesMap;
+    const closeMap = useCallback(() => setView('list'), []);
+    const board = useMemo(
+        () =>
+            nearbyView(station, filterDefaults(), {
+                pinned,
+                now,
+                cancelled: true,
+            }).areas.flatMap((area) => area.cards),
+        [station, pinned, now],
     );
     const stale = station.is_stale || station.time_basis === 'stale';
     // Late at night: the next ones after these are a long way off.
@@ -672,7 +694,7 @@ export function NearbyView({
             : 'All lifts here are working.';
 
     return (
-        <div className="nearby" data-view="list" ref={root}>
+        <div className="nearby" data-view={mapOpen ? 'map' : 'list'} ref={root}>
             <MajorHeadline station={station} />
             {station.unknown_stop ? (
                 <div className="nearby-banner is-labelled">
@@ -747,6 +769,41 @@ export function NearbyView({
                 >
                     <TravelIcon name="star" />
                 </button>
+                {linesMap ? (
+                    <>
+                        <div
+                            className="nearby-views"
+                            role="group"
+                            aria-label="Show as"
+                        >
+                            <button
+                                type="button"
+                                aria-pressed={!mapOpen}
+                                aria-label="List"
+                                onClick={closeMap}
+                            >
+                                <TravelIcon name="list" />
+                            </button>
+                            <button
+                                type="button"
+                                aria-pressed={mapOpen}
+                                aria-label="Map"
+                                onClick={() => setView('map')}
+                            >
+                                <TravelIcon name="map" />
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            className="nearby-open-map"
+                            aria-label="Open the map"
+                            title="Map"
+                            onClick={() => setView('map')}
+                        >
+                            <TravelIcon name="map" />
+                        </button>
+                    </>
+                ) : null}
             </div>
             <div className="nearby-stops" hidden={!stopsOpen}>
                 {stopsOpen ? (
@@ -912,6 +969,17 @@ export function NearbyView({
                     </div>
                 )}
             </div>
+            {linesMap ? (
+                <StationMap
+                    key={station.name}
+                    station={station}
+                    data={linesMap}
+                    open={mapOpen}
+                    onClose={closeMap}
+                    board={board}
+                    renderLine={row}
+                />
+            ) : null}
             {station.credits?.map((credit) => (
                 <p key={credit.name} className="nearby-credit">
                     {credit.for}:{' '}
