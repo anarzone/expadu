@@ -303,6 +303,86 @@ h3 {
     margin: 10px 0;
     padding-left: 6px;
 }
+/* Markdown tables: same rules as .timeline; wide ones scroll sideways on phones. */
+.article-body table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 30px 0;
+    border-collapse: collapse;
+    border-block: 1px solid var(--ink);
+    font-size: 15px;
+    line-height: 1.5;
+}
+.article-body th,
+.article-body td {
+    min-width: 7.5em;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 18px 12px 0;
+    text-align: left;
+    vertical-align: top;
+}
+.article-body th {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+.article-body tr:last-child td {
+    border-bottom: 0;
+}
+.article-body td:first-child {
+    font-weight: 700;
+}
+.article-body a[href^='tel:'] {
+    white-space: nowrap;
+}
+/* On phones a 4-column table becomes one stacked card per row. */
+@media (max-width: 600px) {
+    .article-body th,
+    .article-body td {
+        min-width: 0;
+        padding-right: 12px;
+        overflow-wrap: anywhere;
+    }
+    .article-body table:has(th:nth-child(4)) {
+        border-bottom: 0;
+    }
+    .article-body table:has(th:nth-child(4)) thead {
+        display: none;
+    }
+    .article-body table:has(th:nth-child(4)) :is(tbody, tr, td) {
+        display: block;
+    }
+    .article-body table:has(th:nth-child(4)) tr {
+        border-bottom: 1px solid var(--line);
+        padding: 14px 0;
+    }
+    .article-body table:has(th:nth-child(4)) td {
+        min-width: 0;
+        border: 0;
+        padding: 2px 0;
+    }
+    .article-body table:has(th:nth-child(4)) td:first-child {
+        font-size: 17px;
+    }
+}
+/* Markdown task lists ("- [ ]") render bare disabled checkboxes. */
+.article-body ul:has(> li > input[type='checkbox']) {
+    padding-left: 0;
+    list-style: none;
+}
+.article-body li:has(> input[type='checkbox']) {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-left: 0;
+}
+.article-body li > input[type='checkbox'] {
+    flex: none;
+    margin: 0;
+    accent-color: var(--orange);
+}
 .fact {
     margin: 30px 0;
     border-left: 5px solid var(--orange);
