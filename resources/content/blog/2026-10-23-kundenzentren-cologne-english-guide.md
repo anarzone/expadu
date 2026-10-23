@@ -22,19 +22,19 @@ On the walk-in days the city warns you to expect a wait.
 
 ## The nine Kundenzentren
 
-| Kundenzentrum | Address                                                                        | Step-free entrance                   |
-| ------------- | ------------------------------------------------------------------------------ | ------------------------------------ |
-| Chorweiler    | Bezirksrathaus, Pariser Platz 1 (1st floor), 50765                             | Yes                                  |
-| Ehrenfeld     | Bezirksrathaus, Venloer Straße 419–421, 50825                                  | Yes                                  |
-| Innenstadt    | Laurenzplatz 1–3, 50667 (Innenstadt II, on the 4th floor, is appointment only) | Yes                                  |
-| Kalk          | Bezirksrathaus, Kalker Hauptstraße 247–273, 51103                              | Yes                                  |
-| Lindenthal    | Bezirksrathaus, Aachener Straße 220, 50931                                     | Yes                                  |
-| Mülheim       | Bezirksrathaus, Wiener Platz 2a, 51065                                         | Limited ("eingeschränkt zugänglich") |
-| Nippes        | Bezirksrathaus, Neusser Straße 450, 50733                                      | Yes, through a side entrance         |
-| Porz          | Bezirksrathaus, Alfred-Moritz-Platz 1, 51143                                   | Yes                                  |
-| Rodenkirchen  | Mannesmannstraße 10, 50996 (new location)                                      | Yes                                  |
+| Kundenzentrum | Address                                                                        | Step-free entrance           |
+| ------------- | ------------------------------------------------------------------------------ | ---------------------------- |
+| Chorweiler    | Bezirksrathaus, Pariser Platz 1 (1st floor), 50765                             | Yes                          |
+| Ehrenfeld     | Bezirksrathaus, Venloer Straße 419–421, 50825                                  | Yes                          |
+| Innenstadt    | Laurenzplatz 1–3, 50667 (Innenstadt II, on the 4th floor, is appointment only) | Yes                          |
+| Kalk          | Bezirksrathaus, Kalker Hauptstraße 247–273, 51103                              | Yes                          |
+| Lindenthal    | Bezirksrathaus, Aachener Straße 220, 50931                                     | Yes                          |
+| Mülheim       | Bezirksrathaus, Wiener Platz 2a, 51065                                         | Limited                      |
+| Nippes        | Bezirksrathaus, Neusser Straße 450, 50733                                      | Yes, through a side entrance |
+| Porz          | Bezirksrathaus, Alfred-Moritz-Platz 1, 51143                                   | Yes                          |
+| Rodenkirchen  | Mannesmannstraße 10, 50996 (new location)                                      | Yes                          |
 
-Each centre's own page on the [city's list](https://www.stadt-koeln.de/service/alle-adressen/kundenzentren) also covers toilets, lifts, parking and hearing loops.
+The city lists Mülheim's entrance as "eingeschränkt zugänglich" (limited access). Each centre's own page on the [city's list](https://www.stadt-koeln.de/service/alle-adressen/kundenzentren) also covers toilets, lifts, parking and hearing loops.
 
 ## What you can do there
 
