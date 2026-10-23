@@ -82,8 +82,8 @@ export default function AroundHere({
         'en-GB',
         { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' },
     );
-    const close = places.filter((p) => p.km <= CLOSE_KM);
-    const further = places.filter((p) => p.km > CLOSE_KM);
+    const close = places.filter((p) => (p.km ?? Infinity) <= CLOSE_KM);
+    const further = places.filter((p) => (p.km ?? Infinity) > CLOSE_KM);
     const noun = countNoun(kind, kinds, close.length === 1);
     const count = places.length
         ? `${close.length || 'No'} ${noun} within 2 km${open ? `, listed as open at ${at.time}` : ''}`
