@@ -29,6 +29,7 @@ use App\Places\OpeningAnswer;
 use App\Places\PlaceAmenities;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceDisplayName;
+use App\Places\PlaceWorkAnswers;
 use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
@@ -826,33 +827,53 @@ final class AssistantTools
         return $laptops === 'yes' ? true : null;
     }
 
+    /** What people's answers are about, as said ("good for laptop work"), by the place fact each feeds. */
+    private const PEOPLE_SAY = ['laptops' => 'good for laptop work', 'internet_access' => 'has Wi-Fi', 'power_supply' => 'has sockets', 'quiet' => 'quiet enough to work'];
+
     /**
-     * What a place's sources say of laptop work, by source (laptop answers design, 23 Oct 2026):
-     * its website ("Its website says laptops aren't allowed at weekends."), its listing ("It lists
-     * laptops welcome."), or that nothing is listed. People's answers come as their count summary
-     * when the places session's `people` facts land.
+     * What a place's sources say of working there, each by its source (laptop answers design, 23 Oct
+     * 2026): its website ("Its website says laptops aren't allowed at weekends."), its listing ("It
+     * lists laptops as welcome."), people who've been there with their anonymous counts only
+     * ("People who've been there say it's good for laptop work (9 of 11)."), or that nothing is listed.
      */
     public static function laptopSaid(Candidate $c): string
     {
         $practical = $c->placeFacts['practical'] ?? [];
         $laptops = mb_strtolower((string) ($practical['laptops']['value'] ?? ''));
-        if (! in_array($laptops, ['yes', 'no', 'limited'], true)) {
-            return 'Laptop work isn\'t listed.';
+        $said = [];
+        if (($practical['laptops']['provider'] ?? null) !== 'people' && in_array($laptops, ['yes', 'no', 'limited'], true)) {
+            $who = ($practical['laptops']['provider'] ?? null) === 'website' || ! str_contains((string) ($practical['laptops']['source_url'] ?? ''), 'openstreetmap.org')
+                ? 'Its website says' : 'It lists';
+            $days = (string) ($practical['laptops:conditional']['value'] ?? '');
+            $when = match (true) {
+                preg_match('/\bsa\s*-\s*su\b/i', $days) === 1 => 'at weekends',
+                preg_match('/\bmo\s*-\s*fr\b/i', $days) === 1 => 'on weekdays',
+                $days !== '' => "on {$days}",
+                default => 'at some times',
+            };
+            $said[] = match ($laptops) {
+                'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
+                'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
+                default => "{$who} laptops aren't allowed {$when}.",
+            };
         }
-        $who = str_contains((string) ($practical['laptops']['source_url'] ?? ''), 'openstreetmap.org') ? 'It lists' : 'Its website says';
-        $days = (string) ($practical['laptops:conditional']['value'] ?? '');
-        $when = match (true) {
-            preg_match('/\bsa\s*-\s*su\b/i', $days) === 1 => 'at weekends',
-            preg_match('/\bmo\s*-\s*fr\b/i', $days) === 1 => 'on weekdays',
-            $days !== '' => "on {$days}",
-            default => 'at some times',
-        };
+        // People's answers: only their counts (PlaceWorkAnswers::totals), never who.
+        $people = array_filter(self::PEOPLE_SAY, fn (string $_, string $fact): bool => ($practical[$fact]['provider'] ?? null) === 'people', ARRAY_FILTER_USE_BOTH);
+        if ($people !== []) {
+            $totals = app(PlaceWorkAnswers::class)->totals((int) substr($c->id, 5));
+            foreach ($people as $fact => $what) {
+                $total = $totals[array_search($fact, PlaceWorkAnswers::QUESTIONS, true)] ?? null;
+                if ($total !== null) {
+                    $said[] = match ($total['value']) {
+                        'yes' => "People who've been there say it's {$what} ({$total['yes']} of {$total['total']}).",
+                        'no' => "People who've been there say it isn't {$what} (".($total['total'] - $total['yes'])." of {$total['total']}).",
+                        default => "People who've been there are mixed on whether it's {$what} ({$total['yes']} of {$total['total']} said yes).",
+                    };
+                }
+            }
+        }
 
-        return match ($laptops) {
-            'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
-            'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
-            default => ($who === 'It lists' ? 'It lists' : 'Its website says')." laptops aren't allowed {$when}.",
-        };
+        return $said === [] ? 'Laptop work isn\'t listed yet.' : implode(' ', $said);
     }
 
     /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
@@ -1198,7 +1219,9 @@ final class AssistantTools
             default => '',
         };
 
-        $lists = PlaceAmenities::listed($c->placeFacts['practical'] ?? []);
+        // What its listing or website lists; Wi-Fi from people's answers is said as theirs (laptopSaid).
+        $lists = array_values(array_diff(PlaceAmenities::listed($c->placeFacts['practical'] ?? []),
+            ($c->placeFacts['practical']['internet_access']['provider'] ?? null) === 'people' ? ['Wi-Fi'] : []));
 
         return '"'.self::name($c).'" ('.$kind.($c->outdoor ? ', outdoors' : ', indoors').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
             .($has !== null ? ' Has: '.$has.'.' : '')

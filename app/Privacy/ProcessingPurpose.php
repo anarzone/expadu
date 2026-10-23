@@ -30,7 +30,7 @@ enum ProcessingPurpose: string
         'your_nearest_stop_and_veedel' => 'where you are, only as your nearest stop and neighbourhood',
         'your_saved_places_names' => 'the names you gave your saved places (Home and Work only as such, with their neighbourhood)',
         'events_listed' => 'event listings',
-        'places_listed' => 'places from our catalogue',
+        'places_listed' => 'places from our catalogue, with what their listings and websites say and, for working there, the anonymous counts of people’s answers about them (never who answered)',
         'weather' => 'the weather',
         'departures' => 'departures',
         'trips_to_places_you_name' => 'routes to places you name',

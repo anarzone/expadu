@@ -128,8 +128,10 @@
             it, your earlier messages in that conversation and Composer’s answers to them, your home
             neighbourhood, the current time and the page you asked from are sent to Anthropic (Claude
             Haiku) to answer it. To answer, Composer looks things up and sends what it finds: public
-            information (event listings, places from our catalogue, the weather, departures, routes to
-            places you name, public transport notices and the titles of our reviewed paperwork guides),
+            information (event listings, places from our catalogue with what their listings and
+            websites say and, for working there, the anonymous counts of people’s answers about them,
+            never who answered; the weather, departures, routes to places you name, public transport
+            notices and the titles of our reviewed paperwork guides),
             the plans our planner puts together for you, the names you gave your saved places (Home and
             Work only as such, with their neighbourhood), where you are only as your nearest stop and
             neighbourhood, from your browser’s location or the start you chose, and the changes you ask
