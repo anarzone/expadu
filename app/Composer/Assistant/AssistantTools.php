@@ -827,10 +827,23 @@ final class AssistantTools
             return false;
         }
         if ($laptops === 'limited') {
-            return ! self::onDays((string) ($practical['laptops:conditional']['value'] ?? ''), $at);
+            // OSM's conditional form: "no @ (Sa-Su)" bans them those days; "limited @ (Sa-Su)" allows them
+            // then only in some areas (Treibgut: the library), so the place is kept but not counted as welcome.
+            $condition = (string) ($practical['laptops:conditional']['value'] ?? '');
+            if (! self::onDays($condition, $at)) {
+                return true;
+            }
+
+            return self::conditionKind($condition) === 'limited' ? null : false;
         }
 
         return $laptops === 'yes' ? true : null;
+    }
+
+    /** What a laptops:conditional says applies on its days: "no" (the default, and the older plain days) or "limited". */
+    private static function conditionKind(string $condition): string
+    {
+        return preg_match('/^\s*limited\s*@/i', $condition) === 1 ? 'limited' : 'no';
     }
 
     /** What people's answers are about, as said ("good for laptop work"), by the place fact each feeds. */
@@ -857,9 +870,10 @@ final class AssistantTools
                 $days !== '' => "on {$days}",
                 default => 'at some times',
             };
-            $said[] = match ($laptops) {
-                'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
-                'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
+            $said[] = match (true) {
+                $laptops === 'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
+                $laptops === 'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
+                self::conditionKind($days) === 'limited' => "{$who} laptops are only allowed in some areas {$when}.",
                 default => "{$who} laptops aren't allowed {$when}.",
             };
         }
