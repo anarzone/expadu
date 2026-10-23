@@ -258,7 +258,7 @@
     font-size: 13px;
     font-weight: var(--weight-semibold);
 }
-/* The picked lines' strips, as the board draws them (its `.nearby-list`):
+/* The picked lines' rows (LineRow), as the board draws them (its `.nearby-list`):
    full width, one under another, folding only when the card is narrow. */
 .nearby .mapview-lines {
     display: flex;

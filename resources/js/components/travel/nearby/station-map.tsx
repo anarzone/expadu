@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { pushStep } from '@/lib/history-steps';
 import { cn } from '@/lib/utils';
@@ -261,7 +261,7 @@ type StationMapProps = {
     onClose: () => void;
     /** The board's lines (no filters), for the departures under the map. */
     board: ShownLine[];
-    /** A line's departures as Nearby draws them; a tap opens it in the list. */
+    /** A line's row as the board draws it (LineRow), opening in place. */
     renderLine: (line: ShownLine) => ReactNode;
 };
 
@@ -557,9 +557,9 @@ export function StationMap({
                         // another.
                         <div className="mapview-lines">
                             {picked.map((l) => (
-                                <div key={l.line} className="nearby-line-slot">
+                                <Fragment key={l.line}>
                                     {renderLine(l)}
-                                </div>
+                                </Fragment>
                             ))}
                         </div>
                     ) : (

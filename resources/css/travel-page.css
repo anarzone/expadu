@@ -2482,79 +2482,6 @@
     align-self: flex-start;
     margin-top: var(--space-6);
 }
-:where(.travel-page) .nearby-line {
-    grid-column: 1 / -1;
-}
-/* A line's place in the cards: one cell, so its strip still stretches to
-   the row; opened, the whole row (nearby-view.tsx LineSlot animates it). */
-:where(.travel-page) .nearby-line-slot {
-    position: relative;
-    display: grid;
-    min-width: 0;
-}
-/* The strip over its detail while the line unfolds or folds back. */
-:where(.travel-page) .nearby-line-ghost {
-    position: absolute;
-    inset: 0 0 auto;
-    background: var(--color-bg-surface);
-    pointer-events: none;
-}
-:where(.travel-page) .nearby-line-slot.is-open {
-    grid-column: 1 / -1;
-}
-:where(.travel-page) .nearby-line.is-inline {
-    border: 1.5px solid var(--color-text);
-    border-radius: 22px;
-    background: var(--color-bg-surface);
-    overflow: hidden;
-}
-:where(.travel-page) .nearby-line-head {
-    display: flex;
-    align-items: center;
-    gap: var(--space-12);
-    padding: var(--space-10) var(--space-8) var(--space-10) var(--space-16);
-    border-radius: var(--radius-lg);
-    color: var(--color-text);
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-line-head {
-    border-radius: 0px;
-}
-:where(.travel-page) .nearby-line-head > span:nth-child(2) {
-    flex: 1 1 0%;
-    min-width: 0px;
-    display: flex;
-    flex-direction: column;
-    line-height: var(--leading-snug);
-}
-:where(.travel-page) .nearby-line-head small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-line-close {
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    width: var(--touch-target);
-    height: var(--touch-target);
-    border: 0px;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-}
-:where(.travel-page) .nearby-line-close svg {
-    width: 18px;
-    height: 18px;
-}
-:where(.travel-page) .nearby-detail-dir {
-    display: flex;
-    gap: var(--space-12);
-    padding: var(--space-12) var(--space-2);
-    border-top: 1px solid var(--color-border);
-    line-height: var(--leading-snug);
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-detail-dir {
-    padding-inline: var(--space-14);
-}
 /* Delays and disruptions, two tiers (delays canvas, 22 Oct 2026): everyday
    lateness and cancellations stay small in the row; a major problem on this
    stop's lines is the one headline above the board. */
@@ -2577,34 +2504,6 @@
 :where(.travel-page) .nearby-list > .tl-reason {
     padding: 0 0 10px;
 }
-:where(.travel-page) .nearby-detail-dir > span:first-child {
-    flex: 1 1 0%;
-    min-width: 0px;
-    display: flex;
-    flex-direction: column;
-}
-:where(.travel-page) .nearby-detail-dir small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-detail-time {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-}
-:where(.travel-page) .nearby-front {
-    margin: 0px;
-    padding: var(--space-10) var(--space-12);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
-    font-size: var(--text-small);
-    line-height: 1.4;
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-front {
-    margin: 0 var(--space-12);
-}
 /* Who gave the board what it carries (DELFI's licence asks to be named). */
 :where(.travel-page) .nearby-credit {
     margin: var(--space-12) 0 0;
@@ -2615,49 +2514,6 @@
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
-}
-:where(.travel-page) .nearby-later {
-    margin: 0 var(--space-12);
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-front small {
-    display: block;
-    color: var(--color-text-soft);
-    font-size: 11.5px;
-    font-weight: var(--weight-semibold);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-:where(.travel-page) .nearby-front strong,
-:where(.travel-page) .nearby-front [lang='de'] {
-    font-weight: var(--weight-semibold);
-}
-:where(.travel-page) .nearby-line-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-8);
-    padding: var(--space-12) 0 0;
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-line-actions {
-    padding: var(--space-12);
-}
-:where(.travel-page) .nearby-pin {
-    display: flex;
-    align-items: center;
-    gap: var(--space-6);
-    min-height: var(--touch-target);
-    padding: 0 var(--space-14);
-    border: 1.5px solid var(--color-text);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    font-weight: var(--weight-semibold);
-}
-:where(.travel-page) .nearby-pin svg,
-:where(.travel-page) .nearby-line-actions .quiet-button svg {
-    width: 15px;
-    height: 15px;
 }
 @media (max-width: 359px) {
     :where(.travel-page) .nearby-cards {
@@ -3702,6 +3558,37 @@
     width: 18px;
     height: 18px;
 }
+/* A cancelled run stays where it was among the options, struck through;
+   the next one moved up (the delays canvas, 22 Oct 2026). */
+:where(.travel-page) .plan-gone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) .plan-gone .tl-line {
+    opacity: 0.6;
+}
+:where(.travel-page) .plan-gone > span:last-child {
+    margin-left: auto;
+}
+/* A major one in What we checked: the conflict colours, light, as the
+   headline it goes with (a filled pill is for nothing now). */
+:where(.travel-page) .plan-checks .tl-chip.is-conflict {
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    box-shadow: inset 0 0 0 1px var(--color-conflict-border);
+}
+:where(.travel-page) #results > .tl-headline {
+    margin-bottom: var(--space-12);
+}
 :where(.travel-page) .plan-option-actions .plan-go {
     flex: 1.5 1 0px;
     min-width: 0px;
@@ -4114,10 +4001,12 @@
 }
 
 /* ── departures-next/press.css ── */
+/* A line's strip only tints when pressed: nothing in its row moves
+   (departure rows canvas, owner, 23 Oct 2026). */
 .travel-page
     :is(button, a[href], summary, [role='switch'], [role='radio']):not(
         :disabled
-    ):not([aria-disabled='true']):active {
+    ):not([aria-disabled='true']):not(.nearby-strip):active {
     filter: brightness(0.93);
     scale: 0.97;
 }
@@ -4316,6 +4205,13 @@
         column-gap: var(--space-32);
         align-items: start;
         transition: grid-template-columns 460ms var(--ease);
+    }
+}
+/* Bigger: Plan a trip takes two thirds, the board the rest, and its
+   options sit beside the form (departures-next hub.css). */
+@media (min-width: 1000px) {
+    .travel-page.plan-big {
+        grid-template-columns: calc(66.6% - 16px) minmax(0px, 1fr);
     }
 }
 @media (min-width: 1000px) {
