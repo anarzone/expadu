@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Gtfs\GtfsStop;
 use App\Transit\DepartureTime;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -221,22 +222,7 @@ class GtfsDepartureService
                     ->where('gtfs_stop_times.departure_time', '>=', $lowerBound);
 
                 if ($hasCalendar || $hasExceptions) {
-                    $removed = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id');
-                    $added = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id');
-                    $query->where(function ($q) use ($dayColumn, $date, $removed, $added) {
-                        $q->where(function ($normal) use ($dayColumn, $date, $removed) {
-                            $normal->whereExists(function ($calendar) use ($dayColumn, $date) {
-                                $calendar->select(DB::raw(1))->from('gtfs_calendar')
-                                    ->whereColumn('gtfs_calendar.service_id', 'gtfs_trips.service_id')
-                                    ->where("gtfs_calendar.{$dayColumn}", true)
-                                    ->where('gtfs_calendar.start_date', '<=', $date)
-                                    ->where('gtfs_calendar.end_date', '>=', $date);
-                            })->whereNotIn('gtfs_trips.service_id', $removed);
-                        });
-                        if ($added->isNotEmpty()) {
-                            $q->orWhereIn('gtfs_trips.service_id', $added);
-                        }
-                    });
+                    $this->runningOn($query, $date, $dayColumn);
                 }
 
                 $rows = $query->orderBy('gtfs_stop_times.departure_time')->limit($limit * 10)
@@ -568,6 +554,97 @@ class GtfsDepartureService
      *
      * @return Collection<string, object{stop_id: string, stop_name: string, stop_lat: float|null, stop_lng: float|null}>
      */
+    /**
+     * Each line's usual gap at a stop around now, by direction ("12|Merkenich"
+     * => 20): the median minutes between its timetabled runs from two hours
+     * before to two hours after, so a board can tell an ordinary 20-minute
+     * service from the night's last trams. Lines with fewer than three runs
+     * in that window have none.
+     *
+     * @return array<string, int>
+     */
+    public function headways(string $stopName, ?Carbon $at = null): array
+    {
+        if (! $this->hasGtfsData()) {
+            return [];
+        }
+        $at = ($at ?? Carbon::now())->copy()->setTimezone('Europe/Berlin');
+
+        return Cache::remember('gtfs_headways:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.md5(mb_strtolower($stopName)).':'.$at->format('Y-m-d-H'), 3600, function () use ($stopName, $at) {
+            $stops = $this->stopsNamed($stopName);
+            if ($stops->isEmpty()) {
+                return [];
+            }
+            $from = $at->copy()->subHours(2);
+            $to = $at->copy()->addHours(2);
+            $hasCalendar = DB::table('gtfs_calendar')->exists() || DB::table('gtfs_calendar_dates')->exists();
+            $runs = [];
+            // Yesterday's service day runs past midnight (25:10), as getStaticDepartures reads it.
+            foreach ([-1, 0] as $offset) {
+                $serviceDay = $at->copy()->startOfDay()->addDays($offset);
+                $clock = fn (Carbon $t) => sprintf('%02d:%02d:00', intdiv((int) $serviceDay->diffInMinutes($t, false), 60), (int) $serviceDay->diffInMinutes($t, false) % 60);
+                if ($to->lt($serviceDay)) {
+                    continue;
+                }
+                $query = DB::table('gtfs_stop_times')
+                    ->join('gtfs_trips', 'gtfs_stop_times.trip_id', '=', 'gtfs_trips.trip_id')
+                    ->join('gtfs_routes', 'gtfs_trips.route_id', '=', 'gtfs_routes.route_id')
+                    ->whereIn('gtfs_stop_times.stop_id', $stops->keys())
+                    ->whereBetween('gtfs_stop_times.departure_time', [$from->lt($serviceDay) ? '00:00:00' : $clock($from), $clock($to)]);
+                if ($hasCalendar) {
+                    $this->runningOn($query, $serviceDay->format('Y-m-d'), strtolower($serviceDay->format('l')));
+                }
+                foreach ($query->get(['gtfs_routes.route_short_name as line', 'gtfs_trips.trip_headsign as dest', 'gtfs_stop_times.departure_time']) as $row) {
+                    $time = $this->scheduledTime($serviceDay, $row->departure_time);
+                    if ($time !== null && $row->line) {
+                        $runs[$row->line.'|'.$row->dest][] = $time->getTimestamp();
+                    }
+                }
+            }
+
+            $headways = [];
+            foreach ($runs as $key => $times) {
+                $times = array_values(array_unique($times));
+                sort($times);
+                if (count($times) < 3) {
+                    continue;
+                }
+                $gaps = [];
+                for ($i = 1; $i < count($times); $i++) {
+                    $gaps[] = intdiv($times[$i] - $times[$i - 1], 60);
+                }
+                sort($gaps);
+                $headways[$key] = $gaps[intdiv(count($gaps), 2)];
+            }
+
+            return $headways;
+        });
+    }
+
+    /**
+     * Only trips whose service runs on the date: its weekday in the calendar,
+     * less the dates taken out, plus the dates added.
+     */
+    private function runningOn(Builder $query, string $date, string $dayColumn): void
+    {
+        $removed = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id');
+        $added = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id');
+        $query->where(function ($q) use ($dayColumn, $date, $removed, $added) {
+            $q->where(function ($normal) use ($dayColumn, $date, $removed) {
+                $normal->whereExists(function ($calendar) use ($dayColumn, $date) {
+                    $calendar->select(DB::raw(1))->from('gtfs_calendar')
+                        ->whereColumn('gtfs_calendar.service_id', 'gtfs_trips.service_id')
+                        ->where("gtfs_calendar.{$dayColumn}", true)
+                        ->where('gtfs_calendar.start_date', '<=', $date)
+                        ->where('gtfs_calendar.end_date', '>=', $date);
+                })->whereNotIn('gtfs_trips.service_id', $removed);
+            });
+            if ($added->isNotEmpty()) {
+                $q->orWhereIn('gtfs_trips.service_id', $added);
+            }
+        });
+    }
+
     private function stopsNamed(string $stopName): Collection
     {
         $key = 'gtfs_stops_named:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.md5(mb_strtolower($stopName));
