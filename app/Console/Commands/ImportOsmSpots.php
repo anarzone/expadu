@@ -297,7 +297,8 @@ class ImportOsmSpots extends Command
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
                 'cuisine' => isset($tags['cuisine']) ? mb_substr(trim((string) $tags['cuisine']), 0, 255) : null,
-                'source_group' => in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
+                // An ice-cream café stays in the café refresh, so a later run can retire it.
+                'source_group' => $category !== 'ice_cream' && in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
                 'last_seen_at' => now(),
                 'is_active' => true,
                 'is_recommendable' => $this->isRecommendationDestination($category, $name),
@@ -638,6 +639,27 @@ class ImportOsmSpots extends Command
      *
      * @param  array<string, string>  $tags
      */
+    /**
+     * Many Eiscafés are tagged amenity=cafe. Someone asking for coffee or a
+     * place to work should not get a gelato counter: ice cream as the main
+     * cuisine, or an ice-cream name with no cuisine given, unless it lists
+     * itself as a coffee shop too.
+     *
+     * @param  array<string, mixed>  $tags
+     */
+    public static function isIceCreamCafe(array $tags): bool
+    {
+        $cuisines = array_values(array_filter(array_map('trim', explode(';', mb_strtolower((string) ($tags['cuisine'] ?? ''))))));
+        if (in_array('coffee_shop', $cuisines, true)) {
+            return false;
+        }
+        if ($cuisines !== []) {
+            return $cuisines[0] === 'ice_cream';
+        }
+
+        return preg_match('/\b(eis\s?caf[eé]|eiscaf[eé]|eisdiele|gelat(o|eria)|ice\s?cream)\b/iu', (string) ($tags['name'] ?? '')) === 1;
+    }
+
     protected function resolveCategory(array $tags, string $hint): string
     {
         if ($hint === 'green') {
@@ -676,6 +698,9 @@ class ImportOsmSpots extends Command
         }
 
         if (in_array($hint, SpotCategory::finesForCoarse('food_drink'), true)) {
+            if ($amenity === 'cafe' && self::isIceCreamCafe($tags)) {
+                return 'ice_cream';
+            }
             if (in_array($amenity, ['cafe', 'restaurant', 'fast_food', 'bar'], true)) {
                 return $amenity;
             }

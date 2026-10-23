@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Ai\LlmRollout;
+use App\Composer\Actions\ComposerActions;
 use App\Composer\ActivePlanStore;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AppointmentRepository;
@@ -207,9 +208,54 @@ class ComposerController extends Controller
             'from_area' => ['nullable', 'string', Rule::in($areas)],
             'from_place' => ['nullable', 'integer'],
             ...ProcessingAcceptanceRules::rules(),
+            // Their permission for Composer to read and change their Paperwork record in this message.
+            ...ProcessingAcceptanceRules::rules('paperwork_processing'),
         ]);
 
-        return response()->json($ask->answer($request->user(), $validated['processing'] ?? null, $validated['page'] ?? null, $request));
+        return response()->json($ask->answer($request->user(), $validated['processing'] ?? null, $validated['page'] ?? null, $request,
+            $validated['paperwork_processing'] ?? null));
+    }
+
+    /**
+     * Apply on a change Composer proposed (its `proposal` card): made as proposed. The
+     * workspace comes back with the card as it is now; refused, a 409 says why, with it.
+     */
+    public function applyAction(Request $request, ComposerActions $actions): JsonResponse
+    {
+        $validated = $request->validate(['token' => ['required', 'uuid']]);
+
+        return $this->acted($actions->apply($request->user(), strtolower($validated['token']), CarbonImmutable::now('Europe/Berlin')));
+    }
+
+    /** Undo on a change Composer made in the last 24 hours, through the app's own way back. */
+    public function undoAction(Request $request, ComposerActions $actions): JsonResponse
+    {
+        $validated = $request->validate(['token' => ['required', 'uuid']]);
+
+        return $this->acted($actions->undo($request->user(), strtolower($validated['token']), CarbonImmutable::now('Europe/Berlin')));
+    }
+
+    /**
+     * A change the person made on a card themselves: a Paperwork record row's new date. Made,
+     * or proposed when they ask first, in a reply of Composer's own.
+     */
+    public function act(Request $request, ComposerActions $actions): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['paperwork_fact'])],
+            'key' => ['required', 'string', 'max:80'],
+            'value' => ['required', 'string', 'max:40'],
+        ]);
+
+        return $this->acted($actions->act($request->user(), 'change_paperwork_fact', ['key' => $validated['key'], 'value' => $validated['value']],
+            CarbonImmutable::now('Europe/Berlin')));
+    }
+
+    /** @param  array{workspace: array<string, mixed>, refusal: ?string}  $result */
+    private function acted(array $result): JsonResponse
+    {
+        return response()->json($result['refusal'] === null ? $result['workspace'] : ['message' => $result['refusal'], 'workspace' => $result['workspace']],
+            $result['refusal'] === null ? 200 : 409)->header('Cache-Control', 'private, no-store');
     }
 
     /**

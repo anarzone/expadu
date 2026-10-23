@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Ai\LlmCalls;
+use App\Bureaucracy\Facts\ConfirmedFactView;
+use App\Bureaucracy\Facts\RecordFactChange;
+use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Composer\Answers\AroundCheck;
 use App\Composer\Assistant\Ask;
 use App\Composer\Assistant\Assistant;
@@ -11,6 +14,7 @@ use App\Composer\Eval\PlanChecks;
 use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
 use App\Models\ComposerWorkspace;
+use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingPurpose;
@@ -57,7 +61,8 @@ class EvaluateComposer extends Command
 
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
-        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true];
+        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true,
+        'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -148,7 +153,7 @@ class EvaluateComposer extends Command
         ComposerWorkspace::query()->where('user_id', $user->id)->delete();
         try {
             foreach ($request['before'] ?? [] as $earlier) {
-                $this->message($user, (string) $earlier, $request['origin'] ?? null);
+                $this->message($user, (string) $earlier, $request['origin'] ?? null, (bool) ($request['paperwork_permission'] ?? false));
             }
         } catch (Throwable $e) {
             return $row + ['error' => 'earlier turns: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
@@ -160,7 +165,7 @@ class EvaluateComposer extends Command
 
         $started = hrtime(true);
         try {
-            [$assistant, $added] = $this->message($user, $request['text'], $request['origin'] ?? null);
+            [$assistant, $added] = $this->message($user, $request['text'], $request['origin'] ?? null, (bool) ($request['paperwork_permission'] ?? false));
         } catch (Throwable $e) {
             return $row + ['error' => 'ask: '.class_basename($e).': '.Str::limit($e->getMessage(), 200)];
         }
@@ -207,6 +212,21 @@ class EvaluateComposer extends Command
         // Asked again or narrowed, never turned down; step-free never said unasked.
         $routing += ($expect['no_leave_out'] ?? false) ? ['no_leave_out' => ! collect($assistant->timings)->contains(fn (array $t): bool => str_contains($t[0], '"leave_out_earlier":true'))] : [];
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
+        // Every card drawn as Around here's row (a park found for its pitch included).
+        $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
+        // Places that must not be suggested (a café that says no laptops, for work).
+        $routing += isset($expect['places_not']) ? ['places_not' => array_intersect((array) $expect['places_not'], array_column($shownPlaces, 'name')) === []] : [];
+        $routing += isset($expect['not_says']) ? ['not_says' => preg_match('/'.$expect['not_says'].'/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
+        // A change asked for: the tool it called, the card it showed (done or proposed), or the place
+        // that does what Composer never does; and none when it shouldn't change anything.
+        $called = fn (string $tool): bool => collect($assistant->timings)->contains(fn (array $t): bool => str_starts_with($t[0], $tool.' '));
+        // Proposed or made: the proposal or done card (session 2's blocks).
+        $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
+        $routing += isset($expect['acted']) ? ['acted' => $called($expect['acted'])] : [];
+        $routing += isset($expect['changed']) ? ['changed' => $changed->contains('state', $expect['changed'])] : [];
+        // Every place handed over that's expected (one, or both ways of stopping).
+        $routing += isset($expect['handoff']) ? ['handoff' => array_diff((array) $expect['handoff'], array_column(array_filter($answer['blocks'] ?? [], fn (array $b): bool => ($b['type'] ?? null) === 'handoff'), 'what')) === []] : [];
+        $routing += ($expect['no_change'] ?? false) ? ['no_change' => $changed->isEmpty()] : [];
         // What the answer must say (a fact that isn't listed, why nothing is open), as a pattern over its words.
         $routing += isset($expect['says']) ? ['says' => preg_match('/'.$expect['says'].'/iu', (string) ($answer['text'] ?? '')) === 1] : [];
         $planExpect = array_diff_key($expect, self::ANSWER_EXPECT);
@@ -279,7 +299,7 @@ class EvaluateComposer extends Command
      * @param  array{lat?: float, lng?: float}|null  $origin
      * @return array{0: Assistant, 1: list<array<string, mixed>>} the assistant that answered, and the messages its answer added
      */
-    private function message(User $user, string $text, ?array $origin): array
+    private function message(User $user, string $text, ?array $origin, bool $paperwork = false): array
     {
         $store = app(WorkspaceStore::class);
         $store->command($user, ['action' => 'message', 'text' => $text, 'revision' => $store->read($user)['revision']]);
@@ -290,7 +310,8 @@ class EvaluateComposer extends Command
         Auth::setUser($user);
         app()->instance(Assistant::class, $assistant = app()->make(Assistant::class));
         try {
-            $workspace = app(Ask::class)->answer($user, $this->acceptance(ProcessingPurpose::ComposerAssist), 'Composer', $http);
+            $workspace = app(Ask::class)->answer($user, $this->acceptance(ProcessingPurpose::ComposerAssist), 'Composer', $http,
+                $paperwork ? $this->acceptance(ProcessingPurpose::ComposerPaperwork) : null);
         } finally {
             app()->forgetInstance(Assistant::class);
         }
@@ -391,6 +412,19 @@ class EvaluateComposer extends Command
             // A persona's step-free need is in its settings, as a person's is.
             'needs_step_free' => in_array('step_free', $request['needs'] ?? [], true),
         ])->save();
+        // What a case changed before stays out of the next: saved places, Home and Work.
+        SpotFeedback::query()->where('user_id', $user->id)->delete();
+        $user->places()->delete();
+        // A persona with a Paperwork record: its answers, as the case sets them.
+        if (is_array($request['paperwork'] ?? null)) {
+            $case = app(EnsureAccountHolder::class)->dossier($user);
+            $view = app(ConfirmedFactView::class)->forCase($case, now()->toDateString());
+            foreach ($request['paperwork'] as $key => $value) {
+                if (($view['values'][$key] ?? null) !== $value) {
+                    app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+                }
+            }
+        }
         // A persona with personalisation on, and a taste to go with it.
         $personalised = (bool) ($request['personalised'] ?? false);
         $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => $personalised]]);

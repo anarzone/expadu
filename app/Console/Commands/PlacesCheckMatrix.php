@@ -8,7 +8,6 @@ use App\Composer\CandidateRepository;
 use App\Enums\LocationSource;
 use App\Models\User;
 use App\Places\OpeningAnswer;
-use App\Places\PlaceDisplayName;
 use App\Services\LocationContext;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
@@ -61,8 +60,9 @@ class PlacesCheckMatrix extends Command
                 if (isset($case['areas']) && ! in_array($row['veedel'], $case['areas'], true)) {
                     $problems[] = "outside the area: {$row['name']} ({$row['veedel']})";
                 }
-                if (($case['no_bare_generic'] ?? false) && PlaceDisplayName::isGeneric($row['name'])) {
-                    $problems[] = "unlabelled name: {$row['name']}";
+                // Owner, 23 Oct: never a German kind label as a name, in any answer.
+                if (preg_match('/^(Spielplatz|Bolzplatz|Basketballplatz|Tennisplatz|Tischtennisplatte|Tischtennis|Boulebahn|Hundewiese|Hundefreilauffläche|Grillplatz|Picknickplatz|Sportplatz|Fußballplatz|Spielwiese|Kinderspielplatz)\b/iu', $row['name']) === 1) {
+                    $problems[] = "German kind label as a name: {$row['name']}";
                 }
                 if (($case['open_from_listed_hours'] ?? false) && $place !== null && OpeningAnswer::isOpenAt($place, $at) !== true) {
                     $problems[] = "not open by listed hours: {$row['name']}";
@@ -71,11 +71,12 @@ class PlacesCheckMatrix extends Command
                     $problems[] = "{$case['requires']} not listed: {$row['name']}";
                 }
             }
-            // Chains repeat names (two Merzenich bakeries are two places); identical
-            // facility labels ("Bolzplatz · Bürgerpark" twice) are one place shown twice.
-            $names = array_values(array_filter(array_column($rows, 'name'), fn (string $name): bool => str_contains($name, ' · ')));
+            // Chains repeat names (two Merzenich bakeries are two places); a park or a
+            // facility shown twice is one place twice (owner: one park, one answer).
+            $once = ['Pitch', 'Park', 'Playground', 'Table tennis', 'Tennis court', 'Basketball court', 'Dog park', 'Boules', 'Sports centre', 'Skatepark', 'Picnic spot', 'Lake', 'Woods & nature'];
+            $names = array_column(array_filter($rows, fn (array $row): bool => in_array($row['kind'], $once, true)), 'name');
             if (count($names) !== count(array_unique($names))) {
-                $problems[] = 'duplicate names: '.implode(', ', array_unique(array_diff_assoc($names, array_unique($names))));
+                $problems[] = 'the same place twice: '.implode(', ', array_unique(array_diff_assoc($names, array_unique($names))));
             }
 
             $problems === [] ? $this->line("<info>PASS</info> {$case['ask']} (".count($rows).')') : $failed++;

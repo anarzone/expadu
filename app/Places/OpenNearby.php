@@ -109,9 +109,10 @@ final class OpenNearby
         $facts = $facts->union($parks->isEmpty() ? collect() : $this->facts->resolveMany($parks->values()));
         $counts = $groups->counts(array_column($folds, 'id'));
         $byId = $spots->keyBy('id')->union($parks);
-        // People's laptop answers (from 3 people, counts only), by canonical place.
+        // People's laptop verdicts (from 3 people, counts only), by canonical place.
         $canonical = fn (Spot $spot): int => (int) ($spot->canonical_spot_id ?? $spot->id);
-        $people = app(PlaceWorkAnswers::class)->totalsMany($byId->map($canonical)->unique()->values()->all());
+        $people = app(PlaceWorkAnswers::class)->totalsMany(collect($folds)->map(fn (array $fold): ?Spot => $byId->get($fold['id']))->filter()
+            ->map($canonical)->unique()->values()->all());
 
         $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts, $groups, $people, $canonical): ?array {
             $place = $byId->get($fold['id']);
@@ -140,7 +141,8 @@ final class OpenNearby
                 // What fitted the ask ("Football pitch"), and what the park (or its part) has, that first.
                 'matched' => $matched,
                 'facilities' => FacilityGroups::summary($part !== null ? $groups->partCounts($place->id, $part) : ($counts[$place->id] ?? []), $matched),
-                'laptop' => self::laptop($facts->get($place->id)['practical'] ?? [], $people[$canonical($place)]['laptop'] ?? null),
+                // Its laptop tag: people's verdict and the café's own website rule.
+                'laptop' => self::laptop(($facts->get($place->id) ?? [])['practical'] ?? [], $people[$canonical($place)]['laptop'] ?? null),
             ];
         })->filter()->values();
 
@@ -222,7 +224,6 @@ final class OpenNearby
             'lat' => (float) ($point['lat'] ?? $spot->lat),
             'lng' => (float) ($point['lng'] ?? $spot->lng),
             'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3) : null,
-            // A park or a wood is measured to its middle: "about".
             // A park, a lake or a wood drawn as an area: its point is its
             // middle, so its distance is "about".
             'area' => ($point['kind'] ?? null) === 'source_center' && AroundKinds::of($spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category) === 'green',

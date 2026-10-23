@@ -185,7 +185,8 @@ class PlaceWorkAnswers
         return $deleted;
     }
 
-    private function canonical(Spot $spot): int
+    /** The place id answers are kept on: its canonical record. */
+    public function canonical(Spot $spot): int
     {
         return (int) ($this->identity->canonicalIds([$spot->id])[$spot->id] ?? $spot->id);
     }

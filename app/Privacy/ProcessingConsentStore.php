@@ -41,7 +41,7 @@ final class ProcessingConsentStore
                 if ($current === null || $question === null || $current->id !== $question->id || $current->answered_at !== null) {
                     throw new AuthorizationException;
                 }
-            } elseif ($purpose === ProcessingPurpose::PaperworkAnswer) {
+            } elseif (in_array($purpose, [ProcessingPurpose::PaperworkAnswer, ProcessingPurpose::ComposerPaperwork], true)) {
                 // Bound to one case, so withdrawing or erasing that person ends it too.
                 if ($case === null || $question !== null || ! app(AnalyserAccess::class)->allows($actor, $case)) {
                     throw new AuthorizationException;
@@ -97,7 +97,9 @@ final class ProcessingConsentStore
             }
             $permissions = BureaucracyProcessingConsent::query()->where('actor_id', $actor->id)
                 ->when($case !== null, fn ($query) => $query->where('case_id', $case->id))
-                ->when($purpose !== null, fn ($query) => $query->where('purpose', $purpose->value));
+                // Withdrawing Composer's AI withdraws its Paperwork permission too.
+                ->when($purpose !== null, fn ($query) => $query->whereIn('purpose', $purpose === ProcessingPurpose::ComposerAssist
+                    ? [$purpose->value, ProcessingPurpose::ComposerPaperwork->value] : [$purpose->value]));
             $inFlight = (clone $permissions)->where('state', 'processing')->whereNotNull('dispatched_at')->count();
             $permissions->update(['withdrawn_at' => now()->utc(), 'result' => null, 'state' => 'withdrawn']);
             BureaucracyExtractionCandidate::query()->whereIn('consent_id', (clone $permissions)->select('id'))

@@ -23,10 +23,149 @@ class WorkspaceStore
     /** Undo stays available for this many of the newest changes. */
     public const CHANGE_LIMIT = 50;
 
+    /** The most action records kept (Composer's proposals and their Undo), newest last. */
+    public const ACTION_LIMIT = 100;
+
     /** What the conversation says when the page couldn't get an answer to a message. */
     private const FAILED = 'I could not finish that request. Your plan is unchanged. You can retry your message.';
 
+    /** A change Composer makes for an answer says itself in that answer (its `changed` card), not in replies of its own. */
+    private bool $quiet = false;
+
     public function __construct(private CandidateRepository $catalogue, private WorkspaceUpgrade $upgrade) {}
+
+    /**
+     * A change to a day Composer makes for one of its answers (ComposerActions): the same
+     * edit, refusals and Undo entry as one made in Plans, without a reply of its own.
+     *
+     * @param  array<string, mixed>  $input  an edit, as `command` takes it (add, remove, replace, cancel_day), or `undo` with its change id
+     * @return array{change: ?array<string, mixed>, plan: ?array<string, mixed>} the change made, and its day after it
+     *
+     * @throws WorkspaceRefusal when it can't go in
+     */
+    public function change(User $user, array $input): array
+    {
+        return DB::transaction(function () use ($user, $input): array {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
+            $s = $this->state($row);
+            $this->quiet = true;
+            try {
+                $displaced = $this->run($s, $user, $input);
+            } finally {
+                $this->quiet = false;
+            }
+            $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            if ($displaced !== null) {
+                app(TasteSignals::class)->swappedAway($user, $displaced);
+                app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$displaced]);
+            }
+            $change = $input['action'] === 'undo'
+                ? collect($s['changes'])->firstWhere('id', $input['change'])
+                : collect($s['changes'])->last();
+
+            return ['change' => $change, 'plan' => $change === null ? null : ($s['plans'][$change['date']] ?? null)];
+        });
+    }
+
+    /** A day's plan as it is now, or null. */
+    public function plan(User $user, string $date): ?array
+    {
+        return $this->state(ComposerWorkspace::query()->where('user_id', $user->id)->first())['plans'][$date] ?? null;
+    }
+
+    /**
+     * One of Composer's action records (a proposal, a change made and its Undo), by token;
+     * never shown to the page as it is (projectState leaves it out).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function action(User $user, string $token): ?array
+    {
+        $record = $this->state(ComposerWorkspace::query()->where('user_id', $user->id)->first())['actions'][$token] ?? null;
+
+        return is_array($record) ? $record : null;
+    }
+
+    /**
+     * Keeps an action record, and puts its cards, as they are now, wherever an answer shows them
+     * (by their id): a proposal becomes done, done becomes undone, in place.
+     *
+     * @param  array<string, mixed>  $record  with `token` and `blocks`
+     * @return array<string, mixed> the projected workspace
+     */
+    public function keepAction(User $user, array $record): array
+    {
+        return DB::transaction(function () use ($user, $record): array {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
+            $s = $this->state($row);
+            $actions = $s['actions'] ?? [];
+            unset($actions[$record['token']]);
+            // Spent after 24 hours (owner, 23 Oct 2026): a record past it is no longer kept.
+            $actions = array_filter($actions, fn (mixed $kept): bool => is_array($kept) && CarbonImmutable::parse($kept['expires_at'])->isFuture());
+            $s['actions'] = array_slice([...$actions, $record['token'] => $record], -self::ACTION_LIMIT, preserve_keys: true);
+            // Its cards (the change, and what changed in their plan) are put back as they are now, where the first stood.
+            $ours = [$record['token'], "{$record['token']}:plan"];
+            foreach ($s['conversations'] as $i => $conversation) {
+                foreach ($conversation['messages'] as $j => $message) {
+                    if (! collect($message['blocks'] ?? [])->contains(fn (array $block): bool => in_array($block['id'] ?? null, $ours, true))) {
+                        continue;
+                    }
+                    $blocks = [];
+                    $placed = false;
+                    foreach ($message['blocks'] as $block) {
+                        if (! in_array($block['id'] ?? null, $ours, true)) {
+                            $blocks[] = $block;
+                        } elseif (! $placed) {
+                            array_push($blocks, ...$record['blocks']);
+                            $placed = true;
+                        }
+                    }
+                    $s['conversations'][$i]['messages'][$j]['blocks'] = $blocks;
+                }
+            }
+            $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+
+            return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => null];
+        });
+    }
+
+    /**
+     * Erasure worker: the copies of a person's Paperwork that Composer keeps (its record and
+     * change cards, the checklist card, and the proposals and Undo it holds for Paperwork).
+     */
+    public function purgePaperworkCopies(int $userId): void
+    {
+        DB::transaction(function () use ($userId): void {
+            $row = ComposerWorkspace::query()->where('user_id', $userId)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+            $s = $this->state($row);
+            $was = $s;
+            if (isset($s['actions'])) {
+                $s['actions'] = array_filter($s['actions'], fn (mixed $record): bool => is_array($record) && ($record['domain'] ?? null) !== 'paperwork');
+            }
+            foreach ($s['conversations'] as $i => $conversation) {
+                foreach ($conversation['messages'] as $j => $message) {
+                    if (! is_array($message['blocks'] ?? null)) {
+                        continue;
+                    }
+                    $kept = array_values(array_filter($message['blocks'], fn (array $block): bool => ! in_array($block['type'] ?? null, ['record', 'checklist', 'plan_changes'], true)
+                        && ($block['area'] ?? $block['domain'] ?? null) !== 'paperwork'));
+                    if (count($kept) !== count($message['blocks'])) {
+                        // Its words were about that record too.
+                        $s['conversations'][$i]['messages'][$j] = [...array_diff_key($message, ['record' => true, 'lead' => true, 'facts' => true]),
+                            'blocks' => $kept, 'text' => 'This answer showed your Paperwork record, which has since been deleted.'];
+                    }
+                }
+            }
+            if ($s !== $was) {
+                $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            }
+        });
+    }
 
     public function read(User $user): array
     {
@@ -632,6 +771,9 @@ class WorkspaceStore
 
     private function message(array &$s, string $role, string $text, array $extra = []): void
     {
+        if ($this->quiet && $role === 'assistant') {
+            return;
+        }
         foreach ($s['conversations'] as &$conversation) {
             if ($conversation['id'] !== $s['active']) {
                 continue;

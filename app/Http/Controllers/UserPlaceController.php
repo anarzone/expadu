@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserPlace;
 use App\Places\AddressLocator;
+use App\Places\SetHomeOrWork;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -54,13 +55,7 @@ class UserPlaceController extends Controller
             'lng' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        $place = $request->user()->places()->firstOrNew(['category' => $category]);
-        $place->fill([
-            ...$validated,
-            'emoji' => $place->emoji ?: ($category === 'home' ? '🏠' : '💼'),
-        ]);
-        $place->sort_order ??= $request->user()->places()->count();
-        $place->save();
+        app(SetHomeOrWork::class)->execute($request->user(), $category, $validated);
 
         return back();
     }

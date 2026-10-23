@@ -2,6 +2,7 @@
 
 namespace App\Composer\Answers;
 
+use App\Composer\Assistant\PlanDay;
 use App\Enums\SpotCategory;
 use App\Models\Spot;
 use App\Transit\Contracts\RouteService;
@@ -156,7 +157,7 @@ final class Destinations
         if ($area === null || trim($area) === '') {
             return [];
         }
-        $area = mb_strtolower(trim($area));
+        $area = PlanDay::plain($area);
         if (preg_match(self::CENTRE_WORDS, $area)) {
             return self::CENTRE;
         }
