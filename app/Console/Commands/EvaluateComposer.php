@@ -57,7 +57,8 @@ class EvaluateComposer extends Command
 
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
-        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true];
+        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true,
+        'all_rows' => true, 'not_says' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -207,6 +208,9 @@ class EvaluateComposer extends Command
         // Asked again or narrowed, never turned down; step-free never said unasked.
         $routing += ($expect['no_leave_out'] ?? false) ? ['no_leave_out' => ! collect($assistant->timings)->contains(fn (array $t): bool => str_contains($t[0], '"leave_out_earlier":true'))] : [];
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
+        // Every card drawn as Around here's row (a park found for its pitch included).
+        $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
+        $routing += isset($expect['not_says']) ? ['not_says' => preg_match('/'.$expect['not_says'].'/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // What the answer must say (a fact that isn't listed, why nothing is open), as a pattern over its words.
         $routing += isset($expect['says']) ? ['says' => preg_match('/'.$expect['says'].'/iu', (string) ($answer['text'] ?? '')) === 1] : [];
         $planExpect = array_diff_key($expect, self::ANSWER_EXPECT);

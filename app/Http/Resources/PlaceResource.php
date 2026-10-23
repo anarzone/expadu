@@ -6,6 +6,7 @@ use App\Enums\SpotCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use App\Places\AroundKinds;
+use App\Places\FacilityGroups;
 use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -71,6 +72,8 @@ class PlaceResource extends JsonResource
             'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
+            // A park's own facilities (unnamed pitches, courts, playgrounds inside it), with counts.
+            ...$this->facilities(),
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
@@ -256,5 +259,16 @@ class PlaceResource extends JsonResource
         }
 
         return array_slice($facts, 0, 3);
+    }
+
+    /** @return array{facilities: list<array{kind: string, count: int}>, facilities_text: ?string} */
+    private function facilities(): array
+    {
+        $counts = app(FacilityGroups::class)->counts([(int) $this->id])[(int) $this->id] ?? [];
+
+        return [
+            'facilities' => array_map(fn (string $kind, int $count): array => ['kind' => $kind, 'count' => $count], array_keys($counts), array_values($counts)),
+            'facilities_text' => FacilityGroups::summary($counts),
+        ];
     }
 }

@@ -61,14 +61,25 @@ export function PlaceRow({
                 onClick={onOpen}
             >
                 <span className="place-map-snippet" data-kind={place.icon}>
-                    <span className="place-map-fallback">
-                        <PlaceIcon name={place.icon} />
-                    </span>
+                    {place.photo ? (
+                        <img
+                            className="place-photo"
+                            src={place.photo.url}
+                            alt=""
+                            loading="lazy"
+                        />
+                    ) : (
+                        <span className="place-map-fallback">
+                            <PlaceIcon name={place.icon} />
+                        </span>
+                    )}
                 </span>
                 <span className="nearby-place-copy">
                     <strong>{place.name}</strong>
                     <small>
-                        {[place.veedel, away].filter(Boolean).join(' · ')}
+                        {[place.street, place.veedel, away]
+                            .filter(Boolean)
+                            .join(' · ')}
                         {dish ? (
                             <>
                                 {' · '}
@@ -83,8 +94,18 @@ export function PlaceRow({
                             </>
                         ) : null}
                     </small>
-                    {hours || access || outdoorSeating(place) || diet || net ? (
+                    {hours ||
+                    access ||
+                    outdoorSeating(place) ||
+                    diet ||
+                    net ||
+                    place.facilities ? (
                         <span className="nearby-place-facts">
+                            {place.facilities ? (
+                                <span className="place-detail">
+                                    {place.facilities}
+                                </span>
+                            ) : null}
                             {hours ? (
                                 <span
                                     className={cn(
@@ -121,6 +142,12 @@ export function PlaceRow({
                                 </span>
                             ) : null}
                         </span>
+                    ) : null}
+                    {/* Plain text inside the button; the sheet links the source and licence. */}
+                    {place.photo?.credit ? (
+                        <small className="place-photo-credit">
+                            Photo: {place.photo.credit}
+                        </small>
                     ) : null}
                 </span>
             </button>

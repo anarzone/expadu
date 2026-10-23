@@ -50,6 +50,10 @@ export type AroundPlace = {
         source_url: string | null;
         licence_url: string | null;
     } | null;
+    /** For a park answered for its facilities: the kinds that fitted the ask ("Football pitch"). */
+    matched?: string[];
+    /** What a park has, the matched kind first: "Football pitch · 2 tennis courts · Playground". */
+    facilities?: string | null;
     saved: boolean;
 };
 

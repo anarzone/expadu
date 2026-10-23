@@ -179,6 +179,12 @@ final class PlanDay
     }
 
     /** @return list<string> the Veedel named, as Cologne spells them ("Südstadt" is Neustadt-Süd; "the centre" is its four) */
+    /** An area as said, without the city's own name: "Cologne city center", "centre of Köln" → "city center", "centre". */
+    public static function plain(string $area): string
+    {
+        return mb_strtolower(trim((string) preg_replace(['/,|\b(?:(?:of|in)\s+)?(?:cologne|k(?:ö|oe)ln)\b/iu', '/\s+/u'], [' ', ' '], $area)));
+    }
+
     public static function areas(mixed $areas): array
     {
         $known = collect(config('veedels', []))->flatten()->filter(fn (mixed $area): bool => is_string($area))
@@ -186,7 +192,7 @@ final class PlanDay
 
         return collect(is_array($areas) ? $areas : [])->filter(fn (mixed $area): bool => is_string($area))
             ->flatMap(function (string $area) use ($known): array {
-                $area = mb_strtolower(trim(preg_replace('/^(the|die|das|der)\s+/iu', '', trim($area))));
+                $area = preg_replace('/^(the|die|das|der)\s+/iu', '', self::plain($area));
 
                 return preg_match(self::CENTRE_WORDS, $area) === 1 ? self::CENTRE : array_filter([$known[$area] ?? null]);
             })->unique()->values()->all();

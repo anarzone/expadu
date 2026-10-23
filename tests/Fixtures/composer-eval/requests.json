@@ -7361,6 +7361,24 @@
    }
   },
   {
+   "id": "regression.cafe_nova_city_center",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I want to go to cafe nova in city center",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
    "id": "regression.cafe_nova_deutz",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",
@@ -7651,6 +7669,23 @@
    }
   },
   {
+   "id": "regression.football_near_ehrenfeld",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can i play football?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true,
+    "all_rows": true,
+    "not_says": "^[0-9]+ [^ ]+ in Ehrenfeld|Bolzplatz"
+   }
+  },
+  {
    "id": "places_matrix.wifi_cafe",
    "persona": "places_matrix",
    "home_veedel": "Altstadt-Süd",
@@ -7664,6 +7699,7 @@
    "weather": "dry",
    "text": "quiet café with wifi near me",
    "expect": {
+    "says": "wi-?fi",
     "open": true,
     "min_places": 3
    }
@@ -7682,6 +7718,7 @@
    "weather": "dry",
    "text": "vegan restaurant in Ehrenfeld",
    "expect": {
+    "says": "vegan",
     "open": true,
     "places_in": [
      "Ehrenfeld"
@@ -7851,6 +7888,7 @@
    "weather": "dry",
    "text": "wheelchair-accessible restaurant",
    "expect": {
+    "says": "step-?free|wheelchair",
     "open": true,
     "min_places": 3
    }

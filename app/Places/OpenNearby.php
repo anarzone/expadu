@@ -88,7 +88,57 @@ final class OpenNearby
         [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for);
         $local = $at->setTimezone('Europe/Berlin');
 
-        return $spots->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $lat, $lng))->values();
+        return $this->folded($spots, $facts, $local, $lat, $lng);
+    }
+
+    /**
+     * Rows in the given order, with facilities folded into their park: the park's
+     * name and what it has, at the nearest matching facility's point.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @param  Collection<int, array<string, mixed>>  $facts
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function folded(Collection $spots, Collection $facts, CarbonImmutable $local, ?float $lat, ?float $lng): Collection
+    {
+        $groups = app(FacilityGroups::class);
+        $folds = $groups->fold($spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all());
+        $parkIds = array_values(array_diff(array_column($folds, 'id'), $spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all()));
+        $parks = $parkIds === [] ? collect() : Spot::query()->whereIn('id', $parkIds)
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])->get()->keyBy('id');
+        $facts = $facts->union($parks->isEmpty() ? collect() : $this->facts->resolveMany($parks->values()));
+        $counts = $groups->counts(array_column($folds, 'id'));
+        $byId = $spots->keyBy('id')->union($parks);
+
+        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts): ?array {
+            $place = $byId->get($fold['id']);
+            if (! $place instanceof Spot) {
+                return null;
+            }
+            $row = $this->row($place, $facts->get($place->id) ?? [], $local, $lat, $lng);
+            $first = $fold['members'] === [] ? null : $byId->get($fold['members'][0]);
+            if ($first instanceof Spot) {
+                // Walk to the pitch, not to the middle of the park.
+                $row = [...$row, 'lat' => (float) $first->lat, 'lng' => (float) $first->lng, 'area' => false,
+                    'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $first->lat, (float) $first->lng), 3) : null];
+            }
+
+            $matched = array_values(array_unique(array_map(
+                fn (int $id): string => PlaceDisplayName::kind($byId->get($id)->category->value, $byId->get($id)->tags['sport'] ?? null),
+                $fold['members'],
+            )));
+
+            return [
+                ...$row,
+                // What fitted the ask ("Football pitch"), and what the park has, that first.
+                'matched' => $matched,
+                'facilities' => FacilityGroups::summary($counts[$place->id] ?? [], $matched),
+            ];
+        })->filter()->values();
+
+        // Two unnamed pitches by the same stop read the same: one entry, the nearer.
+        return $rows->reject(fn (array $row, int $i): bool => $rows->take($i)->contains(fn (array $earlier): bool => $earlier['name'] === $row['name']
+            && NearbyPlaces::km($earlier['lat'], $earlier['lng'], $row['lat'], $row['lng']) < 0.4))->values();
     }
 
     /**
@@ -109,8 +159,9 @@ final class OpenNearby
         $facts = $this->facts->resolveMany($spots->values());
         $local = $at->setTimezone('Europe/Berlin');
 
-        return collect($spotIds)->map(fn (int $id): ?Spot => $spots->get($id))->filter()
-            ->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $fromLat, $fromLng))
+        $ordered = collect($spotIds)->map(fn (int $id): ?Spot => $spots->get($id))->filter()->values();
+
+        return $this->folded($ordered, $facts, $local, $fromLat, $fromLng)
             // What Around here's PlaceRow needs besides the facts: its icon, label and saved state.
             ->map(fn (array $row): array => [
                 ...$row,
@@ -118,6 +169,24 @@ final class OpenNearby
                 'label' => AroundKinds::label($row['kind']),
                 'saved' => in_array($row['id'], $saved, true),
             ])->values();
+    }
+
+    /** "Frankenwerft 35, 50667 Köln" → "Frankenwerft 35"; a postcode or town alone is no street. */
+    public static function street(?string $address): ?string
+    {
+        $first = trim(explode(',', (string) $address)[0]);
+
+        return $first === '' || preg_match('/^\d{5}\b/u', $first) === 1 || preg_match('/^(köln|cologne)$/iu', $first) === 1 ? null : $first;
+    }
+
+    /** "IMG_1.jpg — Molgreen — CC BY-SA 4.0" → "Molgreen · CC BY-SA 4.0": author and licence, no file name. */
+    public static function shortCredit(?string $attribution): ?string
+    {
+        $parts = collect(preg_split('/\s+[—·|]\s+/u', trim((string) $attribution)) ?: [])
+            ->map(fn (string $part): string => trim($part))
+            ->reject(fn (string $part): bool => $part === '' || preg_match('/\.(jpe?g|png|webp|gif|tiff?)$/iu', $part) === 1 || $part === 'Wikimedia Commons');
+
+        return $parts->isEmpty() ? null : $parts->implode(' · ');
     }
 
     /**
@@ -148,10 +217,10 @@ final class OpenNearby
             // A park or a wood is measured to its middle: "about".
             'area' => ($point['kind'] ?? null) === 'area',
             'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
-            'street' => $address === null ? null : trim(explode(',', $address)[0]),
+            'street' => self::street($address),
             'photo' => $photo === null ? null : [
                 'url' => $photo->remote_url,
-                'credit' => $photo->attribution,
+                'credit' => self::shortCredit($photo->attribution),
                 'source_url' => $photo->source_page_url,
                 'licence_url' => $photo->license_url,
             ],
@@ -221,6 +290,8 @@ final class OpenNearby
             ->when($hidden !== [], fn ($q) => $q->whereNotIn(DB::raw('coalesce(spots.canonical_spot_id, spots.id)'), $hidden));
         $spots = $this->nearby->orderByDistance($this->nearby->withinKm($query, $lat, $lng, $radiusKm), $lat, $lng)
             ->limit($take)
+            // Each row looks for a rights-cleared photo: load them with the places.
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
             ->get();
 
         return [$spots, $this->facts->resolveMany($spots)];

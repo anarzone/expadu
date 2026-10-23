@@ -303,6 +303,22 @@
     color: var(--color-text-soft);
 }
 
+.around .place-photo {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+}
+
+/* A photo's credit, under its facts (licences need it on screen). */
+.around .place-photo-credit {
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .around .place-map-fallback svg {
     /* Inline, as the mock's: the line under it lifts it off the middle. */
     display: inline;
