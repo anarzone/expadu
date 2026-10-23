@@ -1531,6 +1531,18 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
+/* An AI permission's notice, sentence by sentence, as the server words it. */
+.composer-page .action-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.composer-page .action-notice p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+}
 .composer-page button.action-link {
     padding: 0;
     border: 0;

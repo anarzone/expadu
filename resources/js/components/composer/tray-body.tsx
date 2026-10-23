@@ -365,11 +365,12 @@ function Talk({
         draft: onDraft,
         // Saved and My day are full Composer's panels for now (the panel's own
         // menu is the Designer's next canvas); the AI notice is under this box.
-        nav: (where: 'saved' | 'plans' | 'ai_notice') =>
+        nav: (
+            where: 'saved' | 'plans' | 'ai_notice',
+            purpose?: 'composer_assist' | 'composer_paperwork',
+        ) =>
             where === 'ai_notice'
-                ? ringWithdraw(
-                      document.querySelector('.composer-tray') ?? document,
-                  )
+                ? ringWithdraw(purpose)
                 : router.visit(composer.url({ query: { panel: where } })),
         allow: engine.allow,
         busy: !!busy,

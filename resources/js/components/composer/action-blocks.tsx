@@ -123,6 +123,8 @@ export type HandoffBlock = {
         href?: string | null;
         /** The AI notice under the box, which holds Withdraw. */
         nav?: 'ai_notice' | null;
+        /** Whose Withdraw it opens: Composer's AI, or its Paperwork permission. */
+        purpose?: 'composer_assist' | 'composer_paperwork' | null;
     };
     note?: string | null;
 };
@@ -134,12 +136,14 @@ export type Disclosure = {
     provider_version: string;
     processor_name: string | null;
     processor_privacy_url: string | null;
+    /** The notice in words, sentence by sentence, drawn as given. */
+    notice?: string[] | null;
 };
 
 /** Paperwork needs their say-so before Composer reads or changes it, for this one message. */
 export type PermissionBlock = {
     type: 'permission';
-    purpose: 'paperwork_answer';
+    purpose: 'composer_paperwork' | 'paperwork_answer';
     title: string;
     sub?: string | null;
     disclosure: Disclosure;
@@ -176,8 +180,11 @@ export type ActionCalls = {
     focusBox: () => void;
     /** Words in the box for them to finish ("I moved in on "). */
     draft: (text: string) => void;
-    /** One of Composer's own panels, or the AI notice under the box. */
-    nav: (where: 'saved' | 'plans' | 'ai_notice') => void;
+    /** One of Composer's own panels, or the AI notice under the box (with whose Withdraw). */
+    nav: (
+        where: 'saved' | 'plans' | 'ai_notice',
+        purpose?: 'composer_assist' | 'composer_paperwork',
+    ) => void;
     /** Their say-so for Paperwork, for this message: it's asked again with it. */
     allow: (disclosure: Disclosure) => void;
     busy: boolean;
@@ -583,7 +590,9 @@ export function Handoff({
                     <button
                         type="button"
                         className="action-go"
-                        onClick={() => calls.nav('ai_notice')}
+                        onClick={() =>
+                            calls.nav('ai_notice', place.purpose ?? undefined)
+                        }
                     >
                         {place.label}
                     </button>
@@ -618,22 +627,28 @@ export function Permission({
         <div className="action-proposal action-permission">
             <strong>{block.title}</strong>
             {block.sub && <span className="action-sub">{block.sub}</span>}
-            {disclosure.processor_name && (
-                <span className="action-sub">
-                    {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
-                    {disclosure.processor_privacy_url && (
-                        <>
-                            {' · '}
-                            <a
-                                href={disclosure.processor_privacy_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Privacy notice
-                            </a>
-                        </>
-                    )}
-                </span>
+            {disclosure.notice?.length ? (
+                <div className="action-notice">
+                    {disclosure.notice.map((sentence) => (
+                        <p key={sentence}>{sentence}</p>
+                    ))}
+                </div>
+            ) : (
+                disclosure.processor_name && (
+                    <span className="action-sub">
+                        {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
+                    </span>
+                )
+            )}
+            {disclosure.processor_privacy_url && (
+                <a
+                    className="action-link"
+                    href={disclosure.processor_privacy_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Privacy notice
+                </a>
             )}
             <span className="action-proposal-buttons">
                 <button

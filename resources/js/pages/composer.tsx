@@ -494,8 +494,13 @@ export default function ComposerPage({
             setInput(text);
             textarea.current?.focus({ preventScroll: true });
         },
-        nav: (where: 'saved' | 'plans' | 'ai_notice') =>
-            where === 'ai_notice' ? ringWithdraw() : openCollection(where),
+        nav: (
+            where: 'saved' | 'plans' | 'ai_notice',
+            purpose?: 'composer_assist' | 'composer_paperwork',
+        ) =>
+            where === 'ai_notice'
+                ? ringWithdraw(purpose)
+                : openCollection(where),
         allow,
         busy: !!busy,
     };
