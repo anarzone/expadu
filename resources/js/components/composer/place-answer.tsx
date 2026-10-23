@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import { Icon } from '@/components/ui/icon';
 
 /** A place as the answer carries it (App\Composer\Answers\PlaceAnswers). */
 export type AnsweredPlace = {
@@ -68,12 +67,6 @@ export function PlaceAnswer({
                                 href={place.href}
                                 aria-label={`${place.name}, ${kind}`}
                             >
-                                <span
-                                    className="nearby-answer-map"
-                                    aria-hidden="true"
-                                >
-                                    <Icon name="pin" variant="line" />
-                                </span>
                                 <span className="nearby-answer-copy">
                                     <small>{kind}</small>
                                     <strong>{place.name}</strong>
