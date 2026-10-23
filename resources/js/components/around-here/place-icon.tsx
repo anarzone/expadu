@@ -18,6 +18,8 @@ const SHAPES = {
     fastfood:
         '<path d="M4 11a8 6 0 0 1 16 0H4Zm-1 3h18M5 17h14a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3Z"/>',
     nature: '<path d="M12 2 6 10h3l-4 6h14l-4-6h3l-6-8Zm0 14v6"/>',
+    // A pitch, a court, a pool: places for sport.
+    sport: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3.5 9.5c5 1.5 12 1.5 17 0M3.5 14.5c5-1.5 12-1.5 17 0"/>',
     outdoor: '<path d="M3 10a9 6 0 0 1 18 0H3Zm9 0v11M7 21h10M8 15h8"/>',
     leaf: '<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15H5v-1Zm0 0 8-8"/>',
     wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',

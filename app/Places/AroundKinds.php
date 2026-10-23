@@ -59,10 +59,28 @@ final class AroundKinds
         return (string) collect(self::KINDS)->search(fn (array $k): bool => in_array($fine, $k[2], true));
     }
 
-    /** A place's icon: its kind's, a wood keeping its own beside parks. */
+    /**
+     * Places outside these kinds that Composer still shows: the icon of
+     * their family (sport, the open air, culture). Any other keeps the pin.
+     *
+     * @var array<string, list<SpotCategory>>
+     */
+    private const FAMILY_ICONS = [
+        'sport' => [SpotCategory::SportsCentre, SpotCategory::Pitch, SpotCategory::Basketball, SpotCategory::Tennis, SpotCategory::Skatepark, SpotCategory::Swimming, SpotCategory::TableTennis, SpotCategory::Boules],
+        'park' => [SpotCategory::DogPark, SpotCategory::Bbq, SpotCategory::Picnic, SpotCategory::Viewpoint],
+        'culture' => [SpotCategory::Attraction, SpotCategory::Zoo],
+    ];
+
+    /** A place's icon: its kind's, a wood keeping its own beside parks; else its family's ('' for the pin). */
     public static function icon(string $category): string
     {
         $kind = self::of($category);
+
+        if ($kind === '') {
+            $fine = SpotCategory::tryFrom($category);
+
+            return (string) collect(self::FAMILY_ICONS)->search(fn (array $family): bool => in_array($fine, $family, true));
+        }
 
         return $kind === 'green' ? ($category === SpotCategory::Nature->value ? 'nature' : 'park') : $kind;
     }
