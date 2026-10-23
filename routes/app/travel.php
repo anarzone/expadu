@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\GeocodeSearchController;
 use App\Http\Controllers\Api\JourneyPlanController;
 use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\JourneySuggestSearchController;
+use App\Http\Controllers\Api\LineRouteController;
+use App\Http\Controllers\Api\LineStopController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlannedTripController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
@@ -46,6 +48,10 @@ Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::clas
 Route::get('api/travel/stations', StationSearchController::class)->middleware('throttle:search')->name('api.travel.stations');
 // Nearby's Map: the lines through a station and their next stops.
 Route::get('api/travel/lines-map', StationLinesMapController::class)->name('api.travel.lines-map');
+// The map's picked line: its whole route, and each stop's runs as it comes
+// into view (one board read per stop, so the search budget).
+Route::get('api/travel/line-route', LineRouteController::class)->name('api.travel.line-route');
+Route::get('api/travel/line-stop', LineStopController::class)->middleware('throttle:search')->name('api.travel.line-stop');
 // Travel's ★ favourite stops, per account.
 Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
 Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');

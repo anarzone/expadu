@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { TravelChip } from '../labels';
 import { lineLook, vehicleOf, vehicleWord } from '../line-look';
 import { TravelIcon } from '../travel-icon';
+import { LineRoute, useLineRoute } from './line-route';
 import { layoutLinesMap, ROW_GAP, textWidth } from './lines-map-layout';
 import type { LinesMapData } from './lines-map-layout';
 import type { ShownLine } from './nearby-model';
@@ -263,6 +264,10 @@ type StationMapProps = {
     board: ShownLine[];
     /** A line's row as the board draws it (LineRow), opening in place. */
     renderLine: (line: ShownLine) => ReactNode;
+    /** A stop on a picked line's route: its own board. */
+    onOpenBoard: (name: string) => void;
+    /** The line whose whole route shows, for the screen's one headline. */
+    onRouteLine: (line: string | null) => void;
 };
 
 export function StationMap({
@@ -272,6 +277,8 @@ export function StationMap({
     onClose,
     board,
     renderLine,
+    onOpenBoard,
+    onRouteLine,
 }: StationMapProps) {
     // A line, or the lines boarding together, picked.
     const [pick, setPick] = useState<string[] | null>(null);
@@ -321,6 +328,16 @@ export function StationMap({
               pick.every((line) => a.lines.includes(line)),
           )
         : null;
+    // A tram or train line picked on its own: its whole route under the map
+    // (the Line route canvas); a group or a bus lists the board's rows.
+    const routeLine =
+        open && pick?.length === 1 && drawn.includes(pick[0]) ? pick[0] : null;
+    const route = useLineRoute(station, routeLine);
+
+    useEffect(() => {
+        onRouteLine(routeLine);
+    }, [routeLine, onRouteLine]);
+
     const count =
         picked.length === 1
             ? `${vehicleWord(vehicleOf(picked[0].mode))} ${picked[0].line} · soonest first`
@@ -365,10 +382,10 @@ export function StationMap({
         };
     }, [open]);
 
-    // A pick brings its rows up; clearing it goes back up to the map.
+    // A pick brings its rows up (a route once it's loaded); clearing it
+    // goes back up to the map.
     useEffect(() => {
         const to = scrollTo.current;
-        scrollTo.current = null;
 
         if (!to || !open) {
             return;
@@ -380,14 +397,20 @@ export function StationMap({
                 : root.current
                       ?.closest('.nearby')
                       ?.querySelector('.nearby-bar');
-        target?.scrollIntoView({
+
+        if (!target) {
+            return;
+        }
+
+        scrollTo.current = null;
+        target.scrollIntoView({
             block: 'start',
             behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
                 .matches
                 ? 'instant'
                 : 'smooth',
         });
-    }, [pick, open]);
+    }, [pick, open, route]);
 
     const badge = (line: string) => {
         const look = lookOf(line);
@@ -528,10 +551,22 @@ export function StationMap({
                     })}
                 </div>
                 {pick ? null : (
-                    <p>Pick a line or a group to see its next departures.</p>
+                    <p>
+                        Pick a line to see its whole route, or a group for its
+                        next departures.
+                    </p>
                 )}
             </div>
-            {pick ? (
+            {routeLine && route ? (
+                <LineRoute
+                    key={routeLine}
+                    route={route}
+                    station={station}
+                    look={lookOf(routeLine)}
+                    onClear={() => choose(null)}
+                    onOpenBoard={onOpenBoard}
+                />
+            ) : pick && !(routeLine && route === undefined) ? (
                 <section
                     key={pick.join(' ')}
                     className="mapview-picked"
