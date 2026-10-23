@@ -656,6 +656,12 @@ final class AssistantTools
             $areas !== [] => 'in '.implode(', ', $areas),
             default => null,
         };
+        // Nothing beyond what they were shown: those again, never an empty answer (owner, 23 Oct 2026:
+        // "I couldn't find any other football place" on a repeat ask).
+        if ($found->isEmpty() && $leaveOut !== []) {
+            return "Nothing fits beyond the places they were shown before, so here are those again:\n"
+                .$this->searchPlaces([...$input, 'leave_out_earlier' => false]);
+        }
         if ($found->isEmpty()) {
             // Places of that kind, none open then: why ("closed on Sundays", "no hours listed").
             $why = $mustBeOpen ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
