@@ -982,39 +982,28 @@ export function NearbyView({
                     <TravelIcon name="star" />
                 </button>
                 {linesMap ? (
-                    <>
-                        <div
-                            className="nearby-views"
-                            role="group"
-                            aria-label="Show as"
-                        >
-                            <button
-                                type="button"
-                                aria-pressed={!mapOpen}
-                                aria-label="List"
-                                onClick={closeMap}
-                            >
-                                <TravelIcon name="list" />
-                            </button>
-                            <button
-                                type="button"
-                                aria-pressed={mapOpen}
-                                aria-label="Map"
-                                onClick={() => setView('map')}
-                            >
-                                <TravelIcon name="map" />
-                            </button>
-                        </div>
+                    <div
+                        className="nearby-views"
+                        role="group"
+                        aria-label="Show as"
+                    >
                         <button
                             type="button"
-                            className="nearby-open-map"
-                            aria-label="Open the map"
-                            title="Map"
+                            aria-pressed={!mapOpen}
+                            aria-label="List"
+                            onClick={closeMap}
+                        >
+                            <TravelIcon name="list" />
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={mapOpen}
+                            aria-label="Map"
                             onClick={() => setView('map')}
                         >
                             <TravelIcon name="map" />
                         </button>
-                    </>
+                    </div>
                 ) : null}
             </div>
             <div className="nearby-stops" hidden={!stopsOpen}>
