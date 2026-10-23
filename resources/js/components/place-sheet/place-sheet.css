@@ -196,11 +196,14 @@
     font-size: var(--text-small);
 }
 
-.place-week summary {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    cursor: pointer;
+.place-week h3 {
+    margin: 12px 0 8px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+.place-week p {
+    margin: 0 0 4px;
 }
 
 .place-week dl {

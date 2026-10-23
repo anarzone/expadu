@@ -82,6 +82,10 @@ const DAYS = [
     ['sun', 'Sun'],
 ] as const;
 
+/** A day listed as open round the clock (00:00–24:00). */
+const allDay = (spans: [string, string][] | undefined) =>
+    spans?.length === 1 && spans[0][0] === '00:00' && spans[0][1] === '24:00';
+
 const known = (fact: Fact | undefined) =>
     fact && fact.status === 'known' && fact.value ? fact.value : null;
 
@@ -497,23 +501,35 @@ function About({ detail: d }: { detail: Detail }) {
                 />
             </dl>
             {week ? (
-                <details className="place-week">
-                    <summary>All listed hours</summary>
-                    <dl>
-                        {DAYS.map(([key, name]) => (
-                            <div key={key}>
-                                <dt>{name}</dt>
-                                <dd>
-                                    {(week[key] ?? []).length
-                                        ? week[key]
-                                              .map(([a, b]) => `${a}–${b}`)
-                                              .join(', ')
-                                        : 'Closed'}
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
-                </details>
+                // Listed, not folded away: a folded week read as an empty heading.
+                <section
+                    className="place-week"
+                    aria-labelledby="place-week-title"
+                >
+                    <h3 id="place-week-title">All listed hours</h3>
+                    {DAYS.every(([key]) => allDay(week[key])) ? (
+                        <p>Open 24 hours, every day</p>
+                    ) : (
+                        <dl>
+                            {DAYS.map(([key, name]) => (
+                                <div key={key}>
+                                    <dt>{name}</dt>
+                                    <dd>
+                                        {allDay(week[key])
+                                            ? 'Open 24 hours'
+                                            : (week[key] ?? []).length
+                                              ? week[key]
+                                                    .map(
+                                                        ([a, b]) => `${a}–${b}`,
+                                                    )
+                                                    .join(', ')
+                                              : 'Closed'}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                </section>
             ) : null}
             <p className="place-source">
                 {area
