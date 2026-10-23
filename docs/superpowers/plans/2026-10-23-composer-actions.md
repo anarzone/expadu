@@ -72,11 +72,13 @@ looking at was "Can u update my paperwork details?". Composer answered with an O
     - a fact: `POST people/{p}/facts/{fact}/corrections` with the previous value from its history;
     - a step event: `POST processes/{id}/events/{event}/corrections`;
     - a document: `DELETE …/requirements/{r}/confirmation`.
-  - **Two gaps** to close before the change line can work:
-    - A fact change reassesses asynchronously, through `ProcessReassessmentOutbox`. The change line
-      needs the new plan within the same answer, so Composer needs a synchronous "reassess this
-      person now" call.
-    - There's no "what changed" summary yet. Session 2 offers to build it as a plan diff: before and
+  - **The plan is live, so "what changed" fits in one request.** `PlanReadModel::for` (behind
+    `GET people/{p}/plan`) works the plan out from the current facts on every read, with no cache. So in
+    one request Composer can: read the plan → make the change → read the plan again → diff the two.
+    Reminders and notifications still run in the background through `ProcessReassessmentOutbox`.
+    Composer never starts them and never calls `ReassessPerson`, which would bypass `delivered_at`
+    (session 2, 23 Oct).
+  - **One gap:** there's no "what changed" summary yet. Session 2 will build it as a plan diff: before and
       after `GET people/{p}/plan`, compared by process and step. Proposed shape:
       `PaperworkPlanDiff::between($before, $after)` → a list of
       {process, title, change: added, removed, due_moved, step_added, step_removed or state_changed,
