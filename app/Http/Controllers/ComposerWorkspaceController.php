@@ -6,8 +6,11 @@ use App\Bureaucracy\RuleSourcePolicy;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Composer\DayAround;
+use App\Composer\PaperworkGlance;
 use App\Composer\PlanSlot;
 use App\Composer\WorkspaceStore;
+use App\Day\DayProjection;
 use App\Http\Requests\Composer\WorkspaceCommandRequest;
 use App\Models\Event;
 use App\Models\SpotFeedback;
@@ -23,6 +26,24 @@ class ComposerWorkspaceController extends Controller
     public function show(Request $request, WorkspaceStore $store): JsonResponse
     {
         return response()->json($store->read($request->user()));
+    }
+
+    /**
+     * What Composer's page carries beside the workspace, for the panel on any page:
+     * Your day, what the Paperwork record has coming up, tonight's listings and
+     * the person's saved starting points (the new conversation's starters, My
+     * Plans' today and Starting point).
+     */
+    public function day(Request $request, DayProjection $day, PaperworkGlance $paperwork, DayAround $around): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'day' => $day->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
+            'paperwork' => $paperwork->for($user),
+            'around' => $around->for($user),
+            'savedPlaces' => ComposerController::savedPlaces($user),
+        ]);
     }
 
     /**

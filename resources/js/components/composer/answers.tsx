@@ -34,7 +34,6 @@ import { DeparturesAnswer } from './departures-answer';
 import type { AnsweredBoard } from './departures-answer';
 import { EventAnswer } from './event-answer';
 import type { AnsweredEvent } from './event-answer';
-import type { Panel } from './frame';
 import { Guidance } from './guidance';
 import { notThis } from './not-this';
 import { PersonaliseInvite } from './personalise-invite';
@@ -42,6 +41,7 @@ import { PlaceAnswer } from './place-answer';
 import type { AnsweredPlace, PlaceFrom } from './place-answer';
 import { readList } from './read-words';
 import type { Message } from './types';
+import type { Collection } from './views';
 
 /*
  * Composer's answers as the approved design draws them
@@ -55,7 +55,7 @@ export type Suggestion = {
     label: string;
     prompt?: string;
     href?: string;
-    nav?: Panel;
+    nav?: Collection;
 };
 
 type Checklist = {
@@ -476,7 +476,7 @@ function Suggestions({
 }: {
     suggestions: Suggestion[];
     onAsk: (prompt: string) => void;
-    onPanel: (panel: Panel) => void;
+    onPanel: (panel: Collection) => void;
 }) {
     return (
         <div className="reply-suggestions">
@@ -523,7 +523,7 @@ export function AnswerBody({
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
     latest: boolean;
     onAsk: (prompt: string) => void;
-    onPanel: (panel: Panel) => void;
+    onPanel: (panel: Collection) => void;
     /** Whether a listed event is in its day's plan already. */
     planned: (event: AnsweredEvent) => boolean;
     onAddEvent: (event: AnsweredEvent) => void;

@@ -83,9 +83,9 @@ test('a saved unavailable item keeps its name and time with a review note in Com
         .getByRole('banner')
         .getByRole('link', { name: 'Saved', exact: true })
         .click();
-    await expect(page.locator('#workspace-panel')).toBeVisible();
+    await expect(page.locator('.composer-view')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#workspace-panel')).toBeHidden();
+    await expect(page.locator('.composer-view')).toBeHidden();
     const plan = page.locator('#composer-current-plan');
     await expect(
         plan.getByText('Saved park visit', { exact: true }),

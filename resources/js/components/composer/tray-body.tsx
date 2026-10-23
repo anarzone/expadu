@@ -1,45 +1,42 @@
-import { Link, router } from '@inertiajs/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
-import { Icon } from '@/components/ui/icon';
-import { composer } from '@/routes';
-import { ringWithdraw } from './ai-notice';
-import type { AiNotice } from './ai-notice';
+import { useEffect, useRef, useState } from 'react';
 import {
-    AnswerBody,
-    firstAskId,
-    guided,
-    isAnswer,
-    NotAnswered,
-    TryAgain,
-    unanswered,
-} from './answers';
-import { Guidance } from './guidance';
+    day as dayContext,
+    show,
+} from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import { Icon } from '@/components/ui/icon';
+import type { AiNotice } from './ai-notice';
+import type { MenuPick } from './composer-box';
 import { ComposerLoading } from './loading';
-import { PlanCard } from './plan-card';
+import { ComposerSurface, useComposerSurface } from './surface';
+import type { SurfaceContext } from './surface';
 import { api } from './types';
-import type { Conversation, Message, Workspace } from './types';
-import { useComposerEngine } from './use-composer-engine';
+import type { Conversation, Workspace } from './types';
+import { conversationMeta } from './views';
 import '../../../css/composer.css';
 import '../../../css/composer-page.css';
 
 /** A request the tray sent: asked once, by its id; `fresh` from the panel's start. */
 export type TrayAsked = { id: number; text: string; fresh: boolean };
 
-/** What the panel shows: its start, or the conversation. */
+/** A + menu choice, made once, by its id. */
+export type TrayPick = { id: number; pick: MenuPick };
+
+/** What the panel shows: its start, or the conversation (and what the menu opened there). */
 export type TrayView = 'start' | 'talk';
 
 /*
  * The tray's panel (owner, 22 Oct 2026: "Proposal is good, anchor at the
- * bottom"; the Composer in place canvas, row Proposal, and the mock's
- * connected/composer-entry). Before you ask, its start: the conversation to
- * go back to and the last three from History, each opening here. Asked, the
- * whole conversation, newest just above the box. It's the same conversation
- * as the full page (one workspace, one engine), so Full Composer carries on.
+ * bottom"; the Composer in place canvas, row Proposal). Before you ask, its
+ * start: the conversation to go back to and the last three from History,
+ * each opening here. Asked, the whole conversation, newest just above the
+ * box; the + menu's views open here too (owner, 23 Oct 2026), so nothing
+ * leaves the page you're on. It's the same conversation as Full Composer
+ * (one workspace, one engine), so Full Composer carries on.
  */
 export default function TrayBody({
     view,
     asked,
+    pick,
     notice,
     onOpen,
     onFocus,
@@ -47,9 +44,10 @@ export default function TrayBody({
 }: {
     view: TrayView;
     asked: TrayAsked | null;
+    pick: TrayPick | null;
     /** The AI line the tray shows: every request sent from it is under it. */
     notice: AiNotice | null;
-    /** A conversation from the start opened: it's Composer's current one now. */
+    /** A conversation (or a view) opened from the start: the panel shows it. */
     onOpen: () => void;
     /** The day in focus, so the box can say "Ask or change Saturday…". */
     onFocus: (date: string | null) => void;
@@ -57,6 +55,7 @@ export default function TrayBody({
     onDraft: (text: string) => void;
 }) {
     const [initial, setInitial] = useState<Workspace | null>(null);
+    const [context, setContext] = useState<SurfaceContext>({});
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
@@ -64,6 +63,11 @@ export default function TrayBody({
         api<Workspace>(show.url())
             .then((workspace) => live && setInitial(workspace))
             .catch(() => live && setFailed(true));
+        // Your day and saved starting points: the starters and Starting point
+        // wait for them, the conversation doesn't.
+        api<SurfaceContext>(dayContext.url())
+            .then((loaded) => live && setContext(loaded))
+            .catch(() => undefined);
 
         return () => {
             live = false;
@@ -92,8 +96,10 @@ export default function TrayBody({
     return (
         <Body
             initial={initial}
+            context={context}
             view={view}
             asked={asked}
+            pick={pick}
             notice={notice}
             onOpen={onOpen}
             onFocus={onFocus}
@@ -106,38 +112,40 @@ export default function TrayBody({
 const askedIn = (conversation: Conversation) =>
     conversation.messages.filter((message) => message.role === 'user').length;
 
-/** "30 Sept · 3 messages", as History says it. */
-function when(conversation: Conversation) {
-    const n = askedIn(conversation);
-    const day = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/Berlin',
-        day: 'numeric',
-        month: 'short',
-    }).format(new Date(conversation.created_at));
-
-    return `${day} · ${n} ${n === 1 ? 'message' : 'messages'}`;
-}
+const focusBox = () =>
+    document
+        .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
+        ?.focus({ preventScroll: true });
 
 function Body({
     initial,
+    context,
     view,
     asked,
+    pick,
     notice,
     onOpen,
     onFocus,
     onDraft,
 }: {
     initial: Workspace;
+    context: SurfaceContext;
     view: TrayView;
     asked: TrayAsked | null;
+    pick: TrayPick | null;
     notice: AiNotice | null;
     onOpen: () => void;
     onFocus: (date: string | null) => void;
     onDraft: (text: string) => void;
 }) {
-    const engine = useComposerEngine(initial, notice, {});
+    const surface = useComposerSurface(initial, notice, {
+        focusBox,
+        onFailed: onDraft,
+    });
+    const { engine } = surface;
     const { workspace, busy, error } = engine;
     const sent = useRef<number | null>(null);
+    const picked = useRef<number | null>(null);
     // The day in focus (with a plan), as the box's placeholder names it.
     const focus =
         workspace.focus && workspace.plans[workspace.focus]
@@ -170,6 +178,21 @@ function Body({
         })();
     }, [asked, engine]);
 
+    // Each + menu choice, once: its view here, or a new conversation.
+    useEffect(() => {
+        if (!pick || picked.current === pick.id) {
+            return;
+        }
+
+        picked.current = pick.id;
+
+        if (pick.pick === 'fresh') {
+            void surface.fresh();
+        } else {
+            surface.setView(pick.pick);
+        }
+    }, [pick, surface]);
+
     if (view === 'start') {
         const current = workspace.conversations.find(
             (conversation) =>
@@ -186,10 +209,7 @@ function Body({
             .slice(0, 3);
         // It becomes Composer's current conversation, as opening it from History does.
         const open = async (id: string) => {
-            if (
-                id === workspace.active ||
-                (await engine.command({ action: 'resume', id }))
-            ) {
+            if (await surface.resume(id)) {
                 onOpen();
             }
         };
@@ -209,7 +229,7 @@ function Body({
                         <span className="composer-tray-start-copy">
                             <span>Back to your conversation</span>
                             <strong>{current.title}</strong>
-                            <small>{when(current)}</small>
+                            <small>{conversationMeta(current)}</small>
                         </span>
                         <Icon name="arrow" variant="line" />
                     </button>
@@ -218,14 +238,16 @@ function Body({
                     <div className="composer-tray-start-recent">
                         <div className="composer-tray-start-head">
                             <h2>Recent conversations</h2>
-                            <Link
+                            <button
+                                type="button"
                                 className="composer-tray-start-all"
-                                href={composer.url({
-                                    query: { panel: 'history' },
-                                })}
+                                onClick={() => {
+                                    surface.setView('history');
+                                    onOpen();
+                                }}
                             >
                                 All in History
-                            </Link>
+                            </button>
                         </div>
                         {recent.map((conversation) => (
                             <button
@@ -238,7 +260,9 @@ function Body({
                                 <Icon name="clock" variant="line" />
                                 <span className="composer-tray-start-copy">
                                     <strong>{conversation.title}</strong>
-                                    <small>{when(conversation)}</small>
+                                    <small>
+                                        {conversationMeta(conversation)}
+                                    </small>
                                 </span>
                                 <Icon name="next" variant="line" />
                             </button>
@@ -259,240 +283,13 @@ function Body({
         );
     }
 
-    return <Talk engine={engine} asked={asked} onDraft={onDraft} />;
-}
-
-function Talk({
-    engine,
-    asked,
-    onDraft,
-}: {
-    engine: ReturnType<typeof useComposerEngine>;
-    asked: TrayAsked | null;
-    onDraft: (text: string) => void;
-}) {
-    const body = useRef<HTMLDivElement>(null);
-    const { workspace, busy, error, retryMessage, pendingText } = engine;
-    const conversation = workspace.conversations.find(
-        (item) => item.id === workspace.active,
-    );
-    const messages = conversation?.messages ?? [];
-    const latestReply = messages.findLast(
-        (message) => message.role === 'assistant',
-    );
-    const latestReplyId = latestReply?.id;
-    const firstAsk = firstAskId(messages);
-    // Said aloud when it arrives: the answer's first sentence (or its title).
-    const said = asked
-        ? (
-              latestReply?.text ||
-              (latestReply as { title?: string } | undefined)?.title ||
-              ''
-          ).split(/(?<=[.!?])\s/)[0]
-        : '';
-
-    // The newest exchange sits just above the box; a long one opens at its
-    // start, the person's message 12px from the top. Older ones scroll up.
-    // It stays so as the panel's room changes (the viewport, the keyboard, a
-    // poster loading) until the person scrolls it themselves.
-    const following = useRef(true);
-    const follow = () => {
-        const element = body.current;
-        const turns = element?.querySelectorAll('.chat-entry.chat-user');
-        const turn = turns?.[turns.length - 1];
-
-        if (!element || !following.current) {
-            return;
-        }
-
-        const end = element.scrollHeight - element.clientHeight;
-        const top = turn
-            ? turn.getBoundingClientRect().top -
-              element.getBoundingClientRect().top +
-              element.scrollTop -
-              12
-            : end;
-        element.scrollTop = Math.max(0, Math.min(end, top));
-    };
-    const followRef = useRef(follow);
-    useLayoutEffect(() => {
-        followRef.current = follow;
-    });
-
-    useLayoutEffect(() => {
-        following.current = true;
-        followRef.current();
-    }, [messages.length, pendingText, busy]);
-
-    useEffect(() => {
-        const element = body.current;
-
-        if (!element) {
-            return;
-        }
-
-        const again = () => followRef.current();
-        const away = () => {
-            following.current = false;
-        };
-        const observer = new ResizeObserver(again);
-        observer.observe(element);
-
-        if (element.firstElementChild) {
-            observer.observe(element.firstElementChild);
-        }
-
-        window.visualViewport?.addEventListener('resize', again);
-        element.addEventListener('wheel', away, { passive: true });
-        element.addEventListener('touchmove', away, { passive: true });
-
-        return () => {
-            observer.disconnect();
-            window.visualViewport?.removeEventListener('resize', again);
-            element.removeEventListener('wheel', away);
-            element.removeEventListener('touchmove', away);
-        };
-    }, []);
-
-    // A change Composer made or proposed: Undo, Apply, a record row changed here.
-    const calls = {
-        undo: engine.undo,
-        apply: engine.apply,
-        change: engine.change,
-        ask: (prompt: string) => void engine.send(prompt),
-        focusBox: () =>
-            document
-                .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
-                ?.focus({ preventScroll: true }),
-        draft: onDraft,
-        // Saved and My day are full Composer's panels for now (the panel's own
-        // menu is the Designer's next canvas); the AI notice is under this box.
-        nav: (
-            where: 'saved' | 'plans' | 'ai_notice',
-            purpose?: 'composer_assist' | 'composer_paperwork',
-        ) =>
-            where === 'ai_notice'
-                ? ringWithdraw(purpose)
-                : router.visit(composer.url({ query: { panel: where } })),
-        allow: engine.allow,
-        busy: !!busy,
-    };
-
-    const entry = (message: Message) => (
-        <article
-            key={message.id}
-            className={
-                message.role === 'user'
-                    ? 'chat-entry chat-user'
-                    : 'chat-entry chat-assistant'
-            }
-        >
-            <span className="chat-speaker">
-                {message.role === 'user' ? (
-                    'You'
-                ) : (
-                    <>
-                        <Icon name="spark" variant="line" />
-                        Composer
-                    </>
-                )}
-            </span>
-            {isAnswer(message) ? (
-                <AnswerBody
-                    message={message}
-                    latest={message.id === latestReplyId}
-                    firstAsk={message.id === firstAsk}
-                    onAsk={(prompt) => void engine.send(prompt)}
-                    onPanel={() => undefined}
-                    planned={(event) =>
-                        !!workspace.plans[event.date]?.slots.some(
-                            (slot) => slot.id === event.candidate,
-                        )
-                    }
-                    onAddEvent={(event) =>
-                        void engine.command({
-                            action: 'add',
-                            candidate: event.candidate,
-                            date: event.date,
-                        })
-                    }
-                    calls={calls}
-                />
-            ) : (
-                message.text && <p>{message.text}</p>
-            )}
-            {message.kind === 'plan' &&
-                message.date &&
-                workspace.plans[message.date] && (
-                    <PlanCard plan={workspace.plans[message.date]} readonly />
-                )}
-            {message.kind === 'change' &&
-                workspace.changes.find(
-                    (change) => change.id === message.change_id,
-                )?.undoable && (
-                    <button
-                        type="button"
-                        className="composer-text-button"
-                        disabled={!!busy}
-                        onClick={() =>
-                            void engine.command({
-                                action: 'undo',
-                                change: message.change_id,
-                            })
-                        }
-                    >
-                        Undo
-                    </button>
-                )}
-            {guided(message) && <Guidance query={message.query ?? ''} />}
-            {message.id === messages.at(-1)?.id && unanswered(message) && (
-                <TryAgain
-                    onAgain={() => void engine.again()}
-                    disabled={!!busy}
-                />
-            )}
-        </article>
-    );
-
     return (
-        <div ref={body} className="composer-tray-body composer-page">
-            <p className="sr-only" aria-live="polite">
-                {busy ? '' : said}
-            </p>
-            <div className="chat-feed" aria-label="Conversation">
-                {messages.map(entry)}
-                {engine.leftUnanswered() && (
-                    <NotAnswered
-                        onAgain={() => void engine.again()}
-                        disabled={!!busy}
-                    />
-                )}
-                {pendingText && (
-                    <article className="chat-entry chat-user">
-                        <span className="chat-speaker">You</span>
-                        <p>{pendingText}</p>
-                    </article>
-                )}
-                {!!busy && (
-                    <div className="composer-working">
-                        <ComposerLoading label={busy} />
-                    </div>
-                )}
-                {error && (
-                    <div className="composer-error" role="alert">
-                        <span>{error}</span>
-                        {retryMessage && (
-                            <button
-                                type="button"
-                                onClick={engine.retry}
-                                disabled={!!busy}
-                            >
-                                Retry
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
+        <ComposerSurface
+            surface={surface}
+            context={context}
+            className="composer-tray-body composer-page"
+            focusBox={focusBox}
+            draft={onDraft}
+        />
     );
 }

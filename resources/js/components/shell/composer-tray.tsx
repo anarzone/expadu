@@ -3,7 +3,6 @@ import {
     lazy,
     Suspense,
     useEffect,
-    useId,
     useLayoutEffect,
     useRef,
     useState,
@@ -12,9 +11,14 @@ import {
 import type { KeyboardEvent } from 'react';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
 import { AskFirstChip } from '@/components/composer/ask-first-chip';
-import type { TrayAsked, TrayView } from '@/components/composer/tray-body';
+import { ComposerBox } from '@/components/composer/composer-box';
+import { useComposerStart } from '@/components/composer/origin-store';
+import type {
+    TrayAsked,
+    TrayPick,
+    TrayView,
+} from '@/components/composer/tray-body';
 import { Icon } from '@/components/ui/icon';
-import type { IconName } from '@/components/ui/icon';
 import { composer } from '@/routes';
 
 // The panel's start and conversation, and Composer's styles, load when it first
@@ -101,50 +105,17 @@ const weekday = (date: string) =>
         timeZone: 'Europe/Berlin',
     }).format(new Date(`${date}T12:00:00`));
 
-const today = () =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(
-        new Date(),
-    );
-
-const actions: { label: string; icon: IconName; href: () => string }[] = [
-    {
-        label: 'My Plans',
-        icon: 'calendar',
-        href: () => composer.url({ query: { panel: 'plans' } }),
-    },
-    {
-        label: 'Saved',
-        icon: 'bookmark',
-        href: () => composer.url({ query: { panel: 'saved' } }),
-    },
-    {
-        label: 'History',
-        icon: 'clock',
-        href: () => composer.url({ query: { panel: 'history' } }),
-    },
-    {
-        label: 'Add appointment',
-        icon: 'calendar',
-        href: () =>
-            composer.url({ query: { entry: 'appointment', date: today() } }),
-    },
-    { label: 'Try Composer', icon: 'spark', href: () => composer.url() },
-    {
-        label: 'Start fresh',
-        icon: 'plus',
-        href: () => composer.url({ query: { new: '1' } }),
-    },
-];
-
 const still = () =>
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const isOpen = useTrayOpen();
     const [text, setText] = useState('');
-    const [menuOpen, setMenuOpen] = useState(false);
     // The request just sent, and whether there's a conversation to come back to.
     const [asked, setAsked] = useState<TrayAsked | null>(null);
+    // The + menu's last choice: its view opens in the panel.
+    const [pick, setPick] = useState<TrayPick | null>(null);
+    const origin = useComposerStart();
     // The panel's start each time it opens; the conversation once asked, or
     // reopened from "Back to your conversation".
     const [view, setView] = useState<TrayView>('start');
@@ -170,7 +141,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const closing = useRef(false);
     const field = useRef<HTMLTextAreaElement>(null);
     const launcher = useRef<HTMLButtonElement>(null);
-    const menuId = useId();
     // Read once the tray first opens: who reads the request, said before Send.
     const aiNotice = useAiNotice(isOpen);
 
@@ -314,7 +284,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             return;
         }
 
-        setMenuOpen(false);
         // What was asked is answered in the conversation; reopening asks nothing again.
         setAsked(null);
         const box = tray.current;
@@ -447,18 +416,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         )?.focus({ preventScroll: true });
     }, [view]);
 
-    // The field grows with the request, up to five lines.
-    useLayoutEffect(() => {
-        const box = field.current;
-
-        if (!box) {
-            return;
-        }
-
-        box.style.height = 'auto';
-        box.style.height = `${Math.min(box.scrollHeight, 120)}px`;
-    }, [text, isOpen]);
-
     const close = () => {
         hide();
         // Back to whichever button opened it: the header's from 701px.
@@ -471,8 +428,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }, 200);
     };
 
-    const send = (event?: { preventDefault(): void }) => {
-        event?.preventDefault();
+    const send = () => {
         const request = text.trim();
 
         if (!request) {
@@ -480,7 +436,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }
 
         setText('');
-        setMenuOpen(false);
         // Asked here, once; the box stays for the next one. From the start,
         // it's a new conversation.
         setAsked({ id: Date.now(), text: request, fresh: view === 'start' });
@@ -495,16 +450,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }
 
         event.preventDefault();
-
-        if (menuOpen) {
-            setMenuOpen(false);
-            document
-                .querySelector<HTMLElement>(`[aria-controls="${menuId}"]`)
-                ?.focus();
-
-            return;
-        }
-
         close();
     };
 
@@ -636,6 +581,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                             <TrayBody
                                 view={view}
                                 asked={asked}
+                                pick={pick}
                                 notice={aiNotice}
                                 onOpen={() => {
                                     setView('talk');
@@ -654,103 +600,26 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                             />
                         </Suspense>
                     </section>
-                    <form onSubmit={send}>
-                        <textarea
-                            ref={field}
-                            rows={1}
-                            maxLength={500}
-                            value={text}
-                            onChange={(event) => setText(event.target.value)}
-                            onKeyDown={(event) => {
-                                if (
-                                    event.key === 'Enter' &&
-                                    !event.shiftKey &&
-                                    !event.nativeEvent.isComposing
-                                ) {
-                                    send(event);
-                                }
-                            }}
-                            aria-label="Your request to Composer"
-                            placeholder={
-                                view === 'talk' && focusDay
-                                    ? `Ask or change ${weekday(focusDay)}…`
-                                    : 'Ask, discover, or plan…'
-                            }
-                        />
-                        <div className="composer-tray-tools">
-                            <div className="composer-tray-actions">
-                                <button
-                                    type="button"
-                                    aria-label="Composer actions"
-                                    aria-expanded={menuOpen}
-                                    aria-controls={menuId}
-                                    onClick={() => setMenuOpen((on) => !on)}
-                                >
-                                    <span className="composer-tray-icon">
-                                        <Icon name="plus" variant="line" />
-                                    </span>
-                                </button>
-                                {menuOpen && (
-                                    <div
-                                        id={menuId}
-                                        className="composer-tray-menu"
-                                        role="menu"
-                                        aria-label="Composer actions"
-                                    >
-                                        {actions.map((action) => (
-                                            <Link
-                                                key={action.label}
-                                                href={action.href()}
-                                                role="menuitem"
-                                                onClick={() => {
-                                                    setMenuOpen(false);
-                                                    shut();
-
-                                                    // A fresh start leaves nothing to come back to.
-                                                    if (
-                                                        action.label ===
-                                                        'Start fresh'
-                                                    ) {
-                                                        setKept(false);
-                                                    }
-                                                }}
-                                            >
-                                                <span
-                                                    className="composer-tray-icon"
-                                                    aria-hidden="true"
-                                                >
-                                                    <Icon
-                                                        name={action.icon}
-                                                        variant="line"
-                                                    />
-                                                </span>
-                                                {action.label}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <button
-                                className="composer-tray-send"
-                                type="submit"
-                                aria-label="Send request"
-                                disabled={!text.trim()}
-                            >
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={1.8}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M12 19V5m-7 7 7-7 7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
-                    {aiNotice && <AiNoticeLine notice={aiNotice} />}
+                    <ComposerBox
+                        fieldRef={field}
+                        value={text}
+                        label="Your request to Composer"
+                        placeholder={
+                            view === 'talk' && focusDay
+                                ? `Ask or change ${weekday(focusDay)}…`
+                                : 'Ask, discover, or plan…'
+                        }
+                        origin={origin?.label ?? null}
+                        notice={aiNotice && <AiNoticeLine notice={aiNotice} />}
+                        onChange={setText}
+                        onSend={send}
+                        onPick={(choice) => {
+                            // A fresh start leaves the last one to come back to in History.
+                            setPick({ id: Date.now(), pick: choice });
+                            setView('talk');
+                            setKept(true);
+                        }}
+                    />
                 </div>
             )}
         </>
