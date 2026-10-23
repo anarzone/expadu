@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
     AccountPanel,
     CityPanel,
+    ComposerPanel,
     DeletePanel,
     LaterPanel,
     LearnPanel,
@@ -28,6 +29,7 @@ export default function Settings() {
                 <AccountPanel edit={edit} onEdit={setEdit} />
                 <div className="settings-side">
                     <LearnPanel />
+                    <ComposerPanel />
                     <CityPanel edit={edit} onEdit={setEdit} />
                     <div className="settings-later">
                         <LaterPanel

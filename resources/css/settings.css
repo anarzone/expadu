@@ -94,6 +94,10 @@
     background: var(--color-paper-bg-quiet);
     color: var(--color-nav-violet);
 }
+.settings-chip.composer {
+    background: var(--color-select-bg);
+    color: var(--color-nav-teal);
+}
 .settings-chip.place {
     background: var(--color-paper-bg);
     color: var(--color-paper-text);

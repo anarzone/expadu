@@ -538,6 +538,127 @@ export function CityPanel({
 }
 
 /** A part that comes later: dashed, with a label saying when, offering nothing. */
+/**
+ * The settings Composer reads before it changes something for you (owner,
+ * 23 Oct 2026, "Composer does things" canvas). Off, it makes the change and
+ * offers Undo; on, it proposes the change and waits for Apply. Composer's
+ * header chip links here (#composer).
+ */
+const ASK_FIRST = [
+    {
+        key: 'composer_ask_first_everyday',
+        id: 'ask-everyday',
+        label: 'Ask first for everyday changes',
+        off: 'Off: saves, My day, Home and Work change right away, with Undo',
+        fallback: false,
+    },
+    {
+        key: 'composer_ask_first_paperwork',
+        id: 'ask-paperwork',
+        label: 'Ask first for Paperwork changes',
+        off: 'Off: your Paperwork record changes right away, with Undo',
+        fallback: true,
+    },
+] as const;
+
+type AskFirstKey = (typeof ASK_FIRST)[number]['key'];
+
+export function ComposerPanel() {
+    const { userSettings } = usePage<{
+        userSettings?: Record<string, boolean | string>;
+    }>().props;
+    const [on, setOn] = useState<Record<AskFirstKey, boolean>>(
+        () =>
+            Object.fromEntries(
+                ASK_FIRST.map((s) => [
+                    s.key,
+                    (userSettings?.[s.key] as boolean | undefined) ??
+                        s.fallback,
+                ]),
+            ) as Record<AskFirstKey, boolean>,
+    );
+    const [busy, setBusy] = useState<AskFirstKey | null>(null);
+    const [error, setError] = useState('');
+
+    async function save(key: AskFirstKey, next: boolean) {
+        if (busy) {
+            return;
+        }
+
+        setBusy(key);
+        setError('');
+
+        try {
+            await writeJson('/user-settings', 'PUT', {
+                settings: { [key]: next },
+            });
+            setOn((now) => ({ ...now, [key]: next }));
+            router.reload({ only: ['userSettings'] });
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? e.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            setBusy(null);
+        }
+    }
+
+    return (
+        <section
+            id="composer"
+            className="settings-panel"
+            aria-labelledby="composer-title"
+        >
+            <div className="settings-head">
+                <span className="settings-chip composer">
+                    <SettingsIcon name="spark-small" />
+                </span>
+                <div>
+                    <h2 id="composer-title">Composer</h2>
+                    <p>
+                        Composer can make changes for you, each with Undo. With
+                        Ask first, it proposes the change and waits for your OK.
+                    </p>
+                </div>
+            </div>
+            <div className="settings-tiles">
+                {ASK_FIRST.map((s) => (
+                    <div key={s.key} className="settings-tile">
+                        <span className="settings-tile-copy">
+                            <strong id={`${s.id}-label`}>{s.label}</strong>
+                            <span
+                                className="settings-tile-note"
+                                id={`${s.id}-state`}
+                            >
+                                {on[s.key]
+                                    ? 'On: Composer proposes the change and waits for your OK'
+                                    : s.off}
+                            </span>
+                        </span>
+                        <button
+                            type="button"
+                            className="settings-switch"
+                            role="switch"
+                            aria-checked={on[s.key]}
+                            aria-labelledby={`${s.id}-label`}
+                            aria-describedby={`${s.id}-state`}
+                            aria-busy={busy === s.key || undefined}
+                            onClick={() => void save(s.key, !on[s.key])}
+                        />
+                    </div>
+                ))}
+            </div>
+            {error ? (
+                <p className="settings-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </section>
+    );
+}
+
 export function LaterPanel({
     id,
     icon,
