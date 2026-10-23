@@ -89,11 +89,7 @@
 :where(.travel-page) button {
     transition:
         background 0.15s,
-        box-shadow 0.15s,
-        transform 0.15s;
-}
-:where(.travel-page) button:active {
-    transform: scale(0.985);
+        box-shadow 0.15s;
 }
 :where(.travel-page) [hidden] {
     display: none !important;
@@ -285,9 +281,6 @@
     border: 0;
     background: none;
     cursor: pointer;
-}
-:where(.travel-page) .from-locate:active .origin-dot {
-    scale: 0.85;
 }
 :where(.travel-page) .from-locate[aria-busy='true'] .origin-dot {
     background: rgb(66, 123, 138);
@@ -819,7 +812,6 @@
 }
 :where(.travel-page) .nav-icon-button:active {
     background: rgb(222, 243, 247);
-    transform: scale(0.97);
 }
 :where(.travel-page) .nav-topbar .nav-icon-button {
     background: rgb(242, 247, 248);
@@ -892,12 +884,9 @@
     font-weight: var(--weight-semibold);
     font-size: var(--text-control);
     flex: 1 1 0%;
-    transition:
-        transform 150ms ease-out,
-        background 150ms ease-out;
+    transition: background 150ms ease-out;
 }
 :where(.travel-page) .nav-primary:active {
-    transform: scale(0.98);
     background: rgb(191, 46, 10);
 }
 :where(.travel-page) .nav-confirm {
@@ -1191,7 +1180,7 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    animation: nav-step-in 320ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation .nav-step-lead > div {
     min-width: 0px;
@@ -1318,7 +1307,7 @@
     border-radius: 16px;
     background: var(--color-bg-surface);
     box-shadow: rgba(33, 29, 21, 0.5) 0px 16px 34px -22px;
-    animation: nav-step-in 240ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation .nav-not-right button {
     display: flex;
@@ -1589,7 +1578,7 @@
     background: var(--color-bg-surface);
     color: var(--color-text);
     text-decoration: none;
-    animation: nav-step-in 320ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation a.nav-look:hover {
     background: var(--color-bg-quiet);
@@ -2061,22 +2050,6 @@
 .travel-page .plan-option-pick[aria-expanded='true'] .details-toggle svg {
     rotate: 180deg;
 }
-.travel-page .route-disclosure {
-    display: grid;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transition:
-        grid-template-rows 220ms var(--ease),
-        opacity 180ms ease;
-}
-.travel-page .route-disclosure[aria-hidden='false'] {
-    grid-template-rows: 1fr;
-    opacity: 1;
-}
-.travel-page .route-disclosure-inner {
-    overflow: hidden;
-    min-height: 0px;
-}
 .travel-page .result-empty {
     background: var(--surface-quiet);
     border-radius: var(--radius-lg);
@@ -2163,7 +2136,7 @@
     opacity: 0.65;
 }
 @media (prefers-reduced-motion: reduce) {
-    .travel-page :is(.route-disclosure, .details-toggle svg) {
+    .travel-page .details-toggle svg {
         transition: none;
     }
 }
@@ -2457,12 +2430,11 @@
 }
 :where(.travel-page) .nearby-pinned {
     display: grid;
-    margin-left: auto;
     color: var(--color-text);
 }
 :where(.travel-page) .nearby-pinned svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     fill: currentColor;
 }
 :where(.travel-page) .nearby-empty {
@@ -2481,79 +2453,6 @@
 :where(.travel-page) .nearby-empty .quiet-button {
     align-self: flex-start;
     margin-top: var(--space-6);
-}
-:where(.travel-page) .nearby-line {
-    grid-column: 1 / -1;
-}
-/* A line's place in the cards: one cell, so its strip still stretches to
-   the row; opened, the whole row (nearby-view.tsx LineSlot animates it). */
-:where(.travel-page) .nearby-line-slot {
-    position: relative;
-    display: grid;
-    min-width: 0;
-}
-/* The strip over its detail while the line unfolds or folds back. */
-:where(.travel-page) .nearby-line-ghost {
-    position: absolute;
-    inset: 0 0 auto;
-    background: var(--color-bg-surface);
-    pointer-events: none;
-}
-:where(.travel-page) .nearby-line-slot.is-open {
-    grid-column: 1 / -1;
-}
-:where(.travel-page) .nearby-line.is-inline {
-    border: 1.5px solid var(--color-text);
-    border-radius: 22px;
-    background: var(--color-bg-surface);
-    overflow: hidden;
-}
-:where(.travel-page) .nearby-line-head {
-    display: flex;
-    align-items: center;
-    gap: var(--space-12);
-    padding: var(--space-10) var(--space-8) var(--space-10) var(--space-16);
-    border-radius: var(--radius-lg);
-    color: var(--color-text);
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-line-head {
-    border-radius: 0px;
-}
-:where(.travel-page) .nearby-line-head > span:nth-child(2) {
-    flex: 1 1 0%;
-    min-width: 0px;
-    display: flex;
-    flex-direction: column;
-    line-height: var(--leading-snug);
-}
-:where(.travel-page) .nearby-line-head small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-line-close {
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    width: var(--touch-target);
-    height: var(--touch-target);
-    border: 0px;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-}
-:where(.travel-page) .nearby-line-close svg {
-    width: 18px;
-    height: 18px;
-}
-:where(.travel-page) .nearby-detail-dir {
-    display: flex;
-    gap: var(--space-12);
-    padding: var(--space-12) var(--space-2);
-    border-top: 1px solid var(--color-border);
-    line-height: var(--leading-snug);
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-detail-dir {
-    padding-inline: var(--space-14);
 }
 /* Delays and disruptions, two tiers (delays canvas, 22 Oct 2026): everyday
    lateness and cancellations stay small in the row; a major problem on this
@@ -2575,33 +2474,9 @@
 :where(.travel-page) .nearby-list > .tl-reason {
     padding: 0 0 10px;
 }
-:where(.travel-page) .nearby-detail-dir > span:first-child {
-    flex: 1 1 0%;
-    min-width: 0px;
-    display: flex;
-    flex-direction: column;
-}
-:where(.travel-page) .nearby-detail-dir small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-detail-time {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-}
-:where(.travel-page) .nearby-front {
-    margin: 0px;
-    padding: var(--space-10) var(--space-12);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
-    font-size: var(--text-small);
-    line-height: 1.4;
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-front {
-    margin: 0 var(--space-12);
+/* A row's notice line has room under the row, not glued to its colour. */
+:where(.travel-page) .line-row + .tl-reason {
+    margin-top: var(--space-10);
 }
 /* Who gave the board what it carries (DELFI's licence asks to be named). */
 :where(.travel-page) .nearby-credit {
@@ -2613,49 +2488,6 @@
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
-}
-:where(.travel-page) .nearby-later {
-    margin: 0 var(--space-12);
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-:where(.travel-page) .nearby-front small {
-    display: block;
-    color: var(--color-text-soft);
-    font-size: 11.5px;
-    font-weight: var(--weight-semibold);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-:where(.travel-page) .nearby-front strong,
-:where(.travel-page) .nearby-front [lang='de'] {
-    font-weight: var(--weight-semibold);
-}
-:where(.travel-page) .nearby-line-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-8);
-    padding: var(--space-12) 0 0;
-}
-:where(.travel-page) .nearby-line.is-inline .nearby-line-actions {
-    padding: var(--space-12);
-}
-:where(.travel-page) .nearby-pin {
-    display: flex;
-    align-items: center;
-    gap: var(--space-6);
-    min-height: var(--touch-target);
-    padding: 0 var(--space-14);
-    border: 1.5px solid var(--color-text);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    font-weight: var(--weight-semibold);
-}
-:where(.travel-page) .nearby-pin svg,
-:where(.travel-page) .nearby-line-actions .quiet-button svg {
-    width: 15px;
-    height: 15px;
 }
 @media (max-width: 359px) {
     :where(.travel-page) .nearby-cards {
@@ -3108,9 +2940,6 @@
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 0 var(--space-24);
     padding-bottom: var(--space-10);
-}
-:where(.travel-page) .plan-checks-detail[hidden] {
-    display: none;
 }
 :where(.travel-page) .plan-checks-detail p {
     display: flex;
@@ -4143,28 +3972,13 @@
 }
 
 /* ── departures-next/press.css ── */
+/* A press only tints: nothing on Travel shrinks (owner, 23 Oct 2026: no
+   squeeze anywhere). A line's strip has its own tint. */
 .travel-page
     :is(button, a[href], summary, [role='switch'], [role='radio']):not(
         :disabled
-    ):not([aria-disabled='true']):active {
+    ):not([aria-disabled='true']):not(.nearby-strip):active {
     filter: brightness(0.93);
-    scale: 0.97;
-}
-.travel-page
-    :is(
-        .plan-option-pick,
-        .plan-checks-toggle,
-        .day-places button,
-        .where-to,
-        .nearby-stop-name
-    ):active {
-    scale: 0.985;
-}
-@media (prefers-reduced-motion: reduce) {
-    .travel-page
-        :is(button, a[href], summary, [role='switch'], [role='radio']):active {
-        scale: none;
-    }
 }
 .travel-page .results-heading .icon-button {
     min-width: var(--touch-target);
@@ -4266,18 +4080,23 @@
 :where(.travel-page) .plan-panel-head {
     display: none;
 }
+/* From folds away at rest and back with the rest: Slide's timing. */
 .travel-page .journey-fields > .from-field {
     max-height: 120px;
     overflow: hidden;
     transition:
-        max-height 380ms var(--ease),
-        opacity 260ms ease,
-        padding 380ms var(--ease);
+        max-height 180ms ease-out,
+        opacity 250ms ease-out,
+        padding 180ms ease-out;
 }
 .travel-page[data-plan-stage='rest'] .journey-fields > .from-field {
     max-height: 0px;
     padding-block: 0px;
     opacity: 0;
+    transition:
+        max-height 200ms cubic-bezier(0.4, 0, 1, 1),
+        opacity 120ms ease-in,
+        padding 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 .travel-page[data-plan-stage='rest'] .journey-fields > .from-field::after {
     display: none;
@@ -4428,19 +4247,12 @@
         border: 1px solid var(--color-border);
         border-radius: 14px;
         background: var(--color-bg-surface);
-        transition:
-            background-color 160ms,
-            transform 140ms;
+        transition: background-color 160ms;
     }
 }
 @media (min-width: 1000px) {
     .travel-page .plan-grow:hover {
         background: var(--color-bg-quiet);
-    }
-}
-@media (min-width: 1000px) {
-    .travel-page .plan-grow:active {
-        transform: scale(0.96);
     }
 }
 @media (min-width: 1000px) {
@@ -4651,11 +4463,6 @@
     }
 }
 @media (min-width: 1000px) {
-    .travel-page[data-plan-stage='picked'] .plan-controls:not(.is-open) {
-        display: none;
-    }
-}
-@media (min-width: 1000px) {
     .travel-page #results .results-top {
         justify-content: flex-end;
     }
@@ -4670,10 +4477,11 @@
         white-space: nowrap;
     }
 }
+/* Slide's words: they fade in and drop 10px into place. */
 @keyframes nav-step-in {
     0% {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(-10px);
     }
 }
 
