@@ -1,6 +1,7 @@
 <?php
 
 use App\Composer\Assistant\AssistantTools;
+use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Models\Spot;
 use App\Models\User;
@@ -56,4 +57,19 @@ test('below three people, or with nothing listed, laptop work isn’t listed yet
     peopleAnswer($this->spot, ['yes', 'yes']);
 
     expect(AssistantTools::laptopSaid(laptopCandidate($this->spot)))->toBe("Laptop work isn't listed yet.");
+});
+
+test('a website’s weekend rule is a ban (no @) or some areas only (limited @), on its days alone', function () {
+    $website = ['provider' => 'website', 'source_url' => 'https://example.test/', 'status' => 'known'];
+    $rule = fn (string $condition) => new Candidate(id: 'spot:1', type: 'spot', name: 'Treibgut', lat: 50.9, lng: 6.9, veedel: null,
+        category: 'cafe', outdoor: false, typicalDurationMin: 60, costTier: 'unknown', opensAt: null, closesAt: null,
+        placeFacts: ['practical' => ['laptops' => [...$website, 'value' => 'limited'], 'laptops:conditional' => [...$website, 'value' => $condition]]]);
+    $saturday = CarbonImmutable::parse('2026-10-24 12:00', 'Europe/Berlin');
+    $wednesday = CarbonImmutable::parse('2026-10-21 12:00', 'Europe/Berlin');
+
+    expect(AssistantTools::laptopsWelcome($rule('no @ (Sa-Su)'), $saturday))->toBeFalse()
+        ->and(AssistantTools::laptopsWelcome($rule('no @ (Sa-Su)'), $wednesday))->toBeTrue()
+        ->and(AssistantTools::laptopSaid($rule('no @ (Sa-Su)')))->toBe("Its website says laptops aren't allowed at weekends.")
+        ->and(AssistantTools::laptopsWelcome($rule('limited @ (Sa-Su)'), $saturday))->toBeNull()
+        ->and(AssistantTools::laptopSaid($rule('limited @ (Sa-Su)')))->toBe('Its website says laptops are only allowed in some areas at weekends.');
 });
