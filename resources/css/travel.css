@@ -1843,7 +1843,6 @@
 /* An everyday notice: one line under the row it explains. */
 .tl-reason {
     display: grid;
-    gap: 8px;
     justify-items: start;
 }
 .tl-reason-line {
@@ -1880,6 +1879,7 @@
 .tl-reason-more {
     display: grid;
     gap: 8px;
+    margin-top: 8px;
     justify-items: start;
     max-width: 62ch;
     padding: 12px 14px;
@@ -2024,25 +2024,7 @@
 .tl-headline.is-open .tl-headline-chev {
     rotate: 180deg;
 }
-/* Slide (owner's pick, 23 Oct): rows 0fr → 1fr, the words fade in and drop
-   10 px; closing is quicker and eases in. Interruptible: transitions. */
-.tl-headline-fold {
-    display: grid;
-    grid-template-rows: 0fr;
-    visibility: hidden;
-    transition:
-        grid-template-rows 200ms ease-in,
-        visibility 0s linear 200ms;
-}
-.tl-headline.is-open .tl-headline-fold {
-    grid-template-rows: 1fr;
-    visibility: visible;
-    transition: grid-template-rows 180ms ease-out;
-}
-.tl-headline-in {
-    min-height: 0;
-    overflow: hidden;
-}
+/* The fold opens with Travel's Slide (slide.tsx, .tl-slide). */
 .tl-headline-body {
     display: grid;
     gap: 8px;
@@ -2050,18 +2032,6 @@
     padding: 0 16px 14px 46px;
     font-size: var(--text-control);
     line-height: 1.5;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition:
-        opacity 200ms ease-in,
-        transform 200ms ease-in;
-}
-.tl-headline.is-open .tl-headline-body {
-    opacity: 1;
-    transform: none;
-    transition:
-        opacity 250ms ease-out,
-        transform 250ms ease-out;
 }
 .tl-headline-body p {
     margin: 0;
@@ -2153,11 +2123,7 @@
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .tl-headline-chev,
-    .tl-headline-fold,
-    .tl-headline.is-open .tl-headline-fold,
-    .tl-headline-body,
-    .tl-headline.is-open .tl-headline-body {
+    .tl-headline-chev {
         transition: none;
     }
 }

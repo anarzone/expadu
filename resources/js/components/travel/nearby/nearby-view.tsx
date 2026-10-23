@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Fragment,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { TravelBanner, TravelChip } from '../labels';
@@ -970,7 +977,7 @@ export function NearbyView({
                     open={mapOpen}
                     onClose={closeMap}
                     board={board}
-                    renderLine={strip}
+                    renderLine={row}
                 />
             ) : null}
             {station.credits?.map((credit) => (
