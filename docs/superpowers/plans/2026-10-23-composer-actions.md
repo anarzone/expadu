@@ -68,8 +68,20 @@ looking at was "Can u update my paperwork details?". Composer answered with an O
     Composer compares the steps before and after and says what changed, in Paperwork's card words
     ("Your Blue Card renewal moves to 12 Feb", "2 new steps: …"). Dates and figures come only from the
     source-checked cards.
-  - **Undo** writes the previous value again (a fact) or the opposite event (`step_reopened`,
-    `submission_retracted`, `process_untracked`, `appointment_cancelled`).
+  - **Undo** uses Paperwork's own corrections (from session 2, 23 Oct):
+    - a fact: `POST people/{p}/facts/{fact}/corrections` with the previous value from its history;
+    - a step event: `POST processes/{id}/events/{event}/corrections`;
+    - a document: `DELETE …/requirements/{r}/confirmation`.
+  - **Two gaps** to close before the change line can work:
+    - A fact change reassesses asynchronously, through `ProcessReassessmentOutbox`. The change line
+      needs the new plan within the same answer, so Composer needs a synchronous "reassess this
+      person now" call.
+    - There's no "what changed" summary yet. Session 2 offers to build it as a plan diff: before and
+      after `GET people/{p}/plan`, compared by process and step. Proposed shape:
+      `PaperworkPlanDiff::between($before, $after)` → a list of
+      {process, title, change: added, removed, due_moved, step_added, step_removed or state_changed,
+      from, to}. Its dates and titles come only from the plan's own card fields. Composer would call
+      the class directly, in the same request.
 - **C, permanent or security.** Composer never does these. In a few words it says what would happen and
   opens the exact place: the Settings section, Paperwork's privacy page or the delete dialog.
 
