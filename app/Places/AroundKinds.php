@@ -8,7 +8,7 @@ use App\Enums\SpotCategory;
  * The kinds of place Around here offers (prototype/dev/design/around-here/),
  * in the mock's order: what each is called, one of it, and the places it
  * covers. Today's discovery groups the same everyday ones; parks, lakes and
- * woods share "Parks & nature".
+ * woods share "Parks & nature". Kinds combine (Parks & nature with Sports).
  */
 final class AroundKinds
 {
@@ -20,6 +20,9 @@ final class AroundKinds
         'grocery' => ['Groceries', 'Groceries', [SpotCategory::Supermarket, SpotCategory::Convenience, SpotCategory::Drugstore, SpotCategory::Greengrocer]],
         'playground' => ['Playgrounds', 'Playground', [SpotCategory::Playground]],
         'green' => ['Parks & nature', 'Green space', [SpotCategory::Park, SpotCategory::Lake, SpotCategory::Nature]],
+        // Places to go for sport (Around here direction A, 23 Oct 2026): a
+        // park's pitches and courts are listed with their park instead.
+        'sports' => ['Sports', 'Sports centre', [SpotCategory::SportsCentre, SpotCategory::FitnessCentre, SpotCategory::Climbing, SpotCategory::DanceStudio]],
         'library' => ['Libraries', 'Library', [SpotCategory::Library]],
         'restaurant' => ['Restaurants', 'Restaurant', [SpotCategory::Restaurant]],
         'fastfood' => ['Fast food', 'Fast food place', [SpotCategory::FastFood]],
@@ -66,7 +69,7 @@ final class AroundKinds
      * @var array<string, list<SpotCategory>>
      */
     private const FAMILY_ICONS = [
-        'sport' => [SpotCategory::SportsCentre, SpotCategory::Pitch, SpotCategory::Basketball, SpotCategory::Tennis, SpotCategory::Skatepark, SpotCategory::Swimming, SpotCategory::TableTennis, SpotCategory::Boules],
+        'sports' => [SpotCategory::Pitch, SpotCategory::Basketball, SpotCategory::Tennis, SpotCategory::Skatepark, SpotCategory::Swimming, SpotCategory::TableTennis, SpotCategory::Boules],
         'park' => [SpotCategory::DogPark, SpotCategory::Bbq, SpotCategory::Picnic, SpotCategory::Viewpoint],
         'culture' => [SpotCategory::Attraction, SpotCategory::Zoo],
     ];

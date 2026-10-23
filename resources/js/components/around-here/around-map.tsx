@@ -2,13 +2,14 @@ import type { Map as MaplibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
-import { PlaceIcon, placeShape } from './place-icon';
+import { PlaceIcon } from './place-icon';
 import type { AroundPlace } from './place-model';
 
 /* Around here's map (the mock's around-here/app.js loadMap and
-   drawMarkers): the point you're around, and each place in the list as
-   its kind's icon. A tap on a place points it out in the list; the row
-   you hover or open stands out here. */
+   drawMarkers, direction A): the point you're around, and each place in
+   the list as a pin with its row's number in the kind's colour, at full
+   strength. A tap on a pin points out its row; hovering a row rings its
+   pin, and the open one is larger. */
 
 type Point = { name: string; lat: number; lng: number };
 
@@ -100,14 +101,14 @@ export function AroundMap({
         }
 
         marks.current.forEach(({ marker }) => marker.remove());
-        marks.current = places.map((place) => {
+        marks.current = places.map((place, index) => {
             const element = document.createElement('button');
             element.type = 'button';
             element.className = 'around-marker';
             element.dataset.kind = place.icon;
-            element.setAttribute('aria-label', place.name);
-            // The kind's icon (static artwork, never user input).
-            element.innerHTML = `<svg class="place-icon" viewBox="0 0 24 24" aria-hidden="true">${placeShape(place.icon)}</svg>`;
+            element.setAttribute('aria-label', `${index + 1}. ${place.name}`);
+            // The row's number, in the kind's colour.
+            element.textContent = String(index + 1);
             element.addEventListener('click', (event) => {
                 event.stopPropagation();
                 onSelect(place.id);
@@ -121,7 +122,7 @@ export function AroundMap({
         const bounds = new bm.maplibregl.LngLatBounds();
         bounds.extend([point.lng, point.lat]);
         places.forEach((place) => bounds.extend([place.lng, place.lat]));
-        m.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 0 });
+        m.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 0 });
         // onSelect is the page's setter; the markers follow the list.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state, places, point.lat, point.lng]);

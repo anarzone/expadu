@@ -1,8 +1,10 @@
-/* Around here (the mock's around-here/): places of one kind near a point,
-   as a list beside a map, read at a time's listed hours. Opened from
-   Travel ("Places nearby"), Today and Composer; not a navigation page. The
-   point and the time come from the URL and stay in it; the server resolves
-   a plan's or an appointment's place by its id, never by coordinates. */
+/* Around here (the mock's around-here/, direction A; owner 23 Oct 2026):
+   places near a point as a board beside its map, read at a time's listed
+   hours. Rows are numbered like the map's pins and coloured by kind; kinds
+   combine. Opened from Travel ("Places nearby"), Today and Composer; not a
+   navigation page. The point and the time come from the URL and stay in
+   it; the server resolves a plan's or an appointment's place by its id,
+   never by coordinates. */
 
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -14,10 +16,8 @@ import type {
     AroundPlace,
 } from '@/components/around-here/place-model';
 import { PlaceRow } from '@/components/around-here/place-row';
-import { api } from '@/components/composer/types';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { Icon } from '@/components/ui/icon';
-import { showToast } from '@/components/ui/toast';
 import AppLayout from '@/layouts/app-layout';
 import { isHidden, useHidden } from '@/lib/not-now';
 import { useImpressions } from '@/lib/signals';
@@ -27,6 +27,7 @@ import '@/components/around-here/around-here.css';
 type Props = {
     /** The point the URL names; null when it names none of yours. */
     point: { name: string; lat: number; lng: number } | null;
+    /** The kinds picked, comma-separated ("green,sports"); '' is every kind. */
     kind: string;
     open: boolean;
     at: { date: string; time: string };
@@ -36,8 +37,8 @@ type Props = {
 
 const CLOSE_KM = 2;
 
-/** Each kind's icon on its chip ("Parks & nature" takes the park's). */
-const chipIcon = (id: string) => (id === 'green' ? 'park' : id);
+/** A chip's colour: "Parks & nature" takes the park's. */
+const chipKind = (id: string) => (id === 'green' ? 'park' : id);
 
 /** The place the link opens (?place=), if it names one. */
 function linkPlace(): number | null {
@@ -58,6 +59,7 @@ export default function AroundHere({
     kinds,
     places: listed,
 }: Props) {
+    const picked = kind ? kind.split(',') : [];
     // The place the link opens (?place=) starts picked in the list too.
     const [selected, setSelected] = useState<number | null>(() => linkPlace());
     const shown = useImpressions('places', 'spot');
@@ -66,7 +68,6 @@ export default function AroundHere({
     const places = listed.filter((p) => !isHidden(hidden, 'spot', p.id));
     const [hovered, setHovered] = useState<number | null>(null);
     const [flyTo, setFlyTo] = useState<{ id: number; at: number } | null>(null);
-    const [saved, setSaved] = useState<Record<number, boolean>>({});
     // The place open in its sheet: a row's, or the link's (?place=).
     const [sheet, setSheet] = useState<number | null>(() => linkPlace());
     // Back goes back when you came from inside the app, else to Composer.
@@ -88,22 +89,25 @@ export default function AroundHere({
     );
     const close = places.filter((p) => (p.km ?? Infinity) <= CLOSE_KM);
     const further = places.filter((p) => (p.km ?? Infinity) > CLOSE_KM);
-    const noun = countNoun(kind, kinds, close.length === 1);
+    // The list's order is the pins' numbers.
+    const numbered = [...close, ...further];
+    const noun = (one: boolean) =>
+        picked.length === 1 ? countNoun(picked[0], kinds, one) : 'places';
     const count = places.length
-        ? `${close.length || 'No'} ${noun} within 2 km${open ? `, listed as open at ${at.time}` : ''}`
-        : `No ${countNoun(kind, kinds, false)}${open ? ` listed as open at ${at.time}` : ''} near ${point?.name ?? 'here'}.`;
+        ? `${close.length || 'No'} ${noun(close.length === 1)} within 2 km · nearest first${open ? `, listed as open at ${at.time}` : ''}`
+        : `No ${noun(false)}${open ? ` listed as open at ${at.time}` : ''} near ${point?.name ?? 'here'}.`;
 
-    // A choice of kind or "Open at" asks the server again; the point and
+    // A choice of kinds or "Open at" asks the server again; the point and
     // the time stay as the URL has them. Never write the resolved point
     // back as coordinates: `home`, `work` and `plan:…` resolve on the
     // server, and bare coordinates only ever name a public point.
-    const choose = (next: { kind?: string; open?: boolean }) => {
+    const choose = (next: { kinds?: string[]; open?: boolean }) => {
         const query = new URLSearchParams(location.search);
-        const k = next.kind ?? kind;
+        const k = next.kinds ?? picked;
         const o = next.open ?? open;
 
-        if (k) {
-            query.set('kind', k);
+        if (k.length) {
+            query.set('kind', k.join(','));
         } else {
             query.delete('kind');
         }
@@ -122,36 +126,30 @@ export default function AroundHere({
             replace: true,
         });
     };
-
-    const isSaved = (place: AroundPlace) => saved[place.id] ?? place.saved;
-    const save = (place: AroundPlace) => {
-        const next = !isSaved(place);
-        setSaved((all) => ({ ...all, [place.id]: next }));
-        api(`/api/places/${place.id}/feedback`, {
-            action: next ? 'saved' : 'clear',
-        }).catch(() => {
-            setSaved((all) => ({ ...all, [place.id]: !next }));
-            showToast('That place wasn’t saved. Please try again.', {
-                error: true,
-            });
+    // Chips combine: a second one adds its kind, the same one again takes
+    // it away; none is All.
+    const toggle = (id: string) =>
+        choose({
+            kinds: picked.includes(id)
+                ? picked.filter((k) => k !== id)
+                : [...picked, id],
         });
-    };
 
-    // Its place in the list, counting from 1.
-    const row = (place: AroundPlace, position: number) => (
-        <PlaceRow
-            key={place.id}
-            ref={shown(place.id, position)}
-            place={{ ...place, saved: isSaved(place) }}
-            selected={selected === place.id}
-            onOpen={() => {
-                setSelected(place.id);
-                setFlyTo({ id: place.id, at: Date.now() });
-                setSheet(place.id);
-            }}
-            onHover={(on) => setHovered(on ? place.id : null)}
-            onSave={() => save(place)}
-        />
+    const row = (place: AroundPlace, number: number) => (
+        <li key={place.id}>
+            <PlaceRow
+                ref={shown(place.id, number)}
+                place={place}
+                number={number}
+                selected={selected === place.id}
+                onOpen={() => {
+                    setSelected(place.id);
+                    setFlyTo({ id: place.id, at: Date.now() });
+                    setSheet(place.id);
+                }}
+                onHover={(on) => setHovered(on ? place.id : null)}
+            />
+        </li>
     );
 
     return (
@@ -190,12 +188,12 @@ export default function AroundHere({
                         <div
                             className="around-filters"
                             role="group"
-                            aria-label="Kind of place"
+                            aria-label="Kinds of place"
                         >
                             <button
                                 type="button"
-                                aria-pressed={!kind}
-                                onClick={() => choose({ kind: '' })}
+                                aria-pressed={!picked.length}
+                                onClick={() => choose({ kinds: [] })}
                             >
                                 All
                             </button>
@@ -203,10 +201,11 @@ export default function AroundHere({
                                 <button
                                     key={k.id}
                                     type="button"
-                                    aria-pressed={kind === k.id}
-                                    onClick={() => choose({ kind: k.id })}
+                                    data-kind={chipKind(k.id)}
+                                    aria-pressed={picked.includes(k.id)}
+                                    onClick={() => toggle(k.id)}
                                 >
-                                    <PlaceIcon name={chipIcon(k.id)} />
+                                    <i aria-hidden="true" />
                                     <span>{k.label}</span>
                                 </button>
                             ))}
@@ -231,13 +230,13 @@ export default function AroundHere({
                                         <span>Open at {at.time}</span>
                                     </button>
                                 </div>
-                                <div className="around-results">
+                                <ol className="around-results">
                                     {close.map((place, i) => row(place, i + 1))}
                                     {further.length ? (
                                         <>
-                                            <p className="around-further">
+                                            <li className="around-further">
                                                 Further away
-                                            </p>
+                                            </li>
                                             {further.map((place, i) =>
                                                 row(
                                                     place,
@@ -246,7 +245,7 @@ export default function AroundHere({
                                             )}
                                         </>
                                     ) : null}
-                                </div>
+                                </ol>
                                 <p className="place-map-credit">
                                     Place data and maps © OpenStreetMap
                                     contributors · OpenFreeMap. Straight-line
@@ -255,7 +254,7 @@ export default function AroundHere({
                             </section>
                             <AroundMap
                                 point={point}
-                                places={places}
+                                places={numbered}
                                 selected={selected}
                                 hovered={hovered}
                                 flyTo={flyTo}
@@ -279,10 +278,8 @@ export default function AroundHere({
                 place={sheet}
                 at={at.time}
                 from={point}
+                beside
                 onClose={() => setSheet(null)}
-                onSaved={(id, next) =>
-                    setSaved((all) => ({ ...all, [id]: next }))
-                }
             />
         </AppLayout>
     );

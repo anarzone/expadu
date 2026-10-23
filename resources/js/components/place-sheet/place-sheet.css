@@ -1,15 +1,19 @@
-/* One place's sheet (the mock's connected/place-sheet.css and its
-   detail-dialog): on a laptop a 560px dialog, on a phone a sheet from the
-   bottom. The hero and the tabs stay; the part shown scrolls above its own
-   footer. */
+/* One place's sheet, one scroll (the mock's connected/place-sheet.css,
+   direction A): on a laptop a dialog that fits what it holds (over the list
+   beside the map on Around here), on a phone a sheet from the bottom. The
+   band leads; the close button sits on it and the heading stays for screen
+   readers; Save / Share / Plan a visit stay at the foot. */
 
 .ui-sheet.place-sheet {
+    display: flex;
+    flex-direction: column;
     width: min(560px, calc(100vw - 32px));
-    height: min(700px, calc(100dvh - 48px));
-    max-height: none;
-    /* The mock's shared dialog: white, not the page's cream, with a line. */
+    height: fit-content;
+    max-height: min(780px, calc(100dvh - 32px));
+    overflow: hidden;
+    padding: 0;
     border: 1px solid var(--color-border);
-    background: #fff;
+    background: var(--color-bg-surface);
     box-shadow: none;
 }
 
@@ -20,292 +24,547 @@
     }
 }
 
+/* Around here on a laptop: over the list, so the map and its pin stay in
+   view. */
+@media (min-width: 1000px) {
+    .ui-sheet.place-sheet.is-beside {
+        inset: 96px auto 24px max(32px, calc((100vw - 1440px) / 2 + 32px));
+        width: 540px;
+        margin: 0;
+    }
+
+    .ui-sheet.place-sheet.is-beside::backdrop {
+        background: #211d1524;
+    }
+}
+
 @media (max-width: 700px) {
     .ui-sheet.place-sheet {
         width: 100%;
-        height: min(700px, calc(100dvh - 40px));
+        max-height: calc(100dvh - 72px);
         margin: auto 0 0;
         border-bottom: 0;
     }
 }
 
+/* The head lies over the band: its close button on the band's corner, the
+   band itself a handle to drag the sheet down on a phone. */
 .place-sheet .ui-sheet-head {
-    padding: 12px 20px 8px;
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 3;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    height: 150px;
+    padding: 12px;
+    background: none;
 }
 
-/* A drag down still closes it on a phone; the mock draws no handle. */
 .place-sheet .ui-sheet-head::before {
     content: none;
 }
 
 .place-sheet .ui-sheet-head h2 {
-    line-height: 1.2;
-    letter-spacing: -0.7px;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.place-sheet .ui-sheet-close {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-bg-surface);
+    box-shadow: 0 2px 8px #211d1533;
 }
 
 .place-sheet .ui-sheet-body {
+    position: relative;
     display: flex;
     flex: 1;
     flex-direction: column;
+    min-height: 0;
     overflow: hidden;
     padding: 0;
 }
 
-/* Loading, or a place that couldn't open. */
-.place-sheet .ui-sheet-body > .place-source {
-    margin: 10px 20px;
-}
-
-.place-sheet-hero {
+/* Loading, or a place that couldn't open: under the head. */
+.place-sheet-status {
     display: flex;
-    flex: none;
-    gap: 6px 10px;
     align-items: center;
-    min-height: 44px;
-    margin: 0 20px;
+    gap: 8px;
+    margin: 0;
+    padding: 72px 22px 24px;
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
 
-.place-sheet-hero strong {
-    font-weight: var(--weight-regular);
+.place-sheet-status .place-icon {
+    width: 18px;
+    height: 18px;
 }
 
-.place-sheet-hero a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    margin-left: auto;
-    color: var(--color-action);
-    font-size: var(--text-caption);
-    text-decoration: none;
-}
-
-/* About, Plan a visit, Get there. */
-.place-sheet-tabs {
-    display: flex;
-    flex: none;
-    gap: 3px;
-    margin: 14px 20px 0;
-    padding: 3px;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-canvas);
-}
-
-.place-sheet-tabs button {
-    display: flex;
-    flex: 1;
-    gap: 5px;
-    align-items: center;
-    justify-content: center;
-    min-width: 0;
-    height: 40px;
-    padding: 0 4px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: none;
-    color: var(--color-text);
-    font: inherit;
-    font-size: var(--text-small);
-    line-height: 1.5;
-    cursor: pointer;
-}
-
-.place-sheet-tabs button[aria-pressed='true'] {
-    background: var(--color-select-bg);
-    box-shadow: inset 0 -2px var(--color-field-focus);
-    font-weight: var(--weight-semibold);
-}
-
-.place-sheet-panel {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 0;
-    min-height: 0;
-    overflow: hidden;
+.place-sheet .place-icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .place-sheet-scroll {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-y: auto;
     overscroll-behavior: contain;
-    scroll-padding-block: 12px;
-    padding: 20px 20px 12px;
 }
 
-/* Planning and the way: a cream canvas under the tabs. */
-.place-sheet-panel:is(.is-plan, .is-way) {
-    margin-top: 12px;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    background: var(--color-bg-canvas);
+/* A rights-checked photo, or the kind's colour, its icon and "No photo yet". */
+.place-sheet-band {
+    --band: #ece6da;
+    --band-ink: #4d463a;
+    position: relative;
+    height: 150px;
+    overflow: hidden;
+    background: var(--band);
 }
 
-.place-sheet-panel.is-plan .place-sheet-scroll {
-    padding-top: 16px;
+.place-sheet-band.has-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.place-sheet-panel.is-way .place-sheet-scroll {
-    padding-block: 12px;
-}
-
-.place-facts {
-    display: grid;
-    margin: 0 0 12px;
-}
-
-.place-facts > div {
+.place-sheet-band-art {
+    position: absolute;
+    inset: 0;
     display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 40px;
+    color: var(--band-ink);
+    opacity: 0.16;
+}
+
+.place-sheet-band-art .place-icon {
+    width: 64px;
+    height: 64px;
+    stroke-width: 1.2;
+}
+
+.place-sheet-band-art .place-icon:nth-child(2) {
+    width: 92px;
+    height: 92px;
+}
+
+.place-sheet-band-note {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: #fffdf8d9;
+    color: #4d463a;
+    font-size: var(--text-caption);
+}
+
+.place-sheet-band:is([data-kind='restaurant'], [data-kind='fastfood']) {
+    --band: #f8e8e0;
+    --band-ink: #b4441c;
+}
+
+.place-sheet-band:is([data-kind='cafe'], [data-kind='bakery']) {
+    --band: #f4ebdf;
+    --band-ink: #8a5a1e;
+}
+
+.place-sheet-band[data-kind='grocery'] {
+    --band: #ddeff1;
+    --band-ink: #00687b;
+}
+
+.place-sheet-band[data-kind='pharmacy'] {
+    --band: #e2f0e6;
+    --band-ink: #2f7d4f;
+}
+
+.place-sheet-band:is(
+    [data-kind='park'],
+    [data-kind='nature'],
+    [data-kind='playground']
+) {
+    --band: #eaf1dc;
+    --band-ink: #4e7a12;
+}
+
+.place-sheet-band[data-kind='sports'] {
+    --band: #e1eaf6;
+    --band-ink: #1f5fa8;
+}
+
+.place-sheet-band[data-kind='library'] {
+    --band: #ece6f4;
+    --band-ink: #6b4fa0;
+}
+
+.place-sheet-band[data-kind='culture'] {
+    --band: #f3e4ee;
+    --band-ink: #8a3c6e;
+}
+
+.place-sheet-body {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
-    justify-content: space-between;
-    padding: 9px 2px;
-    border: 0 none;
+    padding: 18px 22px 16px;
+}
+
+.place-sheet-name {
+    display: grid;
+    gap: 4px;
+}
+
+.place-sheet-name strong {
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+}
+
+.place-sheet-name span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.place-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: -6px;
+}
+
+.place-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    background: #f1ebdf;
+    color: #4d463a;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+
+.place-chip.is-open {
+    background: #e2f0e6;
+    color: #2b6b3f;
+    font-weight: var(--weight-bold);
+}
+
+.place-chip.is-open i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Only the rows the listing has. */
+.place-known {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.place-known > div {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 12px;
+    padding: 11px 0;
     border-bottom: 1px solid var(--color-border);
     font-size: var(--text-small);
 }
 
-.place-facts > div:first-child {
-    border-top: 1px solid var(--color-border);
-}
-
-.place-facts dt {
-    flex: none;
+.place-known dt {
     color: var(--color-text-soft);
 }
 
-.place-facts dd {
+.place-known dd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
     margin: 0;
-    font-weight: var(--weight-medium);
-    text-align: right;
+    font-weight: var(--weight-semibold);
 }
 
-.place-facts dd.is-unknown {
+.place-known dd a {
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.place-copy {
+    flex: none;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+}
+
+.place-week-lines {
+    display: grid;
+    gap: 2px;
+    font-weight: var(--weight-regular);
+    font-variant-numeric: tabular-nums;
+}
+
+.place-week-lines b {
+    display: inline-block;
+    min-width: 92px;
+    font-weight: var(--weight-semibold);
+}
+
+.place-week-lines .is-today {
+    font-weight: var(--weight-bold);
+}
+
+.place-week-lines .is-today::after {
+    content: ' · today';
     color: var(--color-text-soft);
     font-weight: var(--weight-regular);
 }
 
-.place-facts a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+.place-contents h3,
+.place-sheet-way h3,
+.place-sheet-plan h3 {
+    margin: 0 0 8px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
-.place-week {
-    margin: 0 0 12px;
+.place-contents ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.place-contents li {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    min-height: 52px;
+    border-top: 1px solid var(--color-border);
     font-size: var(--text-small);
 }
 
-.place-week h3 {
-    margin: 12px 0 8px;
+.place-contents-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #eaf1dc;
+    color: #4e7a12;
+}
+
+.place-contents-icon .place-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.place-contents em {
+    color: var(--color-text-soft);
     font-size: var(--text-small);
+    font-style: normal;
     font-weight: var(--weight-semibold);
 }
 
-.place-week p {
-    margin: 0 0 4px;
-}
-
-.place-week dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4px 16px;
-    margin: 0 0 4px;
-}
-
-.place-week dl > div {
-    display: contents;
-}
-
-.place-week dt {
-    color: var(--color-text-soft);
-}
-
-.place-week dd {
+.place-missing {
     margin: 0;
-}
-
-.place-source {
-    margin: 10px 0;
     color: var(--color-text-soft);
-    font-size: var(--text-small);
+    font-size: var(--text-caption);
+    line-height: 1.45;
 }
 
-.place-source a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.place-sheet-footer {
+.place-sheet-way > div {
     display: flex;
-    flex: none;
+    align-items: center;
     gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #f6f0e4;
+}
+
+.place-sheet-way > div > span .place-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.place-sheet-way p {
+    flex: 1;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
+.place-way {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+
+.place-sheet-source,
+.place-photo-credit {
+    margin: 0;
+    color: #8a8173;
+    font-size: 11.5px;
+}
+
+.place-sheet-source a,
+.place-photo-credit a {
+    color: inherit;
+}
+
+/* Slide (Travel's one way to open and close in place): 0fr→1fr in 180 ms
+   ease-out, the words fading in and dropping 10 px over 250 ms; it folds
+   in 200 ms ease-in. */
+.place-sheet-plan {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.place-sheet-plan[data-open='true'] {
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 180ms ease-out;
+}
+
+.place-sheet-plan-in {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.place-sheet-plan-in > * {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+        opacity 120ms ease-in,
+        transform 120ms ease-in;
+}
+
+.place-sheet-plan[data-open='true'] > .place-sheet-plan-in > * {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 250ms ease-out,
+        transform 250ms ease-out;
+}
+
+.place-sheet-plan-inner {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+}
+
+/* Plan a visit's own buttons, under its form. */
+.place-sheet-plan .place-sheet-footer {
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 20px;
-    /* The mock's light glass finish, in its own row. */
-    background: rgb(255 255 255 / 78%);
-    -webkit-backdrop-filter: blur(16px) saturate(120%);
-    backdrop-filter: blur(16px) saturate(120%);
+    gap: 12px;
+    padding: 12px 0 0;
 }
 
-/* On the cream canvas, the mock's paler glass. */
-.place-sheet-panel:is(.is-plan, .is-way) .place-sheet-footer {
-    background: rgb(246 250 251 / 78%);
-}
-
-.place-sheet-footer.is-end {
+.place-sheet-plan .place-sheet-footer.is-end {
     justify-content: flex-end;
 }
 
 .place-sheet-save {
     display: flex;
-    gap: 7px;
-    align-items: center;
-    justify-content: center;
-    min-height: 40px;
-    padding: 8px 4px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: #fffdf8;
-    color: var(--color-text);
-    font: inherit;
-    font-size: var(--text-caption);
-    font-weight: var(--weight-medium);
-    line-height: 1.25;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.place-sheet-save[aria-pressed='true'] {
-    color: var(--color-select-text);
-}
-
-/* Not now sits by Save; Plan a visit keeps the end. */
-.place-sheet-not-now {
-    margin-right: auto;
-    color: var(--color-text-soft);
-}
-
-/* The part's one main action: Plan a visit, Add to plan, Back to place. */
-.place-sheet-primary {
-    display: flex;
-    gap: 7px;
     align-items: center;
     justify-content: center;
     min-height: 40px;
     padding: 8px 12px;
-    border: 0;
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    background: var(--color-action);
-    color: var(--color-text-on-action);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
     font: inherit;
     font-size: var(--text-caption);
     font-weight: var(--weight-medium);
-    line-height: 1.25;
     white-space: nowrap;
     cursor: pointer;
+}
+
+/* Save / Share / Plan a visit at the foot. */
+.place-sheet-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border);
+    background: var(--color-bg-surface);
+}
+
+.place-sheet-secondary,
+.place-sheet-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    font: inherit;
+    font-size: var(--text-small);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.place-sheet-secondary {
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+
+.place-sheet-secondary .place-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.place-sheet-secondary[aria-pressed='true'] .place-icon {
+    fill: currentColor;
+}
+
+.place-sheet-primary {
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-weight: var(--weight-bold);
 }
 
 .place-sheet-primary:disabled {
@@ -313,29 +572,28 @@
     cursor: default;
 }
 
-/* A phone: the mock's 16px sides, and a shorter head. */
+.place-sheet-actions > :last-child[aria-expanded] {
+    margin-left: auto;
+}
+
 @media (max-width: 700px) {
-    .place-sheet .ui-sheet-head {
-        padding: 8px 16px;
+    .place-sheet .ui-sheet-head,
+    .place-sheet-band {
+        height: 118px;
     }
 
-    .place-sheet-hero {
-        margin: 0 16px;
+    .place-sheet-body {
+        padding: 14px 16px 12px;
     }
 
-    .place-sheet-tabs {
-        margin: 12px 16px 0;
+    .place-sheet-name strong {
+        font-size: 24px;
     }
+}
 
-    .place-sheet-scroll {
-        padding: 18px 16px 12px;
-    }
-
-    .place-sheet .ui-sheet-body > .place-source {
-        margin-inline: 16px;
-    }
-
-    .place-sheet-footer {
-        padding: 8px 16px;
+@media (prefers-reduced-motion: reduce) {
+    .place-sheet-plan,
+    .place-sheet-plan-in > * {
+        transition: none;
     }
 }

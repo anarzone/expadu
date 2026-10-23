@@ -1,0 +1,168 @@
+/* A place's row (place-row.tsx; the mock's around-here/style.css, direction
+   A): hairlines, no cards, the number in the kind's colour. Its own file so
+   every list that shows places (Around here, Composer) draws it the same. */
+
+/* One colour per kind, shared by the chip's dot, the row's number, the
+   map's pin and the sheet's band. */
+[data-kind] {
+    --kind: #4d463a;
+    --kind-tint: #ece6da;
+}
+[data-kind='restaurant'],
+[data-kind='fastfood'] {
+    --kind: #b4441c;
+    --kind-tint: #f8e8e0;
+}
+[data-kind='cafe'],
+[data-kind='bakery'] {
+    --kind: #8a5a1e;
+    --kind-tint: #f4ebdf;
+}
+[data-kind='grocery'] {
+    --kind: #00687b;
+    --kind-tint: #ddeff1;
+}
+[data-kind='pharmacy'] {
+    --kind: #2f7d4f;
+    --kind-tint: #e2f0e6;
+}
+[data-kind='park'],
+[data-kind='nature'] {
+    --kind: #4e7a12;
+    --kind-tint: #eaf1dc;
+}
+[data-kind='playground'] {
+    --kind: #9a5a08;
+    --kind-tint: #f6ead8;
+}
+[data-kind='sports'] {
+    --kind: #1f5fa8;
+    --kind-tint: #e1eaf6;
+}
+[data-kind='library'] {
+    --kind: #6b4fa0;
+    --kind-tint: #ece6f4;
+}
+[data-kind='culture'] {
+    --kind: #8a3c6e;
+    --kind-tint: #f3e4ee;
+}
+
+.around-row {
+    border-top: 1px solid var(--color-border);
+}
+:first-child > .around-row,
+.around-row:first-child {
+    border-top: 0;
+}
+.around-row-open {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    column-gap: 14px;
+    align-items: start;
+    width: 100%;
+    min-height: 62px;
+    padding: 10px;
+    border: 0;
+    border-radius: 14px;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.around-row-open:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+}
+.around-row.is-selected .around-row-open {
+    background: var(--kind-tint);
+}
+.around-row.is-selected,
+.around-row.is-selected + .around-row {
+    border-top-color: transparent;
+}
+@media (hover: hover) {
+    .around-row-open:hover {
+        background: var(--kind-tint);
+    }
+    .around-row:has(.around-row-open:hover),
+    .around-row:has(.around-row-open:hover) + .around-row {
+        border-top-color: transparent;
+    }
+}
+.around-row-open:active {
+    background: var(--kind-tint);
+}
+.around-num {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    margin-top: 1px;
+    border-radius: 50%;
+    background: var(--kind);
+    color: #fff;
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.around-num .place-icon {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.around-row-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+.around-row-copy strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.around-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.around-row-meta .place-hours {
+    font-weight: var(--weight-semibold);
+}
+.around-row-meta .place-hours.is-open {
+    color: #2b6b3f;
+}
+.around-row-contents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px;
+}
+.around-row-contents span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: var(--radius-pill);
+    background: var(--kind-tint);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.around-row-away {
+    padding-top: 2px;
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .around-row-open {
+        transition: background 160ms ease;
+    }
+}

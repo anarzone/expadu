@@ -2,50 +2,67 @@ import type { Ref } from 'react';
 import { cn } from '@/lib/utils';
 import { PlaceIcon } from './place-icon';
 import {
-    cuisineText,
+    cuisineNames,
     dietChip,
     distanceText,
     hoursText,
     placeNet,
-    outdoorSeating,
-    wheelchairText,
 } from './place-model';
 import type { AroundPlace } from './place-model';
+import './place-row.css';
 
-/* One place in Around here's list (the mock's connected/places.js card,
-   row variant): its kind's icon, its name, where it is and how far, and
-   what the listing records (hours at the time, step-free access, food
-   facts, Wi-Fi). Save keeps it for later. */
+/* One place in a list (Around here direction A, owner 23 Oct 2026; the
+   mock's around-here/app.js row): Travel's hairline row, its number in the
+   kind's colour as on the map's pin, the name, the kind with its cuisine,
+   today's listed hours, only the facts the listing records (step-free, a
+   diet, Wi-Fi) and the distance. A park lists what's in it. Composer's
+   place answers use it too, without numbers. */
+
+/** Kinds whose rows don't say "Hours not listed": open spaces. */
+const OPEN_SPACES = ['park', 'nature', 'playground', 'sports'];
+
 export function PlaceRow({
     ref,
     place,
+    number,
     selected,
     onOpen,
     onHover,
-    onSave,
 }: {
-    ref?: Ref<HTMLElement>;
+    ref?: Ref<HTMLDivElement>;
     place: AroundPlace;
+    /** Its pin's number on the map; the kind's icon where there's no map. */
+    number?: number;
     selected: boolean;
     onOpen: () => void;
     onHover: (hovered: boolean) => void;
-    onSave: () => void;
+    /** Kept for callers from before direction A; saving is in the sheet now. */
+    onSave?: () => void;
 }) {
     const away = distanceText(place);
-    // Woods and lakes have no opening hours to show.
-    const hours = place.icon === 'nature' ? null : place.hours;
-    const dish = cuisineText(place);
-    const diet = dietChip(place);
-    const net = placeNet(place);
-    const access = wheelchairText(place.wheelchair);
+    const kindLine = [place.label, cuisineNames(place.cuisine)]
+        .filter(Boolean)
+        .join(' · ');
+    const hours =
+        place.icon === 'nature' ||
+        (place.hours.state === 'unknown' && OPEN_SPACES.includes(place.icon))
+            ? null
+            : place.hours;
+    const facts = [
+        place.wheelchair === 'yes' ? 'Step-free' : '',
+        dietChip(place),
+        placeNet(place),
+    ].filter(Boolean);
+    const contents = (place.facilities ?? '')
+        .split(' · ')
+        .map((part) => part.trim())
+        .filter(Boolean);
 
     return (
-        <article
+        <div
             ref={ref}
-            className={cn(
-                'nearby-place nearby-place--row',
-                selected && 'is-selected',
-            )}
+            className={cn('around-row', selected && 'is-selected')}
+            data-kind={place.icon}
             data-place-card={place.id}
             onPointerEnter={(event) =>
                 event.pointerType === 'mouse' && onHover(true)
@@ -55,114 +72,48 @@ export function PlaceRow({
             }
         >
             <button
-                className="nearby-place-open"
                 type="button"
-                aria-label={`${place.name}, ${place.label}, ${away}`}
+                className="around-row-open"
+                aria-label={[
+                    number ? `${number}. ${place.name}` : place.name,
+                    kindLine,
+                    away,
+                ]
+                    .filter(Boolean)
+                    .join(', ')}
                 onClick={onOpen}
             >
-                <span className="place-map-snippet" data-kind={place.icon}>
-                    {place.photo ? (
-                        <img
-                            className="place-photo"
-                            src={place.photo.url}
-                            alt=""
-                            loading="lazy"
-                        />
-                    ) : (
-                        <span className="place-map-fallback">
-                            <PlaceIcon name={place.icon} />
-                        </span>
-                    )}
+                <span className="around-num" aria-hidden="true">
+                    {number ?? <PlaceIcon name={place.icon} />}
                 </span>
-                <span className="nearby-place-copy">
+                <span className="around-row-copy">
                     <strong>{place.name}</strong>
-                    <small>
-                        {[place.street, place.veedel, away]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        {dish ? (
-                            <>
-                                {' · '}
-                                <span
-                                    className={cn(
-                                        'place-cuisine',
-                                        !dish.known && 'is-unknown',
-                                    )}
-                                >
-                                    {dish.text}
-                                </span>
-                            </>
+                    <span className="around-row-meta">
+                        <span>{kindLine}</span>
+                        {hours ? (
+                            <span
+                                className={cn(
+                                    'place-hours',
+                                    `is-${hours.state}`,
+                                )}
+                            >
+                                {hoursText(hours)}
+                            </span>
                         ) : null}
-                    </small>
-                    {hours ||
-                    access ||
-                    outdoorSeating(place) ||
-                    diet ||
-                    net ||
-                    place.facilities ? (
-                        <span className="nearby-place-facts">
-                            {place.facilities ? (
-                                <span className="place-detail">
-                                    {place.facilities}
-                                </span>
-                            ) : null}
-                            {hours ? (
-                                <span
-                                    className={cn(
-                                        'place-hours',
-                                        `is-${hours.state}`,
-                                    )}
-                                >
-                                    <PlaceIcon name="clock" />
-                                    {hoursText(hours)}
-                                </span>
-                            ) : null}
-                            {access ? (
-                                <span className="place-access">
-                                    <PlaceIcon name="wheelchair" />
-                                    {access}
-                                </span>
-                            ) : null}
-                            {outdoorSeating(place) ? (
-                                <span className="place-detail">
-                                    <PlaceIcon name="outdoor" />
-                                    Outdoor seating
-                                </span>
-                            ) : null}
-                            {diet ? (
-                                <span className="place-detail">
-                                    <PlaceIcon name="leaf" />
-                                    {diet}
-                                </span>
-                            ) : null}
-                            {net ? (
-                                <span className="place-detail">
-                                    <PlaceIcon name="wifi" />
-                                    {net}
-                                </span>
-                            ) : null}
+                        {facts.map((fact) => (
+                            <span key={fact}>{fact}</span>
+                        ))}
+                    </span>
+                    {contents.length ? (
+                        <span className="around-row-contents">
+                            {contents.map((part) => (
+                                <span key={part}>{part}</span>
+                            ))}
                         </span>
                     ) : null}
-                    {/* Plain text inside the button; the sheet links the source and licence. */}
-                    {place.photo?.credit ? (
-                        <small className="place-photo-credit">
-                            Photo: {place.photo.credit}
-                        </small>
-                    ) : null}
                 </span>
+                <span className="around-row-away">{away}</span>
             </button>
-            <span className="nearby-place-actions">
-                <button
-                    className="nearby-place-save"
-                    type="button"
-                    aria-pressed={place.saved}
-                    aria-label={`${place.saved ? 'Unsave' : 'Save'} ${place.name}`}
-                    title="Save for later"
-                    onClick={onSave}
-                >
-                    <PlaceIcon name="bookmark" />
-                </button>
-            </span>
-        </article>
+        </div>
     );
 }

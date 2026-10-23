@@ -56,18 +56,22 @@ class AroundHereController extends Controller
             ? (string) $request->query('time')
             : $now->format('H:i');
         $at = CarbonImmutable::parse($now->toDateString().' '.$time, 'Europe/Berlin');
-        $kind = AroundKinds::has((string) $request->query('kind')) ? (string) $request->query('kind') : '';
+        // Kinds combine ("green,sports"); none is every kind.
+        $kinds = collect(explode(',', (string) $request->query('kind')))
+            ->map(fn (string $k): string => trim($k))
+            ->filter(fn (string $k): bool => AroundKinds::has($k))
+            ->unique()->values()->all();
         $open = $request->query('open') === '1';
         $point = $this->point((string) $request->query('near'), (string) $request->query('name'), $user, $points, $now)
             ?? ($request->query('near', '') === '' ? $this->placePoint((string) $request->query('place')) : null);
 
         return Inertia::render('around-here', [
             'point' => $point,
-            'kind' => $kind,
+            'kind' => implode(',', $kinds),
             'open' => $open,
             'at' => ['date' => $at->toDateString(), 'time' => $time],
             'kinds' => AroundKinds::chips(),
-            'places' => $point === null ? [] : $this->places($nearby, $point, $at, $kind, $open, $user),
+            'places' => $point === null ? [] : $this->places($nearby, $point, $at, $kinds, $open, $user),
         ]);
     }
 
@@ -122,16 +126,17 @@ class AroundHereController extends Controller
     }
 
     /**
-     * The nearest places of the kind (or of every kind), the ones listed as
+     * The nearest places of the kinds (or of every kind), the ones listed as
      * open at the time when asked: those within 2 km, or, where that's
      * fewer than three, up to three of the next ones further away.
      *
      * @param  array{name: string, lat: float, lng: float}  $point
+     * @param  list<string>  $kinds
      * @return list<array<string, mixed>>
      */
-    private function places(OpenNearby $nearby, array $point, CarbonImmutable $at, string $kind, bool $open, User $user): array
+    private function places(OpenNearby $nearby, array $point, CarbonImmutable $at, array $kinds, bool $open, User $user): array
     {
-        $rows = $nearby->listed($point['lat'], $point['lng'], $at, AroundKinds::categories($kind === '' ? [] : [$kind]), limit: $open ? self::LIMIT * 4 : self::LIMIT, for: $user)
+        $rows = $nearby->listed($point['lat'], $point['lng'], $at, AroundKinds::categories($kinds), limit: $open ? self::LIMIT * 4 : self::LIMIT, for: $user)
             ->filter(fn (array $row): bool => ! $open || $row['hours']['state'] === 'open')
             ->take(self::LIMIT)
             ->values();

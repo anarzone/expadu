@@ -1,6 +1,7 @@
-/* Around here: a list beside a map (the mock's around-here/style.css, with
-   connected/place-card.css's row card). Phones put a short map above the
-   list; larger screens keep the map beside it while the list scrolls. */
+/* Around here: a board beside a map (the mock's around-here/style.css,
+   direction A; owner 23 Oct 2026). The rows and the kinds' colours are
+   place-row.css. Phones put a short map above the list; larger screens keep
+   the map beside it while the list scrolls. */
 
 .around {
     display: grid;
@@ -9,14 +10,14 @@
 
 .around-head {
     display: flex;
-    gap: 8px;
     align-items: flex-start;
+    gap: 8px;
 }
 
 .around-head h1 {
     margin: 0;
     font-size: var(--text-title);
-    font-weight: var(--weight-semibold);
+    font-weight: var(--weight-bold);
     line-height: 1.2;
     letter-spacing: -0.5px;
 }
@@ -29,19 +30,18 @@
 
 .around-back {
     display: inline-flex;
-    gap: 4px;
     align-items: center;
+    gap: 4px;
     min-height: 44px;
     margin-left: -10px;
     padding: 0 10px;
     border: 0;
     border-radius: var(--radius-md);
-    background: none;
     color: var(--color-text);
+    background: none;
     font: inherit;
     font-size: var(--text-small);
     text-decoration: none;
-    cursor: pointer;
 }
 
 .around-back svg {
@@ -60,10 +60,10 @@
 .around-filters {
     display: flex;
     gap: 6px;
-    margin-inline: -16px;
-    padding: 2px 16px;
     overflow-x: auto;
     scrollbar-width: none;
+    margin-inline: -16px;
+    padding: 2px 16px;
 }
 
 .around-filters::-webkit-scrollbar {
@@ -74,33 +74,50 @@
 .around-open-toggle {
     display: inline-flex;
     flex-shrink: 0;
-    gap: 6px;
     align-items: center;
+    gap: 7px;
     min-height: 40px;
-    padding: 0 12px;
-    border: 0;
+    padding: 0 13px;
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-pill);
-    background: var(--color-bg-quiet);
     color: var(--color-text);
+    background: var(--color-bg-surface);
     font: inherit;
     font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
     white-space: nowrap;
-    cursor: pointer;
+}
+
+.around-filters i {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    background: var(--kind);
 }
 
 .around-filters button[aria-pressed='true'],
 .around-open-toggle[aria-pressed='true'] {
-    background: var(--color-select-bg);
-    color: var(--color-select-text);
-    font-weight: var(--weight-semibold);
+    border-color: var(--color-text);
+    color: var(--color-bg-surface);
+    background: var(--color-text);
+}
+
+.around-open-toggle .place-icon {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* "Open at" filters the list, so it sits with the count above it. */
 .around-list-head {
     display: flex;
-    gap: 12px;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
 }
 
 .around-body {
@@ -122,14 +139,26 @@
 
 .around-results {
     display: grid;
-    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .around-further {
-    margin: 10px 0 0;
+    margin: 10px 0 4px;
     color: var(--color-text-soft);
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
+}
+
+.around-further + li > .around-row {
+    border-top: 0;
+}
+
+.around .place-map-credit {
+    margin: 8px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
 }
 
 .around-map {
@@ -154,9 +183,9 @@
     position: absolute;
     inset: 0;
     display: grid;
-    gap: 6px;
     place-content: center;
     justify-items: center;
+    gap: 6px;
     margin: 0;
     color: var(--color-text-soft);
     font-size: var(--text-small);
@@ -167,51 +196,59 @@
     height: 24px;
 }
 
+/* Pins carry the row's number in the kind's colour. */
 .around-marker {
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     padding: 0;
     border: 2px solid #fff;
     border-radius: var(--radius-round);
-    background: var(--color-bg-surface);
-    box-shadow: 0 2px 6px #3e352b33;
-    color: var(--color-text);
+    color: #fff;
+    background: var(--kind);
+    box-shadow: 0 2px 6px #3e352b59;
+    font: inherit;
+    font-size: 12px;
+    font-weight: var(--weight-bold);
     cursor: pointer;
 }
 
-.around-marker .place-icon {
-    width: 16px;
-    height: 16px;
-}
-
-.around-marker.is-hovered,
-.around-marker.is-selected {
+.around-marker.is-hovered {
     z-index: 2;
-    background: var(--color-select-text);
-    color: #fff;
+    box-shadow:
+        0 0 0 4px var(--kind-tint),
+        0 2px 6px #3e352b59;
 }
 
 .around-marker.is-selected {
-    width: 38px;
-    height: 38px;
+    z-index: 3;
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+    box-shadow:
+        0 0 0 5px var(--kind-tint),
+        0 4px 10px #3e352b66;
 }
 
 .around-here-marker {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border: 3px solid #fff;
-    border-radius: var(--radius-round);
+    border-radius: 5px;
     background: var(--color-text);
     box-shadow: 0 0 0 6px #211d1526;
 }
 
 @media (min-width: 1000px) {
     .around-body {
-        grid-template-columns: minmax(360px, 440px) 1fr;
-        gap: 20px;
+        grid-template-columns: minmax(400px, 540px) 1fr;
         align-items: start;
+        gap: 0;
+    }
+
+    .around-list {
+        padding-right: 20px;
     }
 
     .around-map {
@@ -219,6 +256,8 @@
         top: 88px;
         order: 0;
         height: calc(100vh - 120px);
+        border-left: 1px solid var(--color-border);
+        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     }
 
     .around-filters {
@@ -234,222 +273,7 @@
     .around-marker {
         transition:
             background 160ms ease,
-            color 160ms ease;
-    }
-}
-
-/* ---------- A place in the list (connected/place-card.css, row) ----------
-   Scoped here: Today's discovery rows share the class names. */
-
-.around .place-icon {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.around .nearby-place {
-    position: relative;
-    display: flex;
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
-    color: var(--color-text);
-}
-
-.around .nearby-place.is-selected {
-    border-color: var(--color-select-text);
-    box-shadow: inset 0 0 0 1px var(--color-select-text);
-}
-
-.around .nearby-place-open {
-    display: flex;
-    flex: 1;
-    flex-direction: row;
-    gap: 12px;
-    align-items: center;
-    min-width: 0;
-    padding: 8px 56px 8px 8px;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.around .nearby-place-open:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
-}
-
-.around .place-map-snippet {
-    position: relative;
-    display: grid;
-    flex: 0 0 64px;
-    place-items: center;
-    width: 64px;
-    height: 64px;
-    overflow: hidden;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
-    color: var(--color-text-soft);
-}
-
-.around .place-photo {
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    object-fit: cover;
-}
-
-/* A photo's credit, under its facts (licences need it on screen). */
-.around .place-photo-credit {
-    overflow: hidden;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.around .place-map-fallback svg {
-    /* Inline, as the mock's: the line under it lifts it off the middle. */
-    display: inline;
-    width: 28px;
-    height: 28px;
-    vertical-align: baseline;
-}
-
-.around .nearby-place-copy {
-    display: grid;
-    gap: 2px;
-    min-width: 0;
-}
-
-.around .nearby-place-copy strong {
-    overflow: hidden;
-    font-size: var(--text-body);
-    font-weight: var(--weight-semibold);
-    line-height: 1.3;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.around .nearby-place-copy small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-
-.around .nearby-place-facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 12px;
-    margin-top: 2px;
-    font-size: var(--text-small);
-}
-
-.around .nearby-place-facts > span {
-    display: inline-flex;
-    gap: 5px;
-    align-items: center;
-}
-
-.around .place-hours.is-open {
-    color: var(--color-select-text);
-    font-weight: var(--weight-medium);
-}
-
-.around .place-hours.is-closed,
-.around .place-hours.is-unknown,
-.around .place-access,
-.around .place-detail {
-    color: var(--color-text-soft);
-}
-
-.around .place-cuisine {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--color-text);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.around .place-cuisine.is-unknown {
-    color: var(--color-text-soft);
-}
-
-.around .nearby-place-actions {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    display: flex;
-    gap: 6px;
-    transform: translateY(-50%);
-}
-
-.around .nearby-place-actions button {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-round);
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-    cursor: pointer;
-}
-
-/* A larger tap area than the button. */
-.around .nearby-place-actions button::after {
-    content: '';
-    position: absolute;
-    inset: -4px;
-}
-
-.around .nearby-place-actions .place-icon {
-    width: 18px;
-    height: 18px;
-}
-
-.around .nearby-place-save[aria-pressed='true'] {
-    background: var(--color-select-bg);
-    color: var(--color-select-text);
-}
-
-.around .nearby-place-save[aria-pressed='true'] .place-icon {
-    fill: currentColor;
-}
-
-.around .place-map-credit {
-    margin: 8px 0 0;
-    color: var(--color-text-soft);
-    font-size: var(--text-micro);
-}
-
-@media (hover: hover) {
-    .around .nearby-place-open:hover strong {
-        text-decoration: underline;
-        text-underline-offset: 3px;
-    }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .around .nearby-place-actions button {
-        transition:
-            background 160ms ease,
-            transform 160ms ease;
-    }
-
-    .around .nearby-place-actions button:active {
-        transform: scale(0.94);
+            color 160ms ease,
+            box-shadow 160ms ease;
     }
 }

@@ -18,8 +18,13 @@ const SHAPES = {
     fastfood:
         '<path d="M4 11a8 6 0 0 1 16 0H4Zm-1 3h18M5 17h14a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3Z"/>',
     nature: '<path d="M12 2 6 10h3l-4 6h14l-4-6h3l-6-8Zm0 14v6"/>',
-    // A pitch, a court, a pool: places for sport.
-    sport: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3.5 9.5c5 1.5 12 1.5 17 0M3.5 14.5c5-1.5 12-1.5 17 0"/>',
+    // Places for sport, and what a park has (the mock's connected/places.js).
+    sports: '<path d="M6 7v10M3 9v6m15-8v10m3-8v6M6 12h12"/>',
+    pitch: '<path d="M3 6h18v12H3zM12 6v12"/><circle cx="12" cy="12" r="2.5"/>',
+    table_tennis: '<path d="M3 10h18v3H3zM6 13v6m12-6v6M12 10V7"/>',
+    boules: '<circle cx="8" cy="15" r="4"/><circle cx="17" cy="15" r="3"/><circle cx="13" cy="7" r="1.5"/>',
+    dog_park:
+        '<path d="M6 15c0-3 3-5 6-5s6 2 6 5-3 4-6 4-6-1-6-4Z"/><circle cx="7" cy="8" r="1.5"/><circle cx="12" cy="6" r="1.5"/><circle cx="17" cy="8" r="1.5"/>',
     outdoor: '<path d="M3 10a9 6 0 0 1 18 0H3Zm9 0v11M7 21h10M8 15h8"/>',
     leaf: '<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15H5v-1Zm0 0 8-8"/>',
     wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',
@@ -28,6 +33,8 @@ const SHAPES = {
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     pin: '<path d="M12 22s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4V3Z"/>',
+    route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H12"/>',
+    share: '<path d="M12 3v12M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
 } as const;
 
 export type PlaceShape = keyof typeof SHAPES;
