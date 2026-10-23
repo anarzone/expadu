@@ -8421,7 +8421,8 @@
    ],
    "expect": {
     "open": true,
-    "min_places": 3
+    "min_places": 3,
+    "first_names_place": true
    }
   },
   {
@@ -8470,7 +8471,8 @@
    "text": "try again",
    "expect": {
     "open": true,
-    "min_places": 3
+    "min_places": 3,
+    "first_names_place": true
    }
   }
  ]

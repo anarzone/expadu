@@ -684,8 +684,15 @@ final class AssistantTools
                 .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : '')).$lists.'.');
         }
 
+        // Every one shown before (asked again): said so, with the nearest as it's listed, so the answer
+        // restates it rather than only offering something else (owner, 23 Oct 2026).
+        $same = $found->isNotEmpty() && $found->every(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))
+            ? $this->line('s'.(++$this->count), 'The same places as shown before. The nearest: '
+                .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null))."\n"
+            : '';
+
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
-        return ($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
+        return $same.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
