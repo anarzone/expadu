@@ -102,6 +102,9 @@ class ImportOsmSpots extends Command
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
             'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+            // Gyms, climbing and bouldering halls, dance studios and schools (owner, 23 Oct).
+            // Named only; never capped.
+            'fitness' => "[out:json][timeout:90];(nwr[\"leisure\"=\"fitness_centre\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"~\"climbing|fitness|dance\"][\"name\"]({$bbox});nwr[\"sport\"=\"climbing\"][\"name\"]({$bbox});nwr[\"leisure\"=\"dance\"][\"name\"]({$bbox});nwr[\"amenity\"=\"dancing_school\"][\"name\"]({$bbox}););out center;",
             // Everyday errands for Today's "Near ‹plan›" and Around here's
             // pharmacy and grocery kinds. City-wide with no `out` limit: a
             // capped query silently drops whole districts.
@@ -669,6 +672,16 @@ class ImportOsmSpots extends Command
 
         $amenity = $tags['amenity'] ?? '';
         $office = $tags['office'] ?? '';
+
+        if ($hint === 'fitness') {
+            $sport = mb_strtolower((string) ($tags['sport'] ?? ''));
+
+            return match (true) {
+                str_contains($sport, 'climbing') => 'climbing',
+                ($tags['leisure'] ?? null) === 'dance' || $amenity === 'dancing_school' || str_contains($sport, 'dance') => 'dance_studio',
+                default => 'fitness_centre',
+            };
+        }
 
         if ($amenity === 'coworking_space' || $office === 'coworking') {
             return 'coworking';
