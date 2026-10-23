@@ -71,7 +71,7 @@ final class AroundCheck
      * @param  string  $source  the text of the items it cites, plus the time line every sentence may use
      * @param  bool  $personal  it cites the person's own facts (their taste or their day, with the
      *                          opt-in), so it may speak of them, as softly as those facts are
-     * @param  int  $named  how many listed things the sentence names ("two events": the two it names)
+     * @param  int  $named  how many listed things it may count: those it names, or its lookups found ("two events" among them)
      */
     public function holds(string $sentence, string $source, bool $personal = false, int $named = 0): bool
     {
@@ -83,8 +83,10 @@ final class AroundCheck
             || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower)))) {
             return false;
         }
+        // A count holds when it's how many things the sentence names, or a number its results give ("3 places nearby").
         preg_match_all(self::COUNTS, $lower, $counts);
-        if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? null) !== $named)) {
+        if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? PHP_INT_MAX) > $named
+            && (! isset(self::NUMBERS[$count]) || preg_match('/\b'.self::NUMBERS[$count].'\b/u', $source) !== 1))) {
             return false;
         }
 

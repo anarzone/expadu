@@ -57,7 +57,7 @@ class EvaluateComposer extends Command
 
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
-        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true];
+        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -204,6 +204,9 @@ class EvaluateComposer extends Command
         // "Open now": only places whose listed hours say so.
         $routing += ($expect['open_only'] ?? false) ? ['open_only' => collect($shownPlaces)->every(fn (array $p): bool => str_starts_with((string) ($p['hours'] ?? ''), 'Open'))] : [];
         $routing += ($expect['distinct_names'] ?? false) ? ['distinct_names' => count(array_unique(array_column($shownPlaces, 'name'))) === count($shownPlaces)] : [];
+        // Asked again or narrowed, never turned down; step-free never said unasked.
+        $routing += ($expect['no_leave_out'] ?? false) ? ['no_leave_out' => ! collect($assistant->timings)->contains(fn (array $t): bool => str_contains($t[0], '"leave_out_earlier":true'))] : [];
+        $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // What the answer must say (a fact that isn't listed, why nothing is open), as a pattern over its words.
         $routing += isset($expect['says']) ? ['says' => preg_match('/'.$expect['says'].'/iu', (string) ($answer['text'] ?? '')) === 1] : [];
         $planExpect = array_diff_key($expect, self::ANSWER_EXPECT);
@@ -251,7 +254,7 @@ class EvaluateComposer extends Command
         // Each sentence it kept, against everything it read (not only what it cited): a sentence may
         // speak of the person from their own facts, and count the listings, places and choices it cites.
         foreach (($answer['written'] ?? null) === 'ai' ? $assistant->kept : [] as $sentence) {
-            $count = count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', $sentence['uses']))
+            $count = max(count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', $sentence['uses'])), count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', array_keys($assistant->read))))
                 + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? []);
             if (! app(AroundCheck::class)->holds($sentence['text'], implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
                 $invented[] = $sentence['text'];
