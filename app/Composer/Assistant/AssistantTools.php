@@ -26,6 +26,7 @@ use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -156,11 +157,11 @@ final class AssistantTools
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'leave out what you suggested earlier in this conversation (they turned it down)'],
                 ], 'required' => ['day']]],
-            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known, nearest to the person first.',
+            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'kind' => ['type' => 'string', 'enum' => $kinds],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $kinds], 'description' => 'kinds of place; "a place to work" or "laptop" is cafe, library and coworking; "coffee shop" is cafe'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
-                    'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, optional'],
+                    'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today, optional'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
@@ -440,9 +441,9 @@ final class AssistantTools
         }
         $shown = collect($this->listings->posters($occurrences->values(), self::SHOWN));
         if ($shown->isEmpty()) {
-            // What was looked for, so "nothing free is on" is a fact the answer may state.
-            return 'Nothing'.(($input['free'] ?? false) === true ? ' free' : '').' is listed '.($day->isSameDay($this->now) ? 'today' : 'on '.$day->format('l j F'))
-                .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.';
+            // What was looked for, so "nothing free is on" is a fact the answer may state, citing it.
+            return $this->line('n'.(++$this->count), 'Nothing'.(($input['free'] ?? false) === true ? ' free' : '').' is listed '.($day->isSameDay($this->now) ? 'today' : 'on '.$day->format('l j F'))
+                .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.');
         }
 
         return $shown->map(function (array $poster) use ($occurrences): string {
@@ -457,46 +458,71 @@ final class AssistantTools
     private function searchPlaces(array $input): string
     {
         $at = $this->clock($input['open_at'] ?? null, $this->now) ?? $this->now;
-        $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? (PlanDay::areas([$input['area']])[0] ?? null) : null;
-        if ($area === null && is_string($input['area'] ?? null) && trim($input['area']) !== '') {
-            return "No Veedel is called \"{$input['area']}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt).";
+        $named = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        $areas = $named !== null ? PlanDay::areas([$named]) : [];
+        if ($named !== null && $areas === []) {
+            return "No Veedel is called \"{$named}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt), or the city centre.";
         }
+        $kinds = array_values(array_unique(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string')));
+        $activity = is_string($input['activity'] ?? null) ? $input['activity'] : null;
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
-        [$lat, $lng] = $this->location->hasOrigin() ? [(float) $this->location->lat, (float) $this->location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
-        // The nearest that fit, two of a kind, and a few spare for the filters below.
+        // In an area named, from its middle (owner's test, 23 Oct 2026: "places to work in city center"
+        // were sorted by the home Veedel at the city's edge); else nearest to the person.
+        $middle = $areas !== [] ? DB::table('veedels')->whereIn('name', $areas)->whereNotNull('centroid_lat')
+            ->selectRaw('avg(centroid_lat) as lat, avg(centroid_lng) as lng')->first() : null;
+        [$lat, $lng] = match (true) {
+            $middle?->lat !== null => [(float) $middle->lat, (float) $middle->lng],
+            $this->location->hasOrigin() => [(float) $this->location->lat, (float) $this->location->lng],
+            default => [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
+        };
+        // Asked for one kind or a sport: up to the whole list of it; for several ("a place to work": cafés,
+        // libraries, coworking), a share of each; for anything, two of a kind, for variety.
+        $perKind = match (true) {
+            count($kinds) > 1 => max(2, intdiv(self::SHOWN, count($kinds))),
+            $kinds !== [] || $activity !== null => self::SHOWN,
+            default => 2,
+        };
         $found = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
-            areas: array_values(array_filter([$area])),
-            categories: array_values(array_filter([is_string($input['kind'] ?? null) ? $input['kind'] : null])),
-            activities: array_values(array_filter([is_string($input['activity'] ?? null) ? $input['activity'] : null])),
+            areas: $areas,
+            categories: $kinds,
+            activities: array_values(array_filter([$activity])),
             moods: array_values(array_filter([is_string($input['mood'] ?? null) ? $input['mood'] : null])),
             // Their own step-free need, from their settings: only places with it verified (never told to the AI).
             needs: $this->user->needs_step_free ? ['step_free'] : [],
-        ), $lat, $lng, 2, self::SHOWN * 3))
+        ), $lat, $lng, $perKind, self::SHOWN * 3))
             ->filter(fn (Candidate $c): bool => ! $c->closedToday
+                && ($areas === [] || in_array($c->veedel, $areas, true))
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
                 && (($input['free'] ?? false) !== true || $c->costTier === 'free')
                 && ($c->hoursAssumed || $c->opensAt === null || ($c->opensAt->lessThanOrEqualTo($at) && $c->closesAt?->greaterThan($at))))
             ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
-            // Nearest first, but no more than two of one kind, so a second look finds something different.
-            ->groupBy('category')->flatMap(fn ($kind) => $kind->take(2))
+            ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
             ->take(self::SHOWN)->values();
+        $where = match (true) {
+            $areas === PlanDay::CENTRE => 'in the city centre',
+            $areas !== [] => 'in '.implode(', ', $areas),
+            default => null,
+        };
         if ($found->isEmpty()) {
-            return 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '').' place is listed for that'
-                .($area !== null ? " in {$area}" : '').'.';
+            return $this->line('n'.(++$this->count), 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '').' place is listed for that'
+                .($where !== null ? " {$where}" : '').'.');
         }
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
-        return ($area !== null ? "In {$area}".(mb_strtolower(trim($input['area'])) !== mb_strtolower($area) ? " (\"{$input['area']}\")" : '').', ' : '')
-            .($this->location->hasOrigin() ? "nearest to the person first:\n" : "across Cologne (where they are isn't known):\n").$found->map(function (Candidate $c): string {
-                $this->places[$c->id] = $c;
+        return match (true) {
+            $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
+            $this->location->hasOrigin() => 'Nearest to the person first:',
+            default => "Across Cologne (where they are isn't known):",
+        }."\n".$found->map(function (Candidate $c): string {
+            $this->places[$c->id] = $c;
 
-                return $this->line($c->id, self::placeText($c).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
-            })->implode("\n");
+            return $this->line($c->id, self::placeText($c).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+        })->implode("\n");
     }
 
     private function weatherNow(): string

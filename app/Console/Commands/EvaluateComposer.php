@@ -56,7 +56,7 @@ class EvaluateComposer extends Command
     private const ANSWER_GATES = ['dead_end', 'invented', 'because_unbacked', 'repeated_after_refusal'];
 
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
-    private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true];
+    private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -194,6 +194,11 @@ class EvaluateComposer extends Command
         $routing += ($expect['open'] ?? false) ? ['open' => ($answer['written'] ?? null) === 'ai'] : [];
         $routing += isset($expect['around']) ? ['around' => array_intersect($blocks, ['events', 'places']) !== []] : [];
         $routing += isset($expect['answer_kind']) ? ['answer_kind' => array_intersect((array) $expect['answer_kind'], $blocks) !== []] : [];
+        // Places shown: at least so many, all in the areas asked about.
+        $shownPlaces = $answer['places'] ?? [];
+        $routing += isset($expect['min_places']) ? ['min_places' => count($shownPlaces) >= $expect['min_places']] : [];
+        $routing += isset($expect['places_in']) ? ['places_in' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => in_array($p['area'] ?? null, $expect['places_in'], true))] : [];
+        $routing += isset($expect['place_kinds']) ? ['place_kinds' => count(array_unique(array_column($shownPlaces, 'kind'))) >= $expect['place_kinds']] : [];
         $planExpect = array_diff_key($expect, self::ANSWER_EXPECT);
         $gates = array_fill_keys([...PlanChecks::GATES, ...self::ANSWER_GATES], []);
         $gates = [...$gates, ...$this->said($user, $answer, $assistant, $now, $earlier, $request['text'], $plan !== null)];

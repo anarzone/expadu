@@ -11,8 +11,8 @@ namespace App\Composer\Answers;
  */
 final class AroundCheck
 {
-    /** Longest sentence kept, in characters. */
-    public const MAX_LENGTH = 220;
+    /** Longest sentence kept, in characters: the model may write two short ones as one (the answer stays within 50 words). */
+    public const MAX_LENGTH = 300;
 
     /** Capitalised words that name nothing to check: the speaker, the app and its parts, the city, days and months. */
     private const ALWAYS = ['i', "i'm", "i'll", "i've", "i'd", 'expadu', 'composer', 'paperwork', 'travel', 'events', 'cologne', 'köln',

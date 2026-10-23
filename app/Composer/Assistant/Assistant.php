@@ -66,7 +66,7 @@ final class Assistant
 
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
-        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
+        - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with kinds cafe, library and coworking. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("nope", "something else"), look again with leave_out_earlier and suggest something of another kind or in another area. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
@@ -324,10 +324,10 @@ final class Assistant
             }
             // Once a sentence is dropped, one leaning on it ("also", "the same library") goes too.
             $uses = $cited($s['uses'] ?? null, $s['text']);
-            // Not cited, but what a trip, board, notice or guide lookup said ("I couldn't find Café Nova"):
+            // Not cited, but what a trip, board, notice or guide lookup said, or that one found nothing ("I couldn't find Café Nova"):
             // held against those, which are few and each about one thing.
             if (! $holds($s['text'], $uses)) {
-                $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g)\d+$|^here$/', array_keys($tools->read))]));
+                $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g|n)\d+$|^here$/', array_keys($tools->read))]));
             }
             if (! $holds($s['text'], $uses) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
                 $dropped = true;
@@ -376,6 +376,18 @@ final class Assistant
                     continue;
                 }
                 $blocks[$card['type'] === 'guidance' ? 'guidance' : $id] ??= $card;
+            }
+        }
+        // Nothing it said held and it chose nothing to show, but it found places or listings: those,
+        // in its lookups' order, under Composer's own line (owner, 23 Oct 2026: never an unrelated
+        // "what's on" when places of the kind asked for exist).
+        if ($lead === '' && $blocks === [] && $token === null && ($tools->places !== [] || $tools->events !== [])) {
+            $lead = 'Here’s what I found.';
+            if ($tools->places !== []) {
+                $blocks['places'] = ['type' => 'places', 'places' => $this->places(collect(array_slice($tools->places, 0, self::SHOWN)), [])];
+            }
+            if ($tools->events !== []) {
+                $blocks['events'] = ['type' => 'events', 'events' => $this->listings->posters($tools->occurrences(array_slice(array_keys($tools->events), 0, self::SHOWN)), self::SHOWN)];
             }
         }
         if ($lead === '' && $blocks === [] && $token === null) {
