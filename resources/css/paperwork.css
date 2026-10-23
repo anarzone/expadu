@@ -338,18 +338,6 @@
     .form-wide {
         grid-column: 1/-1;
     }
-    .note-line {
-        display: flex;
-        gap: 9px;
-        align-items: flex-start;
-        font-size: var(--text-small);
-        color: var(--muted);
-    }
-    .note-line svg {
-        width: 17px;
-        height: 17px;
-        margin-top: 1px;
-    }
     /* The prototype's body text and shared controls at phone width (connected/style.css). */
     @media (max-width: 700px) {
         font-size: var(--text-body);
@@ -2017,35 +2005,10 @@
     }
 
     /* Guided entry and task help use the same workspace, not a second onboarding flow. */
-    .getting-started {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px 16px;
-        flex-wrap: wrap;
-        margin: -4px 0 20px;
-        padding: 10px 14px;
-        background: var(--color-bg-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        font-size: var(--text-body);
-    }
-    .getting-started > span,
-    .getting-started button,
     .guide-bottom .plain-button {
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-    .getting-started button {
-        min-height: 44px;
-        font-weight: var(--weight-semibold);
-        text-align: left;
-    }
-    .getting-started svg {
-        width: 19px;
-        height: 19px;
-        flex: none;
     }
     .guide-intro {
         max-width: 54ch;
@@ -2106,9 +2069,6 @@
     }
     .case-inline h2:focus {
         outline: none;
-    }
-    #case-editor:not(:empty) + .bureaucracy-view .getting-started {
-        display: none;
     }
     .step-guide {
         padding: 16px;
@@ -2262,17 +2222,6 @@
         }
     }
     @media (max-width: 700px) {
-        .getting-started {
-            gap: 0;
-            padding: 8px 14px;
-        }
-        .getting-started > span {
-            display: none;
-        }
-        .getting-started button {
-            width: 100%;
-            justify-content: space-between;
-        }
         .step-main-actions {
             display: grid;
             grid-template-columns: minmax(0, 1fr);
@@ -2305,15 +2254,13 @@
     }
     @media (prefers-reduced-motion: no-preference) {
         .guide-choice,
-        .step-help,
-        .getting-started button {
+        .step-help {
             transition:
                 background-color 160ms ease,
                 transform 160ms ease;
         }
         .guide-choice:active,
-        .step-help:active,
-        .getting-started button:active {
+        .step-help:active {
             transform: scale(0.985);
         }
     }
@@ -2807,43 +2754,6 @@
         }
     }
     /* A read-only persona preview says so above the page. */
-    .persona-preview {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
-        padding: 10px 12px;
-        border-radius: var(--radius-md);
-        background: var(--color-select-bg);
-        color: var(--color-text);
-        font-size: var(--text-small);
-    }
-    .persona-preview > svg {
-        flex: none;
-        width: 18px;
-        height: 18px;
-        color: var(--color-select-text);
-    }
-    .persona-preview span {
-        display: grid;
-        flex: 1;
-        min-width: 0;
-    }
-    .persona-preview span strong {
-        font-weight: var(--weight-semibold);
-    }
-    .persona-preview button {
-        flex: none;
-        min-height: 44px;
-        padding: 0 14px;
-        border: 1px solid var(--color-text);
-        border-radius: var(--radius-pill);
-        background: transparent;
-        color: var(--color-text);
-        font: inherit;
-        font-weight: var(--weight-semibold);
-        cursor: pointer;
-    }
     /* Update progress: where the task is now, and why completion may wait. */
     .workflow-now {
         margin: 0 0 8px;
@@ -3483,13 +3393,6 @@
     }
 
     /* The preview note: the shared surface with a hairline, not cyan. */
-    &.paperwork-page .persona-preview {
-        background: var(--color-bg-surface);
-        box-shadow: inset 0 0 0 1px var(--color-border);
-    }
-    &.paperwork-page .persona-preview > svg {
-        color: var(--color-paper-text);
-    }
 
     /* A task's page: the way back first, then its name with its status. */
     .case-back .view-back {
@@ -3682,24 +3585,6 @@
         font-size: var(--text-control);
         font-weight: var(--weight-semibold);
         white-space: nowrap;
-    }
-    .shared-note {
-        display: flex;
-        gap: 8px;
-        margin: 12px 2px 16px;
-        color: var(--color-text-soft);
-        font-size: var(--text-small);
-        line-height: 1.45;
-    }
-    .shared-note > svg {
-        flex: none;
-        width: 16px;
-        height: 16px;
-        margin-top: 2px;
-    }
-    .shared-note strong {
-        color: var(--color-text);
-        font-weight: var(--weight-semibold);
     }
     /* Outside the covered city: a way on (owner, 18 Oct 2026, Composer review
        canvas board 16). */
@@ -4533,115 +4418,12 @@
         align-items: center;
         gap: 8px;
     }
-    .situation-start svg,
-    .situation-summary svg,
-    .situation-topics svg,
-    .situation-change-grid svg,
-    .situation-change-card svg {
+    .situation-start svg {
         width: 20px;
         height: 20px;
         flex: none;
     }
-    .situation-summary {
-        padding: 22px;
-        background: white;
-        border-radius: var(--radius-xl);
-        margin: 12px 0 24px;
-    }
     /* On the overview: one line that opens in place. */
-    .situation-summary.situation-compact {
-        padding: 0;
-    }
-    .situation-compact > summary {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-height: 64px;
-        padding: 12px 16px;
-        cursor: pointer;
-        list-style: none;
-        border-radius: var(--radius-xl);
-    }
-    .situation-compact > summary::-webkit-details-marker {
-        display: none;
-    }
-    .situation-compact > summary:focus-visible {
-        outline: 2px solid var(--color-focus);
-        outline-offset: 2px;
-    }
-    .situation-compact-copy {
-        display: grid;
-        flex: 1;
-        gap: 2px;
-        min-width: 0;
-    }
-    .situation-compact-copy strong {
-        font-size: var(--text-section);
-    }
-    .situation-compact-copy small {
-        color: var(--color-text-soft);
-        font-size: var(--text-caption);
-    }
-    .situation-compact > summary > svg {
-        color: var(--color-text-soft);
-        transition: transform 200ms ease;
-    }
-    .situation-compact[open] > summary > svg {
-        transform: rotate(180deg);
-    }
-    .situation-compact-body {
-        padding: 4px 22px 22px;
-    }
-    @media (max-width: 420px) {
-        .situation-compact-body {
-            padding: 4px 16px 18px;
-        }
-    }
-    @media (prefers-reduced-motion: reduce) {
-        .situation-compact > summary > svg {
-            transition: none;
-        }
-    }
-    .situation-section-head {
-        display: flex;
-        gap: 12px;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 18px;
-        flex-wrap: wrap;
-    }
-    .situation-section-head h2 {
-        font-size: var(--text-title);
-        letter-spacing: -0.035em;
-        margin: 0 0 5px;
-    }
-    .situation-section-head p {
-        color: var(--muted);
-        font-size: var(--text-control);
-        margin: 0;
-        line-height: 1.45;
-    }
-    .situation-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        border-radius: var(--radius-sm);
-        background: var(--paper);
-        padding: 6px 8px;
-        font-size: var(--text-caption);
-    }
-    .situation-status.review,
-    .situation-status.check {
-        background: #fff2cd;
-        color: #705418;
-    }
-    .situation-status.current {
-        background: var(--color-select-bg, #dff4f8);
-    }
-    .situation-status svg {
-        width: 16px;
-        height: 16px;
-    }
     .situation-facts {
         display: grid;
         gap: 8px;
@@ -4670,9 +4452,7 @@
         min-width: 0;
         flex: 1;
     }
-    .situation-fact small,
-    .situation-change-grid small,
-    .situation-change-card small {
+    .situation-fact small {
         display: block;
         color: var(--muted);
         font-size: var(--text-caption);
@@ -4688,61 +4468,6 @@
         height: 17px;
         color: var(--muted);
     }
-    .situation-fact.needs-review {
-        background: #fff7df;
-    }
-    .situation-fact-review {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        padding: 0 12px 8px;
-        font-size: var(--text-caption);
-        color: #705418;
-    }
-    .situation-fact-review button {
-        white-space: nowrap;
-        flex-shrink: 0;
-        font: inherit;
-        font-weight: var(--weight-semibold);
-        background: white;
-        border: 0;
-        border-radius: var(--radius-sm);
-        min-height: 44px;
-        padding: 0 10px;
-    }
-    .situation-summary-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-    }
-    .situation-summary-actions button {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-    }
-    .situation-summary-actions button:first-child {
-        border: 1px solid var(--color-border-strong);
-        background: var(--color-bg-surface);
-    }
-    .situation-checkin {
-        background: var(--color-bg-surface);
-        border: 1px solid var(--color-border);
-        padding: 16px;
-        border-radius: var(--radius-xl);
-        margin-bottom: 18px;
-    }
-    .situation-checkin p {
-        color: var(--muted);
-        font-size: var(--text-control);
-        line-height: 1.45;
-    }
-    .situation-checkin > div {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
     .situation-note {
         color: var(--muted);
         font-size: var(--text-small);
@@ -4754,98 +4479,7 @@
         vertical-align: middle;
         margin-right: 6px;
     }
-    .situation-notice {
-        font-size: var(--text-control);
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-        padding: 12px;
-        background: var(--color-select-bg, #e5f5f8);
-        border-radius: var(--radius-md);
-    }
-    .situation-history {
-        margin-top: 16px;
-        font-size: var(--text-control);
-    }
-    .situation-history summary {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        min-height: 44px;
-        cursor: pointer;
-    }
-    .situation-history summary::-webkit-details-marker {
-        display: none;
-    }
-    .situation-history > div {
-        padding: 10px 0;
-    }
-    .situation-history strong {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        font-size: var(--text-control);
-    }
-    .situation-history small {
-        display: block;
-        margin: 5px 0 0 28px;
-        color: var(--muted);
-    }
-    .situation-topics {
-        margin: 24px 0;
-    }
-    .situation-topic-grid {
-        display: grid;
-        gap: 10px;
-    }
-    .situation-topic-grid article {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-        padding: 16px;
-        background: white;
-        border-radius: var(--radius-xl);
-    }
-    .situation-topic-grid article > strong {
-        flex: 1;
-        font-size: var(--text-section);
-    }
-    .situation-topic-grid article > div {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        width: 100%;
-        align-items: center;
-    }
-    .situation-topic-grid a,
-    .situation-topic-grid button {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        min-height: 44px;
-        border: 0;
-        background: none;
-        font: inherit;
-        font-size: var(--text-small);
-        color: var(--ink);
-        cursor: pointer;
-    }
     /* A secondary action: outlined in ink, not the selection colour. */
-    .situation-topic-grid button {
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        padding: 0 12px;
-        background: var(--color-bg-surface);
-        font-weight: var(--weight-semibold);
-    }
-    .situation-topic-grid button:disabled {
-        border-color: transparent;
-    }
-    .situation-topic-grid button:disabled {
-        color: var(--muted);
-        background: var(--paper);
-    }
     .situation-progress {
         display: flex;
         justify-content: space-between;
@@ -4861,74 +4495,6 @@
         padding: 5px 9px;
         color: var(--color-paper-text);
         font-weight: var(--weight-semibold);
-    }
-    .situation-change-grid {
-        display: grid;
-        gap: 8px;
-    }
-    .situation-change-grid > button {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-align: left;
-        border: 0;
-        border-radius: var(--radius-lg);
-        background: var(--paper);
-        padding: 12px;
-        min-height: 66px;
-        font: inherit;
-        color: var(--ink);
-    }
-    .situation-change-grid > button > span:nth-child(2) {
-        flex: 1;
-    }
-    .situation-change-grid strong {
-        font-size: var(--text-body);
-    }
-    .situation-change-card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        background: var(--color-select-bg, #e5f5f8);
-        padding: 18px;
-        border-radius: var(--radius-xl);
-        margin-bottom: 20px;
-    }
-    .situation-change-card > svg {
-        width: 28px;
-        height: 28px;
-    }
-    .situation-change-card strong {
-        font-size: var(--text-title-sm);
-    }
-    .orientation .situation-summary {
-        margin: 0;
-        padding: 0;
-        background: none;
-    }
-    .situation-preview {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        font-size: var(--text-caption);
-        color: var(--muted);
-        margin: 16px 0;
-    }
-    .situation-preview label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .situation-preview select {
-        font: inherit;
-        color: var(--ink);
-        background: white;
-        border: 0;
-        border-radius: var(--radius-md);
-        padding: 8px;
-        min-height: 44px;
-        max-width: 190px;
     }
     .has-situation-guide .bureaucracy-view {
         display: none;
@@ -4988,15 +4554,6 @@
         .situation-facts {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .situation-topic-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .situation-summary {
-            padding: 26px;
-        }
-        .situation-change-grid {
-            grid-template-columns: 1fr 1fr;
-        }
     }
     @media (prefers-reduced-motion: reduce) {
         :is(
@@ -5029,24 +4586,6 @@
     }
 
     /* "Address registration is now in Your tasks": what your answers opened. */
-    .situation-arrived {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin: 14px 0 0;
-        padding: 10px 12px;
-        border-radius: var(--radius-md);
-        background: var(--color-select-bg);
-        color: var(--color-select-text);
-        font-size: var(--text-control);
-        line-height: 1.45;
-    }
-    .situation-arrived svg {
-        width: 18px;
-        height: 18px;
-        flex: none;
-        margin-top: 2px;
-    }
 
     /* ── today-palette.css (prototype/dev/design/connected) ── */
     /* Approved Today brief palette. Opt-in, colour-only; historical previews stay intact. */
@@ -5075,7 +4614,6 @@
         background-color: var(--paper);
     }
 
-    div&.paperwork-page .scroll-header,
     div&.paperwork-page.studio #shell {
         background-color: var(--palette-header);
     }
@@ -5144,7 +4682,6 @@
     & dialog#sheet,
     &.studio #studio-form,
     & .date-picker form,
-    & .situation-topic-grid article,
     & .form-field :is(input, select, textarea),
     & .case-time-fields input,
     & .shared-date .shared-date-toggle {
@@ -5174,14 +4711,6 @@
     }
 
     /* Fade a Travel sheet into its own surface instead of a stark white footer. */
-    & .detail-footer {
-        background: linear-gradient(
-            to bottom,
-            transparent,
-            color-mix(in srgb, var(--surface) 92%, transparent) 22px,
-            var(--surface) 70%
-        );
-    }
 
     /* Toasts sit on the light surface like Travel's, so their text is ink. */
     div&.paperwork-page .toast {
@@ -5202,16 +4731,8 @@
         background-color: var(--paper);
     }
     &.studio .composer-actions-menu,
-    &.studio .studio-detail-dialog,
-    &.shell-review :is(.dock-field, .composer-entry) {
+    &.studio .studio-detail-dialog {
         background-color: var(--surface);
-    }
-    &.studio .studio-toolbar {
-        background-color: color-mix(
-            in srgb,
-            var(--color-bg-canvas) 96%,
-            transparent
-        );
     }
     & .studio-input-wrap {
         background: linear-gradient(
@@ -5300,8 +4821,7 @@
         ) {
         background-color: var(--surface-quiet);
     }
-    div&.paperwork-page .field:focus-within,
-    div&.paperwork-page .nav-options button[aria-pressed='true'] {
+    div&.paperwork-page .field:focus-within {
         background-color: var(--blue);
     }
     div&.paperwork-page :is(.origin-dot, .sample-connection),
