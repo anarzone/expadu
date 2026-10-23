@@ -94,6 +94,13 @@ final class Ask
 
         return $this->workspace->answer($user, $conversation, self::message($around['text'], $around['blocks'], [
             'written' => 'code', 'without_ai' => $reason, 'suggestions' => $around['suggestions'],
+            // When it answered but nothing held: the tools it used and how many sentences were dropped,
+            // by name and count only (never their words), so a fallback can be told apart later.
+            ...($reason === 'unchecked' ? [
+                'tried' => array_values(array_unique(array_map(fn (array $t): string => (string) strtok($t[0], ' '),
+                    array_filter($this->assistant->timings, fn (array $t): bool => preg_match('/^call\d+$/', $t[0]) !== 1)))),
+                'dropped' => count($this->assistant->written['sentences'] ?? []) - count($this->assistant->kept),
+            ] : []),
         ]), null);
     }
 

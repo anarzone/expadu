@@ -1113,7 +1113,8 @@ final class AssistantTools
     {
         $what = is_string($input['what'] ?? null) ? $input['what'] : '';
         if (InAppPlaces::card($what) === null) {
-            return 'Nothing to open for that.';
+            // Asked for a place it doesn't have: the ones it has, so the next round picks one.
+            return 'No such place. The places are: '.implode(', ', array_keys(InAppPlaces::PLACES)).'. Call open_in_app again with one of them.';
         }
         // "Stop using my Paperwork data" means one of two things: both are offered, the one meant first.
         $both = InAppPlaces::STOPPING[$what] ?? null;
