@@ -666,7 +666,13 @@ class PlaceFacts
      */
     private function resolveDescription(Spot $spot, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'description');
+        // The place's own source describes it when it does; another provider (Wikidata)
+        // only fills a gap, so a refresh without a description doesn't erase one.
+        $described = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('description', $row->payload))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $own = $described->filter(fn (PlaceFactObservation $row): bool => $row->provider === $spot->source && $row->provider_record_id === $spot->source_id)->last();
+        $other = $described->filter(fn (PlaceFactObservation $row): bool => $row !== $own && $this->stringValue($row->payload['description'] ?? null) !== null)->last();
+        $row = $own !== null && $this->stringValue($own->payload['description'] ?? null) !== null ? $own : ($other ?? $own ?? $described->last());
         $value = $row !== null
             ? $this->stringValue($row->payload['description'] ?? null)
             : ($useLegacyProjection ? $this->stringValue($spot->description) : null);
