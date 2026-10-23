@@ -5537,7 +5537,7 @@
    "text": "do I need an umbrella today",
    "expect": {
     "routed": "answer",
-    "around": true
+    "open": true
    }
   },
   {
@@ -7498,6 +7498,450 @@
    "expect": {
     "routed": "answer",
     "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.demo_football",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "where can i play football?",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "regression.demo_work_centre",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "Can u recommend me places to work in city center?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ]
+   }
+  },
+  {
+   "id": "regression.demo_cofe_followup",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "I prefer cofe shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ]
+   },
+   "before": [
+    "Can u recommend me places to work in city center?"
+   ]
+  },
+  {
+   "id": "places_matrix.football",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can I play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true
+   }
+  },
+  {
+   "id": "places_matrix.work_centre",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "places to work in the city centre",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "place_kinds": 2
+   }
+  },
+  {
+   "id": "places_matrix.coffee",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "coffee shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Café"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.cofe_typo",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "cofe shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Café"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.wifi_cafe",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "quiet café with wifi near me",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "wi-?fi"
+   }
+  },
+  {
+   "id": "places_matrix.vegan_ehrenfeld",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "vegan restaurant in Ehrenfeld",
+   "expect": {
+    "open": true,
+    "places_in": [
+     "Ehrenfeld"
+    ],
+    "says": "vegan"
+   }
+  },
+  {
+   "id": "places_matrix.pharmacy_now",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "pharmacy open now",
+   "expect": {
+    "open": true,
+    "open_only": true
+   }
+  },
+  {
+   "id": "places_matrix.supermarket_sunday",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-25T11:00:00+01:00",
+   "weather": "dry",
+   "text": "supermarket open Sunday",
+   "expect": {
+    "open": true,
+    "says": "sunday|closed|open"
+   }
+  },
+  {
+   "id": "places_matrix.playground_neumarkt",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "playground near Neumarkt",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.swim",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can I swim",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.picnic_park",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "picnic park",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.bakery_now",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "bakery open now",
+   "expect": {
+    "open": true,
+    "open_only": true
+   }
+  },
+  {
+   "id": "places_matrix.library_late",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "library open late",
+   "expect": {
+    "open": true,
+    "says": "librar|bibliothek"
+   }
+  },
+  {
+   "id": "places_matrix.coworking",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "coworking",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Coworking space",
+     "Coworking"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.wheelchair_restaurant",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "wheelchair-accessible restaurant",
+   "expect": {
+    "open": true,
+    "says": "step-free|wheelchair|access"
+   }
+  },
+  {
+   "id": "places_matrix.brunch_sunday",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-25T10:00:00+01:00",
+   "weather": "dry",
+   "text": "brunch Sunday",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.table_tennis",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "table tennis",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true
+   }
+  },
+  {
+   "id": "places_matrix.dog_park",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "dog park",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.gym",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "climbing or gym",
+   "expect": {
+    "open": true,
+    "min_places": 1
+   }
+  },
+  {
+   "id": "places_matrix.bar_live_music",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "bar with live music tonight",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "live music"
    }
   }
  ]

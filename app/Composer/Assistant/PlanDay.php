@@ -27,10 +27,14 @@ final class PlanDay
     /** Areas as people in Cologne call them, by the Veedel the planner knows (owner's test, 22 Oct 2026: "Südstadt"). */
     private const AREA_NAMES = [
         'südstadt' => 'Neustadt-Süd', 'suedstadt' => 'Neustadt-Süd', 'sudstadt' => 'Neustadt-Süd', 'kwartier latäng' => 'Neustadt-Süd',
-        'belgisches viertel' => 'Neustadt-Nord', 'belgian quarter' => 'Neustadt-Nord', 'agnesviertel' => 'Neustadt-Nord',
-        'altstadt' => 'Altstadt-Nord', 'old town' => 'Altstadt-Nord', 'innenstadt' => 'Altstadt-Nord', 'city centre' => 'Altstadt-Nord',
-        'city center' => 'Altstadt-Nord', 'zentrum' => 'Altstadt-Nord', 'rheinauhafen' => 'Altstadt-Süd',
+        'belgisches viertel' => 'Neustadt-Nord', 'belgian quarter' => 'Neustadt-Nord', 'agnesviertel' => 'Neustadt-Nord', 'rheinauhafen' => 'Altstadt-Süd',
     ];
+
+    /** "The centre" in Cologne: the old town and the Neustadt, this side of the Rhine (as Destinations has it). */
+    public const CENTRE = ['Altstadt-Nord', 'Altstadt-Süd', 'Neustadt-Nord', 'Neustadt-Süd'];
+
+    /** Words for the centre (owner's test, 23 Oct 2026: "places to work in city center" found the city's edge). */
+    private const CENTRE_WORDS = '/^(the\s+)?(city|city\s*cent(er|re)|cent(er|re)|town\s*cent(er|re)|downtown|innenstadt|zentrum|stadtmitte|mitte|altstadt|old\s*town|stadtzentrum)$/u';
 
     /** @return array<string, mixed> the tool, as the Messages API takes it */
     public static function definition(): array
@@ -39,7 +43,7 @@ final class PlanDay
 
         return ['name' => 'plan_day', 'description' => 'Put a day or an evening together with Expadu\'s planner: places and listed events in order, with the way between them, from where the person starts. Use it when they ask to plan, or ask for a stretch of time with things to do ("my Saturday", "this evening in Ehrenfeld", "a museum and then coffee"). Fill in only what they said. Returns the plan, which you can show.',
             'input_schema' => ['type' => 'object', 'properties' => [
-                'day' => ['type' => 'string', 'description' => 'today, tomorrow or YYYY-MM-DD, within 3 days'],
+                'day' => ['type' => 'string', 'description' => 'today, tomorrow, a weekday (Saturday) or YYYY-MM-DD, within 3 days'],
                 'from' => ['type' => 'string', 'description' => 'HH:MM. "after work" 17:30; "tonight" 18:00; "this afternoon" 13:00; "this morning" 09:00; a day named alone 10:00; none said: now'],
                 'until' => ['type' => 'string', 'description' => 'HH:MM. "after work" 20:00; "tonight" 23:00; "this afternoon" 18:00; "this morning" 12:00; a day named alone 20:00'],
                 'areas' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Cologne Veedel they named (Südstadt is Neustadt-Süd, the old town Altstadt-Nord). Never their home Veedel unless named.'],
@@ -65,16 +69,21 @@ final class PlanDay
     public function plan(User $user, array $input, CarbonImmutable $now): array|string
     {
         $now = $now->setTimezone('Europe/Berlin');
-        $day = match ($input['day'] ?? 'today') {
-            'today' => $now->startOfDay(),
-            'tomorrow' => $now->startOfDay()->addDay(),
+        $named = mb_strtolower(trim((string) ($input['day'] ?? 'today')));
+        $day = match (true) {
+            $named === 'today' => $now->startOfDay(),
+            $named === 'tomorrow' => $now->startOfDay()->addDay(),
+            // "Saturday": the next one, today included.
+            in_array($named, ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], true) => $now->startOfDay()->addDays((array_search($named, ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], true) + 1 - $now->dayOfWeekIso + 7) % 7),
             default => rescue(fn () => CarbonImmutable::parse((string) $input['day'], 'Europe/Berlin')->startOfDay(), null, false),
         };
         if ($day === null || $day->lessThan($now->startOfDay()) || $day->greaterThan($now->startOfDay()->addDays(3))) {
             return 'The planner plans today and the next 3 days only.';
         }
         $from = self::clock($input['from'] ?? null, $day) ?? ($day->isSameDay($now) ? $now : $day->setTime(10, 0));
-        $until = self::clock($input['until'] ?? null, $day) ?? $from->addHours(4);
+        // A day named alone ("plan my Saturday") is the day, until 20:00; a start alone, four hours.
+        $until = self::clock($input['until'] ?? null, $day)
+            ?? (! isset($input['from']) ? $from->addHours(4)->max($day->setTime(20, 0)) : $from->addHours(4));
         $sequence = self::listOf($input['sequence'] ?? [], self::kinds());
         $moods = self::listOf($input['moods'] ?? [], Constraints::MOODS);
         $areas = self::areas($input['areas'] ?? []);
@@ -100,8 +109,9 @@ final class PlanDay
             moods: $moods,
             avoid: array_slice(self::listOf($input['avoid'] ?? [], self::kinds()), 0, 60),
             sequence: count($sequence) >= 2 ? $sequence : [],
-            needs: self::listOf($input['needs'] ?? [], Constraints::NEEDS),
-        ), $now);
+            // Their own step-free need, from their settings, whatever the AI was told: it never is.
+            needs: array_values(array_unique([...self::listOf($input['needs'] ?? [], Constraints::NEEDS), ...($user->needs_step_free ? ['step_free'] : [])])),
+        ), $now, $from);
 
         // The planner as the page calls it, from the start the person chose on the page (or
         // where they are), so its rules and limits are the page's own.
@@ -145,15 +155,17 @@ final class PlanDay
     }
 
     /**
-     * Within the planner's reach: never in the past, at most 72 hours ahead, long enough to
-     * fill, and on one day.
+     * Within the planner's reach: never in the past, at most 72 hours ahead, on one day, and
+     * long enough to fill when the time now cut it short.
      */
-    private function clamped(Constraints $constraints, CarbonImmutable $now): Constraints
+    private function clamped(Constraints $constraints, CarbonImmutable $now, CarbonImmutable $asked): Constraints
     {
         $horizon = $now->addHours(72);
         $start = self::quarter($constraints->windowStart->max($now), up: true);
         $end = self::quarter($constraints->windowEnd->min($horizon), up: false);
-        if ($start->diffInMinutes($end, false) < self::MIN_WINDOW_MINUTES) {
+        // As long as asked ("two hours after work"); only a stretch cut short by the time now
+        // ("this afternoon" at 17:00), or gone by, gets room for something to do.
+        if ($start->diffInMinutes($end, false) <= 0 || ($start->greaterThan(self::quarter($asked, up: true)) && $start->diffInMinutes($end) < self::MIN_WINDOW_MINUTES)) {
             $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)->min($horizon);
         }
 
@@ -166,15 +178,18 @@ final class PlanDay
         return array_values(array_unique([...array_map(fn (SpotCategory $c): string => $c->value, SpotCategory::cases()), ...SpotCategory::placesCoarse(), 'event']));
     }
 
-    /** @return list<string> the Veedel named, as Cologne spells them ("Südstadt" is Neustadt-Süd) */
+    /** @return list<string> the Veedel named, as Cologne spells them ("Südstadt" is Neustadt-Süd; "the centre" is its four) */
     public static function areas(mixed $areas): array
     {
         $known = collect(config('veedels', []))->flatten()->filter(fn (mixed $area): bool => is_string($area))
             ->mapWithKeys(fn (string $area): array => [mb_strtolower($area) => $area])->all() + self::AREA_NAMES;
 
         return collect(is_array($areas) ? $areas : [])->filter(fn (mixed $area): bool => is_string($area))
-            ->map(fn (string $area): ?string => $known[mb_strtolower(trim(preg_replace('/^(the|die|das|der)\s+/iu', '', trim($area))))] ?? null)
-            ->filter()->unique()->values()->all();
+            ->flatMap(function (string $area) use ($known): array {
+                $area = mb_strtolower(trim(preg_replace('/^(the|die|das|der)\s+/iu', '', trim($area))));
+
+                return preg_match(self::CENTRE_WORDS, $area) === 1 ? self::CENTRE : array_filter([$known[$area] ?? null]);
+            })->unique()->values()->all();
     }
 
     /**
