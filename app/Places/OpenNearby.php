@@ -110,7 +110,7 @@ final class OpenNearby
         $counts = $groups->counts(array_column($folds, 'id'));
         $byId = $spots->keyBy('id')->union($parks);
 
-        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts): ?array {
+        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts, $groups): ?array {
             $place = $byId->get($fold['id']);
             if (! $place instanceof Spot) {
                 return null;
@@ -128,11 +128,15 @@ final class OpenNearby
                 $fold['members'],
             )));
 
+            // A park too big to walk round answers for its part in this Veedel.
+            $part = $fold['part'] ?? null;
+
             return [
                 ...$row,
-                // What fitted the ask ("Football pitch"), and what the park has, that first.
+                ...($part !== null ? ['name' => "{$row['name']} ({$part})", 'part' => $part, 'veedel' => $part] : []),
+                // What fitted the ask ("Football pitch"), and what the park (or its part) has, that first.
                 'matched' => $matched,
-                'facilities' => FacilityGroups::summary($counts[$place->id] ?? [], $matched),
+                'facilities' => FacilityGroups::summary($part !== null ? $groups->partCounts($place->id, $part) : ($counts[$place->id] ?? []), $matched),
             ];
         })->filter()->values();
 
