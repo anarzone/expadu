@@ -463,8 +463,20 @@ final class Assistant
         $ids = $places->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all();
         $from = $places->isEmpty() ? null : ($tools->from[$places->first()->id] ?? null);
         $sources = $ids === [] ? collect() : Spot::query()->whereKey($ids)->pluck('source', 'id');
+        // A park answered for its pitch is read from the pitch: OpenNearby folds it into the park's row,
+        // measured to the pitch, with what fitted first ("Football pitch · 2 playgrounds").
+        $read = $places->map(fn (Candidate $c): int => $tools->parks[$c->id]['member'] ?? (int) substr($c->id, 5))->values()->all();
+        $row = fn (array $ids): Collection => app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $now, $tools->person());
         try {
-            $rows = $ids === [] ? collect() : app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $now, $tools->person())->keyBy('id');
+            $rows = $ids === [] ? collect() : $row($read)->keyBy('id');
+            // One it merged with a like-named row nearby is read on its own, so every card has its row.
+            foreach ($ids as $i => $id) {
+                if (! $rows->has($id) && ($one = $row([$read[$i]])->first()) !== null) {
+                    $rows->put($id, $one);
+                }
+            }
+            // The cards draw as Around here's rows only when all have one: a place without is left out.
+            $places = $places->filter(fn (Candidate $c): bool => $rows->has((int) substr($c->id, 5)))->values();
         } catch (Throwable) {
             $rows = collect();
         }
@@ -475,7 +487,8 @@ final class Assistant
             $km = $c->distanceKmFromOrigin;
 
             return array_filter(['id' => $id, 'name' => AssistantTools::name($c),
-                'kind' => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
+                // A park found for its pitch is counted as what was looked for ("6 football pitches").
+                'kind' => $tools->parks[$c->id]['matched'] ?? SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
                 // How far, in a straight line, only from where the person is or starts (never sent to the AI).
                 'distance' => ($tools->measured[$c->id] ?? false) && $km !== null ? ($km < 1 ? (int) (round($km * 1000 / 50) * 50).' m' : number_format($km, 1).' km') : null,
                 'area' => $c->veedel, 'href' => route('explore', ['place' => $id], false),
@@ -537,8 +550,8 @@ final class Assistant
     }
 
     /**
-     * Where the cards were searched from, as said: " near Neuehrenfeld" (where the person is),
-     * " in the city centre", " in Merkenich" (an area), or nothing.
+     * Where the cards were searched from, as said: " in Merkenich", " in the city centre" (an area
+     * they named), " near Ehrenfeld" (where they are or live), or nothing.
      *
      * @param  array{places: list<array<string, mixed>>, from: ?array{name: string, lat: float, lng: float}}  $block
      */
@@ -548,7 +561,7 @@ final class Assistant
 
         return match (true) {
             $from === '' => '',
-            ($tools->measured['spot:'.($block['places'][0]['id'] ?? '')] ?? false) => ' near '.$from,
+            ! isset($tools->within['spot:'.($block['places'][0]['id'] ?? '')]) => ' near '.$from,
             $from === 'City centre' => ' in the city centre',
             default => ' in '.$from,
         };

@@ -78,7 +78,8 @@ class PlaceDisplayName
         $where = str_contains($name, '·') ? trim((string) preg_replace('/^.*?·\s*/u', '', $name)) : '';
 
         return match (true) {
-            trim((string) $parkName) !== '' => "{$kind} in ".trim((string) $parkName),
+            // A square is "at" ("Football pitch at Helmholtzplatz"), a park "in".
+            trim((string) $parkName) !== '' => $kind.(preg_match('/(platz|markt)$/iu', trim((string) $parkName)) === 1 ? ' at ' : ' in ').trim((string) $parkName),
             $where !== '' => "{$kind}, {$where}",
             $street !== '' => "{$kind}, {$street}",
             $stop !== null => "{$kind} near {$stop}",

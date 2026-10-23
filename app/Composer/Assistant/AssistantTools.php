@@ -17,6 +17,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
 use App\Places\DestinationGrouping;
+use App\Places\FacilityGroups;
 use App\Places\OpeningAnswer;
 use App\Places\PlaceAmenities;
 use App\Places\PlaceCapabilities;
@@ -75,6 +76,13 @@ final class AssistantTools
 
     /** @var array<string, string> what a place was searched for and lists, by id ("Wi-Fi", "vegan food") */
     public array $featured = [];
+
+    /** @var array<string, true> places searched for in an area they named ("in Merkenich"), not near them */
+    public array $within = [];
+
+    /** @var array<string, array{member: int, matched: string, has: ?string}> a park answered for a facility in it: the
+     *      facility it was found by (its row is measured to it), what that is ("Football pitch") and what the park has */
+    public array $parks = [];
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
@@ -520,7 +528,7 @@ final class AssistantTools
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
         $deep = $mustBeOpen || $features !== [];
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
-        $matches = collect($this->catalogue->nearestSpots(new Constraints(
+        $nearest = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
             areas: $areas,
@@ -531,23 +539,29 @@ final class AssistantTools
             needs: $stepFree ? ['step_free'] : [],
             features: $features,
             // When it must be open then, or list a fact, more of each kind are read: most have no listed hours or facts.
-        ), $lat, $lng, $deep ? max($perKind * 4, 12) : $perKind, $deep ? self::SHOWN * 8 : self::SHOWN * 3))
+        ), $lat, $lng, $deep ? max($perKind * 4, 12) : $perKind, $deep ? self::SHOWN * 8 : self::SHOWN * 3));
+        // A pitch or a playground in a named park is that park, once, with what it has (places
+        // session's FacilityGroups, 23 Oct 2026: "Carola-Williams-Park · Football pitch · 2 playgrounds").
+        $parents = app(FacilityGroups::class)->parents($nearest->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all());
+        $park = fn (Candidate $c): int => $parents[(int) substr($c->id, 5)] ?? (int) substr($c->id, 5);
+        $matches = $nearest
             ->filter(fn (Candidate $c): bool => ($areas === [] || in_array($c->veedel, $areas, true))
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
-                && ! in_array((int) substr($c->id, 5), $leaveOut, true)
+                && ! in_array((int) substr($c->id, 5), $leaveOut, true) && ! in_array($park($c), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
                 && (($input['free'] ?? false) !== true || $c->costTier === 'free'))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
-            // Nearest first, and a place with its own name before a generic one ("Bolzplatz") at a like distance.
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + (($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
-            // One per place: two pitches in one park ("Bolzplatz · Bürgerpark") are one answer; a chain's
+            // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
-            ->unique(fn (Candidate $c): string => mb_strtolower(self::name($c)).'|'.$c->veedel)
+            ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + (($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
             ->take(self::SHOWN)->values();
+        $found = $this->asParks($found, $parents, $at, $lat, $lng);
         $where = match (true) {
             $areas === PlanDay::CENTRE => 'in the city centre',
             $areas !== [] => 'in '.implode(', ', $areas),
@@ -572,6 +586,9 @@ final class AssistantTools
         }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
+            if ($areas !== []) {
+                $this->within[$c->id] = true;
+            }
             if ($features !== []) {
                 $this->featured[$c->id] = self::featureWords($features);
             }
@@ -583,8 +600,47 @@ final class AssistantTools
             }, 'lat' => $lat, 'lng' => $lng];
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null)
+                .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
+    }
+
+    /**
+     * Facilities found in a named park, as the park: its name, facts and what it has, at the
+     * facility's point (walk to the pitch, not the park's middle). A park that can't be read stays
+     * the facility.
+     *
+     * @param  Collection<int, Candidate>  $found
+     * @param  array<int, int>  $parents  facility id => park id
+     * @return Collection<int, Candidate>
+     */
+    private function asParks(Collection $found, array $parents, CarbonImmutable $at, float $lat, float $lng): Collection
+    {
+        $folded = $found->filter(fn (Candidate $c): bool => isset($parents[(int) substr($c->id, 5)]));
+        if ($folded->isEmpty()) {
+            return $found;
+        }
+        $ids = array_values(array_unique($folded->map(fn (Candidate $c): int => $parents[(int) substr($c->id, 5)])->all()));
+        // The fact subqueries trip Postgres's JIT (3–4 s); see CandidateRepository::spotCandidates.
+        $parks = collect(DB::transaction(function () use ($ids, $at, $lat, $lng): array {
+            DB::statement('SET LOCAL jit = off');
+
+            return $this->catalogue->byIds(array_map(fn (int $id): string => "spot:{$id}", $ids), $at, $lat, $lng);
+        }))->keyBy('id');
+        $counts = app(FacilityGroups::class)->counts($ids);
+
+        return $found->map(function (Candidate $c) use ($parents, $parks, $counts): Candidate {
+            $member = (int) substr($c->id, 5);
+            $park = isset($parents[$member]) ? $parks->get('spot:'.$parents[$member]) : null;
+            if (! $park instanceof Candidate) {
+                return $c;
+            }
+            $matched = PlaceDisplayName::kind($c->category, $c->placeFacts['practical']['sport']['value'] ?? null);
+            $this->parks[$park->id] = ['member' => $member, 'matched' => $matched, 'has' => FacilityGroups::summary($counts[$parents[$member]] ?? [], [$matched])];
+
+            return new Candidate(...[...get_object_vars($park), 'lat' => $c->lat, 'lng' => $c->lng,
+                'distanceKmFromOrigin' => $c->distanceKmFromOrigin, 'travelMinutesFromOrigin' => $c->travelMinutesFromOrigin]);
+        })->unique('id')->values();
     }
 
     /**
@@ -782,7 +838,7 @@ final class AssistantTools
     }
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
-    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false): string
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null): string
     {
         $kind = SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category));
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
@@ -796,6 +852,7 @@ final class AssistantTools
         $lists = PlaceAmenities::listed($c->placeFacts['practical'] ?? []);
 
         return '"'.self::name($c).'" ('.$kind.($c->outdoor ? ', outdoors' : ', indoors').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
+            .($has !== null ? ' Has: '.$has.'.' : '')
             .($lists !== [] ? ' Lists: '.implode(', ', $lists).'.' : '')
             .$hours
             .($c->costTier === 'free' ? ' Free.' : '')
