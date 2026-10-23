@@ -107,6 +107,8 @@ class PlaceCapabilities
             'observed_at' => $last->observed_at?->toIso8601String(),
             'reviewed_at' => null,
             'provider' => $last->provider,
+            // The website's own sentence, or people's count summary: what Composer and the sheet quote.
+            'quote' => $value === null ? null : ($last->payload['evidence'][$key] ?? null),
             ...($disputedBy !== [] ? ['disputed_by' => $disputedBy] : []),
         ];
     }

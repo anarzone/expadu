@@ -9,10 +9,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * POST /api/places/{spot}/feedback
+ * POST /api/places/{spot}/feedback — the one-of choice: more like this, saved,
+ * not interested (or clear). PUT / DELETE /api/places/{spot}/been — Been there,
+ * kept apart so a place can be both saved and visited.
  *
- * Records the user's standing relationship to a place and its ranking signal
- * (RecordPlaceFeedback, which Composer's place_feedback uses too).
+ * Each records through RecordPlaceFeedback, which Composer's place_feedback uses too.
  */
 class PlaceFeedbackController extends Controller
 {
@@ -23,6 +24,21 @@ class PlaceFeedbackController extends Controller
             'rating' => ['nullable', 'string', 'in:up,down'],
         ]);
 
+        // Older clients set Been through this endpoint; it never touches the choice.
         return response()->json($feedback->execute($request->user(), $spot, $validated['action'], $validated['rating'] ?? null));
+    }
+
+    /** PUT /api/places/{spot}/been {rating?: up|down} */
+    public function been(Request $request, Spot $spot, RecordPlaceFeedback $feedback): JsonResponse
+    {
+        $validated = $request->validate(['rating' => ['nullable', 'string', 'in:up,down']]);
+
+        return response()->json($feedback->been($request->user(), $spot, $validated['rating'] ?? null));
+    }
+
+    /** DELETE /api/places/{spot}/been */
+    public function forgetBeen(Request $request, Spot $spot, RecordPlaceFeedback $feedback): JsonResponse
+    {
+        return response()->json($feedback->forgetBeen($request->user(), $spot));
     }
 }

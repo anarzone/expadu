@@ -103,6 +103,23 @@ test('a saved place is made at once with Undo, and proposed when they ask first'
     expect(savedState($this->user, $spot))->toBe('saved');
 });
 
+test('Been there is set on its own and undone on its own, the saved choice untouched', function () {
+    $spot = Spot::factory()->create(['name' => 'Bau', 'category' => 'cafe', 'is_active' => true]);
+    $actions = app(ComposerActions::class);
+    $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now());
+
+    $been = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'been'], CarbonImmutable::now());
+    $row = SpotFeedback::query()->where('user_id', $this->user->id)->where('spot_id', $spot->id)->sole();
+    expect($been['blocks'][0]['type'])->toBe('done')
+        ->and($row->been_at)->not->toBeNull()
+        ->and($row->state?->value)->toBe('saved');
+
+    $actions->undo($this->user, $been['blocks'][0]['id'], CarbonImmutable::now());
+    $row = SpotFeedback::query()->where('user_id', $this->user->id)->where('spot_id', $spot->id)->sole();
+    expect($row->been_at)->toBeNull()
+        ->and($row->state?->value)->toBe('saved');
+});
+
 test('only the person who asked can apply or undo a change, and only for 24 hours', function () {
     $spot = Spot::factory()->create(['name' => 'Bau', 'category' => 'cafe', 'is_active' => true]);
     $made = app(ComposerActions::class)->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now());

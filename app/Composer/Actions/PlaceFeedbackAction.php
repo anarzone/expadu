@@ -23,7 +23,7 @@ final class PlaceFeedbackAction implements ComposerAction
     private const DONE = ['saved' => 'Saved %s', 'been' => 'Marked %s as a place you’ve been', 'more_like_this' => 'You’ll see more places like %s',
         'not_interested' => '%s won’t be suggested again', 'clear' => '%s isn’t saved any more'];
 
-    private const UNDONE = ['saved' => 'Undone. %s isn’t saved.', 'clear' => 'Undone. %s is saved again.'];
+    private const UNDONE = ['saved' => 'Undone. %s isn’t saved.', 'clear' => 'Undone. %s is saved again.', 'been' => 'Undone. %s isn’t marked as a place you’ve been.'];
 
     public function __construct(private RecordPlaceFeedback $feedback, private Destinations $destinations) {}
 
@@ -31,8 +31,9 @@ final class PlaceFeedbackAction implements ComposerAction
     {
         $state = in_array($input['state'] ?? null, self::STATES, true) ? $input['state'] : 'saved';
         $spot = $this->spot(trim((string) ($input['place'] ?? '')), is_string($input['area'] ?? null) ? $input['area'] : null);
+        // Been there is apart from the choice (saved, more like this, not for me): each is checked on its own.
         $current = $this->feedback->current($user, $spot);
-        if (($current['state'] ?? null) === ($state === 'clear' ? null : $state)) {
+        if ($state === 'been' ? $current['been'] : $current['state'] === ($state === 'clear' ? null : $state)) {
             throw new ActionRefused($state === 'clear' ? "{$spot->name} isn’t saved." : sprintf(self::DONE[$state], $spot->name).' already.');
         }
         $row = app(OpenNearby::class)->rows([$spot->id], null, null, $now, $user)->first();
@@ -57,8 +58,13 @@ final class PlaceFeedbackAction implements ComposerAction
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
     {
         $spot = Spot::query()->find($undo['spot']) ?? throw new ActionRefused('That place is no longer listed.');
-        $previous = $undo['previous'] ?? null;
-        $this->feedback->execute($user, $spot, $previous['state'] ?? 'clear', $previous['rating'] ?? null);
+        $previous = $undo['previous'] ?? ['state' => null, 'been' => false, 'been_rating' => null];
+        // Only what this change set goes back: Been on its own, the choice on its own.
+        if ($undo['state'] === 'been') {
+            $previous['been'] ? $this->feedback->been($user, $spot, $previous['been_rating'] ?? null) : $this->feedback->forgetBeen($user, $spot);
+        } else {
+            $this->feedback->execute($user, $spot, $previous['state'] ?? 'clear');
+        }
 
         return ['title' => sprintf(self::UNDONE[$undo['state']] ?? 'Undone. %s is back as it was.', $undo['name'])];
     }

@@ -6,95 +6,167 @@ use App\Enums\SpotFeedbackState;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\SignalAction;
 use App\Personalisation\SignalRecorder;
 use App\Services\EventTrackingService;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Records the person's standing relationship to a place (the SpotFeedback row)
- * AND emits a ranking signal as a user_event so IntentWeights tunes the feed.
- * "More like this" / "Save" are forward-looking interest signals — no visit
- * implied; "been" / "not interested" also drop the place from discovery.
- * The place feedback endpoint and Composer's place_feedback both record through here.
+ * The person's standing relationship to a place: the one-of choice (more like this,
+ * saved, not interested) and, apart from it, Been there (`been_at`, `been_rating`), so a
+ * place can be saved and visited at once and each clears on its own. Each records the
+ * SpotFeedback row AND emits a ranking signal as a user_event so IntentWeights tunes
+ * the feed; a signal withdraws only its own kind. The place feedback and Been endpoints
+ * and Composer's place_feedback all record through here.
  */
 final class RecordPlaceFeedback
 {
     public function __construct(private EventTrackingService $tracking) {}
 
     /**
-     * @param  string  $action  more_like_this, saved, been, not_interested or clear
-     * @return array{state: ?string, rating: ?string}
+     * The choice, or Been for older clients (it never touches the choice); `clear` clears only the choice.
+     *
+     * @param  string  $action  more_like_this, saved, not_interested, clear, or been
+     * @return array{state: ?string, rating: null, been: bool, been_rating: ?string}
      */
     public function execute(User $user, Spot $spot, string $action, ?string $rating = null): array
     {
-        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($user, $action, $rating): array {
-            if ($action === 'clear') {
-                SpotFeedback::query()
-                    ->where('user_id', $user->id)
-                    ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id))
-                    ->delete();
-                app(SignalRecorder::class)->placeFeedback($user, $spot, null);
+        if ($action === 'been') {
+            return $this->been($user, $spot, $rating);
+        }
 
-                return ['state' => null, 'rating' => null];
+        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($user, $action): array {
+            if ($action === 'clear') {
+                $this->family($user->id, $spot)->update(['state' => null, 'rating' => null]);
+                $this->deleteEmpty($user->id, $spot);
+                app(SignalRecorder::class)->placeFeedback($user, $spot, null, replaces: SignalAction::placeState());
+
+                return $this->payload($user->id, $spot);
             }
 
             $state = SpotFeedbackState::from($action);
-            $rating = $state === SpotFeedbackState::Been ? $rating : null;
-
-            $feedback = SpotFeedback::updateOrCreate(
-                ['user_id' => $user->id, 'spot_id' => $spot->id],
-                ['state' => $state, 'rating' => $rating],
-            );
+            $feedback = $this->row($user->id, $spot);
+            $feedback->fill(['state' => $state, 'rating' => null])->save();
             $feedback->touch();
-            app(SignalRecorder::class)->placeFeedback($user, $spot, $state, $rating);
+            app(SignalRecorder::class)->placeFeedback($user, $spot, $state);
+            $this->track($user, $spot, $this->signalFor($state));
 
-            // Emit the ranking signal through the same pipeline as every other
-            // intent signal, keyed on category × Veedel (what IntentWeights reads).
-            if ($eventType = $this->signalFor($state, $rating)) {
-                $this->tracking->track($user, $eventType, [
-                    'category' => $this->categoryValue($spot),
-                    'veedel' => $spot->veedel,
-                    'spot_id' => $spot->id,
-                ]);
-            }
-
-            return ['state' => $state->value, 'rating' => $rating];
+            return $this->payload($user->id, $spot);
         });
     }
 
-    /** The person's current feedback on a place (any of its identities), or null. */
-    public function current(User $user, Spot $spot): ?array
+    /**
+     * Been there, with how it was (up/down) or none; the first visit's day is kept.
+     *
+     * @return array{state: ?string, rating: null, been: bool, been_rating: ?string}
+     */
+    public function been(User $user, Spot $spot, ?string $rating = null): array
     {
-        $row = SpotFeedback::query()->where('user_id', $user->id)
-            ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id))
-            ->latest('updated_at')->first();
+        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($user, $rating): array {
+            $feedback = $this->row($user->id, $spot);
+            $feedback->fill(['been_at' => $feedback->been_at ?? CarbonImmutable::now(), 'been_rating' => $rating])->save();
+            app(SignalRecorder::class)->placeFeedback($user, $spot, SpotFeedbackState::Been, $rating);
+            // A "been" with no rating just leaves discovery: no taste signal.
+            $this->track($user, $spot, match ($rating) {
+                'up' => 'spot_been_liked',
+                'down' => 'spot_been_disliked',
+                default => null,
+            });
 
-        return $row === null ? null : ['state' => $row->state instanceof SpotFeedbackState ? $row->state->value : (string) $row->state, 'rating' => $row->rating];
+            return $this->payload($user->id, $spot);
+        });
     }
 
     /**
-     * The user_event type for this feedback, or null when there's no taste
-     * signal to record (a "been" with no rating just leaves discovery).
+     * Not been there after all: only Been is cleared, the choice stays.
+     *
+     * @return array{state: ?string, rating: null, been: bool, been_rating: ?string}
      */
-    private function signalFor(SpotFeedbackState $state, ?string $rating): ?string
+    public function forgetBeen(User $user, Spot $spot): array
+    {
+        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($user): array {
+            $this->family($user->id, $spot)->update(['been_at' => null, 'been_rating' => null]);
+            $this->deleteEmpty($user->id, $spot);
+            app(SignalRecorder::class)->placeFeedback($user, $spot, null, replaces: SignalAction::placeBeen());
+
+            return $this->payload($user->id, $spot);
+        });
+    }
+
+    /**
+     * Where the person stands with a place now (any of its identities): what Undo puts back.
+     *
+     * @return array{state: ?string, rating: null, been: bool, been_rating: ?string}
+     */
+    public function current(User $user, Spot $spot): array
+    {
+        return $this->payload($user->id, $spot);
+    }
+
+    /** @return Builder<SpotFeedback> */
+    private function family(int $userId, Spot $spot): Builder
+    {
+        return SpotFeedback::query()->where('user_id', $userId)->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id));
+    }
+
+    /**
+     * The person's one row for this place family, at this id: the family's
+     * choice and Been are carried onto it and the other rows go, so both
+     * always sit on the same row (effectiveForUser reads one per family).
+     */
+    private function row(int $userId, Spot $spot): SpotFeedback
+    {
+        $rows = $this->family($userId, $spot)->orderByDesc('updated_at')->get();
+        $row = $rows->firstWhere('spot_id', $spot->id) ?? new SpotFeedback(['user_id' => $userId, 'spot_id' => $spot->id]);
+        $chosen = $rows->first(fn (SpotFeedback $r): bool => $r->state !== null);
+        $been = $rows->filter(fn (SpotFeedback $r): bool => $r->been())->sortBy('been_at')->first();
+        $row->fill([
+            'state' => $chosen?->state, 'rating' => null,
+            'been_at' => $been?->been_at, 'been_rating' => $been?->been_rating,
+        ]);
+        $this->family($userId, $spot)->where('spot_id', '!=', $spot->id)->delete();
+
+        return $row;
+    }
+
+    /** A row with neither a choice nor Been means nothing. */
+    private function deleteEmpty(int $userId, Spot $spot): void
+    {
+        $this->family($userId, $spot)->whereNull('state')->whereNull('been_at')->delete();
+    }
+
+    /** @return array{state: ?string, rating: null, been: bool, been_rating: ?string} */
+    private function payload(int $userId, Spot $spot): array
+    {
+        $rows = $this->family($userId, $spot)->get();
+        $state = $rows->first(fn (SpotFeedback $row): bool => $row->state !== null)?->state;
+        $been = $rows->first(fn (SpotFeedback $row): bool => $row->been());
+
+        // `rating` stays for older clients; Been's rating is `been_rating` now.
+        return ['state' => $state?->value, 'rating' => null, 'been' => $been !== null, 'been_rating' => $been?->been_rating];
+    }
+
+    private function track(User $user, Spot $spot, ?string $eventType): void
+    {
+        if ($eventType === null) {
+            return;
+        }
+        // Same pipeline as every other intent signal, keyed on category × Veedel (what IntentWeights reads).
+        $this->tracking->track($user, $eventType, [
+            'category' => $spot->category instanceof \BackedEnum ? $spot->category->value : ($spot->category ? (string) $spot->category : null),
+            'veedel' => $spot->veedel,
+            'spot_id' => $spot->id,
+        ]);
+    }
+
+    private function signalFor(SpotFeedbackState $state): ?string
     {
         return match ($state) {
             SpotFeedbackState::MoreLikeThis => 'spot_more_like_this',
             SpotFeedbackState::Saved => 'spot_saved',
             SpotFeedbackState::NotInterested => 'spot_not_interested',
-            SpotFeedbackState::Been => match ($rating) {
-                'up' => 'spot_been_liked',
-                'down' => 'spot_been_disliked',
-                default => null,
-            },
+            SpotFeedbackState::Been => null,
         };
-    }
-
-    private function categoryValue(Spot $spot): ?string
-    {
-        if ($spot->category instanceof \BackedEnum) {
-            return $spot->category->value;
-        }
-
-        return $spot->category ? (string) $spot->category : null;
     }
 }

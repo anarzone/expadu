@@ -5,6 +5,7 @@ use App\Models\PlaceWorkAnswer;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Places\OpenNearby;
 use App\Places\PlaceFacts;
 use App\Places\PlaceWorkAnswers;
 use App\Places\RecordPlaceObservation;
@@ -19,7 +20,7 @@ function workCafe(array $attributes = []): Spot
 function workAnswer(Spot $spot, string $laptop, ?CarbonImmutable $at = null, ?User $user = null): User
 {
     $user ??= User::factory()->create(['created_at' => now()->subMonths(24)]);
-    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'state' => SpotFeedbackState::Been]);
+    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'been_at' => now()]);
     PlaceWorkAnswer::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'laptop' => $laptop, 'answered_at' => $at ?? CarbonImmutable::now()]);
 
     return $user;
@@ -50,7 +51,7 @@ test('only people who marked the place Been there or Saved can answer', function
 test('a person can change and withdraw their answer', function () {
     $spot = workCafe();
     $user = User::factory()->create();
-    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'state' => SpotFeedbackState::Been]);
+    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'been_at' => now()]);
 
     $this->actingAs($user)->putJson("/api/places/{$spot->id}/work-answer", ['laptop' => 'yes'])->assertOk();
     $this->actingAs($user)->putJson("/api/places/{$spot->id}/work-answer", ['laptop' => 'no'])->assertOk()->assertJsonPath('answer.laptop', 'no');
@@ -129,7 +130,28 @@ test("a café's own website rule and OSM outrank people", function () {
         'payload' => ['practical' => ['laptops' => 'limited', 'laptops:conditional' => 'Sa-Su'], 'evidence' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt.']],
     ]);
 
-    expect(laptopsFact($spot))->toMatchArray(['value' => 'limited', 'status' => 'known', 'provider' => 'website', 'disputed_by' => ['people']]);
+    expect(laptopsFact($spot))->toMatchArray(['value' => 'limited', 'status' => 'known', 'provider' => 'website', 'disputed_by' => ['people'], 'quote' => 'Laptops sind am Wochenende nicht erlaubt.', 'source_url' => 'https://cafe.test/']);
+
+    // Around here's row carries both: people's counts and the café's rule with its days.
+    $row = app(OpenNearby::class)->listed(50.94, 6.95, CarbonImmutable::now(), ['cafe'])->firstWhere('id', $spot->id);
+    expect($row['laptop'])->toBe([
+        'people' => ['value' => 'yes', 'yes' => 3, 'total' => 3],
+        'rule' => ['value' => 'limited', 'days' => 'Sa-Su'],
+    ]);
+});
+
+test("people's fact quotes its count summary, and rows without answers carry no tag", function () {
+    $spot = workCafe();
+    $quiet = workCafe(['lng' => 6.951]);
+    foreach (range(1, 3) as $_) {
+        workAnswer($spot, 'yes');
+    }
+    app(PlaceWorkAnswers::class)->refresh($spot->id);
+
+    expect(laptopsFact($spot)['quote'])->toBe("3 of 3 people who've been there said yes (last 12 months)");
+    $rows = app(OpenNearby::class)->listed(50.94, 6.95, CarbonImmutable::now(), ['cafe'])->keyBy('id');
+    expect($rows[$quiet->id]['laptop'])->toBeNull()
+        ->and($rows[$spot->id]['laptop'])->toBe(['people' => ['value' => 'yes', 'yes' => 3, 'total' => 3], 'rule' => null]);
 });
 
 test('deleting the account erases their answers and recomputes the place', function () {

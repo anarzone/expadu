@@ -23,6 +23,8 @@ Route::get('api/places/{spot}/events', [EventsController::class, 'place'])->name
 Route::get('api/places/work-answers', [PlaceWorkAnswerController::class, 'mine'])->name('api.places.work-answers');
 Route::get('api/places/{spot}', [PlacesController::class, 'show'])->name('api.places.show');
 Route::post('api/places/{spot}/feedback', PlaceFeedbackController::class)->name('api.places.feedback');
+Route::put('api/places/{spot}/been', [PlaceFeedbackController::class, 'been'])->name('api.places.been.update');
+Route::delete('api/places/{spot}/been', [PlaceFeedbackController::class, 'forgetBeen'])->name('api.places.been.destroy');
 
 // "Good for laptop work?" (people's answers; Been there or Saved only).
 Route::get('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'show'])->name('api.places.work-answer.show');

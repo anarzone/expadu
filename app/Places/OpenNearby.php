@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\DB;
  * here's list (listed(): every one, open until, opens at, closed or not
  * listed). Unknown or conflicting hours are never guessed open.
  *
- * Given a person, it leaves out the places they marked "not interested" or
- * "been" (SpotFeedbackState::hiddenFromDiscovery), matched on the canonical
- * place.
+ * Given a person, around() leaves out the places they marked "not interested"
+ * or Been there; listed() only the "not interested" ones (Around here still
+ * lists the places they know). Matched on the canonical place.
  *
  * The point, the time and the person are inputs only: nothing here stores,
  * caches or logs them (they can say where someone will be), so the answer is
@@ -45,7 +45,7 @@ final class OpenNearby
     public function around(float $lat, float $lng, CarbonImmutable $at, array $kinds = self::EVERYDAY, float $radiusKm = 1.0, int $limit = 6, ?User $for = null): Collection
     {
         // A few more than asked, since closed places drop out below.
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for, hideBeen: true);
         $local = $at->setTimezone('Europe/Berlin');
 
         return $spots
@@ -85,7 +85,7 @@ final class OpenNearby
      */
     public function listed(float $lat, float $lng, CarbonImmutable $at, array $kinds, float $radiusKm = 15.0, int $limit = 12, ?User $for = null): Collection
     {
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for, hideBeen: false);
         $local = $at->setTimezone('Europe/Berlin');
 
         return $this->folded($spots, $facts, $local, $lat, $lng);
@@ -109,8 +109,12 @@ final class OpenNearby
         $facts = $facts->union($parks->isEmpty() ? collect() : $this->facts->resolveMany($parks->values()));
         $counts = $groups->counts(array_column($folds, 'id'));
         $byId = $spots->keyBy('id')->union($parks);
+        // People's laptop verdicts (from 3 people, counts only), by canonical place.
+        $canonical = fn (Spot $spot): int => (int) ($spot->canonical_spot_id ?? $spot->id);
+        $people = app(PlaceWorkAnswers::class)->totalsMany(collect($folds)->map(fn (array $fold): ?Spot => $byId->get($fold['id']))->filter()
+            ->map($canonical)->unique()->values()->all());
 
-        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts, $groups): ?array {
+        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts, $groups, $people, $canonical): ?array {
             $place = $byId->get($fold['id']);
             if (! $place instanceof Spot) {
                 return null;
@@ -137,6 +141,8 @@ final class OpenNearby
                 // What fitted the ask ("Football pitch"), and what the park (or its part) has, that first.
                 'matched' => $matched,
                 'facilities' => FacilityGroups::summary($part !== null ? $groups->partCounts($place->id, $part) : ($counts[$place->id] ?? []), $matched),
+                // Its laptop tag: people's verdict and the café's own website rule.
+                'laptop' => self::laptop(($facts->get($place->id) ?? [])['practical'] ?? [], $people[$canonical($place)]['laptop'] ?? null),
             ];
         })->filter()->values();
 
@@ -240,6 +246,25 @@ final class OpenNearby
     }
 
     /**
+     * The row's laptop tag: people's verdict (from 3 people, counts only) and
+     * the café's own rule from its website, with the days it names. Null when
+     * neither exists; the client decides whether the rule's days include its date.
+     *
+     * @param  array<string, mixed>  $practical  resolved practical facts
+     * @param  array{value: string, yes: int, total: int}|null  $people
+     * @return array{people: ?array{value: string, yes: int, total: int}, rule: ?array{value: string, days: ?string}}|null
+     */
+    private static function laptop(array $practical, ?array $people): ?array
+    {
+        $fact = $practical['laptops'] ?? [];
+        $rule = ($fact['provider'] ?? null) === 'website' && ($fact['status'] ?? null) === 'known' && is_string($fact['value'] ?? null)
+            ? ['value' => $fact['value'], 'days' => ($practical['laptops:conditional']['status'] ?? null) === 'known' ? $practical['laptops:conditional']['value'] : null]
+            : null;
+
+        return $people === null && $rule === null ? null : ['people' => $people, 'rule' => $rule];
+    }
+
+    /**
      * What recorded hours say at `$at` (local time): open until when, closed
      * and when it opens next today, closed for the rest of today, or not
      * known. Only hours known for sure are read.
@@ -280,10 +305,10 @@ final class OpenNearby
      * @param  list<string>  $kinds
      * @return array{0: Collection<int, Spot>, 1: Collection<int, array<string, mixed>>}
      */
-    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for): array
+    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for, bool $hideBeen): array
     {
         $hidden = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
-            ->filter(fn (SpotFeedback $row): bool => in_array($row->state, SpotFeedbackState::hiddenFromDiscovery(), true))
+            ->filter(fn (SpotFeedback $row): bool => $hideBeen ? $row->hiddenFromDiscovery() : $row->state === SpotFeedbackState::NotInterested)
             ->keys()
             ->map(fn (mixed $id): int => (int) $id)
             ->all();
