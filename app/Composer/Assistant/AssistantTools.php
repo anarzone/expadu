@@ -2,7 +2,13 @@
 
 namespace App\Composer\Assistant;
 
+use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
+use App\Composer\Actions\ActionRefused;
+use App\Composer\Actions\ComposerActions;
+use App\Composer\Actions\InAppPlaces;
+use App\Composer\Actions\PaperworkActions;
+use App\Composer\Actions\PlaceFeedbackAction;
 use App\Composer\Answers\Destinations;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Answers\TripAnswers;
@@ -11,6 +17,7 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
+use App\Models\BureaucracyPerson;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Task;
@@ -22,6 +29,7 @@ use App\Places\OpeningAnswer;
 use App\Places\PlaceAmenities;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceDisplayName;
+use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
@@ -57,7 +65,7 @@ final class AssistantTools
     private const NOTICES = 3;
 
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
-    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|plan)\d+|here|pw|trip|next)$/';
+    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next)$/';
 
     /** @var array<string, string> each result's text, by id, as the assistant read it */
     public array $read = [];
@@ -118,7 +126,16 @@ final class AssistantTools
         private array $earlier = ['event' => [], 'spot' => [], 'areas' => [], 'places' => []],
         // Their Composer plans, by date (their next plan, from code only).
         private array $plans = [],
+        // With their Paperwork permission for this message (paperwork_answer): their record is read,
+        // and changed through Paperwork's own writes.
+        private bool $paperwork = false,
     ) {}
+
+    /** Whether their Paperwork record may be read and changed in this message (their permission for it). */
+    public function paperwork(): bool
+    {
+        return $this->paperwork;
+    }
 
     /** Whether the person's own taste and day are tools here (the opt-in). */
     public function personal(): bool
@@ -148,7 +165,7 @@ final class AssistantTools
      * @param  bool  $weather  whether there is weather to look at (without it, no weather tool, so no "the weather is unavailable")
      * @return list<array<string, mixed>> the tools, as the Messages API takes them
      */
-    public static function definitions(bool $personal = false, bool $weather = true): array
+    public static function definitions(bool $personal = false, bool $weather = true, bool $paperwork = false): array
     {
         $kinds = self::kindsWithPlaces();
         $none = ['type' => 'object', 'properties' => (object) []];
@@ -197,12 +214,15 @@ final class AssistantTools
             PlanDay::definition(),
             ['name' => 'guidance', 'description' => 'Expadu\'s reviewed guides to German paperwork (registration, residence permits, tax ID, insurance…) matching some words: their titles. Paperwork and legal questions are answered only by these guides, never by you.',
                 'input_schema' => ['type' => 'object', 'properties' => ['query' => ['type' => 'string', 'description' => 'a few words, e.g. Anmeldung, blue card, tax ID']], 'required' => ['query']]],
-            ['name' => 'paperwork', 'description' => 'Shows the person their own Paperwork record as a card: their checklist for the next step and their next date. You don\'t get its contents.', 'input_schema' => $none],
+            $paperwork
+                ? ['name' => 'paperwork', 'description' => 'The person\'s own Paperwork record, shown to them as a card: the answers it keeps (with each key) and their open tasks with each step\'s id. They allowed you to read it for this message.', 'input_schema' => $none]
+                : ['name' => 'paperwork', 'description' => 'Shows the person their own Paperwork record as a card: their checklist for the next step and their next date. You don\'t get its contents.', 'input_schema' => $none],
             ['name' => 'my_trip', 'description' => 'Shows the person their trip as a card: the trip under way, else the way to their next appointment today (when to leave, their tram, where to get off). You don\'t get its contents.',
                 'input_schema' => ['type' => 'object', 'properties' => ['ask' => ['type' => 'string', 'enum' => ['leave', 'status', 'stop', 'arrive', 'next'], 'description' => 'what they asked: when to leave, whether it runs on time, where to get off, when they arrive, what\'s next']]]],
             ['name' => 'my_next', 'description' => 'Shows the person their next plan or appointment as a card. You don\'t get its contents.',
                 'input_schema' => ['type' => 'object', 'properties' => ['appointment' => ['type' => 'boolean', 'description' => 'they asked about appointments only']]]],
             ['name' => 'my_places', 'description' => 'The person\'s saved places (Home, Work and others) by name and Veedel.', 'input_schema' => $none],
+            ...self::actions($paperwork),
             ...($personal ? [
                 ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.', 'input_schema' => $none],
                 ['name' => 'my_day', 'description' => 'This person\'s own plans and appointments today and tomorrow. They turned personalisation on.', 'input_schema' => $none],
@@ -219,7 +239,9 @@ final class AssistantTools
     {
         $this->looked[] = match ($name) {
             'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
-            'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans', default => $name,
+            'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans',
+            // Read only with their Paperwork permission; else a card it never reads.
+            'paperwork' => $this->paperwork ? 'paperwork_record' : 'paperwork', default => $name,
         };
         $started = hrtime(true);
         try {
@@ -233,7 +255,11 @@ final class AssistantTools
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'guidance' => $this->guidance($input),
-                'paperwork' => $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record'),
+                'paperwork' => $this->paperwork ? $this->paperworkRecord() : $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record')
+                    .($this->askPaperworkPermission() ? ' A card asks whether they let Composer read and change it for this message.' : ''),
+                'place_feedback', 'set_my_place', 'add_to_day', 'remove_from_day', 'swap_in_day', 'clear_day',
+                'change_paperwork_fact', 'paperwork_step', 'paperwork_report' => $this->act($name, $input),
+                'open_in_app' => $this->openInApp($input),
                 'my_trip' => $this->own('trip', app(OwnCards::class)->trip($this->user, in_array($input['ask'] ?? null, ['leave', 'status', 'stop', 'arrive', 'next'], true) ? $input['ask'] : 'leave', $this->now), 'their trip'),
                 'my_next' => $this->own('next', app(OwnCards::class)->next($this->user, $this->plans, ($input['appointment'] ?? false) === true, $this->now), 'their next plan or appointment'),
                 'my_places' => $this->myPlaces(),
@@ -771,6 +797,157 @@ final class AssistantTools
         $this->cards[$id] = [...$card, 'private' => true];
 
         return $this->line($id, ucfirst($what).', shown to them as a card. Its contents stay private: say only that it\'s below.');
+    }
+
+    /**
+     * The changes Composer can make (ComposerActions), as tools: Paperwork's only with their
+     * permission for this message; permanent ones never, only the place that makes them.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function actions(bool $paperwork): array
+    {
+        $day = ['type' => 'string', 'description' => 'today, tomorrow or YYYY-MM-DD; today when they don\'t say'];
+        $registry = app(FactRegistry::class)->all();
+
+        return [
+            ['name' => 'place_feedback', 'description' => 'Saves a place for them, marks it as been, more like this or not for me, or takes that back (clear). Done, or proposed when they ask first: the result says which.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'place' => ['type' => 'string', 'description' => 'its id from your lookups ("spot:12"), else its name as they said it'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
+                    'state' => ['type' => 'string', 'enum' => PlaceFeedbackAction::STATES],
+                ], 'required' => ['place', 'state']]],
+            ['name' => 'set_my_place', 'description' => 'Sets their Home or Work to an address or a place they name. The address stays private: you only learn it\'s set.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'which' => ['type' => 'string', 'enum' => ['home', 'work']],
+                    'place' => ['type' => 'string', 'description' => 'the address or place exactly as they said it'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with a place, optional'],
+                ], 'required' => ['which', 'place']]],
+            ['name' => 'add_to_day', 'description' => 'Adds a place or listing to their plans for a day, at a time that fits its hours, or the time they say.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'item' => ['type' => 'string', 'description' => 'its id from your lookups ("spot:12", "e34@1767225600"), else a place\'s name'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with the place, optional'],
+                    'day' => $day,
+                    'start' => ['type' => 'string', 'description' => 'HH:MM, optional'], 'end' => ['type' => 'string', 'description' => 'HH:MM, optional'],
+                ], 'required' => ['item']]],
+            ['name' => 'remove_from_day', 'description' => 'Takes something off their plans for a day, by its name as they said it.',
+                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day], 'required' => ['item']]],
+            ['name' => 'swap_in_day', 'description' => 'Swaps something in their plans for a day for a place or listing, at the same time.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
+                    'with' => ['type' => 'string', 'description' => 'the new one\'s id from your lookups, else its name'],
+                    'day' => $day,
+                ], 'required' => ['item', 'with']]],
+            ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
+                'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
+            // Offered with or without their permission: without it, a card asks them for it.
+            ...[
+                ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission for this message: without it, a card asks them. Keys and what each answers: '
+                    // A key the record has a row for is described by that row ("visa_expires_at: Your visa runs until"),
+                    // so "my visa" is the visa's date, not the residence permit's.
+                    .$registry->map(fn ($d, string $key): string => "{$key} ({$d->type}".($d->type === 'enum' ? ': '.implode('|', $d->options) : '').'): '
+                        .(PaperworkActions::rowLabel($key) ?? $d->question))->implode('; '),
+                    'input_schema' => ['type' => 'object', 'properties' => [
+                        'key' => ['type' => 'string', 'enum' => $registry->keys()->all()],
+                        'value' => ['type' => 'string', 'description' => 'a date as YYYY-MM-DD, yes or no, a whole number, or one of its options'],
+                    ], 'required' => ['key', 'value']]],
+                ['name' => 'paperwork_step', 'description' => 'Marks a step of one of their Paperwork tasks done, or not done, by the task and step from the paperwork tool.',
+                    'input_schema' => ['type' => 'object', 'properties' => [
+                        'task' => ['type' => 'string', 'description' => 'the task\'s key, else its title'],
+                        'step' => ['type' => 'string', 'description' => 'the step\'s id, else its title'],
+                        'done' => ['type' => 'boolean'],
+                    ], 'required' => ['task', 'step']]],
+                ['name' => 'paperwork_report', 'description' => 'Records on one of their Paperwork tasks that they submitted it (the day), or an appointment they have (the day and time).',
+                    'input_schema' => ['type' => 'object', 'properties' => [
+                        'task' => ['type' => 'string', 'description' => 'the task\'s key, else its title'],
+                        'event' => ['type' => 'string', 'enum' => ['submitted', 'appointment']],
+                        'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
+                        'time' => ['type' => 'string', 'description' => 'HH:MM, for an appointment'],
+                        'minutes' => ['type' => 'integer', 'description' => 'how long the appointment is, when they say'],
+                        'channel' => ['type' => 'string', 'enum' => ['online', 'post', 'email', 'in_person'], 'description' => 'how they submitted it, when they say'],
+                    ], 'required' => ['task', 'event', 'date']]],
+            ],
+        ];
+    }
+
+    /**
+     * A change they asked for, made or proposed (ComposerActions), shown as its card; Paperwork's
+     * only with their permission for this message.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function act(string $action, array $input): string
+    {
+        if (ComposerActions::ACTIONS[$action][1] === 'paperwork' && ! $this->paperwork) {
+            return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission for this message.'
+                .($this->askPaperworkPermission() ? ' A card asks them for it.' : ''));
+        }
+        // A place this conversation showed, said by its name ("save Café Nova"): that one.
+        foreach (['place', 'item', 'with'] as $field) {
+            if (is_string($input[$field] ?? null) && preg_match('/^(spot:\d+|e\d+@\d+)$/', $input[$field]) !== 1) {
+                $shown = array_keys(array_filter($this->earlier['spot'], fn (string $name): bool => Destinations::key($name) === Destinations::key((string) $input[$field])));
+                if (count($shown) === 1) {
+                    $input[$field] = "spot:{$shown[0]}";
+                }
+            }
+        }
+        $made = app(ComposerActions::class)->request($this->user, $action, $input, $this->now);
+        if ($made['blocks'] === []) {
+            return $this->line('n'.(++$this->count), $made['said']);
+        }
+        $id = 'x'.(++$this->count);
+        // Its cards are Composer's own words, from the records it changed: always shown.
+        foreach ($made['blocks'] as $i => $block) {
+            $this->cards[$id.($i === 0 ? '' : 'p')] = $block;
+        }
+
+        return $this->line($id, $made['said']);
+    }
+
+    /**
+     * Their permission for Composer to read and change their Paperwork record, asked for on a
+     * card (the page sends it with the message again): only when Paperwork's AI is on and they
+     * have a record in use.
+     */
+    private function askPaperworkPermission(): bool
+    {
+        if (! ProcessingPurpose::PaperworkAnswer->available() || ! BureaucracyPerson::query()->where('account_user_id', $this->user->id)
+            ->where('record_status', 'active')->whereNull('processing_stopped_at')->exists()) {
+            return false;
+        }
+        $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::PaperworkAnswer->value,
+            'title' => 'Let Composer read and change your Paperwork record for this message?',
+            'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
+            'disclosure' => ProcessingPurpose::PaperworkAnswer->disclosure()];
+
+        return true;
+    }
+
+    /** What Composer never does itself, and the exact place that does it (InAppPlaces). */
+    private function openInApp(array $input): string
+    {
+        $card = InAppPlaces::card(is_string($input['what'] ?? null) ? $input['what'] : '');
+        if ($card === null) {
+            return 'Nothing to open for that.';
+        }
+        $id = 'o'.(++$this->count);
+        $this->cards[$id] = $card;
+
+        return $this->line($id, 'Shown to them as a card with where to do it and why Composer doesn\'t. Say one short line at most.');
+    }
+
+    /** Their Paperwork record, read with their permission for this message, and shown as its card. */
+    private function paperworkRecord(): string
+    {
+        try {
+            $record = app(PaperworkActions::class)->record($this->user, $this->now);
+        } catch (ActionRefused $refused) {
+            return $this->line('n'.(++$this->count), $refused->getMessage());
+        }
+        $this->cards['pw'] = [...$record['block'], 'private' => true];
+
+        return $this->line('pw', $record['text']);
     }
 
     /** Their saved places, by name and Veedel, never where exactly. */

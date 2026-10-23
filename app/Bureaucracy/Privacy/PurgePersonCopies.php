@@ -25,5 +25,7 @@ class PurgePersonCopies
         }
         app(PrivatePlanCache::class)->purgeAppointmentCopies($userId);
         app(WorkspaceStore::class)->purgeAppointmentCopies($userId);
+        // Composer's copies of the record: its record and change cards, and the proposals and Undo it holds.
+        app(WorkspaceStore::class)->purgePaperworkCopies($userId);
     }
 }
