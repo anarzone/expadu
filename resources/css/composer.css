@@ -1144,9 +1144,3 @@
 .composer-page .answer-board-full::after {
     content: '→';
 }
-
-/* A major problem on a trip answer's way: Travel's headline (headline.tsx),
-   one before the answer's words. */
-.composer-page .answer-major {
-    margin: 0 0 12px;
-}

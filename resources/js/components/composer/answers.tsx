@@ -250,12 +250,11 @@ function RideStatus({ leg }: { leg: JourneyLeg }) {
     ) : null;
 }
 
-/** One headline for a major problem, before the answer's words: Travel's own. */
+/** One headline for a major problem, before the answer's words: Travel's own compact bar, closed. */
 function MajorHeadline({ major }: { major: Major }) {
     return (
         <Headline
             level="h3"
-            className="answer-major"
             lines={major.lines ?? []}
             title={major.title}
             text={major.text}
