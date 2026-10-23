@@ -23,6 +23,7 @@ import type { Journey, JourneyLeg } from '@/types/transit';
 import {
     DoneLine,
     Handoff,
+    Permission,
     PlanChanges,
     Proposal,
     RecordRows,
@@ -717,9 +718,17 @@ export function AnswerBody({
                         <RecordRows key={index} block={block} calls={calls} />
                     ) : null;
                 case 'plan_changes':
-                    return <PlanChanges key={index} block={block} />;
+                    return calls ? (
+                        <PlanChanges key={index} block={block} calls={calls} />
+                    ) : null;
                 case 'handoff':
-                    return <Handoff key={index} block={block} />;
+                    return calls ? (
+                        <Handoff key={index} block={block} calls={calls} />
+                    ) : null;
+                case 'permission':
+                    return calls ? (
+                        <Permission key={index} block={block} calls={calls} />
+                    ) : null;
                 case 'guidance':
                     return <Guidance key={index} query={block.query} />;
                 default:

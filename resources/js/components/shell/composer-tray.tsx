@@ -644,6 +644,12 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                     });
                                 }}
                                 onFocus={setFocusDay}
+                                onDraft={(words) => {
+                                    setText(words);
+                                    field.current?.focus({
+                                        preventScroll: true,
+                                    });
+                                }}
                             />
                         </Suspense>
                     </section>

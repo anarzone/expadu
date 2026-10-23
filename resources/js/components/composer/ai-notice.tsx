@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ProcessingNoticeController from '@/actions/App/Http/Controllers/ProcessingNoticeController';
+import { writeJson } from '@/lib/reliable-write';
 
 /**
  * Composer answers a message with an AI service only with the person's say-so (owner,
@@ -82,8 +83,25 @@ export function aiPermit(notice: AiNotice | null): object {
         : {};
 }
 
-/** The line under the box, in its helper text: who reads what you send, and their notice. */
+/**
+ * The line under the box, in its helper text: who reads what you send, their
+ * notice, and Withdraw (stopping it, and removing what was kept). Sending is
+ * the consent again next time (owner, 21 Oct 2026).
+ */
 export function AiNoticeLine({ notice }: { notice: AiNotice }) {
+    const [state, setState] = useState<'idle' | 'saving' | 'done' | 'failed'>(
+        'idle',
+    );
+    const [said, setSaid] = useState('');
+
+    if (state === 'done') {
+        return (
+            <p className="composer-ai-notice" role="status">
+                {said}
+            </p>
+        );
+    }
+
     return (
         <p className="composer-ai-notice">
             {`Composer sends what you type, with your nearest stop and neighbourhood, to ${notice.processor_name}, an AI service, to answer you`}
@@ -99,6 +117,50 @@ export function AiNoticeLine({ notice }: { notice: AiNotice }) {
                     </a>
                 </>
             ) : null}
+            {' · '}
+            <button
+                type="button"
+                className="composer-ai-withdraw"
+                disabled={state === 'saving'}
+                onClick={async () => {
+                    setState('saving');
+
+                    try {
+                        const result = await writeJson<{ message?: string }>(
+                            ProcessingNoticeController.withdraw.url(
+                                'composer_assist',
+                            ),
+                            'DELETE',
+                        );
+                        setSaid(
+                            result?.message ??
+                                'Future processing is stopped and saved responses are removed.',
+                        );
+                        setState('done');
+                    } catch {
+                        setState('failed');
+                    }
+                }}
+            >
+                Withdraw
+            </button>
+            {state === 'failed' && (
+                <span role="alert"> That didn’t go through. Try again.</span>
+            )}
         </p>
     );
+}
+
+/** Composer's hand-off to Withdraw: the notice's button, in view, ringed for a moment. */
+export function ringWithdraw(root: ParentNode = document) {
+    const button = root.querySelector<HTMLElement>('.composer-ai-withdraw');
+
+    if (!button) {
+        return;
+    }
+
+    button.scrollIntoView({ block: 'nearest' });
+    button.focus({ preventScroll: true });
+    button.classList.add('is-ringed');
+    window.setTimeout(() => button.classList.remove('is-ringed'), 4000);
 }

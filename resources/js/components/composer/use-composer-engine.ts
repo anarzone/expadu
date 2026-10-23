@@ -1,6 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import { ask } from '@/actions/App/Http/Controllers/ComposerController';
+import {
+    act as actRoute,
+    applyAction,
+    ask,
+    undoAction,
+} from '@/actions/App/Http/Controllers/ComposerController';
 import {
     show,
     update,
@@ -32,13 +37,6 @@ const PAGES: Record<string, string> = {
 
 /** The assistant's answer: its own budget (App\Composer\Assistant) and the tools after it. */
 const ASK_TIMEOUT = 60_000;
-
-/** Where a change is undone, applied or made (the AI session's routes for Composer actions). */
-const ACTIONS = {
-    undo: '/composer/undo',
-    apply: '/composer/apply',
-    act: '/composer/act',
-};
 
 /** Whether the person's last message in the open conversation has a reply after it. */
 export function replied(state: Workspace): boolean {
@@ -176,7 +174,7 @@ export function useComposerEngine(
      * notice) is asked again without the AI, and the answer says so: a timeout or
      * a server error isn't asked twice, since the first may still be answering.
      */
-    async function answer(notice: AiNotice | null) {
+    async function answer(notice: AiNotice | null, extra: object = {}) {
         setBusy('Looking into it…');
         const origin = on.current.origin ?? null;
         const where = {
@@ -203,7 +201,7 @@ export function useComposerEngine(
             setState(
                 await api<Workspace>(
                     ask.url(),
-                    { ...where, ...permit },
+                    { ...where, ...permit, ...extra },
                     undefined,
                     ASK_TIMEOUT,
                 ).catch((error: unknown) =>
@@ -251,7 +249,10 @@ export function useComposerEngine(
     }
 
     /** Try again: the same message, asked again, not sent again. */
-    async function again(notice: AiNotice | null = aiNotice) {
+    async function again(
+        notice: AiNotice | null = aiNotice,
+        extra: object = {},
+    ) {
         if (busyRef.current) {
             return;
         }
@@ -262,7 +263,7 @@ export function useComposerEngine(
         setRetryMessage(null);
 
         try {
-            await answer(notice);
+            await answer(notice, extra);
         } catch {
             await unanswered();
         } finally {
@@ -303,10 +304,23 @@ export function useComposerEngine(
             busyRef.current = false;
         }
     }
-    const undo = (token: string) => void act(ACTIONS.undo, { token });
-    const apply = (token: string) => void act(ACTIONS.apply, { token });
+    const undo = (token: string) => void act(undoAction.url(), { token });
+    const apply = (token: string) => void act(applyAction.url(), { token });
     const change = (key: string, value: string) =>
-        void act(ACTIONS.act, { action: 'paperwork_fact', key, value });
+        void act(actRoute.url(), { action: 'paperwork_fact', key, value });
+    /** Paperwork's say-so for this message: the same message, asked again with it. */
+    const allow = (disclosure: {
+        notice_version: string;
+        provider_version: string;
+    }) =>
+        void again(aiNotice, {
+            paperwork_processing: {
+                consent: true,
+                request_id: crypto.randomUUID(),
+                notice_version: disclosure.notice_version,
+                provider_version: disclosure.provider_version,
+            },
+        });
 
     /** The bar's Retry: asks again when the message is in, else sends it. */
     function retry() {
@@ -487,5 +501,6 @@ export function useComposerEngine(
         undo,
         apply,
         change,
+        allow,
     };
 }

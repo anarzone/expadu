@@ -1131,6 +1131,23 @@ html {
     font-size: var(--text-micro);
     line-height: 1.45;
 }
+/* Withdraw, in the notice's own words (Composer page and tray alike). */
+.composer-ai-withdraw {
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.composer-ai-withdraw.is-ringed {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px var(--color-paper-bg);
+}
 .composer-tray .composer-ai-notice a {
     color: inherit;
     text-decoration: underline;

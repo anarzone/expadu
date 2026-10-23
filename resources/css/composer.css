@@ -1468,6 +1468,80 @@
     font-weight: 700;
     text-decoration: none;
 }
+/* My day as it is now, the new item marked; and what Paperwork would like to know next. */
+.composer-page .action-day {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    animation: action-in 250ms 60ms ease-out both;
+}
+.composer-page .action-day div {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--color-bg-quiet);
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+}
+.composer-page .action-day div:first-child {
+    border-top: 0;
+}
+.composer-page .action-day div.is-new {
+    background: var(--color-success-soft);
+    font-weight: 700;
+}
+.composer-page .action-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--color-bg-quiet);
+    font-size: 13.5px;
+    animation: action-in 250ms 100ms ease-out both;
+}
+.composer-page .action-ask button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.composer-page .action-ask button:active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .action-record h3 {
+    margin: 0;
+    padding: 10px 14px 6px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.composer-page button.action-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
 @media (max-width: 700px) {
     .composer-page .action-record-row {
         grid-template-columns: minmax(0, 1fr) auto;
@@ -1485,6 +1559,8 @@
 @media (prefers-reduced-motion: reduce) {
     .composer-page
         :is(
+            .action-day,
+            .action-ask,
             .action-done,
             .action-undone,
             .action-proposal,

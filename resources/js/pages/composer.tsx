@@ -11,7 +11,11 @@ import { clsx } from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { keep } from '@/actions/App/Http/Controllers/ComposerController';
 import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
-import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
+import {
+    AiNoticeLine,
+    ringWithdraw,
+    useAiNotice,
+} from '@/components/composer/ai-notice';
 import {
     AnswerBody,
     isAnswer,
@@ -198,6 +202,7 @@ export default function ComposerPage({
         undo,
         apply,
         change,
+        allow,
     } = useComposerEngine(initial, aiNotice, {
         origin,
         pins,
@@ -485,6 +490,13 @@ export default function ComposerPage({
         change,
         ask,
         focusBox: () => textarea.current?.focus({ preventScroll: true }),
+        draft: (text: string) => {
+            setInput(text);
+            textarea.current?.focus({ preventScroll: true });
+        },
+        nav: (where: 'saved' | 'plans' | 'ai_notice') =>
+            where === 'ai_notice' ? ringWithdraw() : openCollection(where),
+        allow,
         busy: !!busy,
     };
     const openDay = (date: string) => {

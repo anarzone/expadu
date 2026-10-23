@@ -11,20 +11,42 @@ import { useState } from 'react';
  * change, a data right) opens the right place instead.
  */
 
-export type ActionLink = { label: string; href: string };
+/** Where a change can be seen: a page, or one of Composer's own panels. */
+export type ActionLink = {
+    label: string;
+    href?: string | null;
+    nav?: 'saved' | 'plans' | null;
+};
+
+type Area = 'everyday' | 'paperwork';
 
 export type DoneBlock = {
     type: 'done';
     id: string;
+    area: Area;
+    action?: string;
     /** "Saved Bau", "Your visa now runs until 12 Feb 2027". */
     text: string;
     sub?: string | null;
     /** Undo, until the time it lasts (24 hours). */
     undo?: { token: string; until: string } | null;
     link?: ActionLink | null;
+    /** My day as it is now, the new item marked. */
+    day?: { time: string; what: string; new: boolean }[] | null;
+    /** What Paperwork would like to know next ("When did you move in?"). */
+    ask?: {
+        text: string;
+        options: { label: string; prompt?: string; draft?: string }[];
+    } | null;
 };
 
-export type UndoneBlock = { type: 'undone'; id: string; text: string };
+export type UndoneBlock = {
+    type: 'undone';
+    id: string;
+    area?: Area;
+    action?: string;
+    text: string;
+};
 
 export type ProposalBlock = {
     type: 'proposal';
@@ -35,7 +57,12 @@ export type ProposalBlock = {
     to?: string | null;
     sub?: string | null;
     token: string;
-    area: 'everyday' | 'paperwork';
+    area: Area;
+    action?: string;
+    /** Composer's own words for it. */
+    text?: string;
+    /** Until when it can be applied (24 hours). */
+    until?: string | null;
     /** The record row it changes, with its date, so "Change the date" edits it here. */
     fact_key?: string | null;
     edit?: { kind: 'date'; value: string } | null;
@@ -47,11 +74,16 @@ export type RecordRow = {
     /** As the record says it: "National D visa", "1 Oct 2026". */
     value: string;
     note?: string | null;
-    /** A field the person can change here, in place. */
-    edit?: { kind: 'date'; value: string } | null;
+    /** A field the person can change here, in place; no value when it isn't answered yet. */
+    edit?: { kind: 'date'; value: string | null } | null;
 };
 
-export type RecordBlock = { type: 'record'; rows: RecordRow[] };
+export type RecordBlock = {
+    type: 'record';
+    title?: string | null;
+    rows: RecordRow[];
+    link?: ActionLink | null;
+};
 
 /** One row of PaperworkPlanDiff::between. */
 export type PlanChange = {
@@ -72,23 +104,45 @@ export type PlanChange = {
 
 export type PlanChangesBlock = {
     type: 'plan_changes';
+    id?: string;
     changes: PlanChange[];
     link?: ActionLink | null;
 };
 
 export type HandoffBlock = {
     type: 'handoff';
+    what?: string;
     text: string;
     place: {
         crumb: string;
-        description: string;
+        description?: string | null;
         actions: string[];
         /** The action the person asked for, ringed. */
         here: string;
         label: string;
-        href: string;
+        href?: string | null;
+        /** The AI notice under the box, which holds Withdraw. */
+        nav?: 'ai_notice' | null;
     };
     note?: string | null;
+};
+
+/** What an AI permission says before it's given (ProcessingPurpose::disclosure). */
+export type Disclosure = {
+    purpose: string;
+    notice_version: string;
+    provider_version: string;
+    processor_name: string | null;
+    processor_privacy_url: string | null;
+};
+
+/** Paperwork needs their say-so before Composer reads or changes it, for this one message. */
+export type PermissionBlock = {
+    type: 'permission';
+    purpose: 'paperwork_answer';
+    title: string;
+    sub?: string | null;
+    disclosure: Disclosure;
 };
 
 export type ActionBlock =
@@ -97,7 +151,8 @@ export type ActionBlock =
     | ProposalBlock
     | RecordBlock
     | PlanChangesBlock
-    | HandoffBlock;
+    | HandoffBlock
+    | PermissionBlock;
 
 export const ACTION_TYPES: ActionBlock['type'][] = [
     'done',
@@ -106,6 +161,7 @@ export const ACTION_TYPES: ActionBlock['type'][] = [
     'record',
     'plan_changes',
     'handoff',
+    'permission',
 ];
 
 /** What the blocks ask of the page: one call, the workspace it returns shows the result. */
@@ -118,6 +174,12 @@ export type ActionCalls = {
     ask: (prompt: string) => void;
     /** Back to the box (a proposal's "Change something"). */
     focusBox: () => void;
+    /** Words in the box for them to finish ("I moved in on "). */
+    draft: (text: string) => void;
+    /** One of Composer's own panels, or the AI notice under the box. */
+    nav: (where: 'saved' | 'plans' | 'ai_notice') => void;
+    /** Their say-so for Paperwork, for this message: it's asked again with it. */
+    allow: (disclosure: Disclosure) => void;
     busy: boolean;
 };
 
@@ -139,6 +201,29 @@ function day(value: string | null | undefined): string {
     );
 
     return Number.isNaN(date.getTime()) ? value : DAY.format(date);
+}
+
+/** Where a change can be seen: a page, or one of Composer's own panels. */
+function SeeIt({ link, calls }: { link: ActionLink; calls: ActionCalls }) {
+    if (link.nav) {
+        const nav = link.nav;
+
+        return (
+            <button
+                type="button"
+                className="action-link"
+                onClick={() => calls.nav(nav)}
+            >
+                {link.label}
+            </button>
+        );
+    }
+
+    return link.href ? (
+        <Link className="action-link" href={link.href}>
+            {link.label}
+        </Link>
+    ) : null;
 }
 
 export function DoneLine({
@@ -174,11 +259,39 @@ export function DoneLine({
                     </button>
                 )}
             </div>
-            {block.link && (
-                <Link className="action-link" href={block.link.href}>
-                    {block.link.label}
-                </Link>
+            {!!block.day?.length && (
+                <div className="action-day" aria-label="My day">
+                    {block.day.map((item) => (
+                        <div
+                            key={`${item.time}-${item.what}`}
+                            className={item.new ? 'is-new' : undefined}
+                        >
+                            <span>{item.time}</span>
+                            <span>{item.what}</span>
+                        </div>
+                    ))}
+                </div>
             )}
+            {block.ask && (
+                <div className="action-ask">
+                    <span>{block.ask.text}</span>
+                    {block.ask.options.map((option) => (
+                        <button
+                            type="button"
+                            key={option.label}
+                            disabled={calls.busy}
+                            onClick={() =>
+                                option.prompt
+                                    ? calls.ask(option.prompt)
+                                    : calls.draft(option.draft ?? '')
+                            }
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+            {block.link && <SeeIt link={block.link} calls={calls} />}
         </>
     );
 }
@@ -201,6 +314,9 @@ export function Proposal({
 }) {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(block.edit?.value ?? '');
+    // It can be applied for 24 hours; the server says until when, and checks it again.
+    const [now] = useState(() => Date.now());
+    const expired = !!block.until && Date.parse(block.until) <= now;
     const key = block.fact_key;
     const edit = block.edit;
 
@@ -215,7 +331,12 @@ export function Proposal({
                 </span>
             )}
             {block.sub && <span className="action-sub">{block.sub}</span>}
-            {editing && key && edit ? (
+            {expired ? (
+                <span className="action-sub">
+                    This can no longer be applied. Ask again if you still want
+                    it.
+                </span>
+            ) : editing && key && edit ? (
                 <form
                     className="action-record-edit"
                     onSubmit={(event) => {
@@ -290,72 +411,79 @@ export function RecordRows({
     const [draft, setDraft] = useState('');
 
     return (
-        <div className="action-record" aria-label="Your Paperwork record">
-            {block.rows.map((row) => (
-                <div key={row.key} className="action-record-row">
-                    <span>{row.label}</span>
-                    {editing === row.key && row.edit ? (
-                        <form
-                            className="action-record-edit"
-                            onSubmit={(event) => {
-                                event.preventDefault();
-                                const value = draft || row.edit!.value;
+        <>
+            <div
+                className="action-record"
+                aria-label={block.title ?? 'Your Paperwork record'}
+            >
+                {block.title && <h3>{block.title}</h3>}
+                {block.rows.map((row) => (
+                    <div key={row.key} className="action-record-row">
+                        <span>{row.label}</span>
+                        {editing === row.key && row.edit ? (
+                            <form
+                                className="action-record-edit"
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+                                    const value = draft || row.edit!.value;
 
-                                if (value !== row.edit!.value) {
-                                    calls.change(row.key, value);
-                                }
+                                    if (value && value !== row.edit!.value) {
+                                        calls.change(row.key, value);
+                                    }
 
-                                onEdit(null);
-                            }}
-                        >
-                            <label>
-                                <span className="sr-only">{row.label}</span>
-                                <input
-                                    type="date"
-                                    defaultValue={row.edit.value}
-                                    onChange={(event) =>
-                                        setDraft(event.target.value)
-                                    }
-                                    autoFocus
-                                />
-                            </label>
-                            <button
-                                type="submit"
-                                className="action-save"
-                                disabled={calls.busy}
-                            >
-                                Save
-                            </button>
-                        </form>
-                    ) : (
-                        <>
-                            <strong>
-                                {row.value}
-                                {row.note && <small> · {row.note}</small>}
-                            </strong>
-                            <button
-                                type="button"
-                                className="action-change"
-                                aria-label={`Change ${row.label.toLowerCase()}`}
-                                disabled={calls.busy}
-                                onClick={() => {
-                                    if (row.edit) {
-                                        setDraft('');
-                                        onEdit(row.key);
-                                    } else {
-                                        calls.ask(
-                                            `Change my ${row.label.toLowerCase()}`,
-                                        );
-                                    }
+                                    onEdit(null);
                                 }}
                             >
-                                Change
-                            </button>
-                        </>
-                    )}
-                </div>
-            ))}
-        </div>
+                                <label>
+                                    <span className="sr-only">{row.label}</span>
+                                    <input
+                                        type="date"
+                                        defaultValue={row.edit.value ?? ''}
+                                        onChange={(event) =>
+                                            setDraft(event.target.value)
+                                        }
+                                        autoFocus
+                                    />
+                                </label>
+                                <button
+                                    type="submit"
+                                    className="action-save"
+                                    disabled={calls.busy}
+                                >
+                                    Save
+                                </button>
+                            </form>
+                        ) : (
+                            <>
+                                <strong>
+                                    {row.value}
+                                    {row.note && <small> · {row.note}</small>}
+                                </strong>
+                                <button
+                                    type="button"
+                                    className="action-change"
+                                    aria-label={`Change ${row.label.toLowerCase()}`}
+                                    disabled={calls.busy}
+                                    onClick={() => {
+                                        if (row.edit) {
+                                            setDraft('');
+                                            onEdit(row.key);
+                                        } else {
+                                            calls.ask(
+                                                `Change my ${row.label.toLowerCase()}`,
+                                            );
+                                        }
+                                    }}
+                                >
+                                    Change
+                                </button>
+                            </>
+                        )}
+                    </div>
+                ))}
+            </div>
+            {block.link && <SeeIt link={block.link} calls={calls} />}
+        </>
     );
 }
 
@@ -369,7 +497,13 @@ const STEP: Record<PlanChange['change'], string> = {
 };
 
 /** What a change moved in the plan, by task, in the plan's own titles and dates. */
-export function PlanChanges({ block }: { block: PlanChangesBlock }) {
+export function PlanChanges({
+    block,
+    calls,
+}: {
+    block: PlanChangesBlock;
+    calls: ActionCalls;
+}) {
     const tasks = [
         ...new Map(
             block.changes.map((change) => [
@@ -412,17 +546,19 @@ export function PlanChanges({ block }: { block: PlanChangesBlock }) {
                         ))}
                 </div>
             ))}
-            {block.link && (
-                <Link className="action-link" href={block.link.href}>
-                    {block.link.label}
-                </Link>
-            )}
+            {block.link && <SeeIt link={block.link} calls={calls} />}
         </section>
     );
 }
 
 /** What Composer won't do itself: where it is, with the asked action ringed. */
-export function Handoff({ block }: { block: HandoffBlock }) {
+export function Handoff({
+    block,
+    calls,
+}: {
+    block: HandoffBlock;
+    calls: ActionCalls;
+}) {
     const { place } = block;
 
     return (
@@ -430,7 +566,7 @@ export function Handoff({ block }: { block: HandoffBlock }) {
             <p>{block.text}</p>
             <div className="action-handoff">
                 <span className="action-handoff-crumb">{place.crumb}</span>
-                <span>{place.description}</span>
+                {place.description && <span>{place.description}</span>}
                 <span className="action-handoff-actions" aria-hidden="true">
                     {place.actions.map((action) => (
                         <span
@@ -443,11 +579,72 @@ export function Handoff({ block }: { block: HandoffBlock }) {
                         </span>
                     ))}
                 </span>
-                <Link className="action-go" href={place.href}>
-                    {place.label}
-                </Link>
+                {place.nav ? (
+                    <button
+                        type="button"
+                        className="action-go"
+                        onClick={() => calls.nav('ai_notice')}
+                    >
+                        {place.label}
+                    </button>
+                ) : (
+                    place.href && (
+                        <Link className="action-go" href={place.href}>
+                            {place.label}
+                        </Link>
+                    )
+                )}
             </div>
             {block.note && <p className="action-sub">{block.note}</p>}
         </>
+    );
+}
+
+/**
+ * Paperwork's say-so, for this one message (Ask first's Paperwork rule): what
+ * Composer would read and who reads it, and Allow, which asks the same message
+ * again with it. Without it, Composer neither reads nor changes the record.
+ */
+export function Permission({
+    block,
+    calls,
+}: {
+    block: PermissionBlock;
+    calls: ActionCalls;
+}) {
+    const { disclosure } = block;
+
+    return (
+        <div className="action-proposal action-permission">
+            <strong>{block.title}</strong>
+            {block.sub && <span className="action-sub">{block.sub}</span>}
+            {disclosure.processor_name && (
+                <span className="action-sub">
+                    {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
+                    {disclosure.processor_privacy_url && (
+                        <>
+                            {' · '}
+                            <a
+                                href={disclosure.processor_privacy_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Privacy notice
+                            </a>
+                        </>
+                    )}
+                </span>
+            )}
+            <span className="action-proposal-buttons">
+                <button
+                    type="button"
+                    className="action-apply"
+                    disabled={calls.busy}
+                    onClick={() => calls.allow(disclosure)}
+                >
+                    Allow
+                </button>
+            </span>
+        </div>
     );
 }
