@@ -345,6 +345,15 @@ h3 {
         padding-right: 12px;
         overflow-wrap: anywhere;
     }
+    /* Headers and the first column (names) only break between words. */
+    .article-body th,
+    .article-body td:first-child {
+        overflow-wrap: normal;
+    }
+    /* Narrow cells may wrap a phone number; stacked cards have room anyway. */
+    .article-body a[href^='tel:'] {
+        white-space: normal;
+    }
     .article-body table:has(th:nth-child(4)) {
         border-bottom: 0;
     }
