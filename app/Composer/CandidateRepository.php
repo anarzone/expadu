@@ -271,7 +271,7 @@ class CandidateRepository
             id: "spot:{$spot->id}",
             destinationGroupId: 'spot:'.($destinationId ?? $spot->id),
             type: 'spot',
-            name: $facts['name']['value'] ?? $spot->name,
+            name: $facts['display_name'] ?? $facts['name']['value'] ?? $spot->name,
             lat: $lat,
             lng: $lng,
             veedel: $spot->veedel ?? null,
