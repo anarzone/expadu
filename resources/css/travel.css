@@ -544,6 +544,45 @@
         color: var(--color-text-soft);
     }
 }
+/* ---------- Slide: Travel's one way to open and close in place ----------
+   (slide.tsx; owner, 23 Oct 2026: the departure rows' Slide everywhere on
+   Travel). It opens 0fr→1fr in 180 ms ease-out while the words fade in and
+   drop 10 px over 250 ms; it closes in 200 ms ease-in, the words fading
+   out in 120 ms; with less motion it just opens and closes. */
+.tl-slide {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 1, 1);
+}
+.tl-slide[data-open='true'] {
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 180ms ease-out;
+}
+.tl-slide-in {
+    min-height: 0;
+    overflow: hidden;
+}
+.tl-slide-in > * {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+        opacity 120ms ease-in,
+        transform 120ms ease-in;
+}
+.tl-slide[data-open='true'] > .tl-slide-in > * {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 250ms ease-out,
+        transform 250ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tl-slide,
+    .tl-slide-in > * {
+        transition: none;
+    }
+}
+
 /* ---------- A line's row that opens into itself (line-row.tsx) ----------
    The departure rows canvas, "Slide" (owner, 23 Oct 2026): the strip stays
    exactly where it is, a press only tints it, the chevron turns, and the
@@ -572,9 +611,17 @@
     border-top: 0;
     border-radius: 16px;
 }
+/* One colour (owner, 23 Oct 2026): a closed row hovered or pressed takes
+   the open colour, never darker; an open row is that colour throughout,
+   strip and details alike, hovered or not. */
+.line-row > .nearby-strip:hover,
 .line-row > .nearby-strip:active {
-    transform: none;
-    background: color-mix(in srgb, var(--line) 7%, transparent);
+    background: color-mix(in srgb, var(--line) 8%, var(--color-bg-surface));
+}
+.line-row.is-open > .nearby-strip,
+.line-row.is-open > .nearby-strip:hover,
+.line-row.is-open > .nearby-strip:active {
+    background: transparent;
 }
 .nearby-strip.has-chev {
     grid-template-columns: 64px minmax(0, 1fr) 150px minmax(0, 1fr) 36px;
@@ -1187,16 +1234,6 @@
     flex-direction: column;
     gap: var(--space-12);
     padding: var(--space-6) var(--space-4) var(--space-4);
-    animation: trip-line-open 320ms var(--ease-standard) both;
-}
-.trip-line-way[hidden] {
-    display: none;
-}
-@keyframes trip-line-open {
-    from {
-        opacity: 0;
-        transform: translateY(-6px);
-    }
 }
 .trip-line-note {
     display: flex;
@@ -1713,7 +1750,6 @@
     cursor: pointer;
 }
 .nav-primary:active {
-    transform: scale(0.98);
     background: var(--color-action-hover);
 }
 .nav-confirm {
@@ -1785,7 +1821,6 @@
     cursor: pointer;
 }
 .plan-schedule-done:active {
-    transform: scale(0.98);
     background: var(--color-action-hover);
 }
 

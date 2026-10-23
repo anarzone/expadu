@@ -89,11 +89,7 @@
 :where(.travel-page) button {
     transition:
         background 0.15s,
-        box-shadow 0.15s,
-        transform 0.15s;
-}
-:where(.travel-page) button:active {
-    transform: scale(0.985);
+        box-shadow 0.15s;
 }
 :where(.travel-page) [hidden] {
     display: none !important;
@@ -285,9 +281,6 @@
     border: 0;
     background: none;
     cursor: pointer;
-}
-:where(.travel-page) .from-locate:active .origin-dot {
-    scale: 0.85;
 }
 :where(.travel-page) .from-locate[aria-busy='true'] .origin-dot {
     background: rgb(66, 123, 138);
@@ -819,7 +812,6 @@
 }
 :where(.travel-page) .nav-icon-button:active {
     background: rgb(222, 243, 247);
-    transform: scale(0.97);
 }
 :where(.travel-page) .nav-topbar .nav-icon-button {
     background: rgb(242, 247, 248);
@@ -892,12 +884,9 @@
     font-weight: var(--weight-semibold);
     font-size: var(--text-control);
     flex: 1 1 0%;
-    transition:
-        transform 150ms ease-out,
-        background 150ms ease-out;
+    transition: background 150ms ease-out;
 }
 :where(.travel-page) .nav-primary:active {
-    transform: scale(0.98);
     background: rgb(191, 46, 10);
 }
 :where(.travel-page) .nav-confirm {
@@ -1191,7 +1180,7 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    animation: nav-step-in 320ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation .nav-step-lead > div {
     min-width: 0px;
@@ -1318,7 +1307,7 @@
     border-radius: 16px;
     background: var(--color-bg-surface);
     box-shadow: rgba(33, 29, 21, 0.5) 0px 16px 34px -22px;
-    animation: nav-step-in 240ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation .nav-not-right button {
     display: flex;
@@ -1589,7 +1578,7 @@
     background: var(--color-bg-surface);
     color: var(--color-text);
     text-decoration: none;
-    animation: nav-step-in 320ms var(--ease-standard) both;
+    animation: nav-step-in 250ms ease-out both;
 }
 :where(.travel-page) #journey-navigation a.nav-look:hover {
     background: var(--color-bg-quiet);
@@ -2061,22 +2050,6 @@
 .travel-page .plan-option-pick[aria-expanded='true'] .details-toggle svg {
     rotate: 180deg;
 }
-.travel-page .route-disclosure {
-    display: grid;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transition:
-        grid-template-rows 220ms var(--ease),
-        opacity 180ms ease;
-}
-.travel-page .route-disclosure[aria-hidden='false'] {
-    grid-template-rows: 1fr;
-    opacity: 1;
-}
-.travel-page .route-disclosure-inner {
-    overflow: hidden;
-    min-height: 0px;
-}
 .travel-page .result-empty {
     background: var(--surface-quiet);
     border-radius: var(--radius-lg);
@@ -2163,7 +2136,7 @@
     opacity: 0.65;
 }
 @media (prefers-reduced-motion: reduce) {
-    .travel-page :is(.route-disclosure, .details-toggle svg) {
+    .travel-page .details-toggle svg {
         transition: none;
     }
 }
@@ -2502,6 +2475,10 @@
 :where(.travel-page) .nearby-cards > .tl-reason,
 :where(.travel-page) .nearby-list > .tl-reason {
     padding: 0 0 10px;
+}
+/* A row's notice line has room under the row, not glued to its colour. */
+:where(.travel-page) .line-row + .tl-reason {
+    margin-top: var(--space-10);
 }
 /* Who gave the board what it carries (DELFI's licence asks to be named). */
 :where(.travel-page) .nearby-credit {
@@ -2965,9 +2942,6 @@
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 0 var(--space-24);
     padding-bottom: var(--space-10);
-}
-:where(.travel-page) .plan-checks-detail[hidden] {
-    display: none;
 }
 :where(.travel-page) .plan-checks-detail p {
     display: flex;
@@ -4000,30 +3974,13 @@
 }
 
 /* ── departures-next/press.css ── */
-/* A line's strip only tints when pressed: nothing in its row moves
-   (departure rows canvas, owner, 23 Oct 2026). */
+/* A press only tints: nothing on Travel shrinks (owner, 23 Oct 2026: no
+   squeeze anywhere). A line's strip has its own tint. */
 .travel-page
     :is(button, a[href], summary, [role='switch'], [role='radio']):not(
         :disabled
     ):not([aria-disabled='true']):not(.nearby-strip):active {
     filter: brightness(0.93);
-    scale: 0.97;
-}
-.travel-page
-    :is(
-        .plan-option-pick,
-        .plan-checks-toggle,
-        .day-places button,
-        .where-to,
-        .nearby-stop-name
-    ):active {
-    scale: 0.985;
-}
-@media (prefers-reduced-motion: reduce) {
-    .travel-page
-        :is(button, a[href], summary, [role='switch'], [role='radio']):active {
-        scale: none;
-    }
 }
 .travel-page .results-heading .icon-button {
     min-width: var(--touch-target);
@@ -4125,18 +4082,23 @@
 :where(.travel-page) .plan-panel-head {
     display: none;
 }
+/* From folds away at rest and back with the rest: Slide's timing. */
 .travel-page .journey-fields > .from-field {
     max-height: 120px;
     overflow: hidden;
     transition:
-        max-height 380ms var(--ease),
-        opacity 260ms ease,
-        padding 380ms var(--ease);
+        max-height 180ms ease-out,
+        opacity 250ms ease-out,
+        padding 180ms ease-out;
 }
 .travel-page[data-plan-stage='rest'] .journey-fields > .from-field {
     max-height: 0px;
     padding-block: 0px;
     opacity: 0;
+    transition:
+        max-height 200ms cubic-bezier(0.4, 0, 1, 1),
+        opacity 120ms ease-in,
+        padding 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 .travel-page[data-plan-stage='rest'] .journey-fields > .from-field::after {
     display: none;
@@ -4287,19 +4249,12 @@
         border: 1px solid var(--color-border);
         border-radius: 14px;
         background: var(--color-bg-surface);
-        transition:
-            background-color 160ms,
-            transform 140ms;
+        transition: background-color 160ms;
     }
 }
 @media (min-width: 1000px) {
     .travel-page .plan-grow:hover {
         background: var(--color-bg-quiet);
-    }
-}
-@media (min-width: 1000px) {
-    .travel-page .plan-grow:active {
-        transform: scale(0.96);
     }
 }
 @media (min-width: 1000px) {
@@ -4510,11 +4465,6 @@
     }
 }
 @media (min-width: 1000px) {
-    .travel-page[data-plan-stage='picked'] .plan-controls:not(.is-open) {
-        display: none;
-    }
-}
-@media (min-width: 1000px) {
     .travel-page #results .results-top {
         justify-content: flex-end;
     }
@@ -4529,10 +4479,11 @@
         white-space: nowrap;
     }
 }
+/* Slide's words: they fade in and drop 10px into place. */
 @keyframes nav-step-in {
     0% {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(-10px);
     }
 }
 
