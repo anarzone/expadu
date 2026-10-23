@@ -165,7 +165,7 @@ final class AssistantTools
                     'until' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
-                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Narrowing ("I prefer coffee shops", "cheaper", "closer") is not turning down.'],
+                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                 ], 'required' => ['day']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
@@ -179,7 +179,7 @@ final class AssistantTools
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
-                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Narrowing ("I prefer coffee shops", "cheaper", "closer") is not turning down.'],
+                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
             PlanDay::definition(),
@@ -515,6 +515,7 @@ final class AssistantTools
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
         $deep = $mustBeOpen || $features !== [];
+        $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $matches = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
@@ -567,7 +568,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             // Where its card measures from: the area's middle, or where the person is or starts.
@@ -577,7 +578,8 @@ final class AssistantTools
                 default => $this->origin(),
             }, 'lat' => $lat, 'lng' => $lng];
 
-            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now)).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+            // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
+            return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree).(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
     }
 
@@ -618,7 +620,13 @@ final class AssistantTools
     /** A place's name as said: an import's "Headquarter[s]" is "Headquarters". */
     public static function name(Candidate $c): string
     {
-        return trim((string) preg_replace('/\[(\w{1,3})\]/u', '$1', $c->name));
+        return self::clean($c->name);
+    }
+
+    /** A name without an import's bracket artefacts ("Headquarter[s]"). */
+    public static function clean(string $name): string
+    {
+        return trim((string) preg_replace('/\[(\w{1,3})\]/u', '$1', $name));
     }
 
     /** A kind as said: "supermarkets", "Café". */
@@ -757,7 +765,7 @@ final class AssistantTools
     }
 
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
-    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true): string
+    public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false): string
     {
         $kind = SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category));
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
@@ -774,7 +782,7 @@ final class AssistantTools
             .($lists !== [] ? ' Lists: '.implode(', ', $lists).'.' : '')
             .$hours
             .($c->costTier === 'free' ? ' Free.' : '')
-            .($c->stepFree() ? ' Step-free access listed.' : '')
+            .($stepFree && $c->stepFree() ? ' Step-free access listed.' : '')
             .($c->vibeTags !== [] ? ' Listed as '.implode(', ', array_slice($c->vibeTags, 0, 3)).'.' : '');
     }
 

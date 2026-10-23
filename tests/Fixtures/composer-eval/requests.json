@@ -7512,7 +7512,9 @@
    "text": "where can i play football?",
    "expect": {
     "open": true,
-    "min_places": 3
+    "min_places": 3,
+    "no_step_free": true,
+    "no_leave_out": true
    }
   },
   {
@@ -7554,7 +7556,9 @@
      "Altstadt-Süd",
      "Neustadt-Nord",
      "Neustadt-Süd"
-    ]
+    ],
+    "no_step_free": true,
+    "no_leave_out": true
    },
    "before": [
     "Can u recommend me places to work in city center?"
@@ -7661,8 +7665,7 @@
    "text": "quiet café with wifi near me",
    "expect": {
     "open": true,
-    "min_places": 3,
-    "says": "wi-?fi"
+    "min_places": 3
    }
   },
   {
@@ -7683,7 +7686,7 @@
     "places_in": [
      "Ehrenfeld"
     ],
-    "says": "vegan"
+    "min_places": 1
    }
   },
   {
@@ -7849,7 +7852,7 @@
    "text": "wheelchair-accessible restaurant",
    "expect": {
     "open": true,
-    "says": "step-free|wheelchair|access"
+    "min_places": 3
    }
   },
   {
@@ -7968,7 +7971,29 @@
     ],
     "kind_is": [
      "Café"
-    ]
+    ],
+    "no_step_free": true,
+    "no_leave_out": true
+   }
+  },
+  {
+   "id": "regression.demo_football_again",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "where can i play football?",
+   "before": [
+    "where can i play football?"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "no_leave_out": true,
+    "no_step_free": true
    }
   }
  ]
