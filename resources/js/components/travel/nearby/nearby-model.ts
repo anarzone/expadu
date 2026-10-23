@@ -5,7 +5,7 @@ import type { Station, StationArea, StationDir, StationLine } from './types';
 /**
  * What Nearby shows under the person's filters (departures-next/nearby.js
  * `view`): each boarding area with its lines, a line's two soonest runs on
- * its strip, the areas soonest first. Minutes come from the device clock and
+ * its strip, in a steady order. Minutes come from the device clock and
  * the run's own time, so a board a minute old still counts down correctly.
  */
 
@@ -31,7 +31,10 @@ export type ShownDir = StationDir & {
     mins: number;
     clock: string;
     delayMin: number;
+    /** The later runs that leave (a cancelled one isn't a "then"). */
     laterClocks: string[];
+    /** Its runs the feed says are cancelled, by their timetabled clock. */
+    cancelledClocks: string[];
     live: boolean;
 };
 
@@ -80,7 +83,12 @@ function shownDir(dir: StationDir, now: number): ShownDir | null {
         mins: minutesUntil(dir.next.at, now),
         clock: dir.next.time,
         delayMin: Math.max(0, dir.next.delay),
-        laterClocks: dir.later.map((run) => run.time),
+        laterClocks: dir.later
+            .filter((run) => !run.cancelled)
+            .map((run) => run.time),
+        cancelledClocks: [dir.next, ...dir.later]
+            .filter((run) => run.cancelled)
+            .map((run) => run.time),
         live: dir.next.time_basis === 'realtime',
     };
 }
@@ -88,7 +96,16 @@ function shownDir(dir: StationDir, now: number): ShownDir | null {
 export function nearbyView(
     station: Station,
     filters: NearbyFilters,
-    { pinned = [], now = Date.now() }: { pinned?: string[]; now?: number } = {},
+    {
+        pinned = [],
+        now = Date.now(),
+        cancelled = false,
+    }: {
+        pinned?: string[];
+        now?: number;
+        /** Keep a way whose every run is cancelled (Nearby says so). */
+        cancelled?: boolean;
+    } = {},
 ): NearbyView {
     const f = filters;
     const firstVia = (d: StationDir) => d.via[0] ?? '';
@@ -99,9 +116,6 @@ export function nearbyView(
         d.mins <= f.win &&
         (!f.delayed || d.delayMin > 0) &&
         (!f.via.length || f.via.includes(firstVia(d)));
-    // By the departure's own time: a paused board's past times stay in order.
-    const leaves = (d: ShownDir) => Date.parse(d.next?.at ?? '') || 0;
-    const soonest = (dirs: ShownDir[]) => Math.min(...dirs.map(leaves));
     const total = station.lines.reduce(
         (n, l) => n + l.dirs.filter((d) => d.next).length,
         0,
@@ -117,26 +131,35 @@ export function nearbyView(
                     shown: l.dirs
                         .map((d) => shownDir(d, now))
                         .filter(
-                            (d): d is ShownDir => d !== null && !d.cancelled,
+                            (d): d is ShownDir =>
+                                d !== null && (cancelled || !d.cancelled),
                         )
                         .filter(dirOk)
-                        .sort((a, b) => leaves(a) - leaves(b)),
+                        // Each way keeps its side (as the mock: the station's
+                        // order), never swapping with whichever leaves sooner.
+                        .sort(
+                            (a, b) =>
+                                (a.direction ?? 9) - (b.direction ?? 9) ||
+                                a.dest.localeCompare(b.dest),
+                        ),
                     pinned: pinned.includes(l.line),
                 }))
                 .filter((l) => l.shown.length)
+                // A steady order, pinned first, never reshuffled by which
+                // leaves sooner on a refresh (owner, 22 Oct).
                 .sort(
                     (a, b) =>
                         Number(b.pinned) - Number(a.pinned) ||
-                        soonest(a.shown) - soonest(b.shown),
+                        byLine(a.line, b.line),
                 );
 
             return { ...area, cards };
         })
         .filter((area) => area.cards.length)
+        // Steady too: trams before buses, the busier area first, then the
+        // station's own order.
         .sort(
             (a, b) =>
-                soonest(a.cards.flatMap((c) => c.shown)) -
-                    soonest(b.cards.flatMap((c) => c.shown)) ||
                 Number(a.mode === 'bus') - Number(b.mode === 'bus') ||
                 b.lines.length - a.lines.length,
         );

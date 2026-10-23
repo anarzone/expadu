@@ -15,7 +15,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Ramsey\Uuid\Uuid;
 
 final class ProcessingConsentStore
 {
@@ -81,26 +80,6 @@ final class ProcessingConsentStore
 
             return new ProcessingPermit($row->id, $actor->getKey());
         });
-    }
-
-    /**
-     * A second purpose under the person's one say-so for a request: Composer reads it
-     * (composer_parse), then its assistant answers it (composer_assist). The same actor,
-     * notice and window, its own row and its own daily quota; only that pair.
-     *
-     * @param  array<string, mixed>  $context
-     */
-    public function derive(ProcessingPermit $from, ProcessingPurpose $purpose, array $context): ?ProcessingPermit
-    {
-        $source = BureaucracyProcessingConsent::query()->whereKey($from->id)->where('actor_id', $from->actorId)->first();
-        $actor = User::query()->find($from->actorId);
-        if ($source === null || $actor === null || $source->purpose !== ProcessingPurpose::ComposerParse->value
-            || $purpose !== ProcessingPurpose::ComposerAssist || $source->withdrawn_at !== null || $source->expires_at->lessThanOrEqualTo(now())) {
-            return null;
-        }
-
-        return $this->grant($actor, $purpose, $context, ['consent' => true, 'request_id' => Uuid::uuid5($source->request_key, $purpose->value)->toString(),
-            'notice_version' => $source->notice_version, 'provider_version' => $purpose->providerVersion()]);
     }
 
     public function referenceTime(ProcessingPermit $permit): ?CarbonImmutable

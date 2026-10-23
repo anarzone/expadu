@@ -59,7 +59,7 @@ class PlaceDisplayName
         ?float $lat = null,
         ?float $lng = null,
     ): string {
-        $name = trim((string) $name);
+        $name = self::clean((string) $name);
         // City-style names lead with the German kind ("Spielplatz Leyendeckerstraße"):
         // say the kind in English and keep where it is.
         $label = implode('|', array_map(fn (string $l): string => preg_quote($l, '/'), self::GENERIC_LABELS));
@@ -85,6 +85,12 @@ class PlaceDisplayName
             trim((string) $veedel) !== '' => "{$kind} in ".trim((string) $veedel),
             default => $kind,
         };
+    }
+
+    /** Import bracket artefacts read as text: "Headquarter[s]" → "Headquarters" (AI session, c7d5e304). */
+    public static function clean(string $name): string
+    {
+        return trim((string) preg_replace('/\[(\w{1,3})\]/u', '$1', $name));
     }
 
     /** "Venloer Straße 12, 50823 Köln" → "Venloer Straße"; a postcode alone is no street. */

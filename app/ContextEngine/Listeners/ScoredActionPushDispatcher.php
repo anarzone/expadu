@@ -61,10 +61,9 @@ class ScoredActionPushDispatcher
             'score' => $action->score,
         ];
 
-        // Pushes reserved in the PushLedger (the residency milestone) or in
-        // PlanReminderDelivery (paperwork reminders) are deduped there, so they
-        // skip this check.
-        $dedupe = ! isset($action->payload['push_reservation']) && $action->type !== 'bureaucracy_task';
+        // Paperwork reminders are deduped by PlanReminderDelivery, so they skip
+        // this check.
+        $dedupe = $action->type !== 'bureaucracy_task';
         if ($dedupe && $this->alreadyPushed($action)) {
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + ['mode' => 'deduped']);
 

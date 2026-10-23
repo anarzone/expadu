@@ -206,7 +206,6 @@
 }
 :where(.travel-page) .journey-fields {
     position: relative;
-    padding-right: 44px;
     border-radius: var(--radius-lg);
     background: var(--paper);
 }
@@ -309,12 +308,6 @@
 }
 :where(.travel-page) .field:focus-within input:focus-visible {
     outline: none;
-}
-:where(.travel-page) .swap {
-    position: absolute;
-    right: 0px;
-    top: calc(50% - 22px);
-    background: var(--paper);
 }
 :where(.travel-page) .find-routes {
     width: 100%;
@@ -1796,7 +1789,6 @@
 }
 .travel-page
     :is(
-        .swap,
         :where(.travel-page) .leg-piece:not(.transit, .bike),
         .detail-footer .save-route,
         .paperwork-select select,
@@ -1849,9 +1841,6 @@
 .travel-page .journey-desk {
     box-shadow: none;
 }
-.travel-page .journey-fields > .swap {
-    background-color: transparent;
-}
 .travel-page .journey-fields {
     background-color: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line);
@@ -1867,10 +1856,6 @@
 }
 .travel-page .from-field::after {
     background: var(--line);
-}
-.travel-page .journey-fields > .swap:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: -6px;
 }
 .travel-page .segmented [aria-pressed='true'] {
     background-color: var(--blue);
@@ -1932,9 +1917,6 @@
     font-size: var(--text-title-sm);
     letter-spacing: -0.45px;
     margin-bottom: 18px;
-}
-.travel-page .journey-fields {
-    padding-right: 44px;
 }
 .travel-page .field {
     padding-block: 12px;
@@ -2076,7 +2058,7 @@
     width: 14px;
     transition: rotate 220ms var(--ease);
 }
-.travel-page .details-toggle[aria-expanded='true'] svg {
+.travel-page .plan-option-pick[aria-expanded='true'] .details-toggle svg {
     rotate: 180deg;
 }
 .travel-page .route-disclosure {
@@ -2173,11 +2155,11 @@
     }
 }
 @media (hover: hover) {
-    .travel-page .details-toggle:hover {
+    .travel-page .plan-option-pick:hover .details-toggle {
         color: var(--ink);
     }
 }
-.travel-page .details-toggle:active {
+.travel-page .plan-option-pick:active .details-toggle {
     opacity: 0.65;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2240,10 +2222,19 @@
     text-align: left;
     line-height: var(--leading-snug);
 }
-:where(.travel-page) .nearby-stop-name {
-    display: flex;
+:where(.travel-page) .nearby .nearby-stop-name {
+    display: inline-flex;
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 100%;
     align-items: center;
     gap: var(--space-6);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: inherit;
+    text-align: left;
     font-size: var(--text-title-sm);
     font-weight: var(--weight-bold);
     letter-spacing: -0.3px;
@@ -2253,7 +2244,7 @@
     height: 16px;
     transition: transform var(--duration-fast) var(--ease-standard);
 }
-:where(.travel-page) .nearby-stop[aria-expanded='true'] .nearby-stop-name svg {
+:where(.travel-page) .nearby-stop-name[aria-expanded='true'] svg {
     transform: rotate(180deg);
 }
 :where(.travel-page) .nearby-stops [role='listbox'] {
@@ -2494,6 +2485,23 @@
 :where(.travel-page) .nearby-line {
     grid-column: 1 / -1;
 }
+/* A line's place in the cards: one cell, so its strip still stretches to
+   the row; opened, the whole row (nearby-view.tsx LineSlot animates it). */
+:where(.travel-page) .nearby-line-slot {
+    position: relative;
+    display: grid;
+    min-width: 0;
+}
+/* The strip over its detail while the line unfolds or folds back. */
+:where(.travel-page) .nearby-line-ghost {
+    position: absolute;
+    inset: 0 0 auto;
+    background: var(--color-bg-surface);
+    pointer-events: none;
+}
+:where(.travel-page) .nearby-line-slot.is-open {
+    grid-column: 1 / -1;
+}
 :where(.travel-page) .nearby-line.is-inline {
     border: 1.5px solid var(--color-text);
     border-radius: 22px;
@@ -2547,6 +2555,28 @@
 :where(.travel-page) .nearby-line.is-inline .nearby-detail-dir {
     padding-inline: var(--space-14);
 }
+/* Delays and disruptions, two tiers (delays canvas, 22 Oct 2026): everyday
+   lateness and cancellations stay small in the row; a major problem on this
+   stop's lines is the one headline above the board. */
+:where(.travel-page) .nearby-late {
+    background: var(--color-attention-bg);
+    font-weight: var(--weight-semibold);
+}
+:where(.travel-page) .nearby-late.is-strong {
+    background: var(--color-attention);
+    font-weight: var(--weight-bold);
+}
+/* The board's one headline (tl-headline, travel.css) and, when there are
+   more, "and N more" under it. */
+:where(.travel-page) .nearby-major {
+    display: grid;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
+}
+:where(.travel-page) .nearby-cards > .tl-reason,
+:where(.travel-page) .nearby-list > .tl-reason {
+    padding: 0 0 10px;
+}
 :where(.travel-page) .nearby-detail-dir > span:first-child {
     flex: 1 1 0%;
     min-width: 0px;
@@ -2574,6 +2604,17 @@
 }
 :where(.travel-page) .nearby-line.is-inline .nearby-front {
     margin: 0 var(--space-12);
+}
+/* Who gave the board what it carries (DELFI's licence asks to be named). */
+:where(.travel-page) .nearby-credit {
+    margin: var(--space-12) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) .nearby-credit a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 :where(.travel-page) .nearby-later {
     margin: 0 var(--space-12);
@@ -2641,7 +2682,7 @@
     }
 }
 @media (min-width: 1000px) {
-    :where(.travel-page) .nearby-stop-name {
+    :where(.travel-page) .nearby .nearby-stop-name {
         font-size: var(--text-title-lg);
         letter-spacing: -0.6px;
     }
@@ -3260,12 +3301,6 @@
         transition: none;
     }
 }
-.travel-page .journey-fields > .swap {
-    display: none;
-}
-.travel-page .journey-fields {
-    padding-right: 0px;
-}
 :where(.travel-page) .from-note {
     color: var(--color-text-soft);
     font-weight: var(--weight-regular);
@@ -3335,11 +3370,12 @@
     background: var(--color-bg-surface);
     box-shadow: inset 0 0 0 0.5px var(--color-text);
 }
+/* Each option opens in place: its whole top is the button, "Journey
+   details" under it says so (owner, 22 Oct 2026, "Trip options" canvas). */
 :where(.travel-page) .plan-option-pick {
     display: grid;
-    grid-template-columns: 22px minmax(0px, 1fr);
+    grid-template-columns: minmax(0px, 1fr);
     align-items: start;
-    gap: var(--space-12);
     width: 100%;
     padding: var(--space-14) var(--space-14) var(--space-4);
     border: 0px;
@@ -3365,18 +3401,6 @@
 :where(.travel-page) .plan-option-pick:focus-visible {
     outline: 2px solid var(--color-focus, var(--color-text));
     outline-offset: 2px;
-}
-:where(.travel-page) .plan-radio {
-    width: 22px;
-    height: 22px;
-    margin-top: 2px;
-    border: 2px solid var(--color-border-strong);
-    border-radius: var(--radius-round);
-    background: var(--color-bg-surface);
-    transition: border-width var(--duration-fast) var(--ease-standard);
-}
-:where(.travel-page) .is-on .plan-radio {
-    border: 6px solid var(--color-text);
 }
 :where(.travel-page) .plan-option-body {
     display: flex;
@@ -3421,25 +3445,8 @@
 :where(.travel-page) .plan-option-reasons .is-warn {
     color: var(--color-attention-text);
 }
-.travel-page .plan-option > .details-toggle {
-    margin-left: 48px;
-    padding-block: 0px;
-    border: 0px;
-    background: none;
-    font-style: inherit;
-    font-variant: inherit;
-    font-weight: inherit;
-    font-stretch: inherit;
-    line-height: inherit;
-    font-family: inherit;
-    font-optical-sizing: inherit;
-    font-size-adjust: inherit;
-    font-kerning: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    font-language-override: inherit;
-    font-size: var(--text-small);
-    cursor: pointer;
+.travel-page .plan-option-pick .details-toggle {
+    font-size: var(--text-control);
 }
 :where(.travel-page) .plan-option .route-disclosure-inner {
     padding: 0 var(--space-14);
@@ -3642,8 +3649,7 @@
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    :where(.travel-page) .plan-option,
-    :where(.travel-page) .plan-radio {
+    :where(.travel-page) .plan-option {
         transition: none;
     }
 }
@@ -3662,17 +3668,19 @@
     width: 14px;
     height: 14px;
 }
-:where(.travel-page) .plan-actions {
+/* An option's own buttons, at the foot of its open details: the way first,
+   saving it second (owner, 10 Oct 2026). One bar pinned under the list
+   served the picked option until 22 Oct 2026 ("Trip options" canvas). */
+:where(.travel-page) .plan-option-actions {
     display: flex;
-    flex-direction: column;
     gap: var(--space-8);
-    margin-top: var(--space-14);
+    padding-bottom: var(--space-14);
 }
-:where(.travel-page) .plan-actions .plan-save {
+.travel-page .plan-option-actions button.plan-save {
+    flex: 1 1 0px;
+    min-width: 0px;
+    min-height: 50px;
     margin-top: 0px;
-}
-.travel-page .plan-actions button.plan-save {
-    min-height: 48px;
     border: 1.5px solid var(--color-text);
     border-radius: var(--radius-lg);
     background: var(--color-bg-surface);
@@ -3694,33 +3702,41 @@
     width: 18px;
     height: 18px;
 }
-:where(.travel-page) .plan-actions {
-    position: sticky;
-    bottom: max(
-        calc(12px + env(safe-area-inset-bottom, 0px)),
-        calc(var(--section-bar, 0px) - 2px)
-    );
-    z-index: 40;
-    flex-direction: row;
-    padding: 8px;
-    border: 1px solid
-        color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
-    border-radius: 22px;
-    background: var(--color-bg-surface, #fffdf8);
-    box-shadow: rgba(33, 29, 21, 0.42) 0px 14px 34px -16px;
+/* A cancelled run stays where it was among the options, struck through;
+   the next one moved up (the delays canvas, 22 Oct 2026). */
+:where(.travel-page) .plan-gone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
 }
-:where(.travel-page) .plan-actions .plan-go {
+:where(.travel-page) .plan-gone .tl-line {
+    opacity: 0.6;
+}
+:where(.travel-page) .plan-gone > span:last-child {
+    margin-left: auto;
+}
+/* A major one in What we checked: the conflict colours, light, as the
+   headline it goes with (a filled pill is for nothing now). */
+:where(.travel-page) .plan-checks .tl-chip.is-conflict {
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    box-shadow: inset 0 0 0 1px var(--color-conflict-border);
+}
+:where(.travel-page) #results > .tl-headline {
+    margin-bottom: var(--space-12);
+}
+:where(.travel-page) .plan-option-actions .plan-go {
     flex: 1.5 1 0px;
+    min-width: 0px;
     min-height: 50px;
-}
-.travel-page .plan-actions button.plan-save {
-    flex: 1 1 0px;
-    min-height: 50px;
-}
-@media (max-width: 700px) {
-    :where(.travel-page) .plan-actions {
-        margin-inline: -2px;
-    }
 }
 :where(.travel-page) .plan-option-reasons {
     gap: 4px;
@@ -4142,7 +4158,7 @@
         .plan-checks-toggle,
         .day-places button,
         .where-to,
-        .nearby-stop
+        .nearby-stop-name
     ):active {
     scale: 0.985;
 }
@@ -4268,16 +4284,6 @@
 .travel-page[data-plan-stage='rest'] .journey-fields > .from-field::after {
     display: none;
 }
-.travel-page .journey-fields > .swap {
-    transition:
-        opacity 260ms ease,
-        transform 320ms var(--ease);
-}
-.travel-page[data-plan-stage='rest'] .journey-fields > .swap {
-    opacity: 0;
-    transform: scale(0.6);
-    pointer-events: none;
-}
 .travel-page[data-plan-stage='rest'] .to-field > label {
     position: absolute;
     width: 1px;
@@ -4358,7 +4364,10 @@
     .travel-page #journey-view {
         grid-area: 1 / 1 / span 6;
         position: sticky;
-        top: 96px;
+        /* Where it sits anyway (the 72px header and the page's 16px), level
+           with Nearby: at 96 it stuck 8px lower whenever Nearby grew taller
+           (a line opened), so the column jumped. */
+        top: 88px;
         max-height: calc(-120px + 100vh);
         box-sizing: border-box;
         overflow-y: auto;
@@ -4493,8 +4502,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
     .travel-page,
-    .travel-page .journey-fields > .from-field,
-    .travel-page .journey-fields > .swap {
+    .travel-page .journey-fields > .from-field {
         transition: none;
     }
 }

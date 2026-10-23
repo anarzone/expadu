@@ -7,7 +7,6 @@ use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Enums\Situation;
 use App\Models\User;
-use App\Profile\Interest;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -104,7 +103,6 @@ class SeedPersonasCommand extends Command
             'city' => 'Köln',
             'german_level' => null,
             'has_deutschlandticket' => false,
-            'interests' => $this->defaultInterests(),
             'onboarded_at' => now(),
         ])->save();
 
@@ -139,7 +137,6 @@ class SeedPersonasCommand extends Command
             'is_eu' => true,
             'veedel' => 'Altstadt-Nord',
             'city' => 'Köln',
-            'interests' => $this->defaultInterests(),
             'onboarded_at' => now(),
             'is_admin' => true,
         ])->save();
@@ -148,9 +145,8 @@ class SeedPersonasCommand extends Command
     }
 
     /**
-     * Create the required Home + Work places if they don't exist yet —
-     * mirrors OnboardingController::complete() so a seeded account looks
-     * exactly like one that just finished onboarding for real.
+     * Create Home + Work places if they don't exist yet, as the old
+     * onboarding did for a seeded persona.
      */
     private function ensurePlaces(User $user): void
     {
@@ -162,21 +158,6 @@ class SeedPersonasCommand extends Command
         $user->places()->firstOrCreate(
             ['category' => 'work'],
             ['emoji' => '💼', 'name' => 'Work', 'sort_order' => 1],
-        );
-    }
-
-    /**
-     * The first Interest::MIN_SELECT values — a valid default selection so
-     * seeded accounts satisfy onboarding's interest-count expectations.
-     *
-     * @return list<string>
-     */
-    private function defaultInterests(): array
-    {
-        return array_slice(
-            array_map(fn (Interest $interest) => $interest->value, Interest::cases()),
-            0,
-            Interest::MIN_SELECT,
         );
     }
 

@@ -7,10 +7,10 @@ type PageModule = {
     };
 };
 
-// Pages outside the app shell: sign-in and the onboarding wizard.
+// Pages outside the app shell: sign-in.
 // resources/views/app.blade.php holds the same list, so it links the shell's
 // chunk and CSS only for pages inside it.
-const WITHOUT_SHELL = /^(auth\/|onboarding$)/;
+const WITHOUT_SHELL = /^auth\//;
 
 /**
  * Resolves an Inertia page and gives every app page the persistent shell

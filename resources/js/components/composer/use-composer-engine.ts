@@ -1,8 +1,6 @@
+import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import {
-    compose,
-    parse,
-} from '@/actions/App/Http/Controllers/ComposerController';
+import { ask } from '@/actions/App/Http/Controllers/ComposerController';
 import {
     show,
     update,
@@ -10,16 +8,27 @@ import {
 import { aiPermit } from './ai-notice';
 import type { AiNotice } from './ai-notice';
 import type { PlanOrigin } from './origin-picker';
+import { watchProgress } from './progress';
 import { api, ApiError } from './types';
 import type { Command, Slot, Workspace } from './types';
 
 /*
  * Composer's conversation engine, shared by its full page and the answer under
  * the tray's box (direction B, owner 22 Oct 2026): the workspace, sending a
- * request (the message, its reading, then the answer, reply or plan) and each
- * change to a plan. One copy, so both surfaces behave the same. What a surface
- * does around it (scrolling, its box, its panels) comes in as `on`.
+ * request (the message, then Composer's one answer to it) and each change to a
+ * plan. One copy, so both surfaces behave the same. What a surface does around
+ * it (scrolling, its box, its panels) comes in as `on`.
  */
+
+/** The pages Composer can be opened on, by the name the assistant is told. */
+const PAGES: Record<string, string> = {
+    dashboard: 'Today',
+    timetable: 'Travel',
+    events: 'Events',
+    'around-here': 'Places',
+    paperwork: 'Paperwork',
+    composer: 'Composer',
+};
 
 export type EngineSwap = { slot: Slot; date: string; revision: number };
 
@@ -57,6 +66,7 @@ export function useComposerEngine(
     aiNotice: AiNotice | null,
     hooks: EngineHooks = {},
 ) {
+    const page = PAGES[usePage().component] ?? null;
     const [workspace, setWorkspace] = useState(initial);
     const stateRef = useRef(initial);
     const [busy, setBusy] = useState('');
@@ -223,74 +233,42 @@ export function useComposerEngine(
                     );
                 }
             } else {
-                type Parsed = {
-                    intent: string;
-                    constraints: Record<string, unknown> | null;
-                    kind: string;
-                    answer: boolean;
-                    /** Why it was read without the AI, when it was. */
-                    reader?: string | null;
-                };
-                // Read with the AI service under the line's say-so; if that's refused (an
-                // outdated notice, the service off), the request is read without it.
-                const parsed = await api<Parsed>(parse.url(), {
-                    text,
-                    ...aiPermit(notice),
-                }).catch((error: unknown) =>
-                    notice
-                        ? api<Parsed>(parse.url(), { text })
-                        : Promise.reject(error),
-                );
-                // Read without the AI: the reply says why (nothing fake, 22 Oct 2026).
-                const reader = parsed.reader ? { reader: parsed.reader } : {};
-
+                // Composer's assistant answers it: the server reads the message from the
+                // conversation, looks things up from where you start and answers; a plan it
+                // shows goes into your plans. If the say-so is refused (an outdated notice),
+                // it's answered without the AI, and the answer says so.
+                setBusy('Looking into it…');
                 const origin = on.current.origin ?? null;
-
-                if (parsed.answer) {
-                    // Composer answers it from your day and records (the server works
-                    // out what you asked from your own words).
-                    await sendCommand({ action: 'answer', ...reader });
-                } else if (parsed.intent === 'plan_day' && parsed.constraints) {
-                    setBusy('Putting your day together…');
-                    const result = await api<{
-                        handoff_token: string;
-                        plan: { slots: Slot[] };
-                    }>(compose.url(), {
-                        constraints: parsed.constraints,
-                        pins: on.current.pins ?? [],
-                        ...(origin
-                            ? {
-                                  lat: origin.lat,
-                                  lng: origin.lng,
-                                  from_place: origin.from_place,
-                                  from_area: origin.from_area,
-                                  from_label: origin.label.slice(0, 80),
-                              }
-                            : {}),
-                    });
-
-                    if (result.plan.slots.length === 0) {
-                        throw new Error(
-                            'No suitable activities were found for that time. Try another date or browse places.',
-                        );
-                    }
-
-                    await sendCommand({
-                        action: 'proposal',
-                        ...reader,
-                        token: result.handoff_token,
-                    });
-                } else {
-                    const kind =
-                        parsed.intent === 'bureaucracy_q'
-                            ? 'bureaucracy'
-                            : parsed.intent === 'take_me_there'
-                              ? 'journey'
-                              : parsed.intent === 'find'
-                                ? 'find'
-                                : 'unknown';
-                    await sendCommand({ action: 'reply', kind, ...reader });
-                }
+                const where = {
+                    ...(page ? { page } : {}),
+                    ...(origin
+                        ? {
+                              lat: origin.lat,
+                              lng: origin.lng,
+                              from_place: origin.from_place,
+                              from_area: origin.from_area,
+                              from_label: origin.label.slice(0, 80),
+                          }
+                        : {}),
+                };
+                // The say-so for this request; while the assistant works, the line says how far.
+                const permit = aiPermit(notice) as {
+                    processing?: { request_id: string };
+                };
+                const stop = permit.processing
+                    ? watchProgress(permit.processing.request_id, setBusy)
+                    : () => undefined;
+                const answered = await api<Workspace>(ask.url(), {
+                    ...where,
+                    ...permit,
+                })
+                    .catch((error: unknown) =>
+                        notice
+                            ? api<Workspace>(ask.url(), where)
+                            : Promise.reject(error),
+                    )
+                    .finally(stop);
+                setState(answered);
             }
 
             on.current.onAnswered?.();
