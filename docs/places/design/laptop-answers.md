@@ -1,6 +1,7 @@
 # "Good for laptop work?" — data design
 
 Status: design only, 23 Oct 2026. The owner liked the idea; nothing is built until he says "build it".
+Owner decisions (23 Oct): **3 answers by 3 people**; the question appears **only after Been there or Saved**.
 UI: the Designer's canvas. This doc covers storage, aggregation, abuse limits, privacy and how
 Composer and search use it.
 
@@ -42,8 +43,8 @@ Per question, over answers in the last **12 months**, weighted by age: weight 1 
 6 months old, 0.5 from 6 to 12 months, ignored after 12 months (cafés change owners, Wi-Fi and
 rules).
 
-- **Minimum to show anything: 3 answers** (weighted count ≥ 3) from **3 different people**.
-  Below that the fact stays unknown — "Not listed yet".
+- **Minimum to show anything (owner, 23 Oct): 3 answers from 3 different people**, counted after
+  the age weighting below (weighted count ≥ 3). Below that the fact stays unknown — "Not listed yet".
 - **Shown fact** (yes share = weighted yes / weighted total):
   - ≥ 70% yes → `yes` ("Good for laptop work").
   - ≤ 30% yes → `no` ("Not good for laptop work").
@@ -58,8 +59,8 @@ rules).
 ## 3. Abuse limits
 
 - Signed-in, verified accounts only.
-- The question appears only on places the person marked **Been there** or **Saved**, or
-  opened from their own plan. This is the cheapest strong signal they've been there.
+- The question appears **only on places the person marked Been there or Saved** (owner, 23 Oct).
+  Opening a place from their own plan doesn't count unless they also saved it.
 - Rate limits: 20 answers per person per day, 3 changes per place per day (route throttle, as
   the app's other write limits).
 - Accounts younger than 24 h: answers stored but not counted until the account is a day old.
@@ -102,8 +103,7 @@ rules).
 
 ## Open questions for the owner
 
-1. Minimum answers: 3 (proposed). 5 is safer against a few friends gaming a café, but fills more slowly.
-2. Ask only after Been there or Saved, or on any café sheet? Asking only after them gives fewer but
-   more trustworthy answers.
-3. Follow-ups (Wi-Fi, sockets, quiet): ask all three after a "yes", or only Wi-Fi?
-4. Legal basis wording for the Datenschutz line (above).
+Decided 23 Oct: minimum 3 answers by 3 people; ask only after Been there or Saved.
+
+1. Follow-ups (Wi-Fi, sockets, quiet): ask all three after a "yes", or only Wi-Fi?
+2. Legal basis wording for the Datenschutz line (above).
