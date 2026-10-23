@@ -215,7 +215,9 @@ final class OpenNearby
             'lng' => (float) ($point['lng'] ?? $spot->lng),
             'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3) : null,
             // A park or a wood is measured to its middle: "about".
-            'area' => ($point['kind'] ?? null) === 'area',
+            // A park, a lake or a wood drawn as an area: its point is its
+            // middle, so its distance is "about".
+            'area' => ($point['kind'] ?? null) === 'source_center' && AroundKinds::of($spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category) === 'green',
             'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
             'street' => self::street($address),
             'photo' => $photo === null ? null : [
@@ -232,6 +234,8 @@ final class OpenNearby
                 'vegan' => $practical('diet:vegan'),
             ]),
             'internet_access' => $practical('internet_access'),
+            // A sports centre's sports as listed ("fencing;tai_chi;qi_gong").
+            'sport' => $practical('sport'),
         ];
     }
 

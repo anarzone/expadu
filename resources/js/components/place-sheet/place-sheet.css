@@ -386,11 +386,31 @@
     height: 20px;
 }
 
+.place-contents li > span:nth-child(2) {
+    display: grid;
+}
+
+.place-contents small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
 .place-contents em {
     color: var(--color-text-soft);
     font-size: var(--text-small);
     font-style: normal;
     font-weight: var(--weight-semibold);
+}
+
+.place-sheet-wait {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
+.place-sheet-actions button:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
 
 .place-missing {

@@ -32,7 +32,10 @@ type Props = {
     open: boolean;
     at: { date: string; time: string };
     kinds: AroundKind[];
+    /** The first twelve, or all once Show more asked for them. */
     places: AroundPlace[];
+    /** The real counts: within 2 km, and all listed (with a few further away). */
+    counts: { close: number; all: number };
 };
 
 const CLOSE_KM = 2;
@@ -58,6 +61,7 @@ export default function AroundHere({
     at,
     kinds,
     places: listed,
+    counts,
 }: Props) {
     const picked = kind ? kind.split(',') : [];
     // The place the link opens (?place=) starts picked in the list too.
@@ -90,18 +94,34 @@ export default function AroundHere({
     const close = places.filter((p) => (p.km ?? Infinity) <= CLOSE_KM);
     const further = places.filter((p) => (p.km ?? Infinity) > CLOSE_KM);
     // The list's order is the pins' numbers.
-    const numbered = [...close, ...further];
+    const shownPlaces = [...close, ...further];
+    const hiddenCount = Math.max(0, counts.all - listed.length);
     const noun = (one: boolean) =>
         picked.length === 1 ? countNoun(picked[0], kinds, one) : 'places';
-    const count = places.length
-        ? `${close.length || 'No'} ${noun(close.length === 1)} within 2 km · nearest first${open ? `, listed as open at ${at.time}` : ''}`
-        : `No ${noun(false)}${open ? ` listed as open at ${at.time}` : ''} near ${point?.name ?? 'here'}.`;
+    // The real count; a phone says it short ("11 within 2 km") so it fits
+    // beside "Open at".
+    const count = places.length ? (
+        <>
+            <span className="around-count-long">
+                {`${counts.close || 'No'} ${noun(counts.close === 1)} within 2 km · nearest first${open ? `, listed as open at ${at.time}` : ''}`}
+            </span>
+            <span className="around-count-short">
+                {`${counts.close || 'None'} within 2 km`}
+            </span>
+        </>
+    ) : (
+        `No ${noun(false)}${open ? ` listed as open at ${at.time}` : ''} near ${point?.name ?? 'here'}.`
+    );
 
     // A choice of kinds or "Open at" asks the server again; the point and
     // the time stay as the URL has them. Never write the resolved point
     // back as coordinates: `home`, `work` and `plan:…` resolve on the
     // server, and bare coordinates only ever name a public point.
-    const choose = (next: { kinds?: string[]; open?: boolean }) => {
+    const choose = (next: {
+        kinds?: string[];
+        open?: boolean;
+        more?: boolean;
+    }) => {
         const query = new URLSearchParams(location.search);
         const k = next.kinds ?? picked;
         const o = next.open ?? open;
@@ -118,9 +138,16 @@ export default function AroundHere({
             query.delete('open');
         }
 
-        setSelected(null);
+        // Show more keeps what's picked; a new choice starts at twelve.
+        if (next.more) {
+            query.set('more', '1');
+        } else {
+            query.delete('more');
+            setSelected(null);
+        }
+
         router.get(`/explore?${query}`, undefined, {
-            only: ['kind', 'open', 'places'],
+            only: ['kind', 'open', 'places', 'counts'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -231,21 +258,27 @@ export default function AroundHere({
                                     </button>
                                 </div>
                                 <ol className="around-results">
-                                    {close.map((place, i) => row(place, i + 1))}
-                                    {further.length ? (
-                                        <>
-                                            <li className="around-further">
+                                    {shownPlaces.map((place, i) => [
+                                        i === close.length ? (
+                                            <li
+                                                key="further"
+                                                className="around-further"
+                                            >
                                                 Further away
                                             </li>
-                                            {further.map((place, i) =>
-                                                row(
-                                                    place,
-                                                    close.length + i + 1,
-                                                ),
-                                            )}
-                                        </>
-                                    ) : null}
+                                        ) : null,
+                                        row(place, i + 1),
+                                    ])}
                                 </ol>
+                                {hiddenCount ? (
+                                    <button
+                                        type="button"
+                                        className="around-more"
+                                        onClick={() => choose({ more: true })}
+                                    >
+                                        Show {hiddenCount} more
+                                    </button>
+                                ) : null}
                                 <p className="place-map-credit">
                                     Place data and maps © OpenStreetMap
                                     contributors · OpenFreeMap. Straight-line
@@ -254,7 +287,7 @@ export default function AroundHere({
                             </section>
                             <AroundMap
                                 point={point}
-                                places={numbered}
+                                places={shownPlaces}
                                 selected={selected}
                                 hovered={hovered}
                                 flyTo={flyTo}
@@ -279,6 +312,7 @@ export default function AroundHere({
                 at={at.time}
                 from={point}
                 beside
+                preview={places.find((p) => p.id === sheet) ?? null}
                 onClose={() => setSheet(null)}
             />
         </AppLayout>

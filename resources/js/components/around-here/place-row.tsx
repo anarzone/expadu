@@ -7,6 +7,7 @@ import {
     distanceText,
     hoursText,
     placeNet,
+    sportNames,
 } from './place-model';
 import type { AroundPlace } from './place-model';
 import './place-row.css';
@@ -40,7 +41,10 @@ export function PlaceRow({
     onSave?: () => void;
 }) {
     const away = distanceText(place);
-    const kindLine = [place.label, cuisineNames(place.cuisine)]
+    const kindLine = [
+        place.label,
+        sportNames(place.sport) || cuisineNames(place.cuisine),
+    ]
         .filter(Boolean)
         .join(' · ');
     const hours =

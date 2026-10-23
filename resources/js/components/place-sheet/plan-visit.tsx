@@ -202,12 +202,6 @@ export function PlanVisitPanel({ visit }: { visit: PlanVisit }) {
 
     return (
         <form id={FORM} className="selection-visit" onSubmit={visit.submit}>
-            <div className="place-section-heading">
-                <div>
-                    <h3>A little time here.</h3>
-                    <p>Choose when it fits your day.</p>
-                </div>
-            </div>
             <div className="visit-setup">
                 <div className="form-field selection-day">
                     <span>Choose a day</span>

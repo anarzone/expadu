@@ -42,8 +42,11 @@ use Inertia\Response;
  */
 class AroundHereController extends Controller
 {
-    /** How many places a list shows, nearest first. */
-    private const LIMIT = 12;
+    /** At most this many places within 2 km, for the count and Show more. */
+    private const WITHIN_LIMIT = 400;
+
+    /** Rows the page shows before Show more. */
+    private const FIRST = 12;
 
     /** Close by; a thin area adds up to three further away. */
     private const CLOSE_KM = 2.0;
@@ -65,13 +68,21 @@ class AroundHereController extends Controller
         $point = $this->point((string) $request->query('near'), (string) $request->query('name'), $user, $points, $now)
             ?? ($request->query('near', '') === '' ? $this->placePoint((string) $request->query('place')) : null);
 
+        $list = $point === null ? [] : $this->places($nearby, $point, $at, $kinds, $open, $user);
+
         return Inertia::render('around-here', [
             'point' => $point,
             'kind' => implode(',', $kinds),
             'open' => $open,
             'at' => ['date' => $at->toDateString(), 'time' => $time],
             'kinds' => AroundKinds::chips(),
-            'places' => $point === null ? [] : $this->places($nearby, $point, $at, $kinds, $open, $user),
+            // The first twelve, or all of them once asked (`more=1`), with
+            // the real counts.
+            'places' => $request->query('more') === '1' ? $list : array_slice($list, 0, self::FIRST),
+            'counts' => [
+                'close' => count(array_filter($list, fn (array $row): bool => $row['km'] <= self::CLOSE_KM)),
+                'all' => count($list),
+            ],
         ]);
     }
 
@@ -126,9 +137,9 @@ class AroundHereController extends Controller
     }
 
     /**
-     * The nearest places of the kinds (or of every kind), the ones listed as
-     * open at the time when asked: those within 2 km, or, where that's
-     * fewer than three, up to three of the next ones further away.
+     * The places of the kinds (or of every kind) within 2 km, nearest first,
+     * the ones listed as open at the time when asked; where that's fewer
+     * than three, up to three of the next ones further away.
      *
      * @param  array{name: string, lat: float, lng: float}  $point
      * @param  list<string>  $kinds
@@ -136,14 +147,21 @@ class AroundHereController extends Controller
      */
     private function places(OpenNearby $nearby, array $point, CarbonImmutable $at, array $kinds, bool $open, User $user): array
     {
-        $rows = $nearby->listed($point['lat'], $point['lng'], $at, AroundKinds::categories($kinds), limit: $open ? self::LIMIT * 4 : self::LIMIT, for: $user)
-            ->filter(fn (array $row): bool => ! $open || $row['hours']['state'] === 'open')
-            ->take(self::LIMIT)
+        $categories = AroundKinds::categories($kinds);
+        $listed = fn (array $row): bool => ! $open || $row['hours']['state'] === 'open';
+        // Everything within 2 km, nearest first; the page shows the first
+        // twelve and the real count.
+        $close = $nearby->listed($point['lat'], $point['lng'], $at, $categories, radiusKm: self::CLOSE_KM, limit: self::WITHIN_LIMIT, for: $user)
+            ->filter($listed)
+            ->filter(fn (array $row): bool => $row['km'] <= self::CLOSE_KM)
             ->values();
-        $close = $rows->filter(fn (array $row): bool => $row['km'] <= self::CLOSE_KM);
+        // A thin area adds up to three further away.
         $shown = $close->count() >= 3
             ? $close
-            : $close->concat($rows->filter(fn (array $row): bool => $row['km'] > self::CLOSE_KM)->take(3 - $close->count()));
+            : $close->concat($nearby->listed($point['lat'], $point['lng'], $at, $categories, limit: 12, for: $user)
+                ->filter($listed)
+                ->filter(fn (array $row): bool => $row['km'] > self::CLOSE_KM)
+                ->take(3 - $close->count()));
         $saved = SpotFeedback::effectiveForUser($user->id)
             ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
             ->keys()->map(fn (mixed $id): int => (int) $id)->all();

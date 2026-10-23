@@ -51,8 +51,8 @@
 .around-row {
     border-top: 1px solid var(--color-border);
 }
-:first-child > .around-row,
-.around-row:first-child {
+/* The list's first row has no line above it. */
+li:first-child > .around-row {
     border-top: 0;
 }
 .around-row-open {

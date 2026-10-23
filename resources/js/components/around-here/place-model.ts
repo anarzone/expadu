@@ -42,6 +42,8 @@ export type AroundPlace = {
     cuisine: string | null;
     diets: { vegetarian?: string; vegan?: string };
     internet_access: string | null;
+    /** A sports centre's sports as listed ("fencing;tai_chi"); null when not. */
+    sport?: string | null;
     /** The street from its listed address, when listed. */
     street: string | null;
     /** A rights-cleared photo with its credit; null for most places (no placeholder). */
@@ -182,6 +184,16 @@ const CUISINE: Record<string, string> = {
     seafood: 'Seafood',
     steak_house: 'Steak',
 };
+
+/** A sports centre's sports in words: "Fencing, tai chi, qi gong" ('' when none). */
+export function sportNames(raw: string | null | undefined): string {
+    return (raw ?? '')
+        .split(';')
+        .map((value) => value.trim().replace(/_/g, ' '))
+        .filter(Boolean)
+        .join(', ')
+        .replace(/^./, (c) => c.toUpperCase());
+}
 
 /** A listing's cuisine values in words: "Ice cream · Coffee" ('' when none). */
 export function cuisineNames(raw: string | null): string {

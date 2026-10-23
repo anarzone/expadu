@@ -14,7 +14,10 @@ import { PlaceIcon } from '@/components/around-here/place-icon';
 import {
     cuisineNames,
     distanceText,
+    hoursText,
+    sportNames,
 } from '@/components/around-here/place-model';
+import type { AroundPlace } from '@/components/around-here/place-model';
 import { api } from '@/components/composer/types';
 import { Sheet } from '@/components/ui/sheet';
 import { showToast } from '@/components/ui/toast';
@@ -37,6 +40,8 @@ export type PlaceSheetProps = {
     initial?: 'about' | 'plan';
     /** On a laptop, over the list beside the map rather than in the middle. */
     beside?: boolean;
+    /** What the list already knows, shown at once while the details load. */
+    preview?: AroundPlace | null;
     onClose: () => void;
     /** Saved or not, as the person changes it here, so a list can follow. */
     onSaved?: (place: number, saved: boolean) => void;
@@ -77,6 +82,7 @@ type Detail = {
         access: { value: string | null; status: string };
         fee: { value: string | null; status: string };
         practical: Record<string, Fact>;
+        location?: { map_point?: { kind?: string | null } };
     };
 };
 
@@ -181,6 +187,23 @@ const listWords = (words: string[]) =>
         ? `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`
         : (words[0] ?? '');
 
+/**
+ * A park's facility as the mock names it, with the word on its sign
+ * (expats see the German on site): "Boules", "Boulebahn".
+ */
+const FACILITY: Record<string, [string, string]> = {
+    'Boules court': ['Boules', 'Boulebahn'],
+    Playground: ['Playground', 'Spielplatz'],
+    'Football pitch': ['Football pitch', 'Bolzplatz'],
+    'Sports pitch': ['Sports pitch', 'Sportplatz'],
+    'Basketball court': ['Basketball court', 'Basketballplatz'],
+    'Tennis court': ['Tennis court', 'Tennisplatz'],
+    'Table tennis table': ['Table tennis', 'Tischtennisplatte'],
+    'Dog park': ['Dog meadow', 'Hundewiese'],
+    'BBQ spot': ['Barbecue spot', 'Grillplatz'],
+    'Picnic spot': ['Picnic spot', 'Picknickplatz'],
+};
+
 /** A park's facility's icon, by what it is. */
 const facilityIcon = (kind: string) => {
     const k = kind.toLowerCase();
@@ -204,6 +227,7 @@ export function PlaceSheet({
     from = null,
     initial = 'about',
     beside = false,
+    preview = null,
     onClose,
     onSaved,
 }: PlaceSheetProps) {
@@ -269,7 +293,7 @@ export function PlaceSheet({
             open={place !== null}
             onClose={onClose}
             className={cn('place-sheet', beside && 'is-beside')}
-            title={d?.name ?? 'Place'}
+            title={d?.name ?? (preview?.id === place ? preview.name : 'Place')}
         >
             {failed ? (
                 <p className="place-sheet-status">
@@ -284,12 +308,95 @@ export function PlaceSheet({
                     saved={saved}
                     onSave={save}
                 />
+            ) : preview && preview.id === place ? (
+                <PreviewDetail place={preview} />
             ) : (
                 <p className="place-sheet-status" role="status">
                     <PlaceIcon name="pin" /> Loading the place
                 </p>
             )}
         </Sheet>
+    );
+}
+
+/**
+ * The sheet at once, from the row: its band, name, kind line and today's
+ * hours, while the listing's details load.
+ */
+function PreviewDetail({ place }: { place: AroundPlace }) {
+    const kindLine = [
+        place.label,
+        sportNames(place.sport) || cuisineNames(place.cuisine),
+        place.veedel,
+        place.km !== null && place.km >= 0.025 ? distanceText(place) : '',
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
+    return (
+        <>
+            <div className="place-sheet-scroll">
+                <div className="place-sheet-band" data-kind={place.icon}>
+                    <span className="place-sheet-band-art" aria-hidden="true">
+                        <PlaceIcon name={place.icon} />
+                        <PlaceIcon name={place.icon} />
+                        <PlaceIcon name={place.icon} />
+                    </span>
+                </div>
+                <div className="place-sheet-body">
+                    <div className="place-sheet-name" aria-hidden="true">
+                        <strong>{place.name}</strong>
+                        <span>{kindLine}</span>
+                    </div>
+                    {place.hours.state !== 'unknown' ? (
+                        <div className="place-chips">
+                            <span
+                                className={cn(
+                                    'place-chip',
+                                    place.hours.state === 'open'
+                                        ? 'is-open'
+                                        : 'is-quiet',
+                                )}
+                            >
+                                {place.hours.state === 'open' ? (
+                                    <i aria-hidden="true" />
+                                ) : null}
+                                {hoursText(place.hours)}
+                            </span>
+                        </div>
+                    ) : null}
+                    <p className="place-sheet-wait" role="status">
+                        Loading what the listing has…
+                    </p>
+                </div>
+            </div>
+            <div className="place-sheet-actions">
+                <button
+                    type="button"
+                    className="place-sheet-secondary"
+                    disabled
+                >
+                    <PlaceIcon name="bookmark" />
+                    <span>Save</span>
+                </button>
+                <button
+                    type="button"
+                    className="place-sheet-secondary"
+                    disabled
+                >
+                    <PlaceIcon name="share" />
+                    <span>Share</span>
+                </button>
+                <button
+                    type="button"
+                    className="place-sheet-primary"
+                    aria-expanded={false}
+                    disabled
+                >
+                    Plan a visit
+                </button>
+            </div>
+        </>
     );
 }
 
@@ -364,21 +471,18 @@ function PlaceDetail({
     const eats = EATING.includes(kind);
     const point = d.lat !== null && d.lng !== null;
     // From the point you're around; nothing when that's the place itself.
+    // A park, a lake or a wood drawn as an area is measured to its middle.
+    const largeArea =
+        ['park', 'nature'].includes(kind) &&
+        facts.location?.map_point?.kind === 'source_center';
     const km =
         from && point ? kmBetween(from, { lat: d.lat!, lng: d.lng! }) : null;
     const away =
-        km !== null && km >= 0.025 ? distanceText({ km, area: false }) : '';
-    const sport = known(practical.sport);
+        km !== null && km >= 0.025 ? distanceText({ km, area: largeArea }) : '';
     const kindLine = [
         d.fine_label,
-        sport
-            ? capital(
-                  sport
-                      .split(';')
-                      .map((s) => s.trim().replace(/_/g, ' '))
-                      .join(', '),
-              )
-            : cuisineNames(known(practical.cuisine)),
+        sportNames(known(practical.sport)) ||
+            cuisineNames(known(practical.cuisine)),
         d.veedel,
         away,
     ]
@@ -653,19 +757,38 @@ function PlaceDetail({
                                 In this {(d.fine_label ?? 'park').toLowerCase()}
                             </h3>
                             <ul>
-                                {facilities.map((f) => (
-                                    <li key={f.kind}>
-                                        <span className="place-contents-icon">
-                                            <PlaceIcon
-                                                name={facilityIcon(f.kind)}
-                                            />
-                                        </span>
-                                        <strong>{f.kind}</strong>
-                                        {f.count > 1 ? (
-                                            <em>{f.count}</em>
-                                        ) : null}
-                                    </li>
-                                ))}
+                                {facilities.map((f) => {
+                                    const [name, sign] = FACILITY[f.kind] ?? [
+                                        f.kind,
+                                        '',
+                                    ];
+
+                                    return (
+                                        <li key={f.kind}>
+                                            <span className="place-contents-icon">
+                                                <PlaceIcon
+                                                    name={facilityIcon(f.kind)}
+                                                />
+                                            </span>
+                                            <span>
+                                                <strong>
+                                                    {f.count > 1 &&
+                                                    name === 'Playground'
+                                                        ? 'Playgrounds'
+                                                        : name}
+                                                </strong>
+                                                {sign ? (
+                                                    <small lang="de">
+                                                        {sign}
+                                                    </small>
+                                                ) : null}
+                                            </span>
+                                            {f.count > 1 ? (
+                                                <em>{f.count}</em>
+                                            ) : null}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </section>
                     ) : null}
@@ -712,7 +835,7 @@ function PlaceDetail({
                             OpenStreetMap
                         </a>
                         {observed ? `, seen ${observed}` : ''}
-                        {area
+                        {area || largeArea
                             ? ' · a large area: its point is approximate'
                             : week
                               ? ' · hours as listed, not checked live'

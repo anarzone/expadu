@@ -1,31 +1,6 @@
 /* Plan a visit, in the place sheet (the mock's connected/place-sheet.css
-   planning canvas, as it computes): a heading, the day and the time on a
-   cyan card, your day under it, and a hint. */
-
-.place-section-heading {
-    display: flex;
-    flex: none;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 0 14px;
-}
-
-.place-section-heading h3 {
-    margin: 0;
-    color: var(--color-text);
-    font-size: var(--text-title-sm);
-    font-weight: var(--weight-bold);
-    line-height: 1.2;
-    letter-spacing: -0.7px;
-}
-
-.place-section-heading p {
-    margin: 5px 0 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-small);
-    line-height: 1.5;
-}
+   planning canvas, as it computes): the day and the time on a cyan card,
+   your day under it, and a hint. */
 
 /* The day and the time: one cyan card. */
 .visit-setup {
