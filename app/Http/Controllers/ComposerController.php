@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Ai\LlmRollout;
+use App\Composer\Actions\ComposerActions;
 use App\Composer\ActivePlanStore;
 use App\Composer\AnthropicCandidateRanker;
 use App\Composer\AppointmentRepository;
@@ -207,9 +208,29 @@ class ComposerController extends Controller
             'from_area' => ['nullable', 'string', Rule::in($areas)],
             'from_place' => ['nullable', 'integer'],
             ...ProcessingAcceptanceRules::rules(),
+            // Their permission for Composer to read and change their Paperwork record in this message.
+            ...ProcessingAcceptanceRules::rules('paperwork_processing'),
         ]);
 
-        return response()->json($ask->answer($request->user(), $validated['processing'] ?? null, $validated['page'] ?? null, $request));
+        return response()->json($ask->answer($request->user(), $validated['processing'] ?? null, $validated['page'] ?? null, $request,
+            $validated['paperwork_processing'] ?? null));
+    }
+
+    /**
+     * Apply on a change Composer proposed (its `changed` card): made as proposed, or why not.
+     * The card comes back as it is now, and the workspace that shows it.
+     */
+    public function applyAction(Request $request, string $token, ComposerActions $actions): JsonResponse
+    {
+        return response()->json($actions->apply($request->user(), strtolower($token), CarbonImmutable::now('Europe/Berlin')))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    /** Undo on a change Composer made in the last 24 hours, through the app's own way back. */
+    public function undoAction(Request $request, string $token, ComposerActions $actions): JsonResponse
+    {
+        return response()->json($actions->undo($request->user(), strtolower($token), CarbonImmutable::now('Europe/Berlin')))
+            ->header('Cache-Control', 'private, no-store');
     }
 
     /**

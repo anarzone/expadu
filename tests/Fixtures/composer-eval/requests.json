@@ -8033,6 +8033,198 @@
     "no_leave_out": true,
     "no_step_free": true
    }
+  },
+  {
+   "id": "actions.save_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Save Cafe Nova in Deutz for later",
+   "expect": {
+    "open": true,
+    "acted": "place_feedback",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.save_shown_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "save the first one",
+   "before": [
+    "cafés in Deutz"
+   ],
+   "expect": {
+    "open": true,
+    "acted": "place_feedback",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.add_to_day",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Add coffee at Cafe Nova in Deutz to my day at 15:00",
+   "expect": {
+    "open": true,
+    "acted": "add_to_day",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.set_home",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "My new address is Venloer Straße 210",
+   "expect": {
+    "open": true,
+    "acted": "set_my_place",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.delete_record",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Delete my paperwork record",
+   "expect": {
+    "open": true,
+    "handoff": "delete_paperwork_record"
+   }
+  },
+  {
+   "id": "actions.paperwork_without_permission",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Can you update my paperwork details?",
+   "expect": {
+    "open": true,
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.visa_date",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "my visa now runs until 12 Feb 2027",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "expect": {
+    "open": true,
+    "acted": "change_paperwork_fact",
+    "changed": "proposed",
+    "says": "apply"
+   }
+  },
+  {
+   "id": "actions.no_change_for_a_question",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "when does my visa run out?",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "expect": {
+    "open": true,
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.visa_without_permission",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "my visa now runs until 12 Feb 2027",
+   "expect": {
+    "open": true,
+    "answer_kind": "permission",
+    "no_change": true
+   }
   }
  ]
 }

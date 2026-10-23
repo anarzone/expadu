@@ -4,6 +4,7 @@ namespace App\Composer\Assistant;
 
 use App\Composer\Answers\AroundNow;
 use App\Composer\WorkspaceStore;
+use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
@@ -12,6 +13,7 @@ use App\Privacy\ProcessingPurpose;
 use App\Profile\ProfileEngine;
 use App\Services\UserLocationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -50,9 +52,10 @@ final class Ask
      * @param  array<string, mixed>|null  $processing  their say-so for this request (the AI notice under the box)
      * @param  string|null  $page  the page Composer was opened on
      * @param  Request  $request  where they start from (UserLocationService::context): the page's From, or their browser's position
+     * @param  array<string, mixed>|null  $paperworkProcessing  their permission for Composer to read and change their Paperwork record in this message
      * @return array<string, mixed> the workspace, with the answer in it
      */
-    public function answer(User $user, ?array $processing, ?string $page, Request $request): array
+    public function answer(User $user, ?array $processing, ?string $page, Request $request, ?array $paperworkProcessing = null): array
     {
         $workspace = $this->workspace->read($user);
         $conversation = (string) $workspace['active'];
@@ -68,9 +71,11 @@ final class Ask
             ? $this->consents->grant($user, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile, $page), $processing)
             : null;
 
+        $paperwork = $permit !== null && $paperworkProcessing !== null && $this->paperworkPermitted($user, $text, $paperworkProcessing);
+
         $answer = $permit === null ? null : $this->assistant->answer($user, $text, $profile, $now, $this->locations->context($user, $request, $user->veedel),
             $permit, $workspace['plans'] ?? [], self::progressKey($user, (string) ($processing['request_id'] ?? '')),
-            Assistant::history(array_slice($messages, 0, $asked)), $page);
+            Assistant::history(array_slice($messages, 0, $asked)), $page, $paperwork);
         if ($answer !== null) {
             return $this->workspace->answer($user, $conversation, self::message($answer['text'], $answer['blocks'], [
                 'written' => 'ai',
@@ -148,10 +153,36 @@ final class Ask
             'listings' => $now->setTimezone('Europe/Berlin')->format('H') >= 17 ? 'tonight’s listings' : 'today’s listings',
             'places' => 'places', 'weather' => 'the weather', 'location' => 'your nearest stop and Veedel', 'departures' => 'departures',
             'trip' => 'the trip planner', 'planner' => 'the day planner', 'notices' => 'KVB notices', 'guidance' => 'reviewed paperwork guides',
-            'my_places' => 'your saved places’ names', 'taste' => 'what you like', 'plans' => 'your plans',
+            'my_places' => 'your saved places’ names', 'taste' => 'what you like', 'plans' => 'your plans', 'paperwork_record' => 'your Paperwork record',
         ];
 
         return array_values(array_unique(array_filter(array_map(fn (string $key): ?string => $words[$key] ?? null, $looked))));
+    }
+
+    /**
+     * Their Paperwork permission for this message (paperwork_answer), bound to their own record
+     * like a question asked in Paperwork, so erasing or stopping it ends it too. Without a
+     * record in use there's nothing to permit.
+     *
+     * @param  array<string, mixed>  $acceptance
+     */
+    private function paperworkPermitted(User $user, string $text, array $acceptance): bool
+    {
+        if (! ProcessingPurpose::PaperworkAnswer->available()) {
+            return false;
+        }
+        $case = BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')
+            ->whereNull('processing_stopped_at')->first()?->dossier()->first();
+        if ($case === null) {
+            return false;
+        }
+        try {
+            $this->consents->grant($user, ProcessingPurpose::PaperworkAnswer, ['composer' => $text], $acceptance, $case);
+        } catch (AuthorizationException) {
+            return false;
+        }
+
+        return true;
     }
 
     /** Why the AI didn't answer: it's off, it wasn't asked to, the day's limit, or it failed. */
