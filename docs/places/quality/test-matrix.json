@@ -1,5 +1,5 @@
 {
-  "about": "Places quality gate: 21 real asks, run through Composer's search_places tool without the AI (php artisan places:check-matrix). 'input' is the tool call the AI should make for the ask; the AI session's own eval checks that mapping. Times are Europe/Berlin; the person is at the Dom unless 'from' says otherwise.",
+  "about": "Places quality gate: 22 real asks, run through Composer's search_places tool without the AI (php artisan places:check-matrix). 'input' is the tool call the AI should make for the ask; the AI session's own eval checks that mapping. Times are Europe/Berlin; the person is at the Dom unless 'from' says otherwise.",
   "defaults": {
     "at": "2026-10-23 14:00",
     "from": [
@@ -19,6 +19,19 @@
         "Sports centre",
         "Park"
       ]
+    },
+    {
+      "ask": "where can my kid play football",
+      "input": {
+        "kinds": [
+          "playground"
+        ]
+      },
+      "kinds": [
+        "Playground",
+        "Park"
+      ],
+      "note": "children's ask: playgrounds (with goals where the city lists them) are right here; the adult ask above stays pitches and parks"
     },
     {
       "ask": "places to work in the city centre",
