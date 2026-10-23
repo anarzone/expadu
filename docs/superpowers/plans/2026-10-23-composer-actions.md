@@ -113,10 +113,16 @@ looking at was "Can u update my paperwork details?". Composer answered with an O
    - no coordinates are in what the AI sees.
 6. Tests: only Paperwork writes, consent and Undo on Paperwork, the sensitive part.
 
-## Questions for the owner
+## The owner's answers (23 Oct, through the coordinator)
 
-1. Should Ask first be off by default everywhere, including Paperwork? Recommendation: yes for A; on for
-   B until the change line has been seen working.
-2. A first slice could be Paperwork facts and steps, saved places, My day and home/work; the rest would
-   follow. Is that the right order?
-3. How long should Undo last: this conversation, or 24 hours?
+1. **Ask first:** off for tier A. On for Paperwork (B) at first, and the person can change it.
+2. **First slice:** Paperwork facts and steps, saved places, My day, home/work. Next: events, Travel
+   saves, alerts and settings.
+3. **Undo:** available for 24 hours, also after the person leaves and comes back.
+
+**Who builds what:**
+- The AI session builds the tools, the `changed` block and the server-side Ask first setting.
+- Session 2 builds the Paperwork endpoints and UI, and `PaperworkPlanDiff`.
+- The Designer's canvas: https://claude.ai/artifact/Aooo2WrGvVoeX83qbhLiyT
+
+Nothing is built until the owner says "build it".
