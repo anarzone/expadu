@@ -1,4 +1,5 @@
 import {
+    Fragment,
     useCallback,
     useEffect,
     useLayoutEffect,
@@ -8,7 +9,6 @@ import {
 } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { CardStrip, TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
@@ -16,9 +16,10 @@ import { LineStrip, StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
+import { LiftLine, MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
 import { StationMap, useLinesMap } from './station-map';
 import { StopPicker } from './stop-picker';
-import { closestNow, closestWords, noticeWords } from './types';
+import { closestNow, closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
 import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
@@ -298,12 +299,6 @@ export function NearbyView({
             : wait?.mode === 'tram'
               ? 'trams'
               : 'departures';
-    // Paused: how long since the last reading, in whole clock minutes (it
-    // says "from 22:19", so 22:25 is 6 minutes).
-    const pausedFor = station.observed_at
-        ? Math.floor(now / 60_000) -
-          Math.floor(Date.parse(station.observed_at) / 60_000)
-        : 0;
     const runs = station.lines.flatMap((l) =>
         l.dirs.flatMap((d) => (d.next ? [d.next] : [])),
     );
@@ -595,35 +590,47 @@ export function NearbyView({
             return null;
         }
 
-        const now = whenOf(dir).big === 'now';
-        const text = `${now && !long ? 'Running ' : ''}${dir.delayMin}\u00a0min late`;
-
+        // Everyday lateness stays small; 10+ min in the stronger yellow.
         return (
             <TravelChip
                 kind="attention"
-                icon={<TravelIcon name="clock" />}
                 size="sm"
+                className={cn('nearby-late', dir.delayMin >= 10 && 'is-strong')}
             >
-                {text}
+                {`${dir.delayMin}\u00a0min late`}
             </TravelChip>
         );
     };
 
     // Paused times are the last ones read: their clocks. A timetable time
     // leaving now shows its clock, quietly: "Now" is for a live departure.
-    // Only what the feed says: its cancelled runs, by their timetabled clock.
+    // Only what the feed says: its cancelled runs, by their timetabled
+    // clock, struck through, then "Cancelled" in red (no pill).
     const cancelTag = (dir: ShownDir) =>
         dir.cancelledClocks.length ? (
-            <TravelChip
-                kind="conflict"
-                icon={<TravelIcon name="alert" />}
-                size="sm"
-            >
-                {dir.cancelled
-                    ? 'Cancelled'
-                    : `${dir.cancelledClocks.join(' · ')} cancelled`}
-            </TravelChip>
+            <span className="tl-cancelled">
+                {dir.cancelled ? null : (
+                    <>
+                        <s>{dir.cancelledClocks.join(' · ')}</s>{' '}
+                    </>
+                )}
+                Cancelled
+            </span>
         ) : null;
+
+    // Each line row's one minor notice (the major ones are the headline's),
+    // on the first of its lines' rows; a run's own matched notice first.
+    const rowNotices = rowNoticesOf(
+        station,
+        v.areas.flatMap((area) =>
+            area.cards.map((l) => ({
+                line: l.line,
+                notices: l.shown.flatMap((d) =>
+                    [d.next, ...d.later].map((run) => run?.notice),
+                ),
+            })),
+        ),
+    );
 
     const time = (dir: ShownDir) => {
         if (dir.cancelled) {
@@ -884,6 +891,7 @@ export function NearbyView({
 
     return (
         <div className="nearby" data-view={mapOpen ? 'map' : 'list'} ref={root}>
+            <MajorHeadline station={station} />
             {station.unknown_stop ? (
                 <div className="nearby-banner is-labelled">
                     <TravelBanner
@@ -892,28 +900,6 @@ export function NearbyView({
                         title={`“${station.unknown_stop}” isn’t a KVB stop`}
                     >
                         Showing the closest station instead.
-                    </TravelBanner>
-                </div>
-            ) : stale ? (
-                <div className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind="unsure"
-                        icon={<TravelIcon name="offline" />}
-                        title="Live times paused"
-                    >
-                        {pausedFor >= 1
-                            ? `No update for ${pausedFor} minute${pausedFor === 1 ? '' : 's'}, so these are the last times we had, from ${clockOf(station.observed_at)}.`
-                            : `These are the last times we had, from ${clockOf(station.observed_at)}.`}
-                    </TravelBanner>
-                </div>
-            ) : liftOut ? (
-                <div className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind="conflict"
-                        icon={<TravelIcon name="lift" />}
-                        title={`A lift at ${station.name} is out of order`}
-                    >
-                        {lifts.out.map((lift) => lift.label).join('; ')}
                     </TravelBanner>
                 </div>
             ) : wait ? (
@@ -927,60 +913,6 @@ export function NearbyView({
                     </TravelBanner>
                 </div>
             ) : null}
-            {station.notices.slice(0, 2).map((notice) => {
-                const { headline, text, lang } = noticeWords(notice);
-                const kvb = notice.source?.startsWith('kvb') ?? false;
-                // Every notice is KVB's; its feed's own name ("kvb-betriebslage") isn't one to show.
-                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${kvb ? ' · KVB' : ''}`;
-                const german = lang === 'de';
-
-                return (
-                    <div key={notice.id} className="nearby-banner is-labelled">
-                        <TravelBanner
-                            kind={
-                                notice.severity === 'critical' ||
-                                notice.severity === 'major'
-                                    ? 'conflict'
-                                    : 'attention'
-                            }
-                            icon={<TravelIcon name="alert" />}
-                            title={
-                                german ? (
-                                    <>
-                                        <InGermanChip fromKvb={kvb} />
-                                        <span lang="de">{headline}</span>
-                                    </>
-                                ) : (
-                                    headline
-                                )
-                            }
-                        >
-                            {/* KVB's own words keep to the line, after its lines; all of them are behind the link. */}
-                            {german ? (
-                                <span className="kvb-notice-line">
-                                    {lines}
-                                    {text ? (
-                                        <>
-                                            {' · '}
-                                            <span lang="de">{text}</span>
-                                        </>
-                                    ) : null}
-                                </span>
-                            ) : text ? (
-                                `${text} · ${lines}`
-                            ) : (
-                                lines
-                            )}
-                            {notice.url ? (
-                                <KvbNoticeLink
-                                    url={notice.url}
-                                    className="is-own-line"
-                                />
-                            ) : null}
-                        </TravelBanner>
-                    </div>
-                );
-            })}
             <div className="nearby-bar">
                 {/* Only the name and its chevron change the stop: the row
                     beside it and the labels under it do nothing. */}
@@ -1006,6 +938,14 @@ export function NearbyView({
                             {placesKind}
                         </TravelChip>
                         {timesLabel}
+                        {liftOut ? (
+                            <TravelChip
+                                kind="conflict"
+                                icon={<TravelIcon name="lift" />}
+                            >
+                                Lift out of order
+                            </TravelChip>
+                        ) : null}
                     </span>
                 </div>
                 <button
@@ -1115,6 +1055,7 @@ export function NearbyView({
                     </button>
                 ) : null}
             </div>
+            <LiftLine station={station} />
             <div className="nearby-list">
                 {v.areas.length ? (
                     v.areas.map((area, index) => (
@@ -1185,21 +1126,29 @@ export function NearbyView({
                                 </div>
                                 <div className="nearby-cards">
                                     {area.cards.map((l) => (
-                                        <LineSlot
-                                            key={l.line}
-                                            open={openLine === l.line}
-                                            opening={opening === l.line}
-                                            closing={closing === l.line}
-                                            strip={strip(l)}
-                                            detail={
-                                                openLine === l.line ||
-                                                closing === l.line
-                                                    ? detail(l)
-                                                    : null
-                                            }
-                                            onOpened={() => opened(l.line)}
-                                            onClosed={() => closed(l.line)}
-                                        />
+                                        <Fragment key={l.line}>
+                                            <LineSlot
+                                                open={openLine === l.line}
+                                                opening={opening === l.line}
+                                                closing={closing === l.line}
+                                                strip={strip(l)}
+                                                detail={
+                                                    openLine === l.line ||
+                                                    closing === l.line
+                                                        ? detail(l)
+                                                        : null
+                                                }
+                                                onOpened={() => opened(l.line)}
+                                                onClosed={() => closed(l.line)}
+                                            />
+                                            {rowNotices.has(l.line) ? (
+                                                <NoticeLine
+                                                    notice={
+                                                        rowNotices.get(l.line)!
+                                                    }
+                                                />
+                                            ) : null}
+                                        </Fragment>
                                     ))}
                                 </div>
                             </section>

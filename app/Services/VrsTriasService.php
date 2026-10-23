@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Support\PerfLogger;
+use App\Transit\TransitNotices;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
@@ -341,6 +343,8 @@ class VrsTriasService
         $now = Carbon::now();
         $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
         $grouped = [];
+        // Line refs to the names riders see, for the situations below.
+        $lineNames = [];
 
         foreach ($results as $result) {
             $event = $result->StopEvent ?? null;
@@ -401,6 +405,9 @@ class VrsTriasService
             ]);
 
             $type = $this->mapPtMode($ptMode, $lineName);
+            if ((string) ($section->LineRef ?? '') !== '' && $lineName !== '') {
+                $lineNames[(string) $section->LineRef] = $lineName;
+            }
 
             $key = $lineName.'_'.$dest;
             if (! isset($grouped[$key])) {
@@ -428,6 +435,8 @@ class VrsTriasService
                 'time_basis' => $estimated !== '' ? 'realtime' : 'scheduled',
                 'delay' => $delayMin,
                 'cancelled' => $cancelled,
+                // VRS's own notices about this departure (TRIAS situations).
+                'notices' => self::situationRefs($service, $stop),
                 'boarding_point' => $stopId !== '' || $stopName !== '' ? [
                     'id' => $stopId !== '' ? $stopId : null,
                     'name' => $stopName !== '' ? $stopName : null,
@@ -435,6 +444,8 @@ class VrsTriasService
                 ] : null,
             ];
         }
+
+        $this->rememberSituations($parsed, $lineNames);
 
         foreach ($grouped as &$group) {
             $services = array_values($group['services']);
@@ -463,6 +474,78 @@ class VrsTriasService
         });
 
         return ['departures' => array_slice($results, 0, $limit), 'observed_at' => $observedAt];
+    }
+
+    /** A TRIAS situation's id in the notices store. */
+    public static function situationKey(string $participant, string $number): string
+    {
+        return 'trias:situation:'.($participant !== '' ? $participant.':' : '').$number;
+    }
+
+    /**
+     * The situations a departure refers to (SituationFullRef on its service
+     * or its call), as notices-store keys.
+     *
+     * @return list<string>
+     */
+    private static function situationRefs(\SimpleXMLElement $service, ?\SimpleXMLElement $call): array
+    {
+        $refs = [];
+        foreach ([$service, $call] as $node) {
+            foreach ($node?->SituationFullRef ?? [] as $ref) {
+                $number = trim((string) ($ref->SituationNumber ?? ''));
+                if ($number !== '') {
+                    $refs[] = self::situationKey(trim((string) ($ref->ParticipantRef ?? '')), $number);
+                }
+            }
+        }
+
+        return array_values(array_unique($refs));
+    }
+
+    /**
+     * VRS's official notices (SIRI situations), which come in the StopEvent
+     * response's context: kept in the notices store with their lines, stops
+     * and validity, by their own id, so each is briefed once.
+     *
+     * @param  array<string, string>  $lineNames  line refs to published names
+     */
+    private function rememberSituations(\SimpleXMLElement $parsed, array $lineNames): void
+    {
+        $text = fn (?\SimpleXMLElement $node): string => $node === null ? '' : trim((string) ($node->Text ?? $node));
+        $notices = app(TransitNotices::class);
+
+        foreach ($parsed->xpath('//StopEventResponseContext//PtSituation') ?: [] as $situation) {
+            $number = trim((string) ($situation->SituationNumber ?? ''));
+            if ($number === '') {
+                continue;
+            }
+
+            $lines = [];
+            foreach ($situation->xpath('.//AffectedLine') ?: [] as $line) {
+                $name = $text($line->PublishedLineName ?? null);
+                $lines[] = $name !== '' ? $name : ($lineNames[trim((string) ($line->LineRef ?? ''))] ?? '');
+            }
+            $stops = [];
+            foreach ($situation->xpath('.//AffectedStopPoint') ?: [] as $point) {
+                $name = $text($point->StopPointName ?? null);
+                $stops[] = $name !== '' ? $name : trim((string) ($point->StopPointRef ?? ''));
+            }
+            $from = trim((string) ($situation->ValidityPeriod->StartTime ?? ''));
+            $until = trim((string) ($situation->ValidityPeriod->EndTime ?? ''));
+
+            $notices->remember(
+                self::situationKey(trim((string) ($situation->ParticipantRef ?? '')), $number),
+                'vrs-trias',
+                $text($situation->Summary ?? null),
+                implode("\n\n", array_filter([$text($situation->Description ?? null), $text($situation->Detail ?? null)])),
+                array_values(array_filter($lines)),
+                array_values(array_filter($stops)),
+                [],
+                $from !== '' ? CarbonImmutable::parse($from) : null,
+                $until !== '' ? CarbonImmutable::parse($until) : null,
+            );
+        }
     }
 
     /**

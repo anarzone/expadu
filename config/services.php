@@ -68,14 +68,14 @@ return [
         'effort' => env('ANTHROPIC_EFFORT', 'low'),
     ],
 
-    // KVB notices as short English briefs (App\Transit\NoticeBriefWriter).
+    // Transit notices (KVB, VRS, DELFI) as short English briefs (App\Transit\NoticeBriefWriter).
     // Public data only. Off without ANTHROPIC_API_KEY or with the switch.
     'transit_briefs' => [
         'enabled' => env('TRANSIT_BRIEFS_ENABLED', true),
         'model' => $haiku(env('TRANSIT_BRIEFS_MODEL')),
         'effort' => env('TRANSIT_BRIEFS_EFFORT', 'low'),
         'daily_limit' => (int) env('TRANSIT_BRIEFS_DAILY_LIMIT', 300),
-        'prompt_version' => '2026-10-21',
+        'prompt_version' => '2026-10-22',
     ],
 
     // Place descriptions and evidence-backed vibe tags (App\Places\Enrichment).

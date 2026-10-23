@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A KVB notice in plain language. See App\Transit\NoticeBriefWriter.
+ * A transit notice in plain language: its brief, or (kind "translation") a
+ * checked literal translation. See App\Transit\NoticeBriefWriter.
  */
-#[Fillable(['input_hash', 'locale', 'headline', 'body', 'impact', 'model', 'prompt_version'])]
+#[Fillable(['input_hash', 'locale', 'kind', 'headline', 'body', 'impact', 'model', 'prompt_version'])]
 class NoticeBrief extends Model
 {
     /**
