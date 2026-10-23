@@ -74,6 +74,8 @@ class PlaceResource extends JsonResource
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
+            'feedback_been' => (bool) ($this->feedback_been ?? false),
+            'feedback_been_rating' => $this->feedback_been_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
             'place_facts' => $this->placeFacts($placeFacts),
             // The place sheet (Around here): its kind's icon, and what its

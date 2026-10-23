@@ -18,9 +18,9 @@ use Illuminate\Support\Facades\DB;
  * here's list (listed(): every one, open until, opens at, closed or not
  * listed). Unknown or conflicting hours are never guessed open.
  *
- * Given a person, it leaves out the places they marked "not interested" or
- * "been" (SpotFeedbackState::hiddenFromDiscovery), matched on the canonical
- * place.
+ * Given a person, around() leaves out the places they marked "not interested"
+ * or Been there; listed() only the "not interested" ones (Around here still
+ * lists the places they know). Matched on the canonical place.
  *
  * The point, the time and the person are inputs only: nothing here stores,
  * caches or logs them (they can say where someone will be), so the answer is
@@ -44,7 +44,7 @@ final class OpenNearby
     public function around(float $lat, float $lng, CarbonImmutable $at, array $kinds = self::EVERYDAY, float $radiusKm = 1.0, int $limit = 6, ?User $for = null): Collection
     {
         // A few more than asked, since closed places drop out below.
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for, hideBeen: true);
         $local = $at->setTimezone('Europe/Berlin');
 
         return $spots
@@ -84,10 +84,12 @@ final class OpenNearby
      */
     public function listed(float $lat, float $lng, CarbonImmutable $at, array $kinds, float $radiusKm = 15.0, int $limit = 12, ?User $for = null): Collection
     {
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for, hideBeen: false);
         $local = $at->setTimezone('Europe/Berlin');
+        $canonical = fn (Spot $spot): int => (int) ($spot->canonical_spot_id ?? $spot->id);
+        $people = app(PlaceWorkAnswers::class)->totalsMany($spots->map($canonical)->unique()->values()->all());
 
-        return $spots->map(function (Spot $spot) use ($facts, $local, $lat, $lng): array {
+        return $spots->map(function (Spot $spot) use ($facts, $local, $lat, $lng, $people, $canonical): array {
             $fact = $facts->get($spot->id) ?? [];
             $practical = fn (string $key): ?string => ($fact['practical'][$key]['status'] ?? null) === 'known' && is_scalar($fact['practical'][$key]['value'] ?? null)
                 ? (string) $fact['practical'][$key]['value']
@@ -113,8 +115,28 @@ final class OpenNearby
                     'vegan' => $practical('diet:vegan'),
                 ]),
                 'internet_access' => $practical('internet_access'),
+                'laptop' => self::laptop($fact['practical'] ?? [], $people[$canonical($spot)]['laptop'] ?? null),
             ];
         })->values();
+    }
+
+    /**
+     * The row's laptop tag: people's verdict (from 3 people, counts only) and
+     * the café's own rule from its website, with the days it names. Null when
+     * neither exists; the client decides whether the rule's days include its date.
+     *
+     * @param  array<string, mixed>  $practical  resolved practical facts
+     * @param  array{value: string, yes: int, total: int}|null  $people
+     * @return array{people: ?array{value: string, yes: int, total: int}, rule: ?array{value: string, days: ?string}}|null
+     */
+    private static function laptop(array $practical, ?array $people): ?array
+    {
+        $fact = $practical['laptops'] ?? [];
+        $rule = ($fact['provider'] ?? null) === 'website' && ($fact['status'] ?? null) === 'known' && is_string($fact['value'] ?? null)
+            ? ['value' => $fact['value'], 'days' => ($practical['laptops:conditional']['status'] ?? null) === 'known' ? $practical['laptops:conditional']['value'] : null]
+            : null;
+
+        return $people === null && $rule === null ? null : ['people' => $people, 'rule' => $rule];
     }
 
     /**
@@ -158,10 +180,10 @@ final class OpenNearby
      * @param  list<string>  $kinds
      * @return array{0: Collection<int, Spot>, 1: Collection<int, array<string, mixed>>}
      */
-    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for): array
+    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for, bool $hideBeen): array
     {
         $hidden = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
-            ->filter(fn (SpotFeedback $row): bool => in_array($row->state, SpotFeedbackState::hiddenFromDiscovery(), true))
+            ->filter(fn (SpotFeedback $row): bool => $hideBeen ? $row->hiddenFromDiscovery() : $row->state === SpotFeedbackState::NotInterested)
             ->keys()
             ->map(fn (mixed $id): int => (int) $id)
             ->all();

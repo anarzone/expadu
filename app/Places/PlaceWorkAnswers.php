@@ -8,6 +8,7 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 /**
  * "Good for laptop work?" — people's answers and the anonymous place fact made
@@ -37,7 +38,7 @@ class PlaceWorkAnswers
     {
         return SpotFeedback::query()->where('user_id', $user->id)
             ->whereIn('spot_id', $this->identity->familyIds($spot->id))
-            ->whereIn('state', [SpotFeedbackState::Been->value, SpotFeedbackState::Saved->value])
+            ->where(fn ($q) => $q->where('state', SpotFeedbackState::Saved->value)->orWhereNotNull('been_at'))
             ->exists();
     }
 
@@ -89,14 +90,35 @@ class PlaceWorkAnswers
      */
     public function totals(int $spotId, ?CarbonImmutable $now = null): array
     {
+        return $this->totalsMany([$spotId], $now)[$spotId];
+    }
+
+    /**
+     * totals() for many places in one query (Around here's rows).
+     *
+     * @param  list<int>  $spotIds  canonical ids
+     * @return array<int, array<string, array{value: string, yes: int, total: int}|null>>
+     */
+    public function totalsMany(array $spotIds, ?CarbonImmutable $now = null): array
+    {
         $now ??= CarbonImmutable::now();
-        $answers = PlaceWorkAnswer::query()
+        $answers = $spotIds === [] ? collect() : PlaceWorkAnswer::query()
             ->join('users', 'users.id', '=', 'place_work_answers.user_id')
-            ->where('place_work_answers.spot_id', $spotId)
+            ->whereIn('place_work_answers.spot_id', $spotIds)
             ->where('place_work_answers.answered_at', '>=', $now->subMonths(self::WINDOW_MONTHS))
             ->where('users.created_at', '<=', $now->subDay())
-            ->get(['place_work_answers.*']);
+            ->get(['place_work_answers.*'])
+            ->groupBy('spot_id');
 
+        return collect($spotIds)->mapWithKeys(fn (int $id): array => [$id => $this->tally($answers->get($id, collect()), $now)])->all();
+    }
+
+    /**
+     * @param  Collection<int, PlaceWorkAnswer>  $answers
+     * @return array<string, array{value: string, yes: int, total: int}|null>
+     */
+    private function tally(Collection $answers, CarbonImmutable $now): array
+    {
         return collect(self::QUESTIONS)->mapWithKeys(function (string $_fact, string $question) use ($answers, $now): array {
             $given = $answers->filter(fn (PlaceWorkAnswer $a): bool => in_array($a->{$question}, ['yes', 'no'], true));
             if ($given->count() < self::MIN_PEOPLE) {

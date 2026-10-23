@@ -133,10 +133,14 @@ test('latest family feedback wins and new canonical feedback supersedes older al
     SpotFeedback::factory()->create(['user_id' => $user->id, 'spot_id' => $alias->id, 'state' => 'saved', 'updated_at' => now()->subDay()]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->getJson('/api/places')->assertOk()->assertJsonPath('data.0.feedback_state', 'saved');
-    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'been'])->assertOk();
-    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'been');
+    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'more_like_this'])->assertOk();
+    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'more_like_this');
+    // Been there by another record of the place joins the same row; the choice stays.
+    $this->putJson("/api/places/{$canonical->id}/been")->assertOk();
+    $this->getJson("/api/places/{$alias->id}")->assertOk()
+        ->assertJsonPath('data.feedback_state', 'more_like_this')->assertJsonPath('data.feedback_been', true);
 
-    expect(SpotFeedback::query()->count())->toBe(2);
+    expect(SpotFeedback::query()->count())->toBe(1);
 });
 
 test('family reviews preserve history and count the newest review once per user in ratings', function () {
