@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
 import { PlaceIcon } from './place-icon';
+import { rowKey } from './place-model';
 import type { AroundPlace } from './place-model';
 
 /* Around here's map (the mock's around-here/app.js loadMap and
@@ -23,17 +24,18 @@ export function AroundMap({
 }: {
     point: Point;
     places: AroundPlace[];
-    selected: number | null;
-    hovered: number | null;
-    onSelect: (id: number) => void;
+    /** Rows' keys (rowKey): a big park's parts share its id. */
+    selected: string | null;
+    hovered: string | null;
+    onSelect: (key: string) => void;
     /** A place to bring to the middle (one just opened). */
-    flyTo: { id: number; at: number } | null;
+    flyTo: { key: string; at: number } | null;
 }) {
     const box = useRef<HTMLDivElement>(null);
     const map = useRef<MaplibreMap | null>(null);
     const basemap = useRef<Basemap | null>(null);
     const marks = useRef<
-        { id: number; element: HTMLElement; marker: Marker }[]
+        { key: string; element: HTMLElement; marker: Marker }[]
     >([]);
     const [state, setState] = useState<'loading' | 'ready' | 'failed'>(
         'loading',
@@ -111,13 +113,13 @@ export function AroundMap({
             element.textContent = String(index + 1);
             element.addEventListener('click', (event) => {
                 event.stopPropagation();
-                onSelect(place.id);
+                onSelect(rowKey(place));
             });
             const marker = new bm.maplibregl.Marker({ element })
                 .setLngLat([place.lng, place.lat])
                 .addTo(m);
 
-            return { id: place.id, element, marker };
+            return { key: rowKey(place), element, marker };
         });
         const bounds = new bm.maplibregl.LngLatBounds();
         bounds.extend([point.lng, point.lat]);
@@ -128,14 +130,14 @@ export function AroundMap({
     }, [state, places, point.lat, point.lng]);
 
     useEffect(() => {
-        marks.current.forEach(({ id, element }) => {
-            element.classList.toggle('is-selected', id === selected);
-            element.classList.toggle('is-hovered', id === hovered);
+        marks.current.forEach(({ key, element }) => {
+            element.classList.toggle('is-selected', key === selected);
+            element.classList.toggle('is-hovered', key === hovered);
         });
     }, [selected, hovered, state, places]);
 
     useEffect(() => {
-        const place = flyTo && places.find((p) => p.id === flyTo.id);
+        const place = flyTo && places.find((p) => rowKey(p) === flyTo.key);
 
         if (!place || !map.current) {
             return;

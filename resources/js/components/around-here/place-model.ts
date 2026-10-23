@@ -57,8 +57,13 @@ export type AroundPlace = {
     matched?: string[];
     /** What a park has, the matched kind first: "Football pitch · 2 tennis courts · Playground". */
     facilities?: string | null;
+    /** A park too big to walk round answers per Veedel: the part this row is. */
+    part?: string | null;
     saved: boolean;
 };
+
+/** A row's own key: one park can list once per part, under its one id. */
+export const rowKey = (place: AroundPlace) => `${place.id}-${place.part ?? ''}`;
 
 export type AroundKind = { id: string; label: string };
 

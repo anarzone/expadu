@@ -10,7 +10,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AroundMap } from '@/components/around-here/around-map';
 import { PlaceIcon } from '@/components/around-here/place-icon';
-import { countNoun } from '@/components/around-here/place-model';
+import { countNoun, rowKey } from '@/components/around-here/place-model';
 import type {
     AroundKind,
     AroundPlace,
@@ -64,14 +64,21 @@ export default function AroundHere({
     counts,
 }: Props) {
     const picked = kind ? kind.split(',') : [];
-    // The place the link opens (?place=) starts picked in the list too.
-    const [selected, setSelected] = useState<number | null>(() => linkPlace());
+    // The place the link opens (?place=) starts picked in the list too:
+    // its first row, when a big park lists per part.
+    const [selected, setSelected] = useState<string | null>(() => {
+        const first = listed.find((p) => p.id === linkPlace());
+
+        return first ? rowKey(first) : null;
+    });
     const shown = useImpressions('places', 'spot');
     // Less what was put away with Not now this week.
     const hidden = useHidden();
     const places = listed.filter((p) => !isHidden(hidden, 'spot', p.id));
-    const [hovered, setHovered] = useState<number | null>(null);
-    const [flyTo, setFlyTo] = useState<{ id: number; at: number } | null>(null);
+    const [hovered, setHovered] = useState<string | null>(null);
+    const [flyTo, setFlyTo] = useState<{ key: string; at: number } | null>(
+        null,
+    );
     // The place open in its sheet: a row's, or the link's (?place=).
     const [sheet, setSheet] = useState<number | null>(() => linkPlace());
     // Back goes back when you came from inside the app, else to Composer.
@@ -163,18 +170,19 @@ export default function AroundHere({
         });
 
     const row = (place: AroundPlace, number: number) => (
-        <li key={place.id}>
+        <li key={rowKey(place)}>
             <PlaceRow
                 ref={shown(place.id, number)}
                 place={place}
                 number={number}
-                selected={selected === place.id}
+                selected={selected === rowKey(place)}
                 onOpen={() => {
-                    setSelected(place.id);
-                    setFlyTo({ id: place.id, at: Date.now() });
+                    setSelected(rowKey(place));
+                    setFlyTo({ key: rowKey(place), at: Date.now() });
+                    // The sheet is the whole park's, whichever part opened it.
                     setSheet(place.id);
                 }}
-                onHover={(on) => setHovered(on ? place.id : null)}
+                onHover={(on) => setHovered(on ? rowKey(place) : null)}
             />
         </li>
     );
@@ -291,11 +299,11 @@ export default function AroundHere({
                                 selected={selected}
                                 hovered={hovered}
                                 flyTo={flyTo}
-                                onSelect={(id) => {
-                                    setSelected(id);
+                                onSelect={(key) => {
+                                    setSelected(key);
                                     document
                                         .querySelector(
-                                            `[data-place-card="${id}"]`,
+                                            `[data-place-card="${CSS.escape(key)}"]`,
                                         )
                                         ?.scrollIntoView({
                                             block: 'nearest',
@@ -312,7 +320,13 @@ export default function AroundHere({
                 at={at.time}
                 from={point}
                 beside
-                preview={places.find((p) => p.id === sheet) ?? null}
+                preview={
+                    places.find(
+                        (p) => p.id === sheet && rowKey(p) === selected,
+                    ) ??
+                    places.find((p) => p.id === sheet) ??
+                    null
+                }
                 onClose={() => setSheet(null)}
             />
         </AppLayout>

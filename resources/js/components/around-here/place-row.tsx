@@ -7,6 +7,7 @@ import {
     distanceText,
     hoursText,
     placeNet,
+    rowKey,
     sportNames,
 } from './place-model';
 import type { AroundPlace } from './place-model';
@@ -67,7 +68,7 @@ export function PlaceRow({
             ref={ref}
             className={cn('around-row', selected && 'is-selected')}
             data-kind={place.icon}
-            data-place-card={place.id}
+            data-place-card={rowKey(place)}
             onPointerEnter={(event) =>
                 event.pointerType === 'mouse' && onHover(true)
             }
