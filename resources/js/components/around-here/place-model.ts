@@ -31,7 +31,8 @@ export type AroundPlace = {
     veedel: string | null;
     lat: number;
     lng: number;
-    km: number;
+    /** From the point searched around; null when that isn't known. */
+    km: number | null;
     /** A park or a wood is measured to its middle. */
     area: boolean;
     hours: ListedHours;
@@ -40,6 +41,15 @@ export type AroundPlace = {
     cuisine: string | null;
     diets: { vegetarian?: string; vegan?: string };
     internet_access: string | null;
+    /** The street from its listed address, when listed. */
+    street: string | null;
+    /** A rights-cleared photo with its credit; null for most places (no placeholder). */
+    photo: {
+        url: string;
+        credit: string | null;
+        source_url: string | null;
+        licence_url: string | null;
+    } | null;
     saved: boolean;
 };
 
@@ -68,6 +78,10 @@ export function hoursText(hours: ListedHours): string {
 
 /** "50 m", "about 600 m" for the middle of an area, "1.4 km", "12 km". */
 export function distanceText(place: Pick<AroundPlace, 'km' | 'area'>): string {
+    if (place.km === null) {
+        return '';
+    }
+
     const text =
         place.km < 1
             ? `${Math.max(50, Math.round(place.km * 20) * 50)} m`
