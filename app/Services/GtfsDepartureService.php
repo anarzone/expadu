@@ -245,6 +245,8 @@ class GtfsDepartureService
                 return $this->fallbackDepartures($stopName);
             }
 
+            $departures = $this->toRealEnds($departures, $stops->keys()->map(fn ($id) => (string) $id)->all());
+
             // Get disrupted lines to mark them
             $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
 
@@ -536,6 +538,42 @@ class GtfsDepartureService
             }
 
             return $headways;
+        });
+    }
+
+    /**
+     * Each run towards where it really ends. Works keep the usual headsign:
+     * line 16 said "Bonn-Bad Godesberg" while it ended at Ubierring (17 Oct
+     * to 2 Nov 2026). A headsign the run's last stop doesn't carry gives way
+     * to that stop's name, less "Köln". A run that ends here doesn't leave
+     * from here (line 9 ended at Neumarkt).
+     *
+     * @param  Collection<int, object>  $departures
+     * @param  list<string>  $here  the station's stop ids
+     * @return Collection<int, object>
+     */
+    private function toRealEnds(Collection $departures, array $here): Collection
+    {
+        $last = DB::table('gtfs_stop_times as st')
+            ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+            ->whereIn('st.trip_id', $departures->pluck('trip_id')->unique()->values())
+            ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
+            ->get(['st.trip_id', 'st.stop_id', 's.stop_name'])
+            ->keyBy('trip_id');
+        $departures = $departures->reject(fn (object $dep) => in_array((string) ($last[$dep->trip_id]->stop_id ?? ''), $here, true))->values();
+        $ends = $last->map(fn (object $row) => $row->stop_name);
+        $plain = fn (string $name) => mb_strtolower(trim((string) preg_replace(['/^Köln[ -]/u', '/[\s-]+/u'], ['', ' '], $name)));
+
+        return $departures->map(function (object $dep) use ($ends, $plain) {
+            $end = isset($ends[$dep->trip_id]) ? (string) preg_replace('/^Köln[ -]/u', '', $ends[$dep->trip_id]) : null;
+            // Either may carry the district: "Braunsfeld Eupener Str." ends at "Köln Eupener Str.".
+            if ($end !== null && $dep->direction
+                && ! str_contains($plain($end), $plain($dep->direction))
+                && ! str_contains($plain($dep->direction), $plain($end))) {
+                $dep->direction = $end;
+            }
+
+            return $dep;
         });
     }
 
