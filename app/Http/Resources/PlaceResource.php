@@ -7,6 +7,7 @@ use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use App\Places\AroundKinds;
 use App\Places\FacilityGroups;
+use App\Places\PlaceAmenities;
 use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -80,6 +81,9 @@ class PlaceResource extends JsonResource
             'feedback_been' => (bool) ($this->feedback_been ?? false),
             'feedback_been_rating' => $this->feedback_been_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
+            // What it lists, as search filters by it and Composer says it:
+            // "Italian", "Wi-Fi", "outdoor seating", "vegan options".
+            'amenities' => PlaceAmenities::listed($placeFacts['practical']),
             'place_facts' => $this->placeFacts($placeFacts),
             // The place sheet (Around here): its kind's icon, and what its
             // listed hours say at the time asked (OpenNearby::hoursAt).
