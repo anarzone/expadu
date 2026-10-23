@@ -577,14 +577,25 @@ class PlaceFacts
      */
     private function resolveHours(Spot $spot, array $tags, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'hours');
-        $source = is_array($row?->payload['hours'] ?? null) ? $row->payload['hours'] : [];
-        $raw = $row !== null
-            ? $this->stringValue(array_key_exists('raw', $source) ? $source['raw'] : null)
-            : ($useLegacyProjection ? $this->stringValue($tags['opening_hours'] ?? null) : null);
+        // The place's own source (OSM) gives its hours; another provider (its website) only
+        // fills a gap. Hours that differ between them are flagged as conflicting, never swapped.
+        $withHours = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('hours', $row->payload))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $isOwn = fn (PlaceFactObservation $row): bool => $spot->source === null || ($row->provider === $spot->source && $row->provider_record_id === $spot->source_id);
+        $ownRow = $withHours->filter($isOwn)->last();
+        $rawOf = fn (?PlaceFactObservation $row): ?string => $row === null ? null : $this->stringValue(is_array($row->payload['hours'] ?? null) ? ($row->payload['hours']['raw'] ?? null) : null);
+        $others = $withHours->reject($isOwn)
+            ->groupBy(fn (PlaceFactObservation $row): string => $row->provider.'|'.$row->provider_record_id)
+            ->map(fn (Collection $rows): PlaceFactObservation => $rows->last())
+            ->filter(fn (PlaceFactObservation $row): bool => $rawOf($row) !== null && OpeningHoursParser::parse($rawOf($row)) !== null)
+            ->values();
+        $ownRaw = $rawOf($ownRow) ?? ($ownRow === null && $useLegacyProjection ? $this->stringValue($tags['opening_hours'] ?? null) : null);
+        $row = $ownRaw !== null || $others->isEmpty() ? $ownRow : $others->last();
+        $raw = $ownRaw ?? $rawOf($row);
         $parsed = $raw !== null
             ? OpeningHoursParser::parse($raw)
             : ($row === null && $useLegacyProjection && is_array($spot->opening_hours) ? $spot->opening_hours : null);
+        $hoursDisagree = $parsed !== null && $others->contains(fn (PlaceFactObservation $other): bool => OpeningHoursParser::parse($rawOf($other)) != $parsed);
 
         $correction = $corrections->last();
         if ($correction !== null) {
@@ -593,7 +604,7 @@ class PlaceFacts
         }
 
         return [
-            ...$this->fact($parsed, $corrections->count() > 1 ? 'conflicting' : ($parsed !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($raw !== null || $parsed !== null ? $legacySourceUrl : null))),
+            ...$this->fact($parsed, $corrections->count() > 1 || ($correction === null && $hoursDisagree) ? 'conflicting' : ($parsed !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($raw !== null || $parsed !== null ? $legacySourceUrl : null))),
             'raw' => $raw,
             'parsed' => $parsed,
             'observed_at' => $row?->observed_at?->toIso8601String(),
