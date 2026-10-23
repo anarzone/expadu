@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
 use App\Enums\TransportMode;
+use App\Places\PlaceWorkAnswers;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -26,6 +27,13 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
+
+    protected static function booted(): void
+    {
+        // Their "Good for laptop work?" answers go with the account, and the places'
+        // anonymous totals are recomputed without them (the FK cascade alone wouldn't).
+        static::deleting(fn (User $user) => app(PlaceWorkAnswers::class)->forget($user));
+    }
 
     public function canAccessPanel(Panel $panel): bool
     {
