@@ -4,7 +4,7 @@ import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 import type { AiNotice } from './ai-notice';
-import { AnswerBody, guided, isAnswer } from './answers';
+import { AnswerBody, guided, isAnswer, TryAgain, unanswered } from './answers';
 import { Guidance } from './guidance';
 import { ComposerLoading } from './loading';
 import { PlanCard } from './plan-card';
@@ -359,6 +359,12 @@ function Talk({
                     </button>
                 )}
             {guided(message) && <Guidance query={message.query ?? ''} />}
+            {message.id === messages.at(-1)?.id && unanswered(message) && (
+                <TryAgain
+                    onAgain={() => void engine.again()}
+                    disabled={!!busy}
+                />
+            )}
         </article>
     );
 
@@ -386,7 +392,7 @@ function Talk({
                         {retryMessage && (
                             <button
                                 type="button"
-                                onClick={() => void engine.send(retryMessage)}
+                                onClick={engine.retry}
                                 disabled={!!busy}
                             >
                                 Retry

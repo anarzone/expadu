@@ -12,7 +12,13 @@ import { useEffect, useRef, useState } from 'react';
 import { keep } from '@/actions/App/Http/Controllers/ComposerController';
 import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
-import { AnswerBody, isAnswer, guided } from '@/components/composer/answers';
+import {
+    AnswerBody,
+    isAnswer,
+    guided,
+    TryAgain,
+    unanswered,
+} from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
     readComposerEntry,
@@ -185,6 +191,8 @@ export default function ComposerPage({
         pendingText,
         command,
         send,
+        again,
+        retry,
     } = useComposerEngine(initial, aiNotice, {
         origin,
         pins,
@@ -758,6 +766,14 @@ export default function ComposerPage({
                                     {guided(message) && (
                                         <Guidance query={message.query ?? ''} />
                                     )}
+                                    {message.id ===
+                                        conversation.messages.at(-1)?.id &&
+                                        unanswered(message) && (
+                                            <TryAgain
+                                                onAgain={() => void again()}
+                                                disabled={!!busy}
+                                            />
+                                        )}
                                 </article>
                             );
                         })}
@@ -1028,10 +1044,7 @@ export default function ComposerPage({
                             <div className="composer-error" role="alert">
                                 <span>{error}</span>
                                 {retryMessage && (
-                                    <button
-                                        onClick={() => send(retryMessage)}
-                                        disabled={!!busy}
-                                    >
+                                    <button onClick={retry} disabled={!!busy}>
                                         Retry
                                     </button>
                                 )}

@@ -692,6 +692,11 @@ export function AnswerBody({
                 block.type === 'trip' && !!block.major,
         )?.major;
 
+        // Nothing came back to show: it says so, rather than an empty reply.
+        if (emptyAnswer(message)) {
+            return <p>Composer couldn’t put an answer together for that.</p>;
+        }
+
         return (
             <>
                 {major && <MajorHeadline major={major} />}
@@ -744,6 +749,42 @@ export function AnswerBody({
             )}
             {next}
         </>
+    );
+}
+
+/** An assistant's answer with nothing in it: no words, no cards, nothing to do next. */
+const emptyAnswer = (message: AnswerMessage) =>
+    message.request === 'ask' &&
+    !message.lead &&
+    !message.blocks?.length &&
+    !message.suggestions?.length;
+
+/** The reply to a message that couldn't be answered, or came back empty. */
+export const unanswered = (message: Message) =>
+    message.kind === 'failed' || (isAnswer(message) && emptyAnswer(message));
+
+/**
+ * Try again under the newest reply that couldn't answer: the same message,
+ * asked again (the engine's `again`), never sent a second time.
+ */
+export function TryAgain({
+    onAgain,
+    disabled,
+}: {
+    onAgain: () => void;
+    disabled: boolean;
+}) {
+    return (
+        <div className="reply-suggestions">
+            <button
+                type="button"
+                className="suggestion-chip"
+                disabled={disabled}
+                onClick={onAgain}
+            >
+                Try again
+            </button>
+        </div>
     );
 }
 

@@ -30,6 +30,24 @@ const PAGES: Record<string, string> = {
     composer: 'Composer',
 };
 
+/** The assistant's answer: its own budget (App\Composer\Assistant) and the tools after it. */
+const ASK_TIMEOUT = 60_000;
+
+/** Whether the person's last message in the open conversation has a reply after it. */
+export function replied(state: Workspace): boolean {
+    const messages =
+        state.conversations.find((item) => item.id === state.active)
+            ?.messages ?? [];
+    const asked = messages.findLastIndex((message) => message.role === 'user');
+
+    return (
+        asked >= 0 &&
+        messages
+            .slice(asked + 1)
+            .some((message) => message.role === 'assistant')
+    );
+}
+
 export type EngineSwap = { slot: Slot; date: string; revision: number };
 
 export type EngineHooks = {
@@ -74,6 +92,8 @@ export function useComposerEngine(
     const [error, setError] = useState('');
     const [retryMessage, setRetryMessage] = useState<string | null>(null);
     const [pendingText, setPendingText] = useState('');
+    // The last request's message is in but unanswered: Retry asks again.
+    const againRef = useRef(false);
     const on = useRef(hooks);
     useEffect(() => {
         on.current = hooks;
@@ -138,6 +158,118 @@ export function useComposerEngine(
             setBusy('');
         }
     }
+    /**
+     * Composer's assistant answers the person's last message: the server reads it
+     * from the conversation, looks things up from where they start and answers; a
+     * plan it shows goes into their plans. Only a refused say-so (an outdated
+     * notice) is asked again without the AI, and the answer says so: a timeout or
+     * a server error isn't asked twice, since the first may still be answering.
+     */
+    async function answer(notice: AiNotice | null) {
+        setBusy('Looking into it…');
+        const origin = on.current.origin ?? null;
+        const where = {
+            ...(page ? { page } : {}),
+            ...(origin
+                ? {
+                      lat: origin.lat,
+                      lng: origin.lng,
+                      from_place: origin.from_place,
+                      from_area: origin.from_area,
+                      from_label: origin.label.slice(0, 80),
+                  }
+                : {}),
+        };
+        // The say-so for this request; while the assistant works, the line says how far.
+        const permit = aiPermit(notice) as {
+            processing?: { request_id: string };
+        };
+        const stop = permit.processing
+            ? watchProgress(permit.processing.request_id, setBusy)
+            : () => undefined;
+
+        try {
+            setState(
+                await api<Workspace>(
+                    ask.url(),
+                    { ...where, ...permit },
+                    undefined,
+                    ASK_TIMEOUT,
+                ).catch((error: unknown) =>
+                    notice &&
+                    error instanceof ApiError &&
+                    (error.status === 403 || error.status === 422)
+                        ? api<Workspace>(
+                              ask.url(),
+                              where,
+                              undefined,
+                              ASK_TIMEOUT,
+                          )
+                        : Promise.reject(error),
+                ),
+            );
+            on.current.onAnswered?.();
+        } finally {
+            stop();
+        }
+    }
+
+    /**
+     * The answer didn't come: a late one may be in the conversation after all, so
+     * that's read first; otherwise the conversation says it couldn't answer, with
+     * Try again (`again`). Only when even that can't be saved does the bar say so.
+     */
+    async function unanswered() {
+        const latest = await api<Workspace>(show.url()).catch(() => null);
+
+        if (latest && replied(latest)) {
+            setState(latest);
+            on.current.onAnswered?.();
+
+            return;
+        }
+
+        try {
+            await sendCommand({ action: 'reply', kind: 'failed' });
+            on.current.onAnswered?.();
+        } catch {
+            againRef.current = true;
+            setError('Composer couldn’t answer that, and couldn’t save why.');
+            setRetryMessage('again');
+        }
+    }
+
+    /** Try again: the same message, asked again, not sent again. */
+    async function again(notice: AiNotice | null = aiNotice) {
+        if (busyRef.current) {
+            return;
+        }
+
+        busyRef.current = true;
+        againRef.current = false;
+        setError('');
+        setRetryMessage(null);
+
+        try {
+            await answer(notice);
+        } catch {
+            await unanswered();
+        } finally {
+            setBusy('');
+            busyRef.current = false;
+            on.current.onSettled?.();
+        }
+    }
+
+    /** The bar's Retry: asks again when the message is in, else sends it. */
+    function retry() {
+        if (againRef.current) {
+            void again();
+        } else if (retryMessage) {
+            void send(retryMessage);
+        }
+    }
+
     /** Asks a request; `notice` is the AI notice the person saw when they sent it. */
     async function send(text: string, notice: AiNotice | null = aiNotice) {
         if (!text.trim() || busyRef.current) {
@@ -145,6 +277,7 @@ export function useComposerEngine(
         }
 
         busyRef.current = true;
+        againRef.current = false;
         setBusy('Working on your request…');
         setError('');
         setRetryMessage(null);
@@ -233,60 +366,23 @@ export function useComposerEngine(
                     );
                 }
             } else {
-                // Composer's assistant answers it: the server reads the message from the
-                // conversation, looks things up from where you start and answers; a plan it
-                // shows goes into your plans. If the say-so is refused (an outdated notice),
-                // it's answered without the AI, and the answer says so.
-                setBusy('Looking into it…');
-                const origin = on.current.origin ?? null;
-                const where = {
-                    ...(page ? { page } : {}),
-                    ...(origin
-                        ? {
-                              lat: origin.lat,
-                              lng: origin.lng,
-                              from_place: origin.from_place,
-                              from_area: origin.from_area,
-                              from_label: origin.label.slice(0, 80),
-                          }
-                        : {}),
-                };
-                // The say-so for this request; while the assistant works, the line says how far.
-                const permit = aiPermit(notice) as {
-                    processing?: { request_id: string };
-                };
-                const stop = permit.processing
-                    ? watchProgress(permit.processing.request_id, setBusy)
-                    : () => undefined;
-                const answered = await api<Workspace>(ask.url(), {
-                    ...where,
-                    ...permit,
-                })
-                    .catch((error: unknown) =>
-                        notice
-                            ? api<Workspace>(ask.url(), where)
-                            : Promise.reject(error),
-                    )
-                    .finally(stop);
-                setState(answered);
+                await answer(notice);
             }
 
             on.current.onAnswered?.();
         } catch (err) {
+            // Stored, it's answered or says it couldn't be: never resent, so never twice.
             if (asked) {
-                await sendCommand({ action: 'reply', kind: 'failed' }).catch(
-                    () => undefined,
+                await unanswered();
+            } else {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Could not finish that request.',
                 );
-                on.current.onAnswered?.();
+                setRetryMessage(text);
+                on.current.onFailed?.(text);
             }
-
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'Could not finish that request.',
-            );
-            setRetryMessage(text);
-            on.current.onFailed?.(text);
         } finally {
             setPendingText('');
             setBusy('');
@@ -311,5 +407,7 @@ export function useComposerEngine(
         sendCommand,
         command,
         send,
+        again,
+        retry,
     };
 }
