@@ -98,8 +98,11 @@ final class OpenNearby
      * @param  list<int>  $spotIds
      * @return Collection<int, array<string, mixed>>
      */
-    public function rows(array $spotIds, ?float $fromLat, ?float $fromLng, CarbonImmutable $at): Collection
+    public function rows(array $spotIds, ?float $fromLat, ?float $fromLng, CarbonImmutable $at, ?User $for = null): Collection
     {
+        $saved = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
+            ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
+            ->keys()->map(fn (mixed $id): int => (int) $id)->all();
         $spots = Spot::query()->whereIn('id', $spotIds)
             ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
             ->get()->keyBy('id');
@@ -107,7 +110,14 @@ final class OpenNearby
         $local = $at->setTimezone('Europe/Berlin');
 
         return collect($spotIds)->map(fn (int $id): ?Spot => $spots->get($id))->filter()
-            ->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $fromLat, $fromLng))->values();
+            ->map(fn (Spot $spot): array => $this->row($spot, $facts->get($spot->id) ?? [], $local, $fromLat, $fromLng))
+            // What Around here's PlaceRow needs besides the facts: its icon, label and saved state.
+            ->map(fn (array $row): array => [
+                ...$row,
+                'icon' => AroundKinds::icon($row['kind']),
+                'label' => AroundKinds::label($row['kind']),
+                'saved' => in_array($row['id'], $saved, true),
+            ])->values();
     }
 
     /**
