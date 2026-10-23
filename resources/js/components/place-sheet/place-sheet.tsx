@@ -244,6 +244,9 @@ export function PlaceSheet({
     const [failedFor, setFailedFor] = useState<number | null>(null);
     const [saved, setSaved] = useState(false);
     const [been, setBeen] = useState(false);
+    // When Save or Been there last reached the server: what may be asked
+    // (the laptop question) is read again after it.
+    const [markedAt, setMarkedAt] = useState(0);
     // "Saved to your places." or "Marked as been there." over the footer,
     // with Undo, after turning it on.
     const [marked, setMarked] = useState<Marked | null>(null);
@@ -302,7 +305,10 @@ export function PlaceSheet({
         api(`/api/places/${d.id}/feedback`, {
             action: next ? 'saved' : 'clear',
         })
-            .then(() => onSaved?.(d.id, next))
+            .then(() => {
+                setMarkedAt(Date.now());
+                onSaved?.(d.id, next);
+            })
             .catch(() => {
                 setSaved(!next);
                 setMarked(null);
@@ -330,13 +336,15 @@ export function PlaceSheet({
         );
         api(`/api/places/${d.id}/been`, {
             _method: next ? 'PUT' : 'DELETE',
-        }).catch(() => {
-            setBeen(!next);
-            setMarked(null);
-            showToast('That wasn’t marked. Please try again.', {
-                error: true,
+        })
+            .then(() => setMarkedAt(Date.now()))
+            .catch(() => {
+                setBeen(!next);
+                setMarked(null);
+                showToast('That wasn’t marked. Please try again.', {
+                    error: true,
+                });
             });
-        });
     };
 
     return (
@@ -360,6 +368,7 @@ export function PlaceSheet({
                     onSave={save}
                     been={been}
                     onBeen={toggleBeen}
+                    markedAt={markedAt}
                     marked={marked}
                     onMarkedDone={clearMarked}
                 />
@@ -487,6 +496,7 @@ function PlaceDetail({
     onSave,
     been,
     onBeen,
+    markedAt,
     marked,
     onMarkedDone,
 }: {
@@ -497,6 +507,8 @@ function PlaceDetail({
     onSave: () => void;
     been: boolean;
     onBeen: () => void;
+    /** When Save or Been there last reached the server. */
+    markedAt: number;
     /** A mark just turned on, shown over the footer with Undo. */
     marked: Marked | null;
     onMarkedDone: () => void;
@@ -729,6 +741,7 @@ function PlaceDetail({
                 conditional={practical['laptops:conditional']}
                 saved={saved}
                 been={been}
+                markedAt={markedAt}
                 canAsk={!!user?.email_verified_at}
             />
         ) : null;

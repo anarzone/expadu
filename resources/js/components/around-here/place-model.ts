@@ -3,6 +3,8 @@
    records). A fact the listing doesn't record is null and isn't shown;
    nothing is guessed. */
 
+import type { RowLaptop } from '@/components/place-sheet/laptop-text';
+
 export type PlaceIconName =
     | 'pharmacy'
     | 'cafe'
@@ -59,6 +61,8 @@ export type AroundPlace = {
     facilities?: string | null;
     /** A park too big to walk round answers per Veedel: the part this row is. */
     part?: string | null;
+    /** "Good for laptop work?": people's verdict and the café's own rule, if any. */
+    laptop?: RowLaptop;
     saved: boolean;
 };
 
@@ -66,6 +70,8 @@ export type AroundPlace = {
 export const rowKey = (place: AroundPlace) => `${place.id}-${place.part ?? ''}`;
 
 export type AroundKind = { id: string; label: string };
+
+export type { RowLaptop };
 
 /** Places to eat, whose rows say their diets. */
 const EATING = ['cafe', 'restaurant', 'fastfood', 'bakery'];

@@ -597,8 +597,20 @@
     fill: currentColor;
 }
 
-/* On a phone Share is its icon, so the footer fits. */
+/* On a phone Share is its icon and the buttons sit closer, so Save,
+   Been there, Share and Plan a visit fit at 375. */
 @media (max-width: 700px) {
+    .ui-sheet.place-sheet .place-sheet-actions {
+        gap: 6px;
+        padding-inline: 12px;
+    }
+
+    .ui-sheet.place-sheet .place-sheet-secondary,
+    .ui-sheet.place-sheet .place-sheet-primary {
+        gap: 6px;
+        padding: 0 10px;
+    }
+
     .ui-sheet.place-sheet .place-sheet-share {
         padding: 0 12px;
     }

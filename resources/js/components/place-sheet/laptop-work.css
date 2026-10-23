@@ -348,6 +348,16 @@
     font-size: var(--text-small);
 }
 
+.ui-sheet.place-sheet .laptop-error {
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--color-conflict-border);
+    border-radius: 12px;
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+
 .ui-sheet.place-sheet .laptop-work button:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;

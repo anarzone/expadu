@@ -7,10 +7,10 @@
    no one else's answers. */
 
 import { useEffect, useRef, useState } from 'react';
-import { showToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { fullDays, ruleDays, ruleTitle, verdictTitle } from './laptop-text';
 import { FOLLOW_UPS, useWorkAnswer } from './work-answer';
-import type { FollowUp, WorkAnswer, WorkTotal, YesNo } from './work-answer';
+import type { FollowUp, WorkAnswer, YesNo } from './work-answer';
 import './laptop-work.css';
 
 /** A resolved place fact, with where it came from when the listing says. */
@@ -29,83 +29,6 @@ const FOLLOW_LABEL: Record<FollowUp, string> = {
     sockets: 'Sockets',
     quiet: 'Quiet',
 };
-
-const DAY_NAMES: Record<string, [string, string]> = {
-    Mo: ['Monday', 'Mon'],
-    Tu: ['Tuesday', 'Tue'],
-    We: ['Wednesday', 'Wed'],
-    Th: ['Thursday', 'Thu'],
-    Fr: ['Friday', 'Fri'],
-    Sa: ['Saturday', 'Sat'],
-    Su: ['Sunday', 'Sun'],
-};
-const ORDER = Object.keys(DAY_NAMES);
-
-/** The days an OSM-style rule names ("Sa-Su", "Mo-Fr", "Sa,Su"), in order. */
-export function ruleDays(days: string | null | undefined): string[] {
-    if (!days) {
-        return [];
-    }
-
-    return days
-        .split(/[,;]/)
-        .flatMap((part) => {
-            const [from, to] = part.trim().split('-');
-            const a = ORDER.indexOf(from);
-            const b = ORDER.indexOf(to ?? from);
-
-            return a < 0 || b < 0 ? [] : ORDER.slice(a, b + 1);
-        })
-        .filter((day, i, all) => all.indexOf(day) === i);
-}
-
-/** "at weekends", "on weekdays", "on Saturdays", "on Mon, Wed". */
-function daysPhrase(days: string[]): string {
-    const key = days.join(',');
-
-    if (key === 'Sa,Su') {
-        return 'at weekends';
-    }
-
-    if (key === 'Mo,Tu,We,Th,Fr') {
-        return 'on weekdays';
-    }
-
-    return days.length === 1
-        ? `on ${DAY_NAMES[days[0]][0]}s`
-        : `on ${days.map((d) => DAY_NAMES[d][1]).join(', ')}`;
-}
-
-/** "Saturday and Sunday". */
-const fullDays = (days: string[]) => {
-    const names = days.map((d) => DAY_NAMES[d][0]);
-
-    return names.length > 1
-        ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
-        : (names[0] ?? '');
-};
-
-/** The café's own rule as a title: "No laptops at weekends". */
-export function ruleTitle(value: string, days: string[]): string {
-    const when = days.length ? ` ${daysPhrase(days)}` : '';
-
-    return value === 'no'
-        ? `No laptops${when}`
-        : value === 'yes'
-          ? `Laptops welcome${when}`
-          : `Laptops limited${when}`;
-}
-
-/** A people's verdict, short: "Good for laptop work · 9 of 11". */
-export function verdictTitle(total: NonNullable<WorkTotal>): string {
-    const words = {
-        yes: 'Good for laptop work',
-        no: 'Not good for laptop work',
-        mixed: 'Mixed reports',
-    }[total.value];
-
-    return `${words} · ${total.yes} of ${total.total}`;
-}
 
 function Mark({ kind }: { kind: 'good' | 'mixed' | 'not' | 'rule' | 'none' }) {
     const paths = {
@@ -207,6 +130,7 @@ export function LaptopWork({
     conditional,
     saved,
     been,
+    markedAt,
     canAsk,
 }: {
     place: number;
@@ -216,10 +140,12 @@ export function LaptopWork({
     conditional: WorkFact | undefined;
     saved: boolean;
     been: boolean;
+    /** When Save or Been there last reached the server: may they answer now? */
+    markedAt: number;
     /** Signed in with a verified address: may be asked at all. */
     canAsk: boolean;
 }) {
-    const work = useWorkAnswer(canAsk ? place : null, `${saved}-${been}`);
+    const work = useWorkAnswer(canAsk ? place : null, String(markedAt));
     const state = work.state;
     const answer = state?.answer ?? null;
     // Just answered here: the thank-you (and, after a Yes, what helped).
@@ -241,7 +167,9 @@ export function LaptopWork({
         [],
     );
 
-    const fail = (error: Error) => showToast(error.message, { error: true });
+    // A failure shows here, where the answer is (a toast would sit under the sheet).
+    const [error, setError] = useState<string | null>(null);
+    const fail = (failure: Error) => setError(failure.message);
 
     const say = (laptop: YesNo) => {
         const keep = laptop === 'yes' && answer?.laptop === 'yes';
@@ -252,6 +180,7 @@ export function LaptopWork({
             quiet: keep ? answer.quiet : null,
         };
         setWithdrawn(null);
+        setError(null);
         work.answer(next)
             .then((before) => {
                 setFresh({ before });
@@ -261,9 +190,14 @@ export function LaptopWork({
     };
 
     const undoAnswer = () => {
-        const before = fresh?.before ?? null;
+        const was = fresh;
         setFresh(null);
-        work.restore(before).catch(fail);
+        setError(null);
+        work.restore(was?.before ?? null).catch((failure: Error) => {
+            // Still answered: the thank-you and its Undo stay.
+            setFresh(was);
+            fail(failure);
+        });
     };
 
     // What helped: each tap shows at once; the answer saves a moment after
@@ -538,12 +472,23 @@ export function LaptopWork({
                         onClick={() => {
                             const back = withdrawn;
                             setWithdrawn(null);
-                            work.restore(back).catch(fail);
+                            setError(null);
+                            work.restore(back).catch((failure: Error) => {
+                                // Still withdrawn: its Undo stays.
+                                setWithdrawn(back);
+                                fail(failure);
+                            });
                         }}
                     >
                         Undo
                     </button>
                 </div>
+            ) : null}
+
+            {error ? (
+                <p className="laptop-error" role="alert">
+                    {error}
+                </p>
             ) : null}
         </section>
     );
