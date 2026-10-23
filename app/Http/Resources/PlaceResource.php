@@ -41,7 +41,7 @@ class PlaceResource extends JsonResource
         return [
             'id' => $this->id,
             'recommendation_status' => $this->whenHas('recommendation_available', fn () => $this->recommendation_available ? 'available' : 'unavailable'),
-            'name' => $placeFacts['name']['value'] ?? $this->name,
+            'name' => $placeFacts['display_name'] ?? $placeFacts['name']['value'] ?? $this->name,
             'category' => $coarse,
             'fine_label' => $fine?->label(),
             'emoji' => $fine?->emoji(),
