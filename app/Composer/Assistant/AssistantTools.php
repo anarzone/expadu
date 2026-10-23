@@ -67,6 +67,41 @@ final class AssistantTools
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
     public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next)$/';
 
+    /**
+     * What each tool's result sends, as Composer's notice names it (ProcessingPurpose::WORDS).
+     * A tool without one can't be sent: ComposerPaperworkNoticeTest fails on it.
+     */
+    public const CATEGORIES = [
+        'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
+        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'weather' => 'weather',
+        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names',
+        'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
+        'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
+        'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
+        'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
+        'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
+        // Without their Paperwork permission, these only say it's needed.
+        'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
+    ];
+
+    /** With their Paperwork permission for the message (composer_paperwork), these tools send their record. */
+    public const PAPERWORK_CATEGORIES = [
+        'paperwork' => 'your_paperwork_answers_and_tasks', 'change_paperwork_fact' => 'paperwork_changes_you_ask_for',
+        'paperwork_step' => 'paperwork_changes_you_ask_for', 'paperwork_report' => 'paperwork_changes_you_ask_for',
+    ];
+
+    /**
+     * Everything a request can carry: the message's own parts (Assistant::CONTEXT) and what each
+     * tool's result is.
+     *
+     * @return list<string>
+     */
+    public static function categories(bool $paperwork): array
+    {
+        return array_values(array_unique([...array_values(Assistant::CONTEXT), ...array_values(self::CATEGORIES),
+            ...($paperwork ? array_values(self::PAPERWORK_CATEGORIES) : [])]));
+    }
+
     /** @var array<string, string> each result's text, by id, as the assistant read it */
     public array $read = [];
 
@@ -866,7 +901,7 @@ final class AssistantTools
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
-            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
@@ -939,14 +974,15 @@ final class AssistantTools
      */
     private function askPaperworkPermission(): bool
     {
-        if (! ProcessingPurpose::PaperworkAnswer->available() || ! BureaucracyPerson::query()->where('account_user_id', $this->user->id)
+        if (! ProcessingPurpose::ComposerPaperwork->available() || ! BureaucracyPerson::query()->where('account_user_id', $this->user->id)
             ->where('record_status', 'active')->whereNull('processing_stopped_at')->exists()) {
             return false;
         }
-        $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::PaperworkAnswer->value,
+        $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::ComposerPaperwork->value,
             'title' => 'Let Composer read and change your Paperwork record for this message?',
             'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
-            'disclosure' => ProcessingPurpose::PaperworkAnswer->disclosure()];
+            // Its own notice, in words (disclosure.notice), from what Composer's request carries.
+            'disclosure' => ProcessingPurpose::ComposerPaperwork->disclosure()];
 
         return true;
     }
@@ -986,8 +1022,10 @@ final class AssistantTools
         }
         $locations = app(UserLocationService::class);
 
+        // Home and Work as such: their names are often the address typed for them, and addresses stay here.
         return $places->values()->map(fn ($place, int $i): string => $this->line('m'.($i + 1),
-            ($place->category === 'custom' ? '' : ucfirst((string) $place->category).': ')."\"{$place->name}\" in ".($locations->veedelAt((float) $place->lat, (float) $place->lng) ?? 'an unknown Veedel')))->implode("\n");
+            (in_array($place->category, ['home', 'work'], true) ? ucfirst((string) $place->category) : "\"{$place->name}\"")
+            .' in '.($locations->veedelAt((float) $place->lat, (float) $place->lng) ?? 'an unknown Veedel')))->implode("\n");
     }
 
     /** What they like and skip, as TasteFacts states it: kinds, areas, times of day. */

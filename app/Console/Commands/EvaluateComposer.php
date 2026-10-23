@@ -90,11 +90,6 @@ class EvaluateComposer extends Command
         }
 
         $set = json_decode((string) file_get_contents(base_path((string) $this->option('set'))), true, flags: JSON_THROW_ON_ERROR);
-        // A case with the person's Paperwork permission needs Paperwork's AI on, as on a server
-        // that has it (here only, never in production).
-        if (collect($set['requests'])->contains(fn (array $r): bool => $r['paperwork_permission'] ?? false)) {
-            config(['services.paperwork_analyser.enabled' => true]);
-        }
         $requests = collect($set['requests'])
             ->when($this->option('only'), function ($all, string $only) {
                 $wanted = array_map('trim', explode(',', $only));
@@ -313,7 +308,7 @@ class EvaluateComposer extends Command
         app()->instance(Assistant::class, $assistant = app()->make(Assistant::class));
         try {
             $workspace = app(Ask::class)->answer($user, $this->acceptance(ProcessingPurpose::ComposerAssist), 'Composer', $http,
-                $paperwork ? $this->acceptance(ProcessingPurpose::PaperworkAnswer) : null);
+                $paperwork ? $this->acceptance(ProcessingPurpose::ComposerPaperwork) : null);
         } finally {
             app()->forgetInstance(Assistant::class);
         }

@@ -29,6 +29,12 @@ final class InAppPlaces
                 'label' => 'Open the AI notice →', 'nav' => 'ai_notice'],
             'note' => 'You can give it again with your next message.',
         ],
+        'withdraw_paperwork_permission' => [
+            'text' => 'Composer reads your Paperwork record only for a message you allow it on. Withdrawing that permission is your choice to make, in the notice under the box; it stops any request still on its way.',
+            'place' => ['crumb' => 'Composer › About the AI › Your Paperwork', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
+                'label' => 'Open the AI notice →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
+            'note' => 'Withdrawing Composer’s AI withdraws this too.',
+        ],
         'delete_account' => [
             'text' => 'Deleting your account can’t be undone, so I don’t do it from here. Settings asks you to confirm with your password.',
             'place' => ['crumb' => 'Settings › Profile › Delete account', 'actions' => ['Profile', 'Delete account'], 'here' => 'Delete account',

@@ -66,7 +66,7 @@ final class ComposerActions
                 $record = $this->kept($user, [...$record, 'state' => 'proposed', 'expires_at' => $now->addHours(self::HOURS)->toIso8601String()],
                     ['title' => $prepared['propose'], ...$prepared]);
 
-                return ['said' => "Proposed, not done yet: {$prepared['propose']}".(isset($prepared['about']) ? " ({$prepared['about']})" : '')
+                return ['said' => 'Proposed, not done yet: '.($prepared['tell'] ?? $prepared['propose']).(isset($prepared['about']) ? " ({$prepared['about']})" : '')
                     ." It's done only when they tap Apply on the card.", 'blocks' => $record['blocks']];
             }
             $record = $this->made($user, $record, $now);
