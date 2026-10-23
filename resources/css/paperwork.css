@@ -3093,6 +3093,12 @@
     }
 
     /* Sharing your plan: who sees what, and an invitation with chosen access. */
+    /* Handed over from Composer: the record action asked for, ringed (never pressed). */
+    .record-actions .is-ringed {
+        border: 2px solid var(--color-text);
+        color: var(--color-text);
+        box-shadow: 0 0 0 4px var(--color-paper-bg);
+    }
     .sharing-grants h3,
     .sharing-invite h3 {
         margin: 18px 0 8px;
