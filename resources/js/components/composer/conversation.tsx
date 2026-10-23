@@ -48,6 +48,7 @@ const activities = (plan: Plan) =>
  * reapply, and a swap's alternatives in place.
  */
 export function ConversationFeed({
+    blank = false,
     engine,
     calls,
     swap,
@@ -63,6 +64,8 @@ export function ConversationFeed({
     preview,
     empty,
 }: {
+    /** A new conversation waiting for its first message: none of this one shows. */
+    blank?: boolean;
     engine: Engine;
     calls: ActionCalls;
     swap: EngineSwap | null;
@@ -95,7 +98,7 @@ export function ConversationFeed({
     const conversation = workspace.conversations.find(
         (item) => item.id === workspace.active,
     );
-    const messages = conversation?.messages ?? [];
+    const messages = blank ? [] : (conversation?.messages ?? []);
     const focused = workspace.focus
         ? (workspace.plans[workspace.focus] ?? null)
         : null;
@@ -326,7 +329,7 @@ export function ConversationFeed({
             </p>
             {messages.length === 0 && !pendingText && empty}
             {messages.map(entry)}
-            {leftUnanswered() && (
+            {!blank && leftUnanswered() && (
                 <NotAnswered onAgain={() => void again()} disabled={!!busy} />
             )}
             {pendingText && (

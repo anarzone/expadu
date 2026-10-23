@@ -14,7 +14,7 @@ import {
 } from './day';
 import type { Surface } from './surface';
 import type { Workspace } from './types';
-import { conversationMeta } from './views';
+import { askedConversations, conversationMeta } from './views';
 import type { Collection } from './views';
 
 const berlin = (iso: string, options: Intl.DateTimeFormatOptions) =>
@@ -29,20 +29,17 @@ const NAV: { view: Collection; label: string; icon: IconName }[] = [
     { view: 'history', label: 'History', icon: 'clock' },
 ];
 
-/** The conversations the rail lists: the open one first, then the newest with messages. */
+/** The conversations the rail lists: the open one first, then the most recent with messages. */
 function railConversations(workspace: Workspace) {
-    const asked = workspace.conversations.filter((conversation) =>
-        conversation.messages.some((message) => message.role === 'user'),
-    );
     const active = workspace.conversations.find(
         (conversation) => conversation.id === workspace.active,
     );
 
     return [
         ...(active ? [active] : []),
-        ...asked
-            .filter((conversation) => conversation !== active)
-            .toSorted((a, b) => b.created_at.localeCompare(a.created_at)),
+        ...askedConversations(workspace.conversations).filter(
+            (conversation) => conversation !== active,
+        ),
     ].slice(0, 5);
 }
 
@@ -65,7 +62,7 @@ export function ComposerRail({
     around?: DayAround;
 }) {
     const origin = useComposerOrigin();
-    const { engine, view, setView, fresh, resume } = surface;
+    const { engine, view, setView, fresh, resume, pendingFresh } = surface;
     const { workspace, busy } = engine;
     const conversations = railConversations(workspace);
     const empty =
@@ -86,7 +83,7 @@ export function ComposerRail({
             <button
                 type="button"
                 className="composer-rail-new"
-                disabled={!!busy || empty}
+                disabled={!!busy || empty || pendingFresh}
                 onClick={() => void fresh()}
             >
                 <Icon name="plus" variant="line" />
@@ -143,7 +140,7 @@ export function ComposerRail({
                 paperwork={paperwork}
                 around={around}
                 workspace={workspace}
-                onAsk={(prompt) => void engine.send(prompt)}
+                onAsk={(prompt) => void surface.send(prompt)}
                 onOpenPlan={(date) => {
                     if (workspace.plans[date]) {
                         void engine

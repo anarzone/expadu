@@ -29,6 +29,7 @@ import {
     PlansView,
     SavedView,
     ViewBackLink,
+    askedConversations,
 } from './views';
 import type { Collection, ComposerView } from './views';
 
@@ -91,16 +92,39 @@ export function useComposerSurface(
         onPlans: () => setView('plans'),
     });
 
-    // Start fresh: a new conversation in place; the last one waits in History.
+    // Start fresh: a new conversation in place, made only when its first
+    // message is sent (owner, 23 Oct 2026); the last one waits in History.
+    const [pendingFresh, setPendingFresh] = useState(false);
     const fresh = async () => {
-        if (await engine.command({ action: 'fresh' })) {
-            setSwap(null);
-            setView('chat');
+        setPendingFresh(true);
+        setSwap(null);
+        setView('chat');
 
-            return true;
+        return true;
+    };
+
+    /** A message: into the new conversation when one is waiting for it, else this one. */
+    const send = async (text: string, startNew = false) => {
+        const state = engine.stateRef.current;
+        const current = state.conversations.find(
+            (item) => item.id === state.active,
+        );
+
+        if ((startNew || pendingFresh) && current?.messages.length) {
+            // The message shows at once; the previous conversation never does.
+            setPendingFresh(true);
+            engine.setPendingText(text);
+
+            if (!(await engine.command({ action: 'fresh' }))) {
+                setPendingFresh(false);
+                engine.setPendingText('');
+
+                return;
+            }
         }
 
-        return false;
+        setPendingFresh(false);
+        await engine.send(text);
     };
 
     const resume = async (id: string) => {
@@ -108,6 +132,7 @@ export function useComposerSurface(
             id === engine.stateRef.current.active ||
             (await engine.command({ action: 'resume', id }))
         ) {
+            setPendingFresh(false);
             setSwap(null);
             setView('chat');
 
@@ -139,6 +164,8 @@ export function useComposerSurface(
         setSwap,
         origin,
         fresh,
+        pendingFresh,
+        send,
         resume,
         browseDate,
         setBrowseDate,
@@ -196,7 +223,8 @@ export function ComposerSurface({
         detail,
         setDetail,
     } = surface;
-    const { workspace, busy, command, send, stateRef } = engine;
+    const { workspace, busy, command, stateRef } = engine;
+    const { send, pendingFresh } = surface;
     const scroller = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
     const feedback = useFeedback();
@@ -290,16 +318,11 @@ export function ComposerSurface({
         (item) => item.id === workspace.active,
     );
     const previous =
-        active && active.messages.length === 0
-            ? (workspace.conversations
-                  .filter(
-                      (item) =>
-                          item !== active &&
-                          item.messages.some((m) => m.role === 'user'),
-                  )
-                  .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
-                  .at(0) ?? null)
-            : null;
+        pendingFresh && active?.messages.some((m) => m.role === 'user')
+            ? active
+            : active && active.messages.length === 0
+              ? (askedConversations(workspace.conversations).at(0) ?? null)
+              : null;
 
     // Following the newest exchange, as the panel always has: what came in
     // last opens at its start, the person's message if they asked, else the
@@ -532,6 +555,7 @@ export function ComposerSurface({
             body = (
                 <>
                     <ConversationFeed
+                        blank={pendingFresh}
                         engine={engine}
                         calls={calls}
                         swap={swap}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
     day as dayContext,
     show,
@@ -11,10 +11,14 @@ import { ComposerSurface, useComposerSurface } from './surface';
 import type { SurfaceContext } from './surface';
 import { api } from './types';
 import type { Conversation, Workspace } from './types';
-import { conversationMeta } from './views';
+import { askedConversations, conversationMeta } from './views';
 import type { ComposerView } from './views';
 import '../../../css/composer.css';
 import '../../../css/composer-page.css';
+
+// The workspace as the panel last saw it: opening again draws it at once, at
+// its final size, while the current one loads behind it.
+let lastSeen: Workspace | null = null;
 
 /** A request the tray sent: asked once, by its id; `fresh` from the panel's start. */
 export type TrayAsked = { id: number; text: string; fresh: boolean };
@@ -58,15 +62,16 @@ export default function TrayBody({
     /** Words in the tray's box for them to finish. */
     onDraft: (text: string) => void;
 }) {
-    const [initial, setInitial] = useState<Workspace | null>(null);
+    const [initial] = useState<Workspace | null>(() => lastSeen);
+    const [loaded, setLoaded] = useState<Workspace | null>(null);
     const [context, setContext] = useState<SurfaceContext>({});
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
         let live = true;
         api<Workspace>(show.url())
-            .then((workspace) => live && setInitial(workspace))
-            .catch(() => live && setFailed(true));
+            .then((workspace) => live && setLoaded(workspace))
+            .catch(() => live && !lastSeen && setFailed(true));
         // Your day and saved starting points: the starters and Starting point
         // wait for them, the conversation doesn't.
         api<SurfaceContext>(dayContext.url())
@@ -89,7 +94,7 @@ export default function TrayBody({
         );
     }
 
-    if (!initial) {
+    if (!initial && !loaded) {
         return view === 'talk' ? (
             <div className="composer-tray-body composer-page">
                 <ComposerLoading label="Opening your conversation…" />
@@ -99,7 +104,8 @@ export default function TrayBody({
 
     return (
         <Body
-            initial={initial}
+            initial={(initial ?? loaded)!}
+            loaded={loaded}
             context={context}
             view={view}
             asked={asked}
@@ -124,6 +130,7 @@ const focusBox = () =>
 
 function Body({
     initial,
+    loaded,
     context,
     view,
     asked,
@@ -135,6 +142,8 @@ function Body({
     onView,
 }: {
     initial: Workspace;
+    /** The current workspace once it has loaded (the panel may open on the last one seen). */
+    loaded: Workspace | null;
     context: SurfaceContext;
     view: TrayView;
     asked: TrayAsked | null;
@@ -151,6 +160,24 @@ function Body({
     });
     const { engine } = surface;
     const { workspace, busy, error } = engine;
+
+    // Opened on the last one seen: the current one replaces it once loaded,
+    // unless something here has already moved it on.
+    const applied = useRef<Workspace | null>(null);
+    useEffect(() => {
+        if (
+            loaded &&
+            applied.current !== loaded &&
+            !engine.busyRef.current &&
+            loaded.revision >= engine.stateRef.current.revision
+        ) {
+            applied.current = loaded;
+            engine.setState(loaded);
+        }
+    }, [loaded, engine]);
+    useEffect(() => {
+        lastSeen = workspace;
+    }, [workspace]);
     const sent = useRef<number | null>(null);
     const picked = useRef<number | null>(null);
     // The day in focus (with a plan), as the box's placeholder names it.
@@ -167,26 +194,15 @@ function Body({
 
     // Each request the tray sends, asked once. From the start it's a new
     // conversation, as an empty box suggests; the one before stays in History.
-    useEffect(() => {
+    // Before paint, so the last conversation never flashes in its place.
+    useLayoutEffect(() => {
         if (!asked || sent.current === asked.id) {
             return;
         }
 
         sent.current = asked.id;
-        const current = engine.stateRef.current.conversations.find(
-            (conversation) =>
-                conversation.id === engine.stateRef.current.active,
-        );
-        void (async () => {
-            if (asked.fresh && current && current.messages.length > 0) {
-                if (!(await engine.command({ action: 'fresh' }))) {
-                    return;
-                }
-            }
-
-            await engine.send(asked.text);
-        })();
-    }, [asked, engine]);
+        void surface.send(asked.text, asked.fresh);
+    }, [asked, surface]);
 
     // Each + menu choice, once: its view here, or a new conversation.
     useEffect(() => {
@@ -209,13 +225,9 @@ function Body({
                 conversation.id === workspace.active &&
                 askedIn(conversation) > 0,
         );
-        // The three newest others with messages, by when they started.
-        const recent = workspace.conversations
-            .filter(
-                (conversation) =>
-                    conversation !== current && askedIn(conversation) > 0,
-            )
-            .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
+        // The three most recent others with messages.
+        const recent = askedConversations(workspace.conversations)
+            .filter((conversation) => conversation !== current)
             .slice(0, 3);
         // It becomes Composer's current conversation, as opening it from History does.
         const open = async (id: string) => {

@@ -63,6 +63,18 @@ function weekOf(date: string): string[] {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
+/** When a conversation was last written in: its newest message, else its start. */
+export const lastActive = (conversation: Conversation) =>
+    conversation.messages.at(-1)?.created_at ?? conversation.created_at;
+
+/** The conversations with at least one message, the most recent first. */
+export const askedConversations = (conversations: Conversation[]) =>
+    conversations
+        .filter((conversation) =>
+            conversation.messages.some((message) => message.role === 'user'),
+        )
+        .toSorted((a, b) => lastActive(b).localeCompare(lastActive(a)));
+
 /** "23 Oct · 3 messages", as History counts a conversation. */
 export function conversationMeta(conversation: Conversation): string {
     const asked = conversation.messages.filter(
@@ -623,27 +635,31 @@ export function HistoryView({
                 onBack={onBack}
             />
             <ul className="composer-history" role="list">
-                {workspace.conversations.toReversed().map((conversation) => (
-                    <li key={conversation.id}>
-                        <button
-                            type="button"
-                            className="composer-history-row"
-                            aria-current={
-                                conversation.id === workspace.active
-                                    ? 'true'
-                                    : undefined
-                            }
-                            disabled={busy}
-                            onClick={() => onResume(conversation.id)}
-                        >
-                            <span>
-                                <strong>{conversation.title}</strong>
-                                <span>{conversationMeta(conversation)}</span>
-                            </span>
-                            <Icon name="next" variant="line" />
-                        </button>
-                    </li>
-                ))}
+                {askedConversations(workspace.conversations).map(
+                    (conversation) => (
+                        <li key={conversation.id}>
+                            <button
+                                type="button"
+                                className="composer-history-row"
+                                aria-current={
+                                    conversation.id === workspace.active
+                                        ? 'true'
+                                        : undefined
+                                }
+                                disabled={busy}
+                                onClick={() => onResume(conversation.id)}
+                            >
+                                <span>
+                                    <strong>{conversation.title}</strong>
+                                    <span>
+                                        {conversationMeta(conversation)}
+                                    </span>
+                                </span>
+                                <Icon name="next" variant="line" />
+                            </button>
+                        </li>
+                    ),
+                )}
             </ul>
             <p className="composer-view-note">
                 History stays in your account. Earlier conversations are not

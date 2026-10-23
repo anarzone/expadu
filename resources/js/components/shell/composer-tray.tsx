@@ -292,10 +292,12 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         };
     }, [isOpen, talked, resume]);
 
-    // Closed, it opens at its start next time.
+    // Closed, it opens at its start next time, and a menu choice made before
+    // isn't made again (a Start fresh would otherwise run again on opening).
     const shut = () => {
         setOpen(false);
         setView('start');
+        setPick(null);
     };
 
     const hide = () => {

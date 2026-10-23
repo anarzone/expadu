@@ -151,7 +151,7 @@ export default function ComposerPage({
         focusBox,
     });
     const { engine, view, setView, openAppointment, fresh } = surface;
-    const { workspace, busy, command, send, stateRef } = engine;
+    const { workspace, busy, command, stateRef } = engine;
     const conversation = workspace.conversations.find(
         (item) => item.id === workspace.active,
     );
@@ -363,7 +363,7 @@ export default function ComposerPage({
             origin={surface.origin?.label ?? null}
             notice={aiNotice && <AiNoticeLine notice={aiNotice} />}
             onChange={setInput}
-            onSend={() => void send(input.trim())}
+            onSend={() => void surface.send(input.trim())}
             onPick={(pick) =>
                 pick === 'fresh' ? void surface.fresh() : setView(pick)
             }
