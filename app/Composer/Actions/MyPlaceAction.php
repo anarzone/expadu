@@ -36,7 +36,9 @@ final class MyPlaceAction implements ComposerAction
         }
 
         return ['which' => $which, 'place' => $place, 'previous' => $previous,
-            'propose' => "Set {$label} to {$place['name']}?", 'sub' => self::sub($label, $previous), 'about' => "{$label}: {$place['name']}, as they said it"];
+            'propose' => "Set {$label} to {$place['name']}?", 'sub' => self::sub($label, $previous),
+            // The address stays out of what the AI is told; the card says it.
+            'tell' => "Set {$label} to the place they named?"];
     }
 
     public function run(User $user, string $action, array $prepared, CarbonImmutable $now): array
@@ -51,8 +53,8 @@ final class MyPlaceAction implements ComposerAction
             'link' => ['label' => 'See your places →', 'href' => '/timetable'],
             'ask' => $paperwork ? ['text' => 'When did you move in? Paperwork dates your address registration from it.',
                 'options' => [['label' => 'Today', 'prompt' => 'I moved in today'], ['label' => 'Another day…', 'draft' => 'I moved in on ']]] : null,
-            // As they said it, never its point.
-            'said' => "{$label} is now {$prepared['place']['name']}.",
+            // The address stays out of what the AI is told; the card says it.
+            'said' => "{$label} is now set to the place they named.",
             'undo' => ['which' => $prepared['which'], 'previous' => $prepared['previous']]], fn ($v) => $v !== null);
     }
 

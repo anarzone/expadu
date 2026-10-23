@@ -127,7 +127,8 @@ test('without their Paperwork permission for the message, Paperwork is neither r
     $tools = new AssistantTools($this->user, CarbonImmutable::now(), new LocationContext(null, null, LocationSource::None),
         app(CandidateRepository::class), app(EventAnswers::class), app(WeatherService::class));
     expect($tools->run('change_paperwork_fact', ['key' => 'visa_expires_at', 'value' => '2027-02-12']))->toContain('Not done')
-        ->and($tools->cards)->toBeEmpty()
+        // Nothing proposed or made; at most the card asking for the permission.
+        ->and(collect($tools->cards)->pluck('type')->diff(['permission'])->all())->toBe([])
         ->and(visaOn($this->user))->toBe('2026-10-01');
 });
 

@@ -45,13 +45,20 @@ Notes:
   - `/bureaucracy?record=delete`
   - `/bureaucracy?record=stop`
   - `/settings/profile`
-- `withdraw_ai_permission` sends `place.nav: 'ai_notice'` (the notice under Composer's box holds Withdraw). That is
-  the one thing the page still needs to open.
+- `withdraw_ai_permission` and `withdraw_paperwork_permission` send `place.nav: 'ai_notice'`; the latter also sends
+  `place.purpose: 'composer_paperwork'`. The notice under Composer's box should open with Withdraw for that purpose.
+  - Withdrawing `composer_assist` withdraws `composer_paperwork` too.
+  - `DELETE /privacy/processing/composer_paperwork` withdraws only the Paperwork one.
 - `permission` comes when a Paperwork change arrives without their permission and they have a record in use.
+  - Its purpose is `composer_paperwork`: Composer's own Paperwork notice.
+  - `disclosure.notice` is the notice in words (a list of sentences): draw it as given. Its `payload_categories`
+    and `never_sent` are what the words come from. `GET /privacy/processing/composer_paperwork` serves the same.
   - On Allow, ask again: `POST /composer/ask` for the same last message, with `processing` as usual plus
-    `paperwork_processing: { consent: true, request_id: <new uuid>, notice_version, provider_version }`.
-  - `notice_version` and `provider_version` come from `disclosure`.
-  - The permission is bound to their own record and lasts for that one message.
+    `paperwork_processing: { consent: true, request_id: <new uuid>, notice_version, provider_version }`, both
+    versions taken from `disclosure`.
+  - The permission is bound to their own record and lasts for that one message. That exchange runs under it.
+- `notice_version` is now `2026-10-23.subject-bound-request.5`. Pages already read it from the disclosure, so
+  nothing to change there.
 
 ## Endpoints
 

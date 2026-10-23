@@ -227,6 +227,14 @@ final class ExternalProcessingGate
             || ! hash_equals($row->input_digest, ProcessingConsentStore::digest($context))) {
             return false;
         }
+        if ($purpose === ProcessingPurpose::ComposerPaperwork) {
+            // Their own record, still in use, read by someone still allowed to: Composer's changes to it
+            // (a report) may move its version within the exchange.
+            $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
+            $actor = User::query()->find($row->actor_id);
+
+            return $row->question_id === null && $case !== null && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
+        }
         if ($purpose === ProcessingPurpose::PaperworkAnswer) {
             // The answers sent were read at this fact version, by someone still allowed to ask.
             $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();

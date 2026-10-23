@@ -67,6 +67,41 @@ final class AssistantTools
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
     public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next)$/';
 
+    /**
+     * What each tool's result sends, as Composer's notice names it (ProcessingPurpose::WORDS).
+     * A tool without one can't be sent: ComposerPaperworkNoticeTest fails on it.
+     */
+    public const CATEGORIES = [
+        'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
+        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'weather' => 'weather',
+        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names',
+        'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
+        'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
+        'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
+        'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
+        'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
+        // Without their Paperwork permission, these only say it's needed.
+        'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
+    ];
+
+    /** With their Paperwork permission for the message (composer_paperwork), these tools send their record. */
+    public const PAPERWORK_CATEGORIES = [
+        'paperwork' => 'your_paperwork_answers_and_tasks', 'change_paperwork_fact' => 'paperwork_changes_you_ask_for',
+        'paperwork_step' => 'paperwork_changes_you_ask_for', 'paperwork_report' => 'paperwork_changes_you_ask_for',
+    ];
+
+    /**
+     * Everything a request can carry: the message's own parts (Assistant::CONTEXT) and what each
+     * tool's result is.
+     *
+     * @return list<string>
+     */
+    public static function categories(bool $paperwork): array
+    {
+        return array_values(array_unique([...array_values(Assistant::CONTEXT), ...array_values(self::CATEGORIES),
+            ...($paperwork ? array_values(self::PAPERWORK_CATEGORIES) : [])]));
+    }
+
     /** @var array<string, string> each result's text, by id, as the assistant read it */
     public array $read = [];
 
@@ -88,8 +123,9 @@ final class AssistantTools
     /** @var array<string, true> places searched for in an area they named ("in Merkenich"), not near them */
     public array $within = [];
 
-    /** @var array<string, array{member: int, matched: string, has: ?string}> a park answered for a facility in it: the
-     *      facility it was found by (its row is measured to it), what that is ("Football pitch") and what the park has */
+    /** @var array<string, array{member: int, matched: string, part: ?string, has: ?string}> a park answered for a facility in it: the
+     *      facility it was found by (its row is measured to it), what that is ("Football pitch"), its part (a large
+     *      park's Veedel) and what the park, or that part, has */
     public array $parks = [];
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
@@ -205,6 +241,7 @@ final class AssistantTools
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
+                    'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
@@ -530,6 +567,15 @@ final class AssistantTools
         if ($activity !== null && $kinds === [] && in_array($activity, self::kindsWithPlaces(), true)) {
             [$kinds, $activity] = [[$activity], null];
         }
+        // Playgrounds answer no activity (places session, 23 Oct 2026: a child's ask, never an adult's):
+        // asked for with one ("my kid, football"), those listing it come first ("with football goals").
+        $plays = null;
+        if (($input['for_children'] ?? false) === true) {
+            $kinds = ['playground'];
+        }
+        if ($activity !== null && $kinds === ['playground']) {
+            [$plays, $activity] = [$activity, null];
+        }
         $leaveOut = ($input['leave_out_earlier'] ?? false) === true ? array_keys($this->earlier['spot']) : [];
         // In an area named, from its middle (owner's test, 23 Oct 2026: "places to work in city center"
         // were sorted by the home Veedel at the city's edge); else nearest to the person.
@@ -552,7 +598,8 @@ final class AssistantTools
         $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
-        $deep = $mustBeOpen || $features !== [];
+        // Few places list hours, facts or a playground's goals: for those, the search reads further.
+        $deep = $mustBeOpen || $features !== [] || $plays !== null;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $nearest = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
@@ -569,6 +616,9 @@ final class AssistantTools
         // A pitch or a playground in a named park is that park, once, with what it has (places
         // session's FacilityGroups, 23 Oct 2026: "Carola-Williams-Park · Football pitch · 2 playgrounds").
         $parents = app(FacilityGroups::class)->parents($nearest->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all());
+        // A park too big to walk round is one place per Veedel (places session, 23 Oct 2026): its part.
+        $large = app(FacilityGroups::class)->large(array_values(array_unique($parents)));
+        $part = fn (Candidate $c): ?string => isset($large[$parents[(int) substr($c->id, 5)] ?? 0]) ? $c->veedel : null;
         $park = fn (Candidate $c): int => $parents[(int) substr($c->id, 5)] ?? (int) substr($c->id, 5);
         $matches = $nearest
             ->filter(fn (Candidate $c): bool => ($areas === [] || in_array($c->veedel, $areas, true))
@@ -580,14 +630,16 @@ final class AssistantTools
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
-            ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
+            ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0))
+            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
             ->take(self::SHOWN)->values();
-        $found = $this->asParks($found, $parents, $at, $lat, $lng);
+        $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
             $areas === PlanDay::CENTRE => 'in the city centre',
             $areas !== [] => 'in '.implode(', ', $areas),
@@ -640,7 +692,7 @@ final class AssistantTools
      * @param  array<int, int>  $parents  facility id => park id
      * @return Collection<int, Candidate>
      */
-    private function asParks(Collection $found, array $parents, CarbonImmutable $at, float $lat, float $lng): Collection
+    private function asParks(Collection $found, array $parents, array $large, CarbonImmutable $at, float $lat, float $lng): Collection
     {
         $folded = $found->filter(fn (Candidate $c): bool => isset($parents[(int) substr($c->id, 5)]));
         if ($folded->isEmpty()) {
@@ -653,18 +705,25 @@ final class AssistantTools
 
             return $this->catalogue->byIds(array_map(fn (int $id): string => "spot:{$id}", $ids), $at, $lat, $lng);
         }))->keyBy('id');
-        $counts = app(FacilityGroups::class)->counts($ids);
+        $groups = app(FacilityGroups::class);
+        $counts = $groups->counts($ids);
 
-        return $found->map(function (Candidate $c) use ($parents, $parks, $counts): Candidate {
+        return $found->map(function (Candidate $c) use ($parents, $parks, $counts, $large, $groups): Candidate {
             $member = (int) substr($c->id, 5);
             $park = isset($parents[$member]) ? $parks->get('spot:'.$parents[$member]) : null;
             if (! $park instanceof Candidate) {
                 return $c;
             }
             $matched = PlaceDisplayName::kind($c->category, $c->placeFacts['practical']['sport']['value'] ?? null);
-            $this->parks[$park->id] = ['member' => $member, 'matched' => $matched, 'has' => FacilityGroups::summary($counts[$parents[$member]] ?? [], [$matched])];
+            // A large park's part is its own place: "Äußerer Grüngürtel (Klettenberg)", with what that part has,
+            // its id the park's and its part ("spot:12#Klettenberg"), so two parts are two cards and two rows.
+            $part = isset($large[$parents[$member]]) ? $c->veedel : null;
+            $id = $part === null ? $park->id : "{$park->id}#{$part}";
+            $this->parks[$id] = ['member' => $member, 'matched' => $matched, 'part' => $part,
+                'has' => FacilityGroups::summary($part !== null ? $groups->partCounts($parents[$member], $part) : ($counts[$parents[$member]] ?? []), [$matched])];
 
-            return new Candidate(...[...get_object_vars($park), 'lat' => $c->lat, 'lng' => $c->lng,
+            return new Candidate(...[...get_object_vars($park), 'id' => $id, 'name' => $part === null ? $park->name : "{$park->name} ({$part})",
+                'veedel' => $part ?? $park->veedel, 'lat' => $c->lat, 'lng' => $c->lng,
                 'distanceKmFromOrigin' => $c->distanceKmFromOrigin, 'travelMinutesFromOrigin' => $c->travelMinutesFromOrigin]);
         })->unique('id')->values();
     }
@@ -720,6 +779,20 @@ final class AssistantTools
             $f === 'wifi' => 'Wi-Fi', $f === 'outdoor_seating' => 'outdoor seating', $f === 'wheelchair' => 'step-free access',
             str_starts_with($f, 'diet:') => str_replace('_', '-', substr($f, 5)).' food', default => ucfirst(str_replace('_', ' ', substr($f, 8))).' food',
         }, $features));
+    }
+
+    /**
+     * What a place is, as said: its kind, and a playground the city lists with goals as one
+     * ("Playground with football goals": where a child plays football, never an adult pitch).
+     */
+    public static function kindOf(Candidate $c): string
+    {
+        $sports = array_map('trim', explode(';', mb_strtolower((string) ($c->placeFacts['practical']['sport']['value'] ?? ''))));
+
+        return match (true) {
+            $c->category === 'playground' && in_array('soccer', $sports, true) => 'Playground with football goals',
+            default => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
+        };
     }
 
     /** A name without an import's bracket artefacts ("Headquarter[s]"). */
@@ -839,7 +912,7 @@ final class AssistantTools
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
-            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
@@ -912,14 +985,15 @@ final class AssistantTools
      */
     private function askPaperworkPermission(): bool
     {
-        if (! ProcessingPurpose::PaperworkAnswer->available() || ! BureaucracyPerson::query()->where('account_user_id', $this->user->id)
+        if (! ProcessingPurpose::ComposerPaperwork->available() || ! BureaucracyPerson::query()->where('account_user_id', $this->user->id)
             ->where('record_status', 'active')->whereNull('processing_stopped_at')->exists()) {
             return false;
         }
-        $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::PaperworkAnswer->value,
+        $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::ComposerPaperwork->value,
             'title' => 'Let Composer read and change your Paperwork record for this message?',
             'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
-            'disclosure' => ProcessingPurpose::PaperworkAnswer->disclosure()];
+            // Its own notice, in words (disclosure.notice), from what Composer's request carries.
+            'disclosure' => ProcessingPurpose::ComposerPaperwork->disclosure()];
 
         return true;
     }
@@ -959,8 +1033,10 @@ final class AssistantTools
         }
         $locations = app(UserLocationService::class);
 
+        // Home and Work as such: their names are often the address typed for them, and addresses stay here.
         return $places->values()->map(fn ($place, int $i): string => $this->line('m'.($i + 1),
-            ($place->category === 'custom' ? '' : ucfirst((string) $place->category).': ')."\"{$place->name}\" in ".($locations->veedelAt((float) $place->lat, (float) $place->lng) ?? 'an unknown Veedel')))->implode("\n");
+            (in_array($place->category, ['home', 'work'], true) ? ucfirst((string) $place->category) : "\"{$place->name}\"")
+            .' in '.($locations->veedelAt((float) $place->lat, (float) $place->lng) ?? 'an unknown Veedel')))->implode("\n");
     }
 
     /** What they like and skip, as TasteFacts states it: kinds, areas, times of day. */
@@ -1017,7 +1093,7 @@ final class AssistantTools
     /** A place as the assistant reads it: name, kind, Veedel, its verified hours and its listed character. */
     public static function placeText(Candidate $c, ?CarbonImmutable $at = null, bool $now = true, bool $stepFree = false, ?string $has = null): string
     {
-        $kind = SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category));
+        $kind = self::kindOf($c);
         // Open only from its listed hours; assumed hours are never "open" (OpeningAnswer).
         $open = $at === null ? null : OpeningAnswer::isOpenAt($c, $at);
         $hours = match (true) {

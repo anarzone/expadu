@@ -1,0 +1,636 @@
+{
+    "generated_at": "2026-10-23T17:08:52+02:00",
+    "label": "after Stadt Köln playgrounds",
+    "total": {
+        "places": 5795,
+        "hours": 2765,
+        "website": 3210,
+        "phone": 3215,
+        "wifi": 246,
+        "street": 2926,
+        "photo": 119,
+        "outdoor_seating": 1365,
+        "diet": 587,
+        "wheelchair": 2623,
+        "cuisine": 1757,
+        "description": 116
+    },
+    "kinds": {
+        "attraction": {
+            "places": 118,
+            "sources": {
+                "osm": 118
+            },
+            "hours": 2,
+            "website": 25,
+            "phone": 16,
+            "wifi": 0,
+            "street": 12,
+            "photo": 19,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 65,
+            "cuisine": 0,
+            "description": 15
+        },
+        "bakery": {
+            "places": 381,
+            "sources": {
+                "osm": 381
+            },
+            "hours": 272,
+            "website": 204,
+            "phone": 210,
+            "wifi": 21,
+            "street": 191,
+            "photo": 0,
+            "outdoor_seating": 127,
+            "diet": 8,
+            "wheelchair": 255,
+            "cuisine": 7,
+            "description": 6
+        },
+        "bar": {
+            "places": 210,
+            "sources": {
+                "osm": 178,
+                "overture": 32
+            },
+            "hours": 64,
+            "website": 116,
+            "phone": 131,
+            "wifi": 6,
+            "street": 141,
+            "photo": 0,
+            "outdoor_seating": 50,
+            "diet": 0,
+            "wheelchair": 75,
+            "cuisine": 5,
+            "description": 5
+        },
+        "basketball": {
+            "places": 11,
+            "sources": {
+                "osm": 11
+            },
+            "hours": 0,
+            "website": 0,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 1,
+            "cuisine": 0,
+            "description": 0
+        },
+        "bbq": {
+            "places": 1,
+            "sources": {
+                "osm": 1
+            },
+            "hours": 0,
+            "website": 0,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 1,
+            "cuisine": 0,
+            "description": 0
+        },
+        "boules": {
+            "places": 1,
+            "sources": {
+                "osm": 1
+            },
+            "hours": 0,
+            "website": 0,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "cafe": {
+            "places": 590,
+            "sources": {
+                "osm": 578,
+                "overture": 12
+            },
+            "hours": 338,
+            "website": 300,
+            "phone": 301,
+            "wifi": 61,
+            "street": 335,
+            "photo": 7,
+            "outdoor_seating": 284,
+            "diet": 89,
+            "wheelchair": 285,
+            "cuisine": 146,
+            "description": 10
+        },
+        "climbing": {
+            "places": 10,
+            "sources": {
+                "osm": 10
+            },
+            "hours": 4,
+            "website": 10,
+            "phone": 9,
+            "wifi": 3,
+            "street": 8,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 7,
+            "cuisine": 0,
+            "description": 1
+        },
+        "convenience": {
+            "places": 124,
+            "sources": {
+                "osm": 124
+            },
+            "hours": 64,
+            "website": 42,
+            "phone": 48,
+            "wifi": 2,
+            "street": 64,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 1,
+            "wheelchair": 40,
+            "cuisine": 3,
+            "description": 3
+        },
+        "coworking": {
+            "places": 16,
+            "sources": {
+                "osm": 16
+            },
+            "hours": 4,
+            "website": 9,
+            "phone": 9,
+            "wifi": 0,
+            "street": 10,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 1,
+            "cuisine": 0,
+            "description": 0
+        },
+        "dance_studio": {
+            "places": 40,
+            "sources": {
+                "osm": 40
+            },
+            "hours": 2,
+            "website": 33,
+            "phone": 28,
+            "wifi": 0,
+            "street": 25,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 9,
+            "cuisine": 0,
+            "description": 1
+        },
+        "dog_park": {
+            "places": 24,
+            "sources": {
+                "osm": 24
+            },
+            "hours": 0,
+            "website": 2,
+            "phone": 1,
+            "wifi": 0,
+            "street": 1,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 8,
+            "cuisine": 0,
+            "description": 0
+        },
+        "drugstore": {
+            "places": 68,
+            "sources": {
+                "osm": 68
+            },
+            "hours": 67,
+            "website": 35,
+            "phone": 40,
+            "wifi": 7,
+            "street": 46,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 61,
+            "cuisine": 0,
+            "description": 0
+        },
+        "fast_food": {
+            "places": 712,
+            "sources": {
+                "osm": 709,
+                "overture": 3
+            },
+            "hours": 379,
+            "website": 379,
+            "phone": 474,
+            "wifi": 30,
+            "street": 387,
+            "photo": 0,
+            "outdoor_seating": 277,
+            "diet": 178,
+            "wheelchair": 351,
+            "cuisine": 568,
+            "description": 2
+        },
+        "fitness_centre": {
+            "places": 129,
+            "sources": {
+                "osm": 129
+            },
+            "hours": 48,
+            "website": 98,
+            "phone": 81,
+            "wifi": 4,
+            "street": 90,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 27,
+            "cuisine": 0,
+            "description": 2
+        },
+        "gallery": {
+            "places": 67,
+            "sources": {
+                "osm": 67
+            },
+            "hours": 17,
+            "website": 37,
+            "phone": 22,
+            "wifi": 0,
+            "street": 36,
+            "photo": 2,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 5,
+            "cuisine": 0,
+            "description": 2
+        },
+        "greengrocer": {
+            "places": 19,
+            "sources": {
+                "osm": 19
+            },
+            "hours": 11,
+            "website": 3,
+            "phone": 6,
+            "wifi": 0,
+            "street": 8,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 9,
+            "cuisine": 0,
+            "description": 2
+        },
+        "ice_cream": {
+            "places": 43,
+            "sources": {
+                "osm": 43
+            },
+            "hours": 18,
+            "website": 16,
+            "phone": 26,
+            "wifi": 0,
+            "street": 25,
+            "photo": 0,
+            "outdoor_seating": 28,
+            "diet": 10,
+            "wheelchair": 30,
+            "cuisine": 33,
+            "description": 1
+        },
+        "lake": {
+            "places": 23,
+            "sources": {
+                "osm": 23
+            },
+            "hours": 0,
+            "website": 4,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "library": {
+            "places": 64,
+            "sources": {
+                "osm": 64
+            },
+            "hours": 44,
+            "website": 40,
+            "phone": 29,
+            "wifi": 16,
+            "street": 34,
+            "photo": 3,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 32,
+            "cuisine": 0,
+            "description": 0
+        },
+        "museum": {
+            "places": 51,
+            "sources": {
+                "osm": 51
+            },
+            "hours": 16,
+            "website": 41,
+            "phone": 32,
+            "wifi": 2,
+            "street": 31,
+            "photo": 30,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 31,
+            "cuisine": 0,
+            "description": 3
+        },
+        "nature": {
+            "places": 24,
+            "sources": {
+                "osm": 24
+            },
+            "hours": 0,
+            "website": 10,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "park": {
+            "places": 118,
+            "sources": {
+                "osm": 118
+            },
+            "hours": 6,
+            "website": 33,
+            "phone": 13,
+            "wifi": 0,
+            "street": 0,
+            "photo": 44,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 8,
+            "cuisine": 0,
+            "description": 6
+        },
+        "pharmacy": {
+            "places": 213,
+            "sources": {
+                "osm": 213
+            },
+            "hours": 204,
+            "website": 207,
+            "phone": 207,
+            "wifi": 0,
+            "street": 87,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 202,
+            "cuisine": 0,
+            "description": 0
+        },
+        "picnic": {
+            "places": 1,
+            "sources": {
+                "osm": 1
+            },
+            "hours": 0,
+            "website": 0,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "pitch": {
+            "places": 59,
+            "sources": {
+                "osm": 59
+            },
+            "hours": 0,
+            "website": 3,
+            "phone": 4,
+            "wifi": 0,
+            "street": 0,
+            "photo": 1,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 7,
+            "cuisine": 0,
+            "description": 1
+        },
+        "playground": {
+            "places": 585,
+            "sources": {
+                "osm": 585
+            },
+            "hours": 6,
+            "website": 42,
+            "phone": 21,
+            "wifi": 0,
+            "street": 1,
+            "photo": 1,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 41,
+            "cuisine": 0,
+            "description": 9
+        },
+        "restaurant": {
+            "places": 1496,
+            "sources": {
+                "osm": 1375,
+                "overture": 121
+            },
+            "hours": 843,
+            "website": 1118,
+            "phone": 1204,
+            "wifi": 60,
+            "street": 1010,
+            "photo": 9,
+            "outdoor_seating": 597,
+            "diet": 300,
+            "wheelchair": 717,
+            "cuisine": 990,
+            "description": 37
+        },
+        "skatepark": {
+            "places": 9,
+            "sources": {
+                "osm": 9
+            },
+            "hours": 1,
+            "website": 3,
+            "phone": 2,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "sports_centre": {
+            "places": 148,
+            "sources": {
+                "osm": 148
+            },
+            "hours": 16,
+            "website": 89,
+            "phone": 53,
+            "wifi": 1,
+            "street": 80,
+            "photo": 1,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 30,
+            "cuisine": 0,
+            "description": 4
+        },
+        "supermarket": {
+            "places": 379,
+            "sources": {
+                "osm": 379
+            },
+            "hours": 334,
+            "website": 297,
+            "phone": 241,
+            "wifi": 33,
+            "street": 297,
+            "photo": 0,
+            "outdoor_seating": 2,
+            "diet": 1,
+            "wheelchair": 308,
+            "cuisine": 5,
+            "description": 5
+        },
+        "swimming": {
+            "places": 8,
+            "sources": {
+                "osm": 8
+            },
+            "hours": 0,
+            "website": 4,
+            "phone": 3,
+            "wifi": 0,
+            "street": 6,
+            "photo": 1,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 2,
+            "cuisine": 0,
+            "description": 0
+        },
+        "table_tennis": {
+            "places": 21,
+            "sources": {
+                "osm": 21
+            },
+            "hours": 0,
+            "website": 0,
+            "phone": 0,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "tennis": {
+            "places": 3,
+            "sources": {
+                "osm": 3
+            },
+            "hours": 0,
+            "website": 1,
+            "phone": 1,
+            "wifi": 0,
+            "street": 0,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 0,
+            "cuisine": 0,
+            "description": 0
+        },
+        "viewpoint": {
+            "places": 20,
+            "sources": {
+                "osm": 20
+            },
+            "hours": 1,
+            "website": 4,
+            "phone": 1,
+            "wifi": 0,
+            "street": 0,
+            "photo": 1,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 10,
+            "cuisine": 0,
+            "description": 0
+        },
+        "zoo": {
+            "places": 9,
+            "sources": {
+                "osm": 9
+            },
+            "hours": 4,
+            "website": 5,
+            "phone": 2,
+            "wifi": 0,
+            "street": 1,
+            "photo": 0,
+            "outdoor_seating": 0,
+            "diet": 0,
+            "wheelchair": 5,
+            "cuisine": 0,
+            "description": 1
+        }
+    }
+}

@@ -8225,6 +8225,30 @@
     "answer_kind": "permission",
     "no_change": true
    }
+  },
+  {
+   "id": "places_matrix.kid_football",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can my kid play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Playground with football goals",
+     "Playground",
+     "Park",
+     "Football pitch"
+    ]
+   }
   }
  ]
 }

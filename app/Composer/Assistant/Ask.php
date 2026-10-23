@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
+use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\UserLocationService;
 use Carbon\CarbonImmutable;
@@ -71,7 +72,8 @@ final class Ask
             ? $this->consents->grant($user, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile, $page), $processing)
             : null;
 
-        $paperwork = $permit !== null && $paperworkProcessing !== null && $this->paperworkPermitted($user, $text, $paperworkProcessing);
+        // With their Paperwork permission too (composer_paperwork), that permit carries the whole exchange.
+        $paperwork = $permit !== null && $paperworkProcessing !== null ? $this->paperworkPermit($user, $text, $profile, $page, $paperworkProcessing) : null;
 
         $answer = $permit === null ? null : $this->assistant->answer($user, $text, $profile, $now, $this->locations->context($user, $request, $user->veedel),
             $permit, $workspace['plans'] ?? [], self::progressKey($user, (string) ($processing['request_id'] ?? '')),
@@ -160,29 +162,27 @@ final class Ask
     }
 
     /**
-     * Their Paperwork permission for this message (paperwork_answer), bound to their own record
-     * like a question asked in Paperwork, so erasing or stopping it ends it too. Without a
-     * record in use there's nothing to permit.
+     * Their permission for Composer to read and change their Paperwork record in this message
+     * (composer_paperwork, its own notice), bound to their own record, so erasing or stopping
+     * it ends it too. Without a record in use there's nothing to permit.
      *
      * @param  array<string, mixed>  $acceptance
      */
-    private function paperworkPermitted(User $user, string $text, array $acceptance): bool
+    private function paperworkPermit(User $user, string $text, Profile $profile, ?string $page, array $acceptance): ?ProcessingPermit
     {
-        if (! ProcessingPurpose::PaperworkAnswer->available()) {
-            return false;
+        if (! ProcessingPurpose::ComposerPaperwork->available()) {
+            return null;
         }
         $case = BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')
             ->whereNull('processing_stopped_at')->first()?->dossier()->first();
         if ($case === null) {
-            return false;
+            return null;
         }
         try {
-            $this->consents->grant($user, ProcessingPurpose::PaperworkAnswer, ['composer' => $text], $acceptance, $case);
+            return $this->consents->grant($user, ProcessingPurpose::ComposerPaperwork, Assistant::processingContext($text, $profile, $page), $acceptance, $case);
         } catch (AuthorizationException) {
-            return false;
+            return null;
         }
-
-        return true;
     }
 
     /** Why the AI didn't answer: it's off, it wasn't asked to, the day's limit, or it failed. */
