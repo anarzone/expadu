@@ -537,7 +537,6 @@ export function CityPanel({
     );
 }
 
-/** A part that comes later: dashed, with a label saying when, offering nothing. */
 /**
  * The settings Composer reads before it changes something for you (owner,
  * 23 Oct 2026, "Composer does things" canvas). Off, it makes the change and
@@ -550,13 +549,17 @@ const ASK_FIRST = [
         id: 'ask-everyday',
         label: 'Ask first for everyday changes',
         off: 'Off: saves, My day, Home and Work change right away, with Undo',
+        always: null,
         fallback: false,
     },
     {
         key: 'composer_ask_first_paperwork',
         id: 'ask-paperwork',
         label: 'Ask first for Paperwork changes',
-        off: 'Off: your Paperwork record changes right away, with Undo',
+        off: 'Off: Paperwork steps and reports change right away, with Undo',
+        // Paperwork takes an answer read from someone's words only once
+        // they confirm it, so Apply is that confirmation (AI session).
+        always: 'Changes to your answers always ask first.',
         fallback: true,
     },
 ] as const;
@@ -636,6 +639,11 @@ export function ComposerPanel() {
                                     ? 'On: Composer proposes the change and waits for your OK'
                                     : s.off}
                             </span>
+                            {s.always ? (
+                                <span className="settings-tile-note">
+                                    {s.always}
+                                </span>
+                            ) : null}
                         </span>
                         <button
                             type="button"
@@ -659,6 +667,7 @@ export function ComposerPanel() {
     );
 }
 
+/** A part that comes later: dashed, with a label saying when, offering nothing. */
 export function LaterPanel({
     id,
     icon,
