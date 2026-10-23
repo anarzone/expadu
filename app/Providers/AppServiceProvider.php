@@ -253,12 +253,6 @@ class AppServiceProvider extends ServiceProvider
             ->by('ugc:'.$userOrIp($request)));
 
         // "Good for laptop work?" answers: 20 a day per person, 3 changes per place a day.
-        RateLimiter::for('place-answers', fn (Request $request): array => [
-            Limit::perDay(20)->by('place-answers:'.$request->user()?->getAuthIdentifier()),
-            // The throttle runs before route binding: the place may still be its id.
-            Limit::perDay(3)->by('place-answers:'.$request->user()?->getAuthIdentifier().':'.(is_object($request->route('spot')) ? $request->route('spot')->getKey() : (string) $request->route('spot'))),
-        ]);
-
         RateLimiter::for('composer-parse', fn (Request $request): Limit => Limit::perMinute(10)
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         // The page polls about once a second while the assistant works (3–6 s).

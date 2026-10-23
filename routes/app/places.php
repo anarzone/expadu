@@ -29,8 +29,8 @@ Route::delete('api/places/{spot}/been', [PlaceFeedbackController::class, 'forget
 
 // "Good for laptop work?" (people's answers; Been there or Saved only).
 Route::get('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'show'])->name('api.places.work-answer.show');
-Route::put('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'update'])->middleware('throttle:place-answers')->name('api.places.work-answer.update');
-Route::delete('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'destroy'])->middleware('throttle:place-answers')->name('api.places.work-answer.destroy');
+Route::put('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'update'])->name('api.places.work-answer.update');
+Route::delete('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class, 'destroy'])->name('api.places.work-answer.destroy');
 
 // Around here: places of a kind near a point (AH1); not in the navigation.
 // Its near and time say where someone will be: the session keeps neither.

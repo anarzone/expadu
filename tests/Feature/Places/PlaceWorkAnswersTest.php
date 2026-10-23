@@ -61,6 +61,36 @@ test('a person can change and withdraw their answer', function () {
     expect(PlaceWorkAnswer::query()->count())->toBe(0);
 });
 
+test('answer, chips, withdraw and undo all pass; the place cap is 10 changes a day', function () {
+    $spot = workCafe();
+    $user = User::factory()->create();
+    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'been_at' => now()]);
+    $url = "/api/places/{$spot->id}/work-answer";
+
+    $this->actingAs($user)->putJson($url, ['laptop' => 'yes'])->assertOk();
+    $this->actingAs($user)->putJson($url, ['laptop' => 'yes', 'wifi' => 'yes', 'sockets' => 'no'])->assertOk(); // chips: part of the answer
+    $this->actingAs($user)->deleteJson($url)->assertOk();
+    $this->actingAs($user)->putJson($url, ['laptop' => 'yes', 'wifi' => 'yes', 'sockets' => 'no'])->assertOk() // Undo: free
+        ->assertJsonPath('answer.sockets', 'no');
+
+    // Two changes counted so far; eight more fit, the 11th doesn't. (None of
+    // these puts back the answer before the last change, so none is an Undo.)
+    $change = fn (int $i): array => ['laptop' => $i % 2 ? 'no' : 'yes', 'wifi' => $i % 4 < 2 ? 'yes' : 'no'];
+    foreach (range(1, 8) as $i) {
+        $this->actingAs($user)->putJson($url, $change($i))->assertOk();
+    }
+    $this->actingAs($user)->putJson($url, $change(9))->assertStatus(429);
+});
+
+test('20 new answers a day per person', function () {
+    $user = User::factory()->create();
+    foreach (range(1, 21) as $i) {
+        $spot = workCafe(['lng' => 6.95 + $i / 10000]);
+        SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'been_at' => now()]);
+        $this->actingAs($user)->putJson("/api/places/{$spot->id}/work-answer", ['laptop' => 'yes'])->assertStatus($i <= 20 ? 200 : 429);
+    }
+});
+
 test('nothing shows below three people, and three real answers show', function () {
     $spot = workCafe();
     workAnswer($spot, 'yes');
