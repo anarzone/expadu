@@ -35,33 +35,54 @@ function savedState(User $user, Spot $spot): ?string
     return $state?->value ?? $state;
 }
 
-test('a Paperwork answer is proposed, applied as a confirmed extraction, and undone through Paperwork’s correction', function () {
-    ReviewedHomePlan::activate($this->user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
+function withVisa(User $user): void
+{
+    ReviewedHomePlan::activate($user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
         ['arrival_date' => '2026-09-01', 'visa_expires_at' => '2026-10-01']);
+}
+
+test('a Paperwork answer is proposed, applied as a confirmed extraction, and undone through Paperwork’s correction', function () {
+    withVisa($this->user);
     // Even when they don't ask first: an answer read from their words is theirs to confirm.
     $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_paperwork' => false]]);
     $actions = app(ComposerActions::class);
+    $store = app(WorkspaceStore::class);
 
     $made = $actions->request($this->user, 'change_paperwork_fact', ['key' => 'visa_expires_at', 'value' => '2027-02-12'], CarbonImmutable::now());
-    expect($made['block'])->toMatchArray(['type' => 'changed', 'domain' => 'paperwork', 'state' => 'proposed', 'apply' => true,
-        'title' => 'Change when your visa runs out?', 'from' => '1 Oct 2026', 'to' => '12 Feb 2027'])
+    $token = $made['blocks'][0]['token'];
+    expect($made['blocks'])->toHaveCount(1)
+        ->and($made['blocks'][0])->toMatchArray(['type' => 'proposal', 'area' => 'paperwork', 'title' => 'Change when your visa runs out?',
+            'from' => '1 Oct 2026', 'to' => '12 Feb 2027', 'fact_key' => 'visa_expires_at', 'edit' => ['kind' => 'date', 'value' => '2027-02-12']])
         ->and($made['said'])->toStartWith('Proposed, not done yet')
         ->and(visaOn($this->user))->toBe('2026-10-01');
 
-    $applied = $actions->apply($this->user, $made['block']['id'], CarbonImmutable::now());
+    expect($actions->apply($this->user, $token, CarbonImmutable::now())['refusal'])->toBeNull();
+    $done = $store->action($this->user, $token)['blocks'][0];
     $fact = BureaucracyCaseFact::query()->where('key', 'visa_expires_at')->latest('id')->firstOrFail();
-    expect($applied['refusal'])->toBeNull()
-        ->and($applied['block'])->toMatchArray(['state' => 'done', 'undo' => true, 'title' => 'Your visa now runs until 12 Feb 2027'])
-        ->and($applied['block'])->not->toHaveKey('apply')
+    expect($done)->toMatchArray(['type' => 'done', 'text' => 'Your visa now runs until 12 Feb 2027.'])
+        ->and($done['undo']['token'])->toBe($token)
         ->and(visaOn($this->user))->toBe('2027-02-12')
         ->and($fact->provenance['input_method'])->toBe('confirmed_extraction');
 
-    $undone = $actions->undo($this->user, $made['block']['id'], CarbonImmutable::now());
-    expect($undone['refusal'])->toBeNull()
-        ->and($undone['block']['state'])->toBe('undone')
-        ->and($undone['block']['title'])->toStartWith('Undone. Your visa runs until 1 Oct 2026 again')
-        ->and($undone['block'])->not->toHaveKeys(['undo', 'apply'])
+    expect($actions->undo($this->user, $token, CarbonImmutable::now())['refusal'])->toBeNull();
+    expect($store->action($this->user, $token)['blocks'])->toHaveCount(1)
+        ->and($store->action($this->user, $token)['blocks'][0])->toMatchArray(['type' => 'undone'])
+        ->and($store->action($this->user, $token)['blocks'][0]['text'])->toStartWith('Undone. Your visa runs until 1 Oct 2026 again')
         ->and(visaOn($this->user))->toBe('2026-10-01');
+});
+
+test('a date typed into its record row is their own answer, proposed while they ask first', function () {
+    withVisa($this->user);
+
+    $this->actingAs($this->user)->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'visa_expires_at', 'value' => '2027-02-12'])
+        ->assertSuccessful()->assertJsonPath('conversations.0.messages.0.blocks.0.type', 'proposal');
+    expect(visaOn($this->user))->toBe('2026-10-01');
+
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_paperwork' => false]]);
+    $this->actingAs($this->user->fresh())->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'visa_expires_at', 'value' => '2027-03-01'])
+        ->assertSuccessful()->assertJsonPath('conversations.0.messages.1.blocks.0.type', 'done');
+    expect(visaOn($this->user))->toBe('2027-03-01')
+        ->and(BureaucracyCaseFact::query()->where('key', 'visa_expires_at')->latest('id')->firstOrFail()->provenance['input_method'])->toBe('structured');
 });
 
 test('a saved place is made at once with Undo, and proposed when they ask first', function () {
@@ -69,37 +90,36 @@ test('a saved place is made at once with Undo, and proposed when they ask first'
     $actions = app(ComposerActions::class);
 
     $made = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now());
-    expect($made['block'])->toMatchArray(['state' => 'done', 'undo' => true, 'title' => 'Saved Bau'])
+    expect($made['blocks'][0])->toMatchArray(['type' => 'done', 'area' => 'everyday', 'text' => 'Saved Bau.'])
         ->and(savedState($this->user, $spot))->toBe('saved');
-    $actions->undo($this->user, $made['block']['id'], CarbonImmutable::now());
+    $actions->undo($this->user, $made['blocks'][0]['id'], CarbonImmutable::now());
     expect(savedState($this->user, $spot))->toBeNull();
 
     $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_everyday' => true]]);
     $proposed = $actions->request($this->user->fresh(), 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now());
-    expect($proposed['block'])->toMatchArray(['state' => 'proposed', 'title' => 'Save Bau for later?'])
+    expect($proposed['blocks'][0])->toMatchArray(['type' => 'proposal', 'title' => 'Save Bau for later?'])
         ->and(savedState($this->user, $spot))->toBeNull();
-    $actions->apply($this->user, $proposed['block']['id'], CarbonImmutable::now());
+    $this->actingAs($this->user)->postJson('/composer/apply', ['token' => $proposed['blocks'][0]['token']])->assertSuccessful();
     expect(savedState($this->user, $spot))->toBe('saved');
 });
 
 test('only the person who asked can apply or undo a change, and only for 24 hours', function () {
     $spot = Spot::factory()->create(['name' => 'Bau', 'category' => 'cafe', 'is_active' => true]);
     $made = app(ComposerActions::class)->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now());
-    $token = $made['block']['id'];
+    $token = $made['blocks'][0]['id'];
 
-    $this->actingAs(User::factory()->onboarded()->create())->postJson("/composer/actions/{$token}/undo")->assertNotFound();
+    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/undo', ['token' => $token])->assertNotFound();
     expect(savedState($this->user, $spot))->toBe('saved');
 
     $this->travel(25)->hours();
-    $this->actingAs($this->user)->postJson("/composer/actions/{$token}/undo")->assertSuccessful()
-        ->assertJsonPath('block.state', 'done')
-        ->assertJsonPath('refusal', 'This change can no longer be undone here. Change it back where it’s kept.');
+    $this->actingAs($this->user)->postJson('/composer/undo', ['token' => $token])->assertConflict()
+        ->assertJsonPath('message', ComposerActions::TOO_LATE)
+        ->assertJsonStructure(['workspace' => ['conversations', 'revision']]);
     expect(savedState($this->user, $spot))->toBe('saved');
 });
 
 test('without their Paperwork permission for the message, Paperwork is neither read nor changed', function () {
-    ReviewedHomePlan::activate($this->user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
-        ['arrival_date' => '2026-09-01', 'visa_expires_at' => '2026-10-01']);
+    withVisa($this->user);
     $paperwork = fn (bool $permitted): string => collect(AssistantTools::definitions(false, false, $permitted))->firstWhere('name', 'paperwork')['description'];
     expect($paperwork(false))->toContain('You don\'t get its contents')
         ->and($paperwork(true))->toContain('They allowed you to read it for this message');
@@ -112,12 +132,11 @@ test('without their Paperwork permission for the message, Paperwork is neither r
 });
 
 test('erasing Paperwork removes the copies Composer keeps of it', function () {
-    ReviewedHomePlan::activate($this->user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
-        ['arrival_date' => '2026-09-01', 'visa_expires_at' => '2026-10-01']);
+    withVisa($this->user);
     $spot = Spot::factory()->create(['name' => 'Bau', 'category' => 'cafe', 'is_active' => true]);
     $actions = app(ComposerActions::class);
-    $paperwork = $actions->request($this->user, 'change_paperwork_fact', ['key' => 'visa_expires_at', 'value' => '2027-02-12'], CarbonImmutable::now())['block'];
-    $place = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now())['block'];
+    $paperwork = $actions->request($this->user, 'change_paperwork_fact', ['key' => 'visa_expires_at', 'value' => '2027-02-12'], CarbonImmutable::now())['blocks'][0];
+    $place = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'saved'], CarbonImmutable::now())['blocks'][0];
     $store = app(WorkspaceStore::class);
     $store->answer($this->user, 'initial', ['text' => 'Your visa runs until 1 Oct 2026.', 'extra' => ['blocks' => [$paperwork, $place]]], null);
 

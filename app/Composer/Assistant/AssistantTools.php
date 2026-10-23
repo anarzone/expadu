@@ -844,7 +844,10 @@ final class AssistantTools
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
                 ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission for this message: without it, a card asks them. Keys and what each answers: '
-                    .$registry->map(fn ($d, string $key): string => "{$key} ({$d->type}".($d->type === 'enum' ? ': '.implode('|', $d->options) : '').'): '.$d->question)->implode('; '),
+                    // A key the record has a row for is described by that row ("visa_expires_at: Your visa runs until"),
+                    // so "my visa" is the visa's date, not the residence permit's.
+                    .$registry->map(fn ($d, string $key): string => "{$key} ({$d->type}".($d->type === 'enum' ? ': '.implode('|', $d->options) : '').'): '
+                        .(PaperworkActions::rowLabel($key) ?? $d->question))->implode('; '),
                     'input_schema' => ['type' => 'object', 'properties' => [
                         'key' => ['type' => 'string', 'enum' => $registry->keys()->all()],
                         'value' => ['type' => 'string', 'description' => 'a date as YYYY-MM-DD, yes or no, a whole number, or one of its options'],
@@ -890,12 +893,14 @@ final class AssistantTools
             }
         }
         $made = app(ComposerActions::class)->request($this->user, $action, $input, $this->now);
-        if ($made['block'] === null) {
+        if ($made['blocks'] === []) {
             return $this->line('n'.(++$this->count), $made['said']);
         }
         $id = 'x'.(++$this->count);
-        // Its card is Composer's own words, from the records it changed: always shown.
-        $this->cards[$id] = $made['block'];
+        // Its cards are Composer's own words, from the records it changed: always shown.
+        foreach ($made['blocks'] as $i => $block) {
+            $this->cards[$id.($i === 0 ? '' : 'p')] = $block;
+        }
 
         return $this->line($id, $made['said']);
     }

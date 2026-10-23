@@ -78,7 +78,10 @@ final class PaperworkActions implements ComposerAction
         $rows = [];
         foreach (self::ROWS as $key) {
             if (($view['states'][$key] ?? null) !== null || isset($view['values'][$key])) {
-                $rows[] = ['key' => $key, 'label' => self::LABELS[$key][0], 'value' => $this->said($key, $view, $now)];
+                // A date changes in place on the card (a date field); other answers are asked for in words.
+                $date = $this->registry->definition($key)->type === 'date';
+                $rows[] = array_filter(['key' => $key, 'label' => self::LABELS[$key][0], 'value' => $this->said($key, $view, $now),
+                    'edit' => $date ? ['kind' => 'date', 'value' => ($view['states'][$key] ?? null) === 'value' ? $view['values'][$key] : null] : null], fn ($v) => $v !== null);
             }
         }
         $tasks = collect($plan['processes'] ?? [])->filter(fn (array $p): bool => ! ($p['is_closed'] ?? false))->map(fn (array $p): string => "Task \"{$p['title']}\" (task {$p['occurrence_key']}): "
@@ -111,8 +114,10 @@ final class PaperworkActions implements ComposerAction
         try {
             $made = match ($action) {
                 'change_paperwork_fact' => (function () use ($user, $person, $prepared): array {
-                    // Read from their words by the AI and applied by their tap: a confirmed extraction.
-                    $fact = app(RecordFactChange::class)->execute($user, $person, $prepared['key'], $prepared['value'], null, $prepared['revision'], 'value', FactInputMethod::ConfirmedExtraction);
+                    // Typed into its row by them: their own answer. Read from their words by the AI and
+                    // applied by their tap: a confirmed extraction.
+                    $fact = app(RecordFactChange::class)->execute($user, $person, $prepared['key'], $prepared['value'], null, $prepared['revision'], 'value',
+                        ($prepared['manual'] ?? false) ? FactInputMethod::Structured : FactInputMethod::ConfirmedExtraction);
 
                     return ['title' => sprintf(self::LABELS[$prepared['key']][2] ?? (self::label($prepared['key']).': %s'), $prepared['to']),
                         'sub' => ($prepared['from'] !== null ? "It was {$prepared['from']}. " : '').self::NOTE,
@@ -140,9 +145,9 @@ final class PaperworkActions implements ComposerAction
         }
         $changes = PaperworkPlanDiff::between($before, $this->plan($user));
 
-        return array_filter([...$made, 'from' => $prepared['from'] ?? null, 'to' => $prepared['to'] ?? null,
-            'plan' => self::changes($changes, $now), 'link' => ['label' => 'Open Paperwork →', 'href' => '/bureaucracy'],
-            'said' => $made['title'].'.'.(($moved = self::moved($changes)) !== null ? " {$moved}" : '')], fn ($v) => $v !== null);
+        // What changed in their plan, as Paperwork's before and after say it (the page words its dates).
+        return [...$made, 'changes' => $changes, 'link' => ['label' => 'Open Paperwork →', 'href' => '/bureaucracy'],
+            'said' => $made['title'].'.'.(($moved = self::moved($changes)) !== null ? " {$moved}" : '')];
     }
 
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
@@ -212,6 +217,7 @@ final class PaperworkActions implements ComposerAction
 
         return ['key' => $key, 'value' => $value, 'previous' => $view['values'][$key] ?? null, 'state' => $state, 'revision' => (int) $view['revision'],
             'from' => $from, 'to' => $to, 'propose' => 'Change '.(self::LABELS[$key][1] ?? 'this answer').'?', 'sub' => $this->dated($user, $key),
+            'date' => $definition->type === 'date',
             // Both ways of saying a date, so the AI may say either.
             'about' => self::label($key).': '.($from !== null ? 'from '.self::long($view['values'][$key] ?? null, $from).' ' : '').'to '.self::long($value, $to)];
     }
@@ -380,42 +386,6 @@ final class PaperworkActions implements ComposerAction
 
     private const NUMBERS = [2 => 'two', 3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six'];
 
-    /**
-     * What changed in their plan, grouped by task: a date moved, a step added or gone, a state changed.
-     *
-     * @param  list<array<string, mixed>>  $changes  PaperworkPlanDiff::between
-     * @return array{title: string, tasks: list<array<string, mixed>>}|null
-     */
-    private static function changes(array $changes, CarbonImmutable $now): ?array
-    {
-        if ($changes === []) {
-            return null;
-        }
-        $tasks = collect($changes)->groupBy(fn (array $c): string => (string) $c['title'])->map(function ($rows, string $title): array {
-            $moved = $rows->where('change', 'due_moved');
-            $to = $moved->pluck('to')->unique();
-
-            return array_filter(['title' => $title,
-                'summary' => $moved->isNotEmpty() && $to->count() === 1 ? ($moved->count() === 1 ? '1 step now aims for ' : "{$moved->count()} steps now aim for ").self::day($to->first()) : null,
-                'rows' => $rows->map(fn (array $c): array => array_filter([
-                    'step' => $c['step']['title'] ?? null,
-                    'change' => $c['change'],
-                    'text' => match ($c['change']) {
-                        'added' => 'New task in your plan',
-                        'removed' => 'No longer in your plan',
-                        'step_added' => 'New step',
-                        'step_removed' => 'No longer needed',
-                        'state_changed' => isset($c['to']) ? self::state((string) $c['to']) : null,
-                        default => null,
-                    },
-                    'to' => $c['change'] === 'due_moved' && is_string($c['to'] ?? null) ? self::day($c['to'], false) : null,
-                    'from' => $c['change'] === 'due_moved' && is_string($c['from'] ?? null) ? self::day($c['from'], false) : null,
-                ], fn ($v) => $v !== null))->values()->all()], fn ($v) => $v !== null);
-        })->values()->all();
-
-        return ['title' => 'What changed in your plan', 'tasks' => $tasks];
-    }
-
     /** "EU Blue Card: 2 steps now aim for 12 Feb 2027." for the AI to say, from the plan's own dates. */
     private static function moved(array $changes): ?string
     {
@@ -468,6 +438,12 @@ final class PaperworkActions implements ComposerAction
         return is_string($value) && CalendarDate::parse($value) !== null ? "{$said} (".CarbonImmutable::parse($value, 'Europe/Berlin')->format('j F Y').')' : $said;
     }
 
+    /** What an answer is, as the record's row says it ("Your visa runs until"), or null when it has no row. */
+    public static function rowLabel(string $key): ?string
+    {
+        return self::LABELS[$key][0] ?? null;
+    }
+
     private static function label(string $key): string
     {
         return self::LABELS[$key][0] ?? ucfirst(str_replace('_', ' ', $key));
@@ -477,11 +453,6 @@ final class PaperworkActions implements ComposerAction
     private static function day(string $date, bool $year = true): string
     {
         return CarbonImmutable::parse($date, 'Europe/Berlin')->format($year ? 'j M Y' : 'j M');
-    }
-
-    private static function state(string $state): string
-    {
-        return ucfirst(str_replace('_', ' ', $state));
     }
 
     /** Paperwork's own refusal, in its words. */

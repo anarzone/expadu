@@ -24,11 +24,10 @@ Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue
 Route::post('composer/ask', [ComposerController::class, 'ask'])
     ->middleware('throttle:composer-ask')
     ->name('composer.ask');
-// A change Composer proposed, applied; one it made, undone (24 hours, ComposerActions).
-Route::post('composer/actions/{token}/apply', [ComposerController::class, 'applyAction'])
-    ->whereUuid('token')->middleware('throttle:composer-ask')->name('composer.actions.apply');
-Route::post('composer/actions/{token}/undo', [ComposerController::class, 'undoAction'])
-    ->whereUuid('token')->middleware('throttle:composer-ask')->name('composer.actions.undo');
+// A change Composer proposed, applied; one it made, undone (24 hours); a change made on a card (ComposerActions).
+Route::post('composer/apply', [ComposerController::class, 'applyAction'])->middleware('throttle:composer-ask')->name('composer.apply');
+Route::post('composer/undo', [ComposerController::class, 'undoAction'])->middleware('throttle:composer-ask')->name('composer.undo');
+Route::post('composer/act', [ComposerController::class, 'act'])->middleware('throttle:composer-ask')->name('composer.act');
 // How far the assistant has got with a request (its permit's request id), polled while it works.
 Route::get('composer/progress/{requestId}', [ComposerController::class, 'progress'])
     ->whereUuid('requestId')->middleware('throttle:composer-progress')->name('composer.progress');

@@ -223,7 +223,8 @@ class EvaluateComposer extends Command
         // A change asked for: the tool it called, the card it showed (done or proposed), or the place
         // that does what Composer never does; and none when it shouldn't change anything.
         $called = fn (string $tool): bool => collect($assistant->timings)->contains(fn (array $t): bool => str_starts_with($t[0], $tool.' '));
-        $changed = collect($answer['blocks'] ?? [])->where('type', 'changed');
+        // Proposed or made: the proposal or done card (session 2's blocks).
+        $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
         $routing += isset($expect['acted']) ? ['acted' => $called($expect['acted'])] : [];
         $routing += isset($expect['changed']) ? ['changed' => $changed->contains('state', $expect['changed'])] : [];
         $routing += isset($expect['handoff']) ? ['handoff' => collect($answer['blocks'] ?? [])->contains(fn (array $b): bool => ($b['type'] ?? null) === 'handoff' && $b['what'] === $expect['handoff'])] : [];

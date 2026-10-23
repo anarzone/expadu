@@ -88,10 +88,10 @@ class WorkspaceStore
     }
 
     /**
-     * Keeps an action record, and puts its card, as it is now, wherever an answer shows it
-     * (by the card's id): a proposal becomes done, done becomes undone, in place.
+     * Keeps an action record, and puts its cards, as they are now, wherever an answer shows them
+     * (by their id): a proposal becomes done, done becomes undone, in place.
      *
-     * @param  array<string, mixed>  $record  with `token` and `block`
+     * @param  array<string, mixed>  $record  with `token` and `blocks`
      * @return array<string, mixed> the projected workspace
      */
     public function keepAction(User $user, array $record): array
@@ -105,13 +105,24 @@ class WorkspaceStore
             // Spent after 24 hours (owner, 23 Oct 2026): a record past it is no longer kept.
             $actions = array_filter($actions, fn (mixed $kept): bool => is_array($kept) && CarbonImmutable::parse($kept['expires_at'])->isFuture());
             $s['actions'] = array_slice([...$actions, $record['token'] => $record], -self::ACTION_LIMIT, preserve_keys: true);
+            // Its cards (the change, and what changed in their plan) are put back as they are now, where the first stood.
+            $ours = [$record['token'], "{$record['token']}:plan"];
             foreach ($s['conversations'] as $i => $conversation) {
                 foreach ($conversation['messages'] as $j => $message) {
-                    foreach ($message['blocks'] ?? [] as $k => $block) {
-                        if (($block['type'] ?? null) === 'changed' && ($block['id'] ?? null) === $record['token']) {
-                            $s['conversations'][$i]['messages'][$j]['blocks'][$k] = $record['block'];
+                    if (! collect($message['blocks'] ?? [])->contains(fn (array $block): bool => in_array($block['id'] ?? null, $ours, true))) {
+                        continue;
+                    }
+                    $blocks = [];
+                    $placed = false;
+                    foreach ($message['blocks'] as $block) {
+                        if (! in_array($block['id'] ?? null, $ours, true)) {
+                            $blocks[] = $block;
+                        } elseif (! $placed) {
+                            array_push($blocks, ...$record['blocks']);
+                            $placed = true;
                         }
                     }
+                    $s['conversations'][$i]['messages'][$j]['blocks'] = $blocks;
                 }
             }
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
@@ -141,8 +152,8 @@ class WorkspaceStore
                     if (! is_array($message['blocks'] ?? null)) {
                         continue;
                     }
-                    $kept = array_values(array_filter($message['blocks'], fn (array $block): bool => ! in_array($block['type'] ?? null, ['record', 'checklist'], true)
-                        && ! (($block['type'] ?? null) === 'changed' && ($block['domain'] ?? null) === 'paperwork')));
+                    $kept = array_values(array_filter($message['blocks'], fn (array $block): bool => ! in_array($block['type'] ?? null, ['record', 'checklist', 'plan_changes'], true)
+                        && ($block['area'] ?? $block['domain'] ?? null) !== 'paperwork'));
                     if (count($kept) !== count($message['blocks'])) {
                         // Its words were about that record too.
                         $s['conversations'][$i]['messages'][$j] = [...array_diff_key($message, ['record' => true, 'lead' => true, 'facts' => true]),

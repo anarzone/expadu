@@ -217,20 +217,45 @@ class ComposerController extends Controller
     }
 
     /**
-     * Apply on a change Composer proposed (its `changed` card): made as proposed, or why not.
-     * The card comes back as it is now, and the workspace that shows it.
+     * Apply on a change Composer proposed (its `proposal` card): made as proposed. The
+     * workspace comes back with the card as it is now; refused, a 409 says why, with it.
      */
-    public function applyAction(Request $request, string $token, ComposerActions $actions): JsonResponse
+    public function applyAction(Request $request, ComposerActions $actions): JsonResponse
     {
-        return response()->json($actions->apply($request->user(), strtolower($token), CarbonImmutable::now('Europe/Berlin')))
-            ->header('Cache-Control', 'private, no-store');
+        $validated = $request->validate(['token' => ['required', 'uuid']]);
+
+        return $this->acted($actions->apply($request->user(), strtolower($validated['token']), CarbonImmutable::now('Europe/Berlin')));
     }
 
     /** Undo on a change Composer made in the last 24 hours, through the app's own way back. */
-    public function undoAction(Request $request, string $token, ComposerActions $actions): JsonResponse
+    public function undoAction(Request $request, ComposerActions $actions): JsonResponse
     {
-        return response()->json($actions->undo($request->user(), strtolower($token), CarbonImmutable::now('Europe/Berlin')))
-            ->header('Cache-Control', 'private, no-store');
+        $validated = $request->validate(['token' => ['required', 'uuid']]);
+
+        return $this->acted($actions->undo($request->user(), strtolower($validated['token']), CarbonImmutable::now('Europe/Berlin')));
+    }
+
+    /**
+     * A change the person made on a card themselves: a Paperwork record row's new date. Made,
+     * or proposed when they ask first, in a reply of Composer's own.
+     */
+    public function act(Request $request, ComposerActions $actions): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['paperwork_fact'])],
+            'key' => ['required', 'string', 'max:80'],
+            'value' => ['required', 'string', 'max:40'],
+        ]);
+
+        return $this->acted($actions->act($request->user(), 'change_paperwork_fact', ['key' => $validated['key'], 'value' => $validated['value']],
+            CarbonImmutable::now('Europe/Berlin')));
+    }
+
+    /** @param  array{workspace: array<string, mixed>, refusal: ?string}  $result */
+    private function acted(array $result): JsonResponse
+    {
+        return response()->json($result['refusal'] === null ? $result['workspace'] : ['message' => $result['refusal'], 'workspace' => $result['workspace']],
+            $result['refusal'] === null ? 200 : 409)->header('Cache-Control', 'private, no-store');
     }
 
     /**

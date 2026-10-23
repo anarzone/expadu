@@ -73,7 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // These are JSON commands even when Accept is missing/spoofed. A
         // validation redirect must not flash personal prompts into a session.
-        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/ask', 'composer/actions/*', 'composer/compose', 'bureaucracy/v2/*', 'privacy/processing/*')
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/ask', 'composer/apply', 'composer/undo', 'composer/act', 'composer/compose', 'bureaucracy/v2/*', 'privacy/processing/*')
             || $request->expectsJson());
         // `code`: an emailed confirmation code (EmailConfirmation) never sits in the session.
         $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference', 'question', 'code']);

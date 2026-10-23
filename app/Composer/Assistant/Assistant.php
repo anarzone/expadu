@@ -93,7 +93,7 @@ final class Assistant
 
     /** Added when they allowed Composer to read their Paperwork record for this message (paperwork_answer). */
     private const PAPERWORK = <<<'TXT'
-        They allowed you to read their Paperwork record for this message. To change it, call paperwork first, then change_paperwork_fact (only the answers they said, never others; when what they said matches a row of their record, that row's key; a date as YYYY-MM-DD), paperwork_step or paperwork_report, with the keys and ids it gave. Say only what the record and the change's result say: never what an office requires, decides or allows.
+        They allowed you to read their Paperwork record for this message. When they tell you a new answer, call change_paperwork_fact right away, in your first round, for only the answers they said (a date as YYYY-MM-DD): you needn't read the record first, and the proposal card shows them the change. To tick a step or record a report, call paperwork for the task and step ids, then paperwork_step or paperwork_report. To say what their record says, call paperwork. Say only what the record and the change's result say: never what an office requires, decides or allows.
         TXT;
 
     /** Added for people who turned personalisation on. */
@@ -123,7 +123,7 @@ final class Assistant
     private const LEANS = '/^(also|or|and|but|so|then)\b|\b(the same|that one)\b/iu';
 
     /** Cards of the person's own and questions back: shown whenever they were looked up. */
-    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+|o\d+)$/';
+    private const ALWAYS_SHOWN = '/^(pw|pp|trip|next|c\d+|x\d+p?|o\d+)$/';
 
     /** The last answer as written, before the checks (composer:eval reads what was dropped). */
     public ?array $written = null;
