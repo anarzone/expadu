@@ -18,6 +18,7 @@ import {
 } from '@/components/composer/ai-notice';
 import {
     AnswerBody,
+    firstAskId,
     isAnswer,
     guided,
     NotAnswered,
@@ -228,6 +229,7 @@ export default function ComposerPage({
     const latestReplyId = conversation.messages.findLast(
         (message) => message.role === 'assistant',
     )?.id;
+    const firstAsk = firstAskId(conversation.messages);
     const latestPlanMessage = [...conversation.messages]
         .reverse()
         .find((item) => item.kind === 'plan' && item.date === workspace.focus);
@@ -599,6 +601,7 @@ export default function ComposerPage({
                                             latest={
                                                 message.id === latestReplyId
                                             }
+                                            firstAsk={message.id === firstAsk}
                                             onAsk={ask}
                                             onPanel={openCollection}
                                             planned={(event) =>

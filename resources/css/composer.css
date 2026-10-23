@@ -1531,11 +1531,50 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
-/* An AI permission's notice, sentence by sentence, as the server words it. */
+/* An AI permission's notice, sentence by sentence, as the server words it,
+   folded under "What Composer sends" (open on a conversation's first ask). */
 .composer-page .action-notice {
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+.composer-page .action-notice > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    width: fit-content;
+    margin: -8px 0;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+.composer-page .action-notice > summary::-webkit-details-marker {
+    display: none;
+}
+.composer-page .action-notice > summary::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    margin-top: -3px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+}
+.composer-page .action-notice[open] > summary {
+    margin-bottom: 0;
+}
+.composer-page .action-notice[open] > summary::after {
+    margin-top: 3px;
+    transform: rotate(225deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-page .action-notice > summary::after {
+        transition: none;
+    }
 }
 .composer-page .action-notice p {
     margin: 0;

@@ -7,6 +7,7 @@ import { ringWithdraw } from './ai-notice';
 import type { AiNotice } from './ai-notice';
 import {
     AnswerBody,
+    firstAskId,
     guided,
     isAnswer,
     NotAnswered,
@@ -280,6 +281,7 @@ function Talk({
         (message) => message.role === 'assistant',
     );
     const latestReplyId = latestReply?.id;
+    const firstAsk = firstAskId(messages);
     // Said aloud when it arrives: the answer's first sentence (or its title).
     const said = asked
         ? (
@@ -399,6 +401,7 @@ function Talk({
                 <AnswerBody
                     message={message}
                     latest={message.id === latestReplyId}
+                    firstAsk={message.id === firstAsk}
                     onAsk={(prompt) => void engine.send(prompt)}
                     onPanel={() => undefined}
                     planned={(event) =>

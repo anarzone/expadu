@@ -517,6 +517,7 @@ export function AnswerBody({
     planned,
     onAddEvent,
     calls,
+    firstAsk = false,
 }: {
     message: AnswerMessage;
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
@@ -528,6 +529,8 @@ export function AnswerBody({
     onAddEvent: (event: AnsweredEvent) => void;
     /** Undo, Apply and changes in place, for a change Composer made or proposed. */
     calls?: ActionCalls;
+    /** This reply holds the conversation's first permission ask (its notice starts open). */
+    firstAsk?: boolean;
 }) {
     // "Not this" on an assistant's suggestions, for people who turned learning on
     // (only then is it kept): the card goes at once, with Undo.
@@ -727,7 +730,12 @@ export function AnswerBody({
                     ) : null;
                 case 'permission':
                     return calls ? (
-                        <Permission key={index} block={block} calls={calls} />
+                        <Permission
+                            key={index}
+                            block={block}
+                            calls={calls}
+                            first={firstAsk}
+                        />
                     ) : null;
                 case 'guidance':
                     return <Guidance key={index} query={block.query} />;
@@ -801,6 +809,14 @@ export function AnswerBody({
         </>
     );
 }
+
+/** The reply holding a conversation's first permission ask, if any. */
+export const firstAskId = (messages: Message[]) =>
+    messages.find(
+        (message) =>
+            isAnswer(message) &&
+            message.blocks?.some((block) => block.type === 'permission'),
+    )?.id;
 
 /** An assistant's answer with nothing in it: no words, no cards, nothing to do next. */
 const emptyAnswer = (message: AnswerMessage) =>
