@@ -832,23 +832,7 @@
 .composer-page .event-answer-item .answer-fine {
     margin: 0;
 }
-/* A suggested place's card, with its "because" line and Not this under it. */
-.composer-page .nearby-answer > .nearby-answer-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-.composer-page .nearby-answer > .nearby-answer-item > .nearby-answer-card {
-    flex: 1 1 auto;
-    height: auto;
-}
-.composer-page .nearby-answer-item .answer-fine {
-    margin: 0;
-}
-.composer-page
-    :is(.nearby-answer-item, .event-answer-item)
-    > .composer-text-button {
+.composer-page .event-answer-item > .composer-text-button {
     align-self: flex-start;
 }
 @media (max-width: 700px) {
@@ -884,8 +868,9 @@
     padding: 14px 14px 6px;
 }
 .composer-tray-body {
+    --gutter: 18px;
     position: relative;
-    padding: 18px 18px 28px;
+    padding: 18px var(--gutter) 28px;
 }
 /* The page's conversation, at the panel's measure. */
 .composer-tray-body .chat-feed {
@@ -1086,9 +1071,7 @@
     text-underline-offset: 2px;
 }
 /* Its quiet actions (Not this, the invitation's two) read as the fine print's links. */
-.composer-page
-    :is(.nearby-answer-item, .event-answer-item, .answer-fine)
-    .composer-text-button {
+.composer-page :is(.event-answer-item, .answer-fine) .composer-text-button {
     min-height: 36px;
     padding: 0;
     color: var(--color-text-soft);
@@ -1139,27 +1122,6 @@
 }
 .composer-page .answer-board-full::after {
     content: '→';
-}
-
-/* Places as Around here draws them (its .around rows), one under another,
-   each with its "because" and Not this under it. */
-.composer-page .answer-place-rows {
-    margin: 12px 0 0;
-    padding: 0;
-    list-style: none;
-}
-.composer-page .answer-place-rows > li {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-.composer-page .answer-place-rows .answer-fine {
-    margin: 0;
-}
-.composer-page .nearby-answer-copy .nearby-answer-hours {
-    color: var(--color-text);
-    font-weight: var(--weight-semibold);
 }
 
 /* A trip answer's major headline (Travel's Headline, open or closed): the
@@ -1620,5 +1582,546 @@
             .action-handoff
         ) {
         animation: none;
+    }
+}
+
+/* ── Place results as small cards (option B, owner 23 Oct 2026) ──────────
+   A strip in the panel and on a phone, bleeding to the panel's padding; four
+   across in Full Composer. Each preview is the place's own spot on the map
+   (or its credited photo) washed in its kind's colour, with its pin. Classes
+   are unscoped: the map layer is drawn into the panel, outside the page. */
+.place-card,
+.place-map-selected {
+    --kind-wash: color-mix(in srgb, var(--kind) 18%, var(--color-bg-surface));
+}
+.place-card:is([data-kind='cafe'], [data-kind='bakery']),
+.place-map-selected:is([data-kind='cafe'], [data-kind='bakery']) {
+    --kind-wash: #ead9c2;
+}
+.place-card:is([data-kind='restaurant'], [data-kind='fastfood']),
+.place-map-selected:is([data-kind='restaurant'], [data-kind='fastfood']) {
+    --kind-wash: #f1d3c8;
+}
+.place-answer {
+    margin-top: 12px;
+}
+.place-cards {
+    display: flex;
+    gap: 10px;
+    margin: 0 calc(-1 * var(--gutter, 0px));
+    padding: 0 var(--gutter, 0px) 2px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter, 0px);
+    scrollbar-width: none;
+    list-style: none;
+}
+.place-cards::-webkit-scrollbar {
+    display: none;
+}
+.place-card {
+    position: relative;
+    display: flex;
+    flex: 0 0 172px;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    scroll-snap-align: start;
+}
+.place-card-preview {
+    position: relative;
+    flex: none;
+    height: 104px;
+}
+.place-card-map {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: var(--kind-wash);
+    cursor: zoom-in;
+}
+.place-card-map img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.place-card-tint {
+    position: absolute;
+    inset: 0;
+    background: var(--kind-wash);
+    mix-blend-mode: multiply;
+}
+.place-card-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--kind);
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transform: translate(-50%, -50%);
+}
+.place-card-pin svg,
+.place-map-pin svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: var(--color-text-on-action);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.place-card-expand {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+    color: var(--color-text);
+    font-size: 15px;
+    line-height: 1;
+}
+.place-card-hours {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.place-card-hours.is-open {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+}
+/* Save: 36 to see, 44 to tap. */
+.place-card-save {
+    position: relative;
+    display: grid;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.place-card-preview > .place-card-save {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+.place-card-save::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+}
+.place-map-selected .place-card-save::before {
+    background: var(--color-bg-quiet);
+}
+.place-card-save svg {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+}
+.place-card-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+.place-card-body {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+}
+.place-card-open {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px 12px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.place-card-open:active {
+    background: var(--color-bg-quiet);
+}
+.place-card-body:has(.place-card-more) .place-card-open {
+    padding-right: 36px;
+}
+.place-card-open strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+.place-card-open span {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+.place-card-open small,
+.place-card-open em {
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-style: normal;
+    line-height: 1.35;
+}
+.place-card-more {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+.place-card-more > button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 18px;
+    cursor: pointer;
+}
+.place-card-menu {
+    position: absolute;
+    right: 6px;
+    bottom: 42px;
+    z-index: 2;
+    min-width: 140px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    box-shadow: 0 8px 24px -12px rgb(33 29 21 / 0.45);
+}
+.place-card-menu button {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+.place-card-menu button:active {
+    background: var(--color-bg-quiet);
+}
+/* Not this: the card folds to its stub, with Undo. */
+.place-card.is-dismissed {
+    justify-content: center;
+    gap: 2px;
+    padding: 12px;
+    border-style: dashed;
+    border-color: var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.35;
+}
+.place-card.is-dismissed button {
+    align-self: flex-start;
+    min-height: 44px;
+    margin: -8px 0 -12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.place-answer-credit {
+    margin: 8px 0 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+/* Full Composer: four across. */
+.composer-full .place-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+}
+.composer-full .place-card-preview {
+    height: auto;
+    aspect-ratio: 14 / 9;
+}
+@media (max-width: 700px) {
+    .place-card {
+        flex-basis: 156px;
+    }
+    .place-card-preview {
+        height: 96px;
+    }
+    .place-card-pin {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* ── The answer's places on one map, over the conversation ─────────────── */
+[data-layer-host] {
+    --layer-top: 53px;
+}
+.place-map-layer {
+    position: absolute;
+    inset: var(--layer-top) 0 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px 16px;
+    background: var(--color-bg-canvas);
+    animation: place-map-in 250ms var(--ease-settle);
+}
+@keyframes place-map-in {
+    from {
+        transform: translateX(100%);
+    }
+}
+.place-map-bar {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.place-map-bar strong {
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+.place-map-close {
+    flex: none;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.place-map-frame {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+}
+/* Two classes: MapLibre's own sheet, loaded later, sets the map relative. */
+.place-map-frame > .place-map-canvas {
+    position: absolute;
+    inset: 0;
+}
+.place-map-failed {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    margin: 0;
+    padding: 24px;
+    place-items: center;
+    color: var(--color-text-soft);
+    font-size: 14px;
+    text-align: center;
+}
+/* MapLibre places the marker by its own transform; the pin scales inside it. */
+.place-map-pin {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.place-map-pin > span {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--kind);
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transition: transform var(--duration-base) var(--ease-settle);
+}
+.place-map-pin.is-selected > span {
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 0 0 6px rgb(33 29 21 / 0.28),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transform: scale(1.3);
+}
+.place-map-origin {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+.place-map-origin i {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--color-bg-surface);
+    background: var(--color-text);
+}
+.place-map-origin span {
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgb(33 29 21 / 0.25);
+}
+.place-map-selected {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.place-map-card {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.place-map-card:active {
+    background: var(--color-bg-quiet);
+}
+.place-map-card > i {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--kind);
+}
+.place-map-card > span {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+.place-map-card strong {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.place-map-card small {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+.place-map-step {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.place-map-step button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+@media (max-width: 700px) {
+    [data-layer-host] {
+        --layer-top: 49px;
+    }
+    .place-map-pin > span {
+        width: 30px;
+        height: 30px;
+    }
+    .place-map-selected {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .place-map-step {
+        grid-column: 1 / -1;
+        justify-content: center;
+        border-top: 1px solid var(--color-border);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .place-map-layer {
+        animation: none;
+    }
+    .place-map-pin > span,
+    .place-card-open {
+        transition: none;
     }
 }

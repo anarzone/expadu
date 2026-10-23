@@ -541,10 +541,7 @@ export function AnswerBody({
             }
         ).userSettings?.personalisation === true;
     const [left, setLeft] = useState<string[]>([]);
-    const leave = (
-        key: string,
-        item: { type: 'event' | 'spot'; id: number },
-    ) => {
+    const leave = (key: string, item: { type: 'event'; id: number }) => {
         setLeft((keys) => [...keys, key]);
         notThis(item, () => setLeft((keys) => keys.filter((k) => k !== key)));
     };
@@ -557,8 +554,6 @@ export function AnswerBody({
             (event) =>
                 !left.includes(`event:${event.id}:${event.occurrence_start}`),
         );
-    const shownPlaces = (places: AnsweredPlace[] | undefined) =>
-        places?.filter((place) => !left.includes(`spot:${place.id}`));
     const eventsCard = (list: AnsweredEvent[] | undefined) => {
         const events = shownEvents(list);
 
@@ -583,22 +578,8 @@ export function AnswerBody({
         list: AnsweredPlace[] | undefined,
         from?: PlaceFrom | null,
     ) => {
-        const places = shownPlaces(list);
-
-        return places?.length ? (
-            <PlaceAnswer
-                places={places}
-                from={from}
-                onNotThis={
-                    suggesting
-                        ? (place) =>
-                              leave(`spot:${place.id}`, {
-                                  type: 'spot',
-                                  id: place.id,
-                              })
-                        : undefined
-                }
-            />
+        return list?.length ? (
+            <PlaceAnswer places={list} from={from} notThis={suggesting} />
         ) : null;
     };
     const after = (

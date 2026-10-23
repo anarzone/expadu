@@ -591,6 +591,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                         ref={panel}
                         className="composer-tray-panel"
                         aria-label="Composer"
+                        data-layer-host
                     >
                         <header className="composer-tray-head">
                             {view === 'talk' && (
