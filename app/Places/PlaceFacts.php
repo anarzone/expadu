@@ -290,7 +290,11 @@ class PlaceFacts
             'description' => $description,
             'negative_facts' => $negativeFacts,
             'practical' => $practical,
-            'activities' => PlaceCapabilities::activities($practical['sport']['value']),
+            // A playground with goals or a ball wall is a children's play area, not where adults
+            // go to play football: its equipment stays in practical, but it answers no activity ask.
+            'activities' => ($spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category) === 'playground'
+                ? []
+                : PlaceCapabilities::activities($practical['sport']['value']),
             'conflicts' => array_values(array_filter([
                 $access['conflicting'] ? 'access' : null,
                 $fee['status'] === 'conflicting' ? 'fee' : null,
@@ -351,6 +355,20 @@ class PlaceFacts
         }
 
         $sourceValue = $latestSource !== null ? $this->stringValue($latestSource->payload['name'] ?? null) : null;
+        // The place's own source names it; another provider (the city's register) only names
+        // what its own source calls by a generic label ("Spielplatz"), so refreshes don't flip it.
+        $own = $effectiveObservations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('name', $row->payload)
+            && $row->provider === $spot->source && $row->provider_record_id === $spot->source_id)
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])->last();
+        if ($own !== null) {
+            $ownName = $this->stringValue($own->payload['name'] ?? null);
+            $named = $effectiveObservations->filter(fn (PlaceFactObservation $row): bool => $row !== $own
+                && ($name = $this->stringValue($row->payload['name'] ?? null)) !== null && ! $this->isDescriptiveName($name))
+                ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])->last();
+            [$latestSource, $sourceValue] = $ownName !== null && ! $this->isDescriptiveName($ownName)
+                ? [$own, $ownName]
+                : ($named !== null ? [$named, $this->stringValue($named->payload['name'])] : [$own, $ownName]);
+        }
         $latestObservation = $effectiveObservations
             ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id])
             ->last();
@@ -566,14 +584,25 @@ class PlaceFacts
      */
     private function resolveHours(Spot $spot, array $tags, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'hours');
-        $source = is_array($row?->payload['hours'] ?? null) ? $row->payload['hours'] : [];
-        $raw = $row !== null
-            ? $this->stringValue(array_key_exists('raw', $source) ? $source['raw'] : null)
-            : ($useLegacyProjection ? $this->stringValue($tags['opening_hours'] ?? null) : null);
+        // The place's own source (OSM) gives its hours; another provider (its website) only
+        // fills a gap. Hours that differ between them are flagged as conflicting, never swapped.
+        $withHours = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('hours', $row->payload))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $isOwn = fn (PlaceFactObservation $row): bool => $spot->source === null || ($row->provider === $spot->source && $row->provider_record_id === $spot->source_id);
+        $ownRow = $withHours->filter($isOwn)->last();
+        $rawOf = fn (?PlaceFactObservation $row): ?string => $row === null ? null : $this->stringValue(is_array($row->payload['hours'] ?? null) ? ($row->payload['hours']['raw'] ?? null) : null);
+        $others = $withHours->reject($isOwn)
+            ->groupBy(fn (PlaceFactObservation $row): string => $row->provider.'|'.$row->provider_record_id)
+            ->map(fn (Collection $rows): PlaceFactObservation => $rows->last())
+            ->filter(fn (PlaceFactObservation $row): bool => $rawOf($row) !== null && OpeningHoursParser::parse($rawOf($row)) !== null)
+            ->values();
+        $ownRaw = $rawOf($ownRow) ?? ($ownRow === null && $useLegacyProjection ? $this->stringValue($tags['opening_hours'] ?? null) : null);
+        $row = $ownRaw !== null || $others->isEmpty() ? $ownRow : $others->last();
+        $raw = $ownRaw ?? $rawOf($row);
         $parsed = $raw !== null
             ? OpeningHoursParser::parse($raw)
             : ($row === null && $useLegacyProjection && is_array($spot->opening_hours) ? $spot->opening_hours : null);
+        $hoursDisagree = $parsed !== null && $others->contains(fn (PlaceFactObservation $other): bool => OpeningHoursParser::parse($rawOf($other)) != $parsed);
 
         $correction = $corrections->last();
         if ($correction !== null) {
@@ -582,7 +611,7 @@ class PlaceFacts
         }
 
         return [
-            ...$this->fact($parsed, $corrections->count() > 1 ? 'conflicting' : ($parsed !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($raw !== null || $parsed !== null ? $legacySourceUrl : null))),
+            ...$this->fact($parsed, $corrections->count() > 1 || ($correction === null && $hoursDisagree) ? 'conflicting' : ($parsed !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($raw !== null || $parsed !== null ? $legacySourceUrl : null))),
             'raw' => $raw,
             'parsed' => $parsed,
             'observed_at' => $row?->observed_at?->toIso8601String(),
@@ -596,27 +625,57 @@ class PlaceFacts
      */
     private function resolveContact(Spot $spot, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'contact');
-        $source = is_array($row?->payload['contact'] ?? null) ? $row->payload['contact'] : [];
-        $values = collect(['website', 'phone', 'address'])->mapWithKeys(fn (string $field): array => [
-            $field => $row !== null
-                ? $this->stringValue(array_key_exists($field, $source) ? $source[$field] : null)
-                : ($useLegacyProjection ? $this->stringValue($spot->{$field}) : null),
-        ])->all();
-
+        // Field by field: the place's own source (OSM) decides when it lists a value;
+        // another provider (Overture, a website) only fills a gap. A real disagreement
+        // (another website domain, another number) stays conflicting, never swapped.
+        $withContact = $observations->filter(fn (PlaceFactObservation $row): bool => is_array($row->payload['contact'] ?? null))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $isOwn = fn (PlaceFactObservation $row): bool => $spot->source === null || ($row->provider === $spot->source && $row->provider_record_id === $spot->source_id);
+        $latestByProvider = $withContact->reject($isOwn)
+            ->groupBy(fn (PlaceFactObservation $row): string => $row->provider.'|'.$row->provider_record_id)
+            ->map(fn (Collection $rows): PlaceFactObservation => $rows->last());
         $correction = $corrections->last();
 
-        return collect($values)->map(function (?string $value, string $field) use ($correction, $corrections, $row, $legacySourceUrl): array {
-            if ($correction !== null && array_key_exists($field, $correction->value)) {
-                $value = $this->stringValue($correction->value[$field]);
+        return collect(['website', 'phone', 'address'])->mapWithKeys(function (string $field) use ($spot, $isOwn, $withContact, $latestByProvider, $useLegacyProjection, $legacySourceUrl, $correction, $corrections): array {
+            // The latest own record that states this field (null = removed); one silent on it doesn't erase it.
+            $primary = $withContact->filter(fn (PlaceFactObservation $row): bool => $isOwn($row) && array_key_exists($field, $row->payload['contact']))->last();
+            $own = $primary !== null ? $this->stringValue($primary->payload['contact'][$field] ?? null) : null;
+            if ($primary === null && $useLegacyProjection) {
+                $own = $this->stringValue($spot->{$field});
             }
+            $others = $latestByProvider->map(fn (PlaceFactObservation $row): array => [$row, $this->stringValue($row->payload['contact'][$field] ?? null)])
+                ->filter(fn (array $pair): bool => $pair[1] !== null)->values();
+            [$row, $value] = $own !== null ? [$primary, $own] : ($others->last() ?? [$primary, null]);
+            $differs = fn (string $a, string $b): bool => $this->contactKey($field, $a) !== $this->contactKey($field, $b);
+            // OSM's own value stays shown; another provider saying otherwise is noted, not
+            // allowed to hide it (Overture is often the stale side). Without an own value,
+            // two other providers disagreeing leave it conflicting.
+            $disputedBy = $value !== null ? $others->filter(fn (array $pair): bool => $differs($pair[1], $value))->map(fn (array $pair): string => $pair[0]->provider)->unique()->values()->all() : [];
+            $conflicting = $own === null && $disputedBy !== [];
 
-            return [
-                ...$this->fact($value, $corrections->count() > 1 ? 'conflicting' : ($value !== null ? 'known' : 'unknown'), $correction?->evidence_url ?? ($row?->source_url ?? ($value !== null ? $legacySourceUrl : null))),
+            if ($correction !== null && array_key_exists($field, $correction->value)) {
+                [$value, $conflicting] = [$this->stringValue($correction->value[$field]), false];
+            }
+            $status = $corrections->count() > 1 || $conflicting ? 'conflicting' : ($value !== null ? 'known' : 'unknown');
+
+            return [$field => [
+                ...$this->fact($value, $status, $correction?->evidence_url ?? ($row?->source_url ?? ($value !== null ? $legacySourceUrl : null))),
                 'observed_at' => $row?->observed_at?->toIso8601String(),
                 'reviewed_at' => $correction?->reviewed_at?->toIso8601String(),
-            ];
+                ...($disputedBy !== [] && $correction === null ? ['disputed_by' => $disputedBy] : []),
+            ]];
         })->all();
+    }
+
+    /** What makes two contact values the same: a website's host, a number's digits, an address's letters. */
+    private function contactKey(string $field, string $value): string
+    {
+        return match ($field) {
+            // The registrable domain: shop.rewe.de and www.rewe.de are the same business.
+            'website' => implode('.', array_slice(explode('.', mb_strtolower((string) (parse_url(str_contains($value, '://') ? $value : 'https://'.$value, PHP_URL_HOST) ?? $value))), -2)),
+            'phone' => substr((string) preg_replace('/^(?:00)?49|^0/', '', (string) preg_replace('/\D+/', '', $value)), -9),
+            default => (string) preg_replace('/[^a-z0-9]+/', '', mb_strtolower($value)),
+        };
     }
 
     /**
@@ -625,7 +684,13 @@ class PlaceFacts
      */
     private function resolveDescription(Spot $spot, ?string $legacySourceUrl, Collection $observations, Collection $corrections, bool $useLegacyProjection): array
     {
-        $row = $this->latestWithField($observations, 'description');
+        // The place's own source describes it when it does; another provider (Wikidata)
+        // only fills a gap, so a refresh without a description doesn't erase one.
+        $described = $observations->filter(fn (PlaceFactObservation $row): bool => array_key_exists('description', $row->payload))
+            ->sortBy(fn (PlaceFactObservation $row) => [$row->observed_at?->getTimestamp() ?? 0, $row->id]);
+        $own = $described->filter(fn (PlaceFactObservation $row): bool => $row->provider === $spot->source && $row->provider_record_id === $spot->source_id)->last();
+        $other = $described->filter(fn (PlaceFactObservation $row): bool => $row !== $own && $this->stringValue($row->payload['description'] ?? null) !== null)->last();
+        $row = $own !== null && $this->stringValue($own->payload['description'] ?? null) !== null ? $own : ($other ?? $own ?? $described->last());
         $value = $row !== null
             ? $this->stringValue($row->payload['description'] ?? null)
             : ($useLegacyProjection ? $this->stringValue($spot->description) : null);
