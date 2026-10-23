@@ -20,6 +20,15 @@ import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
 import { timetable } from '@/routes';
 import type { Journey, JourneyLeg } from '@/types/transit';
+import {
+    DoneLine,
+    Handoff,
+    PlanChanges,
+    Proposal,
+    RecordRows,
+    UndoneLine,
+} from './action-blocks';
+import type { ActionBlock, ActionCalls } from './action-blocks';
 import { DeparturesAnswer } from './departures-answer';
 import type { AnsweredBoard } from './departures-answer';
 import { EventAnswer } from './event-answer';
@@ -162,7 +171,8 @@ type Block =
       }
     | { type: 'note'; text: string; private?: boolean }
     | { type: 'facts'; facts: Fact[] }
-    | { type: 'guidance'; query: string };
+    | { type: 'guidance'; query: string }
+    | ActionBlock;
 
 export type AnswerMessage = Message & {
     request?: string;
@@ -505,6 +515,7 @@ export function AnswerBody({
     onPanel,
     planned,
     onAddEvent,
+    calls,
 }: {
     message: AnswerMessage;
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
@@ -514,6 +525,8 @@ export function AnswerBody({
     /** Whether a listed event is in its day's plan already. */
     planned: (event: AnsweredEvent) => boolean;
     onAddEvent: (event: AnsweredEvent) => void;
+    /** Undo, Apply and changes in place, for a change Composer made or proposed. */
+    calls?: ActionCalls;
 }) {
     // "Not this" on an assistant's suggestions, for people who turned learning on
     // (only then is it kept): the card goes at once, with Undo.
@@ -689,6 +702,24 @@ export function AnswerBody({
                     return own(block) ? <p key={index}>{block.text}</p> : null;
                 case 'facts':
                     return <FactList key={index} facts={block.facts} />;
+                case 'done':
+                    return calls ? (
+                        <DoneLine key={index} block={block} calls={calls} />
+                    ) : null;
+                case 'undone':
+                    return <UndoneLine key={index} block={block} />;
+                case 'proposal':
+                    return calls ? (
+                        <Proposal key={index} block={block} calls={calls} />
+                    ) : null;
+                case 'record':
+                    return calls ? (
+                        <RecordRows key={index} block={block} calls={calls} />
+                    ) : null;
+                case 'plan_changes':
+                    return <PlanChanges key={index} block={block} />;
+                case 'handoff':
+                    return <Handoff key={index} block={block} />;
                 case 'guidance':
                     return <Guidance key={index} query={block.query} />;
                 default:

@@ -343,6 +343,19 @@ function Talk({
         };
     }, []);
 
+    // A change Composer made or proposed: Undo, Apply, a record row changed here.
+    const calls = {
+        undo: engine.undo,
+        apply: engine.apply,
+        change: engine.change,
+        ask: (prompt: string) => void engine.send(prompt),
+        focusBox: () =>
+            document
+                .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
+                ?.focus({ preventScroll: true }),
+        busy: !!busy,
+    };
+
     const entry = (message: Message) => (
         <article
             key={message.id}
@@ -380,6 +393,7 @@ function Talk({
                             date: event.date,
                         })
                     }
+                    calls={calls}
                 />
             ) : (
                 message.text && <p>{message.text}</p>

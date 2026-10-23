@@ -33,6 +33,13 @@ const PAGES: Record<string, string> = {
 /** The assistant's answer: its own budget (App\Composer\Assistant) and the tools after it. */
 const ASK_TIMEOUT = 60_000;
 
+/** Where a change is undone, applied or made (the AI session's routes for Composer actions). */
+const ACTIONS = {
+    undo: '/composer/undo',
+    apply: '/composer/apply',
+    act: '/composer/act',
+};
+
 /** Whether the person's last message in the open conversation has a reply after it. */
 export function replied(state: Workspace): boolean {
     const messages =
@@ -265,6 +272,42 @@ export function useComposerEngine(
         }
     }
 
+    /**
+     * A change Composer made or proposed (the "Composer does things" canvas):
+     * Undo (24 hours), Apply under Ask first, or a record row changed in place.
+     * The server makes it through the app's own action and answers with the
+     * workspace, the change's line in it; a refusal says why in the bar.
+     */
+    async function act(url: string, body: object) {
+        if (busyRef.current) {
+            return;
+        }
+
+        busyRef.current = true;
+        setBusy('Updating…');
+        setError('');
+
+        try {
+            setState(await api<Workspace>(url, body));
+            on.current.onAnswered?.();
+        } catch (err) {
+            if (err instanceof ApiError && err.data.workspace) {
+                setState(err.data.workspace as Workspace);
+            }
+
+            setError(
+                err instanceof Error ? err.message : 'That didn’t go through.',
+            );
+        } finally {
+            setBusy('');
+            busyRef.current = false;
+        }
+    }
+    const undo = (token: string) => void act(ACTIONS.undo, { token });
+    const apply = (token: string) => void act(ACTIONS.apply, { token });
+    const change = (key: string, value: string) =>
+        void act(ACTIONS.act, { action: 'paperwork_fact', key, value });
+
     /** The bar's Retry: asks again when the message is in, else sends it. */
     function retry() {
         if (againRef.current) {
@@ -441,5 +484,8 @@ export function useComposerEngine(
         again,
         retry,
         leftUnanswered,
+        undo,
+        apply,
+        change,
     };
 }

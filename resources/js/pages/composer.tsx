@@ -195,6 +195,9 @@ export default function ComposerPage({
         again,
         retry,
         leftUnanswered,
+        undo,
+        apply,
+        change,
     } = useComposerEngine(initial, aiNotice, {
         origin,
         pins,
@@ -475,6 +478,15 @@ export default function ComposerPage({
 
     const facts = dayFacts(day, paperwork, around);
     const ask = (prompt: string) => void send(prompt);
+    // A change Composer made or proposed: Undo, Apply, a record row changed here.
+    const calls = {
+        undo,
+        apply,
+        change,
+        ask,
+        focusBox: () => textarea.current?.focus({ preventScroll: true }),
+        busy: !!busy,
+    };
     const openDay = (date: string) => {
         const plan = workspace.plans[date];
 
@@ -592,6 +604,7 @@ export default function ComposerPage({
                                                         scrollBottom(true),
                                                 )
                                             }
+                                            calls={calls}
                                         />
                                     ) : (
                                         message.text && <p>{message.text}</p>

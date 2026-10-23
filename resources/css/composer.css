@@ -1167,3 +1167,331 @@
 .composer-page .answer-major {
     margin: 0 0 var(--space-14);
 }
+
+/* ── What Composer did, or would do (the "Composer does things" canvas, owner
+   23 Oct 2026): a change made with Undo, its undoing, a proposal with Apply,
+   the Paperwork record's rows with Change, what moved in the plan, and where
+   it hands over. Each slides in (the owner's Slide); presses only tint. ── */
+.composer-page
+    :is(
+        .action-done,
+        .action-undone,
+        .action-proposal,
+        .action-record,
+        .action-plan,
+        .action-handoff
+    ) {
+    margin: 12px 0 0;
+    animation: action-in 250ms ease-out both;
+}
+@keyframes action-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+.composer-page .action-done {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px 10px 12px;
+    border: 1px solid
+        color-mix(in srgb, var(--color-success) 22%, var(--color-bg-canvas));
+    border-radius: 14px;
+    background: var(--color-success-soft);
+}
+.composer-page .action-done-tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-round);
+    background: var(--color-success);
+    color: var(--color-text-on-action);
+    font-size: 13px;
+    font-weight: 800;
+}
+.composer-page .action-done-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.composer-page .action-done-copy strong {
+    font-size: var(--text-body);
+}
+.composer-page :is(.action-done-copy span, .action-sub) {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.composer-page .action-undo {
+    flex: none;
+    min-height: 40px;
+    margin-left: auto;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.composer-page .action-undone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.composer-page .action-proposal {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-proposal > strong {
+    font-size: var(--text-body);
+}
+.composer-page .action-proposal-change {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.composer-page .action-proposal-change s {
+    color: var(--color-text-muted);
+}
+.composer-page .action-proposal-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.composer-page :is(.action-apply, .action-ghost, .action-save, .action-change) {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) ease;
+}
+.composer-page :is(.action-apply, .action-save) {
+    border: 0;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+.composer-page :is(.action-apply, .action-save):active:not(:disabled) {
+    background: color-mix(
+        in srgb,
+        var(--color-text) 82%,
+        var(--color-bg-surface)
+    );
+}
+.composer-page :is(.action-ghost, .action-change) {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: 600;
+}
+.composer-page :is(.action-ghost, .action-change):active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .action-change {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+}
+.composer-page .action-record {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-record-row {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    min-height: 50px;
+    padding: 4px 8px 4px 14px;
+    border-top: 1px solid var(--color-bg-quiet);
+    font-size: 14px;
+}
+.composer-page .action-record-row:first-child {
+    border-top: 0;
+}
+.composer-page .action-record-row > span:first-child {
+    color: var(--color-text-soft);
+}
+.composer-page .action-record-row strong {
+    font-weight: var(--weight-semibold);
+}
+.composer-page .action-record-row small {
+    color: var(--color-attention-text);
+    font-weight: var(--weight-semibold);
+}
+.composer-page .action-record-edit {
+    display: flex;
+    grid-column: 2 / -1;
+    align-items: center;
+    gap: 8px;
+}
+.composer-page .action-record-edit input {
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+    font: inherit;
+    font-size: 16px;
+}
+.composer-page .action-record-edit .action-save {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+.composer-page .action-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-plan h3 {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.composer-page .action-plan-task {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+}
+.composer-page .action-plan-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-bg-quiet);
+}
+.composer-page .action-plan-step small {
+    color: var(--color-text-soft);
+}
+.composer-page .action-plan-when {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+.composer-page .action-plan-when s {
+    display: block;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+.composer-page .action-link {
+    align-self: flex-start;
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-underline-offset: 3px;
+}
+.composer-page .action-handoff {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    font-size: 14px;
+}
+.composer-page .action-handoff-crumb {
+    color: var(--color-paper-text);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.composer-page .action-handoff-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.composer-page .action-handoff-actions span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-soft);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.composer-page .action-handoff-actions span.is-here {
+    border: 2px solid var(--color-text);
+    color: var(--color-text);
+    box-shadow: 0 0 0 4px var(--color-paper-bg);
+}
+.composer-page .action-go {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+@media (max-width: 700px) {
+    .composer-page .action-record-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 10px;
+        padding: 8px 8px 8px 12px;
+    }
+    .composer-page .action-record-row > span:first-child {
+        grid-column: 1 / -1;
+        font-size: 13px;
+    }
+    .composer-page .action-record-edit {
+        grid-column: 1 / -1;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-page
+        :is(
+            .action-done,
+            .action-undone,
+            .action-proposal,
+            .action-record,
+            .action-plan,
+            .action-handoff
+        ) {
+        animation: none;
+    }
+}
