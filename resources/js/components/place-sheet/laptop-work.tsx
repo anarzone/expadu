@@ -8,7 +8,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { fullDays, ruleDays, ruleTitle, verdictTitle } from './laptop-text';
+import {
+    fullDays,
+    ruleDays,
+    ruleOf,
+    ruleTitle,
+    verdictTitle,
+} from './laptop-text';
 import { FOLLOW_UPS, useWorkAnswer } from './work-answer';
 import type { FollowUp, WorkAnswer, YesNo } from './work-answer';
 import './laptop-work.css';
@@ -253,7 +259,8 @@ export function LaptopWork({
         laptops.value
             ? laptops
             : null;
-    const days = rule ? ruleDays(conditional?.value) : [];
+    const applies = rule ? ruleOf(rule.value!, conditional?.value) : null;
+    const days = applies ? ruleDays(applies.days) : [];
     const people = state?.totals.laptop ? state.totals : null;
     const eligible = !!state?.can_answer;
     const asking =
@@ -293,7 +300,10 @@ export function LaptopWork({
 
             {rule ? (
                 <>
-                    <Verdict kind="rule" title={ruleTitle(rule.value!, days)} />
+                    <Verdict
+                        kind="rule"
+                        title={ruleTitle(applies!.value, days)}
+                    />
                     {rule.quote ? (
                         <blockquote className="laptop-quote" lang="de">
                             „{rule.quote}“

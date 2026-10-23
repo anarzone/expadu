@@ -16,6 +16,22 @@ const DAY_NAMES: Record<string, [string, string]> = {
 };
 const ORDER = Object.keys(DAY_NAMES);
 
+/**
+ * A café's rule as it applies: laptops:conditional in OSM's form ("no @
+ * (Sa-Su)": what holds on those days) wins over laptops alone; a bare day
+ * list ("Sa-Su") keeps laptops' own value.
+ */
+export function ruleOf(
+    value: string,
+    conditional: string | null | undefined,
+): { value: string; days: string | null } {
+    const form = conditional?.match(/^(no|limited|yes) @ \((.+)\)$/);
+
+    return form
+        ? { value: form[1], days: form[2] }
+        : { value, days: conditional || null };
+}
+
 /** The days an OSM-style rule names ("Sa-Su", "Mo-Fr", "Sa,Su"), in order. */
 export function ruleDays(days: string | null | undefined): string[] {
     if (!days) {
