@@ -260,6 +260,7 @@ function MajorHeadline({ major }: { major: Major }) {
     return (
         <Headline
             level="h3"
+            className="answer-major"
             lines={major.lines ?? []}
             title={major.title}
             text={major.text}

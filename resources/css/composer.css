@@ -1161,3 +1161,9 @@
     color: var(--color-text);
     font-weight: var(--weight-semibold);
 }
+
+/* A trip answer's major headline (Travel's Headline, open or closed): the
+   same gap to the answer's words as between its other parts. */
+.composer-page .answer-major {
+    margin: 0 0 var(--space-14);
+}
