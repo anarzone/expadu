@@ -586,14 +586,15 @@
     height: 18px;
 }
 
-/* A mark that's on (Saved): green, its icon filled. */
+/* A mark that's on (Saved, Been there): green. */
 .ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] {
     border-color: #2b6b3f;
     background: #e6f2e6;
     color: #1f5530;
 }
 
-.ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] .place-icon {
+/* Saved fills its bookmark; Been there keeps its tick in an outline. */
+.ui-sheet.place-sheet .place-sheet-save[aria-pressed='true'] .place-icon {
     fill: currentColor;
 }
 
