@@ -7361,6 +7361,24 @@
    }
   },
   {
+   "id": "regression.cafe_nova_city_center",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I want to go to cafe nova in city center",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
    "id": "regression.cafe_nova_deutz",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",
