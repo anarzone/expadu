@@ -33,6 +33,8 @@ Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapp
 Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
+// People's laptop-work answers: kept 18 months at most (docs/places/design/laptop-answers.md).
+Schedule::command('places:prune-work-answers')->dailyAt('04:10')->withoutOverlapping(30);
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);
 
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
@@ -118,6 +120,11 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOne
 // trips: check daily, import only when a new feed is out. A run a deploy kills
 // blocks the next for at most 2 hours, and leaves the live tables untouched.
 Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer()->runInBackground();
+// gtfs.de's DELFI feed, for the cancellations VRS leaves out: its timetable
+// slice when a new one is out, and its realtime (30 MB a read) every two
+// minutes, only while someone has looked at Travel in the last ten.
+Schedule::command('transit:import-delfi')->dailyAt('04:15')->withoutOverlapping(60)->onOneServer()->runInBackground();
+Schedule::command('transit:fetch-delfi')->everyTwoMinutes()->withoutOverlapping(5)->onOneServer()->runInBackground();
 // Realtime trips that the timetable doesn't know, or a published feed left unimported → Sentry.
 Schedule::command('gtfs:health')->dailyAt('09:00')->withoutOverlapping(30)->onOneServer();
 

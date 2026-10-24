@@ -350,7 +350,6 @@ class BureaucracyPersonas
             'arrival_date' => self::arrivalFor($persona),
             'veedel' => 'Altstadt-Nord',
             'profile_attributes' => $attributes,
-            'interests' => [],
         ]);
     }
 

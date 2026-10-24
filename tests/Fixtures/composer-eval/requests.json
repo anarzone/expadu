@@ -69,6 +69,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150
@@ -88,6 +89,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free"
    }
@@ -214,6 +216,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1
    }
   },
@@ -464,6 +467,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25
    }
@@ -570,6 +574,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150
@@ -715,6 +720,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1
    }
   },
@@ -965,6 +971,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25
    }
@@ -1082,6 +1089,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150,
@@ -1104,6 +1112,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free",
     "kid_safe": true
@@ -1531,6 +1540,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25,
     "kid_safe": true
@@ -1777,6 +1787,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "kid_safe": true
    }
@@ -2056,6 +2067,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25,
     "kid_safe": true
@@ -2176,6 +2188,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150,
@@ -2198,6 +2211,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free",
     "step_free": true
@@ -2342,6 +2356,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "step_free": true
    }
@@ -2606,6 +2621,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25,
     "step_free": true
@@ -2719,6 +2735,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150
@@ -2738,6 +2755,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free"
    }
@@ -2864,6 +2882,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1
    }
   },
@@ -3114,6 +3133,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25
    }
@@ -3220,6 +3240,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150
@@ -3239,6 +3260,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free"
    }
@@ -3365,6 +3387,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1
    }
   },
@@ -3615,6 +3638,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25
    }
@@ -3721,6 +3745,7 @@
    "weather": "dry",
    "text": "I have two hours after work, something relaxing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_slots": 3,
     "max_window_min": 150
@@ -3740,6 +3765,7 @@
    "weather": "dry",
    "text": "Something nice to do today that costs nothing",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "budget": "free"
    }
@@ -3866,6 +3892,7 @@
    "weather": "dry",
    "text": "I just moved here and want to meet people this weekend",
    "expect": {
+    "open": true,
     "min_slots": 1
    }
   },
@@ -4116,6 +4143,7 @@
    "weather": "cloudy",
    "text": "Something gemütlich for a grey Sunday, nicht zu weit",
    "expect": {
+    "open": true,
     "min_slots": 1,
     "max_leg_min": 25
    }
@@ -5509,7 +5537,7 @@
    "text": "do I need an umbrella today",
    "expect": {
     "routed": "answer",
-    "around": true
+    "open": true
    }
   },
   {
@@ -5581,7 +5609,7 @@
    "text": "how can i go to the cafe nova?",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "choices"
    }
   },
   {
@@ -5599,7 +5627,7 @@
    "text": "hw cna i get to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "choices"
    }
   },
   {
@@ -5617,7 +5645,7 @@
    "text": "whats the way to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "choices"
    }
   },
   {
@@ -6741,6 +6769,2007 @@
     "open": true
    },
    "personalised": true
+  },
+  {
+   "id": "new_person.followup_nope_else",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_something_else",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "something else please",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_not_that",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T19:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "anything fun?"
+   ],
+   "text": "not that, something different",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_cheaper",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_closer",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T16:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what should I do now?"
+   ],
+   "text": "closer to me",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_indoors",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "indoors please",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_later",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T17:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "something chill after work"
+   ],
+   "text": "later tonight",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_twice",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T13:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored",
+    "nope, something else"
+   ],
+   "text": "no, another idea",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_meh",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's up?"
+   ],
+   "text": "meh",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_free",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "free stuff only",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "opted_in.followup_nope_else",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_something_else",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "something else please",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_not_that",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T19:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "anything fun?"
+   ],
+   "text": "not that, something different",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_cheaper",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_closer",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T16:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what should I do now?"
+   ],
+   "text": "closer to me",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_indoors",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "indoors please",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_later",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T17:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "something chill after work"
+   ],
+   "text": "later tonight",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_twice",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T13:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored",
+    "nope, something else"
+   ],
+   "text": "no, another idea",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_meh",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's up?"
+   ],
+   "text": "meh",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_free",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "free stuff only",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "regression.whats_up",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "What's up?",
+   "expect": {
+    "open": true,
+    "around": true
+   }
+  },
+  {
+   "id": "regression.bored",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I'm bored",
+   "expect": {
+    "open": true,
+    "around": true
+   }
+  },
+  {
+   "id": "regression.bored_nope",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true,
+    "around": true
+   },
+   "before": [
+    "I'm bored"
+   ]
+  },
+  {
+   "id": "regression.bored_nope_cheaper",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   },
+   "before": [
+    "I'm bored",
+    "nope, I want something else"
+   ]
+  },
+  {
+   "id": "regression.cafe_nova",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how can I go to the cafe nova?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": [
+     "choices",
+     "trip"
+    ]
+   }
+  },
+  {
+   "id": "regression.cafe_nova_how_far",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how far is it?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": [
+     "choices",
+     "trip"
+    ]
+   },
+   "before": [
+    "how can I go to the cafe nova?"
+   ]
+  },
+  {
+   "id": "regression.suedstadt_evening",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "Something in the Südstadt this evening",
+   "expect": {
+    "routed": "compose",
+    "area": "Neustadt-Süd",
+    "min_slots": 1
+   }
+  },
+  {
+   "id": "regression.where_am_i",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "where I am?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "where"
+   }
+  },
+  {
+   "id": "regression.bored_suggest",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I'm feeling bored today, what do you suggest?",
+   "expect": {
+    "open": true,
+    "around": true
+   }
+  },
+  {
+   "id": "regression.cafe_nova_city_center",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "I want to go to cafe nova in city center",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.cafe_nova_deutz",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:20:00+01:00",
+   "weather": "dry",
+   "text": "Take me to Café Nova in Deutz",
+   "before": [
+    "how can I go to the cafe nova?"
+   ],
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.cafe_nova_deutz_how_far",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:20:00+01:00",
+   "weather": "dry",
+   "text": "how far is it?",
+   "before": [
+    "how can I go to the cafe nova?",
+    "Take me to Café Nova in Deutz"
+   ],
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.cafe_nova_again_after_deutz",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T19:20:00+01:00",
+   "weather": "dry",
+   "text": "how can I go to the cafe nova?",
+   "before": [
+    "how can I go to the cafe nova?",
+    "Take me to Café Nova in Deutz"
+   ],
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.from_neumarkt_heumarkt_tram",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how do I get from Neumarkt to Heumarkt by tram?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.from_neumarkt_weiden_west",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how do I get from Neumarkt to Weiden West?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.from_neumarkt_weiden_west_how_far",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how far is it?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   },
+   "before": [
+    "how do I get from Neumarkt to Weiden West?"
+   ]
+  },
+  {
+   "id": "regression.from_neumarkt_deutz_messe",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:20:00+01:00",
+   "weather": "dry",
+   "text": "how do I get from Neumarkt to Bf Deutz/Messe?",
+   "expect": {
+    "routed": "answer",
+    "answer_kind": "trip"
+   }
+  },
+  {
+   "id": "regression.demo_football",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "where can i play football?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "no_step_free": true,
+    "no_leave_out": true
+   }
+  },
+  {
+   "id": "regression.demo_work_centre",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "Can u recommend me places to work in city center?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ]
+   }
+  },
+  {
+   "id": "regression.demo_cofe_followup",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "I prefer cofe shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "no_step_free": true,
+    "no_leave_out": true
+   },
+   "before": [
+    "Can u recommend me places to work in city center?"
+   ]
+  },
+  {
+   "id": "places_matrix.football",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can I play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true
+   }
+  },
+  {
+   "id": "places_matrix.work_centre",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "places to work in the city centre",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "place_kinds": 2
+   }
+  },
+  {
+   "id": "places_matrix.coffee",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "coffee shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Café"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.cofe_typo",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "cofe shops",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Café"
+    ]
+   }
+  },
+  {
+   "id": "regression.football_near_ehrenfeld",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can i play football?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true,
+    "all_rows": true,
+    "not_says": "^[0-9]+ [^ ]+ in Ehrenfeld|Bolzplatz"
+   }
+  },
+  {
+   "id": "places_matrix.wifi_cafe",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "quiet café with wifi near me",
+   "expect": {
+    "says": "wi-?fi",
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.vegan_ehrenfeld",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "vegan restaurant in Ehrenfeld",
+   "expect": {
+    "says": "vegan",
+    "open": true,
+    "places_in": [
+     "Ehrenfeld"
+    ],
+    "min_places": 1
+   }
+  },
+  {
+   "id": "places_matrix.pharmacy_now",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "pharmacy open now",
+   "expect": {
+    "open": true,
+    "open_only": true
+   }
+  },
+  {
+   "id": "places_matrix.supermarket_sunday",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-25T11:00:00+01:00",
+   "weather": "dry",
+   "text": "supermarket open Sunday",
+   "expect": {
+    "open": true,
+    "says": "sunday|closed|open"
+   }
+  },
+  {
+   "id": "places_matrix.playground_neumarkt",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "playground near Neumarkt",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.swim",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can I swim",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.picnic_park",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "picnic park",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.bakery_now",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "bakery open now",
+   "expect": {
+    "open": true,
+    "open_only": true
+   }
+  },
+  {
+   "id": "places_matrix.library_late",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "library open late",
+   "expect": {
+    "open": true,
+    "says": "librar|bibliothek"
+   }
+  },
+  {
+   "id": "places_matrix.coworking",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "coworking",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Coworking space",
+     "Coworking"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.wheelchair_restaurant",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "wheelchair-accessible restaurant",
+   "expect": {
+    "says": "step-?free|wheelchair",
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.brunch_sunday",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-25T10:00:00+01:00",
+   "weather": "dry",
+   "text": "brunch Sunday",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.table_tennis",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "table tennis",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "distinct_names": true
+   }
+  },
+  {
+   "id": "places_matrix.dog_park",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "dog park",
+   "expect": {
+    "open": true,
+    "min_places": 3
+   }
+  },
+  {
+   "id": "places_matrix.gym",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "climbing or gym",
+   "expect": {
+    "open": true,
+    "says": "(no|not|n't|none)"
+   }
+  },
+  {
+   "id": "places_matrix.bar_live_music",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "bar with live music tonight",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "live music"
+   }
+  },
+  {
+   "id": "regression.demo_coffee_narrowing",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "I prefer coffee shops",
+   "before": [
+    "Can u recommend me places to work in city center?"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 5,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "kind_is": [
+     "Café"
+    ],
+    "no_step_free": true,
+    "no_leave_out": true
+   }
+  },
+  {
+   "id": "regression.demo_football_again",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "where can i play football?",
+   "before": [
+    "where can i play football?"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "no_leave_out": true,
+    "no_step_free": true
+   }
+  },
+  {
+   "id": "actions.save_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Save Cafe Nova in Deutz for later",
+   "expect": {
+    "open": true,
+    "acted": "place_feedback",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.save_shown_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "save the first one",
+   "before": [
+    "cafés in Deutz"
+   ],
+   "expect": {
+    "open": true,
+    "acted": "place_feedback",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.add_to_day",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Add coffee at Cafe Nova in Deutz to my day at 15:00",
+   "expect": {
+    "open": true,
+    "acted": "add_to_day",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.set_home",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "My new address is Venloer Straße 210",
+   "expect": {
+    "open": true,
+    "acted": "set_my_place",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.delete_record",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Delete my paperwork record",
+   "expect": {
+    "open": true,
+    "handoff": "delete_paperwork_record"
+   }
+  },
+  {
+   "id": "actions.paperwork_without_permission",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Can you update my paperwork details?",
+   "expect": {
+    "open": true,
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.visa_date",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "my visa now runs until 12 Feb 2027",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "expect": {
+    "open": true,
+    "acted": "change_paperwork_fact",
+    "changed": "proposed",
+    "says": "apply"
+   }
+  },
+  {
+   "id": "actions.no_change_for_a_question",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "when does my visa run out?",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "expect": {
+    "open": true,
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.visa_without_permission",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "my visa now runs until 12 Feb 2027",
+   "expect": {
+    "open": true,
+    "answer_kind": "permission",
+    "no_change": true
+   }
+  },
+  {
+   "id": "places_matrix.kid_football",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "where can my kid play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "kind_is": [
+     "Playground with football goals",
+     "Playground",
+     "Park",
+     "Football pitch"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.laptop_deutz",
+   "persona": "places_matrix",
+   "home_veedel": "Deutz",
+   "origin": {
+    "lat": 50.9381,
+    "lng": 6.9746
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "a café in Deutz where I can work on my laptop",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_not": [
+     "Kaffebar"
+    ]
+   }
+  },
+  {
+   "id": "places_matrix.laptop_honest",
+   "persona": "places_matrix",
+   "home_veedel": "Altstadt-Süd",
+   "origin": {
+    "lat": 50.9359,
+    "lng": 6.9467
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "which cafés near me are good for laptop work?",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "(isn.t|not) listed|lists? wi-?fi|website says|laptop"
+   }
+  },
+  {
+   "id": "actions.update_paperwork_no_pointer",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "Can you update my paperwork details?",
+   "expect": {
+    "open": true,
+    "answer_kind": "permission",
+    "not_says": "That.s from your own Paperwork record"
+   }
+  },
+  {
+   "id": "actions.stop_using_paperwork",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "stop using my paperwork data",
+   "expect": {
+    "open": true,
+    "handoff": [
+     "withdraw_paperwork_permission",
+     "stop_paperwork_processing"
+    ],
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.stop_using_paperwork_after_permission_card",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "stop using my paperwork data",
+   "expect": {
+    "open": true,
+    "handoff": [
+     "withdraw_paperwork_permission",
+     "stop_paperwork_processing"
+    ],
+    "no_change": true
+   },
+   "before": [
+    "Can you update my paperwork details?"
+   ]
+  },
+  {
+   "id": "actions.stop_using_paperwork_personalised",
+   "persona": "visa_holder_personalised",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "stop using my paperwork data",
+   "expect": {
+    "open": true,
+    "handoff": [
+     "withdraw_paperwork_permission",
+     "stop_paperwork_processing"
+    ],
+    "no_change": true
+   },
+   "before": [
+    "Can you update my paperwork details?"
+   ],
+   "personalised": true
+  },
+  {
+   "id": "regression.repeat_ask_has_cards",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "where can i play football?",
+   "before": [
+    "where can i play football?"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "first_names_place": true
+   }
+  },
+  {
+   "id": "regression.free_open_football_merkenich",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "find me free open places to play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "no fee|no set hours|free to use|not listed|isn.t listed|open-air"
+   }
+  },
+  {
+   "id": "regression.free_open_football_ehrenfeld",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "find me free open places to play football",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "says": "no fee|no set hours|free to use|not listed|isn.t listed|open-air"
+   }
+  },
+  {
+   "id": "regression.free_open_football_try_again",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "personalised": true,
+   "before": [
+    "find me free open places to play football"
+   ],
+   "text": "try again",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "first_names_place": true
+   }
+  },
+  {
+   "id": "actions.save_event",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's on tonight?"
+   ],
+   "text": "save the first one for later",
+   "expect": {
+    "open": true,
+    "acted": "save_event",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.remind_me",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's on tonight?"
+   ],
+   "text": "remind me an hour before the first one",
+   "expect": {
+    "open": true,
+    "acted": "remind_me",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.save_stop",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Make Neumarkt one of my favourite stops",
+   "expect": {
+    "open": true,
+    "acted": "save_stop",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.deutschlandticket",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I have a Deutschlandticket now",
+   "expect": {
+    "open": true,
+    "acted": "set_travel_prefs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.travel_mode",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I usually cycle, so use the bike by default",
+   "expect": {
+    "open": true,
+    "acted": "set_travel_prefs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.plan_trip_for_later",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "Add coffee at Cafe Nova in Deutz to my day at 17:00"
+   ],
+   "text": "Plan the way there and remind me when to leave",
+   "expect": {
+    "open": true,
+    "acted": "plan_trip_for_later",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.mute_alerts",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Stop alerting me about line 13 today",
+   "expect": {
+    "open": true,
+    "acted": "mute_alerts",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.dismiss_alert",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "alerts": 2,
+   "text": "Clear my alerts",
+   "expect": {
+    "open": true,
+    "acted": "dismiss_alert",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.set_notifications",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Turn off weather alerts",
+   "expect": {
+    "open": true,
+    "acted": "set_notifications",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.push_on",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Turn on push notifications on this phone",
+   "expect": {
+    "open": true,
+    "handoff": "push_notifications",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.set_needs",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I use a wheelchair, so only step-free ways please",
+   "expect": {
+    "open": true,
+    "acted": "set_needs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.update_profile",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "My German is B1 now",
+   "expect": {
+    "open": true,
+    "acted": "update_profile",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.change_email",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Change my email to new-address@example.invalid",
+   "expect": {
+    "open": true,
+    "handoff": "change_email",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.stop_personalisation",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "Stop personalising my suggestions",
+   "expect": {
+    "open": true,
+    "handoff": "stop_personalisation",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.stop_location_sharing",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Stop sharing my location",
+   "expect": {
+    "open": true,
+    "handoff": "stop_location_sharing",
+    "no_change": true
+   }
   }
  ]
 }

@@ -94,7 +94,7 @@ test('bureaucracy onboarding and composer request bodies are never sent to error
     ]);
 
     expect(SentryScrubber::scrub($event)->getRequest()['data'])->toBe('[redacted]');
-})->with(['/onboarding', '/composer/parse', '/api/composer/parse']);
+})->with(['/onboarding', '/composer/ask', '/api/composer/ask']);
 
 test('🔒 an emailed confirmation code never reaches error reporting, nor does deleting the account with one', function (string $path) {
     $event = Event::createEvent();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserPlace;
 use App\Places\AddressLocator;
+use App\Places\SetHomeOrWork;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,6 +39,25 @@ class UserPlaceController extends Controller
         ]);
 
         return $notFound ? back()->with('status', $notFound) : back();
+    }
+
+    /**
+     * Your Home or Work from Travel's address line (the mock's "Add home"):
+     * the place you picked, with its point. It fills the one you have (an
+     * older account may hold an empty one) or makes it.
+     */
+    public function setCategory(Request $request, string $category): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        app(SetHomeOrWork::class)->execute($request->user(), $category, $validated);
+
+        return back();
     }
 
     public function update(Request $request, UserPlace $userPlace, AddressLocator $locator): RedirectResponse

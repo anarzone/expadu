@@ -3,6 +3,7 @@
 namespace App\Composer;
 
 use App\Enums\SpotCategory;
+use App\Places\PlaceAmenities;
 use Carbon\CarbonImmutable;
 
 /**
@@ -69,6 +70,11 @@ class FeasibilityFilter
         // A hard need is met only by a verified fact; an unknown never passes.
         if (in_array('step_free', $constraints->needs, true) && ! $candidate->isAppointment() && ! $candidate->stepFree()) {
             return false;
+        }
+        foreach ($constraints->features as $feature) {
+            if ($candidate->type !== 'spot' || ! PlaceAmenities::has($candidate->placeFacts['practical'] ?? [], $feature)) {
+                return false;
+            }
         }
         if ($constraints->activities !== []) {
             $facts = $candidate->placeFacts;

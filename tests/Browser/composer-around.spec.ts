@@ -5,13 +5,14 @@ import type { Page, Route } from '@playwright/test';
 // what they rest on. Every block the answer carries is drawn (the person's own
 // facts as recorded, the listings, where to check them), and the AI is named as
 // the writer only when it wrote them. The payload is the AI session's sample (#306).
-const answer = (written: 'ai' | 'listings') => ({
+const answer = (written: 'ai' | 'listings', read?: string[]) => ({
     id: `around-${written}`,
     role: 'assistant',
     created_at: new Date().toISOString(),
     request: 'around',
     kind: 'around',
     written,
+    ...(read ? { read } : {}),
     text:
         written === 'ai'
             ? 'Clear skies and 12° in Cologne right now. Mobile Filming is on at the Interim Zentralbibliothek at 15:00, and it’s free.'
@@ -61,7 +62,7 @@ const answer = (written: 'ai' | 'listings') => ({
 });
 
 /** Asks "What's up?", answered with the sample: the real workspace, its reply swapped. */
-async function ask(page: Page, written: 'ai' | 'listings') {
+async function ask(page: Page, written: 'ai' | 'listings', read?: string[]) {
     await page.route('**/composer/parse', (route) =>
         route.fulfill({
             json: { intent: 'unknown', constraints: null, answer: true },
@@ -81,8 +82,10 @@ async function ask(page: Page, written: 'ai' | 'listings') {
         const conversation = workspace.conversations.find(
             (item: { id: string }) => item.id === workspace.active,
         );
-        conversation.messages[conversation.messages.length - 1] =
-            answer(written);
+        conversation.messages[conversation.messages.length - 1] = answer(
+            written,
+            read,
+        );
 
         return route.fulfill({ response, json: workspace });
     });
@@ -117,7 +120,8 @@ test('🔒 an "around you now" answer draws every block it rests on', async ({
     await expect(reply.locator('[data-poster="959"]')).toBeVisible();
     // Who wrote it, and where to check it.
     await expect(
-        reply.getByText('Written by AI from public listings and the weather', {
+        // Stored before #330, no `read`: the AI was given the listings and the weather.
+        reply.getByText('Written by AI from the listings and the weather;', {
             exact: false,
         }),
     ).toBeVisible();
@@ -142,4 +146,18 @@ test('🔒 Composer’s own words are never credited to the AI', async ({
         reply.getByText('Written by AI', { exact: false }),
     ).toHaveCount(0);
     await expect(reply.getByText('From:', { exact: false })).toBeVisible();
+});
+
+test('🔒 the fine print names only what the AI was given', async ({ page }) => {
+    const reply = await ask(page, 'ai', ['taste', 'listings', 'weather']);
+
+    await expect(
+        reply.getByText(
+            'Written by AI from the listings, the weather and what you like;',
+            { exact: false },
+        ),
+    ).toBeVisible();
+    await expect(reply.getByText('your plans', { exact: false })).toHaveCount(
+        0,
+    );
 });

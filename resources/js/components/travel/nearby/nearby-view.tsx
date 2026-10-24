@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import {
+    Fragment,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { CardStrip, TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
@@ -9,8 +16,9 @@ import { LineStrip, StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
+import { LiftLine, MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
 import { StopPicker } from './stop-picker';
-import { closestNow, closestWords, noticeWords } from './types';
+import { closestNow, closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
 import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
@@ -85,6 +93,145 @@ type NearbyViewProps = {
     stepFreeNeed?: boolean;
 };
 
+/** The app's open easing (Composer's tray). */
+const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
+
+/**
+ * A line's place in its area: its strip, or its detail when opened. Opening
+ * unfolds the detail, at its own size and clipped, from the strip's height to
+ * its own, while the strip over it fades; closing folds it back and the strip
+ * fades in over it before taking its place (`opening` and `closing` keep the
+ * strip on top until `onOpened` / `onClosed`). Nothing is squeezed to fit.
+ * With reduced motion it just swaps. Its own updates (new times) don't animate.
+ */
+function LineSlot({
+    open,
+    opening,
+    closing,
+    strip,
+    detail,
+    onOpened,
+    onClosed,
+}: {
+    open: boolean;
+    opening: boolean;
+    closing: boolean;
+    strip: ReactNode;
+    detail: ReactNode;
+    onOpened: () => void;
+    onClosed: () => void;
+}) {
+    const box = useRef<HTMLDivElement>(null);
+    const ghost = useRef<HTMLDivElement>(null);
+    const height = useRef(0);
+    // The strip's height when it opened: where closing goes back to.
+    const shut = useRef(0);
+    const was = useRef(open);
+    // The change under way and the height it goes to.
+    const running = useRef<{ anim: Animation; to: number } | null>(null);
+
+    // Before it paints: from the height it had to the one it goes to.
+    useLayoutEffect(() => {
+        const el = box.current;
+
+        if (!el || was.current === open) {
+            return;
+        }
+
+        was.current = open;
+        const from = height.current;
+        const to = open ? el.offsetHeight : shut.current;
+
+        if (open) {
+            shut.current = from;
+        }
+
+        running.current?.anim.cancel();
+
+        if (
+            !from ||
+            !to ||
+            from === to ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            (open ? onOpened : onClosed)();
+
+            return;
+        }
+
+        el.style.overflow = 'hidden';
+        el.style.alignItems = 'start';
+        // Closing holds the last frame until the strip takes its place.
+        const anim = el.animate(
+            [{ height: `${from}px` }, { height: `${to}px` }],
+            { ...OPEN, fill: open ? 'none' : 'forwards' },
+        );
+        ghost.current?.animate(
+            open
+                ? [{ opacity: 1 }, { opacity: 0 }]
+                : [{ opacity: 0 }, { opacity: 1 }],
+            {
+                duration: 140,
+                delay: open ? 0 : OPEN.duration - 140,
+                easing: 'ease-out',
+                fill: 'both',
+            },
+        );
+        running.current = { anim, to };
+        const settle = () => {
+            el.style.overflow = '';
+            el.style.alignItems = '';
+        };
+        anim.onfinish = () => {
+            if (open) {
+                settle();
+                running.current = null;
+                onOpened();
+            } else {
+                onClosed();
+            }
+        };
+        anim.oncancel = () => {
+            settle();
+
+            if (running.current?.anim === anim) {
+                running.current = null;
+            }
+        };
+    }, [open, onOpened, onClosed]);
+
+    // The strip is back: let go of the closing's last frame.
+    useLayoutEffect(() => {
+        if (!open && !closing) {
+            running.current?.anim.cancel();
+        }
+    }, [open, closing]);
+
+    // Its height after every render, for the next change to start from (the
+    // one it's going to while a change is under way, not the frame now).
+    useLayoutEffect(() => {
+        height.current = running.current?.to ?? box.current?.offsetHeight ?? 0;
+    });
+
+    const shown = open || closing;
+
+    return (
+        <div ref={box} className={cn('nearby-line-slot', shown && 'is-open')}>
+            {shown ? detail : strip}
+            {(open && opening) || closing ? (
+                <div
+                    ref={ghost}
+                    className="nearby-line-ghost"
+                    aria-hidden="true"
+                    inert
+                >
+                    {strip}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 export function NearbyView({
     station,
     favourites,
@@ -101,14 +248,31 @@ export function NearbyView({
     }));
     const [panel, setPanel] = useState<Panel>('');
     const [stopsOpen, setStopsOpen] = useState(false);
-    const [picked, setOpenLine] = useState('');
+    const [picked, setPicked] = useState('');
     // A picked line that left the board closes.
     const openLine = station.lines.some((l) => l.line === picked) ? picked : '';
+    // The line unfolding into its detail, and the one folding back to its
+    // strip (the strip shown over it until it has).
+    const [opening, setOpening] = useState('');
+    const [closing, setClosing] = useState('');
+    const setOpenLine = (line: string) => {
+        setClosing(openLine && openLine !== line ? openLine : '');
+        setOpening(line);
+        setPicked(line);
+    };
+    const opened = useCallback(
+        (line: string) => setOpening((now) => (now === line ? '' : now)),
+        [],
+    );
+    const closed = useCallback(
+        (line: string) => setClosing((now) => (now === line ? '' : now)),
+        [],
+    );
     const [pinned, setPinned] = useState<string[]>(readPins);
     const root = useRef<HTMLDivElement>(null);
 
     const v = useMemo(
-        () => nearbyView(station, filters, { pinned, now }),
+        () => nearbyView(station, filters, { pinned, now, cancelled: true }),
         [station, filters, pinned, now],
     );
     const stale = station.is_stale || station.time_basis === 'stale';
@@ -120,12 +284,6 @@ export function NearbyView({
             : wait?.mode === 'tram'
               ? 'trams'
               : 'departures';
-    // Paused: how long since the last reading, in whole clock minutes (it
-    // says "from 22:19", so 22:25 is 6 minutes).
-    const pausedFor = station.observed_at
-        ? Math.floor(now / 60_000) -
-          Math.floor(Date.parse(station.observed_at) / 60_000)
-        : 0;
     const runs = station.lines.flatMap((l) =>
         l.dirs.flatMap((d) => (d.next ? [d.next] : [])),
     );
@@ -413,27 +571,63 @@ export function NearbyView({
             ) : null;
         }
 
-        if (stale || !dir.delayMin) {
+        if (stale || dir.cancelled || !dir.delayMin) {
             return null;
         }
 
-        const now = whenOf(dir).big === 'now';
-        const text = `${now && !long ? 'Running ' : ''}${dir.delayMin}\u00a0min late`;
-
+        // Everyday lateness stays small; 10+ min in the stronger yellow.
         return (
             <TravelChip
                 kind="attention"
-                icon={<TravelIcon name="clock" />}
                 size="sm"
+                className={cn('nearby-late', dir.delayMin >= 10 && 'is-strong')}
             >
-                {text}
+                {`${dir.delayMin}\u00a0min late`}
             </TravelChip>
         );
     };
 
     // Paused times are the last ones read: their clocks. A timetable time
     // leaving now shows its clock, quietly: "Now" is for a live departure.
+    // Only what the feed says: its cancelled runs, by their timetabled
+    // clock, struck through, then "Cancelled" in red (no pill).
+    const cancelTag = (dir: ShownDir) =>
+        dir.cancelledClocks.length ? (
+            <span className="tl-cancelled">
+                {dir.cancelled ? null : (
+                    <>
+                        <s>{dir.cancelledClocks.join(' · ')}</s>{' '}
+                    </>
+                )}
+                Cancelled
+            </span>
+        ) : null;
+
+    // Each line row's one minor notice (the major ones are the headline's),
+    // on the first of its lines' rows; a run's own matched notice first.
+    const rowNotices = rowNoticesOf(
+        station,
+        v.areas.flatMap((area) =>
+            area.cards.map((l) => ({
+                line: l.line,
+                notices: l.shown.flatMap((d) =>
+                    [d.next, ...d.later].map((run) => run?.notice),
+                ),
+            })),
+        ),
+    );
+
     const time = (dir: ShownDir) => {
+        if (dir.cancelled) {
+            return (
+                <span className="nearby-time is-cancelled">
+                    <strong>
+                        <s>{dir.clock}</s>
+                    </strong>
+                </span>
+            );
+        }
+
         const paused = stale || !dir.live;
         const when = whenOf(dir);
 
@@ -449,11 +643,7 @@ export function NearbyView({
         );
     };
 
-    const card = (l: ShownLine) => {
-        if (openLine === l.line) {
-            return detail(l);
-        }
-
+    const strip = (l: ShownLine) => {
         const [first, second] = l.shown;
         const end = (d: ShownDir | undefined) =>
             d
@@ -464,6 +654,7 @@ export function NearbyView({
                           <>
                               {time(d)}
                               {delayTag(d)}
+                              {cancelTag(d)}
                           </>
                       ),
                   }
@@ -474,7 +665,15 @@ export function NearbyView({
             .map((d) => {
                 const t = whenOf(d);
 
-                return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}${d.live ? '' : ' (timetable)'}`;
+                if (d.cancelled) {
+                    return `${d.dest} ${d.clock} cancelled`;
+                }
+
+                const gone = d.cancelledClocks.length
+                    ? ` (${d.cancelledClocks.join(', ')} cancelled)`
+                    : '';
+
+                return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}${d.live ? '' : ' (timetable)'}${gone}`;
             })
             .join(', ')}`;
 
@@ -504,7 +703,11 @@ export function NearbyView({
                         >
                             {/* Each way's next one, soonest first: "Then 00:56 · 00:59". */}
                             {`Then ${l.shown
-                                .flatMap((d) => d.later.slice(0, 1))
+                                .flatMap((d) =>
+                                    d.later
+                                        .filter((run) => !run.cancelled)
+                                        .slice(0, 1),
+                                )
                                 .sort(
                                     (a, b) =>
                                         Date.parse(a.at) - Date.parse(b.at),
@@ -592,13 +795,26 @@ export function NearbyView({
                                 <span
                                     className={cn(
                                         'nearby-time is-large',
-                                        (stale || !d.live) && 'is-paused',
+                                        d.cancelled
+                                            ? 'is-cancelled'
+                                            : (stale || !d.live) && 'is-paused',
                                     )}
                                 >
-                                    <strong>{t.big}</strong>
-                                    {t.unit ? <small>{t.unit}</small> : null}
+                                    {d.cancelled ? (
+                                        <strong>
+                                            <s>{d.clock}</s>
+                                        </strong>
+                                    ) : (
+                                        <>
+                                            <strong>{t.big}</strong>
+                                            {t.unit ? (
+                                                <small>{t.unit}</small>
+                                            ) : null}
+                                        </>
+                                    )}
                                 </span>
                                 {delayTag(d, true)}
+                                {cancelTag(d)}
                             </span>
                         </div>
                     );
@@ -660,6 +876,7 @@ export function NearbyView({
 
     return (
         <div className="nearby" data-view="list" ref={root}>
+            <MajorHeadline station={station} />
             {station.unknown_stop ? (
                 <div className="nearby-banner is-labelled">
                     <TravelBanner
@@ -668,28 +885,6 @@ export function NearbyView({
                         title={`“${station.unknown_stop}” isn’t a KVB stop`}
                     >
                         Showing the closest station instead.
-                    </TravelBanner>
-                </div>
-            ) : stale ? (
-                <div className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind="unsure"
-                        icon={<TravelIcon name="offline" />}
-                        title="Live times paused"
-                    >
-                        {pausedFor >= 1
-                            ? `No update for ${pausedFor} minute${pausedFor === 1 ? '' : 's'}, so these are the last times we had, from ${clockOf(station.observed_at)}.`
-                            : `These are the last times we had, from ${clockOf(station.observed_at)}.`}
-                    </TravelBanner>
-                </div>
-            ) : liftOut ? (
-                <div className="nearby-banner is-labelled">
-                    <TravelBanner
-                        kind="conflict"
-                        icon={<TravelIcon name="lift" />}
-                        title={`A lift at ${station.name} is out of order`}
-                    >
-                        {lifts.out.map((lift) => lift.label).join('; ')}
                     </TravelBanner>
                 </div>
             ) : wait ? (
@@ -703,75 +898,23 @@ export function NearbyView({
                     </TravelBanner>
                 </div>
             ) : null}
-            {station.notices.slice(0, 2).map((notice) => {
-                const { headline, text, lang } = noticeWords(notice);
-                const kvb = notice.source?.startsWith('kvb') ?? false;
-                // Every notice is KVB's; its feed's own name ("kvb-betriebslage") isn't one to show.
-                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${kvb ? ' · KVB' : ''}`;
-                const german = lang === 'de';
-
-                return (
-                    <div key={notice.id} className="nearby-banner is-labelled">
-                        <TravelBanner
-                            kind={
-                                notice.severity === 'critical' ||
-                                notice.severity === 'major'
-                                    ? 'conflict'
-                                    : 'attention'
-                            }
-                            icon={<TravelIcon name="alert" />}
-                            title={
-                                german ? (
-                                    <>
-                                        <InGermanChip fromKvb={kvb} />
-                                        <span lang="de">{headline}</span>
-                                    </>
-                                ) : (
-                                    headline
-                                )
-                            }
-                        >
-                            {/* KVB's own words keep to the line, after its lines; all of them are behind the link. */}
-                            {german ? (
-                                <span className="kvb-notice-line">
-                                    {lines}
-                                    {text ? (
-                                        <>
-                                            {' · '}
-                                            <span lang="de">{text}</span>
-                                        </>
-                                    ) : null}
-                                </span>
-                            ) : text ? (
-                                `${text} · ${lines}`
-                            ) : (
-                                lines
-                            )}
-                            {notice.url ? (
-                                <KvbNoticeLink
-                                    url={notice.url}
-                                    className="is-own-line"
-                                />
-                            ) : null}
-                        </TravelBanner>
-                    </div>
-                );
-            })}
             <div className="nearby-bar">
-                <button
-                    type="button"
-                    className="nearby-stop"
-                    aria-expanded={stopsOpen}
-                    aria-label={`Change stop, now ${station.name}`}
-                    onClick={() => {
-                        setPanel('');
-                        setStopsOpen(!stopsOpen);
-                    }}
-                >
-                    <span className="nearby-stop-name">
+                {/* Only the name and its chevron change the stop: the row
+                    beside it and the labels under it do nothing. */}
+                <div className="nearby-stop">
+                    <button
+                        type="button"
+                        className="nearby-stop-name"
+                        aria-expanded={stopsOpen}
+                        aria-label={`Change stop, now ${station.name}`}
+                        onClick={() => {
+                            setPanel('');
+                            setStopsOpen(!stopsOpen);
+                        }}
+                    >
                         {station.name}
                         <TravelIcon name="down" />
-                    </span>
+                    </button>
                     <span className="tl-chips">
                         <TravelChip
                             kind="calm"
@@ -780,8 +923,16 @@ export function NearbyView({
                             {placesKind}
                         </TravelChip>
                         {timesLabel}
+                        {liftOut ? (
+                            <TravelChip
+                                kind="conflict"
+                                icon={<TravelIcon name="lift" />}
+                            >
+                                Lift out of order
+                            </TravelChip>
+                        ) : null}
                     </span>
-                </button>
+                </div>
                 <button
                     type="button"
                     className="nearby-star"
@@ -854,6 +1005,7 @@ export function NearbyView({
                     </button>
                 ) : null}
             </div>
+            <LiftLine station={station} />
             <div className="nearby-list">
                 {v.areas.length ? (
                     v.areas.map((area, index) => (
@@ -923,7 +1075,31 @@ export function NearbyView({
                                     )}
                                 </div>
                                 <div className="nearby-cards">
-                                    {area.cards.map(card)}
+                                    {area.cards.map((l) => (
+                                        <Fragment key={l.line}>
+                                            <LineSlot
+                                                open={openLine === l.line}
+                                                opening={opening === l.line}
+                                                closing={closing === l.line}
+                                                strip={strip(l)}
+                                                detail={
+                                                    openLine === l.line ||
+                                                    closing === l.line
+                                                        ? detail(l)
+                                                        : null
+                                                }
+                                                onOpened={() => opened(l.line)}
+                                                onClosed={() => closed(l.line)}
+                                            />
+                                            {rowNotices.has(l.line) ? (
+                                                <NoticeLine
+                                                    notice={
+                                                        rowNotices.get(l.line)!
+                                                    }
+                                                />
+                                            ) : null}
+                                        </Fragment>
+                                    ))}
                                 </div>
                             </section>
                         </div>
@@ -952,6 +1128,22 @@ export function NearbyView({
                     </div>
                 )}
             </div>
+            {station.credits?.map((credit) => (
+                <p key={credit.name} className="nearby-credit">
+                    {credit.for}:{' '}
+                    <a href={credit.url} target="_blank" rel="noreferrer">
+                        {credit.name}
+                    </a>
+                    ,{' '}
+                    <a
+                        href={credit.licence_url}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        {credit.licence}
+                    </a>
+                </p>
+            ))}
         </div>
     );
 }

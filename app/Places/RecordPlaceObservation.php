@@ -21,6 +21,7 @@ class RecordPlaceObservation
         'description',
         'negative_facts',
         'practical',
+        'evidence',
     ];
 
     /** @param array<string, mixed> $observation */
@@ -371,6 +372,17 @@ class RecordPlaceObservation
             $practical = $this->keyedObject($payload['practical'], PlaceCapabilities::TAGS, 'Observation practical facts');
             foreach ($practical as $value) {
                 $this->validateNullableText($value, 500, 'Observation practical values', allowNull: false);
+            }
+        }
+
+        if (array_key_exists('evidence', $payload)) {
+            // The sentence each fact was read from (website facts): no quote, no fact.
+            $evidence = $this->keyedObject($payload['evidence'], null, 'Observation evidence');
+            foreach ($evidence as $key => $quote) {
+                if (! is_string($key) || preg_match('/^[a-z0-9][a-z0-9:_.-]{0,99}$/D', $key) !== 1) {
+                    throw new DomainException('Observation evidence keys must name a fact.');
+                }
+                $this->validateNullableText($quote, 500, 'Observation evidence quotes', allowNull: false);
             }
         }
 

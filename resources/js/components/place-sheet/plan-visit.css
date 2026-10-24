@@ -1,34 +1,9 @@
 /* Plan a visit, in the place sheet (the mock's connected/place-sheet.css
-   planning canvas, as it computes): a heading, the day and the time on a
-   cyan card, your day under it, and a hint. */
-
-.place-section-heading {
-    display: flex;
-    flex: none;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 0 14px;
-}
-
-.place-section-heading h3 {
-    margin: 0;
-    color: var(--color-text);
-    font-size: var(--text-title-sm);
-    font-weight: var(--weight-bold);
-    line-height: 1.2;
-    letter-spacing: -0.7px;
-}
-
-.place-section-heading p {
-    margin: 5px 0 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-small);
-    line-height: 1.5;
-}
+   planning canvas, as it computes): the day and the time on a cyan card,
+   your day under it, and a hint. */
 
 /* The day and the time: one cyan card. */
-.visit-setup {
+.ui-sheet.place-sheet .visit-setup {
     flex: none;
     margin: 0 0 12px;
     padding: 14px;
@@ -36,7 +11,7 @@
     background: var(--color-select-bg);
 }
 
-.visit-setup .form-field {
+.ui-sheet.place-sheet .visit-setup .form-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -45,15 +20,15 @@
     line-height: 1.5;
 }
 
-.visit-setup .selection-day {
+.ui-sheet.place-sheet .visit-setup .selection-day {
     margin: 0 0 14px;
 }
 
-.visit-setup .selection-day > span {
+.ui-sheet.place-sheet .visit-setup .selection-day > span {
     display: block;
 }
 
-.visit-setup .ui-date-toggle {
+.ui-sheet.place-sheet .visit-setup .ui-date-toggle {
     min-height: 44px;
     padding: 10px 12px;
     border-color: transparent;
@@ -64,64 +39,67 @@
     line-height: 1.5;
 }
 
-.visit-suggestions {
+.ui-sheet.place-sheet .visit-suggestions {
     margin: 0 0 12px;
 }
 
-.visit-suggestions p {
+.ui-sheet.place-sheet .visit-suggestions p {
     margin: 0 0 7px;
     color: var(--color-text);
     font-size: var(--text-caption);
     line-height: 1.5;
 }
 
-.visit-suggestions :is(p span, small) {
+.ui-sheet.place-sheet .visit-suggestions :is(p span, small) {
     color: var(--color-text-muted);
     font-size: var(--text-micro);
     line-height: 1.5;
 }
 
-.visit-suggestions [role='group'] {
+.ui-sheet.place-sheet .visit-suggestions [role='group'] {
     display: flex;
     gap: 6px;
 }
 
-.visit-suggestions button {
+.ui-sheet.place-sheet .visit-suggestions button {
     flex: 1;
     min-width: 0;
-    min-height: 36px;
-    padding: 7px 4px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    background: #fff;
+    min-height: 40px;
+    padding: 7px 6px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
     color: var(--color-text);
     font: inherit;
-    font-size: var(--text-micro);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     cursor: pointer;
 }
 
-.visit-suggestions button[aria-pressed='true'] {
+/* A suggested time is a chip: outlined, filled when picked. */
+.ui-sheet.place-sheet .visit-suggestions button[aria-pressed='true'] {
+    border-color: var(--color-text);
     background: var(--color-text);
-    color: #fff;
+    color: var(--color-bg-surface);
 }
 
-.visit-setup .selection-times {
+.ui-sheet.place-sheet .visit-setup .selection-times {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
     gap: 8px;
     align-items: center;
 }
 
-.visit-setup .selection-times > span {
+.ui-sheet.place-sheet .visit-setup .selection-times > span {
     padding: 16px 0 0;
     color: var(--color-text);
     text-align: center;
 }
 
-.visit-setup .selection-times .ui-time-input {
+.ui-sheet.place-sheet .visit-setup .selection-times .ui-time-input {
     /* As the mock declares it: a 44px field its 48px minimum outgrows,
        which places the text in it as the mock's does. */
     height: 44px;
@@ -136,13 +114,16 @@
     font-variant-numeric: tabular-nums;
 }
 
-.visit-setup .selection-times .ui-time-input::placeholder {
+.ui-sheet.place-sheet
+    .visit-setup
+    .selection-times
+    .ui-time-input::placeholder {
     color: var(--color-text-muted);
     font-weight: var(--weight-regular);
 }
 
-.visit-setup .selection-error,
-.place-added .selection-error {
+.ui-sheet.place-sheet .visit-setup .selection-error,
+.ui-sheet.place-sheet .place-added .selection-error {
     margin: 10px 0 0;
     color: var(--color-action-text);
     font-size: var(--text-caption);
@@ -150,7 +131,7 @@
 }
 
 /* Your day: what's planned, and the visit where it would go. */
-.selection-agenda {
+.ui-sheet.place-sheet .selection-agenda {
     flex: none;
     padding: 0 12px;
     border: 1px solid var(--color-border);
@@ -160,7 +141,7 @@
     line-height: 1.5;
 }
 
-.selection-agenda summary {
+.ui-sheet.place-sheet .selection-agenda summary {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -170,48 +151,50 @@
     cursor: pointer;
 }
 
-.selection-agenda summary::-webkit-details-marker {
+.ui-sheet.place-sheet .selection-agenda summary::-webkit-details-marker {
     display: none;
 }
 
-.selection-agenda summary > span {
+.ui-sheet.place-sheet .selection-agenda summary > span {
     display: flex;
     gap: 8px;
     align-items: center;
     font-weight: var(--weight-medium);
 }
 
-.selection-agenda summary small {
+.ui-sheet.place-sheet .selection-agenda summary small {
     display: block;
     color: var(--color-text-muted);
     font-size: var(--text-micro);
     font-weight: var(--weight-regular);
 }
 
-.selection-agenda summary > svg {
+.ui-sheet.place-sheet .selection-agenda summary > svg {
     width: 16px;
     height: 16px;
     color: var(--color-text);
 }
 
-.selection-agenda details[open] summary > svg {
+.ui-sheet.place-sheet .selection-agenda details[open] summary > svg {
     transform: rotate(180deg);
 }
 
-.selection-agenda :is(.visit-day-empty, .visit-day-prompt) {
+.ui-sheet.place-sheet
+    .selection-agenda
+    :is(.visit-day-empty, .visit-day-prompt) {
     margin: 10px 0;
     color: var(--color-text-muted);
     font-size: var(--text-small);
     line-height: 1.5;
 }
 
-.visit-day-timeline {
+.ui-sheet.place-sheet .visit-day-timeline {
     margin: 2px 0 12px;
     padding: 0;
     list-style: none;
 }
 
-.visit-day-entry {
+.ui-sheet.place-sheet .visit-day-entry {
     position: relative;
     display: grid;
     grid-template-columns: 44px minmax(0, 1fr);
@@ -220,32 +203,32 @@
     padding-block: 3px;
 }
 
-.visit-day-time {
+.ui-sheet.place-sheet .visit-day-time {
     display: grid;
     gap: 3px;
     padding-top: 9px;
     font-variant-numeric: tabular-nums;
 }
 
-.visit-day-time time {
+.ui-sheet.place-sheet .visit-day-time time {
     color: var(--color-text);
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
 }
 
-.visit-day-time small {
+.ui-sheet.place-sheet .visit-day-time small {
     color: var(--color-text-muted);
     font-size: var(--text-micro);
 }
 
-.visit-day-rail {
+.ui-sheet.place-sheet .visit-day-rail {
     position: relative;
     min-width: 0;
     overflow: hidden;
     border-radius: var(--radius-md);
 }
 
-.visit-day-card {
+.ui-sheet.place-sheet .visit-day-card {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -259,12 +242,12 @@
     background: var(--color-bg-canvas);
 }
 
-.visit-day-description {
+.ui-sheet.place-sheet .visit-day-description {
     flex: 1;
     min-width: 0;
 }
 
-.visit-day-description > strong {
+.ui-sheet.place-sheet .visit-day-description > strong {
     display: block;
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
@@ -272,7 +255,7 @@
     overflow-wrap: anywhere;
 }
 
-.visit-day-meta {
+.ui-sheet.place-sheet .visit-day-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 8px;
@@ -282,26 +265,28 @@
     line-height: 1.4;
 }
 
-.visit-day-meta > span + span {
+.ui-sheet.place-sheet .visit-day-meta > span + span {
     padding-left: 8px;
     border-left: 1px solid var(--color-border);
 }
 
-.visit-day-entry.is-current .visit-day-card {
+.ui-sheet.place-sheet .visit-day-entry.is-current .visit-day-card {
     background: var(--color-select-bg);
 }
 
 /* The visit, before it's added: orange marks a preview. */
-.visit-day-entry.is-preview .visit-day-card {
+.ui-sheet.place-sheet .visit-day-entry.is-preview .visit-day-card {
     border-color: var(--color-action);
     background: var(--color-action-tint);
 }
 
-.visit-day-entry.is-preview :is(.visit-day-time time, .visit-day-meta) {
+.ui-sheet.place-sheet
+    .visit-day-entry.is-preview
+    :is(.visit-day-time time, .visit-day-meta) {
     color: var(--color-action-text);
 }
 
-.visit-day-overlap {
+.ui-sheet.place-sheet .visit-day-overlap {
     display: block;
     margin-top: 5px;
     color: var(--color-action-text);
@@ -309,7 +294,7 @@
     line-height: 1.4;
 }
 
-.visit-day-gap {
+.ui-sheet.place-sheet .visit-day-gap {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -319,14 +304,14 @@
     line-height: 1.4;
 }
 
-.visit-day-gap::before,
-.visit-day-gap::after {
+.ui-sheet.place-sheet .visit-day-gap::before,
+.ui-sheet.place-sheet .visit-day-gap::after {
     flex: 1;
     border-top: 1px dashed var(--color-border);
     content: '';
 }
 
-.selection-hint {
+.ui-sheet.place-sheet .selection-hint {
     display: flex;
     gap: 6px;
     align-items: center;
@@ -337,15 +322,15 @@
 }
 
 /* Added: what was made room for, and when. */
-.place-added {
+.ui-sheet.place-sheet .place-added {
     padding: 16px 0;
 }
 
-.place-added:focus {
+.ui-sheet.place-sheet .place-added:focus {
     outline: none;
 }
 
-.place-added h3 {
+.ui-sheet.place-sheet .place-added h3 {
     margin: 0;
     color: var(--color-text);
     font-size: var(--text-title-sm);
@@ -354,7 +339,7 @@
     letter-spacing: -0.7px;
 }
 
-.place-added p {
+.ui-sheet.place-sheet .place-added p {
     margin: 10px 0;
     color: var(--color-text-muted);
     font-size: var(--text-small);

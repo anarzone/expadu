@@ -47,10 +47,8 @@ class HandleInertiaRequests extends Middleware
                 // emailed code (EXP-174). Nothing else about the password.
                 'has_password' => $request->user() !== null && $request->user()->password !== null,
             ],
-            // Admin-only QA tooling: the floating "become this persona"
-            // toolbar. Null for everyone else so PersonaSwitcher can gate off
-            // a single prop instead of shipping a separate admin flag.
-            // The QA tools show for admins and on this machine only.
+            // Admin-only QA tooling (Events' motion lab), for admins and on
+            // this machine only, gated off a single prop.
             'qaSwitcher' => (bool) ($request->user()?->is_admin || app()->environment('local')),
             // One-shot flash messages — surfaced globally as a toast so no
             // redirect (e.g. "you're already signed in") is ever silent.
@@ -60,7 +58,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
-            'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
+            // Settings saved before a key existed read it at its default.
+            'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? [])],
             // The person's own saved needs, for the account menu's switch
             // (needs_step_free stays out of the user's serialisation).
             'needs' => fn () => $request->user() === null ? null : [

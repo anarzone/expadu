@@ -9,7 +9,7 @@ use Inertia\Testing\AssertableInertia;
 test('the account menu sees the signed-in person’s own step-free need, and auth.user doesn’t carry it', function () {
     $user = User::factory()->onboarded()->create(['needs_step_free' => true]);
 
-    $this->actingAs($user)->get(route('profile.edit'))
+    $this->actingAs($user)->get(route('settings'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('needs.step_free', true)
             ->missing('auth.user.needs_step_free'));
@@ -20,7 +20,7 @@ test('turning the switch off is read back off', function () {
 
     $this->actingAs($user)->putJson(route('needs.step-free.update'), ['step_free' => false])->assertOk();
 
-    $this->actingAs($user)->get(route('profile.edit'))
+    $this->actingAs($user)->get(route('settings'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('needs.step_free', false));
 });
 

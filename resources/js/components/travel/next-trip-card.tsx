@@ -3,9 +3,12 @@ import type { ReactNode } from 'react';
 import { sourceLabel } from '@/components/ui/state-notice';
 import type { NextTrip, TripOption } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
+import { Headline } from './headline';
 import { TravelChip } from './labels';
 import { lineLook, vehicleOf, vehicleWord } from './line-look';
 import type { LineLook } from './line-look';
+import { noticeWords } from './nearby/types';
+import { lateBy } from './plan/plan-model';
 import { stopName } from './stop-name';
 import { TravelIcon } from './travel-icon';
 import {
@@ -292,6 +295,11 @@ export function NextTripCard({
         );
     }
 
+    // A major problem on its lines: the card is its headline.
+    if (trip.major && (trip.major.notice || trip.major.trouble)) {
+        return <TripMajor trip={trip} major={trip.major} onPlan={onPlan} />;
+    }
+
     const journey = trip.journey;
     const ride = journey.legs.find(isRide) ?? null;
     const minutes = leaveIn ?? trip.leave_in_min ?? 0;
@@ -316,12 +324,13 @@ export function NextTripCard({
         : blocked
           ? `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order, and KVB doesn’t say which platform ${many ? 'they serve' : 'it serves'}: this way may not be step-free.`
           : `${many ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${many ? 'are' : 'is'} out of order; KVB doesn’t say if ${many ? 'they’re' : 'it’s'} on your way.`;
-    const tone: TripTone =
-        gone?.kind === 'cancelled' || blocked
-            ? 'conflict'
-            : gone || minutes <= 0 || late || tight
-              ? 'attention'
-              : 'calm';
+    // A cancelled run is everyday (the delays canvas, 22 Oct 2026): its
+    // time struck through over the one to take, never the conflict colours.
+    const tone: TripTone = blocked
+        ? 'conflict'
+        : gone || minutes <= 0 || late || tight
+          ? 'attention'
+          : 'calm';
     const ring: TripRingState =
         gone || blocked
             ? { kind: 'alert' }
@@ -368,6 +377,13 @@ export function NextTripCard({
                               look={rideLook(ride)}
                               word={vehicleWord(vehicleOf(ride.mode))}
                           />
+                      }
+                      before={
+                          gone?.kind === 'cancelled' ? (
+                              <span className="tl-cancelled">
+                                  <s>{gone.ride!.time}</s> Cancelled
+                              </span>
+                          ) : undefined
                       }
                       value={ride.depart_time}
                       sub={stopName(ride.from.name, trip.city)}
@@ -447,15 +463,7 @@ export function NextTripCard({
                 Nothing gets there by {trip.target.start_time}
             </TravelChip>
         ) : null,
-        gone?.kind === 'cancelled' ? (
-            <TravelChip
-                key="gone"
-                kind="conflict"
-                icon={<TravelIcon name="alert" />}
-            >
-                {`${gone.ride!.time} cancelled`}
-            </TravelChip>
-        ) : gone?.kind === 'missed' ? (
+        gone?.kind === 'missed' ? (
             <TravelChip key="gone" kind="attention" icon={icons.clock}>
                 {`Missed the ${gone.ride!.time}`}
             </TravelChip>
@@ -519,6 +527,111 @@ export function NextTripCard({
                 compact ? undefined : () => setOpen((value) => !value)
             }
             moreLabel={`Show the way to ${trip.target.title} and other ways`}
+        />
+    );
+}
+
+const vehicles = (mode: string, count: number) =>
+    mode === 'bus'
+        ? count === 1
+            ? 'bus'
+            : 'buses'
+        : mode === 'rail'
+          ? count === 1
+              ? 'train'
+              : 'trains'
+          : count === 1
+            ? 'tram'
+            : 'trams';
+
+/** "Trams 1, 7 and 9 don’t…" → "trams 1, 7 and 9 don’t…", but "KVB …" stays. */
+const continued = (words: string) =>
+    /^[A-Z][a-z]/.test(words)
+        ? words.charAt(0).toLowerCase() + words.slice(1)
+        : words;
+
+/**
+ * Leave now when a major problem hits the trip's lines (the delays canvas
+ * the owner agreed, 22 Oct 2026): the card itself is the headline, with
+ * what happens to your trip, what to do and another way. Today shows a
+ * major only through this card, so only when it touches your day.
+ */
+function TripMajor({
+    trip,
+    major,
+    onPlan,
+}: {
+    trip: NextTrip;
+    major: NonNullable<NextTrip['major']>;
+    onPlan?: () => void;
+}) {
+    const to = `Your trip to ${trip.target.title}`;
+    const action = onPlan ? (
+        <TripAction icon="route" onClick={onPlan}>
+            Find another way
+        </TripAction>
+    ) : null;
+
+    if (major.notice) {
+        const { notice } = major;
+        const words = noticeWords(notice);
+        const since = notice.since
+            ? new Date(notice.since).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  timeZone: 'Europe/Berlin',
+              })
+            : null;
+        const kvb = notice.source?.startsWith('kvb') ?? false;
+
+        // In English when a brief passed its checks; else the card says it
+        // in English and KVB's own German is a tap away, as on the board.
+        return (
+            <Headline
+                lines={notice.lines}
+                title={
+                    words.lang === 'en'
+                        ? `${to}: ${continued(words.headline)}`
+                        : `${to}: a notice on line${notice.lines.length > 1 ? 's' : ''} ${notice.lines.join(', ')}`
+                }
+                text={words.lang === 'en' ? words.text : null}
+                german={{
+                    title: notice.title,
+                    details: notice.details,
+                    url: notice.url,
+                    kvb,
+                }}
+                source={`${kvb ? 'KVB’s notice' : 'Notice'}${since ? ` of ${since}` : ''}`}
+                action={action}
+            />
+        );
+    }
+
+    const trouble = major.trouble!;
+    const late = trouble.kind === 'late';
+    const stop = stopName(trouble.stop, trip.city);
+    const what = vehicles(trouble.mode, late ? 2 : trouble.of);
+
+    return (
+        <Headline
+            lines={[trouble.line]}
+            title={
+                late
+                    ? `${to}: line ${trouble.line} is running ${lateBy(trouble)} min late`
+                    : `${to}: ${trouble.count === trouble.of ? `the next ${trouble.count}` : `${trouble.count} of the next ${trouble.of}`} ${what} on line ${trouble.line} are cancelled`
+            }
+            text={
+                late
+                    ? `Run after run at ${stop}, ${what} towards ${stopName(trouble.dest, trip.city)} are ${lateBy(trouble)} min behind the timetable in the live times.`
+                    : `Cancelled at ${stop}, towards ${stopName(trouble.dest, trip.city)}: ${trouble.runs.map((r) => r.time).join(' · ')}.`
+            }
+            todo={
+                late
+                    ? `Allow ${lateBy(trouble)} min more, or find another way.`
+                    : null
+            }
+            source="From the live times · no notice"
+            action={action}
         />
     );
 }
