@@ -216,7 +216,7 @@ final class AssistantTools
             ['name' => 'where_am_i', 'description' => 'Where the person is: their nearest KVB stop and Veedel, from their browser\'s location or the start they chose, and how that\'s known.', 'input_schema' => $none],
             ['name' => 'departures', 'description' => 'Live departures at a KVB stop, by line and direction. Without a stop: at the stop nearest the person.',
                 'input_schema' => ['type' => 'object', 'properties' => ['stop' => ['type' => 'string', 'description' => 'a KVB stop name, optional']]]],
-            ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train, from where the person is or from the start they name, with Expadu\'s place finder. When a name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?".',
+            ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train, from where the person is or from the start they name, with Expadu\'s place finder. When a name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?". To keep the way to a plan on their day, with a reminder when to leave ("plan the way there and remind me"), use plan_trip_for_later instead.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
@@ -251,7 +251,7 @@ final class AssistantTools
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
-                    'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee is left out; listed free first, then public ones with no fee listed'],
+                    'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee is left out; listed free first, then public ones with no fee listed. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
@@ -690,7 +690,11 @@ final class AssistantTools
             : '';
 
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
-        return $same.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
+        // Asked for free ones (coordinator, 24 Oct 2026): free only where a source lists no fee, else "public, no fee listed".
+        $fee = ! $free ? '' : ($found->every(fn (Candidate $c): bool => self::publicUse($c)['free'] === 'yes') ? 'Each lists free use. '
+            : 'Call a place free only where its line says "Free to use (listed)"; the others are "public, no fee listed", also in your first sentence ("These public pitches, no fee listed…", never "These free pitches"). ');
+
+        return $same.$fee.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
@@ -1193,9 +1197,11 @@ final class AssistantTools
                 $input['event'] = $shown[0];
             }
         }
-        // A place this conversation showed, said by its name ("save Café Nova"): that one.
+        // A place this conversation showed, said by its name ("save Café Nova", or "spot:Café Nova"
+        // with its id's prefix): that one.
         foreach (['place', 'item', 'with'] as $field) {
             if (is_string($input[$field] ?? null) && preg_match('/^(spot:\d+|e\d+@\d+)$/', $input[$field]) !== 1) {
+                $input[$field] = (string) preg_replace('/^spot:\s*(?=\D)/', '', $input[$field]);
                 $shown = array_keys(array_filter($this->earlier['spot'], fn (string $name): bool => Destinations::key($name) === Destinations::key((string) $input[$field])));
                 if (count($shown) === 1) {
                     $input[$field] = "spot:{$shown[0]}";

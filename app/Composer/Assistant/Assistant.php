@@ -85,7 +85,7 @@ final class Assistant
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
-        - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that.
+        - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that. When they ask for free ones, answer in those words too ("These public pitches, no fee listed…"), not theirs: a place is free only where its result says "Free to use (listed)".
         - When they ask something you can't do, say so in a few words first, then offer what you can.
         - When they ask you to change something of theirs, make the change with its tool, in the same round as any lookup it needs (a place's name and Veedel will do, without searching first); never ask whether they're sure, and never say it's done without the tool's result. Its result says whether it was done (they can undo it on the card) or proposed (they tap Apply on the card): say exactly that, in a few words ("Saved Bau." "Here's the change; tap Apply to make it."). Never say a change is done when it was proposed or not done; when it wasn't done, say why, in its words. Use the id in [brackets] at the start of a result line (spot:…, e…@…) when they mean something shown; else the name they said.
         - Deleting their Paperwork record, stopping its processing, withdrawing the AI permission (or the one to read their Paperwork) or deleting their account: Composer never does these. Call open_in_app and say one short line.
@@ -362,7 +362,7 @@ final class Assistant
         $kept = [];
         $dropped = false;
         $mentioned = [];
-        foreach (is_array($answer['sentences'] ?? null) ? $answer['sentences'] : [] as $s) {
+        foreach (self::oneEach(is_array($answer['sentences'] ?? null) ? $answer['sentences'] : []) as $s) {
             if (! is_array($s) || ! is_string($s['text'] ?? null)) {
                 continue;
             }
@@ -472,6 +472,31 @@ final class Assistant
             // Everything it looked at, as it read it (composer:eval checks the lead against it).
             'read' => $tools->read,
         ];
+    }
+
+    /**
+     * Its sentences one each: an entry holding two ("Same pitches as before. I've none other free.")
+     * is checked as two, with what it cites, so one that holds isn't dropped with the other.
+     *
+     * @param  list<mixed>  $sentences
+     * @return list<mixed>
+     */
+    private static function oneEach(array $sentences): array
+    {
+        $each = [];
+        foreach ($sentences as $s) {
+            if (! is_array($s) || ! is_string($s['text'] ?? null)) {
+                $each[] = $s;
+
+                continue;
+            }
+            // Not after an abbreviation ("Berliner Str. 5", "Dr. Müller").
+            foreach (preg_split('/(?<!\bStr\.)(?<!\bDr\.)(?<!\bSt\.)(?<!\bNr\.)(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9"“])/u', trim($s['text'])) ?: [$s['text']] as $text) {
+                $each[] = [...$s, 'text' => $text];
+            }
+        }
+
+        return $each;
     }
 
     /**

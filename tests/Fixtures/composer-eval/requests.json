@@ -8438,7 +8438,8 @@
    "expect": {
     "open": true,
     "min_places": 3,
-    "says": "no fee|no set hours|free to use|not listed|isn.t listed|open-air"
+    "says": "no fee listed|free to use",
+    "not_says": "\\bfree\\b(?!\\s+to\\s+use)"
    }
   },
   {
@@ -8453,7 +8454,8 @@
    "expect": {
     "open": true,
     "min_places": 3,
-    "says": "no fee|no set hours|free to use|not listed|isn.t listed|open-air"
+    "says": "no fee listed|free to use",
+    "not_says": "\\bfree\\b(?!\\s+to\\s+use)"
    }
   },
   {
