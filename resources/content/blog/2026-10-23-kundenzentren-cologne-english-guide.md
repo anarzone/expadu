@@ -2,6 +2,10 @@
 title: Bürgeramt Köln: Kundenzentren, walk-ins, booking
 description: Cologne's Bürgeramt is the Kundenzentrum: all nine offices with addresses and step-free access, the Monday and Wednesday walk-in days, and how to book.
 updated: 2026-10-24
+glance_1: clock | Walk in on Monday or Wednesday | Mon 7:30–15:00, Wed 7:30–12:00. Expect a wait.
+glance_2: calendar | Tuesday, Thursday, Friday: book first | Online, or call 115.
+glance_3: pin | Any of the nine centres | Wherever you live in Cologne.
+glance_4: euro | Registering your address is free | A registration certificate costs €9.
 ---
 
 Looking for the **Bürgeramt** in Cologne? Here it's called a **Kundenzentrum**. There are nine, one in each district, and you can use any of them, wherever you live: "Sie können jedes Kundenzentrum besuchen, egal, wo Sie in Köln wohnen."
