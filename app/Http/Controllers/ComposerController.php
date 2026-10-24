@@ -298,6 +298,7 @@ class ComposerController extends Controller
             'constraints.activities' => ['array', 'max:10'],
             'constraints.activities.*' => ['string', Rule::in(PlaceCapabilities::ACTIVITIES)],
             'constraints.radius_km' => ['nullable', 'numeric', 'between:0.1,50'],
+            'constraints.stops' => ['nullable', 'integer', 'between:1,6'],
             'constraints.companions' => ['nullable', Rule::in(['alone', 'partner', 'friends', 'kids'])],
             'constraints.budget' => ['nullable', Rule::in(['free', 'low', 'normal'])],
             'constraints.archetype' => ['nullable', 'string'],
@@ -389,7 +390,7 @@ class ComposerController extends Controller
         // named Veedel when there is one ("an afternoon in Ehrenfeld"), else where
         // it starts. Travel is still timed from the start.
         [$poolLat, $poolLng] = $this->areaCentre($constraints) ?? [$originLat, $originLng];
-        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $soloCategory), $poolLat, $poolLng);
+        $rawPool = CandidateRepository::dayOut($constraints, $candidates->candidatesFor($this->itineraryConstraints($constraints, $soloCategory), $poolLat, $poolLng));
 
         // ── Itinerary (Just this / Full day / Today) ──
         // For a solo activity the pool is widened to refuel/relax complements so
@@ -416,6 +417,7 @@ class ComposerController extends Controller
             : [];
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
+            coolExpected: $this->coolExpected(),
             preferredAreas: $constraints->areas !== []
                 ? $constraints->areas
                 : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
@@ -447,8 +449,13 @@ class ComposerController extends Controller
 
         $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
-        $roles = $sequenceRoles ?? ($soloCategory !== null ? $this->activityRoles($soloCategory) : null);
-        $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
+        // As many of one kind as they asked for ("plan 2 museums"): that many, no repeat cap (owner, 24 Oct 2026).
+        $roles = $sequenceRoles ?? match (true) {
+            $soloCategory !== null && $constraints->stops !== null => [new Role(SpotCategory::finesForSelector($soloCategory), $constraints->stops, hero: true)],
+            $soloCategory !== null => $this->activityRoles($soloCategory),
+            default => null,
+        };
+        $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, $constraints->stops !== null ? PHP_INT_MAX : self::SAME_COARSE_CAP);
         $this->recordRun($user, $plan, $filler->pickedScores(), $llmBucket, $llmRankWeights, count($rankable));
 
         // ── Browse options (A few options) ──
@@ -583,7 +590,8 @@ class ComposerController extends Controller
      */
     private function itineraryConstraints(Constraints $constraints, ?string $soloCategory): Constraints
     {
-        if ($soloCategory === null || $constraints->activities !== []) {
+        // As many of one kind as they asked for ("plan 2 museums"): those, not complements (owner, 24 Oct 2026).
+        if ($soloCategory === null || $constraints->activities !== [] || $constraints->stops !== null) {
             return $constraints;
         }
 
@@ -783,6 +791,7 @@ class ComposerController extends Controller
         $originArea = $stored['origin_area'] ?? null;
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
+            coolExpected: $this->coolExpected(),
             preferredAreas: $plan->constraints->areas !== []
                 ? $plan->constraints->areas
                 : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
@@ -943,6 +952,14 @@ class ComposerController extends Controller
         } catch (\Throwable) {
             return $this->forecastCache = [];
         }
+    }
+
+    /** Under 15°: a beer garden is no afternoon out (owner, 24 Oct 2026: 13° in late October). */
+    private function coolExpected(): bool
+    {
+        $temperature = $this->currentWeather()['temperature'] ?? null;
+
+        return is_numeric($temperature) && (float) $temperature < 15.0;
     }
 
     private function rainExpected(): bool

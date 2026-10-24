@@ -57,9 +57,44 @@ class CandidateRepository
         'default' => 60,
     ];
 
+    /** A stop looked at on the way: a fountain, a monument, an artwork. */
+    private const SHORT_STOP_MIN = 15;
+
+    /** Coarse kinds a day out leaves out unless they're asked for: they're named when wanted. */
+    private const NOT_A_DAY_OUT = ['shopping', 'services', 'health', 'stay'];
+
+    /** Places a day out includes only with the kids or for a sport asked for. */
+    private const FOR_KIDS_OR_SPORT = ['playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'skatepark', 'dog_park', 'bbq'];
+
+    /**
+     * What a day out holds when they name no kind (owner, 24 Oct 2026): not a library or reading room
+     * (a place to sit and study) unless the day is a quiet one; not a playground, pitch or court unless
+     * it's with the kids or for a sport; not shops, services, health or stays.
+     *
+     * @param  list<Candidate>  $candidates
+     * @return list<Candidate>
+     */
+    public static function dayOut(Constraints $constraints, array $candidates): array
+    {
+        if ($constraints->categories !== [] || $constraints->sequence !== []) {
+            return $candidates;
+        }
+        $out = [...array_merge(...array_map(SpotCategory::finesForCoarse(...), self::NOT_A_DAY_OUT)),
+            ...(in_array('quiet', $constraints->moods, true) ? [] : [SpotCategory::Library->value]),
+            ...($constraints->activities !== [] || $constraints->companions === 'kids' ? [] : self::FOR_KIDS_OR_SPORT)];
+
+        return array_values(array_filter($candidates, fn (Candidate $c): bool => $c->type !== 'spot' || ! in_array($c->category, $out, true)));
+    }
+
     public function __construct(
         private readonly CologneServiceArea $serviceArea,
     ) {}
+
+    /** @param array<string, mixed> $tags */
+    private static function shortStop(array $tags): bool
+    {
+        return ($tags['amenity'] ?? null) === 'fountain' || in_array($tags['historic'] ?? null, ['monument', 'memorial'], true) || ($tags['tourism'] ?? null) === 'artwork';
+    }
 
     /**
      * @return list<Candidate>
@@ -281,8 +316,10 @@ class CandidateRepository
             lng: $lng,
             veedel: $spot->veedel ?? null,
             category: $category,
-            outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
-            typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
+            // A beer garden is outdoors whatever its category: rain counts against it.
+            outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true) || ($tags['amenity'] ?? null) === 'biergarten',
+            // A fountain, monument or artwork is a short stop on the way, never an hour (owner, 24 Oct 2026: the Domfontäne for an hour).
+            typicalDurationMin: self::shortStop($tags) ? self::SHORT_STOP_MIN : (self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default']),
             costTier: $this->spotCostTier($spot, $facts['fee']),
             opensAt: $opensAt,
             closesAt: $closesAt,

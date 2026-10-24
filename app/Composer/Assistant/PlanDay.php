@@ -56,6 +56,7 @@ final class PlanDay
                 'companions' => ['type' => 'string', 'enum' => ['alone', 'partner', 'friends', 'kids']],
                 'budget' => ['type' => 'string', 'enum' => ['free', 'low', 'normal'], 'description' => '"costs nothing": free; "cheap": low'],
                 'radius_km' => ['type' => 'number', 'description' => 'A distance they named; "nearby" is 2.5'],
+                'stops' => ['type' => 'integer', 'description' => 'How many stops they asked for ("two museums": 2); leave out for a usual day'],
             ], 'required' => ['day']]];
     }
 
@@ -111,6 +112,7 @@ final class PlanDay
             sequence: count($sequence) >= 2 ? $sequence : [],
             // Their own step-free need, from their settings, whatever the AI was told: it never is.
             needs: array_values(array_unique([...self::listOf($input['needs'] ?? [], Constraints::NEEDS), ...($user->needs_step_free ? ['step_free'] : [])])),
+            stops: is_numeric($input['stops'] ?? null) ? max(1, min(6, (int) $input['stops'])) : null,
         ), $now, $from);
 
         // The planner as the page calls it, from the start the person chose on the page (or
