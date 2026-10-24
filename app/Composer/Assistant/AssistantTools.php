@@ -224,7 +224,7 @@ final class AssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
-                    'from' => ['type' => 'string', 'description' => 'the start they named ("from Neumarkt"); leave out to start from where they are'],
+                    'from' => ['type' => 'string', 'description' => 'the start they named ("from Neumarkt"); never their home Veedel unless they said it. Leave out to start from where they are'],
                     'from_area' => ['type' => 'string', 'description' => 'a Veedel they named with the start, optional'],
                     'by' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => TripAnswers::KINDS], 'description' => 'only these ways of travelling ("by tram"); S-Bahn and regional trains are train'],
                     'avoid' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => TripAnswers::KINDS], 'description' => 'ways of travelling they ruled out ("without trains")'],
