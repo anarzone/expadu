@@ -145,6 +145,9 @@ final class AssistantTools
     /** What "an activity" is when they don't name a kind: a day out's sights, culture and green. */
     private const DAY_OUT = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'nature', 'market', 'theatre', 'cinema', 'arts_centre'];
 
+    /** Kinds that may be indoors or out (a sight, an open-air pool, a crag, a kiosk): said only as mapped. */
+    private const SETTING_UNSAID = ['attraction', 'swimming', 'climbing', 'kiosk', 'sports_centre'];
+
     /** @var list<array{0: string, 1: int}> each lookup and its milliseconds, in order (composer:eval reads where the time goes) */
     public array $timings = [];
 
@@ -906,7 +909,7 @@ final class AssistantTools
             ->filter(fn (Candidate $c): bool => ($areas === [] || in_array($c->veedel, $areas, true))
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true) && ! in_array($park($c), $leaveOut, true)
-                && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
+                && (($input['indoors'] ?? false) !== true || self::setting($c) === 'indoors')
                 // To work there: never a place that says no laptops then (places session's website facts).
                 && (! $work || self::laptopsWelcome($c, $at) !== false)
                 // Free (coordinator's call, 23 Oct 2026): public use, by the places session's public_use. Only a
@@ -1093,6 +1096,24 @@ final class AssistantTools
             LocationSource::Ping => 'Your last location',
             LocationSource::Area => (string) $this->location->label,
             LocationSource::None => 'Cologne',
+        };
+    }
+
+    /**
+     * Indoors or outdoors as far as it's known: its own mapped setting (indoor, covered), else its kind
+     * when that settles it (a park is outdoors, a museum a building), else nothing (a tourism=attraction
+     * may be a statue in the street: one was called "an indoor attraction", 24 Oct 2026).
+     */
+    private static function setting(Candidate $c): ?string
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+        $mapped = fn (string $key): ?string => ($practical[$key]['status'] ?? null) === 'known' ? strtolower((string) ($practical[$key]['value'] ?? '')) : null;
+
+        return match (true) {
+            in_array($mapped('indoor'), ['yes', 'true', '1'], true) || in_array($mapped('covered'), ['yes', 'true', '1'], true) => 'indoors',
+            $c->outdoor || in_array($mapped('indoor'), ['no', 'false', '0'], true) => 'outdoors',
+            $c->type === 'spot' && ! in_array($c->category, self::SETTING_UNSAID, true) => 'indoors',
+            default => null,
         };
     }
 
@@ -1666,7 +1687,9 @@ final class AssistantTools
         $lists = array_values(array_diff(PlaceAmenities::listed($c->placeFacts['practical'] ?? []),
             ($c->placeFacts['practical']['internet_access']['provider'] ?? null) === 'people' ? ['Wi-Fi'] : []));
 
-        return '"'.self::name($c).'" ('.$kind.($c->outdoor ? ', outdoors' : ', indoors').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
+        $setting = self::setting($c);
+
+        return '"'.self::name($c).'" ('.$kind.($setting !== null ? ", {$setting}" : '').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
             .($has !== null ? ' Has: '.$has.'.' : '')
             .($lists !== [] ? ' Lists: '.implode(', ', $lists).'.' : '')
             .$hours
