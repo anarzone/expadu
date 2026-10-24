@@ -9,6 +9,7 @@ use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\InAppPlaces;
 use App\Composer\Actions\PaperworkActions;
 use App\Composer\Actions\PlaceFeedbackAction;
+use App\Composer\Actions\SettingsActions;
 use App\Composer\Answers\Destinations;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Answers\TripAnswers;
@@ -84,6 +85,7 @@ final class AssistantTools
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for',
+        'set_notifications' => 'changes_you_ask_for', 'set_needs' => 'changes_you_ask_for', 'update_profile' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -1112,6 +1114,18 @@ final class AssistantTools
                 ], 'required' => ['line']]],
             ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind. You\'re told only how many.',
                 'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => ['all', 'transit', 'city', 'events']]]]],
+            ['name' => 'set_notifications', 'description' => 'Turns a kind of notification on or off, as Settings › Notifications does: transit (disruptions on their lines and trips), checklist (Paperwork deadlines), events (event reminders), weather, rhine (Rhine flood alerts), digest (the weekly digest). Push on this device needs their own tap in the browser: for that, open_in_app "push_notifications".',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'kind' => ['type' => 'string', 'enum' => array_keys(SettingsActions::NOTIFICATIONS)],
+                    'on' => ['type' => 'boolean'],
+                ], 'required' => ['kind', 'on']]],
+            ['name' => 'set_needs', 'description' => 'Sets whether they need step-free ways (lifts, no stairs): Travel and Composer then plan only those.',
+                'input_schema' => ['type' => 'object', 'properties' => ['step_free' => ['type' => 'boolean']], 'required' => ['step_free']]],
+            ['name' => 'update_profile', 'description' => 'Changes their name, city, situation or German level on their profile. Never their email: open_in_app "change_email" for that.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'field' => ['type' => 'string', 'enum' => array_keys(SettingsActions::PROFILE)],
+                    'value' => ['type' => 'string', 'description' => 'as they said it; a situation as non_eu_employee, eu_employee, student, freelancer, family_reunification, digital_nomad or other; a German level as none or a1 to c2'],
+                ], 'required' => ['field', 'value']]],
             ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account, turning personalisation or location sharing off, which deletes what was kept) or needs their own tap (push notifications on this device, changing their email): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.

@@ -8638,6 +8638,25 @@
    }
   },
   {
+   "id": "actions.set_notifications",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Turn off weather alerts",
+   "expect": {
+    "open": true,
+    "acted": "set_notifications",
+    "changed": "done"
+   }
+  },
+  {
    "id": "actions.push_on",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",
@@ -8654,6 +8673,44 @@
     "open": true,
     "handoff": "push_notifications",
     "no_change": true
+   }
+  },
+  {
+   "id": "actions.set_needs",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I use a wheelchair, so only step-free ways please",
+   "expect": {
+    "open": true,
+    "acted": "set_needs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.update_profile",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "My German is B1 now",
+   "expect": {
+    "open": true,
+    "acted": "update_profile",
+    "changed": "done"
    }
   },
   {

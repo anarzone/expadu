@@ -423,16 +423,17 @@ class EvaluateComposer extends Command
             'situation' => self::SITUATIONS[$request['persona']] ?? Situation::Other,
             // A persona's step-free need is in its settings, as a person's is.
             'needs_step_free' => in_array('step_free', $request['needs'] ?? [], true),
-            'transport_mode' => null, 'has_deutschlandticket' => false,
+            'transport_mode' => null, 'has_deutschlandticket' => false, 'german_level' => null, 'city' => null,
         ])->save();
         // What a case changed before stays out of the next: saved places, Home and Work.
         SpotFeedback::query()->where('user_id', $user->id)->delete();
         EventBookmark::query()->where('user_id', $user->id)->delete();
         EventReminder::query()->where('user_id', $user->id)->delete();
         $user->places()->delete();
-        // ...and Travel's stars and planned ways, their alerts and mutes.
+        // ...and Travel's stars and planned ways, their alerts, mutes and notification kinds.
         FavouriteStop::query()->where('user_id', $user->id)->delete();
         PlannedTrip::query()->where('user_id', $user->id)->delete();
+        $user->notificationPreference()->delete();
         foreach (app(MuteService::class)->activeMutes($user) as $mute) {
             app(MuteService::class)->unmute($user, $mute['type'], $mute['key']);
         }
