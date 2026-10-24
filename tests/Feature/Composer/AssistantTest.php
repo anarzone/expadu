@@ -311,6 +311,22 @@ test('an answer pointing at a card it doesn\'t show gets another round: the card
         ->and($reply['lead'])->toBe('The place to do it is shown on the card.');
 });
 
+test('an answer saying it made a change, with none made, gets another round: the change is made by its tool', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'I\'ve turned off weather notifications for you.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['set_notifications', ['kind' => 'weather', 'on' => false]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'I\'ve turned off weather notifications for you.', 'uses' => []]], 'show' => []]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'turn off weather alerts');
+
+    Http::assertSentCount(3);
+    expect($user->fresh()->wantsNotification('weather'))->toBeFalse()
+        ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done')
+        ->and($reply['lead'])->toBe('I\'ve turned off weather notifications for you.');
+});
+
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
     $user = User::factory()->onboarded()->create();
     config()->set('services.llm.driver', 'off');

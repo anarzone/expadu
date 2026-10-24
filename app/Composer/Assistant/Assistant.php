@@ -51,6 +51,9 @@ final class Assistant
     /** A sentence pointing at a card the answer shows ("on the card", "a card asks"), not at a Blue Card or a bank card. */
     private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
 
+    /** A sentence saying it made a change ("I've turned off…", "Done: …"): so only when one was made or proposed. */
+    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|^Done\b/iu';
+
     /** Said back to an answer none of whose sentences a result of this message backs. */
     private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked. Then answer.';
 
@@ -438,10 +441,16 @@ final class Assistant
                 $blocks['events'] = ['type' => 'events', 'events' => $this->listings->posters($tools->occurrences(array_slice(array_keys($tools->events), 0, self::SHOWN)), self::SHOWN)];
             }
         }
-        // With no card shown, a sentence pointing at one ("The place to do it is on the card") isn't so.
-        if ($blocks === [] && $token === null) {
-            $kept = array_values(array_filter($kept, fn (string $text): bool => preg_match(self::CARD, $text) !== 1));
-            $this->kept = array_values(array_filter($this->kept, fn (array $s): bool => preg_match(self::CARD, $s['text']) !== 1));
+        // With no card shown, a sentence pointing at one ("The place to do it is on the card") isn't so;
+        // with no change made or proposed for this message, nor is one saying it did one ("I've turned off…").
+        $false = array_values(array_filter([
+            $blocks === [] && $token === null ? self::CARD : null,
+            preg_grep('/^x\d+$/', array_keys($tools->cards)) === [] ? self::DONE : null,
+        ]));
+        if ($false !== []) {
+            $holds = fn (string $text): bool => collect($false)->every(fn (string $pattern): bool => preg_match($pattern, $text) !== 1);
+            $kept = array_values(array_filter($kept, $holds));
+            $this->kept = array_values(array_filter($this->kept, fn (array $s): bool => $holds($s['text'])));
             $lead = implode(' ', array_slice($kept, 0, 3));
         }
         if ($lead === '' && $blocks === [] && $token === null) {
