@@ -10,7 +10,12 @@ use App\Composer\Answers\AroundCheck;
 use App\Composer\Assistant\Ask;
 use App\Composer\Assistant\Assistant;
 use App\Composer\Assistant\AssistantTools;
+use App\Composer\Assistant\PlanDay;
+use App\Composer\CandidateRepository;
+use App\Composer\Constraints;
 use App\Composer\Eval\PlanChecks;
+use App\Composer\PlanSlot;
+use App\Composer\PrivatePlanCache;
 use App\Composer\WorkspaceStore;
 use App\Enums\AlertType;
 use App\Enums\Situation;
@@ -69,6 +74,7 @@ class EvaluateComposer extends Command
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
         'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'leave_out' => true, 'places_has' => true, 'no_step_free' => true,
+        'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true,
         'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
@@ -159,6 +165,10 @@ class EvaluateComposer extends Command
         // Each case in a conversation of its own: its earlier turns (a follow-up), then itself.
         ComposerWorkspace::query()->where('user_id', $user->id)->delete();
         try {
+            // A plan the case starts from (the owner's Sunday): kept as a plan Composer made in this conversation.
+            if (is_array($request['plan'] ?? null)) {
+                $this->seedPlan($user, $request['plan'], $now);
+            }
             foreach ($request['before'] ?? [] as $earlier) {
                 $this->message($user, (string) $earlier, $request['origin'] ?? null, (bool) ($request['paperwork_permission'] ?? false));
             }
@@ -169,6 +179,7 @@ class EvaluateComposer extends Command
             $row['before'] = $request['before'];
         }
         $earlier = Assistant::history(collect(app(WorkspaceStore::class)->read($user)['conversations'])->first()['messages'] ?? [])['suggested'];
+        $plansBefore = self::stops(app(WorkspaceStore::class)->read($user)['plans'] ?? []);
 
         $started = hrtime(true);
         try {
@@ -223,6 +234,18 @@ class EvaluateComposer extends Command
         $routing += ($expect['leave_out'] ?? false) ? ['leave_out' => $leftOut] : [];
         // Places it must show (asked again, the nearest shown before).
         $routing += isset($expect['places_has']) ? ['places_has' => array_diff((array) $expect['places_has'], array_column($shownPlaces, 'name')) === []] : [];
+        // Their plans as stored after the message: unchanged, holding or lacking stops by name, how many, and when.
+        $plansAfter = self::stops(app(WorkspaceStore::class)->read($user)['plans'] ?? []);
+        $stopsAfter = array_merge([], ...array_values($plansAfter));
+        $named = fn (string $name): bool => collect($stopsAfter)->contains(fn (array $s): bool => str_contains(mb_strtolower($s['name']), mb_strtolower($name)));
+        $routing += ($expect['plan_unchanged'] ?? false) ? ['plan_unchanged' => $plansAfter === $plansBefore] : [];
+        $routing += isset($expect['proposals']) ? ['proposals' => count(array_filter($answer['blocks'] ?? [], fn (array $b): bool => ($b['type'] ?? null) === 'proposal')) === (int) $expect['proposals']] : [];
+        $routing += isset($expect['plan_has']) ? ['plan_has' => collect((array) $expect['plan_has'])->every($named)] : [];
+        $routing += isset($expect['plan_lacks']) ? ['plan_lacks' => ! collect((array) $expect['plan_lacks'])->contains($named)] : [];
+        $own = count(array_filter($stopsAfter, fn (array $s): bool => ! $s['own']));
+        $routing += isset($expect['plan_stops']) ? ['plan_stops' => is_array($expect['plan_stops']) ? $own >= $expect['plan_stops'][0] && $own <= $expect['plan_stops'][1] : $own === (int) $expect['plan_stops']] : [];
+        $routing += isset($expect['not_before']) ? ['not_before' => collect((array) $expect['not_before'])->every(fn (string $time, string $name): bool => collect($stopsAfter)
+            ->every(fn (array $s): bool => ! str_contains(mb_strtolower($s['name']), mb_strtolower($name)) || $s['start'] >= $time))] : [];
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // Every card drawn as Around here's row (a park found for its pitch included).
         $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
@@ -292,7 +315,9 @@ class EvaluateComposer extends Command
         // speak of the person from their own facts, and count the listings, places and choices it cites.
         foreach (($answer['written'] ?? null) === 'ai' ? $assistant->kept : [] as $sentence) {
             $count = max(count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', $sentence['uses'])), count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', array_keys($assistant->read))))
-                + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? []);
+                + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? [])
+                // ...and the stops of a plan it made or this conversation made ("two museums").
+                + array_sum(array_map(fn (string $id): int => substr_count($assistant->read[$id], "\n- "), preg_grep('/^plan\d*$/', array_keys($assistant->read))));
             if (! app(AroundCheck::class)->holds($sentence['text'], implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
                 $invented[] = $sentence['text'];
             }
@@ -502,5 +527,36 @@ class EvaluateComposer extends Command
                 return ['available' => true, 'rain_soon' => $this->rain, 'rain_starts' => $this->rain ? 'now' : null, 'rain_summary' => $this->rain ? 'Rain for the next few hours' : 'Dry for the next few hours'];
             }
         });
+    }
+
+    /**
+     * Their plans' stops, by date: name, start, end, and whether it's one of their own.
+     *
+     * @param  array<string, mixed>  $plans
+     * @return array<string, list<array{name: string, start: string, end: ?string, own: bool}>>
+     */
+    private static function stops(array $plans): array
+    {
+        return collect($plans)->map(fn (mixed $plan): array => collect(is_array($plan) ? ($plan['slots'] ?? []) : [])->map(fn (array $slot): array => [
+            'name' => (string) ($slot['name'] ?? ''), 'start' => (string) ($slot['start_time'] ?? ''), 'end' => $slot['end_time'] ?? null,
+            'own' => ($slot['is_appointment'] ?? false) || in_array($slot['type'] ?? null, ['personal', 'appointment'], true)])->sortBy('start')->values()->all())->sortKeys()->all();
+    }
+
+    /**
+     * A plan the case starts from, put in as Composer puts in a plan it made in a conversation.
+     *
+     * @param  array{day: string, stops: list<array{spot: int, start: string, end: string}>}  $seed
+     */
+    private function seedPlan(User $user, array $seed, CarbonImmutable $now): void
+    {
+        $day = PlanDay::dayOf($seed['day'] ?? null, $now) ?? throw new \RuntimeException('Unknown seed day.');
+        $candidates = collect(app(CandidateRepository::class)->byIds(array_map(fn (array $stop): string => "spot:{$stop['spot']}", $seed['stops']), $day))->keyBy('id');
+        $slots = array_map(fn (array $stop): array => (new PlanSlot($candidates["spot:{$stop['spot']}"] ?? throw new \RuntimeException("Seed spot {$stop['spot']} is unavailable."),
+            $day->setTimeFromTimeString($stop['start']), $day->setTimeFromTimeString($stop['end']), 0))->toArray(), $seed['stops']);
+        $token = 'eval-'.Str::random(12);
+        app(PrivatePlanCache::class)->putHandoff($user, $token, ['date' => $day->toDateString(),
+            'constraints' => (new Constraints(windowStart: $day->setTime(10, 0), windowEnd: $day->setTime(20, 0)))->toArray(), 'slots' => $slots]);
+        $workspace = app(WorkspaceStore::class);
+        $workspace->answer($user, (string) ($workspace->read($user)['active'] ?? 'initial'), ['text' => 'Here is a plan for '.$day->isoFormat('dddd').'.', 'extra' => []], $token);
     }
 }

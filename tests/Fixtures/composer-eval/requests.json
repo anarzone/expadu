@@ -8689,6 +8689,285 @@
    }
   },
   {
+   "id": "regression.plan_followup_find_two",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "before": [
+    "Plan Sunday"
+   ],
+   "text": "Find us two activities for tomorrow near city center",
+   "expect": {
+    "open": true,
+    "plan_unchanged": true,
+    "proposals": 2
+   }
+  },
+  {
+   "id": "regression.plan_followup_find_two_seeded",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "Find us two activities for tomorrow near city center",
+   "expect": {
+    "open": true,
+    "plan_unchanged": true,
+    "proposals": 2
+   }
+  },
+  {
+   "id": "regression.plan_add_dom",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "add the Dom to Sunday",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_has": [
+     "Kölner Dom",
+     "Kolumba",
+     "Domfontäne",
+     "Rheingarten"
+    ]
+   }
+  },
+  {
+   "id": "regression.plan_replace_indoors",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "replace Rheingarten with something indoors",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_lacks": [
+     "Rheingarten"
+    ],
+    "plan_has": [
+     "Kolumba",
+     "Domfontäne"
+    ]
+   }
+  },
+  {
+   "id": "regression.plan_remove_fountain",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "remove Domfontäne",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_lacks": [
+     "Domfontäne"
+    ],
+    "plan_has": [
+     "Kolumba",
+     "Rheingarten"
+    ]
+   }
+  },
+  {
+   "id": "regression.plan_is_kolumba_open",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "is Kolumba open then?",
+   "expect": {
+    "open": true,
+    "plan_unchanged": true,
+    "says": "12:00|17:00|open"
+   }
+  },
+  {
+   "id": "regression.plan_two_museums",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "text": "plan 2 museums on Sunday",
+   "expect": {
+    "open": true,
+    "plan_stops": 2
+   }
+  },
+  {
+   "id": "regression.plan_sunday_hours",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "text": "Plan Sunday",
+   "expect": {
+    "open": true,
+    "plan_stops": [
+     3,
+     4
+    ],
+    "not_before": {
+     "Kolumba": "12:00"
+    },
+    "plan_lacks": [
+     "Lesesaal"
+    ]
+   }
+  },
+  {
    "id": "regression.free_open_football_home_only",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",
