@@ -1595,6 +1595,38 @@
     font-style: normal;
     line-height: 1.35;
 }
+/* "Good for laptop work?" (the laptop canvas): the tag's words in its colour. */
+.place-card-open .place-card-laptop {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+.place-card-laptop svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.place-card-open .place-card-laptop.is-good {
+    color: #1f5530;
+}
+.place-card-open .place-card-laptop.is-mixed {
+    color: #4f4839;
+}
+.place-card-open .place-card-laptop.is-not {
+    color: #7a2e12;
+}
+.place-card-open .place-card-laptop.is-rule {
+    color: #8a3413;
+}
 .place-card-more {
     position: absolute;
     right: 0;

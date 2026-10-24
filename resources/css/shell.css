@@ -964,6 +964,15 @@ html {
     text-align: left;
     box-shadow: 0 -18px 50px -30px rgb(33 29 21 / 0.55);
 }
+/* While the panel's code or conversations load (rarely: they load ahead
+   when the page is idle): the start's room, so it opens at its size. */
+.composer-tray-start.is-loading {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 260px;
+}
 .composer-tray-head {
     flex: none;
     display: flex;

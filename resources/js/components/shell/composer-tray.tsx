@@ -15,6 +15,7 @@ import { ComposerBox } from '@/components/composer/composer-box';
 import type { MenuPick } from '@/components/composer/composer-box';
 import { useComposerStart } from '@/components/composer/origin-store';
 import type {
+    default as TrayBodyComponent,
     TrayAsked,
     TrayPick,
     TrayView,
@@ -23,9 +24,18 @@ import type { ComposerView } from '@/components/composer/views';
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 
-// The panel's start and conversation, and Composer's styles, load when it first
-// opens, not with every page.
-const TrayBody = lazy(() => import('@/components/composer/tray-body'));
+// The panel's start and conversation, and Composer's styles, load apart from
+// every page: ahead, once the page is idle (below), or when it first opens.
+// Loaded ahead (below), it's drawn directly: a lazy component would still
+// show its fallback for a moment, which is the empty panel this avoids.
+let Loaded: typeof TrayBodyComponent | null = null;
+const loadTrayBody = () =>
+    import('@/components/composer/tray-body').then((module) => {
+        Loaded = module.default;
+
+        return module;
+    });
+const LazyTrayBody = lazy(loadTrayBody);
 
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
@@ -57,19 +67,24 @@ export function openComposerTray(): void {
     setOpen(true);
 }
 
-// A view to open with it (the header's bookmark: Saved, in place), taken once.
-const opening: { view: MenuPick | null } = { view: null };
-const takeOpening = (): MenuPick | null => {
-    const view = opening.view;
-    opening.view = null;
-
-    return view;
-};
-
-/** Opens Composer at one of its views: in the panel, or in place on Composer's own page. */
+/**
+ * Opens Composer at one of its views (the header's bookmark: Saved), every
+ * time, whatever it showed last: in place on Composer's own page, else in
+ * the panel, opening it if it's closed.
+ */
 export function openComposerView(view: MenuPick): void {
-    opening.view = view;
+    if (document.getElementById('composer-page')) {
+        window.dispatchEvent(
+            new CustomEvent('composer:view', { detail: view }),
+        );
+
+        return;
+    }
+
     openComposerTray();
+    window.dispatchEvent(
+        new CustomEvent('composer:tray-view', { detail: view }),
+    );
 }
 
 // A conversation kept after closing (B): the dot on what opens Composer, and the way back.
@@ -484,35 +499,60 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     // and a view opens there in place.
     useEffect(() => {
         if (onComposer && isOpen) {
-            const view = takeOpening();
-
-            if (view) {
-                window.dispatchEvent(
-                    new CustomEvent('composer:view', { detail: view }),
-                );
-            } else {
-                document.getElementById('studio-request')?.focus();
-            }
-
+            document.getElementById('studio-request')?.focus();
             setOpen(false);
         }
     }, [onComposer, isOpen]);
 
+    // Once the page is idle, the panel's code and conversations load ahead,
+    // so opening it never shows an empty panel.
+    useEffect(() => {
+        if (onComposer) {
+            return;
+        }
+
+        const ahead = () =>
+            void loadTrayBody()
+                .then((module) => module.prefetchTray())
+                .catch(() => undefined);
+        const idle =
+            typeof window.requestIdleCallback === 'function'
+                ? window.requestIdleCallback(ahead, { timeout: 4000 })
+                : window.setTimeout(ahead, 2000);
+
+        return () => {
+            if (typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(idle);
+            } else {
+                window.clearTimeout(idle);
+            }
+        };
+    }, [onComposer]);
+
     // Opened at a view: it opens in the panel, as the + menu opens it.
     useEffect(() => {
-        const view = !onComposer && isOpen ? takeOpening() : null;
+        if (onComposer) {
+            return;
+        }
 
-        if (view) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- A request from outside React (the header's bookmark), taken once.
-            setPick({ id: Date.now(), pick: view });
+        const open = (event: Event) => {
+            setPick({
+                id: Date.now(),
+                pick: (event as CustomEvent<MenuPick>).detail,
+            });
             setView('talk');
             setKept(true);
-        }
-    }, [onComposer, isOpen]);
+        };
+        window.addEventListener('composer:tray-view', open);
+
+        return () => window.removeEventListener('composer:tray-view', open);
+    }, [onComposer]);
 
     if (onComposer) {
         return null;
     }
+
+    const TrayBody = Loaded ?? LazyTrayBody;
 
     return (
         <>
@@ -639,7 +679,14 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 <Icon name="close" variant="line" />
                             </button>
                         </header>
-                        <Suspense fallback={null}>
+                        <Suspense
+                            fallback={
+                                <div
+                                    className="composer-tray-start is-loading"
+                                    aria-busy="true"
+                                />
+                            }
+                        >
                             <TrayBody
                                 view={view}
                                 asked={asked}

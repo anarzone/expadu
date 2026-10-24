@@ -16,9 +16,37 @@ import type { ComposerView } from './views';
 import '../../../css/composer.css';
 import '../../../css/composer-page.css';
 
-// The workspace as the panel last saw it: opening again draws it at once, at
-// its final size, while the current one loads behind it.
+// The workspace as the panel last saw it, and the day beside it: opening
+// draws them at once, at their final size, while the current ones load behind.
 let lastSeen: Workspace | null = null;
+let lastDay: SurfaceContext = {};
+
+/** Loads them ahead, while the page is idle, so even the first opening isn't empty. */
+export function prefetchTray(): void {
+    if (lastSeen) {
+        return;
+    }
+
+    api<Workspace>(show.url())
+        .then((workspace) => {
+            lastSeen ??= workspace;
+        })
+        .catch(() => undefined);
+    api<SurfaceContext>(dayContext.url())
+        .then((loaded) => {
+            lastDay = loaded;
+        })
+        .catch(() => undefined);
+}
+
+/** The start's room while its conversations load: the panel opens at its size. */
+function StartLoading() {
+    return (
+        <div className="composer-tray-start is-loading" aria-busy="true">
+            <ComposerLoading label="Opening your conversations…" />
+        </div>
+    );
+}
 
 /** A request the tray sent: asked once, by its id; `fresh` from the panel's start. */
 export type TrayAsked = { id: number; text: string; fresh: boolean };
@@ -64,7 +92,7 @@ export default function TrayBody({
 }) {
     const [initial] = useState<Workspace | null>(() => lastSeen);
     const [loaded, setLoaded] = useState<Workspace | null>(null);
-    const [context, setContext] = useState<SurfaceContext>({});
+    const [context, setContext] = useState<SurfaceContext>(() => lastDay);
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
@@ -75,7 +103,13 @@ export default function TrayBody({
         // Your day and saved starting points: the starters and Starting point
         // wait for them, the conversation doesn't.
         api<SurfaceContext>(dayContext.url())
-            .then((loaded) => live && setContext(loaded))
+            .then((loaded) => {
+                lastDay = loaded;
+
+                if (live) {
+                    setContext(loaded);
+                }
+            })
             .catch(() => undefined);
 
         return () => {
@@ -99,7 +133,9 @@ export default function TrayBody({
             <div className="composer-tray-body composer-page">
                 <ComposerLoading label="Opening your conversation…" />
             </div>
-        ) : null;
+        ) : (
+            <StartLoading />
+        );
     }
 
     return (

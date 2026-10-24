@@ -88,10 +88,29 @@ final class AroundKinds
         return $kind === 'green' ? ($category === SpotCategory::Nature->value ? 'nature' : 'park') : $kind;
     }
 
-    /** What the category's kind is called as a group ("Cafés", "Parks & nature"); '' when it has none. */
+    /** Names said the same for one or many ("Fast food", "Swimming"). */
+    private const UNCOUNTED = ['Fast food', 'Woods & nature', 'Swimming', 'Table tennis', 'Boules', 'Coworking'];
+
+    /**
+     * What the category is called as a group: its kind's ("Cafés", "Parks &
+     * nature"), else its own name made plural ("Bars", "Galleries", "Picnic spots").
+     */
     public static function group(string $category): string
     {
-        return self::KINDS[self::of($category)][0] ?? '';
+        $kind = self::KINDS[self::of($category)][0] ?? null;
+
+        if ($kind !== null) {
+            return $kind;
+        }
+
+        $one = self::label($category);
+
+        return match (true) {
+            in_array($one, self::UNCOUNTED, true) => $one,
+            (bool) preg_match('/[^aeiou]y$/', $one) => substr($one, 0, -1).'ies',
+            (bool) preg_match('/(s|x|ch|sh)$/', $one) => $one.'es',
+            default => $one.'s',
+        };
     }
 
     /** What one place of the category is called. */

@@ -12,6 +12,8 @@ import {
     sportNames,
 } from '@/components/around-here/place-model';
 import type { AroundPlace } from '@/components/around-here/place-model';
+import { LaptopTagIcon } from '@/components/around-here/place-row';
+import { rowLaptopTag } from '@/components/place-sheet/laptop-text';
 import { loadBasemap } from '@/lib/basemap';
 import { cn } from '@/lib/utils';
 import { usePlacePreview } from './place-previews';
@@ -36,6 +38,8 @@ export type CardPlace = {
     /** Around here's kind, for its colour and icon ('' when it has none). */
     kind: string;
     hours: { text: string; open: boolean } | null;
+    /** "Good for laptop work · 9 of 11", or the café's own rule today; null when nothing's known. */
+    laptop: ReturnType<typeof rowLaptopTag>;
     distance: string;
     features: string[];
     point: { lat: number; lng: number } | null;
@@ -75,6 +79,7 @@ export function cardOf(
                       open: place.hours.startsWith('Open'),
                   }
                 : null,
+            laptop: null,
             distance: place.distance ?? '',
             features: [],
             point: null,
@@ -103,6 +108,12 @@ export function cardOf(
         hours: listed
             ? { text: hoursText(listed), open: listed.state === 'open' }
             : null,
+        laptop: rowLaptopTag(
+            row.laptop ?? null,
+            new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Europe/Berlin',
+            }).format(new Date()),
+        ),
         distance: distanceText(row),
         features: [
             row.outdoor_seating && row.outdoor_seating !== 'no'
@@ -237,6 +248,14 @@ export function PlaceCard({
                 >
                     <strong>{card.name}</strong>
                     {card.kindLine && <span>{card.kindLine}</span>}
+                    {card.laptop && (
+                        <span
+                            className={`place-card-laptop is-${card.laptop.kind}`}
+                        >
+                            <LaptopTagIcon kind={card.laptop.kind} />
+                            {card.laptop.text}
+                        </span>
+                    )}
                     {(card.distance || card.features.length > 0) && (
                         <small>
                             {[card.distance, ...card.features]

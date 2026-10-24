@@ -111,7 +111,7 @@ class ComposerWorkspaceController extends Controller
                 // As Around here names and colours it: "Café", in its kind's group ("Cafés").
                 'label' => $spot ? AroundKinds::label($candidate->category) : 'Event',
                 'kind' => $spot ? AroundKinds::icon($candidate->category) : 'event',
-                'group' => $spot ? (AroundKinds::group($candidate->category) ?: AroundKinds::label($candidate->category)) : 'Events',
+                'group' => $spot ? AroundKinds::group($candidate->category) : 'Events',
                 // The day's listed hours only: category defaults are "not listed", never shown as hours.
                 'hours' => ! $spot ? null : match (true) {
                     $candidate->closedToday => 'Closed on this day',
