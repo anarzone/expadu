@@ -62,7 +62,7 @@ class EvaluateComposer extends Command
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
         'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true,
-        'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true];
+        'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -214,6 +214,8 @@ class EvaluateComposer extends Command
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // Every card drawn as Around here's row (a park found for its pitch included).
         $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
+        // Places that must not be suggested (a café that says no laptops, for work).
+        $routing += isset($expect['places_not']) ? ['places_not' => array_intersect((array) $expect['places_not'], array_column($shownPlaces, 'name')) === []] : [];
         $routing += isset($expect['not_says']) ? ['not_says' => preg_match('/'.$expect['not_says'].'/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // A change asked for: the tool it called, the card it showed (done or proposed), or the place
         // that does what Composer never does; and none when it shouldn't change anything.
@@ -222,7 +224,8 @@ class EvaluateComposer extends Command
         $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
         $routing += isset($expect['acted']) ? ['acted' => $called($expect['acted'])] : [];
         $routing += isset($expect['changed']) ? ['changed' => $changed->contains('state', $expect['changed'])] : [];
-        $routing += isset($expect['handoff']) ? ['handoff' => collect($answer['blocks'] ?? [])->contains(fn (array $b): bool => ($b['type'] ?? null) === 'handoff' && $b['what'] === $expect['handoff'])] : [];
+        // Every place handed over that's expected (one, or both ways of stopping).
+        $routing += isset($expect['handoff']) ? ['handoff' => array_diff((array) $expect['handoff'], array_column(array_filter($answer['blocks'] ?? [], fn (array $b): bool => ($b['type'] ?? null) === 'handoff'), 'what')) === []] : [];
         $routing += ($expect['no_change'] ?? false) ? ['no_change' => $changed->isEmpty()] : [];
         // What the answer must say (a fact that isn't listed, why nothing is open), as a pattern over its words.
         $routing += isset($expect['says']) ? ['says' => preg_match('/'.$expect['says'].'/iu', (string) ($answer['text'] ?? '')) === 1] : [];

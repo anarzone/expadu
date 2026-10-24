@@ -175,6 +175,7 @@ export default function AroundHere({
                 ref={shown(place.id, number)}
                 place={place}
                 number={number}
+                date={at.date}
                 selected={selected === rowKey(place)}
                 onOpen={() => {
                     setSelected(rowKey(place));

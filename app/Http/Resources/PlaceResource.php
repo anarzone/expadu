@@ -78,6 +78,8 @@ class PlaceResource extends JsonResource
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
+            'feedback_been' => (bool) ($this->feedback_been ?? false),
+            'feedback_been_rating' => $this->feedback_been_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
             // What it lists, as search filters by it and Composer says it:
             // "Italian", "Wi-Fi", "outdoor seating", "vegan options".

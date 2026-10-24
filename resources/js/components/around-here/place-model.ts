@@ -3,6 +3,8 @@
    records). A fact the listing doesn't record is null and isn't shown;
    nothing is guessed. */
 
+import type { RowLaptop } from '@/components/place-sheet/laptop-text';
+
 export type PlaceIconName =
     | 'pharmacy'
     | 'cafe'
@@ -59,6 +61,8 @@ export type AroundPlace = {
     facilities?: string | null;
     /** A park too big to walk round answers per Veedel: the part this row is. */
     part?: string | null;
+    /** "Good for laptop work?": people's verdict and the café's own rule, if any. */
+    laptop?: RowLaptop;
     saved: boolean;
 };
 
@@ -66,6 +70,8 @@ export type AroundPlace = {
 export const rowKey = (place: AroundPlace) => `${place.id}-${place.part ?? ''}`;
 
 export type AroundKind = { id: string; label: string };
+
+export type { RowLaptop };
 
 /** Places to eat, whose rows say their diets. */
 const EATING = ['cafe', 'restaurant', 'fastfood', 'bakery'];
@@ -191,11 +197,17 @@ const CUISINE: Record<string, string> = {
 };
 
 /** A sports centre's sports in words: "Fencing, tai chi, qi gong" ('' when none). */
-export function sportNames(raw: string | null | undefined): string {
+export function sportNames(
+    raw: string | null | undefined,
+    /** The kind the line already names ("Climbing"): a sport that repeats it is left out. */
+    kind?: string | null,
+): string {
+    const same = (kind ?? '').trim().toLowerCase();
+
     return (raw ?? '')
         .split(';')
         .map((value) => value.trim().replace(/_/g, ' '))
-        .filter(Boolean)
+        .filter((value) => value && value.toLowerCase() !== same)
         .join(', ')
         .replace(/^./, (c) => c.toUpperCase());
 }

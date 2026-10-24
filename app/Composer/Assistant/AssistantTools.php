@@ -29,6 +29,7 @@ use App\Places\OpeningAnswer;
 use App\Places\PlaceAmenities;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceDisplayName;
+use App\Places\PlaceWorkAnswers;
 use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
 use App\Services\KvbApiService;
@@ -242,6 +243,7 @@ final class AssistantTools
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
+                    'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
@@ -292,8 +294,12 @@ final class AssistantTools
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'guidance' => $this->guidance($input),
-                'paperwork' => $this->paperwork ? $this->paperworkRecord() : $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record')
-                    .($this->askPaperworkPermission() ? ' A card asks whether they let Composer read and change it for this message.' : ''),
+                'paperwork' => match (true) {
+                    $this->paperwork => $this->paperworkRecord(),
+                    // The card asking for their permission says what's needed: no pointer to Paperwork above it.
+                    $this->askPaperworkPermission() => $this->line('pp', 'Their Paperwork record can be read only with their permission for this message: a card asks them for it.'),
+                    default => $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record'),
+                },
                 'place_feedback', 'set_my_place', 'add_to_day', 'remove_from_day', 'swap_in_day', 'clear_day',
                 'change_paperwork_fact', 'paperwork_step', 'paperwork_report' => $this->act($name, $input),
                 'open_in_app' => $this->openInApp($input),
@@ -598,8 +604,9 @@ final class AssistantTools
         $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
-        // Few places list hours, facts or a playground's goals: for those, the search reads further.
-        $deep = $mustBeOpen || $features !== [] || $plays !== null;
+        $work = ($input['to_work'] ?? false) === true;
+        // Few places list hours, facts, a playground's goals or what they say of laptops: for those, the search reads further.
+        $deep = $mustBeOpen || $features !== [] || $plays !== null || $work;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
         $nearest = collect($this->catalogue->nearestSpots(new Constraints(
             windowStart: $at,
@@ -625,19 +632,23 @@ final class AssistantTools
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
                 && ! in_array((int) substr($c->id, 5), $leaveOut, true) && ! in_array($park($c), $leaveOut, true)
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
+                // To work there: never a place that says no laptops then (places session's website facts).
+                && (! $work || self::laptopsWelcome($c, $at) !== false)
                 && (($input['free'] ?? false) !== true || $c->costTier === 'free'))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0))
+                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
+                + ($work && ! self::workFriendly($c) ? 0.5 : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
@@ -645,6 +656,12 @@ final class AssistantTools
             $areas !== [] => 'in '.implode(', ', $areas),
             default => null,
         };
+        // Nothing beyond what they were shown: those again, never an empty answer (owner, 23 Oct 2026:
+        // "I couldn't find any other football place" on a repeat ask).
+        if ($found->isEmpty() && $leaveOut !== []) {
+            return "Nothing fits beyond the places they were shown before, so here are those again:\n"
+                .$this->searchPlaces([...$input, 'leave_out_earlier' => false]);
+        }
         if ($found->isEmpty()) {
             // Places of that kind, none open then: why ("closed on Sundays", "no hours listed").
             $why = $mustBeOpen ? OpeningAnswer::whyNoneOpen($matches, $at, $kinds !== [] && count($kinds) === 1 ? self::kindName($kinds[0], plural: true) : 'places') : null;
@@ -661,7 +678,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             if ($areas !== []) {
@@ -679,6 +696,8 @@ final class AssistantTools
 
             // Step-free said only when they need it or asked (owner's preview, 23 Oct 2026: never unasked).
             return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null)
+                // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
+                .($work ? ' '.self::laptopSaid($c) : '')
                 .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
     }
@@ -793,6 +812,115 @@ final class AssistantTools
             $c->category === 'playground' && in_array('soccer', $sports, true) => 'Playground with football goals',
             default => SpotCategory::tryFrom($c->category)?->label() ?? ucfirst(str_replace('_', ' ', $c->category)),
         };
+    }
+
+    /**
+     * Whether a place says laptops are welcome at a time, from its listed facts (OSM laptops,
+     * laptops:conditional): false for "no", or "limited" on a day its condition names ("Sa-Su");
+     * null when it says nothing.
+     */
+    public static function laptopsWelcome(Candidate $c, CarbonImmutable $at): ?bool
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+        $laptops = mb_strtolower((string) ($practical['laptops']['value'] ?? ''));
+        if ($laptops === 'no') {
+            return false;
+        }
+        if ($laptops === 'limited') {
+            // OSM's conditional form: "no @ (Sa-Su)" bans them those days; "limited @ (Sa-Su)" allows them
+            // then only in some areas (Treibgut: the library), so the place is kept but not counted as welcome.
+            $condition = (string) ($practical['laptops:conditional']['value'] ?? '');
+            if (! self::onDays($condition, $at)) {
+                return true;
+            }
+
+            return self::conditionKind($condition) === 'limited' ? null : false;
+        }
+
+        return $laptops === 'yes' ? true : null;
+    }
+
+    /** What a laptops:conditional says applies on its days: "no" (the default, and the older plain days) or "limited". */
+    private static function conditionKind(string $condition): string
+    {
+        return preg_match('/^\s*limited\s*@/i', $condition) === 1 ? 'limited' : 'no';
+    }
+
+    /** What people's answers are about, as said ("good for laptop work"), by the place fact each feeds. */
+    private const PEOPLE_SAY = ['laptops' => 'good for laptop work', 'internet_access' => 'has Wi-Fi', 'power_supply' => 'has sockets', 'quiet' => 'quiet enough to work'];
+
+    /**
+     * What a place's sources say of working there, each by its source (laptop answers design, 23 Oct
+     * 2026): its website ("Its website says laptops aren't allowed at weekends."), its listing ("It
+     * lists laptops as welcome."), people who've been there with their anonymous counts only
+     * ("People who've been there say it's good for laptop work (9 of 11)."), or that nothing is listed.
+     */
+    public static function laptopSaid(Candidate $c): string
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+        $laptops = mb_strtolower((string) ($practical['laptops']['value'] ?? ''));
+        $said = [];
+        if (($practical['laptops']['provider'] ?? null) !== 'people' && in_array($laptops, ['yes', 'no', 'limited'], true)) {
+            $who = ($practical['laptops']['provider'] ?? null) === 'website' || ! str_contains((string) ($practical['laptops']['source_url'] ?? ''), 'openstreetmap.org')
+                ? 'Its website says' : 'It lists';
+            $days = (string) ($practical['laptops:conditional']['value'] ?? '');
+            $when = match (true) {
+                preg_match('/\bsa\s*-\s*su\b/i', $days) === 1 => 'at weekends',
+                preg_match('/\bmo\s*-\s*fr\b/i', $days) === 1 => 'on weekdays',
+                $days !== '' => "on {$days}",
+                default => 'at some times',
+            };
+            $said[] = match (true) {
+                $laptops === 'yes' => $who === 'It lists' ? 'It lists laptops as welcome.' : 'Its website says laptops are welcome.',
+                $laptops === 'no' => $who === 'It lists' ? 'It lists laptops as not allowed.' : 'Its website says laptops aren\'t allowed.',
+                self::conditionKind($days) === 'limited' => "{$who} laptops are only allowed in some areas {$when}.",
+                default => "{$who} laptops aren't allowed {$when}.",
+            };
+        }
+        // People's answers: only their counts (PlaceWorkAnswers::totals), never who.
+        $people = array_filter(self::PEOPLE_SAY, fn (string $_, string $fact): bool => ($practical[$fact]['provider'] ?? null) === 'people', ARRAY_FILTER_USE_BOTH);
+        if ($people !== []) {
+            $totals = app(PlaceWorkAnswers::class)->totals((int) substr($c->id, 5));
+            foreach ($people as $fact => $what) {
+                $total = $totals[array_search($fact, PlaceWorkAnswers::QUESTIONS, true)] ?? null;
+                if ($total !== null) {
+                    $said[] = match ($total['value']) {
+                        'yes' => "People who've been there say it's {$what} ({$total['yes']} of {$total['total']}).",
+                        'no' => "People who've been there say it isn't {$what} (".($total['total'] - $total['yes'])." of {$total['total']}).",
+                        default => "People who've been there are mixed on whether it's {$what} ({$total['yes']} of {$total['total']} said yes).",
+                    };
+                }
+            }
+        }
+
+        return $said === [] ? 'Laptop work isn\'t listed yet.' : implode(' ', $said);
+    }
+
+    /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
+    private static function workFriendly(Candidate $c): bool
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+
+        return PlaceAmenities::has($practical, 'wifi') || mb_strtolower((string) ($practical['power_supply']['value'] ?? '')) === 'yes'
+            || mb_strtolower((string) ($practical['laptops']['value'] ?? '')) === 'yes';
+    }
+
+    /** Whether a condition's days ("Sa-Su", "Mo-Fr", "Sa,Su", "no @ (Sa-Su)") include the day of `$at`. */
+    private static function onDays(string $condition, CarbonImmutable $at): bool
+    {
+        $days = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+        $today = $days[$at->setTimezone('Europe/Berlin')->dayOfWeekIso - 1];
+        preg_match_all('/\b(mo|tu|we|th|fr|sa|su)\b(?:\s*-\s*\b(mo|tu|we|th|fr|sa|su)\b)?/i', $condition, $ranges, PREG_SET_ORDER);
+        foreach ($ranges as $range) {
+            $from = array_search(mb_strtolower($range[1]), $days, true);
+            $to = array_search(mb_strtolower($range[2] ?? $range[1]), $days, true);
+            $index = array_search($today, $days, true);
+            if ($from <= $to ? ($index >= $from && $index <= $to) : ($index >= $from || $index <= $to)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** A name without an import's bracket artefacts ("Headquarter[s]"). */
@@ -912,7 +1040,7 @@ final class AssistantTools
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
-            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Say one short line; the card says the rest.',
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
@@ -991,6 +1119,8 @@ final class AssistantTools
         }
         $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::ComposerPaperwork->value,
             'title' => 'Let Composer read and change your Paperwork record for this message?',
+            // Composer's own words, said when the AI said nothing.
+            'text' => 'To read or change your Paperwork record, Composer needs your permission for this message.',
             'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
             // Its own notice, in words (disclosure.notice), from what Composer's request carries.
             'disclosure' => ProcessingPurpose::ComposerPaperwork->disclosure()];
@@ -1001,14 +1131,22 @@ final class AssistantTools
     /** What Composer never does itself, and the exact place that does it (InAppPlaces). */
     private function openInApp(array $input): string
     {
-        $card = InAppPlaces::card(is_string($input['what'] ?? null) ? $input['what'] : '');
-        if ($card === null) {
-            return 'Nothing to open for that.';
+        $what = is_string($input['what'] ?? null) ? $input['what'] : '';
+        if (InAppPlaces::card($what) === null) {
+            // Asked for a place it doesn't have: the ones it has, so the next round picks one.
+            return 'No such place. The places are: '.implode(', ', array_keys(InAppPlaces::PLACES)).'. Call open_in_app again with one of them.';
         }
+        // "Stop using my Paperwork data" means one of two things: both are offered, the one meant first.
+        $both = InAppPlaces::STOPPING[$what] ?? null;
         $id = 'o'.(++$this->count);
-        $this->cards[$id] = $card;
+        // Each place once, however often it's asked for.
+        $shown = array_column(array_filter($this->cards, fn (array $card): bool => ($card['type'] ?? null) === 'handoff'), 'what');
+        foreach (array_diff($both === null ? [$what] : [$what, $both], $shown) as $i => $place) {
+            $this->cards[$id.($i === 0 ? '' : 'b')] = InAppPlaces::card($place);
+        }
 
-        return $this->line($id, 'Shown to them as a card with where to do it and why Composer doesn\'t. Say one short line at most.');
+        return $this->line($id, $both === null ? 'Shown to them as a card with where to do it and why Composer doesn\'t. Say one short line at most.'
+            : 'Shown to them as two cards: stopping Composer reading their Paperwork, and stopping Paperwork processing their record. Say in one short line that they can choose either.');
     }
 
     /** Their Paperwork record, read with their permission for this message, and shown as its card. */
@@ -1102,7 +1240,9 @@ final class AssistantTools
             default => '',
         };
 
-        $lists = PlaceAmenities::listed($c->placeFacts['practical'] ?? []);
+        // What its listing or website lists; Wi-Fi from people's answers is said as theirs (laptopSaid).
+        $lists = array_values(array_diff(PlaceAmenities::listed($c->placeFacts['practical'] ?? []),
+            ($c->placeFacts['practical']['internet_access']['provider'] ?? null) === 'people' ? ['Wi-Fi'] : []));
 
         return '"'.self::name($c).'" ('.$kind.($c->outdoor ? ', outdoors' : ', indoors').')'.($c->veedel !== null ? " in {$c->veedel}" : '').'.'
             .($has !== null ? ' Has: '.$has.'.' : '')

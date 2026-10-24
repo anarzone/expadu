@@ -17,6 +17,7 @@ final class InAppPlaces
             'note' => 'Want a copy first? Download it there before you delete.',
         ],
         'stop_paperwork_processing' => [
+            'title' => 'Stop Paperwork processing your record',
             'text' => 'Stopping its processing is your right over your data, so it’s your tap, in Paperwork. It keeps your record but doesn’t use it until you resume.',
             'place' => ['crumb' => 'Paperwork › Share your plan › Your record', 'actions' => self::RECORD, 'here' => 'Stop processing',
                 'label' => 'Open Your record →', 'href' => '/bureaucracy?record=stop'],
@@ -30,6 +31,7 @@ final class InAppPlaces
             'note' => 'You can give it again with your next message.',
         ],
         'withdraw_paperwork_permission' => [
+            'title' => 'Stop Composer reading it',
             'text' => 'Composer reads your Paperwork record only for a message you allow it on. Withdrawing that permission is your choice to make, in the notice under the box; it stops any request still on its way.',
             'place' => ['crumb' => 'Composer › About the AI › Your Paperwork', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
                 'label' => 'Open the AI notice →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
@@ -42,6 +44,9 @@ final class InAppPlaces
             'note' => 'Your Paperwork record has its own copy to download first.',
         ],
     ];
+
+    /** Stopping the use of their Paperwork data, two ways: the other one is always offered too. */
+    public const STOPPING = ['withdraw_paperwork_permission' => 'stop_paperwork_processing', 'stop_paperwork_processing' => 'withdraw_paperwork_permission'];
 
     /** Your record's own actions in Paperwork, as its panel names them. */
     private const RECORD = ['Download a copy', 'Stop processing', 'Delete your record'];

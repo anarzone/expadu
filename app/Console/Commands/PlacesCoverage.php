@@ -22,7 +22,7 @@ use Illuminate\Support\Collection;
 class PlacesCoverage extends Command
 {
     /** Columns: fact => how a place has it. */
-    private const FACTS = ['hours', 'website', 'phone', 'wifi', 'street', 'photo', 'outdoor_seating', 'diet', 'wheelchair', 'cuisine', 'description'];
+    private const FACTS = ['hours', 'website', 'phone', 'wifi', 'sockets', 'laptops', 'street', 'photo', 'outdoor_seating', 'diet', 'wheelchair', 'cuisine', 'description'];
 
     public function handle(PlaceFacts $facts, PublishedMediaSelector $media): int
     {
@@ -70,6 +70,8 @@ class PlacesCoverage extends Command
             'website' => $known($fact['contact']['website'] ?? null),
             'phone' => $known($fact['contact']['phone'] ?? null),
             'wifi' => $known($practical['internet_access'] ?? null),
+            'sockets' => $known($practical['power_supply'] ?? null),
+            'laptops' => $known($practical['laptops'] ?? null),
             'street' => $address !== '' && preg_match('/^\d{5}\b/u', $address) !== 1,
             'photo' => $media->select($spot, 'hero') !== null,
             'outdoor_seating' => $known($practical['outdoor_seating'] ?? null),

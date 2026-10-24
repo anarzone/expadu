@@ -138,6 +138,50 @@ li:first-child > .around-row {
 .around-row-meta .place-hours.is-open {
     color: #2b6b3f;
 }
+/* What the listing records, the laptop tag first (the laptop canvas). */
+.around-row-features {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.around-laptop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: var(--radius-pill);
+    font-weight: var(--weight-bold);
+}
+.around-laptop svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.around-laptop.is-good {
+    background: #e6f2e6;
+    color: #1f5530;
+}
+.around-laptop.is-mixed {
+    background: #efe8da;
+    color: #4f4839;
+}
+.around-laptop.is-not {
+    background: #f3e1da;
+    color: #7a2e12;
+}
+.around-laptop.is-rule {
+    background: #fbeadf;
+    color: #8a3413;
+}
 .around-row-contents {
     display: flex;
     flex-wrap: wrap;

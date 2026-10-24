@@ -231,6 +231,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10)
             ->by('composer-ask:'.$request->user()?->getAuthIdentifier()));
+
         // The page polls about once a second while the assistant works (3–6 s).
         RateLimiter::for('composer-progress', fn (Request $request): Limit => Limit::perMinute(120)
             ->by('composer-progress:'.$request->user()?->getAuthIdentifier()));

@@ -83,7 +83,7 @@ export function PlaceFeedbackMenu({
                 </DropdownMenuItem>
                 {!hideBeen && (
                     <DropdownMenuItem
-                        onSelect={() => onAction(been ? 'clear' : 'been')}
+                        onSelect={() => onAction(been ? 'unbeen' : 'been')}
                     >
                         <IconMapPinCheck stroke={ICON_STROKE} />
                         {been ? 'Visited' : 'Been here'}
@@ -136,7 +136,7 @@ export function PlaceFeedbackBar({
                 </span>
                 <div className="ml-auto flex items-center gap-1.5">
                     <button
-                        onClick={() => onAction(been ? 'clear' : 'been')}
+                        onClick={() => onAction(been ? 'unbeen' : 'been')}
                         aria-pressed={been}
                         aria-label={
                             been ? 'Visited — tap to undo' : 'Mark as visited'

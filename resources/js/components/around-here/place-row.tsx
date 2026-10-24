@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import { rowLaptopTag } from '@/components/place-sheet/laptop-text';
 import { cn } from '@/lib/utils';
 import { PlaceIcon } from './place-icon';
 import {
@@ -28,11 +29,14 @@ export function PlaceRow({
     place,
     number,
     selected,
+    date,
     onOpen,
     onHover,
 }: {
     ref?: Ref<HTMLDivElement>;
     place: AroundPlace;
+    /** The list's day ("2026-10-24"): a café's own laptop rule shows on its days. */
+    date?: string;
     /** Its pin's number on the map; the kind's icon where there's no map. */
     number?: number;
     selected: boolean;
@@ -44,7 +48,7 @@ export function PlaceRow({
     const away = distanceText(place);
     const kindLine = [
         place.label,
-        sportNames(place.sport) || cuisineNames(place.cuisine),
+        sportNames(place.sport, place.label) || cuisineNames(place.cuisine),
     ]
         .filter(Boolean)
         .join(' · ');
@@ -58,6 +62,10 @@ export function PlaceRow({
         dietChip(place),
         placeNet(place),
     ].filter(Boolean);
+    const laptop = rowLaptopTag(
+        place.laptop ?? null,
+        date ?? new Date().toISOString().slice(0, 10),
+    );
     const contents = (place.facilities ?? '')
         .split(' · ')
         .map((part) => part.trim())
@@ -105,10 +113,25 @@ export function PlaceRow({
                                 {hoursText(hours)}
                             </span>
                         ) : null}
-                        {facts.map((fact) => (
-                            <span key={fact}>{fact}</span>
-                        ))}
                     </span>
+                    {laptop || facts.length ? (
+                        <span className="around-row-features">
+                            {laptop ? (
+                                <span
+                                    className={cn(
+                                        'around-laptop',
+                                        `is-${laptop.kind}`,
+                                    )}
+                                >
+                                    <LaptopTagIcon kind={laptop.kind} />
+                                    {laptop.text}
+                                </span>
+                            ) : null}
+                            {facts.map((fact) => (
+                                <span key={fact}>{fact}</span>
+                            ))}
+                        </span>
+                    ) : null}
                     {contents.length ? (
                         <span className="around-row-contents">
                             {contents.map((part) => (
@@ -120,5 +143,26 @@ export function PlaceRow({
                 <span className="around-row-away">{away}</span>
             </button>
         </div>
+    );
+}
+
+/** The laptop tag's icon: a laptop, crossed out when not good; a calendar for a café's rule. */
+function LaptopTagIcon({ kind }: { kind: 'good' | 'mixed' | 'not' | 'rule' }) {
+    return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            {kind === 'rule' ? (
+                <>
+                    <rect x="4" y="5" width="16" height="15" rx="2" />
+                    <path d="M16 3v4M8 3v4M4 11h16" />
+                </>
+            ) : (
+                <>
+                    <rect x="5" y="5" width="14" height="10" rx="1.5" />
+                    <path
+                        d={kind === 'not' ? 'M3 19h18M4 4l16 16' : 'M3 19h18'}
+                    />
+                </>
+            )}
+        </svg>
     );
 }
