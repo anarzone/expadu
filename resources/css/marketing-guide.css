@@ -447,6 +447,50 @@ h3 {
     font-size: 12px;
     font-weight: 700;
 }
+/* The guide's last word: turn it into your checklist (the owner picked
+   this box from the canvas's direction C). */
+.guide-cta {
+    margin-top: 40px;
+    border-radius: 24px;
+    background: var(--ink);
+    padding: 26px 28px;
+    color: #fff;
+}
+.guide-cta strong {
+    display: block;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+.article-body .guide-cta p {
+    margin: 8px 0 18px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 15px;
+    line-height: 1.5;
+}
+.article-body .guide-cta a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: #ffe363;
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+}
+.guide-cta svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
 /* Markdown task lists ("- [ ]") render bare disabled checkboxes. */
 .article-body ul:has(> li > input[type='checkbox']) {
     padding-left: 0;
