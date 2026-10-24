@@ -315,7 +315,7 @@ test('an answer saying a change was made, with nothing behind it, gets another r
     $reply = assistantAsk($this, 'save the jazz one for later');
 
     Http::assertSentCount(3);
-    expect(Http::recorded()[1][0]->body())->toContain('Nothing in that answer is backed')
+    expect(Http::recorded()[1][0]->body())->toContain('says a change was made, but none was made')
         ->and(EventBookmark::query()->where('user_id', $user->id)->where('event_id', $jazz->id)->exists())->toBeTrue()
         ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done');
 });

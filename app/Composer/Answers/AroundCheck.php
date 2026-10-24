@@ -58,7 +58,7 @@ final class AroundCheck
      */
     private const UNLISTED = '/\b(wi-?fi|laptops?|sockets?|vegan|vegetarian|gluten[- ]free|live music|outdoor seating|terrace|open (right )?now|open (all day|late|24))\b/u';
 
-    private const NOT = '/\b(not|no|neither|nor|never|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
+    private const NOT = '/\b(not|no|none|nothing|nowhere|neither|nor|never|isn\'t|aren\'t|can\'t|cannot|don\'t|doesn\'t|unknown|without)\b/u';
 
     /** Counts are claims too: kept only as the number of things the sentence itself names (`$named`). */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';

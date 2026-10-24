@@ -52,7 +52,7 @@ final class Assistant
     private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
 
     /** A sentence saying it made a change ("I've turned off…", "Done: …"): so only when one was made or proposed. */
-    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete)\b|^Done\b/iu';
+    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete)\b|^(?:Done|Saved|Added|Removed|Muted|Unmuted|Dismissed|Starred|Noted|Cleared|Changed|Updated|Marked|Turned\s+(?:on|off))\b/iu';
 
     /** Said back to an answer saying it made a change when none was made. */
     private const CLAIMED = 'That answer says a change was made, but none was made for this message. If they asked for it, make it with its tool; otherwise answer without saying it was made.';
