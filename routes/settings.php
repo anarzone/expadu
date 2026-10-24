@@ -7,7 +7,10 @@ use App\Http\Controllers\Settings\StepFreeNeedController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'throttle:app-writes'])->group(function () {
-    Route::redirect('settings', '/settings/profile');
+    // Settings (design canvas "Settings and account", 22 Oct 2026): one page
+    // of panels. It reads the shared auth and userSettings props and writes
+    // through the endpoints below, /user-settings and the email-code route.
+    Route::inertia('settings', 'settings')->name('settings');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');

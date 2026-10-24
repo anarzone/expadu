@@ -1,15 +1,23 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
-test('profile page is displayed', function () {
+test('settings page is displayed', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->get(route('profile.edit'));
+    $this->actingAs($user)
+        ->get(route('settings'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('settings'));
+});
 
-    $response->assertOk();
+test('the old profile page opens settings', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('profile.edit'))
+        ->assertRedirect(route('settings'));
 });
 
 test('profile information can be updated', function () {

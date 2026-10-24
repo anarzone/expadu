@@ -5,8 +5,7 @@ import StepFreeNeedController from '@/actions/App/Http/Controllers/Settings/Step
 import { showToast } from '@/components/ui/toast';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
-import { alerts, bureaucracy, logout } from '@/routes';
-import { edit } from '@/routes/profile';
+import { alerts, bureaucracy, logout, settings } from '@/routes';
 
 /**
  * The account popover at the header's end (the mock's header-account
@@ -48,13 +47,10 @@ export function AccountMenu() {
                     aria-label="Your account"
                     title="Your account"
                 >
-                    {user.avatar ? (
-                        <img src={user.avatar} alt="" />
-                    ) : (
-                        <span aria-hidden="true">
-                            {user.name.trim().charAt(0).toUpperCase()}
-                        </span>
-                    )}
+                    {/* The initial: no picture is kept, and none is loaded from a sign-in service. */}
+                    <span aria-hidden="true">
+                        {user.name.trim().charAt(0).toUpperCase()}
+                    </span>
                 </button>
             </Menu.Trigger>
             <Menu.Portal>
@@ -102,7 +98,7 @@ export function AccountMenu() {
                             </Link>
                         </Menu.Item>
                         <Menu.Item asChild>
-                            <Link href={edit()}>Settings</Link>
+                            <Link href={settings()}>Settings</Link>
                         </Menu.Item>
                         <Menu.Item asChild>
                             <Link href={alerts()}>
