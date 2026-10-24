@@ -109,6 +109,10 @@ class PlaceCapabilities
             'provider' => $last->provider,
             // The website's own sentence, or people's count summary: what Composer and the sheet quote.
             'quote' => $value === null ? null : ($last->payload['evidence'][$key] ?? null),
+            // The sentence that states the rule, and an English line for the other days or
+            // conditions, translated only from the quote (website rules).
+            'quote_short' => $value === null ? null : ($last->payload['evidence_short'][$key] ?? null),
+            'note' => $value === null ? null : ($last->payload['notes'][$key] ?? null),
             ...($disputedBy !== [] ? ['disputed_by' => $disputedBy] : []),
         ];
     }

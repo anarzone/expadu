@@ -157,10 +157,10 @@ test("a café's own website rule and OSM outrank people", function () {
     app(RecordPlaceObservation::class)->record($spot, [
         'provider' => 'website', 'provider_record_id' => 'cafe.test', 'source_url' => 'https://cafe.test/',
         'observed_at' => now()->subDay()->toIso8601String(), 'ingestion_key' => 'website:test:'.$spot->id,
-        'payload' => ['practical' => ['laptops' => 'limited', 'laptops:conditional' => 'no @ (Sa-Su)'], 'evidence' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt.']],
+        'payload' => ['practical' => ['laptops' => 'limited', 'laptops:conditional' => 'no @ (Sa-Su)'], 'evidence' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt. Unter der Woche gerne.'], 'evidence_short' => ['laptops' => 'Laptops sind am Wochenende nicht erlaubt.'], 'notes' => ['laptops' => 'Weekdays are welcome.']],
     ]);
 
-    expect(laptopsFact($spot))->toMatchArray(['value' => 'limited', 'status' => 'known', 'provider' => 'website', 'disputed_by' => ['people'], 'quote' => 'Laptops sind am Wochenende nicht erlaubt.', 'source_url' => 'https://cafe.test/']);
+    expect(laptopsFact($spot))->toMatchArray(['value' => 'limited', 'status' => 'known', 'provider' => 'website', 'disputed_by' => ['people'], 'quote' => 'Laptops sind am Wochenende nicht erlaubt. Unter der Woche gerne.', 'quote_short' => 'Laptops sind am Wochenende nicht erlaubt.', 'note' => 'Weekdays are welcome.', 'source_url' => 'https://cafe.test/']);
 
     // Around here's row carries both: people's counts and the café's rule with its days.
     $row = app(OpenNearby::class)->listed(50.94, 6.95, CarbonImmutable::now(), ['cafe'])->firstWhere('id', $spot->id);
