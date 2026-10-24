@@ -785,8 +785,15 @@ html {
     border-radius: 20px;
     background: var(--color-bg-surface);
 }
+/* Focus is the box's own border going a little darker (owner, 24 Oct 2026):
+   no ring inside it, no colour, no glow. The second selector outweighs the
+   Composer page's ported ring for every field. */
 .composer-box form:has(textarea:focus) {
     border-color: var(--color-border-strong);
+}
+.composer-box form textarea:focus-visible,
+.composer-page .composer-box form textarea:focus-visible {
+    outline: none;
 }
 /* Every icon in the tray and the box is 20px, as the mock's are. */
 :is(.composer-tray, .composer-box) svg {
