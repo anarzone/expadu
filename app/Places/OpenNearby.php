@@ -103,6 +103,9 @@ final class OpenNearby
     {
         $groups = app(FacilityGroups::class);
         $folds = $groups->fold($spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all());
+        // A large park listed by its parts doesn't also appear whole.
+        $split = array_column(array_filter($folds, fn (array $fold): bool => ($fold['part'] ?? null) !== null), 'id');
+        $folds = array_values(array_filter($folds, fn (array $fold): bool => ! (($fold['part'] ?? null) === null && $fold['members'] === [] && in_array($fold['id'], $split, true))));
         $parkIds = array_values(array_diff(array_column($folds, 'id'), $spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all()));
         $parks = $parkIds === [] ? collect() : Spot::query()->whereIn('id', $parkIds)
             ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])->get()->keyBy('id');
