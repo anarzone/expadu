@@ -47,6 +47,23 @@ class ComposerWorkspaceController extends Controller
         ]);
     }
 
+    /** Renames one of the person's own conversations (an empty title: the automatic one). */
+    public function renameConversation(Request $request, WorkspaceStore $store, string $conversation): JsonResponse
+    {
+        $input = $request->validate(['title' => ['present', 'nullable', 'string', 'max:120']]);
+        $workspace = $store->renameConversation($request->user(), $conversation, (string) ($input['title'] ?? ''));
+
+        return $workspace === null ? response()->json(['message' => 'Conversation not found.'], 404) : response()->json($workspace);
+    }
+
+    /** Deletes one of the person's own conversations for good (the page asks first). */
+    public function deleteConversation(Request $request, WorkspaceStore $store, string $conversation): JsonResponse
+    {
+        $workspace = $store->deleteConversation($request->user(), $conversation);
+
+        return $workspace === null ? response()->json(['message' => 'Conversation not found.'], 404) : response()->json($workspace);
+    }
+
     /**
      * A change that can't go in answers 422 with its reason and the workspace,
      * unchanged, so the reply can say why without a reload.
