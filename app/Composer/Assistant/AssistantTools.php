@@ -245,7 +245,7 @@ final class AssistantTools
                     'step_free' => ['type' => 'boolean', 'description' => 'only places whose step-free access is listed'],
                     'features' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'only places that list these, and only when they asked for that fact: wifi, outdoor_seating, wheelchair, diet:vegan|vegetarian|halal|kosher|gluten_free, cuisine:<word> (italian, pizza, turkish, vietnamese, burger…)'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
-                    'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), optional; keep the area of the conversation when they don\'t name another'],
+                    'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), only one they name or this conversation is about; never their home Veedel unless they said it: without an area, places come nearest them, at home or wherever they are'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
@@ -695,7 +695,7 @@ final class AssistantTools
             : 'Call a place free only where its line says "Free to use (listed)"; the others are "public, no fee listed", also in your first sentence ("These public pitches, no fee listed…", never "These free pitches"). ');
 
         return $same.$fee.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
-            $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest its middle first:',
+            $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
         }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work, $free): string {

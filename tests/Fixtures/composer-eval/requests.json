@@ -8459,6 +8459,22 @@
    }
   },
   {
+   "id": "regression.free_open_football_home_only",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "find me free open places to play football",
+   "expect": {
+    "open": true,
+    "min_places": 5,
+    "says": "no fee listed|free to use",
+    "not_says": "its middle|\\bfree\\b(?!\\s+to\\s+use)"
+   }
+  },
+  {
    "id": "regression.free_open_football_try_again",
    "persona": "demo_merkenich",
    "home_veedel": "Merkenich",
