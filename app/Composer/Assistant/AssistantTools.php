@@ -83,6 +83,7 @@ final class AssistantTools
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
+        'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -1103,6 +1104,14 @@ final class AssistantTools
                     'plan' => ['type' => 'string', 'description' => 'the plan as they named it, or "next" for their next one'],
                     'remind' => ['type' => 'boolean', 'description' => 'false for no reminder'],
                 ]]],
+            ['name' => 'mute_alerts', 'description' => 'Mutes alerts about a KVB line\'s disruptions and delays until midnight or for a week (or turns them back on).',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'line' => ['type' => 'string', 'description' => 'the line, e.g. "13" or "S11"'],
+                    'for' => ['type' => 'string', 'enum' => ['today', 'week']],
+                    'on' => ['type' => 'boolean', 'description' => 'false to turn the alerts back on'],
+                ], 'required' => ['line']]],
+            ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind. You\'re told only how many.',
+                'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => ['all', 'transit', 'city', 'events']]]]],
             ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.

@@ -12,7 +12,9 @@ use App\Composer\Assistant\Assistant;
 use App\Composer\Assistant\AssistantTools;
 use App\Composer\Eval\PlanChecks;
 use App\Composer\WorkspaceStore;
+use App\Enums\AlertType;
 use App\Enums\Situation;
+use App\Models\Alert;
 use App\Models\ComposerWorkspace;
 use App\Models\EventBookmark;
 use App\Models\EventReminder;
@@ -22,6 +24,7 @@ use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingPurpose;
+use App\Services\MuteService;
 use App\Services\WeatherService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -427,9 +430,17 @@ class EvaluateComposer extends Command
         EventBookmark::query()->where('user_id', $user->id)->delete();
         EventReminder::query()->where('user_id', $user->id)->delete();
         $user->places()->delete();
-        // ...and Travel's stars and planned ways.
+        // ...and Travel's stars and planned ways, their alerts and mutes.
         FavouriteStop::query()->where('user_id', $user->id)->delete();
         PlannedTrip::query()->where('user_id', $user->id)->delete();
+        foreach (app(MuteService::class)->activeMutes($user) as $mute) {
+            app(MuteService::class)->unmute($user, $mute['type'], $mute['key']);
+        }
+        Alert::query()->where('user_id', $user->id)->delete();
+        for ($n = 1; $n <= (int) ($request['alerts'] ?? 0); $n++) {
+            Alert::record($user->id, "eval:{$n}", ['type' => AlertType::System, 'subtype' => 'transit_delay', 'severity' => 'info',
+                'category' => 'transit', 'lane' => 'action', 'title' => "Synthetic alert {$n}", 'body' => 'For composer:eval only.']);
+        }
         // A persona with a Paperwork record: its answers, as the case sets them.
         if (is_array($request['paperwork'] ?? null)) {
             $case = app(EnsureAccountHolder::class)->dossier($user);

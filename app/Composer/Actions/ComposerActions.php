@@ -30,6 +30,8 @@ final class ComposerActions
         'save_stop' => [TravelActions::class, 'everyday'],
         'set_travel_prefs' => [TravelActions::class, 'everyday'],
         'plan_trip_for_later' => [TravelActions::class, 'everyday'],
+        'mute_alerts' => [AlertActions::class, 'everyday'],
+        'dismiss_alert' => [AlertActions::class, 'everyday'],
         'change_paperwork_fact' => [PaperworkActions::class, 'paperwork'],
         'paperwork_step' => [PaperworkActions::class, 'paperwork'],
         'paperwork_report' => [PaperworkActions::class, 'paperwork'],

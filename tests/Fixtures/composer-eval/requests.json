@@ -8597,6 +8597,45 @@
     "acted": "plan_trip_for_later",
     "changed": "done"
    }
+  },
+  {
+   "id": "actions.mute_alerts",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Stop alerting me about line 13 today",
+   "expect": {
+    "open": true,
+    "acted": "mute_alerts",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.dismiss_alert",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "alerts": 2,
+   "text": "Clear my alerts",
+   "expect": {
+    "open": true,
+    "acted": "dismiss_alert",
+    "changed": "done"
+   }
   }
  ]
 }
