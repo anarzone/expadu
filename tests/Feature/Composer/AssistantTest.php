@@ -298,8 +298,8 @@ test('the same question again leaves nothing out: only their new words asking fo
     $recorded = Http::recorded()->map(fn (array $pair): string => $pair[0]->body())->values();
     expect(collect($again['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
         ->and(collect($third['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
-        ->and($recorded[2])->toContain('They asked this same question before')
-        ->and($recorded[4])->not->toContain('They asked this same question before');
+        ->and($recorded[2])->toContain('They sent this same message before')
+        ->and($recorded[4])->not->toContain('They sent this same message before');
 });
 
 test('an answer saying a change was made, with nothing behind it, gets another round: the change is made by its tool', function () {
@@ -365,6 +365,25 @@ test('place cards come nearest first, in the search\'s order, whichever the AI c
 
     expect(collect($reply['places'] ?? collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())
         ->toBe(['Café Near', 'Café Far']);
+});
+
+test('an answer after a lookup that says it will make a change, with none made, gets a round to make it', function () {
+    $user = User::factory()->onboarded()->create();
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'I\'ll save Jazz im Stadtgarten for later.', 'uses' => [$id]]], 'show' => [$id]]]]))
+        ->push(assistantTurn([['save_event', ['event' => $id]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Saved Jazz im Stadtgarten.', 'uses' => []]], 'show' => []]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'save the jazz one tonight');
+
+    Http::assertSentCount(4);
+    expect(Http::recorded()[2][0]->body())->toContain('says a change was made, but none was made')
+        ->and(EventBookmark::query()->where('user_id', $user->id)->where('event_id', $jazz->id)->exists())->toBeTrue()
+        ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done');
 });
 
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {

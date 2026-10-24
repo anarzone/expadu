@@ -52,7 +52,10 @@ final class Assistant
     private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
 
     /** A sentence saying it made a change ("I've turned off…", "Done: …"): so only when one was made or proposed. */
-    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|^Done\b/iu';
+    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete)\b|^Done\b/iu';
+
+    /** Said back to an answer saying it made a change when none was made. */
+    private const CLAIMED = 'That answer says a change was made, but none was made for this message. If they asked for it, make it with its tool; otherwise answer without saying it was made.';
 
     /** Said back to an answer none of whose sentences a result of this message backs. */
     private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked. Then answer.';
@@ -274,16 +277,21 @@ final class Assistant
         $again = $tools->askedAgain();
         $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
-            .($again ? "\n(They asked this same question before in this conversation: asking again isn't turning down what you showed. Show it again, nearest first, and say it's the same as before.)" : '')]];
+            .($again ? "\n(They sent this same message before in this conversation: asking again isn't turning down what you showed. Answer it again.)" : '')]];
 
-        for ($round = 1; $round <= self::ROUNDS; $round++) {
+        // An answer sent back for another round (unbacked, or saying it made a change it didn't) adds
+        // one round, once, and the round after it may still use the tools.
+        $limit = self::ROUNDS;
+        $sentBack = false;
+        for ($round = 1; $round <= $limit; $round++) {
             $elapsed = (hrtime(true) - $started) / 1e9;
             $left = self::BUDGET_SECONDS - $elapsed;
             if ($left < 1.5) {
                 return null;
             }
             // A second look only while there's time for it; then the answer.
-            $last = $round === self::ROUNDS || ($round > 1 && $elapsed >= self::LOOK_AGAIN_SECONDS) || $left < 4.0;
+            $last = $round === $limit || (! $sentBack && $round > 1 && $elapsed >= self::LOOK_AGAIN_SECONDS) || $left < 4.0;
+            $sentBack = false;
             $tools->progress($round > 1 && $last ? 'writing' : 'reading');
             $callStarted = hrtime(true);
             $body = $call(fn () => Http::baseUrl((string) config('services.llm.base_url'))
@@ -312,18 +320,26 @@ final class Assistant
             $uses = collect($body['content'] ?? [])->filter(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')->values();
             $answer = $uses->first(fn (array $use): bool => $use['name'] === 'answer');
             // An answer straight away, with no lookup or change behind it and nothing in it holding
-            // ("Saved it for later." with nothing saved), gets one more round to use the tools.
-            $unbacked = $answer !== null && $round === 1 && ! $last && is_array($answer['input'] ?? null)
-                && $this->built($answer['input'], $tools, $now, $known) === null;
+            // ("Saved it for later." with nothing saved), gets one more round to use the tools; so does one
+            // saying it made a change ("I'm adding it to your day") when none was made.
+            $claimed = $answer !== null && ! $last && is_array($answer['input'] ?? null) && preg_grep('/^x\d+$/', array_keys($tools->cards)) === []
+                && collect(self::oneEach(is_array($answer['input']['sentences'] ?? null) ? $answer['input']['sentences'] : []))
+                    ->contains(fn (mixed $s): bool => is_array($s) && is_string($s['text'] ?? null) && preg_match(self::DONE, $s['text']) === 1);
+            $unbacked = $claimed || ($answer !== null && $round === 1 && ! $last && is_array($answer['input'] ?? null)
+                && $this->built($answer['input'], $tools, $now, $known) === null);
             $this->kept = [];
             if ($answer !== null && ! $unbacked) {
                 return is_array($answer['input'] ?? null) ? ['answer' => $answer['input'], 'rounds' => $round] : null;
+            }
+            if ($unbacked) {
+                $sentBack = true;
+                $limit = self::ROUNDS + 1;
             }
             // An empty input ({}) decodes to a PHP list and must go back as an object.
             $messages[] = ['role' => 'assistant', 'content' => array_map(fn (mixed $block): mixed => is_array($block) && ($block['type'] ?? null) === 'tool_use'
                 && ($block['input'] ?? null) === [] ? [...$block, 'input' => (object) []] : $block, $body['content'])];
             $messages[] = ['role' => 'user', 'content' => $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
-                'content' => $use['name'] === 'answer' ? self::UNBACKED : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
+                'content' => $use['name'] === 'answer' ? ($claimed ? self::CLAIMED : self::UNBACKED) : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
             array_push($this->timings, ...array_splice($tools->timings, 0));
         }
 
