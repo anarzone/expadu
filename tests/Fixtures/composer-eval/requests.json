@@ -8590,8 +8590,11 @@
    "text": "there should be one near Neumarkt area",
    "expect": {
     "open": true,
-    "answer_kind": "trip",
-    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+    "answer_kind": [
+     "trip",
+     "places"
+    ],
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed|doesn.t list shops"
    }
   },
   {
@@ -8613,8 +8616,11 @@
    "text": "try again",
    "expect": {
     "open": true,
-    "answer_kind": "trip",
-    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+    "answer_kind": [
+     "trip",
+     "places"
+    ],
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed|doesn.t list shops"
    }
   },
   {
@@ -8640,6 +8646,46 @@
      "Neustadt-Süd"
     ],
     "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+   }
+  },
+  {
+   "id": "regression.electronics_near_me",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T17:49:00+02:00",
+   "weather": "dry",
+   "text": "an electronics shop near me",
+   "expect": {
+    "open": true,
+    "min_places": 2,
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed|doesn.t list shops"
+   }
+  },
+  {
+   "id": "regression.ikea_which_one",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T17:49:00+02:00",
+   "weather": "dry",
+   "text": "Where is IKEA?",
+   "expect": {
+    "open": true,
+    "answer_kind": [
+     "choices"
+    ],
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed|doesn.t list shops"
    }
   },
   {

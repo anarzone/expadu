@@ -246,11 +246,11 @@ final class AssistantTools
             ['name' => 'find_place', 'description' => 'One place they name ("Café Wohnraum", "Rheinpark"), from Expadu\'s catalogue, with what\'s listed of it: its hours, what it has, what its website and people say of laptop work, and who may use it. Whenever they ask about a place they name, look it up with this, not search_places; to save, mark or plan one, use that action with its name straight away instead. When several places have that name, it says so and you ask which (show the choice); when none has, it says so.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'name' => ['type' => 'string', 'description' => 'the place as they named it'],
-                    'area' => ['type' => 'string', 'description' => 'its Veedel, when they said one'],
+                    'area' => ['type' => 'string', 'description' => 'its Veedel, or a square, stop or place they said it is near ("near Neumarkt"), when they said one'],
                 ], 'required' => ['name']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists; "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists, shops by their kind (clothes, electronics, furniture…); "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
                     'open_now' => ['type' => 'boolean', 'description' => 'places open now by their listed hours, then open-air ones with no set hours; only when they ask for open now'],
                     'step_free' => ['type' => 'boolean', 'description' => 'only places whose step-free access is listed'],
                     'features' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'only places that list these, and only when they asked for that fact: wifi, outdoor_seating, wheelchair, diet:vegan|vegetarian|halal|kosher|gluten_free, cuisine:<word> (italian, pizza, turkish, vietnamese, burger…)'],
@@ -356,6 +356,12 @@ final class AssistantTools
     public function askedAgain(): bool
     {
         return in_array(self::words($this->asked['now']), array_map(self::words(...), $this->asked['before']), true);
+    }
+
+    /** A distance as said: "300 m", "1.4 km". */
+    private static function distance(float $km): string
+    {
+        return $km < 1 ? max(50, (int) (round($km * 1000 / 50) * 50)).' m' : number_format($km, 1).' km';
     }
 
     /** Words as compared: lower case, letters and digits, single spaces. */
@@ -607,6 +613,12 @@ final class AssistantTools
     {
         $named = trim((string) ($input['name'] ?? ''));
         $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        // "TK Maxx near Neumarkt": near a square, stop or place, so in its Veedel (places' matrix, 24 Oct 2026).
+        if ($area === null && preg_match('/^(.+?)\s+(?:near|by|at|around)\s+(.+)$/iu', $named, $m) === 1) {
+            [$named, $area] = [trim($m[1]), trim($m[2])];
+        }
+        $nearPlace = $area !== null && PlanDay::areas([$area]) === [] ? $this->near($area) : null;
+        $area = $nearPlace['veedel'] ?? $area;
         if (mb_strlen($named) < 3) {
             return 'Say which place.';
         }
@@ -641,10 +653,14 @@ final class AssistantTools
         $use = self::publicUse($c);
         $laptop = self::laptopSaid($c);
 
-        return $this->line($c->id, self::placeText($c, $this->now, true, (bool) $this->user->needs_step_free, $has, $use['value'] !== 'unknown' || $use['free'] !== 'unknown')
+        // Near a place they named: how far from it, so "near Neumarkt" is said as found.
+        $from = $nearPlace === null ? '' : ' About '.self::distance(111.32 * sqrt(($c->lat - $nearPlace['lat']) ** 2
+            + (($c->lng - $nearPlace['lng']) * cos(deg2rad($c->lat))) ** 2))." from {$nearPlace['name']}.";
+
+        return $this->line($c->id, self::placeText($c, $this->now, true, (bool) $this->user->needs_step_free, $has, $use['value'] !== 'unknown' || $use['free'] !== 'unknown').$from
             // Laptop work, where it's listed or the kind of place is one people work in.
             .($laptop !== 'Laptop work isn\'t listed yet.' || in_array($c->category, ['cafe', 'library', 'coworking'], true) ? ' '.$laptop : '')
-            .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
+            .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (The same place as shown before in this conversation.)' : ''));
     }
 
     /**
@@ -859,6 +875,8 @@ final class AssistantTools
             return $this->line($c->id, self::placeText($c, $at, $at->equalTo($this->now), $stepFree, $this->parks[$c->id]['has'] ?? null, $free, $this->parks[$c->id]['matched'] ?? null)
                 // To work there: what its sources say of laptops, and that nothing is listed when nothing is.
                 .($work ? ' '.self::laptopSaid($c) : '')
+                // Near a place they named: how far from it, so "near Neumarkt" is said as found.
+                .($around !== null && $c->distanceKmFromOrigin !== null ? ' About '.self::distance($c->distanceKmFromOrigin)." from {$around['name']}." : '')
                 .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
     }
