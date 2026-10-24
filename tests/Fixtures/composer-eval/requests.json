@@ -8636,6 +8636,83 @@
     "acted": "dismiss_alert",
     "changed": "done"
    }
+  },
+  {
+   "id": "actions.push_on",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Turn on push notifications on this phone",
+   "expect": {
+    "open": true,
+    "handoff": "push_notifications",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.change_email",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Change my email to new-address@example.invalid",
+   "expect": {
+    "open": true,
+    "handoff": "change_email",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.stop_personalisation",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "Stop personalising my suggestions",
+   "expect": {
+    "open": true,
+    "handoff": "stop_personalisation",
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.stop_location_sharing",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Stop sharing my location",
+   "expect": {
+    "open": true,
+    "handoff": "stop_location_sharing",
+    "no_change": true
+   }
   }
  ]
 }

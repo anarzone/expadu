@@ -1112,7 +1112,7 @@ final class AssistantTools
                 ], 'required' => ['line']]],
             ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind. You\'re told only how many.',
                 'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => ['all', 'transit', 'city', 'events']]]]],
-            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
+            ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account, turning personalisation or location sharing off, which deletes what was kept) or needs their own tap (push notifications on this device, changing their email): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[

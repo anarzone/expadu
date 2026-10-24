@@ -37,6 +37,33 @@ final class InAppPlaces
                 'label' => 'Open the AI notice →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
             'note' => 'Withdrawing Composer’s AI withdraws this too.',
         ],
+        'push_notifications' => [
+            'title' => 'Push notifications on this device',
+            'text' => 'Turning push notifications on needs your own tap in this browser, so it’s done in Settings.',
+            'place' => ['crumb' => 'Settings › Notifications', 'actions' => ['Push notifications', 'Each kind'], 'here' => 'Push notifications',
+                'label' => 'Open Notifications →', 'href' => '/settings/notifications'],
+            'note' => 'Each kind of notification can be turned on or off there too, or here.',
+        ],
+        'change_email' => [
+            'title' => 'Change your email',
+            'text' => 'A new email needs confirming before it’s yours, so it’s changed in Settings, which sends you a link.',
+            'place' => ['crumb' => 'Settings › Profile › Account', 'actions' => ['Name', 'Email address'], 'here' => 'Email address',
+                'label' => 'Open Settings →', 'href' => '/settings/profile'],
+        ],
+        'stop_personalisation' => [
+            'title' => 'Turn off personalised suggestions',
+            'text' => 'Turning personalisation off deletes what Expadu learnt about what you like, so it’s your tap, in Settings.',
+            'place' => ['crumb' => 'Settings › Profile › Personalised suggestions', 'actions' => ['Account', 'Personalised suggestions'], 'here' => 'Learn what I like',
+                'label' => 'Open Settings →', 'href' => '/settings/profile'],
+            'note' => 'You can turn it on again at any time; it starts learning afresh.',
+        ],
+        'stop_location_sharing' => [
+            'title' => 'Stop sharing your location',
+            'text' => 'Turning location sharing off deletes the locations Expadu kept for transit, so it’s your tap, in Settings.',
+            'place' => ['crumb' => 'Settings › Transit & tickets', 'actions' => ['I have a Deutschlandticket', 'Share location for transit'], 'here' => 'Share location for transit',
+                'label' => 'Open Transit settings →', 'href' => '/settings/transit'],
+            'note' => 'Departures and trips then start from a stop or place you pick.',
+        ],
         'delete_account' => [
             'text' => 'Deleting your account can’t be undone, so I don’t do it from here. Settings asks you to confirm with your password.',
             'place' => ['crumb' => 'Settings › Profile › Delete account', 'actions' => ['Profile', 'Delete account'], 'here' => 'Delete account',
