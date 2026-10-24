@@ -87,9 +87,10 @@
                 </section>
             @endif
 
-            <div class="tool-cta" style="margin-top:36px">
-                <p>Expadu turns guides like this into <b>your personal checklist</b> — deadlines tracked, documents ticked off, offices booked.</p>
-                <a class="btn btn-primary" href="#waitlist">Start free</a>
+            <div class="guide-cta">
+                <strong>Turn this guide into your checklist</strong>
+                <p>Deadlines tracked, documents ticked off, offices booked.</p>
+                <a href="#waitlist">Start free <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
             </div>
         </article>
 
