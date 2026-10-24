@@ -47,6 +47,8 @@ final class AroundCheck
         '/\boutdoors?\b/u', '/\bindoors?\b/u', '/\bopen[ -]air\b/u', '/\blast chance\b/u', '/\bfamil(y|ies)\b/u', '/\bkids?\b/u', '/\bchildren\b/u',
         // Access is a fact only a listing can state (the assistant called a museum "step-free", 22 Oct 2026).
         '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u',
+        // "Every day" only as a source says it: a café's laptops "welcome every day" when its website says not at weekends.
+        '/\bevery\s?day\b/u', '/\balways\b/u', '/\bany\s?time\b/u', '/\bdaily\b/u',
     ];
 
     /**

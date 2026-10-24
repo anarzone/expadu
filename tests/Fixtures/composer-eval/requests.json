@@ -8486,6 +8486,93 @@
    }
   },
   {
+   "id": "regression.named_cafe_laptop_weekend",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "weather": "dry",
+   "now": "2026-10-24T14:00:00+02:00",
+   "text": "Is Café Wohnraum good for working on a laptop?",
+   "expect": {
+    "open": true,
+    "places_has": [
+     "Café Wohnraum"
+    ],
+    "says": "(?=.*weekend)(?=.*(weekday|€ ?10|10 ?€|minimum))"
+   }
+  },
+  {
+   "id": "regression.named_cafe_laptop_weekday",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "weather": "dry",
+   "now": "2026-10-21T11:00:00+02:00",
+   "text": "Is Café Wohnraum good for working on a laptop?",
+   "expect": {
+    "open": true,
+    "places_has": [
+     "Café Wohnraum"
+    ],
+    "says": "(?=.*(weekday|week))(?=.*(€ ?10|10 ?€|minimum))"
+   }
+  },
+  {
+   "id": "regression.show_named_cafe_after_nearby",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "weather": "dry",
+   "now": "2026-10-21T11:00:00+02:00",
+   "before": [
+    "cafés near Café Wohnraum in Nippes"
+   ],
+   "text": "show me Café Wohnraum",
+   "expect": {
+    "open": true,
+    "places_has": [
+     "Café Wohnraum"
+    ],
+    "says": "Wohnraum"
+   }
+  },
+  {
+   "id": "regression.show_named_park",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "weather": "dry",
+   "now": "2026-10-21T11:00:00+02:00",
+   "text": "show me Rheinpark",
+   "expect": {
+    "open": true,
+    "places_has": [
+     "Rheinpark"
+    ],
+    "says": "Rheinpark"
+   }
+  },
+  {
    "id": "regression.free_open_football_home_only",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",

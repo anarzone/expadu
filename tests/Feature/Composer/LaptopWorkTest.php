@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\Answers\AroundCheck;
 use App\Composer\Assistant\AssistantTools;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -72,4 +73,18 @@ test('a website’s weekend rule is a ban (no @) or some areas only (limited @),
         ->and(AssistantTools::laptopSaid($rule('no @ (Sa-Su)')))->toBe("Its website says laptops aren't allowed at weekends.")
         ->and(AssistantTools::laptopsWelcome($rule('limited @ (Sa-Su)'), $saturday))->toBeNull()
         ->and(AssistantTools::laptopSaid($rule('limited @ (Sa-Su)')))->toBe('Its website says laptops are only allowed in some areas at weekends.');
+});
+
+test('a website rule\'s English note is said as being of laptops, and backs only what it says', function () {
+    $website = ['provider' => 'website', 'source_url' => 'https://example.test/', 'status' => 'known'];
+    $wohnraum = new Candidate(id: 'spot:1', type: 'spot', name: 'Café Wohnraum', lat: 50.96, lng: 6.95, veedel: 'Nippes',
+        category: 'cafe', outdoor: false, typicalDurationMin: 60, costTier: 'unknown', opensAt: null, closesAt: null,
+        placeFacts: ['practical' => ['laptops' => [...$website, 'value' => 'limited', 'note' => 'Weekdays are welcome, with a €10 minimum spend.'],
+            'laptops:conditional' => [...$website, 'value' => 'no @ (Sa-Su)']]]);
+    $said = AssistantTools::laptopSaid($wohnraum);
+    $check = app(AroundCheck::class);
+
+    expect($said)->toBe('Its website says laptops aren\'t allowed at weekends. Of laptops, it also says: "Weekdays are welcome, with a €10 minimum spend."')
+        ->and($check->holds('Its website says laptops are welcome on weekdays, with a €10 minimum spend.', $said))->toBeTrue()
+        ->and($check->holds('Its website says laptops are welcome every day.', $said))->toBeFalse();
 });

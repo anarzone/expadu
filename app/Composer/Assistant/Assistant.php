@@ -61,7 +61,7 @@ final class Assistant
     private const POINTED = 'That answer points to a card, but none is shown. Call the tool that shows it (open_in_app for a place in the app), or answer without mentioning a card.';
 
     /** Said back to an answer none of whose sentences a result of this message backs. */
-    private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked. Then answer.';
+    private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked (a place they name with find_place). Then answer.';
 
     /** Past this many seconds it answers with what it has, rather than look again: a second look and the answer after it take about 3.5 s, and every reply stays under 6 s. */
     private const LOOK_AGAIN_SECONDS = 2.5;
@@ -85,7 +85,7 @@ final class Assistant
     private const SYSTEM = <<<'TXT'
         You are Composer, the assistant in Expadu, an app for people new to Cologne. Answer every message: look things up with the tools, then answer with the answer tool, in English.
 
-        What you can do, only through the tools: say where they are (where_am_i), show departures (departures), the way to a place and how far it is (plan_trip), KVB notices (notices), what's on (search_events), places to go (search_places), the weather, plan a day or an evening (plan_day), their saved places (my_places), and show their Paperwork record (paperwork), their trip (my_trip), their next plan or appointment (my_next) and Expadu's reviewed paperwork guides (guidance). You can also change things of theirs: save a place or mark it (place_feedback), set their Home or Work (set_my_place), and add to, take from, swap in or clear their plans (add_to_day, remove_from_day, swap_in_day, clear_day), save a listing or set a reminder for it (save_event, remind_me), star a stop, set how they travel or their Deutschlandticket, add the way to a plan with a leave reminder (save_stop, set_travel_prefs, plan_trip_for_later), mute a line's alerts or dismiss alerts (mute_alerts, dismiss_alert), and change their notifications, step-free need or profile (set_notifications, set_needs, update_profile). You can't book, buy or order anything, send messages, tell jokes, or answer general-knowledge, legal or visa questions yourself.
+        What you can do, only through the tools: say where they are (where_am_i), show departures (departures), the way to a place and how far it is (plan_trip), KVB notices (notices), what's on (search_events), places to go (search_places), one place they name and what's listed of it (find_place), the weather, plan a day or an evening (plan_day), their saved places (my_places), and show their Paperwork record (paperwork), their trip (my_trip), their next plan or appointment (my_next) and Expadu's reviewed paperwork guides (guidance). You can also change things of theirs: save a place or mark it (place_feedback), set their Home or Work (set_my_place), and add to, take from, swap in or clear their plans (add_to_day, remove_from_day, swap_in_day, clear_day), save a listing or set a reminder for it (save_event, remind_me), star a stop, set how they travel or their Deutschlandticket, add the way to a plan with a leave reminder (save_stop, set_travel_prefs, plan_trip_for_later), mute a line's alerts or dismiss alerts (mute_alerts, dismiss_alert), and change their notifications, step-free need or profile (set_notifications, set_needs, update_profile). You can't book, buy or order anything, send messages, tell jokes, or answer general-knowledge, legal or visa questions yourself.
 
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
@@ -331,9 +331,13 @@ final class Assistant
             $claimed = preg_grep('/^x\d+$/', array_keys($tools->cards)) === [] && $written->contains(fn (string $text): bool => preg_match(self::DONE, $text) === 1);
             // ...and one pointing at a card ("shown on the card below") with nothing to show.
             $pointed = $tools->cards === [] && $tools->places === [] && $tools->events === [] && $written->contains(fn (string $text): bool => preg_match(self::CARD, $text) === 1);
-            $unbacked = $claimed || $pointed || ($answer !== null && $round === 1 && ! $last && is_array($answer['input'] ?? null)
-                && $this->built($answer['input'], $tools, $now, $known) === null);
+            // ...and, in any round, one none of whose sentences holds, so a bare heading over what it
+            // looked up is never all it says (coordinator, 24 Oct 2026).
             $this->kept = [];
+            $hollow = $answer !== null && ! $last && is_array($answer['input'] ?? null)
+                && ($this->built($answer['input'], $tools, $now, $known) === null || ($written->isNotEmpty() && $this->kept === []));
+            $this->kept = [];
+            $unbacked = $claimed || $pointed || $hollow;
             if ($answer !== null && ! $unbacked) {
                 return is_array($answer['input'] ?? null) ? ['answer' => $answer['input'], 'rounds' => $round] : null;
             }

@@ -37,6 +37,7 @@ use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\Dto\GeoPoint;
 use App\Transit\FavouriteStops;
 use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
@@ -75,7 +76,7 @@ final class AssistantTools
      */
     public const CATEGORIES = [
         'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
-        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'weather' => 'weather',
+        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'weather' => 'weather',
         'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names',
         'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
@@ -242,6 +243,11 @@ final class AssistantTools
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                     'asking_for_others' => ['type' => 'string', 'description' => 'with leave_out_earlier: their words in this message that turn down what you showed ("something else", "not these"), as they wrote them; without them, nothing is left out'],
                 ], 'required' => ['day']]],
+            ['name' => 'find_place', 'description' => 'One place they name ("Café Wohnraum", "Rheinpark"), from Expadu\'s catalogue, with what\'s listed of it: its hours, what it has, what its website and people say of laptop work, and who may use it. Whenever they name a place, look it up with this, not search_places. When several places have that name, it says so and you ask which (show the choice); when none has, it says so.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'name' => ['type' => 'string', 'description' => 'the place as they named it'],
+                    'area' => ['type' => 'string', 'description' => 'its Veedel, when they said one'],
+                ], 'required' => ['name']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists; "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
@@ -291,7 +297,7 @@ final class AssistantTools
             unset($input['leave_out_earlier']);
         }
         $this->looked[] = match ($name) {
-            'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
+            'search_events' => 'listings', 'search_places' => 'places', 'find_place' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans',
             // Read only with their Paperwork permission; else a card it never reads.
             'paperwork' => $this->paperwork ? 'paperwork_record' : 'paperwork', default => $name,
@@ -305,6 +311,7 @@ final class AssistantTools
                 'notices' => $this->notices($input),
                 'search_events' => $this->searchEvents($input),
                 'search_places' => $this->searchPlaces($input),
+                'find_place' => $this->findPlace($input),
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'guidance' => $this->guidance($input),
@@ -580,6 +587,55 @@ final class AssistantTools
 
             return $this->line($id, self::eventText($poster).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
+    }
+
+    /**
+     * One place they name (coordinator, 24 Oct 2026: "Is Café Wohnraum good for working on a
+     * laptop?" answered with six other cafés): its card and what's listed of it, by Expadu's place
+     * finder; which, when several have that name; and that none has, when none has.
+     */
+    private function findPlace(array $input): string
+    {
+        $named = trim((string) ($input['name'] ?? ''));
+        $area = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        if (mb_strlen($named) < 3) {
+            return 'Say which place.';
+        }
+        $near = $this->location->hasOrigin() ? new GeoPoint((float) $this->location->lat, (float) $this->location->lng) : null;
+        $found = array_values(array_filter(app(Destinations::class)->find($named, $area, $near), fn (array $p): bool => $p['spot'] !== null));
+        $in = fn (array $p): string => $p['name'].($p['area'] !== null ? " in {$p['area']}" : '');
+        if ($found === []) {
+            return $this->line('n'.(++$this->count), "No place called \"{$named}\"".($area !== null ? " in {$area}" : '').' is among Expadu\'s places.');
+        }
+        if (count($found) > 1) {
+            $id = 'c'.(++$this->count);
+            $this->cards[$id] = ['type' => 'choices', 'text' => "There's more than one {$named}. Which do you mean?",
+                'options' => array_map(fn (array $p): array => ['label' => $p['name'].($p['area'] !== null ? " · {$p['area']}" : ''), 'prompt' => $in($p)], $found)];
+
+            return $this->line($id, "More than one place is called \"{$named}\": ".implode('; ', array_map($in, $found)).'. Ask which.');
+        }
+        [$lat, $lng] = $near !== null ? [$near->lat, $near->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
+        // The fact subqueries trip Postgres's JIT (3–4 s); see CandidateRepository::spotCandidates.
+        $c = DB::transaction(function () use ($found, $lat, $lng): ?Candidate {
+            DB::statement('SET LOCAL jit = off');
+
+            return $this->catalogue->byIds(["spot:{$found[0]['spot']}"], $this->now, $lat, $lng)[0] ?? null;
+        });
+        if (! $c instanceof Candidate) {
+            return $this->line('n'.(++$this->count), "\"{$in($found[0])}\" isn't listed any more.");
+        }
+        $this->places[$c->id] = $c;
+        $this->measured[$c->id] = $this->location->hasOrigin() && $this->location->source !== LocationSource::Area;
+        $this->from[$c->id] = ['name' => $this->origin(), 'lat' => $lat, 'lng' => $lng];
+        $groups = app(FacilityGroups::class);
+        $has = FacilityGroups::summary($groups->counts([(int) substr($c->id, 5)])[(int) substr($c->id, 5)] ?? []);
+        $use = self::publicUse($c);
+        $laptop = self::laptopSaid($c);
+
+        return $this->line($c->id, self::placeText($c, $this->now, true, (bool) $this->user->needs_step_free, $has, $use['value'] !== 'unknown' || $use['free'] !== 'unknown')
+            // Laptop work, where it's listed or the kind of place is one people work in.
+            .($laptop !== 'Laptop work isn\'t listed yet.' || in_array($c->category, ['cafe', 'library', 'coworking'], true) ? ' '.$laptop : '')
+            .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
     }
 
     private function searchPlaces(array $input): string
@@ -946,6 +1002,11 @@ final class AssistantTools
                 self::conditionKind($days) === 'limited' => "{$who} laptops are only allowed in some areas {$when}.",
                 default => "{$who} laptops aren't allowed {$when}.",
             };
+            // Its English line for the other days or conditions, translated only from its own words (places
+            // session), said as being of laptops, so a sentence saying it ("welcome on weekdays") holds.
+            if (is_string($practical['laptops']['note'] ?? null) && trim($practical['laptops']['note']) !== '') {
+                $said[] = 'Of laptops, it also says: "'.trim($practical['laptops']['note']).'"';
+            }
         }
         // People's answers: only their counts (PlaceWorkAnswers::totals), never who.
         $people = array_filter(self::PEOPLE_SAY, fn (string $_, string $fact): bool => ($practical[$fact]['provider'] ?? null) === 'people', ARRAY_FILTER_USE_BOTH);

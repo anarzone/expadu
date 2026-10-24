@@ -386,6 +386,30 @@ test('an answer after a lookup that says it will make a change, with none made, 
         ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done');
 });
 
+test('a place they name is looked up by its name: its card, which one when several have it, and none when none has', function () {
+    $user = User::factory()->onboarded()->create();
+    $wohnraum = Spot::factory()->create(['name' => 'Café Wohnraum', 'category' => 'cafe', 'veedel' => 'Nippes', 'is_active' => true, 'lat' => 50.9640, 'lng' => 6.9510]);
+    Spot::factory()->create(['name' => 'Café Nova', 'category' => 'cafe', 'veedel' => 'Deutz', 'is_active' => true, 'lat' => 50.9380, 'lng' => 6.9750]);
+    Spot::factory()->create(['name' => 'Café Nova', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9500, 'lng' => 6.9180]);
+    $said = fn (string $text): array => ['answer', ['sentences' => [['text' => $text, 'uses' => []]], 'show' => []]];
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['find_place', ['name' => 'Café Wohnraum']]]))
+        ->push(assistantTurn([$said('Café Wohnraum is in Nippes.')]))
+        ->push(assistantTurn([['find_place', ['name' => 'Café Nova']]]))
+        ->push(assistantTurn([$said('There\'s more than one Café Nova.')]))
+        ->push(assistantTurn([['find_place', ['name' => 'Café Nowhere-Such']]]))
+        ->push(assistantTurn([$said('No place called Café Nowhere-Such is among Expadu\'s places.')]))]);
+    $this->actingAs($user);
+
+    $one = assistantAsk($this, 'Is Café Wohnraum good for working on a laptop?', ['lat' => 50.9497, 'lng' => 6.9177]);
+    $two = assistantAsk($this, 'what about Café Nova?');
+    $none = assistantAsk($this, 'and Café Nowhere-Such?');
+
+    expect(collect(collect($one['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('id')->all())->toBe([$wohnraum->id])
+        ->and(collect(collect($two['blocks'])->firstWhere('type', 'choices')['options'] ?? [])->pluck('label')->sort()->values()->all())->toBe(['Café Nova · Deutz', 'Café Nova · Ehrenfeld'])
+        ->and($none['lead'])->toBe('No place called Café Nowhere-Such is among Expadu\'s places.');
+});
+
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
     $user = User::factory()->onboarded()->create();
     config()->set('services.llm.driver', 'off');
