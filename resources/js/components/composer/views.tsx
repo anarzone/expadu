@@ -13,6 +13,7 @@ import type { IconName } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { feedback } from '@/routes/api/places';
 import { Catalogue } from './catalogue';
+import { ManagedConversation } from './conversation-menu';
 import { ItemPreview } from './item-preview';
 import type { ItemDetails } from './item-preview';
 import { ComposerLoading } from './loading';
@@ -609,12 +610,17 @@ export function HistoryView({
     onBack,
     onResume,
     onDelete,
+    onRename,
+    onDeleteOne,
 }: {
     workspace: Workspace;
     busy: boolean;
     onBack: () => void;
     onResume: (id: string) => void;
+    /** Delete conversation history: all of it (asks first). */
     onDelete: () => Promise<boolean>;
+    onRename: (id: string, title: string) => Promise<boolean>;
+    onDeleteOne: (id: string) => Promise<boolean>;
 }) {
     // Deleting history asks first: it's permanent, unlike cancelling a day
     // (owner, 21 Oct 2026). Keep it is the safe default.
@@ -638,25 +644,39 @@ export function HistoryView({
                 {askedConversations(workspace.conversations).map(
                     (conversation) => (
                         <li key={conversation.id}>
-                            <button
-                                type="button"
-                                className="composer-history-row"
-                                aria-current={
-                                    conversation.id === workspace.active
-                                        ? 'true'
-                                        : undefined
+                            <ManagedConversation
+                                conversation={conversation}
+                                busy={busy}
+                                onRename={(title) =>
+                                    onRename(conversation.id, title)
                                 }
-                                disabled={busy}
-                                onClick={() => onResume(conversation.id)}
-                            >
-                                <span>
-                                    <strong>{conversation.title}</strong>
-                                    <span>
-                                        {conversationMeta(conversation)}
-                                    </span>
-                                </span>
-                                <Icon name="next" variant="line" />
-                            </button>
+                                onDelete={() => onDeleteOne(conversation.id)}
+                                row={
+                                    <button
+                                        type="button"
+                                        className="composer-history-row"
+                                        aria-current={
+                                            conversation.id === workspace.active
+                                                ? 'true'
+                                                : undefined
+                                        }
+                                        disabled={busy}
+                                        onClick={() =>
+                                            onResume(conversation.id)
+                                        }
+                                    >
+                                        <span>
+                                            <strong>
+                                                {conversation.title}
+                                            </strong>
+                                            <span>
+                                                {conversationMeta(conversation)}
+                                            </span>
+                                        </span>
+                                        <Icon name="next" variant="line" />
+                                    </button>
+                                }
+                            />
                         </li>
                     ),
                 )}
