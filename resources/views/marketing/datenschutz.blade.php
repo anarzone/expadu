@@ -167,6 +167,19 @@
         personalisation off deletes everything learned. It is off unless you turn it on.
     </p>
 
+    <h3>“Good for laptop work?” answers</h3>
+    <p>
+        On a place you marked Been there or Saved, you can answer whether it is good for laptop
+        work and, if you like, whether it has Wi-Fi, sockets and is quiet. We store your answers
+        with your account, the place and when you gave them, so we can show them back to you, let
+        you change them and count them (Art. 6(1)(b) GDPR, as part of the service you use). Others
+        only ever see anonymous totals, such as “9 of 11 people said yes”, and only once at least
+        three people have answered within the last 12 months; never who answered. Composer may
+        mention these totals when it describes a place. You can change or withdraw your answer at
+        any time on the place’s sheet. Your answers are deleted when you delete your account, and
+        in any case 18 months after you gave them.
+    </p>
+
     <h2>7. Retention &amp; deletion</h2>
     <p>
         Account data is kept while your account exists and deleted when you delete your account or
