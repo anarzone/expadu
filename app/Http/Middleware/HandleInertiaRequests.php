@@ -61,6 +61,11 @@ class HandleInertiaRequests extends Middleware
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
+            // The person's own saved needs, for the account menu's switch
+            // (needs_step_free stays out of the user's serialisation).
+            'needs' => fn () => $request->user() === null ? null : [
+                'step_free' => (bool) $request->user()->needs_step_free,
+            ],
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.
