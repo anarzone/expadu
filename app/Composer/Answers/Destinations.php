@@ -8,6 +8,8 @@ use App\Models\Spot;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -67,12 +69,23 @@ final class Destinations
         // The name itself in Expadu's places, else in Travel's search (in Cologne); only then
         // names holding it ("Zoo" in "Zoo Restaurant"), Expadu's first.
         $found = $spots->filter($same);
+        // Its other names ("Cologne Cathedral" is the Kölner Dom): a place's listed aliases.
+        if ($found->isEmpty()) {
+            $found = $this->byAlias($key);
+        }
         if ($found->isEmpty()) {
             $searched = collect($this->searched($named, $near))
                 ->filter(fn (array $place): bool => abs($place['point']->lat - self::COLOGNE[0]) < 0.2 && abs($place['point']->lng - self::COLOGNE[1]) < 0.3);
             $found = $searched->filter($same);
             $found = $found->isNotEmpty() ? $found : $spots->filter(fn (array $place): bool => preg_match('/\b'.preg_quote($key, '/').'\b/u', self::key($place['name'])) === 1);
             $found = $found->isNotEmpty() ? $found : $searched->filter(fn (array $place): bool => str_contains(self::tight($place['name']), self::tight($key)));
+        }
+        // "The Dom": of several holding the word, the one it names at its end ("Kölner Dom"), when only one does;
+        // "Gaffel am Dom" is by it, not it.
+        $ending = $found->filter(fn (array $place): bool => str_ends_with(' '.self::key($place['name']), ' '.$key)
+            && preg_match('/\b(am|an|im|in|zum|zur|beim|vom|bei|vor|auf|unter|hinterm|neben)\s+'.preg_quote($key, '/').'$/u', self::key($place['name'])) !== 1);
+        if ($found->count() > 1 && $ending->count() === 1) {
+            $found = $ending;
         }
         if ($veedels !== [] && ($inArea = $found->filter(fn (array $place): bool => in_array($place['area'], $veedels, true)))->isNotEmpty()) {
             $found = $inArea;
@@ -164,5 +177,23 @@ final class Destinations
 
         return collect(config('veedels', []))->flatten()->filter(fn (mixed $veedel): bool => is_string($veedel)
             && (self::key($veedel) === self::key($area) || str_starts_with(self::key($veedel), self::key($area).' ')))->values()->all();
+    }
+
+    /**
+     * Places whose listed aliases hold this name (Wikidata's names in other languages, the city's).
+     *
+     * @return Collection<int, array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: ?int, source: ?string}>
+     */
+    private function byAlias(string $key): Collection
+    {
+        $ids = DB::table('place_fact_observations')->whereRaw("lower(payload->>'aliases') like ?", ['%'.$key.'%'])->limit(40)->get(['spot_id', 'payload'])
+            ->filter(fn (object $row): bool => collect(json_decode((string) $row->payload, true)['aliases'] ?? [])
+                ->contains(fn (mixed $alias): bool => is_string($alias) && self::core($alias) === self::core($key)))
+            ->pluck('spot_id')->unique()->values()->all();
+
+        return $ids === [] ? collect() : Spot::query()->canonical()->where('is_active', true)->whereIn('id', $ids)->whereNotNull('lat')->whereNotNull('lng')
+            ->get(['id', 'name', 'category', 'veedel', 'lat', 'lng', 'source'])
+            ->map(fn (Spot $spot): array => ['name' => $spot->name, 'area' => $spot->veedel,
+                'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id, 'source' => $spot->source]);
     }
 }
