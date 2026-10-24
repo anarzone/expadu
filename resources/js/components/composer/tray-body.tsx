@@ -352,7 +352,6 @@ function Body({
                                                 {conversationMeta(conversation)}
                                             </small>
                                         </span>
-                                        <Icon name="next" variant="line" />
                                     </button>
                                 }
                             />

@@ -687,10 +687,6 @@
     width: 18px;
     height: 18px;
 }
-.composer-tray .composer-tray-start-row svg:last-child {
-    width: 16px;
-    height: 16px;
-}
 .composer-tray-start-mark {
     display: grid;
     flex: none;

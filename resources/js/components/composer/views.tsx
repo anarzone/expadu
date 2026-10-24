@@ -673,7 +673,6 @@ export function HistoryView({
                                                 {conversationMeta(conversation)}
                                             </span>
                                         </span>
-                                        <Icon name="next" variant="line" />
                                     </button>
                                 }
                             />
