@@ -16,6 +16,8 @@ use App\Composer\Answers\TripAnswers;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Composer\PlanFit;
+use App\Composer\WorkspaceStore;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Models\BureaucracyPerson;
@@ -35,6 +37,7 @@ use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
 use App\Services\LocationContext;
 use App\Services\NearbyStopService;
+use App\Services\OpeningHoursParser;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use App\Transit\Dto\GeoPoint;
@@ -68,7 +71,7 @@ final class AssistantTools
     private const NOTICES = 3;
 
     /** Ids whose facts are about the person (their place, trip, records, taste, day): a sentence citing one may speak of them. */
-    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next)$/';
+    public const PERSONAL_IDS = '/^((t|a|h|w|d|m|r|c|b|x|o|plan)\d+|here|pw|trip|next|plan)$/';
 
     /**
      * What each tool's result sends, as Composer's notice names it (ProcessingPurpose::WORDS).
@@ -83,6 +86,7 @@ final class AssistantTools
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
+        'move_in_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for',
@@ -137,6 +141,9 @@ final class AssistantTools
 
     /** @var array<string, array<string, mixed>> what else it can show, by id: Composer's own blocks (a trip, a board, a plan, a card) */
     public array $cards = [];
+
+    /** What "an activity" is when they don't name a kind: a day out's sights, culture and green. */
+    private const DAY_OUT = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'nature', 'market', 'theatre', 'cinema', 'arts_centre'];
 
     /** @var list<array{0: string, 1: int}> each lookup and its milliseconds, in order (composer:eval reads where the time goes) */
     public array $timings = [];
@@ -268,6 +275,16 @@ final class AssistantTools
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
             PlanDay::definition(),
+            ['name' => 'suggest_for_day', 'description' => 'Things they could add to their plan for a day, without changing it: places of the kinds or area they asked for, each shown as a card with an "Add to <day>" button and where it would fit ("after Kolumba, 15:15–16:15"). Use it when they ask to find, suggest or look for more ("find us two activities", "what else is there?", "anything indoors?") while they have a plan that day.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'day' => ['type' => 'string', 'description' => 'today, tomorrow, a weekday (Sunday) or YYYY-MM-DD'],
+                    'count' => ['type' => 'integer', 'description' => 'how many they asked for ("two activities": 2); 3 when they don\'t say'],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place they asked for; none for "activities" or "something to do"'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel or "city centre" they named'],
+                    'near' => ['type' => 'string', 'description' => 'a square, stop or place they named'],
+                    'indoors' => ['type' => 'boolean', 'description' => 'only indoor places'],
+                    'free' => ['type' => 'boolean', 'description' => 'only places with no fee listed'],
+                ], 'required' => ['day']]],
             ['name' => 'guidance', 'description' => 'Expadu\'s reviewed guides to German paperwork (registration, residence permits, tax ID, insurance…) matching some words: their titles. Paperwork and legal questions are answered only by these guides, never by you.',
                 'input_schema' => ['type' => 'object', 'properties' => ['query' => ['type' => 'string', 'description' => 'a few words, e.g. Anmeldung, blue card, tax ID']], 'required' => ['query']]],
             $paperwork
@@ -298,7 +315,7 @@ final class AssistantTools
             unset($input['leave_out_earlier']);
         }
         $this->looked[] = match ($name) {
-            'search_events' => 'listings', 'search_places' => 'places', 'find_place' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
+            'search_events' => 'listings', 'search_places' => 'places', 'find_place' => 'places', 'suggest_for_day' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans',
             // Read only with their Paperwork permission; else a card it never reads.
             'paperwork' => $this->paperwork ? 'paperwork_record' : 'paperwork', default => $name,
@@ -315,6 +332,7 @@ final class AssistantTools
                 'find_place' => $this->findPlace($input),
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
+                'suggest_for_day' => $this->suggestForDay($input),
                 'guidance' => $this->guidance($input),
                 'paperwork' => match (true) {
                     $this->paperwork => $this->paperworkRecord(),
@@ -344,8 +362,17 @@ final class AssistantTools
      */
     private function askedForOthers(array $input): bool
     {
+        return $this->theySaid((string) ($input['asking_for_others'] ?? ''));
+    }
+
+    /**
+     * Whether words the AI says are theirs are in this message, with one they hadn't said before
+     * in this conversation: the same question again says nothing new.
+     */
+    private function theySaid(string $quoted): bool
+    {
         $words = fn (string $text): array => array_values(array_filter(explode(' ', self::words($text))));
-        $quote = $words((string) ($input['asking_for_others'] ?? ''));
+        $quote = $words($quoted);
         $before = array_merge(...array_map($words, $this->asked['before']), ...[[]]);
 
         return $quote !== [] && str_contains(' '.self::words($this->asked['now']).' ', ' '.implode(' ', $quote).' ')
@@ -605,6 +632,107 @@ final class AssistantTools
     }
 
     /**
+     * What they could add to a day's plan, the plan unchanged (owner, 24 Oct 2026): places as the
+     * place search finds them, the number asked for, each where it would fit (PlanFit) with its
+     * "Add to <day>" proposal; nothing is added until they tap it.
+     */
+    private function suggestForDay(array $input): string
+    {
+        $day = PlanDay::dayOf($input['day'] ?? null, $this->now);
+        if ($day === null || $day->lessThan($this->now->startOfDay())) {
+            return 'Say which day: today or one ahead.';
+        }
+        $date = $day->toDateString();
+        $plan = app(WorkspaceStore::class)->plan($this->user, $date);
+        $count = is_numeric($input['count'] ?? null) ? max(1, min(5, (int) $input['count'])) : 3;
+        $shown = in_array($date, $this->earlier['plans'] ?? [], true);
+        $before = array_keys($this->places);
+        // "Activities" are a day out's (owner, 24 Oct 2026): sights, museums, galleries, parks and nature,
+        // markets; food and drink when they ask for it.
+        $kinds = is_array($input['kinds'] ?? null) && $input['kinds'] !== [] ? $input['kinds'] : array_values(array_intersect(self::DAY_OUT, self::kindsWithPlaces()));
+        $searched = $this->searchPlaces([...array_intersect_key($input, array_flip(['area', 'near', 'indoors', 'free'])), 'kinds' => $kinds]);
+        $found = array_values(array_diff(array_keys($this->places), $before));
+        $inPlan = array_column($plan['slots'] ?? [], 'id');
+        // Each as it is on that day, its hours that day's (the search reads today's).
+        $onDay = $found === [] ? collect() : collect($this->catalogue->byIds(array_values(array_unique(array_map(fn (string $id): string => explode('#', $id)[0], $found))), $day))->keyBy('id');
+        $options = [];
+        foreach ($found as $id) {
+            $place = $onDay[explode('#', $id)[0]] ?? null;
+            $fit = $place !== null && count($options) < $count && ! in_array($id, $inPlan, true) ? app(PlanFit::class)->for($place, $plan, $day) : null;
+            if ($fit !== null) {
+                $options[$id] = $fit;
+            }
+        }
+        // Only the options are shown and may be named: the rest of the search stays out.
+        foreach ($found as $id) {
+            if (! isset($options[$id])) {
+                unset($this->places[$id], $this->read[$id]);
+            }
+        }
+        if ($options === []) {
+            return $this->line('n'.(++$this->count), $found === [] ? $searched : 'Nothing found fits the free time in their plan for '.$day->isoFormat('dddd').'.');
+        }
+        $where = $day->isoFormat('dddd');
+        $lines = [];
+        foreach ($options as $id => $fit) {
+            // Its "Add to <day>" button: a proposal at the time it fits, made only when they tap it.
+            $made = app(ComposerActions::class)->request($this->user, 'add_to_day', ['item' => $id, 'day' => $date, 'start' => $fit['start'], 'end' => $fit['end'],
+                '_after' => $shown ? $fit['after'] : null], $this->now, propose: true);
+            $card = 'x'.(++$this->count);
+            foreach ($made['blocks'] as $i => $block) {
+                $this->cards[$card.($i === 0 ? '' : 'p')] = $block;
+            }
+            // Where it fits: after which stop only when that plan is in this conversation.
+            $lines[] = $this->line($id, self::placeText($this->places[$id], $day->setTimeFromTimeString($fit['start']), false, (bool) $this->user->needs_step_free)
+                .' Would fit '.($shown && $fit['after'] !== null ? "after \"{$fit['after']}\", " : '')."{$fit['start']}–{$fit['end']}; shown with an Add to {$where} button.");
+        }
+
+        return 'Suggestions for their plan for '.$where.' (not added; the plan is unchanged until they tap Add to '.$where.'), '.count($options).' of them:'."\n".implode("\n", $lines);
+    }
+
+    /**
+     * Their plan for a day as it is now, for this conversation's own plan: its stops by time, name,
+     * kind and Veedel; their own plans and appointments in it only as theirs.
+     */
+    public function planText(string $date): ?string
+    {
+        $plan = app(WorkspaceStore::class)->plan($this->user, $date);
+        if (($plan['slots'] ?? []) === []) {
+            return null;
+        }
+
+        return 'Their plan for '.CarbonImmutable::parse($date, 'Europe/Berlin')->isoFormat('dddd D MMMM').', made in this conversation, as it is now:'."\n"
+            .collect($plan['slots'])->sortBy('start_at')->map(function (array $slot): string {
+                $time = ($slot['start_time'] ?? '').(($slot['end_time'] ?? null) !== null ? "–{$slot['end_time']}" : '');
+                if (($slot['is_appointment'] ?? false) || in_array($slot['type'] ?? null, ['personal', 'appointment'], true)) {
+                    return "- {$time}: one of their own plans (not shown to you)";
+                }
+                $kind = SpotCategory::tryFrom((string) ($slot['category'] ?? ''))?->label() ?? ucfirst(str_replace('_', ' ', (string) ($slot['category'] ?? '')));
+
+                return "- {$time}: \"{$slot['name']}\" ({$kind})".(filled($slot['veedel'] ?? null) ? " in {$slot['veedel']}" : '').self::hoursThatDay($slot);
+            })->implode("\n");
+    }
+
+    /** A stop's listed hours on its plan's day ("listed open 12:00–17:00 that day"), so "is it open then?" is answered from them. */
+    private static function hoursThatDay(array $slot): string
+    {
+        $hours = $slot['place_facts']['hours'] ?? [];
+        if (($slot['type'] ?? null) !== 'spot') {
+            return '';
+        }
+        if (($hours['status'] ?? null) !== 'known' || ! is_array($hours['parsed'] ?? null)) {
+            return '; opening hours not listed';
+        }
+        $day = CarbonImmutable::parse((string) $slot['start_at'])->setTimezone('Europe/Berlin');
+        $intervals = $hours['parsed'][strtolower($day->format('D'))] ?? [];
+        if ($intervals === [] || OpeningHoursParser::closedOn($hours['raw'] ?? null, $day)) {
+            return '; listed closed that day';
+        }
+
+        return '; listed open '.collect($intervals)->map(fn (array $i): string => "{$i[0]}–{$i[1]}")->implode(', ').' that day';
+    }
+
+    /**
      * One place they name (coordinator, 24 Oct 2026: "Is Café Wohnraum good for working on a
      * laptop?" answered with six other cafés): its card and what's listed of it, by Expadu's place
      * finder; which, when several have that name; and that none has, when none has.
@@ -693,9 +821,13 @@ final class AssistantTools
         $named = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
         $nearName = is_string($input['near'] ?? null) && trim($input['near']) !== '' ? trim($input['near']) : null;
         $areas = $named !== null ? PlanDay::areas([$named]) : [];
-        // A square, stop or place named as the area ("Neumarkt"): around it, never refused (owner's chat, 24 Oct 2026).
+        // A square, stop or place named as the area ("Neumarkt"): around it, never refused (owner's chat, 24 Oct 2026);
+        // a Veedel or the centre named as near is the area.
         if ($named !== null && $areas === []) {
             [$nearName, $named] = [$nearName ?? $named, null];
+        }
+        if ($nearName !== null && PlanDay::areas([$nearName]) !== []) {
+            [$named, $areas, $nearName] = [$named ?? $nearName, $areas !== [] ? $areas : PlanDay::areas([$nearName]), null];
         }
         $around = $nearName !== null ? $this->near($nearName) : null;
         if ($nearName !== null && $around === null) {
@@ -1158,12 +1290,22 @@ final class AssistantTools
     /** The planner's plan for what they asked (PlanDay), kept to show and add. */
     private function planDay(array $input): string
     {
+        // A day they already have a plan for keeps it (owner, 24 Oct 2026: "Find us two activities" rewrote
+        // his Sunday): a new plan only when they ask for one instead, in their own words.
+        $day = PlanDay::dayOf($input['day'] ?? null, $this->now);
+        $kept = $day === null ? null : app(WorkspaceStore::class)->plan($this->user, $day->toDateString());
+        if (($kept['slots'] ?? []) !== [] && ! $this->theySaid((string) ($input['replacing'] ?? ''))) {
+            return $this->line('n'.(++$this->count), 'They have a plan for '.$day->isoFormat('dddd').' already, and it stays as it is. To suggest more for it, use suggest_for_day; '
+                .'to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only. Only when they ask for a whole new plan instead, plan_day again with replacing (their words asking for it).');
+        }
         $planned = app(PlanDay::class)->plan($this->user, $input, $this->now);
         if (is_string($planned)) {
             return $planned;
         }
         $id = 'plan'.(++$this->count);
         $this->cards[$id] = ['type' => 'plan', 'token' => $planned['token'],
+            // How many stops it has, their own appointments aside: "two museums" may say so.
+            'stops' => count(array_filter($planned['plan']['slots'], fn (array $slot): bool => ! ($slot['is_appointment'] ?? false))),
             'date' => CarbonImmutable::parse($planned['plan']['constraints']['window_start'])->setTimezone('Europe/Berlin')->toDateString()];
 
         // The areas asked for, as they said them ("Südstadt") and as the planner knows them.
@@ -1240,6 +1382,13 @@ final class AssistantTools
                     'with' => ['type' => 'string', 'description' => 'the new one\'s id from your lookups, else its name'],
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
+            ['name' => 'move_in_day', 'description' => 'Moves one thing in their plans for a day to another time, or makes it shorter or longer: that one only, nothing else moves.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
+                    'day' => $day,
+                    'start' => ['type' => 'string', 'description' => 'HH:MM it starts at now'],
+                    'end' => ['type' => 'string', 'description' => 'HH:MM it ends at; leave out to keep how long it is'],
+                ], 'required' => ['item', 'start']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
             ['name' => 'save_event', 'description' => 'Saves a listing for later (or takes it off their saved events), as the event\'s Save does.',
                 'input_schema' => ['type' => 'object', 'properties' => [

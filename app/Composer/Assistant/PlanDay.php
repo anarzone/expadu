@@ -57,6 +57,7 @@ final class PlanDay
                 'budget' => ['type' => 'string', 'enum' => ['free', 'low', 'normal'], 'description' => '"costs nothing": free; "cheap": low'],
                 'radius_km' => ['type' => 'number', 'description' => 'A distance they named; "nearby" is 2.5'],
                 'stops' => ['type' => 'integer', 'description' => 'How many stops they asked for ("two museums": 2); leave out for a usual day'],
+                'replacing' => ['type' => 'string', 'description' => 'Only when they already have a plan that day and ask for a new one instead: their words asking for it ("plan Sunday again from scratch"); without them their plan stays as it is'],
             ], 'required' => ['day']]];
     }
 
@@ -70,14 +71,7 @@ final class PlanDay
     public function plan(User $user, array $input, CarbonImmutable $now): array|string
     {
         $now = $now->setTimezone('Europe/Berlin');
-        $named = mb_strtolower(trim((string) ($input['day'] ?? 'today')));
-        $day = match (true) {
-            $named === 'today' => $now->startOfDay(),
-            $named === 'tomorrow' => $now->startOfDay()->addDay(),
-            // "Saturday": the next one, today included.
-            in_array($named, ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], true) => $now->startOfDay()->addDays((array_search($named, ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], true) + 1 - $now->dayOfWeekIso + 7) % 7),
-            default => rescue(fn () => CarbonImmutable::parse((string) $input['day'], 'Europe/Berlin')->startOfDay(), null, false),
-        };
+        $day = self::dayOf($input['day'] ?? null, $now);
         if ($day === null || $day->lessThan($now->startOfDay()) || $day->greaterThan($now->startOfDay()->addDays(3))) {
             return 'The planner plans today and the next 3 days only.';
         }
@@ -132,6 +126,21 @@ final class PlanDay
         }
 
         return ['plan' => $body['plan'], 'token' => $body['handoff_token'], 'origin' => $body['origin']['label'] ?? null];
+    }
+
+    /** The day they named: today, tomorrow, a weekday (the next one, today included) or a date. */
+    public static function dayOf(mixed $named, CarbonImmutable $now): ?CarbonImmutable
+    {
+        $now = $now->setTimezone('Europe/Berlin');
+        $said = mb_strtolower(trim((string) ($named ?? 'today')));
+        $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        return match (true) {
+            $said === '' || $said === 'today' => $now->startOfDay(),
+            $said === 'tomorrow' => $now->startOfDay()->addDay(),
+            in_array($said, $weekdays, true) => $now->startOfDay()->addDays((array_search($said, $weekdays, true) + 1 - $now->dayOfWeekIso + 7) % 7),
+            default => rescue(fn () => CarbonImmutable::parse((string) $named, 'Europe/Berlin')->startOfDay(), null, false),
+        };
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Composer\Actions;
 
 use App\Composer\Answers\Destinations;
+use App\Composer\Assistant\PlanDay;
 use App\Composer\CandidateRepository;
 use App\Composer\WorkspaceRefusal;
 use App\Composer\WorkspaceStore;
@@ -30,7 +31,9 @@ final class DayActions implements ComposerAction
                 $time = $start !== null ? ', '.$start.($end !== null ? "–{$end}" : '') : '';
 
                 return ['date' => $date, 'edit' => array_filter(['action' => 'add', 'date' => $date, 'candidate' => $candidate, 'start' => $start, 'end' => $start !== null ? $end : null]),
-                    'name' => $name, 'propose' => "Add {$name} to {$where}{$time}?", 'sub' => null, 'about' => $name.($veedel !== null ? " in {$veedel}" : '')];
+                    'name' => $name, 'propose' => "Add {$name} to {$where}{$time}?",
+                    // Where a suggestion would go (suggest_for_day): "After Kolumba".
+                    'sub' => is_string($input['_after'] ?? null) ? "After {$input['_after']}" : null, 'about' => $name.($veedel !== null ? " in {$veedel}" : '')];
             })(),
             'remove_from_day' => (function () use ($input, $plan, $date, $where): array {
                 $slot = $this->slot($plan, (string) ($input['item'] ?? ''), $where);
@@ -45,6 +48,16 @@ final class DayActions implements ComposerAction
                 return ['date' => $date, 'edit' => ['action' => 'replace', 'date' => $date, 'id' => $slot['id'], 'candidate' => $candidate],
                     'name' => $name, 'was' => $slot['name'], 'propose' => "Swap {$slot['name']} for {$name}?", 'sub' => self::span($slot),
                     'about' => $name.($veedel !== null ? " in {$veedel}" : '')];
+            })(),
+            'move_in_day' => (function () use ($input, $plan, $date, $where): array {
+                $slot = $this->slot($plan, (string) ($input['item'] ?? ''), $where);
+                $start = self::clock($input['start'] ?? null) ?? throw new ActionRefused('Say the time to move it to.');
+                // Its stay is kept unless they said how long ("make it shorter": its new end).
+                $minutes = (int) CarbonImmutable::parse($slot['start_at'])->diffInMinutes(CarbonImmutable::parse($slot['end_at']));
+                $end = self::clock($input['end'] ?? null) ?? CarbonImmutable::parse("{$date} {$start}", 'Europe/Berlin')->addMinutes($minutes)->format('H:i');
+
+                return ['date' => $date, 'edit' => ['action' => 'edit', 'date' => $date, 'id' => $slot['id'], 'start' => $start, 'end' => $end],
+                    'name' => $slot['name'], 'propose' => "Move {$slot['name']} to {$start}–{$end}?", 'sub' => self::span($slot)];
             })(),
             'clear_day' => $plan === null ? throw new ActionRefused('There’s nothing planned '.($where === 'My day' ? 'today' : 'then').'.')
                 : ['date' => $date, 'edit' => ['action' => 'cancel_day', 'date' => $date], 'name' => $where,
@@ -67,6 +80,7 @@ final class DayActions implements ComposerAction
             'add_to_day' => "Added {$prepared['name']} to {$where}".(isset($row['to']) ? ", {$row['to']}" : ''),
             'remove_from_day' => "Took {$prepared['name']} off {$where}",
             'swap_in_day' => "Swapped {$prepared['was']} for {$prepared['name']}".(isset($row['to']) ? ", {$row['to']}" : ''),
+            'move_in_day' => "Moved {$prepared['name']} to {$prepared['edit']['start']}–{$prepared['edit']['end']}",
             default => "Cleared {$where}",
         };
 
@@ -92,6 +106,7 @@ final class DayActions implements ComposerAction
             'add_to_day' => "Undone. {$undo['name']} is off {$where} again.",
             'remove_from_day' => "Undone. {$undo['name']} is back in {$where}.",
             'swap_in_day' => "Undone. {$undo['was']} is back in place of {$undo['name']}.",
+            'move_in_day' => "Undone. {$undo['name']} is back at its time.",
             default => "Undone. {$where} is back.",
         }];
     }
@@ -150,16 +165,13 @@ final class DayActions implements ComposerAction
         return $found[0];
     }
 
-    /** today, tomorrow or a date within the next weeks; else today. */
+    /** today, tomorrow, a weekday ("Sunday") or a date within the next weeks; else today. */
     private static function date(mixed $day, CarbonImmutable $now): string
     {
         $today = $now->setTimezone('Europe/Berlin')->startOfDay();
+        $date = PlanDay::dayOf(is_string($day) ? $day : null, $now);
 
-        return match (true) {
-            $day === 'tomorrow' => $today->addDay()->toDateString(),
-            is_string($day) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1 && ($date = CarbonImmutable::parse($day, 'Europe/Berlin'))->betweenIncluded($today, $today->addWeeks(8)) => $date->toDateString(),
-            default => $today->toDateString(),
-        };
+        return $date !== null && $date->betweenIncluded($today, $today->addWeeks(8)) ? $date->toDateString() : $today->toDateString();
     }
 
     /** "My day" today, else the day's name ("Saturday"). */

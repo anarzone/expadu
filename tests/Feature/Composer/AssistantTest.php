@@ -278,7 +278,7 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
         ->and($reply)->lead->toBe('Salsa Night starts at 20:00.')
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night'])
         ->and(Assistant::history([['role' => 'assistant', 'text' => 'x', 'events' => [['id' => 7, 'title' => 'Jazz']], 'destination' => ['name' => 'Cafe Nova', 'area' => 'Deutz']]])['suggested'])
-        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]]]);
+        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]], 'plans' => []]);
 });
 
 test('the same question again leaves nothing out: only their new words asking for others do', function () {

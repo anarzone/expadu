@@ -75,15 +75,15 @@ function requestParts(array $body, bool $paperwork): array
             continue;
         }
         if (is_string($message['content'])) {
-            $matched = preg_match('/^(Earlier in this conversation \(oldest first\):\n(?:- [^\n]*\n)+\n)?Now: [^\n]*?, Cologne\.( They opened Composer on the [^.\n]+ page\.)?\nHome Veedel: [^\n]*\.\n\nMessage: "(.*)"$/s', $message['content'], $m);
+            $matched = preg_match('/^(Earlier in this conversation \(oldest first\):\n(?:- [^\n]*\n)+\n)?((?:Their plan for [^\n]*, made in this conversation, as it is now:\n(?:- [^\n]*\n)+\n)*)Now: [^\n]*?, Cologne\.( They opened Composer on the [^.\n]+ page\.)?\nHome Veedel: [^\n]*\.\n\nMessage: "(.*)"(\n\(They sent this same message before in this conversation[^\n]*\))?$/s', $message['content'], $m);
             if ($matched !== 1) {
                 $unknown[] = $message['content'];
 
                 continue;
             }
             array_push($categories, ...array_values(array_filter([
-                ($m[1] ?? '') !== '' ? Assistant::CONTEXT['earlier'] : null, Assistant::CONTEXT['now'],
-                ($m[2] ?? '') !== '' ? Assistant::CONTEXT['page'] : null, Assistant::CONTEXT['home'], Assistant::CONTEXT['message'],
+                ($m[1] ?? '') !== '' || ($m[5] ?? '') !== '' ? Assistant::CONTEXT['earlier'] : null, ($m[2] ?? '') !== '' ? Assistant::CONTEXT['plan'] : null,
+                Assistant::CONTEXT['now'], ($m[3] ?? '') !== '' ? Assistant::CONTEXT['page'] : null, Assistant::CONTEXT['home'], Assistant::CONTEXT['message'],
             ])));
 
             continue;

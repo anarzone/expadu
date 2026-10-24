@@ -24,6 +24,7 @@ final class ComposerActions
         'add_to_day' => [DayActions::class, 'everyday'],
         'remove_from_day' => [DayActions::class, 'everyday'],
         'swap_in_day' => [DayActions::class, 'everyday'],
+        'move_in_day' => [DayActions::class, 'everyday'],
         'clear_day' => [DayActions::class, 'everyday'],
         'save_event' => [EventActions::class, 'everyday'],
         'remind_me' => [EventActions::class, 'everyday'],
@@ -62,7 +63,7 @@ final class ComposerActions
      * @param  array<string, mixed>  $input  the tool's input
      * @return array{said: string, blocks: list<array<string, mixed>>} what the AI reads, and the cards
      */
-    public function request(User $user, string $action, array $input, CarbonImmutable $now, bool $manual = false): array
+    public function request(User $user, string $action, array $input, CarbonImmutable $now, bool $manual = false, bool $propose = false): array
     {
         [$class, $domain] = self::ACTIONS[$action] ?? [null, null];
         if ($class === null) {
@@ -72,7 +73,8 @@ final class ComposerActions
             // Typed into a row by the person themselves, an answer is theirs as given (a manual answer).
             $prepared = [...app($class)->prepare($user, $action, $input, $now), 'manual' => $manual];
             $record = ['token' => (string) Str::uuid(), 'action' => $action, 'domain' => $domain, 'prepared' => $prepared, 'undo' => null];
-            if ((! $manual && in_array($action, self::ALWAYS_ASKS, true)) || $this->asksFirst($user, $domain)) {
+            // A suggestion they may add (suggest_for_day) is always a proposal: nothing changes until they tap it.
+            if ($propose || (! $manual && in_array($action, self::ALWAYS_ASKS, true)) || $this->asksFirst($user, $domain)) {
                 $record = $this->kept($user, [...$record, 'state' => 'proposed', 'expires_at' => $now->addHours(self::HOURS)->toIso8601String()],
                     ['title' => $prepared['propose'], ...$prepared]);
 

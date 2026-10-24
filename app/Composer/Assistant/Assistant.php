@@ -52,7 +52,7 @@ final class Assistant
     private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
 
     /** A sentence saying it made a change ("I've turned off…", "Done: …"): so only when one was made or proposed. */
-    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|put|marked|made|booked|deleted)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete)\b|^(?:Done|Saved|Added|Removed|Muted|Unmuted|Dismissed|Starred|Noted|Cleared|Changed|Updated|Marked|Turned\s+(?:on|off))\b/iu';
+    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|took|put|marked|made|booked|deleted|swapped|replaced|moved)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting|swapping|replacing|moving|taking)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete|swap|replace|move|take)\b|^(?:Done|Saved|Added|Removed|Muted|Unmuted|Dismissed|Starred|Noted|Cleared|Changed|Updated|Marked|Swapped|Replaced|Moved|Took|Turned\s+(?:on|off))\b/iu';
 
     /** Said back to an answer saying it made a change when none was made. */
     private const CLAIMED = 'That answer says a change was made, but none was made for this message. If they asked for it, make it with its tool; otherwise answer without saying it was made.';
@@ -74,7 +74,7 @@ final class Assistant
 
     /** The parts of the message it is sent, by what each is (ProcessingPurpose::WORDS). */
     public const CONTEXT = ['earlier' => 'your_earlier_messages_in_this_conversation', 'now' => 'reference_time', 'page' => 'page_you_asked_on',
-        'home' => 'home_area', 'message' => 'your_text'];
+        'home' => 'home_area', 'message' => 'your_text', 'plan' => 'plans_composed'];
 
     /** Suggestions shown, of each kind. */
     private const SHOWN = 3;
@@ -94,6 +94,7 @@ final class Assistant
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
+        - A plan this conversation made is above, as it is now. Read what they ask against it: to find or suggest more for that day ("find us two activities", "what else is there?", "anything indoors?"), suggest_for_day, which changes nothing; to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only, never another (to replace one with something of a kind, "something indoors", find one with search_places and swap it in yourself in the next round: they asked for the change, so don't hand them a list to pick from; a stop's name is its own, the Domfontäne isn't the Dom); a question about it ("is Kolumba open then?", "how far do we walk?"), answer from it and your lookups, changing nothing. plan_day again only when they ask for a whole new plan. When it's unclear which they mean, ask one short question. Give as many as they ask for ("two activities": 2).
         - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Shops are listed by their kind (clothes, shoes, department stores, shopping centres, electronics, phone and computer shops, bookshops, furniture, homeware, hardware, sports and second-hand shops): search_places finds them; a kind of shop it doesn't name isn't listed yet, so say so plainly. A shop they name ("TK Maxx near Neumarkt") is find_place's, with that area; the way there is plan_trip's. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that. When they ask for free ones, answer in those words too ("These public pitches, no fee listed…"), not theirs: a place is free only where its result says "Free to use (listed)".
         - When they ask something you can't do, say so in a few words first, then offer what you can.
         - When they ask you to change something of theirs, make the change with its tool, in the same round as any lookup it needs (a place's name and Veedel will do, without searching first); never ask whether they're sure, and never say it's done without the tool's result. Its result says whether it was done (they can undo it on the card) or proposed (they tap Apply on the card): say exactly that, in a few words ("Saved Bau." "Here's the change; tap Apply to make it."). Never say a change is done when it was proposed or not done; when it wasn't done, say why, in its words. Use the id in [brackets] at the start of a result line (spot:…, e…@…) when they mean something shown; else the name they said.
@@ -171,12 +172,16 @@ final class Assistant
      * and what was answered, what it showed (listings, places) and the places its trips went to.
      *
      * @param  list<array<string, mixed>>  $messages  the conversation's messages before the one being answered
-     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>, places: list<array{name: string, area: ?string, start: ?array{name: string, area: ?string}}>}}
+     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>, areas: list<string>, places: list<array{name: string, area: ?string, start: ?array{name: string, area: ?string}}>, plans: list<string>}}
      */
     public static function history(array $messages): array
     {
-        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => []];
+        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => [], 'plans' => []];
         foreach ($messages as $m) {
+            // The days this conversation planned: their plan is read with each message after.
+            if (is_array($m) && ($m['kind'] ?? null) === 'plan' && is_string($m['date'] ?? null)) {
+                $suggested['plans'][] = $m['date'];
+            }
             if (is_array($m) && ($m['role'] ?? null) === 'assistant' && isset($m['destination']['name'])) {
                 // The places its trips went to, latest first: "how far is it?" means the last one.
                 array_unshift($suggested['places'], ['name' => (string) $m['destination']['name'], 'area' => $m['destination']['area'] ?? null,
@@ -187,6 +192,7 @@ final class Assistant
             }
         }
         $suggested['areas'] = array_values(array_unique($suggested['areas']));
+        $suggested['plans'] = array_values(array_unique($suggested['plans']));
         $recent = array_slice(array_values(array_filter($messages, fn (mixed $m): bool => is_array($m) && in_array($m['role'] ?? null, ['user', 'assistant'], true)
             && (trim((string) ($m['text'] ?? '')) !== '' || ($m['blocks'] ?? []) !== []))), -self::TURNS);
         $turns = [];
@@ -247,7 +253,12 @@ final class Assistant
         $started = hrtime(true);
         // A sentence may also name the home Veedel, the page and what this conversation showed before.
         $known = 'Home Veedel: '.($profile->veedel ?? '')."\n".($page ?? '')."\n"
-            .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']]);
+            .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']])
+            // ...and the plans this conversation made, as they are now: "is Kolumba open then?" is answered from them.
+            ."\n".($planned = collect($history['suggested']['plans'] ?? [])->map(fn (string $date): ?string => $tools->planText($date))->filter()->implode("\n"));
+        if ($planned !== '') {
+            $tools->read['plan'] = $planned;
+        }
 
         // With their Paperwork permission, the exchange runs under it: its notice says all it sends.
         $result = $this->gate->session($paperwork ?? $permit, $paperwork !== null ? ProcessingPurpose::ComposerPaperwork : ProcessingPurpose::ComposerAssist,
@@ -278,7 +289,9 @@ final class Assistant
         // Their message and their earlier ones: the tools leave out what was shown only when they asked for others.
         $tools->asked = ['now' => $text, 'before' => collect($history['turns'])->where('role', 'user')->pluck('text')->values()->all()];
         $again = $tools->askedAgain();
-        $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
+        // The plans this conversation made, as they are now (owner, 24 Oct 2026: follow-ups are read against the plan).
+        $planned = collect($history['suggested']['plans'] ?? [])->map(fn (string $date): ?string => $tools->planText($date))->filter()->map(fn (string $plan): string => $plan."\n\n")->implode('');
+        $messages = [['role' => 'user', 'content' => $earlier.$planned."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
             .($again ? "\n(They sent this same message before in this conversation: asking again isn't turning down what you showed. Answer it again.)" : '')]];
 
@@ -395,7 +408,9 @@ final class Assistant
             preg_grep(AssistantTools::PERSONAL_IDS, $uses) !== [],
             // A count may be as many as it names, or as its lookups found ("two more nearby" among 8 pitches).
             max(count(array_filter($uses, fn (string $id): bool => isset($tools->events[$id]) || isset($tools->places[$id]))), count($tools->places) + count($tools->events))
-                + array_sum(array_map(fn (string $id): int => count($tools->cards[$id]['options'] ?? []), $uses)));
+                + array_sum(array_map(fn (string $id): int => count($tools->cards[$id]['options'] ?? []) + (int) ($tools->cards[$id]['stops'] ?? 0), $uses))
+                // ...and the stops of the plan this conversation made.
+                + (in_array('plan', $uses, true) ? substr_count($tools->read['plan'] ?? '', "\n- ") : 0));
         $kept = [];
         $dropped = false;
         $mentioned = [];
@@ -408,7 +423,7 @@ final class Assistant
             // Not cited, but what a trip, board, notice or guide lookup said, or that one found nothing ("I couldn't find Café Nova"):
             // held against those, which are few and each about one thing.
             if (! $holds($s['text'], $uses)) {
-                $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g|n|x|o|s)\d+$|^here$/', array_keys($tools->read))]));
+                $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g|n|x|o|s|plan)\d+$|^here$|^plan$/', array_keys($tools->read))]));
             }
             if (! $holds($s['text'], $uses) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
                 $dropped = true;
