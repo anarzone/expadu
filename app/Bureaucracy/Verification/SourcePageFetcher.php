@@ -7,7 +7,9 @@ use Throwable;
 
 /**
  * Reads an official page as plain text. Only allowlisted HTTPS hosts are fetched,
- * and redirects are followed only within those hosts.
+ * and redirects are followed only within those hosts. The allowlist is the
+ * catalogue's source hosts unless a caller passes its own (the marketing link
+ * check passes the hosts its own pages link to).
  *
  * "missing" means the page is gone (404/410), which fails the claims built on it.
  * "unreachable" covers everything that says nothing about the content — timeouts,
@@ -19,11 +21,14 @@ class SourcePageFetcher
 
     private const MaxBytes = 3_000_000;
 
-    /** @return array{status: 'ok'|'missing'|'unreachable', text?: string, reason?: string, http_status?: int|null} */
-    public function fetch(string $url): array
+    /**
+     * @param  array<int, string>|null  $hosts
+     * @return array{status: 'ok'|'missing'|'unreachable', url?: string, title?: string, text?: string, reason?: string, http_status?: int|null}
+     */
+    public function fetch(string $url, ?array $hosts = null): array
     {
         for ($hop = 0; $hop <= self::MaxRedirects; $hop++) {
-            if (! $this->allowed($url)) {
+            if (! $this->allowed($url, $hosts)) {
                 return ['status' => 'unreachable', 'reason' => 'host_not_allowed', 'http_status' => null];
             }
             try {
@@ -39,24 +44,29 @@ class SourcePageFetcher
                 continue;
             }
             if (in_array($status, [404, 410], true)) {
-                return ['status' => 'missing', 'reason' => 'page_missing', 'http_status' => $status];
+                return ['status' => 'missing', 'url' => $url, 'reason' => 'page_missing', 'http_status' => $status];
             }
             if ($status < 200 || $status >= 300) {
                 return ['status' => 'unreachable', 'reason' => 'http_'.$status, 'http_status' => $status];
             }
-            $text = SourceText::fromHtml($this->utf8(substr($response->body(), 0, self::MaxBytes), (string) $response->header('Content-Type')));
+            $html = $this->utf8(substr($response->body(), 0, self::MaxBytes), (string) $response->header('Content-Type'));
+            $text = SourceText::fromHtml($html);
             // A bot-check interstitial says nothing about the page; it is never solved or worked around.
             if (mb_strlen($text) < 400 || preg_match('/verifying your browser|just a moment|enable javascript and cookies|captcha|access denied|radware/i', mb_substr($text, 0, 600)) === 1) {
                 return ['status' => 'unreachable', 'reason' => 'bot_check_or_empty', 'http_status' => $status];
             }
 
-            return ['status' => 'ok', 'text' => $text, 'http_status' => $status];
+            $title = preg_match('#<title\b[^>]*>(.*?)</title>#is', $html, $m) === 1
+                ? SourceText::clean(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8')) : '';
+
+            return ['status' => 'ok', 'url' => $url, 'title' => $title, 'text' => $text, 'http_status' => $status];
         }
 
         return ['status' => 'unreachable', 'reason' => 'too_many_redirects', 'http_status' => null];
     }
 
-    public function allowed(string $url): bool
+    /** @param  array<int, string>|null  $hosts */
+    public function allowed(string $url, ?array $hosts = null): bool
     {
         $parts = parse_url($url);
         if (! is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || ! isset($parts['host'])
@@ -64,7 +74,7 @@ class SourcePageFetcher
             return false;
         }
         $host = strtolower(rtrim($parts['host'], '.'));
-        $hosts = [...config('bureaucracy_sources.primary_hosts', []), ...config('bureaucracy_sources.implementation_hosts', [])];
+        $hosts ??= [...config('bureaucracy_sources.primary_hosts', []), ...config('bureaucracy_sources.implementation_hosts', [])];
         foreach ($hosts as $allowed) {
             $allowed = strtolower(trim((string) $allowed, '.'));
             if ($allowed !== '' && ($host === $allowed || str_ends_with($host, '.'.$allowed))) {
