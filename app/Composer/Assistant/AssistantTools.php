@@ -81,6 +81,7 @@ final class AssistantTools
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
+        'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -300,15 +301,14 @@ final class AssistantTools
                     $this->askPaperworkPermission() => $this->line('pp', 'Their Paperwork record can be read only with their permission for this message: a card asks them for it.'),
                     default => $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record'),
                 },
-                'place_feedback', 'set_my_place', 'add_to_day', 'remove_from_day', 'swap_in_day', 'clear_day',
-                'change_paperwork_fact', 'paperwork_step', 'paperwork_report' => $this->act($name, $input),
                 'open_in_app' => $this->openInApp($input),
                 'my_trip' => $this->own('trip', app(OwnCards::class)->trip($this->user, in_array($input['ask'] ?? null, ['leave', 'status', 'stop', 'arrive', 'next'], true) ? $input['ask'] : 'leave', $this->now), 'their trip'),
                 'my_next' => $this->own('next', app(OwnCards::class)->next($this->user, $this->plans, ($input['appointment'] ?? false) === true, $this->now), 'their next plan or appointment'),
                 'my_places' => $this->myPlaces(),
                 'my_taste' => $this->myTaste(),
                 'my_day' => $this->myDay(),
-                default => 'Unknown tool.',
+                // Every change Composer can make goes the one way, its card included.
+                default => isset(ComposerActions::ACTIONS[$name]) ? $this->act($name, $input) : 'Unknown tool.',
             };
         } catch (Throwable) {
             return 'Nothing found: the lookup failed.';
@@ -1074,7 +1074,7 @@ final class AssistantTools
                 ], 'required' => ['which', 'place']]],
             ['name' => 'add_to_day', 'description' => 'Adds a place or listing to their plans for a day, at a time that fits its hours, or the time they say.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'item' => ['type' => 'string', 'description' => 'its id from your lookups ("spot:12", "e34@1767225600"), else a place\'s name'],
+                    'item' => ['type' => 'string', 'description' => 'its id in [brackets] from your lookups ("spot:…", "e…@…"), else a place\'s name'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with the place, optional'],
                     'day' => $day,
                     'start' => ['type' => 'string', 'description' => 'HH:MM, optional'], 'end' => ['type' => 'string', 'description' => 'HH:MM, optional'],
@@ -1088,6 +1088,17 @@ final class AssistantTools
                     'day' => $day,
                 ], 'required' => ['item', 'with']]],
             ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
+            ['name' => 'save_event', 'description' => 'Saves a listing for later (or takes it off their saved events), as the event\'s Save does.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'event' => ['type' => 'string', 'description' => 'its id in [brackets] from a listing line of your lookups ("e…@…"), else its title'],
+                    'saved' => ['type' => 'boolean', 'description' => 'false to take it off'],
+                ], 'required' => ['event']]],
+            ['name' => 'remind_me', 'description' => 'Sets a reminder for a listing (an hour or three hours before, or that morning), or turns it off.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'event' => ['type' => 'string', 'description' => 'its id in [brackets] from a listing line of your lookups ("e…@…"), else its title'],
+                    'when' => ['type' => 'string', 'enum' => ['1h', '3h', 'morning']],
+                    'on' => ['type' => 'boolean', 'description' => 'false to turn it off'],
+                ], 'required' => ['event']]],
             ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
@@ -1131,6 +1142,23 @@ final class AssistantTools
         if (ComposerActions::ACTIONS[$action][1] === 'paperwork' && ! $this->paperwork) {
             return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission for this message.'
                 .($this->askPaperworkPermission() ? ' A card asks them for it.' : ''));
+        }
+        // A listing it looked up or this conversation showed, said by its title ("remind me about the jazz
+        // night"): that one, when one title holds what was said, or the other way round.
+        if (is_string($input['event'] ?? null) && preg_match('/^e\d+(@\d+)?$/', $input['event']) !== 1) {
+            $said = Destinations::key((string) $input['event']);
+            $listings = [];
+            foreach ($this->events as $id => $occurrence) {
+                $listings[] = [$id, (string) ($occurrence['event']->title_en ?: $occurrence['event']->title)];
+            }
+            foreach ($this->earlier['event'] as $id => $title) {
+                $listings[] = ["e{$id}", (string) $title];
+            }
+            $shown = array_values(array_unique(array_column(array_filter($listings, fn (array $l): bool => $said !== ''
+                && (str_contains(Destinations::key($l[1]), $said) || str_contains($said, Destinations::key($l[1])))), 0)));
+            if (count($shown) === 1) {
+                $input['event'] = $shown[0];
+            }
         }
         // A place this conversation showed, said by its name ("save Café Nova"): that one.
         foreach (['place', 'item', 'with'] as $field) {

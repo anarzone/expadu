@@ -25,6 +25,8 @@ final class ComposerActions
         'remove_from_day' => [DayActions::class, 'everyday'],
         'swap_in_day' => [DayActions::class, 'everyday'],
         'clear_day' => [DayActions::class, 'everyday'],
+        'save_event' => [EventActions::class, 'everyday'],
+        'remind_me' => [EventActions::class, 'everyday'],
         'change_paperwork_fact' => [PaperworkActions::class, 'paperwork'],
         'paperwork_step' => [PaperworkActions::class, 'paperwork'],
         'paperwork_report' => [PaperworkActions::class, 'paperwork'],

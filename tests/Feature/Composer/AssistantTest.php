@@ -4,6 +4,7 @@ use App\Composer\Assistant\Assistant;
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
+use App\Models\EventBookmark;
 use App\Models\Spot;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
@@ -275,6 +276,24 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night'])
         ->and(Assistant::history([['role' => 'assistant', 'text' => 'x', 'events' => [['id' => 7, 'title' => 'Jazz']], 'destination' => ['name' => 'Cafe Nova', 'area' => 'Deutz']]])['suggested'])
         ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]]]);
+});
+
+test('an answer saying a change was made, with nothing behind it, gets another round: the change is made by its tool', function () {
+    $user = User::factory()->onboarded()->create();
+    $jazz = assistantJazz();
+    $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Saved Jazz im Stadtgarten for later.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['save_event', ['event' => $id, 'saved' => true]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Saved Jazz im Stadtgarten.', 'uses' => []]], 'show' => []]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'save the jazz one for later');
+
+    Http::assertSentCount(3);
+    expect(Http::recorded()[1][0]->body())->toContain('Nothing in that answer is backed')
+        ->and(EventBookmark::query()->where('user_id', $user->id)->where('event_id', $jazz->id)->exists())->toBeTrue()
+        ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done');
 });
 
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {

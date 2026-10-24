@@ -14,6 +14,8 @@ use App\Composer\Eval\PlanChecks;
 use App\Composer\WorkspaceStore;
 use App\Enums\Situation;
 use App\Models\ComposerWorkspace;
+use App\Models\EventBookmark;
+use App\Models\EventReminder;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
@@ -419,6 +421,8 @@ class EvaluateComposer extends Command
         ])->save();
         // What a case changed before stays out of the next: saved places, Home and Work.
         SpotFeedback::query()->where('user_id', $user->id)->delete();
+        EventBookmark::query()->where('user_id', $user->id)->delete();
+        EventReminder::query()->where('user_id', $user->id)->delete();
         $user->places()->delete();
         // A persona with a Paperwork record: its answers, as the case sets them.
         if (is_array($request['paperwork'] ?? null)) {

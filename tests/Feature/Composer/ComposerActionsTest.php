@@ -8,6 +8,9 @@ use App\Composer\CandidateRepository;
 use App\Composer\WorkspaceStore;
 use App\Enums\LocationSource;
 use App\Models\BureaucracyCaseFact;
+use App\Models\Event;
+use App\Models\EventBookmark;
+use App\Models\EventReminder;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -118,6 +121,26 @@ test('Been there is set on its own and undone on its own, the saved choice untou
     $row = SpotFeedback::query()->where('user_id', $this->user->id)->where('spot_id', $spot->id)->sole();
     expect($row->been_at)->toBeNull()
         ->and($row->state?->value)->toBe('saved');
+});
+
+test('a listing is saved and its reminder set, each with Undo, as the event sheet does', function () {
+    $event = Event::factory()->create(['title' => 'Jazz im Stadtgarten', 'title_en' => null, 'is_curated' => true,
+        'starts_at' => CarbonImmutable::parse('2026-09-10 20:00', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse('2026-09-10 23:00', 'Europe/Berlin')]);
+    $id = 'e'.$event->id.'@'.CarbonImmutable::parse('2026-09-10 20:00', 'Europe/Berlin')->getTimestamp();
+    $actions = app(ComposerActions::class);
+
+    $saved = $actions->request($this->user, 'save_event', ['event' => $id], CarbonImmutable::now());
+    expect($saved['blocks'][0])->toMatchArray(['type' => 'done', 'text' => 'Saved Jazz im Stadtgarten.'])
+        ->and(EventBookmark::query()->where('user_id', $this->user->id)->where('event_id', $event->id)->exists())->toBeTrue();
+    $actions->undo($this->user, $saved['blocks'][0]['id'], CarbonImmutable::now());
+    expect(EventBookmark::query()->where('user_id', $this->user->id)->exists())->toBeFalse();
+
+    $reminded = $actions->request($this->user, 'remind_me', ['event' => $id, 'when' => '3h'], CarbonImmutable::now());
+    $reminder = EventReminder::query()->where('user_id', $this->user->id)->sole();
+    expect($reminded['blocks'][0]['text'])->toBe('You’ll get a reminder three hours before Jazz im Stadtgarten.')
+        ->and($reminder->offset_minutes)->toBe(180);
+    $actions->undo($this->user, $reminded['blocks'][0]['id'], CarbonImmutable::now());
+    expect(EventReminder::query()->where('user_id', $this->user->id)->exists())->toBeFalse();
 });
 
 test('only the person who asked can apply or undo a change, and only for 24 hours', function () {

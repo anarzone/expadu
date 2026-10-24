@@ -8474,6 +8474,50 @@
     "min_places": 3,
     "first_names_place": true
    }
+  },
+  {
+   "id": "actions.save_event",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's on tonight?"
+   ],
+   "text": "save the first one for later",
+   "expect": {
+    "open": true,
+    "acted": "save_event",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.remind_me",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T15:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's on tonight?"
+   ],
+   "text": "remind me an hour before the first one",
+   "expect": {
+    "open": true,
+    "acted": "remind_me",
+    "changed": "done"
+   }
   }
  ]
 }
