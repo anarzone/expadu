@@ -13,10 +13,13 @@ use App\Privacy\ProcessingPurpose;
 use App\Services\NearbyStopService;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request as Psr7Request;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Tests\Support\ExternalProcessingFixtures;
 
@@ -421,6 +424,20 @@ test('🔒 when nothing the AI says holds, the answer is its line alone: no card
     expect($reply)->without_ai->toBe('unchecked')
         ->and($reply['blocks'] ?? [])->toBe([])
         ->and($reply['lead'])->toStartWith('I didn’t find anything I can vouch for there.');
+});
+
+test('🔒 a failed AI call is logged with its cURL error number, never what was sent', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => function () {
+        throw new ConnectException('Operation timed out', new Psr7Request('POST', 'https://processor.example.test/v1/messages'), null, ['errno' => 28]);
+    }]);
+    Log::spy();
+    $this->actingAs($user);
+
+    assistantAsk($this, 'PRIVATE-WORDS-4411');
+
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message, array $context): bool => $message === 'External processing request failed.'
+        && ($context['curl_errno'] ?? null) === 28 && ! str_contains((string) json_encode($context), 'PRIVATE-WORDS-4411'));
 });
 
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
