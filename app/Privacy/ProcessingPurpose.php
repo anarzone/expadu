@@ -38,7 +38,7 @@ enum ProcessingPurpose: string
         'paperwork_guide_titles' => 'the titles of our reviewed paperwork guides',
         'plans_composed' => 'the plans our planner puts together for you',
         'notes_that_your_own_cards_are_shown' => 'that Composer is showing you one of your own cards, never what is on it',
-        'changes_you_ask_for' => 'the changes you ask Composer to make (a saved place or event, a reminder, your plans, Home or Work), and whether they were made',
+        'changes_you_ask_for' => 'the changes you ask Composer to make (a saved place or event, a reminder, your plans, Home or Work, a favourite stop, how you travel), and whether they were made',
         'your_taste_if_personalised' => 'what you tend to like and skip, if you turned on personalisation',
         'your_plans_if_personalised' => 'your own plans and appointments for today and tomorrow, including those recorded in Paperwork, if you turned on personalisation',
         'your_paperwork_answers_and_tasks' => 'your Paperwork answers (such as your residence title and the dates it keeps) and your open Paperwork tasks, with their steps and dates',

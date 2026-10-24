@@ -8518,6 +8518,85 @@
     "acted": "remind_me",
     "changed": "done"
    }
+  },
+  {
+   "id": "actions.save_stop",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Make Neumarkt one of my favourite stops",
+   "expect": {
+    "open": true,
+    "acted": "save_stop",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.deutschlandticket",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I have a Deutschlandticket now",
+   "expect": {
+    "open": true,
+    "acted": "set_travel_prefs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.travel_mode",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I usually cycle, so use the bike by default",
+   "expect": {
+    "open": true,
+    "acted": "set_travel_prefs",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.plan_trip_for_later",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "Add coffee at Cafe Nova in Deutz to my day at 17:00"
+   ],
+   "text": "Plan the way there and remind me when to leave",
+   "expect": {
+    "open": true,
+    "acted": "plan_trip_for_later",
+    "changed": "done"
+   }
   }
  ]
 }

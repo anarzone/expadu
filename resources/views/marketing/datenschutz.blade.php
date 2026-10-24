@@ -135,8 +135,8 @@
             the plans our planner puts together for you, the names you gave your saved places (Home and
             Work only as such, with their neighbourhood), where you are only as your nearest stop and
             neighbourhood, from your browser’s location or the start you chose, and the changes you ask
-            Composer to make (saving a place or an event, a reminder, your plans, Home or Work) and whether
-            they were made. When
+            Composer to make (saving a place or an event, a reminder, your plans, Home or Work, a favourite
+            stop, how you travel) and whether they were made. When
             it shows you one of your own cards (a trip you’re on, your next plan, your Paperwork
             checklist), it only sends that it is showing one, never what is on it. It never sends your
             coordinates, the addresses of your saved places, your documents or evidence, or anyone

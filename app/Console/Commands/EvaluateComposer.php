@@ -16,6 +16,8 @@ use App\Enums\Situation;
 use App\Models\ComposerWorkspace;
 use App\Models\EventBookmark;
 use App\Models\EventReminder;
+use App\Models\FavouriteStop;
+use App\Models\PlannedTrip;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
@@ -418,12 +420,16 @@ class EvaluateComposer extends Command
             'situation' => self::SITUATIONS[$request['persona']] ?? Situation::Other,
             // A persona's step-free need is in its settings, as a person's is.
             'needs_step_free' => in_array('step_free', $request['needs'] ?? [], true),
+            'transport_mode' => null, 'has_deutschlandticket' => false,
         ])->save();
         // What a case changed before stays out of the next: saved places, Home and Work.
         SpotFeedback::query()->where('user_id', $user->id)->delete();
         EventBookmark::query()->where('user_id', $user->id)->delete();
         EventReminder::query()->where('user_id', $user->id)->delete();
         $user->places()->delete();
+        // ...and Travel's stars and planned ways.
+        FavouriteStop::query()->where('user_id', $user->id)->delete();
+        PlannedTrip::query()->where('user_id', $user->id)->delete();
         // A persona with a Paperwork record: its answers, as the case sets them.
         if (is_array($request['paperwork'] ?? null)) {
             $case = app(EnsureAccountHolder::class)->dossier($user);

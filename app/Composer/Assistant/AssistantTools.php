@@ -32,11 +32,11 @@ use App\Places\PlaceDisplayName;
 use App\Places\PlaceWorkAnswers;
 use App\Privacy\ProcessingPurpose;
 use App\Services\DisruptionService;
-use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\FavouriteStops;
 use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -82,6 +82,7 @@ final class AssistantTools
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
+        'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
     ];
@@ -378,7 +379,7 @@ final class AssistantTools
     private function departures(array $input): string
     {
         $named = trim((string) ($input['stop'] ?? ''));
-        $name = $named !== '' ? $this->stopNamed($named) : $this->nearestStop()['name'] ?? null;
+        $name = $named !== '' ? app(FavouriteStops::class)->station($named) : $this->nearestStop()['name'] ?? null;
         if ($name === null) {
             return $named !== '' ? "No KVB stop is called \"{$named}\"." : 'Where they are isn\'t known, so there\'s no nearest stop. Ask which stop.';
         }
@@ -401,18 +402,6 @@ final class AssistantTools
         $this->cards[$id] = ['type' => 'departures', 'board' => array_intersect_key($board, array_flip(['name', 'station', 'time_basis', 'is_stale', 'observed_at', 'areas', 'lines', 'lifts', 'notices']))];
 
         return $this->line($id, "Departures at {$name} ({$basis}):\n".implode("\n", array_slice($rows, 0, 12)));
-    }
-
-    /** The KVB stop a name means: as KVB writes it, else the closest spelling. */
-    private function stopNamed(string $named): ?string
-    {
-        $key = fn (string $name): string => preg_replace('/[^a-z0-9]/', '', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $name) ?: $name));
-        $wanted = $key($named);
-        $names = collect(app(KvbApiService::class)->getStops())->pluck('name')->unique();
-
-        return $names->first(fn (string $name): bool => $key($name) === $wanted)
-            ?? $names->filter(fn (string $name): bool => $wanted !== '' && str_starts_with($key($name), $wanted))->sortBy(fn (string $name): int => strlen($name))->first()
-            ?? $names->filter(fn (string $name): bool => $wanted !== '' && str_contains($key($name), $wanted))->sortBy(fn (string $name): int => strlen($name))->first();
     }
 
     /** The way to a place (TripAnswers), or which of several places of that name. */
@@ -1099,6 +1088,21 @@ final class AssistantTools
                     'when' => ['type' => 'string', 'enum' => ['1h', '3h', 'morning']],
                     'on' => ['type' => 'boolean', 'description' => 'false to turn it off'],
                 ], 'required' => ['event']]],
+            ['name' => 'save_stop', 'description' => 'Stars a KVB stop as one of their favourite stops in Travel (or takes it off).',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'stop' => ['type' => 'string', 'description' => 'the stop as they said it'],
+                    'saved' => ['type' => 'boolean', 'description' => 'false to take it off'],
+                ], 'required' => ['stop']]],
+            ['name' => 'set_travel_prefs', 'description' => 'Sets how they travel by default (by bus and train, by bike, on foot, or the fastest way) and whether they have a Deutschlandticket, as Travel keeps them. Only what they said.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'mode' => ['type' => 'string', 'enum' => ['transit', 'bike', 'walk', 'fastest']],
+                    'deutschlandticket' => ['type' => 'boolean'],
+                ]]],
+            ['name' => 'plan_trip_for_later', 'description' => 'Adds the way to a plan on their day (today or tomorrow) to that plan, from where they are, with a reminder five minutes before they need to leave, as Travel\'s Add to plan does. For a place not on their day yet, add it with add_to_day first.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'plan' => ['type' => 'string', 'description' => 'the plan as they named it, or "next" for their next one'],
+                    'remind' => ['type' => 'boolean', 'description' => 'false for no reminder'],
+                ]]],
             ['name' => 'open_in_app', 'description' => 'For what Composer never does itself because it can\'t be undone or is theirs to decide (deleting their Paperwork record, stopping its processing, withdrawing the AI permission or the one to read their Paperwork, deleting their account): shows the exact place that does it, and why. Never to ask for a permission: a card does that by itself. Say one short line; the card says the rest.',
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
@@ -1168,6 +1172,11 @@ final class AssistantTools
                     $input[$field] = "spot:{$shown[0]}";
                 }
             }
+        }
+        // Where they are goes to the action from the request itself, never from what the AI wrote.
+        $input = array_filter($input, fn (mixed $key): bool => ! str_starts_with((string) $key, '_'), ARRAY_FILTER_USE_KEY);
+        if ($action === 'plan_trip_for_later') {
+            $input['_from'] = $this->location;
         }
         $made = app(ComposerActions::class)->request($this->user, $action, $input, $this->now);
         if ($made['blocks'] === []) {
