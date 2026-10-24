@@ -327,6 +327,22 @@ test('an answer saying it made a change, with none made, gets another round: the
         ->and($reply['lead'])->toBe('I\'ve turned off weather notifications for you.');
 });
 
+test('place cards come nearest first, in the search\'s order, whichever the AI chose', function () {
+    $user = User::factory()->onboarded()->create();
+    $near = Spot::factory()->create(['name' => 'Café Near', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9500, 'lng' => 6.9180]);
+    $far = Spot::factory()->create(['name' => 'Café Far', 'category' => 'cafe', 'veedel' => 'Deutz', 'is_active' => true, 'lat' => 50.9380, 'lng' => 6.9750]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_places', ['kinds' => ['cafe']]]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Café Far is in Deutz.', 'uses' => ["spot:{$far->id}"]]],
+            'show' => ["spot:{$far->id}", "spot:{$near->id}"]]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'a café?', ['lat' => 50.9497, 'lng' => 6.9177]);
+
+    expect(collect($reply['places'] ?? collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())
+        ->toBe(['Café Near', 'Café Far']);
+});
+
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
     $user = User::factory()->onboarded()->create();
     config()->set('services.llm.driver', 'off');

@@ -407,6 +407,10 @@ final class Assistant
         if ($places->isNotEmpty()) {
             $places = $places->concat(collect($tools->places)->reject(fn (Candidate $c): bool => $places->contains('id', $c->id))->values())
                 ->take(self::PLACES_SHOWN)->values();
+            // Shown in its search's order, nearest first, whichever it chose (coordinator, 24 Oct 2026:
+            // cards at 3.2 km, then 1.9 km, with nothing saying why).
+            $rank = array_flip(array_keys($tools->places));
+            $places = $places->sortBy(fn (Candidate $c): int => $rank[$c->id] ?? PHP_INT_MAX)->values();
         }
         // A card that goes with one shown comes right after it.
         $shown = $shown->flatMap(fn (string $id): array => isset($tools->cards[$id.'-also']) ? [$id, $id.'-also'] : [$id])->unique()->values();

@@ -251,7 +251,7 @@ final class AssistantTools
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
-                    'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee is left out; listed free first, then public ones with no fee listed. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
+                    'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee, or restricted, is left out; nearest first. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
@@ -633,9 +633,10 @@ final class AssistantTools
                 && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
                 // To work there: never a place that says no laptops then (places session's website facts).
                 && (! $work || self::laptopsWelcome($c, $at) !== false)
-                // Free (coordinator's call, 23 Oct 2026): public use, by the places session's public_use. A place
-                // that's restricted or lists a fee is left out; one that lists nothing stays, after the public ones.
-                && (! $free || (self::publicUse($c)['value'] !== 'no' && self::publicUse($c)['free'] !== 'no')))
+                // Free (coordinator's call, 23 Oct 2026): public use, by the places session's public_use. Only a
+                // place listed public, or with nothing listed, stays; one restricted (a school's, a daycare's, as
+                // their data marks it) or listing a fee is left out.
+                && (! $free || (in_array(self::publicUse($c)['value'], ['yes', 'unknown'], true) && self::publicUse($c)['free'] !== 'no')))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         // Open: listed open, or an open-air place with no set hours (a public pitch), after those; never one listed closed.
@@ -645,9 +646,9 @@ final class AssistantTools
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
-                // What's certain first: listed open, then listed free, then public access, then neither listed.
-                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
-                + ($free ? self::freeRank($c) : 0))
+                // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
+                // show distances, never why one further on comes first).
+                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0))
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
@@ -655,9 +656,9 @@ final class AssistantTools
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
-                // What's certain first: listed open, then listed free, then public access, then neither listed.
-                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0)
-                + ($free ? self::freeRank($c) : 0))
+                // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
+                // show distances, never why one further on comes first).
+                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0))
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
@@ -692,7 +693,9 @@ final class AssistantTools
         // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
         // Asked for free ones (coordinator, 24 Oct 2026): free only where a source lists no fee, else "public, no fee listed".
         $fee = ! $free ? '' : ($found->every(fn (Candidate $c): bool => self::publicUse($c)['free'] === 'yes') ? 'Each lists free use. '
-            : 'Call a place free only where its line says "Free to use (listed)"; the others are "public, no fee listed", also in your first sentence ("These public pitches, no fee listed…", never "These free pitches"). ');
+            : 'Call a place free only where its line says "Free to use (listed)"; the others are "public, no fee listed", also in your first sentence ("These public pitches, no fee listed…", never "These free pitches"). '
+            // Nearest first, a place with nothing listed may come among them: never called public.
+            .($found->contains(fn (Candidate $c): bool => self::publicUse($c)['value'] === 'unknown') ? 'Where a line says "Fee not listed", nothing is listed of its fee or who may use it: don\'t call that one public. ' : ''));
 
         return $same.$fee.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
@@ -931,19 +934,6 @@ final class AssistantTools
         $use = $c->placeFacts['public_use'] ?? null;
 
         return is_array($use) ? $use : ['value' => 'unknown', 'free' => 'unknown', 'basis' => null, 'source_url' => null];
-    }
-
-    /** For a free ask, what's certain first: listed free, public by the city's register, public otherwise, nothing listed. */
-    private static function freeRank(Candidate $c): float
-    {
-        $use = self::publicUse($c);
-
-        return match (true) {
-            $use['free'] === 'yes' => 0.0,
-            $use['value'] === 'yes' && $use['basis'] === 'city_register' => 0.1,
-            $use['value'] === 'yes' => 0.3,
-            default => 0.6,
-        };
     }
 
     /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
