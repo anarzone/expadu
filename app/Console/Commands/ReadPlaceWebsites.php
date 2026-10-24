@@ -311,11 +311,13 @@ class ReadPlaceWebsites extends Command
             'input_schema' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['wifi', 'power_sockets', 'laptops', 'opening_hours'], 'properties' => [
                 'wifi' => $fact($nullable(['yes', 'no'])),
                 'power_sockets' => $fact($nullable(['yes', 'no'])),
-                'laptops' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['value', 'times', 'at_those_times', 'quote'], 'properties' => [
+                'laptops' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['value', 'times', 'at_those_times', 'quote', 'quote_short', 'note_en'], 'properties' => [
                     'value' => $nullable(['allowed', 'not_allowed', 'restricted']),
                     'times' => ['type' => ['string', 'null'], 'description' => 'when laptops are not allowed or only partly allowed, e.g. "Sa-Su", "weekends 10-16"'],
                     'at_those_times' => array_merge($nullable(['not_allowed', 'partly_allowed']), ['description' => 'at those times: not allowed at all, or only allowed in some areas or ways (e.g. only in the library room)']),
                     'quote' => ['type' => ['string', 'null']],
+                    'quote_short' => ['type' => ['string', 'null'], 'description' => 'the one sentence of the quote that states the rule, copied character for character'],
+                    'note_en' => ['type' => ['string', 'null'], 'description' => 'in English, what the quote says about the other days or conditions (e.g. "Weekdays are welcome, with a €10 minimum spend."), translated only from the quote\'s own words; null if it says nothing more'],
                 ]],
                 'opening_hours' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['osm', 'quote'], 'properties' => [
                     'osm' => ['type' => ['string', 'null'], 'description' => 'the hours in OpenStreetMap opening_hours syntax, e.g. "Mo-Fr 08:00-18:00; Sa 09:00-16:00"'],
@@ -376,6 +378,8 @@ class ReadPlaceWebsites extends Command
         };
         $practical = [];
         $evidence = [];
+        $shortQuotes = [];
+        $notes = [];
         $source = null;
         $rejected = 0;
         $unparsed = 0;
@@ -407,6 +411,17 @@ class ReadPlaceWebsites extends Command
             $then = ($found['laptops']['at_those_times'] ?? null) === 'partly_allowed' ? 'limited' : 'no';
             $practical['laptops:conditional'] = $then.' @ ('.self::days((string) $found['laptops']['times']).')';
         }
+        // The sheet shows the rule's own sentence and an English line for the rest.
+        if (isset($evidence['laptops'])) {
+            $short = trim((string) ($found['laptops']['quote_short'] ?? ''));
+            if ($short !== '' && str_contains($evidence['laptops'], $short)) {
+                $shortQuotes['laptops'] = mb_substr($short, 0, 300);
+            }
+            $note = trim((string) ($found['laptops']['note_en'] ?? ''));
+            if ($note !== '') {
+                $notes['laptops'] = mb_substr($note, 0, 300);
+            }
+        }
 
         $payload = $practical === [] ? [] : ['practical' => $practical];
         // Website hours stay out: in a 23 Oct sample the model misread day ranges
@@ -426,6 +441,12 @@ class ReadPlaceWebsites extends Command
         }
         if ($evidence !== []) {
             $payload['evidence'] = $evidence;
+        }
+        if ($shortQuotes !== []) {
+            $payload['evidence_short'] = $shortQuotes;
+        }
+        if ($notes !== []) {
+            $payload['notes'] = $notes;
         }
 
         return [$payload, $source ?? $pages[0]['url'], $rejected, $unparsed];
