@@ -17,7 +17,8 @@ use Illuminate\Support\Str;
 function workspacePlan(): array
 {
     $day = now('Europe/Berlin')->addDay()->format('Y-m-d');
-    $offset = CarbonImmutable::parse($day, 'Europe/Berlin')->format('P');
+    // Each time with its own offset: on the day the clocks go back, 09:00 and 13:00 differ.
+    $at = fn (string $time): string => CarbonImmutable::parse("{$day} {$time}", 'Europe/Berlin')->toIso8601String();
     Spot::factory()->create(['id' => 1, 'name' => 'Park', 'category' => 'park', 'lat' => 50.94, 'lng' => 6.95, 'tags' => ['opening_hours' => 'Mo-Su 00:00-24:00']]);
     config(['events.geocoding.expected_polygon_count' => 1]);
     DB::table('veedels')->insert(['name' => 'Workspace Fixture Boundary', 'bezirk' => 'Test', 'created_at' => now(), 'updated_at' => now()]);
@@ -25,9 +26,9 @@ function workspacePlan(): array
     Event::factory()->create(['id' => 2, 'title' => 'Concert', 'starts_at' => CarbonImmutable::parse($day.' 16:00', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse($day.' 17:00', 'Europe/Berlin')]);
     DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(6.9603, 50.9375), 4326)::geography WHERE id = 2');
 
-    return ['date' => $day, 'constraints' => ['window_start' => "{$day}T09:00:00{$offset}", 'window_end' => "{$day}T20:00:00{$offset}"], 'slots' => [
-        ['id' => 'spot:1', 'type' => 'spot', 'name' => 'Park', 'start_at' => "{$day}T13:00:00{$offset}", 'end_at' => "{$day}T14:00:00{$offset}", 'start_time' => '13:00', 'end_time' => '14:00', 'swappable' => true],
-        ['id' => 'event:2', 'type' => 'event', 'name' => 'Concert', 'start_at' => "{$day}T16:00:00{$offset}", 'end_at' => "{$day}T17:00:00{$offset}", 'start_time' => '16:00', 'end_time' => '17:00', 'swappable' => true],
+    return ['date' => $day, 'constraints' => ['window_start' => $at('09:00'), 'window_end' => $at('20:00')], 'slots' => [
+        ['id' => 'spot:1', 'type' => 'spot', 'name' => 'Park', 'start_at' => $at('13:00'), 'end_at' => $at('14:00'), 'start_time' => '13:00', 'end_time' => '14:00', 'swappable' => true],
+        ['id' => 'event:2', 'type' => 'event', 'name' => 'Concert', 'start_at' => $at('16:00'), 'end_at' => $at('17:00'), 'start_time' => '16:00', 'end_time' => '17:00', 'swappable' => true],
     ]];
 }
 

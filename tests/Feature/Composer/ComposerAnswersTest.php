@@ -82,7 +82,7 @@ test('🔒 an answer is worked out from the stored message, never from words the
     Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'PAGE-WORDS-6102'));
 });
 
-test('🔒 the checklist is the asker\'s own record, never another account\'s', function () {
+test('🔒 the Paperwork record is the asker\'s own: never another account\'s, and without their permission neither sent nor shown', function () {
     answersCatalogue();
     $owner = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($owner);
@@ -93,11 +93,11 @@ test('🔒 the checklist is the asker\'s own record, never another account\'s', 
     $this->actingAs($owner);
     $reply = askComposer($this, 'What do I need to bring?', 'paperwork', [], 'pw');
     Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'Synthetic passport') || str_contains($request->body(), 'EU Blue Card'));
-    expect($reply)->kind->toBe('checklist')->and($reply['blocks'][0]['type'])->toBe('checklist')
-        ->and($reply['record'])->prepared->toBe(0)->total->toBe(2)
-        ->href->toBe('/bureaucracy?view=paperwork&process='.rawurlencode($process->occurrence_key))
-        ->and(collect($reply['record']['documents'])->pluck('state', 'label')->all())
-        ->toBe(['Synthetic passport' => 'You have it · not checked yet', 'Synthetic contract' => 'Still to get']);
+    // Without their permission for this message, the card asking for it is the whole answer
+    // (coordinator, 23 Oct 2026): nothing of the record is sent or shown.
+    expect(collect($reply['blocks'])->pluck('type')->all())->toBe(['permission'])
+        ->and($reply['blocks'][0]['purpose'])->toBe('composer_paperwork')
+        ->and(json_encode($reply))->not->toContain('You have it')->not->toContain('Synthetic contract')->not->toContain($process->occurrence_key);
 
     // Someone else asking the same gets their own state (or Paperwork's pointer), never the owner's.
     $this->actingAs(User::factory()->onboarded()->create());
