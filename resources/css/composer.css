@@ -2161,10 +2161,97 @@
     justify-content: space-between;
     gap: 12px;
 }
-.composer-page .composer-date-jump {
-    display: inline-flex;
+/* The calendar button ends the week strip (shared-date.tsx). */
+.composer-page .composer-week-calendar svg {
+    width: 20px;
+    height: 20px;
+}
+.composer-page .composer-week-calendar[aria-expanded='true'] {
+    background: var(--color-bg-quiet);
+}
+.composer-page .composer-week-step:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* My Plans' month, floating (AnchoredMenu, portaled to the page): above
+   Composer's box, the chosen day an ink circle, today a dot, Today a quiet
+   word in the header. Composer's own look; other calendars keep theirs. */
+.ui-menu:has(.composer-calendar) {
+    z-index: 300;
+    padding: 12px 14px 14px;
+    box-shadow: 0 16px 40px #211d1529;
+}
+.composer-calendar .ui-calendar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 6px;
+}
+.composer-calendar .ui-calendar-head {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: flex-start;
+    gap: 2px;
+}
+.composer-calendar .ui-calendar-head strong {
+    order: -1;
+    flex: 1;
+    font-size: var(--text-control);
+    font-weight: var(--weight-bold);
+}
+.composer-calendar .ui-calendar-head button {
+    width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+}
+.composer-calendar .ui-calendar .ui-calendar-today {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-height: 40px;
+    margin: 0 0 0 4px;
+    padding: 0 8px;
+    border-radius: var(--radius-pill);
+    color: var(--color-text-soft);
+    font-weight: var(--weight-semibold);
+}
+.composer-calendar .ui-calendar-week,
+.composer-calendar .ui-calendar-days {
+    grid-column: 1 / -1;
+    justify-items: center;
+}
+.composer-calendar .ui-calendar-days [role='option'] {
+    position: relative;
+    width: 40px;
+    min-height: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+.composer-calendar .ui-calendar-days .is-outside {
+    color: var(--color-text-soft);
+    opacity: 0.55;
+}
+.composer-calendar .ui-calendar-days [aria-selected='true'] {
+    background: var(--color-text);
+    box-shadow: none;
+    color: var(--color-bg-surface);
+    font-weight: var(--weight-bold);
+}
+.composer-calendar .ui-calendar-days [aria-selected='true']:hover {
+    background: var(--color-text);
+}
+.composer-calendar .ui-calendar-days .is-today::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: calc(50% - 2px);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-action);
+}
+.composer-calendar .ui-calendar-days .is-today[aria-selected='true']::after {
+    background: var(--color-bg-surface);
 }
 .composer-page .composer-paper {
     display: flex;
