@@ -278,7 +278,7 @@ class PlaceFacts
             'location' => $location,
             'access' => $access['fact'],
             'fee' => $fee,
-            'public_use' => self::publicUse($access['fact'], $fee),
+            'public_use' => self::publicUse($access['fact'], $fee, $spot->grounds_kind === null ? null : ['kind' => $spot->grounds_kind, 'name' => $spot->grounds_name, 'source_id' => $spot->grounds_source_id]),
             'hours' => $hours,
             'contact' => $contact,
             'description' => $description,
@@ -304,11 +304,16 @@ class PlaceFacts
      * an OSM access tag, or fee=no. `free` is only ever what a fee tag says;
      * a public place with no fee listed stays free "unknown", never assumed.
      *
+     * A facility on a school's or daycare's grounds (places:import-school-grounds) is
+     * not public, basis school_grounds, unless its access says public: the city's
+     * register or an access tag wins over the grounds it stands on.
+     *
      * @param  array<string, mixed>  $access
      * @param  array<string, mixed>  $fee
+     * @param  array{kind: string, name: ?string, source_id: ?string}|null  $grounds
      * @return array{value: string, free: string, basis: ?string, source_url: ?string}
      */
-    public static function publicUse(array $access, array $fee): array
+    public static function publicUse(array $access, array $fee, ?array $grounds = null): array
     {
         $free = match ($fee['value'] ?? 'unknown') {
             'free' => 'yes', 'paid' => 'no', default => 'unknown',
@@ -323,6 +328,7 @@ class PlaceFacts
         return match (true) {
             $known && in_array($access['value'] ?? null, self::RESTRICTED_ACCESS, true) => ['value' => 'no', 'free' => $free, 'basis' => $from($access['source_url'] ?? null), 'source_url' => $access['source_url'] ?? null],
             $known && ($access['value'] ?? null) === 'public' => ['value' => 'yes', 'free' => $free, 'basis' => $from($access['source_url'] ?? null), 'source_url' => $access['source_url'] ?? null],
+            $grounds !== null => ['value' => 'no', 'free' => $free, 'basis' => 'school_grounds', 'source_url' => $grounds['source_id'] === null ? null : 'https://www.openstreetmap.org/'.$grounds['source_id']],
             $free === 'yes' => ['value' => 'yes', 'free' => 'yes', 'basis' => 'no_fee', 'source_url' => $fee['source_url'] ?? null],
             default => ['value' => 'unknown', 'free' => $free, 'basis' => null, 'source_url' => null],
         };
