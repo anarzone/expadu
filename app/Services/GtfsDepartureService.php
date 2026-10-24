@@ -379,11 +379,13 @@ class GtfsDepartureService
 
     /**
      * Static route context for a line + headsign at a stop: the GTFS travel
-     * direction (direction_id) and the next stops ridden after this one ("via").
+     * direction (direction_id), the next stops ridden after this one ("via")
+     * and, when today's runs of that headsign end elsewhere, where (`end`:
+     * live times keep 16's "Bonn-Bad Godesberg" while it ends at Ubierring).
      * Timetable-static, so cached long; a miss (renamed headsigns, no GTFS)
      * degrades to nulls and the board simply renders ungrouped.
      *
-     * @return array{direction: int|null, via: array<int, string>}
+     * @return array{direction: int|null, via: array<int, string>, end?: string|null}
      */
     public function routeContext(string $stopName, string $line, string $destination): array
     {
@@ -392,7 +394,7 @@ class GtfsDepartureService
         }
 
         // Per service day: works change a line's run (16 ends at Ubierring).
-        $cacheKey = 'gtfs_route_ctx_'.self::serviceDay()->format('Ymd').'_'.md5("{$stopName}|{$line}|{$destination}");
+        $cacheKey = 'gtfs_route_ctx_v2_'.self::serviceDay()->format('Ymd').'_'.md5("{$stopName}|{$line}|{$destination}");
 
         return Cache::remember($cacheKey, 21600, function () use ($stopName, $line, $destination) {
             $stopIds = $this->stopsNamed($stopName)->pluck('stop_id');
@@ -414,6 +416,14 @@ class GtfsDepartureService
                     ->orWhere('t.trip_headsign', 'ILIKE', "%{$destination}%")
                     ->orWhereRaw('? ILIKE \'%\' || t.trip_headsign || \'%\'', [$destination]));
             $this->runningToday($query, 't');
+            // Where today's runs of it most often end.
+            $lastStop = DB::table('gtfs_stop_times as st')
+                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+                ->whereIn('st.trip_id', (clone $query)->select('t.trip_id'))
+                ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
+                ->groupBy('s.stop_name')
+                ->orderByRaw('count(*) desc')
+                ->value('s.stop_name');
             $trip = $query
                 ->orderByRaw('(t.trip_headsign = ?) DESC', [$destination])
                 ->select('t.trip_id', 't.direction_id', 'st.stop_sequence')
@@ -438,6 +448,7 @@ class GtfsDepartureService
             return [
                 'direction' => $trip->direction_id !== null ? (int) $trip->direction_id : null,
                 'via' => $via,
+                'end' => self::realEnd($destination, $lastStop),
             ];
         });
     }
@@ -562,19 +573,31 @@ class GtfsDepartureService
             ->keyBy('trip_id');
         $departures = $departures->reject(fn (object $dep) => in_array((string) ($last[$dep->trip_id]->stop_id ?? ''), $here, true))->values();
         $ends = $last->map(fn (object $row) => $row->stop_name);
-        $plain = fn (string $name) => mb_strtolower(trim((string) preg_replace(['/^Köln[ -]/u', '/[\s-]+/u'], ['', ' '], $name)));
 
-        return $departures->map(function (object $dep) use ($ends, $plain) {
-            $end = isset($ends[$dep->trip_id]) ? (string) preg_replace('/^Köln[ -]/u', '', $ends[$dep->trip_id]) : null;
-            // Either may carry the district: "Braunsfeld Eupener Str." ends at "Köln Eupener Str.".
-            if ($end !== null && $dep->direction
-                && ! str_contains($plain($end), $plain($dep->direction))
-                && ! str_contains($plain($dep->direction), $plain($end))) {
+        return $departures->map(function (object $dep) use ($ends) {
+            $end = self::realEnd($dep->direction, $ends[$dep->trip_id] ?? null);
+            if ($end !== null) {
                 $dep->direction = $end;
             }
 
             return $dep;
         });
+    }
+
+    /**
+     * The last stop's name, less "Köln", when the headsign isn't it; null
+     * when it is. Either may carry the district: "Braunsfeld Eupener Str."
+     * ends at "Köln Eupener Str.".
+     */
+    private static function realEnd(?string $headsign, ?string $lastStop): ?string
+    {
+        if ($lastStop === null || ! $headsign) {
+            return null;
+        }
+        $plain = fn (string $name) => mb_strtolower(trim((string) preg_replace(['/^Köln[ -]/u', '/[\s-]+/u'], ['', ' '], $name)));
+        $end = (string) preg_replace('/^Köln[ -]/u', '', $lastStop);
+
+        return str_contains($plain($end), $plain($headsign)) || str_contains($plain($headsign), $plain($end)) ? null : $end;
     }
 
     /**

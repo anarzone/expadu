@@ -160,7 +160,8 @@ class LineRoute
             ->get(['st.trip_id', 's.stop_name'])
             ->groupBy('trip_id');
         foreach ($runs as $run) {
-            $ends = [(string) $run->first()->stop_name, (string) $run->last()->stop_name];
+            // Signs don't say the city: "Bf Deutz/Messe", not "Köln Bf Deutz/Messe".
+            $ends = array_map(fn (string $name) => (string) preg_replace('/^Köln[ -]/u', '', $name), [(string) $run->first()->stop_name, (string) $run->last()->stop_name]);
             $key = implode('|', collect($ends)->sort()->all());
             $sections[$key] ??= ['from' => $ends[0], 'to' => $ends[1]];
         }
