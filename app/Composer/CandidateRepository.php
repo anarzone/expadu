@@ -12,6 +12,7 @@ use App\Places\PlaceIdentity;
 use App\Places\SourceTagFacts;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
+use App\Services\OpeningHoursParser;
 use App\Support\EventEvidence;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -251,6 +252,10 @@ class CandidateRepository
             : (string) $spot->category;
 
         [$opensAt, $closesAt, $closedToday] = $this->hoursOn($facts['hours']['parsed'], $day);
+        // One of its closing dates ("Dec 24 off", a summer break): closed that day, whatever the week says.
+        if (OpeningHoursParser::closedOn($facts['hours']['raw'] ?? null, $day)) {
+            [$opensAt, $closesAt, $closedToday] = [null, null, true];
+        }
         $tags = is_array($spot->tags) ? $spot->tags : [];
         $mapPoint = $facts['location']['map_point'];
         $entrance = $facts['location']['entrance_point'];
