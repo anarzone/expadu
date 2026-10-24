@@ -296,6 +296,21 @@ test('an answer saying a change was made, with nothing behind it, gets another r
         ->and(collect($reply['blocks'])->pluck('type')->all())->toContain('done');
 });
 
+test('an answer pointing at a card it doesn\'t show gets another round: the card comes from its tool', function () {
+    $user = User::factory()->onboarded()->create();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'The place to do it is shown on the card.', 'uses' => []]], 'show' => []]]]))
+        ->push(assistantTurn([['open_in_app', ['what' => 'delete_account']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'The place to do it is shown on the card.', 'uses' => []]], 'show' => []]]]))]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'delete my account');
+
+    Http::assertSentCount(3);
+    expect(collect($reply['blocks'])->pluck('type')->all())->toContain('handoff')
+        ->and($reply['lead'])->toBe('The place to do it is shown on the card.');
+});
+
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
     $user = User::factory()->onboarded()->create();
     config()->set('services.llm.driver', 'off');

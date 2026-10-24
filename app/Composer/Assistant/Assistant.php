@@ -48,6 +48,9 @@ final class Assistant
     /** Calls: a round of lookups, a second if needed, then the answer (owner: 3–6 s). */
     private const ROUNDS = 3;
 
+    /** A sentence pointing at a card the answer shows ("on the card", "a card asks"), not at a Blue Card or a bank card. */
+    private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
+
     /** Said back to an answer none of whose sentences a result of this message backs. */
     private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked. Then answer.';
 
@@ -434,6 +437,12 @@ final class Assistant
             if ($tools->events !== []) {
                 $blocks['events'] = ['type' => 'events', 'events' => $this->listings->posters($tools->occurrences(array_slice(array_keys($tools->events), 0, self::SHOWN)), self::SHOWN)];
             }
+        }
+        // With no card shown, a sentence pointing at one ("The place to do it is on the card") isn't so.
+        if ($blocks === [] && $token === null) {
+            $kept = array_values(array_filter($kept, fn (string $text): bool => preg_match(self::CARD, $text) !== 1));
+            $this->kept = array_values(array_filter($this->kept, fn (array $s): bool => preg_match(self::CARD, $s['text']) !== 1));
+            $lead = implode(' ', array_slice($kept, 0, 3));
         }
         if ($lead === '' && $blocks === [] && $token === null) {
             return null;
