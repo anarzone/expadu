@@ -9,7 +9,7 @@ import type { MenuPick } from './composer-box';
 import { ComposerLoading } from './loading';
 import { ComposerSurface, useComposerSurface } from './surface';
 import type { SurfaceContext } from './surface';
-import { api } from './types';
+import { api, ApiError } from './types';
 import type { Conversation, Workspace } from './types';
 import { askedConversations, conversationMeta } from './views';
 import type { ComposerView } from './views';
@@ -93,13 +93,24 @@ export default function TrayBody({
     const [initial] = useState<Workspace | null>(() => lastSeen);
     const [loaded, setLoaded] = useState<Workspace | null>(null);
     const [context, setContext] = useState<SurfaceContext>(() => lastDay);
-    const [failed, setFailed] = useState(false);
+    // Why it didn't load: signed out (the shell's toast offers Sign in again),
+    // or anything else.
+    const [failed, setFailed] = useState<'out' | 'failed' | null>(null);
 
     useEffect(() => {
         let live = true;
         api<Workspace>(show.url())
             .then((workspace) => live && setLoaded(workspace))
-            .catch(() => live && !lastSeen && setFailed(true));
+            .catch((reason) => {
+                if (live && !lastSeen) {
+                    setFailed(
+                        reason instanceof ApiError &&
+                            [401, 419].includes(reason.status)
+                            ? 'out'
+                            : 'failed',
+                    );
+                }
+            });
         // Your day and saved starting points: the starters and Starting point
         // wait for them, the conversation doesn't.
         api<SurfaceContext>(dayContext.url())
@@ -121,8 +132,9 @@ export default function TrayBody({
         return (
             <div className="composer-tray-start">
                 <p role="alert" className="composer-tray-start-empty">
-                    Composer couldn’t load your conversations. Open full
-                    Composer to carry on.
+                    {failed === 'out'
+                        ? 'You’ve been signed out. Sign in again to see your conversations.'
+                        : 'Composer couldn’t load your conversations. Open full Composer to carry on.'}
                 </p>
             </div>
         );
