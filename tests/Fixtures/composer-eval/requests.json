@@ -6787,7 +6787,8 @@
    ],
    "text": "nope, I want something else",
    "expect": {
-    "open": true
+    "open": true,
+    "leave_out": true
    }
   },
   {
@@ -6807,7 +6808,8 @@
    ],
    "text": "something else please",
    "expect": {
-    "open": true
+    "open": true,
+    "leave_out": true
    }
   },
   {
@@ -6827,7 +6829,8 @@
    ],
    "text": "not that, something different",
    "expect": {
-    "open": true
+    "open": true,
+    "leave_out": true
    }
   },
   {
@@ -7233,7 +7236,8 @@
    "text": "nope, I want something else",
    "expect": {
     "open": true,
-    "around": true
+    "around": true,
+    "leave_out": true
    },
    "before": [
     "I'm bored"
@@ -8456,6 +8460,29 @@
     "min_places": 3,
     "says": "no fee listed|free to use",
     "not_says": "\\bfree\\b(?!\\s+to\\s+use)"
+   }
+  },
+  {
+   "id": "regression.free_open_football_repeat",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-23T15:25:00+02:00",
+   "weather": "dry",
+   "text": "find me free open places to play football",
+   "before": [
+    "find me free open places to play football"
+   ],
+   "expect": {
+    "open": true,
+    "min_places": 5,
+    "no_leave_out": true,
+    "places_has": [
+     "Helmholtzplatz",
+     "Takufeld"
+    ],
+    "says": "Helmholtzplatz|same .*as before"
    }
   },
   {

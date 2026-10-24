@@ -140,6 +140,9 @@ final class AssistantTools
     /** @var list<array{0: string, 1: int}> each lookup and its milliseconds, in order (composer:eval reads where the time goes) */
     public array $timings = [];
 
+    /** @var array{now: string, before: list<string>} their message, and their earlier ones in this conversation */
+    public array $asked = ['now' => '', 'before' => []];
+
     /** @var list<string> the lookups made, by the page's names for them */
     private array $looked = [];
 
@@ -236,7 +239,8 @@ final class AssistantTools
                     'until' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
-                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
+                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
+                    'asking_for_others' => ['type' => 'string', 'description' => 'with leave_out_earlier: their words in this message that turn down what you showed ("something else", "not these"), as they wrote them; without them, nothing is left out'],
                 ], 'required' => ['day']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
@@ -252,7 +256,8 @@ final class AssistantTools
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today: only places open then, by their listed hours'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee, or restricted, is left out; nearest first. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
-                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
+                    'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
+                    'asking_for_others' => ['type' => 'string', 'description' => 'with leave_out_earlier: their words in this message that turn down what you showed ("something else", "not these"), as they wrote them; without them, nothing is left out'],
                 ]]],
             ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => $none]] : []),
             PlanDay::definition(),
@@ -281,6 +286,10 @@ final class AssistantTools
      */
     public function run(string $name, array $input): string
     {
+        // Left out only when they asked for others (owner, 23 Oct 2026: asking again isn't turning down).
+        if (in_array($name, ['search_places', 'search_events'], true) && ($input['leave_out_earlier'] ?? false) === true && ! $this->askedForOthers($input)) {
+            unset($input['leave_out_earlier']);
+        }
         $this->looked[] = match ($name) {
             'search_events' => 'listings', 'search_places' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans',
@@ -319,6 +328,32 @@ final class AssistantTools
         } finally {
             $this->timings[] = [$name.' '.json_encode($input, JSON_UNESCAPED_UNICODE), (int) round((hrtime(true) - $started) / 1e6)];
         }
+    }
+
+    /**
+     * Whether the words the AI says ask for others ("something else", "not these") are in their message,
+     * with one they hadn't said before: the same question again says nothing new, so nothing is left out.
+     */
+    private function askedForOthers(array $input): bool
+    {
+        $words = fn (string $text): array => array_values(array_filter(explode(' ', self::words($text))));
+        $quote = $words((string) ($input['asking_for_others'] ?? ''));
+        $before = array_merge(...array_map($words, $this->asked['before']), ...[[]]);
+
+        return $quote !== [] && str_contains(' '.self::words($this->asked['now']).' ', ' '.implode(' ', $quote).' ')
+            && array_diff($quote, $before) !== [];
+    }
+
+    /** Their message is one they sent before in this conversation, word for word. */
+    public function askedAgain(): bool
+    {
+        return in_array(self::words($this->asked['now']), array_map(self::words(...), $this->asked['before']), true);
+    }
+
+    /** Words as compared: lower case, letters and digits, single spaces. */
+    public static function words(string $text): string
+    {
+        return trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', mb_strtolower($text)));
     }
 
     /** Where they are: their nearest stop and Veedel, and how that's known (never coordinates). */
@@ -640,10 +675,15 @@ final class AssistantTools
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         // Open: listed open, or an open-air place with no set hours (a public pitch), after those; never one listed closed.
+        // The same question again (owner, 23 Oct 2026): the places shown before come back first, nearest
+        // first among them, so the cards are the ones it showed.
+        $again = $this->askedAgain();
+        $shownBefore = fn (Candidate $c): bool => isset($this->earlier['spot'][$park($c)]) || isset($this->earlier['spot'][(int) substr($c->id, 5)]);
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true || ($c->outdoor && OpeningAnswer::isOpenAt($c, $at) === null)
             : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($again && ! $shownBefore($c) ? 1000 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
                 // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
@@ -654,6 +694,7 @@ final class AssistantTools
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
             ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+                + ($again && ! $shownBefore($c) ? 1000 : 0)
                 + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
                 + ($work && ! self::workFriendly($c) ? 0.5 : 0)
                 // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
@@ -683,10 +724,12 @@ final class AssistantTools
                 .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : '')).$lists.'.');
         }
 
-        // Every one shown before (asked again): said so, with the nearest as it's listed, so the answer
-        // restates it rather than only offering something else (owner, 23 Oct 2026).
-        $same = $found->isNotEmpty() && $found->every(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))
-            ? $this->line('s'.(++$this->count), 'The same places as shown before. The nearest: '
+        // The cards it will show were all shown before (asked again): said so, with the nearest as it's
+        // listed, so the answer restates it rather than only offering something else (owner, 23 Oct 2026).
+        // Asked word for word again, those shown come first: the ones shown before, then any new.
+        $before = $found->take(Assistant::PLACES_SHOWN)->takeWhile(fn (Candidate $c): bool => isset($this->earlier['spot'][(int) substr($c->id, 5)]))->count();
+        $same = $before > 0 && ($before === min(Assistant::PLACES_SHOWN, $found->count()) || $again)
+            ? $this->line('s'.(++$this->count), 'The same places as shown before'.($before < min(Assistant::PLACES_SHOWN, $found->count()) ? ' (the first '.$before.'; the others are new)' : '').'. The nearest: '
                 .self::placeText($found->first(), $at, $at->equalTo($this->now), $stepFree, $this->parks[$found->first()->id]['has'] ?? null, $free, $this->parks[$found->first()->id]['matched'] ?? null))."\n"
             : '';
 

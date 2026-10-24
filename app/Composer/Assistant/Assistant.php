@@ -74,7 +74,7 @@ final class Assistant
     private const SHOWN = 3;
 
     /** Places shown: every one the answer names gets its card (coordinator's preview check, 23 Oct 2026). */
-    private const PLACES_SHOWN = 6;
+    public const PLACES_SHOWN = 6;
 
     private const SYSTEM = <<<'TXT'
         You are Composer, the assistant in Expadu, an app for people new to Cologne. Answer every message: look things up with the tools, then answer with the answer tool, in English.
@@ -84,7 +84,7 @@ final class Assistant
         How to work:
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
         - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with to_work and kinds cafe, library and coworking; a kind they name ("coworking", "a café to work in") alone, with to_work. For children ("my kid", "for the kids"): search_places with for_children, and the activity they named. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
-        - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. When asked again ("try again", "again") and the results are the same places as before, your first sentence says so and names the nearest with what's listed of it ("Same public pitches as before; the closest is the one in Merkenich, open-air, no fee listed."); then offer something else in one short clause at most. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
+        - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier, their words in asking_for_others, and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. When asked again ("try again", "again") and the results are the same places as before, your first sentence says so and names the nearest with what's listed of it ("Same public pitches as before; the closest is the one in Merkenich, open-air, no fee listed."); then offer something else in one short clause at most. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
@@ -269,8 +269,12 @@ final class Assistant
         // The conversation so far, then the message; earlier messages are untrusted words like it.
         $earlier = $history['turns'] === [] ? '' : "Earlier in this conversation (oldest first):\n"
             .collect($history['turns'])->map(fn (array $t): string => ($t['role'] === 'user' ? '- They asked: "' : '- You answered: "').$t['text'].'"')->implode("\n")."\n\n";
+        // Their message and their earlier ones: the tools leave out what was shown only when they asked for others.
+        $tools->asked = ['now' => $text, 'before' => collect($history['turns'])->where('role', 'user')->pluck('text')->values()->all()];
+        $again = $tools->askedAgain();
         $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
-            .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""]];
+            .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
+            .($again ? "\n(They asked this same question before in this conversation: asking again isn't turning down what you showed. Show it again, nearest first, and say it's the same as before.)" : '')]];
 
         for ($round = 1; $round <= self::ROUNDS; $round++) {
             $elapsed = (hrtime(true) - $started) / 1e9;

@@ -259,7 +259,7 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
     Http::fake(['processor.example.test/*' => Http::sequence()
         ->push(assistantTurn([['search_events', ['day' => 'today']]]))
         ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$jazzId]]], 'show' => [$jazzId]]]]))
-        ->push(assistantTurn([['search_events', ['day' => 'today', 'leave_out_earlier' => true]]]))
+        ->push(assistantTurn([['search_events', ['day' => 'today', 'leave_out_earlier' => true, 'asking_for_others' => 'something else']]]))
         ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Salsa Night starts at 20:00.', 'uses' => [$salsaId]]], 'show' => [$salsaId, $jazzId]]]]))]);
     $this->actingAs($user);
 
@@ -276,6 +276,30 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night'])
         ->and(Assistant::history([['role' => 'assistant', 'text' => 'x', 'events' => [['id' => 7, 'title' => 'Jazz']], 'destination' => ['name' => 'Cafe Nova', 'area' => 'Deutz']]])['suggested'])
         ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]]]);
+});
+
+test('the same question again leaves nothing out: only their new words asking for others do', function () {
+    $user = User::factory()->onboarded()->create();
+    $jazz = assistantJazz();
+    $jazzId = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    $answer = assistantTurn([['answer', ['sentences' => [['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$jazzId]]], 'show' => [$jazzId]]]]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))->push($answer)
+        // Asked again, the AI leaves out what it showed, quoting words they'd said before: nothing is left out.
+        ->push(assistantTurn([['search_events', ['day' => 'today', 'leave_out_earlier' => true, 'asking_for_others' => 'what is on tonight']]]))->push($answer)
+        // Or with no words of theirs at all: nothing is left out either.
+        ->push(assistantTurn([['search_events', ['day' => 'today', 'leave_out_earlier' => true]]]))->push($answer)]);
+    $this->actingAs($user);
+
+    assistantAsk($this, "What's on tonight?");
+    $again = assistantAsk($this, "what's on tonight?");
+    $third = assistantAsk($this, 'and tonight?');
+
+    $recorded = Http::recorded()->map(fn (array $pair): string => $pair[0]->body())->values();
+    expect(collect($again['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
+        ->and(collect($third['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
+        ->and($recorded[2])->toContain('They asked this same question before')
+        ->and($recorded[4])->not->toContain('They asked this same question before');
 });
 
 test('an answer saying a change was made, with nothing behind it, gets another round: the change is made by its tool', function () {

@@ -68,7 +68,7 @@ class EvaluateComposer extends Command
 
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
-        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'no_step_free' => true,
+        'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'leave_out' => true, 'places_has' => true, 'no_step_free' => true,
         'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
@@ -217,7 +217,12 @@ class EvaluateComposer extends Command
         $routing += ($expect['open_only'] ?? false) ? ['open_only' => collect($shownPlaces)->every(fn (array $p): bool => str_starts_with((string) ($p['hours'] ?? ''), 'Open'))] : [];
         $routing += ($expect['distinct_names'] ?? false) ? ['distinct_names' => count(array_unique(array_column($shownPlaces, 'name'))) === count($shownPlaces)] : [];
         // Asked again or narrowed, never turned down; step-free never said unasked.
-        $routing += ($expect['no_leave_out'] ?? false) ? ['no_leave_out' => ! collect($assistant->timings)->contains(fn (array $t): bool => str_contains($t[0], '"leave_out_earlier":true'))] : [];
+        // The lookups as they ran: a leave-out without their words asking for others never takes effect.
+        $leftOut = collect($assistant->timings)->contains(fn (array $t): bool => str_contains($t[0], '"leave_out_earlier":true'));
+        $routing += ($expect['no_leave_out'] ?? false) ? ['no_leave_out' => ! $leftOut] : [];
+        $routing += ($expect['leave_out'] ?? false) ? ['leave_out' => $leftOut] : [];
+        // Places it must show (asked again, the nearest shown before).
+        $routing += isset($expect['places_has']) ? ['places_has' => array_diff((array) $expect['places_has'], array_column($shownPlaces, 'name')) === []] : [];
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // Every card drawn as Around here's row (a park found for its pitch included).
         $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
