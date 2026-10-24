@@ -57,6 +57,9 @@ final class Assistant
     /** Said back to an answer saying it made a change when none was made. */
     private const CLAIMED = 'That answer says a change was made, but none was made for this message. If they asked for it, make it with its tool; otherwise answer without saying it was made.';
 
+    /** Said back to an answer pointing at a card when none is shown. */
+    private const POINTED = 'That answer points to a card, but none is shown. Call the tool that shows it (open_in_app for a place in the app), or answer without mentioning a card.';
+
     /** Said back to an answer none of whose sentences a result of this message backs. */
     private const UNBACKED = 'Nothing in that answer is backed by a lookup or a change made for this message, so none of it can be shown. If they asked you to change something of theirs, make the change with its tool; otherwise look up what they asked. Then answer.';
 
@@ -322,10 +325,13 @@ final class Assistant
             // An answer straight away, with no lookup or change behind it and nothing in it holding
             // ("Saved it for later." with nothing saved), gets one more round to use the tools; so does one
             // saying it made a change ("I'm adding it to your day") when none was made.
-            $claimed = $answer !== null && ! $last && is_array($answer['input'] ?? null) && preg_grep('/^x\d+$/', array_keys($tools->cards)) === []
-                && collect(self::oneEach(is_array($answer['input']['sentences'] ?? null) ? $answer['input']['sentences'] : []))
-                    ->contains(fn (mixed $s): bool => is_array($s) && is_string($s['text'] ?? null) && preg_match(self::DONE, $s['text']) === 1);
-            $unbacked = $claimed || ($answer !== null && $round === 1 && ! $last && is_array($answer['input'] ?? null)
+            $written = $answer !== null && ! $last && is_array($answer['input'] ?? null)
+                ? collect(self::oneEach(is_array($answer['input']['sentences'] ?? null) ? $answer['input']['sentences'] : []))
+                    ->filter(fn (mixed $s): bool => is_array($s) && is_string($s['text'] ?? null))->pluck('text') : collect();
+            $claimed = preg_grep('/^x\d+$/', array_keys($tools->cards)) === [] && $written->contains(fn (string $text): bool => preg_match(self::DONE, $text) === 1);
+            // ...and one pointing at a card ("shown on the card below") with nothing to show.
+            $pointed = $tools->cards === [] && $tools->places === [] && $tools->events === [] && $written->contains(fn (string $text): bool => preg_match(self::CARD, $text) === 1);
+            $unbacked = $claimed || $pointed || ($answer !== null && $round === 1 && ! $last && is_array($answer['input'] ?? null)
                 && $this->built($answer['input'], $tools, $now, $known) === null);
             $this->kept = [];
             if ($answer !== null && ! $unbacked) {
@@ -339,7 +345,11 @@ final class Assistant
             $messages[] = ['role' => 'assistant', 'content' => array_map(fn (mixed $block): mixed => is_array($block) && ($block['type'] ?? null) === 'tool_use'
                 && ($block['input'] ?? null) === [] ? [...$block, 'input' => (object) []] : $block, $body['content'])];
             $messages[] = ['role' => 'user', 'content' => $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
-                'content' => $use['name'] === 'answer' ? ($claimed ? self::CLAIMED : self::UNBACKED) : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
+                'content' => $use['name'] === 'answer' ? match (true) {
+                    $claimed => self::CLAIMED,
+                    $pointed => self::POINTED,
+                    default => self::UNBACKED,
+                } : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
             array_push($this->timings, ...array_splice($tools->timings, 0));
         }
 
