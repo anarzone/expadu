@@ -90,7 +90,10 @@ final class Ask
         }
 
         $reason = $permit !== null && $this->assistant->written !== null ? 'unchecked' : $this->withoutAi($permit, $processing);
-        $around = $this->around->answer($user, $workspace['plans'] ?? [], $now, self::WITHOUT_AI[$reason]);
+        // Without the AI, what's around them; with it, when nothing it found held, its own line alone: never
+        // cards that aren't about what they asked (owner's chat, 24 Oct 2026: weather, notices, a visa date).
+        $around = $reason === 'unchecked' ? ['text' => self::WITHOUT_AI['unchecked'].' Try asking another way, or name the place or area.', 'blocks' => [], 'suggestions' => []]
+            : $this->around->answer($user, $workspace['plans'] ?? [], $now, self::WITHOUT_AI[$reason]);
 
         return $this->workspace->answer($user, $conversation, self::message($around['text'], $around['blocks'], [
             'written' => 'code', 'without_ai' => $reason, 'suggestions' => $around['suggestions'],

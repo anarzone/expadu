@@ -223,7 +223,7 @@ final class AssistantTools
             ['name' => 'plan_trip', 'description' => 'The way to a place by bus, tram and train, from where the person is or from the start they name, with Expadu\'s place finder. When a name fits several places, it says so and you ask which (show the choice). Also answers "how far is it?". To keep the way to a plan on their day, with a reminder when to leave ("plan the way there and remind me"), use plan_trip_for_later instead.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'to' => ['type' => 'string', 'description' => 'the place as they named it, e.g. Cafe Nova, Hauptbahnhof, Rheinpark'],
-                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, or a square, stop or place they said it is near ("near Neumarkt"), optional'],
                     'from' => ['type' => 'string', 'description' => 'the start they named ("from Neumarkt"); never their home Veedel unless they said it. Leave out to start from where they are'],
                     'from_area' => ['type' => 'string', 'description' => 'a Veedel they named with the start, optional'],
                     'by' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => TripAnswers::KINDS], 'description' => 'only these ways of travelling ("by tram"); S-Bahn and regional trains are train'],
@@ -256,6 +256,7 @@ final class AssistantTools
                     'features' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'only places that list these, and only when they asked for that fact: wifi, outdoor_seating, wheelchair, diet:vegan|vegetarian|halal|kosher|gluten_free, cuisine:<word> (italian, pizza, turkish, vietnamese, burger…)'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), only one they name or this conversation is about; never their home Veedel unless they said it: without an area, places come nearest them, at home or wherever they are'],
+                    'near' => ['type' => 'string', 'description' => 'a square, KVB stop or place they named the places near ("near Neumarkt", "by the Dom"): places around it, nearest first'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
@@ -465,6 +466,14 @@ final class AssistantTools
             if (preg_match('/^(.+?)\s+in\s+(.+)$/iu', $name, $m) === 1 && PlanDay::areas([$m[2]]) !== []) {
                 return [trim($m[1]), $area ?? PlanDay::areas([$m[2]])[0]];
             }
+            // "TK Maxx near Neumarkt": near a square, stop or place, so in its Veedel.
+            if ($area === null && preg_match('/^(.+?)\s+(?:near|by|at|around)\s+(.+)$/iu', $name, $m) === 1) {
+                [$name, $area] = [trim($m[1]), trim($m[2])];
+            }
+            // An area that isn't a Veedel (a square, a stop): the Veedel it's in (owner's chat, 24 Oct 2026).
+            if ($area !== null && PlanDay::areas([$area]) === []) {
+                $area = $this->near($area)['veedel'] ?? $area;
+            }
 
             return [$name, $area];
         };
@@ -638,6 +647,27 @@ final class AssistantTools
             .(isset($this->earlier['spot'][(int) substr($c->id, 5)]) ? ' (You suggested it earlier.)' : ''));
     }
 
+    /**
+     * A square, stop or place they name ("near Neumarkt"): where it is and its Veedel, as a KVB stop
+     * first, else by Expadu's place finder; null when it's none of those.
+     *
+     * @return array{name: string, lat: float, lng: float, veedel: ?string}|null
+     */
+    private function near(string $named): ?array
+    {
+        $stops = app(FavouriteStops::class);
+        $station = $stops->stations($named);
+        $point = count($station) === 1 ? $stops->point($station[0]) : null;
+        if ($point !== null) {
+            return ['name' => $station[0], ...$point, 'veedel' => app(UserLocationService::class)->veedelAt($point['lat'], $point['lng'])];
+        }
+        $from = $this->location->hasOrigin() ? new GeoPoint((float) $this->location->lat, (float) $this->location->lng) : null;
+        $place = app(Destinations::class)->find($named, null, $from)[0] ?? null;
+
+        return $place === null ? null : ['name' => $place['name'], 'lat' => $place['point']->lat, 'lng' => $place['point']->lng,
+            'veedel' => $place['area'] ?? app(UserLocationService::class)->veedelAt($place['point']->lat, $place['point']->lng)];
+    }
+
     private function searchPlaces(array $input): string
     {
         $asked = $this->clock($input['open_at'] ?? null, $this->now);
@@ -645,9 +675,15 @@ final class AssistantTools
         // "Open now" or "open at 19:30": only places whose listed hours say so (OpeningAnswer).
         $mustBeOpen = $asked !== null || ($input['open_now'] ?? false) === true;
         $named = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        $nearName = is_string($input['near'] ?? null) && trim($input['near']) !== '' ? trim($input['near']) : null;
         $areas = $named !== null ? PlanDay::areas([$named]) : [];
+        // A square, stop or place named as the area ("Neumarkt"): around it, never refused (owner's chat, 24 Oct 2026).
         if ($named !== null && $areas === []) {
-            return $this->line('n'.(++$this->count), "No Veedel is called \"{$named}\". Places are found by Cologne's Veedel (e.g. Neustadt-Süd for the Südstadt), or the city centre.");
+            [$nearName, $named] = [$nearName ?? $named, null];
+        }
+        $around = $nearName !== null ? $this->near($nearName) : null;
+        if ($nearName !== null && $around === null) {
+            return $this->line('n'.(++$this->count), "No Veedel, KVB stop or place called \"{$nearName}\" is known.");
         }
         $wanted = array_values(array_unique(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string')));
         // Only kinds Expadu has places of: an empty one ("coffee_tea_shop", a shop) would say "nothing" while there are hundreds of cafés.
@@ -677,12 +713,13 @@ final class AssistantTools
         $middle = $areas !== [] ? DB::table('veedels')->whereIn('name', $areas)->whereNotNull('centroid_lat')
             ->selectRaw('avg(centroid_lat) as lat, avg(centroid_lng) as lng')->first() : null;
         [$lat, $lng] = match (true) {
+            $around !== null => [$around['lat'], $around['lng']],
             $middle?->lat !== null => [(float) $middle->lat, (float) $middle->lng],
             $this->location->hasOrigin() => [(float) $this->location->lat, (float) $this->location->lng],
             default => [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
         };
-        // How far a place is, shown on its card, only from where the person really is or starts.
-        $measured = $middle?->lat === null && $this->location->hasOrigin() && $this->location->source !== LocationSource::Area;
+        // How far a place is, shown on its card, only from where the person really is or starts, or the place they named.
+        $measured = $around !== null || ($middle?->lat === null && $this->location->hasOrigin() && $this->location->source !== LocationSource::Area);
         // Asked for one kind or a sport: up to the whole list of it; for several ("a place to work": cafés,
         // libraries, coworking), a share of each; for anything, two of a kind, for variety.
         $perKind = match (true) {
@@ -759,6 +796,7 @@ final class AssistantTools
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
+            $around !== null => "near {$around['name']}",
             $areas === PlanDay::CENTRE => 'in the city centre',
             $areas !== [] => 'in '.implode(', ', $areas),
             default => null,
@@ -800,7 +838,7 @@ final class AssistantTools
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
-        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $stepFree, $features, $work, $free): string {
+        }."\n".$found->map(function (Candidate $c) use ($at, $measured, $lat, $lng, $areas, $around, $stepFree, $features, $work, $free): string {
             $this->places[$c->id] = $c;
             $this->measured[$c->id] = $measured;
             if ($areas !== []) {
@@ -811,6 +849,7 @@ final class AssistantTools
             }
             // Where its card measures from: the area's middle, or where the person is or starts.
             $this->from[$c->id] = ['name' => match (true) {
+                $around !== null => $around['name'],
                 $areas === PlanDay::CENTRE => 'City centre',
                 $areas !== [] => implode(', ', $areas),
                 default => $this->origin(),

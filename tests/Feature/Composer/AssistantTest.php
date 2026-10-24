@@ -410,6 +410,19 @@ test('a place they name is looked up by its name: its card, which one when sever
         ->and($none['lead'])->toBe('No place called Café Nowhere-Such is among Expadu\'s places.');
 });
 
+test('🔒 when nothing the AI says holds, the answer is its line alone: no cards that aren\'t about the ask', function () {
+    $user = User::factory()->onboarded()->create();
+    $unbacked = assistantTurn([['answer', ['sentences' => [['text' => 'The TK Maxx on the Rhine Arena roof opens at 23:00.', 'uses' => []]], 'show' => []]]]);
+    Http::fake(['processor.example.test/*' => Http::sequence()->push($unbacked)->push($unbacked)->push($unbacked)->push($unbacked)]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'there should be one near Neumarkt');
+
+    expect($reply)->without_ai->toBe('unchecked')
+        ->and($reply['blocks'] ?? [])->toBe([])
+        ->and($reply['lead'])->toStartWith('I didn’t find anything I can vouch for there.');
+});
+
 test('without the AI, Composer shows what\'s around, and a fact shows once per conversation', function () {
     $user = User::factory()->onboarded()->create();
     config()->set('services.llm.driver', 'off');

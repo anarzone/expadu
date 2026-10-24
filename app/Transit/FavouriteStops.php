@@ -88,6 +88,18 @@ final class FavouriteStops
         return [];
     }
 
+    /**
+     * Where a station is: the middle of its KVB points.
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    public function point(string $station): ?array
+    {
+        $points = $this->kvb->stationPoints($station);
+
+        return $points === [] ? null : ['lat' => array_sum(array_column($points, 'lat')) / count($points), 'lng' => array_sum(array_column($points, 'lng')) / count($points)];
+    }
+
     /** Whether KVB's stop list can be read at all. */
     public function readable(): bool
     {

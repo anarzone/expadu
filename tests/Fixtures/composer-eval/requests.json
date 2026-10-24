@@ -8573,6 +8573,76 @@
    }
   },
   {
+   "id": "regression.tkmaxx_near_neumarkt",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T17:49:00+02:00",
+   "weather": "dry",
+   "before": [
+    "I am looking for a TkMaxx only"
+   ],
+   "text": "there should be one near Neumarkt area",
+   "expect": {
+    "open": true,
+    "answer_kind": "trip",
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+   }
+  },
+  {
+   "id": "regression.tkmaxx_try_again",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T17:49:00+02:00",
+   "weather": "dry",
+   "before": [
+    "I am looking for a TkMaxx only",
+    "there should be one near Neumarkt area"
+   ],
+   "text": "try again",
+   "expect": {
+    "open": true,
+    "answer_kind": "trip",
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+   }
+  },
+  {
+   "id": "regression.cafes_near_neumarkt",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T17:49:00+02:00",
+   "weather": "dry",
+   "text": "cafés near Neumarkt",
+   "expect": {
+    "open": true,
+    "min_places": 3,
+    "places_in": [
+     "Altstadt-Nord",
+     "Altstadt-Süd",
+     "Neustadt-Nord",
+     "Neustadt-Süd"
+    ],
+    "not_says": "isn.t a Veedel|No Veedel|vouch|Nothing more is listed"
+   }
+  },
+  {
    "id": "regression.free_open_football_home_only",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",
