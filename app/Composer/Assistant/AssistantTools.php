@@ -382,9 +382,15 @@ final class AssistantTools
     private function departures(array $input): string
     {
         $named = trim((string) ($input['stop'] ?? ''));
-        $name = $named !== '' ? app(FavouriteStops::class)->station($named) : $this->nearestStop()['name'] ?? null;
+        $stops = app(FavouriteStops::class);
+        $found = $named !== '' ? $stops->stations($named) : [];
+        if (count($found) > 1) {
+            return "Several KVB stops fit \"{$named}\": ".implode(', ', $found).'. Ask which one.';
+        }
+        $name = $named !== '' ? $found[0] ?? null : $this->nearestStop()['name'] ?? null;
         if ($name === null) {
-            return $named !== '' ? "No KVB stop is called \"{$named}\"." : 'Where they are isn\'t known, so there\'s no nearest stop. Ask which stop.';
+            return $named === '' ? 'Where they are isn\'t known, so there\'s no nearest stop. Ask which stop.'
+                : ($stops->readable() ? "No KVB stop is called \"{$named}\"." : FavouriteStops::UNREADABLE);
         }
         $board = app(NearbyStation::class)->named($name);
         if ($board === null || ($board['lines'] ?? []) === []) {

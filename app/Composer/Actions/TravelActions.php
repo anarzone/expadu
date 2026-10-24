@@ -68,7 +68,7 @@ final class TravelActions implements ComposerAction
             'sub' => $prepared['sub'].($prepared['remind'] && ! $user->pushSubscriptions()->exists() ? ' · Turn on notifications in Settings to get it' : ''),
             'said' => 'The way to the plan they meant is in their plan, leaving at '.$prepared['leave'].($prepared['remind'] ? ', with a reminder five minutes before' : '').'.',
             'undo' => ['date' => $prepared['date'], 'plan' => $plan->id, 'title' => $prepared['title'],
-                'previous' => $previous === null ? null : $previous->only(PlannedTrips::KEPT)]], fn ($v) => $v !== null);
+                'previous' => $previous === null ? null : $this->planned->snapshot($previous)]], fn ($v) => $v !== null);
     }
 
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
@@ -88,7 +88,7 @@ final class TravelActions implements ComposerAction
 
             return ['title' => "Undone. No way is planned to {$undo['title']}."];
         }
-        $this->planned->keep($user, $undo['date'], $this->plan($user, $undo['date'], $undo['plan']), $undo['previous']['journey'], (bool) $undo['previous']['remind']);
+        $this->planned->restore($user, $undo['date'], $undo['plan'], $undo['previous']);
 
         return ['title' => "Undone. The way to {$undo['title']} is the one you had."];
     }
@@ -97,10 +97,18 @@ final class TravelActions implements ComposerAction
     private function prepareStop(User $user, array $input): array
     {
         $said = trim((string) ($input['stop'] ?? ''));
-        $stop = $said === '' ? null : $this->stops->station($said);
-        if ($stop === null) {
-            throw new ActionRefused($said === '' ? 'Say which stop.' : "No KVB stop is called \"{$said}\".");
+        if ($said === '') {
+            throw new ActionRefused('Say which stop.');
         }
+        $found = $this->stops->stations($said);
+        if ($found === []) {
+            throw new ActionRefused($this->stops->readable() ? "No KVB stop is called \"{$said}\"." : FavouriteStops::UNREADABLE);
+        }
+        // Several fit: they're asked which, never one picked for them.
+        if (count($found) > 1) {
+            throw new ActionRefused("Several KVB stops fit \"{$said}\": ".implode(', ', $found).'. Ask them which one.');
+        }
+        $stop = $found[0];
         $saved = ($input['saved'] ?? true) !== false;
         if ($this->stops->has($user->id, $stop) === $saved) {
             throw new ActionRefused($saved ? "{$stop} is a favourite stop already." : "{$stop} isn’t a favourite stop.");

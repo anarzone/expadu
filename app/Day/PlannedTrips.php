@@ -5,6 +5,7 @@ namespace App\Day;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Transit\DepartureTime;
+use Carbon\CarbonInterface;
 
 /**
  * "Add to plan": the way picked for one of the person's plans on a day, with its "Remind me
@@ -12,8 +13,8 @@ use App\Transit\DepartureTime;
  */
 final class PlannedTrips
 {
-    /** The fields a kept way has, and what Undo puts back. */
-    public const KEPT = ['title', 'journey', 'remind'];
+    /** A kept way as Undo puts it back: whether it reminded or alerted already too, so it doesn't again. */
+    public const KEPT = ['title', 'journey', 'depart_at', 'arrive_at', 'remind', 'reminded_at', 'planned_at', 'alerted_kind', 'alerted_at'];
 
     /**
      * Keeps the way for this plan, replacing any it had: a new way is a new reminder, and watched afresh.
@@ -36,6 +37,27 @@ final class PlannedTrips
                 'alerted_at' => null,
             ],
         );
+    }
+
+    /**
+     * A kept way as it is now, for Undo: its fields, times as ISO strings.
+     *
+     * @return array<string, mixed>
+     */
+    public function snapshot(PlannedTrip $trip): array
+    {
+        return array_map(fn (mixed $value): mixed => $value instanceof CarbonInterface ? $value->toIso8601String() : $value, $trip->only(self::KEPT));
+    }
+
+    /**
+     * Puts back a way exactly as it was (snapshot), reminder and alerts included.
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    public function restore(User $user, string $date, string $planId, array $snapshot): PlannedTrip
+    {
+        return PlannedTrip::query()->updateOrCreate(['user_id' => $user->id, 'date' => $date, 'target_id' => $planId],
+            array_intersect_key($snapshot, array_flip(self::KEPT)));
     }
 
     /** The way kept for this plan, if any. */
