@@ -151,6 +151,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     const [chipAt, setChipAt] = useState<{ top: number; left: number } | null>(
         null,
     );
+    // The way back shows for a moment after closing (owner, 22 Oct 2026); the dot
+    // on what opens Composer is the lasting one.
+    const [resume, setResume] = useState(false);
+    const chip = useRef<HTMLButtonElement>(null);
     const tray = useRef<HTMLDivElement>(null);
     const dim = useRef<HTMLDivElement>(null);
     // One close at a time: a tap outside closes on pointerdown, then its click
@@ -236,6 +240,61 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         return () => window.removeEventListener('resize', place);
     }, [isOpen, talked]);
 
+    // It goes about 4 s after closing, or at the first tap or scroll elsewhere,
+    // whichever comes first. Reduced motion: it just goes.
+    useEffect(() => {
+        if (isOpen || !talked || !resume) {
+            return;
+        }
+
+        let gone = false;
+        const leave = (event?: Event) => {
+            if (
+                gone ||
+                (event?.target instanceof Node &&
+                    chip.current?.contains(event.target))
+            ) {
+                return;
+            }
+
+            gone = true;
+            const fade =
+                chip.current && !still()
+                    ? chip.current.animate(
+                          [
+                              { opacity: 1 },
+                              { opacity: 0, transform: 'translateY(-4px)' },
+                          ],
+                          { duration: 200, easing: 'ease', fill: 'forwards' },
+                      )
+                    : null;
+
+            if (fade) {
+                fade.finished.then(
+                    () => setResume(false),
+                    () => {},
+                );
+            } else {
+                setResume(false);
+            }
+        };
+        const timer = window.setTimeout(leave, 4000);
+        const events = ['pointerdown', 'wheel', 'touchmove'] as const;
+        events.forEach((name) =>
+            document.addEventListener(name, leave, {
+                capture: true,
+                passive: true,
+            }),
+        );
+
+        return () => {
+            window.clearTimeout(timer);
+            events.forEach((name) =>
+                document.removeEventListener(name, leave, { capture: true }),
+            );
+        };
+    }, [isOpen, talked, resume]);
+
     const hide = () => {
         if (closing.current) {
             return;
@@ -248,6 +307,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
 
         if (!box || still()) {
             setOpen(false);
+            setResume(true);
 
             return;
         }
@@ -277,6 +337,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                 stopClosing = null;
                 closing.current = false;
                 setOpen(false);
+                setResume(true);
             },
             () => {},
         );
@@ -405,8 +466,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     )}
                 </button>
             )}
-            {!isOpen && talked && (
+            {!isOpen && talked && resume && (
                 <button
+                    ref={chip}
                     type="button"
                     className={
                         chipAt
