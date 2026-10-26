@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\LocationSource;
+use App\Jobs\WarmStation;
 use App\Models\FavouriteStop;
 use App\Models\User;
 use App\Models\UserPlace;
@@ -11,6 +12,7 @@ use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Transit\NearbyStation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 /*
  * Today's Check departures without a picked stop: where the person is, else
@@ -76,17 +78,21 @@ test('last, the station is near the Veedel', function () {
     expect(todayStationFor($user))->toBe(['name' => 'Nippes Bf']);
 });
 
-test('a board Travel doesn’t keep yet is read after the response, and the page names its stop', function () {
+test('a board Travel doesn’t keep yet is read off the request, once per stop, and the page names its stop', function () {
+    Queue::fake();
     $user = User::factory()->onboarded()->create(['veedel' => null]);
     FavouriteStop::create(['user_id' => $user->id, 'name' => 'Neumarkt']);
     $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Neumarkt')->andReturn(null)
-        ->shouldNotReceive('named', 'closestTo')
-        ->shouldReceive('warm')->once()->with('Neumarkt'));
+        ->shouldNotReceive('named', 'closestTo', 'warm'));
 
     $page = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page');
+    // A second view while the first read is queued adds none.
+    $this->actingAs($user)->get(route('dashboard'))->assertOk();
 
     expect($page['props']['station'])->toBeNull()
         ->and($page['props']['stationWarming'])->toBe('Neumarkt');
+    Queue::assertPushedTimes(WarmStation::class, 1);
+    Queue::assertPushed(WarmStation::class, fn (WarmStation $job) => $job->stop === 'Neumarkt' && $job->queue === 'default');
 });
 
 test('the stops they pick most are quick picks only under the current personalisation wording', function () {

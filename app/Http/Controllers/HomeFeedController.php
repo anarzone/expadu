@@ -12,6 +12,7 @@ use App\Home\TodayNeeds;
 use App\Home\TodayPaperwork;
 use App\Home\TodaySaved;
 use App\Http\Controllers\Api\FavouriteStopController;
+use App\Jobs\WarmStation;
 use App\Models\FavouriteStop;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
@@ -108,8 +109,8 @@ class HomeFeedController extends Controller
     /**
      * Check departures without waiting on a cold board: a picked stop reads
      * at once (named(), a cache read once kept); the anchor's station is
-     * read only when Travel already keeps it, and otherwise it's read after
-     * this response (NearbyStation::warm) and the page polls for it.
+     * read only when Travel already keeps it, and otherwise it's read off the
+     * request (WarmStation, queued) and the page looks again for it.
      *
      * @return array{station: array<string, mixed>|null, warming: string|null}
      */
@@ -134,7 +135,7 @@ class HomeFeedController extends Controller
         }
         if ($nearby->kept((string) $name) === null) {
             $warm = (string) $name;
-            dispatch(fn () => app(NearbyStation::class)->warm($warm))->afterResponse();
+            WarmStation::dispatch($warm);
 
             return ['station' => null, 'warming' => $warm];
         }
