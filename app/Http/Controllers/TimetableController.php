@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
 use App\Http\Controllers\Api\FavouriteStopController;
+use App\Models\FavouriteStop;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\GtfsDepartureService;
@@ -32,6 +33,19 @@ class TimetableController extends Controller
         // A picked station (`?stop=`; Today's old `?view=timetable&stop=` too).
         $stop = trim((string) $request->query('stop', ''));
         $stop = $stop === '' ? null : mb_substr($stop, 0, 120);
+
+        // Their favourite stations' boards, built after the response, so a tap
+        // on one finds it ready (only on a visit, not a poll).
+        if (! $request->hasHeader('X-Inertia-Partial-Data')) {
+            $favourites = FavouriteStop::query()->where('user_id', $userId)->pluck('name')->all();
+            if ($favourites !== []) {
+                dispatch(function () use ($favourites) {
+                    foreach ($favourites as $name) {
+                        app(NearbyStation::class)->warm($name);
+                    }
+                })->afterResponse();
+            }
+        }
 
         return Inertia::render('timetable', [
             // Nearby: the picked station, else the closest one. An unknown

@@ -95,6 +95,17 @@ class GtfsDepartureService
         $this->triasService->prefetchDepartures($stopNames, $limit);
     }
 
+    /**
+     * Live departures near several points in parallel, so the
+     * getDeparturesNearby() calls that follow read them from cache.
+     *
+     * @param  list<array{lat: float, lng: float}>  $points
+     */
+    public function prefetchNearby(array $points, int $limit = 10): void
+    {
+        $this->triasService->prefetchNearby($points, $limit);
+    }
+
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
         $fallbackKey = "trias_last_good_v2_{$stopName}";
@@ -229,7 +240,7 @@ class GtfsDepartureService
                     ->selectRaw('gtfs_trips.trip_id, gtfs_routes.route_short_name as line,
                         gtfs_routes.route_long_name as route_name, gtfs_routes.route_color,
                         gtfs_routes.route_type, gtfs_trips.trip_headsign as direction,
-                        gtfs_stop_times.departure_time, gtfs_stop_times.stop_id')->get();
+                        gtfs_stop_times.departure_time, gtfs_stop_times.stop_id, gtfs_stop_times.stop_sequence')->get();
                 foreach ($rows as $row) {
                     $row->scheduled_at = $this->scheduledTime($serviceDay, $row->departure_time);
                     $row->service_date = $date;
@@ -564,14 +575,21 @@ class GtfsDepartureService
      */
     private function toRealEnds(Collection $departures): Collection
     {
+        // Each run's last stop in one pass over its own stop times (a
+        // correlated max() per row took 1.8 s on a cold Ebertplatz board).
         $last = DB::table('gtfs_stop_times as st')
             ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
             ->whereIn('st.trip_id', $departures->pluck('trip_id')->unique()->values())
-            ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
-            ->whereRaw('st.stop_sequence > (select min(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
-            ->get(['st.trip_id', 'st.stop_id', 's.stop_name'])
+            ->orderBy('st.trip_id')
+            ->orderByDesc('st.stop_sequence')
+            ->selectRaw('distinct on (st.trip_id) st.trip_id, st.stop_id, st.stop_sequence, s.stop_name')
+            ->get()
             ->keyBy('trip_id');
-        $departures = $departures->reject(fn (object $dep) => (string) ($last[$dep->trip_id]->stop_id ?? '') === (string) $dep->stop_id)->values();
+        // Arriving at its own last stop, after others (a one-stop record isn't an arrival).
+        $departures = $departures->reject(fn (object $dep) => isset($last[$dep->trip_id])
+            && (string) $last[$dep->trip_id]->stop_id === (string) $dep->stop_id
+            && (int) $dep->stop_sequence === (int) $last[$dep->trip_id]->stop_sequence
+            && (int) $dep->stop_sequence > 1)->values();
         $ends = $last->map(fn (object $row) => $row->stop_name);
 
         return $departures->map(function (object $dep) use ($ends) {
