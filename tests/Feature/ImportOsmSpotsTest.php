@@ -192,3 +192,19 @@ test('a mirror serving stale OSM data is refused', function (?string $base, bool
     'months old mirror' => ['2026-05-06T03:25:00Z', false],
     'missing timestamp' => [null, false],
 ]);
+
+test('one place mapped as a point and as a building is imported once, the richer record kept', function () {
+    $cmd = new ImportOsmSpots;
+    $unique = new ReflectionMethod($cmd, 'uniqueElements');
+    $node = ['type' => 'node', 'id' => 1, 'lat' => 50.9387, 'lon' => 6.9551, '_category' => 'museum', 'tags' => ['tourism' => 'museum', 'name' => 'Kolumba', 'website' => 'https://kolumba.de', 'opening_hours' => 'We-Mo 12:00-17:00']];
+    $way = ['type' => 'way', 'id' => 2, 'center' => ['lat' => 50.9388, 'lon' => 6.9552], '_category' => 'museum', 'tags' => ['tourism' => 'museum', 'name' => 'Kolumba']];
+    $far = ['type' => 'way', 'id' => 3, 'center' => ['lat' => 50.95, 'lon' => 6.97], '_category' => 'museum', 'tags' => ['tourism' => 'museum', 'name' => 'Kolumba']];
+    $tables = [
+        ['type' => 'node', 'id' => 4, 'lat' => 50.94, 'lon' => 6.96, '_category' => 'pitch', 'tags' => ['leisure' => 'pitch', 'sport' => 'table_tennis', 'name' => 'Tischtennis']],
+        ['type' => 'way', 'id' => 5, 'center' => ['lat' => 50.9401, 'lon' => 6.9601], '_category' => 'pitch', 'tags' => ['leisure' => 'pitch', 'sport' => 'table_tennis', 'name' => 'Tischtennis']],
+    ];
+
+    $ids = array_map(fn (array $e): string => $e['type'].'/'.$e['id'], $unique->invoke($cmd, [$node, $way, $far, ...$tables]));
+
+    expect($ids)->toContain('node/1', 'way/3', 'node/4', 'way/5')->not->toContain('way/2');
+});
