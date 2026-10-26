@@ -48,7 +48,7 @@ beforeEach(function () {
         // GTFS's clock: seconds after the service day's noon minus 12 h; in half an hour.
         'departs' => $now->getTimestamp() - $now->setTime(12, 0)->subHours(12)->getTimestamp() + 1800,
     ]);
-    Cache::forever(DelfiCancellations::VERSION_KEY, ['etag' => '"imported"', 'last_modified' => null]);
+    DB::table('delfi_imports')->insert(['id' => 1, 'etag' => '"imported"', 'last_modified' => null, 'imported_at' => now()]);
 });
 
 it('reads the feed against the timetable it numbers its trips by', function () {
@@ -71,6 +71,18 @@ it('keeps no cancellations or notices while the imported timetable is older than
         ->and(json_decode((string) Cache::get(DelfiCancellations::CANCELLED_KEY), true))->toBe([])
         ->and(CityNews::query()->where('source', 'delfi')->count())->toBe(0);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'realtime.pb'));
+});
+
+it('still reads the feed after the cache is lost, since the imported version is kept in the database', function () {
+    Http::fake([
+        'gtfs.test/static.zip' => Http::response('', 200, ['ETag' => '"imported"']),
+        'gtfs.test/realtime.pb' => Http::response(delfiFeed()),
+    ]);
+    Cache::flush();
+
+    expect(app(DelfiCancellations::class)->fetch())->toBe(1);
+    // And the import doesn't fetch a timetable it already has.
+    $this->artisan('transit:import-delfi')->expectsOutputToContain('nothing to do')->assertSuccessful();
 });
 
 it('takes what a vehicle has for no news', function () {
