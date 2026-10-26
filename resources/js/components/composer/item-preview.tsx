@@ -13,6 +13,15 @@ export type ItemDetails =
     | { place: Place; event?: never }
     | { event: EventOccurrence; place?: never };
 
+/*
+ * A plan stop's or a place card's preview. Hovering the title (a mouse)
+ * opens it after a moment and it closes once the pointer has left both the
+ * title and the card, after a short grace, so moving into the card keeps
+ * it. A click, a tap or a long press opens it to stay until a tap outside,
+ * Esc or ✕. Scrolling what it sits on closes it, and opening another
+ * preview closes this one (popover="auto"). Esc gives focus back to the
+ * title.
+ */
 export function ItemPreview({
     slot,
     children,
@@ -28,6 +37,9 @@ export function ItemPreview({
     const popover = useRef<HTMLDivElement>(null);
     const trigger = useRef<HTMLButtonElement>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // How it was opened: by hover it closes when the pointer leaves.
+    const via = useRef<'hover' | 'click'>('click');
+    const leaving = useRef<ReturnType<typeof setTimeout> | null>(null);
     const origin = useRef({ x: 0, y: 0 });
     const [open, setOpen] = useState(false);
     const [data, setData] = useState<ItemDetails | null>(null);
@@ -79,16 +91,72 @@ export function ItemPreview({
             if (timer.current) {
                 clearTimeout(timer.current);
             }
+
+            if (leaving.current) {
+                clearTimeout(leaving.current);
+            }
         },
         [],
     );
+    // Scrolling the list or page it sits on closes it; scrolling inside it doesn't.
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const onScroll = (event: Event) => {
+            if (
+                event.target instanceof Node &&
+                popover.current?.contains(event.target)
+            ) {
+                return;
+            }
+
+            popover.current?.hidePopover();
+        };
+        document.addEventListener('scroll', onScroll, {
+            capture: true,
+            passive: true,
+        });
+
+        return () =>
+            document.removeEventListener('scroll', onScroll, { capture: true });
+    }, [open]);
     function stopTimer() {
         if (timer.current) {
             clearTimeout(timer.current);
         }
     }
-    function show() {
+    function stay() {
+        if (leaving.current) {
+            clearTimeout(leaving.current);
+            leaving.current = null;
+        }
+    }
+    // The pointer left the title or the card: a hover preview goes after a
+    // short grace, unless the pointer comes back into either.
+    function leave() {
         stopTimer();
+
+        if (via.current !== 'hover' || !open) {
+            return;
+        }
+
+        stay();
+        leaving.current = setTimeout(() => popover.current?.hidePopover(), 200);
+    }
+    function show(how: 'hover' | 'click') {
+        stopTimer();
+        stay();
+
+        // A click on a preview hover opened keeps it open.
+        if (open) {
+            via.current = how === 'click' ? 'click' : via.current;
+
+            return;
+        }
+
+        via.current = how;
         const rect = trigger.current?.getBoundingClientRect();
 
         if (!rect || !popover.current) {
@@ -118,18 +186,25 @@ export function ItemPreview({
                 aria-haspopup="dialog"
                 aria-controls={id}
                 aria-expanded={open}
-                onClick={show}
+                onClick={() => show('click')}
                 onPointerEnter={(e) => {
                     if (e.pointerType === 'mouse') {
-                        timer.current = setTimeout(show, 500);
+                        stay();
+                        timer.current = setTimeout(() => show('hover'), 500);
                     }
                 }}
-                onPointerLeave={stopTimer}
+                onPointerLeave={(e) => {
+                    if (e.pointerType === 'mouse') {
+                        leave();
+                    } else {
+                        stopTimer();
+                    }
+                }}
                 onPointerDown={(e) => {
                     origin.current = { x: e.clientX, y: e.clientY };
 
                     if (e.pointerType !== 'mouse') {
-                        timer.current = setTimeout(show, 450);
+                        timer.current = setTimeout(() => show('click'), 450);
                     }
                 }}
                 onPointerMove={(e) => {
@@ -155,7 +230,20 @@ export function ItemPreview({
                 role="dialog"
                 aria-label={`Preview ${slot.name}`}
                 className="composer-item-preview"
-                onToggle={(e) => setOpen(e.newState === 'open')}
+                onPointerEnter={(e) => e.pointerType === 'mouse' && stay()}
+                onPointerLeave={(e) => e.pointerType === 'mouse' && leave()}
+                onToggle={(e) => {
+                    setOpen(e.newState === 'open');
+
+                    if (e.newState === 'closed') {
+                        stay();
+
+                        // Closed from inside (Esc, ✕): focus goes back to the title.
+                        if (popover.current?.contains(document.activeElement)) {
+                            trigger.current?.focus();
+                        }
+                    }
+                }}
             >
                 <button
                     className="composer-preview-close"
