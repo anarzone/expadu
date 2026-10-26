@@ -30,7 +30,7 @@
         'mainEntityOfPage' => route('blog.show', $post['slug']),
         'image' => asset($ogImage),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
-    {{-- Mirrors the visible breadcrumb in the article header. --}}
+    {{-- The trail behind the header's back link: Guides, then this guide. --}}
     <script type="application/ld+json">{!! json_encode([
         '@@context' => 'https://schema.org',
         '@type' => 'BreadcrumbList',
@@ -49,10 +49,9 @@
     <header class="article-hero">
         <div class="wrap">
             <nav class="breadcrumb" aria-label="Breadcrumb">
-                <a href="{{ route('blog.index') }}">Guides</a><span aria-hidden="true">/</span><span>{{ \Illuminate\Support\Str::limit($post['title'], 42) }}</span>
+                <a href="{{ route('blog.index') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Guides</a>
             </nav>
-            <span class="eyebrow">Guide</span>
-            <h1>{{ $post['title'] }}</h1>
+            <h1>{{ \App\Marketing\GermanCompounds::softHyphens($post['title']) }}</h1>
             <p class="dek">{{ $post['description'] }}</p>
             <div class="byline">
                 <span>{{ $readMinutes }} min read</span><span>By Anar · expat in Cologne</span><span class="checked">Official sources checked {{ $post['updated_at']->format('j F Y') }}</span>
@@ -88,6 +87,35 @@
             var toc = document.getElementById('article-toc');
 
             if (!body || !toc) { return; }
+
+            // A table too wide for the screen becomes one card per row, each
+            // value labelled with its column header (see .is-stacked).
+            var tables = body.querySelectorAll('table');
+
+            tables.forEach(function (table) {
+                var heads = table.querySelectorAll('thead th');
+
+                table.querySelectorAll('tbody tr').forEach(function (row) {
+                    row.querySelectorAll('td').forEach(function (cell, i) {
+                        var label = heads[i] ? heads[i].textContent.trim() : '';
+
+                        if (label) { cell.setAttribute('data-label', label); }
+                    });
+                });
+            });
+
+            function fitTables() {
+                tables.forEach(function (table) {
+                    table.classList.remove('is-stacked');
+
+                    if (table.scrollWidth > table.clientWidth + 1) { table.classList.add('is-stacked'); }
+                });
+            }
+
+            fitTables();
+            window.addEventListener('resize', fitTables);
+
+            if (document.fonts) { document.fonts.ready.then(fitTables); }
 
             var headings = body.querySelectorAll('h2');
 
