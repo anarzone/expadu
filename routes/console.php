@@ -147,3 +147,6 @@ Schedule::command('places:enrich-collect')->everyTenMinutes()->withoutOverlappin
 
 // Model-ready place features, rebuilt from the effective facts each night.
 Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping()->onOneServer();
+
+// "Download your data" files are kept 24 hours, then deleted with their rows.
+Schedule::command('account-exports:prune')->hourly()->withoutOverlapping()->onOneServer();

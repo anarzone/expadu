@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
     AccountPanel,
     CityPanel,
+    DataPanel,
     ComposerPanel,
     DeletePanel,
     LaterPanel,
@@ -51,6 +52,7 @@ export default function Settings() {
                             here.
                         </LaterPanel>
                     </div>
+                    <DataPanel />
                     <DeletePanel />
                 </div>
             </div>
