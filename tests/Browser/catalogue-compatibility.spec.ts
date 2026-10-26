@@ -78,14 +78,16 @@ test('a saved unavailable item keeps its name and time with a review note in Com
             await route.fulfill({ response, json: payload });
         },
     );
+    // The header's bookmark opens Saved in the panel, in place; Escape goes
+    // back to the conversation, whose workspace is the stubbed one.
     await page.goto('/dashboard');
     await page
         .getByRole('banner')
-        .getByRole('link', { name: 'Saved', exact: true })
+        .getByRole('button', { name: 'Saved', exact: true })
         .click();
-    await expect(page.locator('#workspace-panel')).toBeVisible();
+    await expect(page.locator('.composer-view')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#workspace-panel')).toBeHidden();
+    await expect(page.locator('.composer-view')).toBeHidden();
     const plan = page.locator('#composer-current-plan');
     await expect(
         plan.getByText('Saved park visit', { exact: true }),

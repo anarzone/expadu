@@ -6,12 +6,16 @@ use App\Bureaucracy\RuleSourcePolicy;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
+use App\Composer\DayAround;
+use App\Composer\PaperworkGlance;
 use App\Composer\PlanSlot;
 use App\Composer\WorkspaceStore;
+use App\Day\DayProjection;
 use App\Http\Requests\Composer\WorkspaceCommandRequest;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\Task;
+use App\Places\AroundKinds;
 use App\Services\UserLocationService;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
@@ -23,6 +27,24 @@ class ComposerWorkspaceController extends Controller
     public function show(Request $request, WorkspaceStore $store): JsonResponse
     {
         return response()->json($store->read($request->user()));
+    }
+
+    /**
+     * What Composer's page carries beside the workspace, for the panel on any page:
+     * Your day, what the Paperwork record has coming up, tonight's listings and
+     * the person's saved starting points (the new conversation's starters, My
+     * Plans' today and Starting point).
+     */
+    public function day(Request $request, DayProjection $day, PaperworkGlance $paperwork, DayAround $around): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'day' => $day->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
+            'paperwork' => $paperwork->for($user),
+            'around' => $around->for($user),
+            'savedPlaces' => ComposerController::savedPlaces($user),
+        ]);
     }
 
     /**
@@ -80,10 +102,22 @@ class ComposerWorkspaceController extends Controller
         return response()->json(['items' => array_values(array_map(function (Candidate $candidate) use ($day, $saved): array {
             $start = $candidate->fixedStart ?? $day->setTime(10, 0);
 
+            $spot = $candidate->type === 'spot';
+
             return (new PlanSlot($candidate, $start, $start->addMinutes($candidate->typicalDurationMin), 0))->toArray() + [
                 'summary' => $candidate->description,
                 'saved' => in_array($candidate->id, $saved, true),
                 'available' => ! $candidate->closedToday,
+                // As Around here names and colours it: "Café", in its kind's group ("Cafés").
+                'label' => $spot ? AroundKinds::label($candidate->category) : 'Event',
+                'kind' => $spot ? AroundKinds::icon($candidate->category) : 'event',
+                'group' => $spot ? AroundKinds::group($candidate->category) : 'Events',
+                // The day's listed hours only: category defaults are "not listed", never shown as hours.
+                'hours' => ! $spot ? null : match (true) {
+                    $candidate->closedToday => 'Closed on this day',
+                    $candidate->hoursAssumed || $candidate->opensAt === null || $candidate->closesAt === null => 'Hours not listed',
+                    default => 'Open '.$candidate->opensAt->setTimezone('Europe/Berlin')->format('H:i').'–'.$candidate->closesAt->setTimezone('Europe/Berlin')->format('H:i'),
+                },
             ];
         }, $pool))]);
     }
