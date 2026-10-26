@@ -5,6 +5,7 @@ namespace App\ContextEngine;
 use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Bureaucracy\ReadModel\PlanAttention;
 use App\Composer\WorkspaceStore;
+use App\Home\TodayNeeds;
 use App\Models\EventReminder;
 use App\Models\PlannedTrip;
 use App\Models\User;
@@ -68,6 +69,8 @@ final class DayImportance
         foreach ($days === [] ? [now(), now()->addDay()] : $days as $day) {
             Cache::forget(self::key($userId, CarbonImmutable::instance($day)->setTimezone('Europe/Berlin')->toDateString()));
         }
+        // Today's "Needs you" is worked out from the same day.
+        TodayNeeds::forget($userId, ...$days);
     }
 
     /**
