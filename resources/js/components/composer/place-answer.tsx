@@ -24,6 +24,8 @@ export type AnsweredPlace = {
     source?: 'osm' | 'overture' | 'transit';
     /** Why the assistant suggests it, from the person's own taste (opt-in only). */
     because?: string | null;
+    /** A large park's part ("Äußerer Grüngürtel (Sülz)"): with the id, what tells two cards apart. */
+    part?: string | null;
     /**
      * Around here's own row for it (App\Places\OpenNearby::rows, with its icon
      * and label): hours at the time, how far from where it searched, its street,
@@ -59,7 +61,10 @@ export function PlaceAnswer({
     /** "Not this" on an assistant's suggestion. */
     onNotThis?: (place: AnsweredPlace) => void;
 }) {
-    const [open, setOpen] = useState<number | null>(null);
+    // A card is its place and, for a large park, its part: two parts of one park
+    // are two cards, never one key or one selection.
+    const [open, setOpen] = useState<{ key: string; id: number } | null>(null);
+    const keyOf = (place: AnsweredPlace) => `${place.id}#${place.part ?? ''}`;
     const [saved, setSaved] = useState<Record<number, boolean>>({});
     const isSaved = (row: NonNullable<AnsweredPlace['row']>) =>
         saved[row.id] ?? row.saved ?? false;
@@ -108,14 +113,19 @@ export function PlaceAnswer({
             {rows ? (
                 <ul className="around answer-place-rows" role="list">
                     {places.map((place) => (
-                        <li key={place.id}>
+                        <li key={keyOf(place)}>
                             <PlaceRow
                                 place={{
                                     ...place.row!,
                                     saved: isSaved(place.row!),
                                 }}
-                                selected={open === place.id}
-                                onOpen={() => setOpen(place.id)}
+                                selected={open?.key === keyOf(place)}
+                                onOpen={() =>
+                                    setOpen({
+                                        key: keyOf(place),
+                                        id: place.id,
+                                    })
+                                }
                                 onHover={() => undefined}
                                 onSave={() => save(place.row!)}
                             />
@@ -132,7 +142,7 @@ export function PlaceAnswer({
 
                         return (
                             <li
-                                key={place.id}
+                                key={keyOf(place)}
                                 className={
                                     place.because || onNotThis
                                         ? 'nearby-answer-item'
@@ -173,7 +183,7 @@ export function PlaceAnswer({
                 </div>
             )}
             <PlaceSheet
-                place={open}
+                place={open?.id ?? null}
                 from={from}
                 onClose={() => setOpen(null)}
                 onSaved={(id, on) => setSaved((all) => ({ ...all, [id]: on }))}

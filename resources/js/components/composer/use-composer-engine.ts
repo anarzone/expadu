@@ -1,6 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import { ask } from '@/actions/App/Http/Controllers/ComposerController';
+import {
+    act as actRoute,
+    applyAction,
+    ask,
+    undoAction,
+} from '@/actions/App/Http/Controllers/ComposerController';
 import {
     show,
     update,
@@ -169,7 +174,7 @@ export function useComposerEngine(
      * notice) is asked again without the AI, and the answer says so: a timeout or
      * a server error isn't asked twice, since the first may still be answering.
      */
-    async function answer(notice: AiNotice | null) {
+    async function answer(notice: AiNotice | null, extra: object = {}) {
         setBusy('Looking into it…');
         const origin = on.current.origin ?? null;
         const where = {
@@ -196,7 +201,7 @@ export function useComposerEngine(
             setState(
                 await api<Workspace>(
                     ask.url(),
-                    { ...where, ...permit },
+                    { ...where, ...permit, ...extra },
                     undefined,
                     ASK_TIMEOUT,
                 ).catch((error: unknown) =>
@@ -244,7 +249,10 @@ export function useComposerEngine(
     }
 
     /** Try again: the same message, asked again, not sent again. */
-    async function again(notice: AiNotice | null = aiNotice) {
+    async function again(
+        notice: AiNotice | null = aiNotice,
+        extra: object = {},
+    ) {
         if (busyRef.current) {
             return;
         }
@@ -255,7 +263,7 @@ export function useComposerEngine(
         setRetryMessage(null);
 
         try {
-            await answer(notice);
+            await answer(notice, extra);
         } catch {
             await unanswered();
         } finally {
@@ -264,6 +272,55 @@ export function useComposerEngine(
             on.current.onSettled?.();
         }
     }
+
+    /**
+     * A change Composer made or proposed (the "Composer does things" canvas):
+     * Undo (24 hours), Apply under Ask first, or a record row changed in place.
+     * The server makes it through the app's own action and answers with the
+     * workspace, the change's line in it; a refusal says why in the bar.
+     */
+    async function act(url: string, body: object) {
+        if (busyRef.current) {
+            return;
+        }
+
+        busyRef.current = true;
+        setBusy('Updating…');
+        setError('');
+
+        try {
+            setState(await api<Workspace>(url, body));
+            on.current.onAnswered?.();
+        } catch (err) {
+            if (err instanceof ApiError && err.data.workspace) {
+                setState(err.data.workspace as Workspace);
+            }
+
+            setError(
+                err instanceof Error ? err.message : 'That didn’t go through.',
+            );
+        } finally {
+            setBusy('');
+            busyRef.current = false;
+        }
+    }
+    const undo = (token: string) => void act(undoAction.url(), { token });
+    const apply = (token: string) => void act(applyAction.url(), { token });
+    const change = (key: string, value: string) =>
+        void act(actRoute.url(), { action: 'paperwork_fact', key, value });
+    /** Paperwork's say-so for this message: the same message, asked again with it. */
+    const allow = (disclosure: {
+        notice_version: string;
+        provider_version: string;
+    }) =>
+        void again(aiNotice, {
+            paperwork_processing: {
+                consent: true,
+                request_id: crypto.randomUUID(),
+                notice_version: disclosure.notice_version,
+                provider_version: disclosure.provider_version,
+            },
+        });
 
     /** The bar's Retry: asks again when the message is in, else sends it. */
     function retry() {
@@ -441,5 +498,9 @@ export function useComposerEngine(
         again,
         retry,
         leftUnanswered,
+        undo,
+        apply,
+        change,
+        allow,
     };
 }
