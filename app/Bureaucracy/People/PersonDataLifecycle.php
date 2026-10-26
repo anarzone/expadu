@@ -18,8 +18,6 @@ use App\Models\BureaucracyQuestionSession;
 use App\Models\BureaucracyRelationship;
 use App\Models\BureaucracyRequirementUse;
 use App\Models\User;
-use App\Notifications\BureaucracyDeadlineNotification;
-use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Privacy\LegacyProcessingUsage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -166,9 +164,10 @@ final class PersonDataLifecycle
             $subject->userTasks()->delete();
             Alert::query()->where('user_id', $subject->id)
                 ->where(fn ($query) => $query->where('category', 'bureaucracy')->orWhereNotNull('guidance_reference'))->delete();
+            // Rows stored by notification classes that no longer exist.
             $subject->notifications()->whereIn('type', [
-                BureaucracyDeadlineNotification::class,
-                PermanentResidencyEligibleNotification::class,
+                'App\\Notifications\\BureaucracyDeadlineNotification',
+                'App\\Notifications\\PermanentResidencyEligibleNotification',
             ])->delete();
         }
         $current->update(['display_label' => null, 'record_status' => 'erased', 'record_version' => $current->record_version + 1, 'erased_at' => now()->utc()]);
