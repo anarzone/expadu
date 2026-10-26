@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -279,7 +280,7 @@ function RecordActions({
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf(),
+                ...csrfHeaders(),
             },
         }).catch(() => null);
         setDownloading(false);
@@ -570,14 +571,6 @@ function berlinDay(iso: string): string {
     return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Berlin',
     }).format(new Date(iso));
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 /** The file name the server gives (Content-Disposition), or a plain one. */

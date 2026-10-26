@@ -21,7 +21,8 @@ export class TripConflictError extends TripRequestError {
 export async function persistTrip(
     url: string,
     body: Record<string, unknown> | undefined,
-    csrf: string,
+    /** The write's CSRF header (csrfHeaders()). */
+    csrf: Record<string, string>,
     refresh: () => Promise<boolean>,
 ): Promise<void> {
     const response = await fetch(url, {
@@ -30,7 +31,7 @@ export async function persistTrip(
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf,
+            ...csrf,
         },
         body: body ? JSON.stringify(body) : undefined,
     });

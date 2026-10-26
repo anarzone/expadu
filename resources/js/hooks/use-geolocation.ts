@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 export type GeoPosition = {
     lat: number;
@@ -9,11 +10,6 @@ export type GeoPosition = {
 };
 
 export type GeoQuality = 'high' | 'medium' | 'low' | 'stale' | 'estimated';
-
-const CSRF = () =>
-    document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content') || '';
 
 // ── Constants ──
 export const MAX_LOCATION_ACCURACY_M = 200; // Reject readings worse than 200m
@@ -68,7 +64,7 @@ async function sendPing(
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF(),
+                ...csrfHeaders(),
             },
             body: JSON.stringify({
                 event_type: 'location_ping',
