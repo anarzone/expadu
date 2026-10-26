@@ -34,7 +34,6 @@ import { DeparturesAnswer } from './departures-answer';
 import type { AnsweredBoard } from './departures-answer';
 import { EventAnswer } from './event-answer';
 import type { AnsweredEvent } from './event-answer';
-import type { Panel } from './frame';
 import { Guidance } from './guidance';
 import { notThis } from './not-this';
 import { PersonaliseInvite } from './personalise-invite';
@@ -42,6 +41,7 @@ import { PlaceAnswer } from './place-answer';
 import type { AnsweredPlace, PlaceFrom } from './place-answer';
 import { readList } from './read-words';
 import type { Message } from './types';
+import type { Collection } from './views';
 
 /*
  * Composer's answers as the approved design draws them
@@ -55,7 +55,7 @@ export type Suggestion = {
     label: string;
     prompt?: string;
     href?: string;
-    nav?: Panel;
+    nav?: Collection;
 };
 
 type Checklist = {
@@ -476,7 +476,7 @@ function Suggestions({
 }: {
     suggestions: Suggestion[];
     onAsk: (prompt: string) => void;
-    onPanel: (panel: Panel) => void;
+    onPanel: (panel: Collection) => void;
 }) {
     return (
         <div className="reply-suggestions">
@@ -517,17 +517,20 @@ export function AnswerBody({
     planned,
     onAddEvent,
     calls,
+    firstAsk = false,
 }: {
     message: AnswerMessage;
     /** The latest reply offers next steps; older ones don't, so they don't pile up. */
     latest: boolean;
     onAsk: (prompt: string) => void;
-    onPanel: (panel: Panel) => void;
+    onPanel: (panel: Collection) => void;
     /** Whether a listed event is in its day's plan already. */
     planned: (event: AnsweredEvent) => boolean;
     onAddEvent: (event: AnsweredEvent) => void;
     /** Undo, Apply and changes in place, for a change Composer made or proposed. */
     calls?: ActionCalls;
+    /** This reply holds the conversation's first permission ask (its notice starts open). */
+    firstAsk?: boolean;
 }) {
     // "Not this" on an assistant's suggestions, for people who turned learning on
     // (only then is it kept): the card goes at once, with Undo.
@@ -538,10 +541,7 @@ export function AnswerBody({
             }
         ).userSettings?.personalisation === true;
     const [left, setLeft] = useState<string[]>([]);
-    const leave = (
-        key: string,
-        item: { type: 'event' | 'spot'; id: number },
-    ) => {
+    const leave = (key: string, item: { type: 'event'; id: number }) => {
         setLeft((keys) => [...keys, key]);
         notThis(item, () => setLeft((keys) => keys.filter((k) => k !== key)));
     };
@@ -554,8 +554,6 @@ export function AnswerBody({
             (event) =>
                 !left.includes(`event:${event.id}:${event.occurrence_start}`),
         );
-    const shownPlaces = (places: AnsweredPlace[] | undefined) =>
-        places?.filter((place) => !left.includes(`spot:${place.id}`));
     const eventsCard = (list: AnsweredEvent[] | undefined) => {
         const events = shownEvents(list);
 
@@ -580,22 +578,8 @@ export function AnswerBody({
         list: AnsweredPlace[] | undefined,
         from?: PlaceFrom | null,
     ) => {
-        const places = shownPlaces(list);
-
-        return places?.length ? (
-            <PlaceAnswer
-                places={places}
-                from={from}
-                onNotThis={
-                    suggesting
-                        ? (place) =>
-                              leave(`spot:${place.id}`, {
-                                  type: 'spot',
-                                  id: place.id,
-                              })
-                        : undefined
-                }
-            />
+        return list?.length ? (
+            <PlaceAnswer places={list} from={from} notThis={suggesting} />
         ) : null;
     };
     const after = (
@@ -727,7 +711,12 @@ export function AnswerBody({
                     ) : null;
                 case 'permission':
                     return calls ? (
-                        <Permission key={index} block={block} calls={calls} />
+                        <Permission
+                            key={index}
+                            block={block}
+                            calls={calls}
+                            first={firstAsk}
+                        />
                     ) : null;
                 case 'guidance':
                     return <Guidance key={index} query={block.query} />;
@@ -801,6 +790,14 @@ export function AnswerBody({
         </>
     );
 }
+
+/** The reply holding a conversation's first permission ask, if any. */
+export const firstAskId = (messages: Message[]) =>
+    messages.find(
+        (message) =>
+            isAnswer(message) &&
+            message.blocks?.some((block) => block.type === 'permission'),
+    )?.id;
 
 /** An assistant's answer with nothing in it: no words, no cards, nothing to do next. */
 const emptyAnswer = (message: AnswerMessage) =>

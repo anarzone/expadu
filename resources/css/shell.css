@@ -723,14 +723,12 @@ html {
         outline: 2px solid var(--color-focus);
         outline-offset: 3px;
     }
-    /* Scrolling down: the menu and Composer's button step away (the
-       shell's, or Composer's own on its page, as the mock's section-bar.css
-       has it), so Composer's text box can take the menu's place; moving
+    /* Scrolling down: the menu and Composer's button step away (as the
+       mock's section-bar.css has it), so Composer's text box can take the menu's place; moving
        into the menu with the keyboard keeps it. Out of the way while the
        keyboard is open, back as it closes. */
     body.menu-away .shell-nav:not(:focus-within),
     body.menu-away .shell-composer-round:not(:focus),
-    body.menu-away .composer-here:not(:focus),
     :root.keyboard-open :is(.shell-nav, .shell-composer-round) {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
@@ -757,7 +755,7 @@ html {
 }
 
 /* ── Composer's tray: one panel to ask in from any page, the box at its foot
-   (owner, 22 Oct 2026: "anchor at the bottom"). On phones it opens above the
+   (owner, 22 Oct 2026: "anchor at the bottom"). On phones it takes the screen over the
    floating sections; from 701px it rises at the foot of the screen, centred,
    with the page dimmed behind it. The panel grows up from the box. ─────── */
 .composer-tray {
@@ -779,25 +777,33 @@ html {
     box-shadow: 0 8px 28px #3e352b1c;
     transform-origin: bottom center;
 }
-/* The box is a field in the foot. */
-.composer-tray form {
+/* The box is a field in the foot (ComposerBox, the panel's and Full
+   Composer's alike). */
+.composer-box form {
     padding: 4px 6px 2px 4px;
     border: 1px solid var(--color-border);
     border-radius: 20px;
     background: var(--color-bg-surface);
 }
-.composer-tray form:has(textarea:focus) {
+.composer-box form:has(textarea:focus) {
     border-color: var(--color-border-strong);
 }
-/* Every icon in the tray is 20px, as the mock's are. */
-.composer-tray svg {
+/* Every icon in the tray and the box is 20px, as the mock's are. */
+:is(.composer-tray, .composer-box) svg {
     width: 20px;
     height: 20px;
+}
+/* On a phone the panel is Full Composer (owner, 23 Oct 2026): over the
+   floating sections too, its foot at the screen's. */
+@media (max-width: 700px) {
+    .composer-tray {
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
 }
 :root.keyboard-open .composer-tray {
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
-.composer-tray textarea {
+.composer-box textarea {
     display: block;
     /* Inset 8px a side, as the mock's request sits in its .composer-entry. */
     width: calc(100% - 16px);
@@ -816,19 +822,19 @@ html {
     font-size: var(--text-section) !important;
     line-height: 24px;
 }
-.composer-tray textarea::placeholder {
+.composer-box textarea::placeholder {
     color: var(--color-text-muted);
 }
-.composer-tray-tools {
+.composer-box-tools {
     display: flex;
     align-items: center;
     gap: 4px;
     margin-top: 6px;
 }
-.composer-tray-actions {
+.composer-box-actions {
     position: relative;
 }
-.composer-tray-actions > button {
+.composer-box-actions > button {
     display: grid;
     place-items: center;
     gap: 7px;
@@ -841,21 +847,21 @@ html {
     color: var(--color-text-soft);
     cursor: pointer;
 }
-.composer-tray-actions > button:is(:hover, :active) {
+.composer-box-actions > button:is(:hover, :active) {
     background: var(--color-bg-quiet);
 }
-.composer-tray-actions > button svg {
+.composer-box-actions > button svg {
     transition: transform 160ms ease;
 }
-.composer-tray-actions > button[aria-expanded='true'] svg {
+.composer-box-actions > button[aria-expanded='true'] svg {
     transform: rotate(45deg);
 }
-.composer-tray-menu {
+.composer-box-menu {
     position: absolute;
     bottom: calc(100% + 10px);
     left: 0;
-    z-index: 1;
-    width: min(230px, calc(100vw - 48px));
+    z-index: 3;
+    width: min(288px, calc(100vw - 48px));
     padding: 6px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -863,35 +869,51 @@ html {
     box-shadow: 0 8px 32px #3e352b1f;
     animation: composer-menu-in 160ms ease-out;
 }
-.composer-tray-menu a {
+.composer-box-menu button {
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 100%;
     min-height: 44px;
     padding: 10px 12px;
     box-sizing: border-box;
+    border: 0;
     border-radius: var(--radius-md);
+    background: transparent;
     color: var(--color-text);
+    font: inherit;
     font-size: 15px;
     line-height: 1.5;
     text-align: left;
-    text-decoration: none;
+    cursor: pointer;
 }
-.composer-tray-menu a:is(:hover, :focus-visible) {
+.composer-box-menu button:is(:hover, :focus-visible) {
     background: var(--color-bg-quiet);
     outline: none;
 }
-.composer-tray-menu a:last-child {
+.composer-box-menu button:disabled {
+    color: var(--color-text-muted);
+    cursor: default;
+}
+.composer-box-menu button svg {
+    flex: none;
+    color: var(--color-text-soft);
+}
+.composer-box-menu small {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Its three groups: the collections, what adds or sets, and a new start. */
+.composer-box-menu [role='group'] + [role='group'] {
+    margin-top: 4px;
+    padding-top: 4px;
     border-top: 1px solid var(--color-border);
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
-/* An icon on its line of text, as the mock's inline icons sit
-   (its + and close, and its menu's icons). */
-.composer-tray-icon svg {
-    display: inline;
-    vertical-align: baseline;
-}
-.composer-tray-send {
+.composer-box-send {
     display: grid;
     place-items: center;
     gap: 0;
@@ -908,18 +930,18 @@ html {
     transition: background-color 160ms ease;
 }
 /* The arrow at the line icons' 1.7px, as the mock draws it. */
-.composer-tray-send svg {
+.composer-box-send svg {
     stroke-width: 1.7px;
 }
-.composer-tray-send:disabled {
+.composer-box-send:disabled {
     background-color: transparent;
     color: var(--color-border-strong);
     cursor: default;
 }
-.composer-tray-send:hover:not(:disabled) {
+.composer-box-send:hover:not(:disabled) {
     background-color: var(--color-action-hover);
 }
-.composer-tray :is(a, button):focus-visible {
+:is(.composer-tray, .composer-box) :is(a, button):focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
 }
@@ -941,6 +963,15 @@ html {
     color: var(--color-text);
     text-align: left;
     box-shadow: 0 -18px 50px -30px rgb(33 29 21 / 0.55);
+}
+/* While the panel's code or conversations load (rarely: they load ahead
+   when the page is idle): the start's room, so it opens at its size. */
+.composer-tray-start.is-loading {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 260px;
 }
 .composer-tray-head {
     flex: none;
@@ -965,7 +996,7 @@ html {
     background: var(--color-select-text);
     color: var(--color-text-on-action);
 }
-.composer-tray .composer-tray-mark svg {
+:is(.composer-tray, .composer-full-head) .composer-tray-mark svg {
     width: 14px;
     height: 14px;
 }
@@ -986,6 +1017,17 @@ html {
     white-space: nowrap;
     text-overflow: ellipsis;
     text-decoration: none;
+}
+.composer-mode-short {
+    display: none;
+}
+@media (max-width: 700px) {
+    .composer-mode-long {
+        display: none;
+    }
+    .composer-mode-short {
+        display: inline;
+    }
 }
 .composer-mode-chip:active {
     background: var(--color-bg-hover, var(--color-border));
@@ -1022,7 +1064,9 @@ html {
     height: 40px;
     margin-left: -8px;
 }
-.composer-tray :is(.composer-tray-full, .composer-tray-head-button) svg {
+:is(.composer-tray, .composer-full-head)
+    :is(.composer-tray-full, .composer-tray-head-button)
+    svg {
     width: 17px;
     height: 17px;
 }
@@ -1035,17 +1079,12 @@ html {
         height: 48px;
         padding: 0 4px 0 14px;
     }
+    /* No Full Composer on a phone (owner, 23 Oct 2026): the panel is it. */
     .composer-tray-full {
-        width: 44px;
-        height: 44px;
-        padding: 0;
+        display: none;
     }
-    .composer-tray-full span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
+    .composer-tray-head-button:last-child {
+        margin-left: auto;
     }
 }
 @media (min-width: 701px) {
@@ -1057,7 +1096,7 @@ html {
         padding: 8px 12px 12px;
         box-shadow: 0 24px 60px -24px #211d1599;
     }
-    .composer-tray-menu a {
+    .composer-box-menu button {
         font-size: 16px;
     }
 }
@@ -1077,11 +1116,11 @@ html {
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .composer-tray-menu {
+    .composer-box-menu {
         animation: none;
     }
-    .composer-tray-actions > button svg,
-    .composer-tray-send {
+    .composer-box-actions > button svg,
+    .composer-box-send {
         transition: none;
     }
 }
@@ -1125,7 +1164,7 @@ html {
 }
 
 /* Who reads the request, said before Send (Composer's AI line, as under its own box). */
-.composer-tray .composer-ai-notice {
+.composer-box .composer-ai-notice {
     margin: 8px 6px 0;
     color: var(--color-text-soft);
     font-size: var(--text-micro);
@@ -1148,7 +1187,7 @@ html {
     outline-offset: 3px;
     box-shadow: 0 0 0 6px var(--color-paper-bg);
 }
-.composer-tray .composer-ai-notice a {
+.composer-box .composer-ai-notice a {
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;

@@ -12,7 +12,7 @@ import {
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { aiPermit } from './ai-notice';
 import type { AiNotice } from './ai-notice';
-import type { PlanOrigin } from './origin-picker';
+import type { PlanOrigin } from './origin-store';
 import { watchProgress } from './progress';
 import { api, ApiError } from './types';
 import type { Command, Slot, Workspace } from './types';
