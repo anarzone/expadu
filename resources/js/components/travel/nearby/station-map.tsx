@@ -23,52 +23,6 @@ import './station-map.css';
  * On phones the map pans sideways and the pick bar stays on top.
  */
 
-/** The station's lines map, once the timetable knows the station. */
-export function useLinesMap(
-    station: Pick<Station, 'name' | 'lat' | 'lng'>,
-): LinesMapData | null {
-    const [map, setMap] = useState<{
-        key: string;
-        data: LinesMapData | null;
-    } | null>(null);
-    const key =
-        station.lat !== null && station.lng !== null
-            ? `${station.name}|${station.lat}|${station.lng}`
-            : '';
-
-    useEffect(() => {
-        if (!key || station.lat === null || station.lng === null) {
-            return;
-        }
-
-        const controller = new AbortController();
-        const query = new URLSearchParams({
-            stop: station.name,
-            lat: String(station.lat),
-            lng: String(station.lng),
-        });
-
-        fetch(`/api/travel/lines-map?${query}`, {
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-            signal: controller.signal,
-        })
-            .then((response) => (response.ok ? response.json() : null))
-            .then((body: { map: LinesMapData | null } | null) =>
-                setMap({ key, data: body?.map ?? null }),
-            )
-            .catch(() => {
-                // Offline or aborted: no map, and no switch to it.
-            });
-
-        return () => controller.abort();
-    }, [key, station.name, station.lat, station.lng]);
-
-    const data = map?.key === key ? map.data : null;
-
-    return data && (data.lines.length || data.buses.length) ? data : null;
-}
-
 const halo = {
     paintOrder: 'stroke',
     stroke: '#fbf6ec',

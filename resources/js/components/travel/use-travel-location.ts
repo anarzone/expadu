@@ -66,7 +66,12 @@ export type LocateError =
     | 'unsaved'
     | 'timeout';
 
-export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
+export function useTravelLocation({
+    onAnchored,
+}: {
+    /** `moved`: more than 100 m from where the page was worked out from. */
+    onAnchored: (moved: boolean) => void;
+}) {
     const enabled = useLocationSharingEnabled();
     const [locating, setLocating] = useState(false);
     const [error, setError] = useState<LocateError | null>(null);
@@ -81,6 +86,8 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
 
     const confirm = useCallback(
         async (lat: number, lng: number): Promise<boolean> => {
+            let moved = true;
+
             try {
                 const response = await fetch('/api/location/confirm', {
                     method: 'POST',
@@ -96,13 +103,17 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
                 if (!response.ok) {
                     return false;
                 }
+
+                moved =
+                    ((await response.json()) as { moved?: boolean }).moved !==
+                    false;
             } catch {
                 return false;
             }
 
             anchor.current = { lat, lng };
             lastAt.current = Date.now();
-            anchored.current();
+            anchored.current(moved);
 
             return true;
         },
