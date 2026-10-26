@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import {
+    deleteConversation as destroy,
+    renameConversation as rename,
+} from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { EventRichDetail } from '@/components/events/event-rich-detail';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -17,7 +21,7 @@ import { ItemPreview } from './item-preview';
 import type { ItemDetails } from './item-preview';
 import { setComposerStart, useComposerStart } from './origin-store';
 import type { PlanOrigin } from './origin-store';
-import { today as todayIn } from './types';
+import { api, today as todayIn } from './types';
 import type { Plan, Slot, Workspace } from './types';
 import { useComposerEngine } from './use-composer-engine';
 import type { EngineSwap } from './use-composer-engine';
@@ -142,6 +146,44 @@ export function useComposerSurface(
         return false;
     };
 
+    /**
+     * A conversation renamed (empty: its automatic title) or deleted for good,
+     * the person's own only. Deleting the open one leaves an empty one open,
+     * listed nowhere, so no new chat appears.
+     */
+    const manage = async (
+        url: string,
+        body: Record<string, unknown>,
+    ): Promise<boolean> => {
+        try {
+            engine.setState(await api<Workspace>(url, body));
+            engine.setError('');
+
+            return true;
+        } catch (reason) {
+            engine.setError(
+                reason instanceof Error
+                    ? reason.message
+                    : 'That didn’t work. Please try again.',
+            );
+
+            return false;
+        }
+    };
+    const renameConversation = (id: string, title: string) =>
+        manage(rename.url(id), { _method: 'PATCH', title });
+    const deleteConversation = async (id: string) => {
+        const open = engine.stateRef.current.active === id;
+        const done = await manage(destroy.url(id), { _method: 'DELETE' });
+
+        if (done && open) {
+            setPendingFresh(false);
+            setSwap(null);
+        }
+
+        return done;
+    };
+
     // The days the views open on, and the place or event open in its sheet.
     const [browseDate, setBrowseDate] = useState(todayIn);
     const [plansDate, setPlansDate] = useState<string | null>(null);
@@ -167,6 +209,8 @@ export function useComposerSurface(
         pendingFresh,
         send,
         resume,
+        renameConversation,
+        deleteConversation,
         browseDate,
         setBrowseDate,
         plansDate,
@@ -476,6 +520,8 @@ export function ComposerSurface({
                 <HistoryView
                     workspace={workspace}
                     busy={!!busy}
+                    onRename={surface.renameConversation}
+                    onDeleteOne={surface.deleteConversation}
                     onBack={back}
                     onResume={(id) => void resume(id)}
                     onDelete={async () => {
