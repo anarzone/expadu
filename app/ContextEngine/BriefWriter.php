@@ -4,21 +4,23 @@ namespace App\ContextEngine;
 
 use App\Composer\Answers\AroundCheck;
 use App\Models\User;
+use App\Privacy\ExternalProcessingGate;
+use App\Privacy\ProcessingOptIns;
+use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Support\Facades\Http;
 
 /**
  * The AI's part in a brief (owner, 26 Oct 2026: Haiku ranks, merges and writes, never inventing):
  * the items' own facts in, at most three lines out, each saying which items it says, each checked
  * against those items' facts as Composer's answers are (AroundCheck). A line that doesn't hold is
- * dropped; with none left, the template writes the brief (BriefText). Paperwork never goes to it:
- * its line ("needs attention") is added after.
+ * dropped; with the top items or a risk unsaid, the template writes the brief (BriefText).
+ * Paperwork never goes to it: its line ("needs attention") is added after.
  *
- * A person's day goes to the AI only with their permission for it, and nothing asks for that yet:
- * every AI call here is consented per request (ExternalProcessingGate), and a brief is no request
- * of theirs. Until the owner decides how people turn AI-written briefs on (with Settings, phase
- * 3), write() writes nothing and the template writes every brief; compose() is what it will run,
- * and what the brief eval (notifications:brief-eval) runs on made-up days.
+ * Only for someone who turned AI-written briefs on (owner, 26 Oct 2026: opt-in, off by default):
+ * each brief gets its own permission under their standing yes (ProcessingOptIns) and goes through
+ * the gate like every request (ExternalProcessingGate); without it, the template writes.
  */
 final class BriefWriter
 {
@@ -45,18 +47,47 @@ final class BriefWriter
             'uses' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'the ids of the items this line says ("i1")'],
         ], 'required' => ['text', 'uses']]]], 'required' => ['lines']]];
 
-    public function __construct(private AroundCheck $check) {}
+    /** What each item a brief sends is, as its notice names it (ProcessingPurpose::BRIEF_WORDS). */
+    public const CATEGORIES = ['trip' => 'your_planned_ways', 'trip_change' => 'your_planned_ways', 'event' => 'events_you_are_going_to',
+        'plan' => 'your_plan_for_the_day', 'disruption' => 'transit_notices', 'delay' => 'transit_notices', 'weather' => 'weather', 'shops' => 'shops_closed'];
+
+    public function __construct(private AroundCheck $check, private ProcessingOptIns $optIns, private ExternalProcessingGate $gate) {}
 
     /**
-     * The brief's lines as the AI writes them for this person, or null for the template.
+     * The brief's lines as the AI writes them for this person, under their own permission, or null
+     * for the template.
      *
      * @param  list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int}>  $items
      * @return list<string>|null
      */
     public function write(User $user, array $items, CarbonImmutable $day, string $kind): ?array
     {
-        // No permission for it exists yet (see above).
-        return null;
+        $context = ['day' => $day->toDateString(), 'kind' => $kind, 'facts' => array_column(self::sendable($items), 'facts', 'id')];
+        if (count($context['facts']) < 2) {
+            return null;
+        }
+        $permit = $this->optIns->permit($user, ProcessingPurpose::NotificationBrief, $context);
+        if ($permit === null) {
+            return null;
+        }
+
+        return $this->compose($items, $day, $kind, fn (array $request): ?array => $this->gate->send($permit, ProcessingPurpose::NotificationBrief, $context,
+            fn () => Http::baseUrl((string) config('services.llm.base_url'))
+                ->withOptions(['allow_redirects' => false])
+                ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
+                ->timeout((int) config('services.llm.timeout', 8))->connectTimeout(3)
+                ->post('/v1/messages', $request)));
+    }
+
+    /**
+     * What may go to the AI: every item but Paperwork.
+     *
+     * @param  list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int}>  $items
+     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int}>
+     */
+    public static function sendable(array $items): array
+    {
+        return array_values(array_filter($items, fn (array $item): bool => isset(self::CATEGORIES[$item['kind']])));
     }
 
     /**
@@ -91,7 +122,7 @@ final class BriefWriter
     public function compose(array $items, CarbonImmutable $day, string $kind, Closure $send): ?array
     {
         $paperwork = array_values(array_filter($items, fn (array $item): bool => $item['kind'] === 'paperwork'));
-        $sent = array_values(array_filter($items, fn (array $item): bool => $item['kind'] !== 'paperwork'));
+        $sent = self::sendable($items);
         if (count($sent) < 2) {
             return null;
         }
