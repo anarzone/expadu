@@ -77,6 +77,13 @@ export type PlanAnswer = {
         lifts: { known: boolean; by_journey: (LiftOut[] | null)[] };
     };
     city?: string | null;
+    /** Rheinlandtarif advice for the first way by transit (FareAdvisor). */
+    ticket?: {
+        covered_by_deutschlandticket: boolean;
+        price_eur: number | null;
+        estimated: boolean;
+        label: string;
+    } | null;
 };
 
 /** One option as Plan a trip lists it: the journey and what it knows about it. */
@@ -341,6 +348,8 @@ export type Check = {
     tone: 'calm' | 'unsure' | 'attention' | 'conflict';
     /** The KVB notices check: each notice's words, with its page. */
     notices?: { words: string; lang: 'en' | 'de'; url: string | null }[];
+    /** The ticket check: whether you said you hold a Deutschlandticket. */
+    ticket?: { held: boolean };
 };
 
 const conditionWord: Record<string, string> = {
@@ -526,6 +535,35 @@ export function checksFor(
                     tone: 'calm',
                 },
     );
+
+    // The fare, asked in place: with a Deutschlandticket a ride costs nothing more.
+    const ticket = answer.ticket;
+
+    if (ticket) {
+        const price =
+            ticket.price_eur === null
+                ? null
+                : `${ticket.estimated ? '≈ ' : ''}€${ticket.price_eur.toFixed(2)}`;
+        checks.push(
+            ticket.covered_by_deutschlandticket
+                ? {
+                      short: 'Deutschlandticket',
+                      title: 'Ticket',
+                      text: 'Covered by your Deutschlandticket',
+                      icon: 'ticket',
+                      tone: 'calm',
+                      ticket: { held: true },
+                  }
+                : {
+                      short: price ?? ticket.label,
+                      title: 'Ticket',
+                      text: `${ticket.label}${price ? ` · ${price}` : ''}${ticket.estimated ? ', estimated from the distance' : ''}`,
+                      icon: 'ticket',
+                      tone: 'calm',
+                      ticket: { held: false },
+                  },
+        );
+    }
 
     return checks;
 }
