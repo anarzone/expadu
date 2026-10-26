@@ -54,6 +54,106 @@ function aroundHereHref(stop: NonNullable<Step['stop']>) {
     return `/explore?${params}`;
 }
 
+/**
+ * While the ways are asked (owner, 24 Oct 2026: a real loading view): the
+ * checks and the option rows in their own shape, bars for their words, and
+ * one quiet line saying what's being checked, in the checks' own words.
+ * Nothing else dims; the fields stay usable.
+ */
+/** What Plan a trip checks, as its chips say it. */
+const CHECKING: [string, TravelIconName][] = [
+    ['Departures', 'clock'],
+    ['Notices', 'info'],
+    ['Weather', 'sun'],
+    ['My day', 'calendar'],
+    ['Lifts', 'lift'],
+];
+
+export function PlanLoading() {
+    return (
+        <div className="plan-loading" role="status">
+            <div className="plan-checks">
+                <div className="plan-checks-toggle">
+                    <strong className="plan-loading-line">
+                        Checking today’s conditions…
+                    </strong>
+                    <span className="plan-check-chips">
+                        {CHECKING.map(([word, icon]) => (
+                            <TravelChip
+                                key={word}
+                                kind="calm"
+                                icon={<TravelIcon name={icon} />}
+                                className="plan-skel-chip"
+                            >
+                                {word}
+                            </TravelChip>
+                        ))}
+                    </span>
+                    <span className="plan-checks-more" aria-hidden="true">
+                        <span className="plan-skel" style={{ width: 56 }} />
+                    </span>
+                </div>
+            </div>
+            <div className="plan-options" aria-hidden="true">
+                {[0, 1, 2].map((row) => (
+                    <div key={row} className="plan-option">
+                        <div className="plan-option-pick">
+                            <span className="plan-option-body">
+                                <span className="plan-option-head">
+                                    <span
+                                        className="plan-skel is-chip"
+                                        style={{ width: row ? 132 : 108 }}
+                                    />
+                                    <span
+                                        className="plan-skel is-chip"
+                                        style={{ width: 58 }}
+                                    />
+                                </span>
+                                {row ? null : (
+                                    <span className="plan-option-title">
+                                        <span
+                                            className="plan-skel is-badge"
+                                            style={{ width: 132 }}
+                                        />
+                                    </span>
+                                )}
+                                <span className="plan-option-times">
+                                    <span
+                                        className="plan-skel"
+                                        style={{ width: '58%' }}
+                                    />
+                                </span>
+                                <span className="plan-option-reasons">
+                                    <span>
+                                        <span className="plan-reason-icon" />
+                                        <span
+                                            className="plan-skel"
+                                            style={{ width: '34%' }}
+                                        />
+                                    </span>
+                                    <span>
+                                        <span className="plan-reason-icon" />
+                                        <span
+                                            className="plan-skel"
+                                            style={{ width: '42%' }}
+                                        />
+                                    </span>
+                                </span>
+                            </span>
+                            <span className="details-toggle">
+                                <span
+                                    className="plan-skel"
+                                    style={{ width: 112 }}
+                                />
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function PlanChecks({
     checks,
     onTicket,
