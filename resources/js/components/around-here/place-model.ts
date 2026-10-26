@@ -61,6 +61,8 @@ export type AroundPlace = {
     facilities?: string | null;
     /** A park too big to walk round answers per Veedel: the part this row is. */
     part?: string | null;
+    /** Why Today's AI order put it here for them (TodayTaste), when it gave one. */
+    why?: string;
     /** "Good for laptop work?": people's verdict and the café's own rule, if any. */
     laptop?: RowLaptop;
     saved: boolean;
