@@ -19,6 +19,8 @@ class UserPlaceController extends Controller
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
             'arrive_by' => ['nullable', 'date_format:H:i'],
+            // When they usually leave Work: the evening's way home.
+            'leave_at' => ['nullable', 'date_format:H:i'],
             'day_mode' => ['nullable', 'in:all,weekdays,weekends,custom'],
             'active_days' => ['nullable', 'array'],
             'active_days.*' => ['in:mon,tue,wed,thu,fri,sat,sun'],
@@ -66,6 +68,8 @@ class UserPlaceController extends Controller
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
             'arrive_by' => ['nullable', 'date_format:H:i'],
+            // When they usually leave Work: the evening's way home.
+            'leave_at' => ['nullable', 'date_format:H:i'],
             'day_mode' => ['nullable', 'in:all,weekdays,weekends,custom'],
             'active_days' => ['nullable', 'array'],
             'active_days.*' => ['in:mon,tue,wed,thu,fri,sat,sun'],
