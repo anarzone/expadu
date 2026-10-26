@@ -1,5 +1,5 @@
 import { Head, usePage, usePoll } from '@inertiajs/react';
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
 import type { Forecast, Weather } from '@/components/today/city-help';
@@ -83,7 +83,23 @@ export default function Today() {
     useDayRefresh(day);
     // Check departures' times move: re-read the station every 30 s, as
     // Travel does (the server's cache).
-    usePoll(30_000, { only: ['station'], async: true });
+    // None to read when there's nothing to anchor one (the server sends null).
+    const { start: startPoll, stop: stopPoll } = usePoll(
+        30_000,
+        { only: ['station'], async: true },
+        { autoStart: false },
+    );
+    const noStation = station === null;
+
+    useEffect(() => {
+        if (noStation) {
+            return;
+        }
+
+        startPoll();
+
+        return stopPoll;
+    }, [noStation, startPoll, stopPoll]);
     const dayLoad = useDayLoad(day !== undefined);
 
     // Paperwork's next step, or with no record yet its way in ("Settling
