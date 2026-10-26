@@ -32,26 +32,15 @@ export default function Settings() {
                     <LearnPanel />
                     <ComposerPanel />
                     <CityPanel edit={edit} onEdit={setEdit} />
-                    <div className="settings-later">
-                        <LaterPanel
-                            id="notify"
-                            icon="bell"
-                            title="Notifications"
-                            label="With Alerts"
-                        >
-                            What Expadu tells you about, and where, is set here
-                            once the new Alerts is designed.
-                        </LaterPanel>
-                        <LaterPanel
-                            id="ai"
-                            icon="sliders"
-                            title="AI limits"
-                            label="Later"
-                        >
-                            Limits on how Expadu uses AI for you will be set
-                            here.
-                        </LaterPanel>
-                    </div>
+                    <LaterPanel
+                        id="notify"
+                        icon="bell"
+                        title="Notifications"
+                        label="With Alerts"
+                    >
+                        What Expadu tells you about, and where, is set here once
+                        the new Alerts is designed.
+                    </LaterPanel>
                     <DataPanel />
                     <DeletePanel />
                 </div>
