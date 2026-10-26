@@ -7561,6 +7561,47 @@
    }
   },
   {
+   "id": "regression.work_cafe_city_followup",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-26T11:40:00+01:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "What about generally in Cologne?",
+   "expect": {
+    "open": true,
+    "min_places": 4,
+    "places_list": {
+     "Wi-Fi": 1
+    },
+    "not_says": "\\bonly (ones|places|cafés|cafes)\\b|nothing else|no others?\\b|same places"
+   },
+   "before": [
+    "What is the nearest Cafeshop where I can work?"
+   ]
+  },
+  {
+   "id": "regression.work_cafe_anywhere",
+   "persona": "demo_merkenich",
+   "home_veedel": "Merkenich",
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-26T11:40:00+01:00",
+   "weather": "dry",
+   "personalised": true,
+   "text": "a café to work anywhere in Cologne",
+   "expect": {
+    "open": true,
+    "min_places": 4,
+    "places_list": {
+     "Wi-Fi": 2
+    },
+    "not_says": "\\bonly (ones|places|cafés|cafes)\\b|nothing else|no others?\\b"
+   }
+  },
+  {
    "id": "regression.demo_cofe_followup",
    "persona": "demo_merkenich",
    "home_veedel": "Merkenich",

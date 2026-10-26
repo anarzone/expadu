@@ -26,9 +26,12 @@ use App\Models\EventBookmark;
 use App\Models\EventReminder;
 use App\Models\FavouriteStop;
 use App\Models\PlannedTrip;
+use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
+use App\Places\PlaceAmenities;
+use App\Places\PlaceFacts;
 use App\Privacy\ProcessingPurpose;
 use App\Services\MuteService;
 use App\Services\WeatherService;
@@ -75,7 +78,7 @@ class EvaluateComposer extends Command
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
         'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'leave_out' => true, 'places_has' => true, 'no_step_free' => true,
-        'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true, 'new_stop_kind' => true,
+        'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true, 'new_stop_kind' => true, 'places_list' => true,
         'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
@@ -259,6 +262,10 @@ class EvaluateComposer extends Command
             trim((string) preg_split('/[,(]/u', (string) $p['name'])[0]), (string) ($p['area'] ?? '')])->filter(fn (string $n): bool => mb_strlen($n) > 3)
             ->contains(fn (string $n): bool => str_contains(mb_strtolower($first), mb_strtolower($n))))] : [];
         // Places that must not be suggested (a café that says no laptops, for work).
+        // Places it shows that list a fact, as their own facts say ({"Wi-Fi": 2}: at least two list Wi-Fi).
+        $routing += isset($expect['places_list']) ? ['places_list' => collect((array) $expect['places_list'])->every(fn (int $least, string $fact): bool => app(PlaceFacts::class)
+            ->resolveMany(Spot::query()->whereIn('id', array_column($shownPlaces, 'id'))->get())
+            ->filter(fn (array $facts): bool => in_array($fact, PlaceAmenities::listed($facts['practical'] ?? []), true))->count() >= $least)] : [];
         $routing += isset($expect['places_not']) ? ['places_not' => array_intersect((array) $expect['places_not'], array_column($shownPlaces, 'name')) === []] : [];
         $routing += isset($expect['not_says']) ? ['not_says' => preg_match('/'.$expect['not_says'].'/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // A change asked for: the tool it called, the card it showed (done or proposed), or the place

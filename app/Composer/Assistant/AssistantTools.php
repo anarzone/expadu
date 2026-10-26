@@ -261,13 +261,14 @@ final class AssistantTools
                 ], 'required' => ['name']]],
             ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known: nearest to the person first, or, with an area, in that area from its middle.',
                 'input_schema' => ['type' => 'object', 'properties' => [
-                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists, shops by their kind (clothes, electronics, furniture…); "a place to work" or "laptop" is cafe, library and coworking, but "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string', ...($kinds !== [] ? ['enum' => $kinds] : [])], 'description' => 'kinds of place, only those Expadu lists, shops by their kind (clothes, electronics, furniture…); "a place to work" or "laptop" is cafe, library and coworking, but a café or coffee shop to work in is cafe and "coworking" alone is coworking; "coffee shop" is cafe; a pool or "swim" is swimming'],
                     'open_now' => ['type' => 'boolean', 'description' => 'places open now by their listed hours, then open-air ones with no set hours; only when they ask for open now'],
                     'step_free' => ['type' => 'boolean', 'description' => 'only places whose step-free access is listed'],
                     'features' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'only places that list these, and only when they asked for that fact: wifi, outdoor_seating, wheelchair, diet:vegan|vegetarian|halal|kosher|gluten_free, cuisine:<word> (italian, pizza, turkish, vietnamese, burger…)'],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, or "city centre" (the old town and Neustadt), only one they name or this conversation is about; never their home Veedel unless they said it: without an area, places come nearest them, at home or wherever they are'],
                     'near' => ['type' => 'string', 'description' => 'a square, KVB stop or place they named the places near ("near Neumarkt", "by the Dom"): places around it, nearest first'],
+                    'whole_city' => ['type' => 'boolean', 'description' => 'all of Cologne, when they widen where to look ("generally in Cologne", "anywhere", "in the whole city"), not only near them or in an area; with to_work, those listing most for working first'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'for_children' => ['type' => 'boolean', 'description' => 'for a child to play ("my kid", "for the kids"): playgrounds, those with the activity\'s gear (football goals) first'],
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
@@ -622,8 +623,9 @@ final class AssistantTools
         }
         $shown = collect($this->listings->posters($occurrences->values(), self::SHOWN));
         if ($shown->isEmpty()) {
-            // What was looked for, so "nothing free is on" is a fact the answer may state, citing it.
-            return $this->line('n'.(++$this->count), 'Nothing'.(($input['free'] ?? false) === true ? ' free' : '').' is listed '.($day->isSameDay($this->now) ? 'today' : 'on '.$day->format('l j F'))
+            // What was looked for, so "nothing free is on" is a fact the answer may state, citing it: all of
+            // the city's listings that day, so past those shown before, "nothing else" is too.
+            return $this->line('n'.(++$this->count), 'Nothing'.($leaveOut !== [] ? ' else' : '').(($input['free'] ?? false) === true ? ' free' : '').' is listed '.($day->isSameDay($this->now) ? 'today' : 'on '.$day->format('l j F'))
                 .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.');
         }
 
@@ -878,8 +880,10 @@ final class AssistantTools
         $at = $asked ?? $this->now;
         // "Open now" or "open at 19:30": only places whose listed hours say so (OpeningAnswer).
         $mustBeOpen = $asked !== null || ($input['open_now'] ?? false) === true;
-        $named = is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
-        $nearName = is_string($input['near'] ?? null) && trim($input['near']) !== '' ? trim($input['near']) : null;
+        // All of Cologne ("generally in Cologne"): no area or place to look around (owner, 26 Oct 2026).
+        $whole = ($input['whole_city'] ?? false) === true;
+        $named = ! $whole && is_string($input['area'] ?? null) && trim($input['area']) !== '' ? trim($input['area']) : null;
+        $nearName = ! $whole && is_string($input['near'] ?? null) && trim($input['near']) !== '' ? trim($input['near']) : null;
         $areas = $named !== null ? PlanDay::areas([$named]) : [];
         // A square, stop or place named as the area ("Neumarkt"): around it, never refused (owner's chat, 24 Oct 2026);
         // a Veedel or the centre named as near is the area.
@@ -920,17 +924,22 @@ final class AssistantTools
         // were sorted by the home Veedel at the city's edge); else nearest to the person.
         $middle = $areas !== [] ? DB::table('veedels')->whereIn('name', $areas)->whereNotNull('centroid_lat')
             ->selectRaw('avg(centroid_lat) as lat, avg(centroid_lng) as lng')->first() : null;
+        $work = ($input['to_work'] ?? false) === true;
+        // All of Cologne: from the middle of the city out, or, to work, wherever it lists most for that, nearest them after.
+        $fromCentre = $whole && ! $work;
         [$lat, $lng] = match (true) {
             $around !== null => [$around['lat'], $around['lng']],
             $middle?->lat !== null => [(float) $middle->lat, (float) $middle->lng],
-            $this->location->hasOrigin() => [(float) $this->location->lat, (float) $this->location->lng],
+            ! $fromCentre && $this->location->hasOrigin() => [(float) $this->location->lat, (float) $this->location->lng],
             default => [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
         };
         // How far a place is, shown on its card, only from where the person really is or starts, or the place they named.
-        $measured = $around !== null || ($middle?->lat === null && $this->location->hasOrigin() && $this->location->source !== LocationSource::Area);
+        $measured = $around !== null || (! $fromCentre && $middle?->lat === null && $this->location->hasOrigin() && $this->location->source !== LocationSource::Area);
         // Asked for one kind or a sport: up to the whole list of it; for several ("a place to work": cafés,
-        // libraries, coworking), a share of each; for anything, two of a kind, for variety.
+        // libraries, coworking), a share of each; for anything, two of a kind, for variety. Across the city
+        // to work: those listing most for it, whichever kind (owner, 26 Oct 2026: two cafés of 41 with Wi-Fi).
         $perKind = match (true) {
+            $whole && $work => self::SHOWN,
             count($kinds) > 1 => max(2, intdiv(self::SHOWN, count($kinds))),
             $kinds !== [] || $activity !== null => self::SHOWN,
             default => 2,
@@ -938,12 +947,11 @@ final class AssistantTools
         $stepFree = $this->user->needs_step_free || ($input['step_free'] ?? false) === true;
         // Facts a place must list ("wifi", "diet:vegan"): few places list them, so the search reads further.
         $features = array_values(array_unique(array_filter(is_array($input['features'] ?? null) ? $input['features'] : [], fn (mixed $f): bool => is_string($f) && PlaceAmenities::valid($f))));
-        $work = ($input['to_work'] ?? false) === true;
         $free = ($input['free'] ?? false) === true;
         // Few places list hours, facts, a playground's goals or what they say of laptops: for those, the search reads further.
         $deep = $mustBeOpen || $features !== [] || $plays !== null || $work;
         $stepFree = $stepFree || in_array('wheelchair', $features, true);
-        $nearest = collect($this->catalogue->nearestSpots(new Constraints(
+        $constraints = new Constraints(
             windowStart: $at,
             windowEnd: $at->addHours(2)->min($at->endOfDay()),
             areas: $areas,
@@ -953,8 +961,10 @@ final class AssistantTools
             // Their own step-free need, from their settings (never told to the AI), or asked for in words.
             needs: $stepFree ? ['step_free'] : [],
             features: $features,
-            // When it must be open then, or list a fact, more of each kind are read: most have no listed hours or facts.
-        ), $lat, $lng, $deep ? max($perKind * 4, 12) : $perKind, $deep ? self::SHOWN * 8 : self::SHOWN * 3));
+        );
+        // When it must be open then, or list a fact, more of each kind are read: most have no listed hours or facts.
+        $nearest = collect($whole && $work ? $this->catalogue->workSpots($constraints, $lat, $lng)
+            : $this->catalogue->nearestSpots($constraints, $lat, $lng, $deep ? max($perKind * 4, 12) : $perKind, $deep ? self::SHOWN * 8 : self::SHOWN * 3));
         // A pitch or a playground in a named park is that park, once, with what it has (places
         // session's FacilityGroups, 23 Oct 2026: "Carola-Williams-Park · Football pitch · 2 playgrounds").
         $parents = app(FacilityGroups::class)->parents($nearest->map(fn (Candidate $c): int => (int) substr($c->id, 5))->all());
@@ -980,30 +990,28 @@ final class AssistantTools
         // first among them, so the cards are the ones it showed.
         $again = $this->askedAgain();
         $shownBefore = fn (Candidate $c): bool => isset($this->earlier['spot'][$park($c)]) || isset($this->earlier['spot'][(int) substr($c->id, 5)]);
+        $rank = fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+            + ($again && ! $shownBefore($c) ? 1000 : 0)
+            + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
+            + ($work && ! self::workFriendly($c) ? 0.5 : 0)
+            // Across the city, to work: what it lists for that before how far it is.
+            - ($whole && $work ? 100 * self::workScore($c, $at) : 0)
+            // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
+            // show distances, never why one further on comes first).
+            + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0);
         $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? OpeningAnswer::isOpenAt($c, $at) === true || ($c->outdoor && OpeningAnswer::isOpenAt($c, $at) === null)
             : OpeningAnswer::isOpenAt($c, $at) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($again && ! $shownBefore($c) ? 1000 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
-                + ($work && ! self::workFriendly($c) ? 0.5 : 0)
-                // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
-                // show distances, never why one further on comes first).
-                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0))
+            ->sortBy($rank)
             // One per place: two pitches in one park are the park once, its nearest; a chain's
             // branches in different Veedel stay apart.
             ->unique(fn (Candidate $c): string => $park($c) !== (int) substr($c->id, 5) ? 'park:'.$park($c).'|'.$part($c) : mb_strtolower(self::name($c)).'|'.$c->veedel)
             ->groupBy('category')->flatMap(fn ($kind) => $kind->take($perKind))
-            ->sortBy(fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
-                + ($again && ! $shownBefore($c) ? 1000 : 0)
-                + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
-                + ($work && ! self::workFriendly($c) ? 0.5 : 0)
-                // Listed open first; asked for free ones, nearest first (coordinator, 24 Oct 2026: the cards
-                // show distances, never why one further on comes first).
-                + ($mustBeOpen && OpeningAnswer::isOpenAt($c, $at) !== true ? 0.5 : 0))
+            ->sortBy($rank)
             ->take(self::SHOWN)->values();
         $found = $this->asParks($found, $parents, $large, $at, $lat, $lng);
         $where = match (true) {
+            $whole => 'across Cologne',
             $around !== null => "near {$around['name']}",
             $areas === PlanDay::CENTRE => 'in the city centre',
             $areas !== [] => 'in '.implode(', ', $areas),
@@ -1043,6 +1051,8 @@ final class AssistantTools
             .($found->contains(fn (Candidate $c): bool => self::publicUse($c)['value'] === 'unknown') ? 'Where a line says "Fee not listed", nothing is listed of its fee or who may use it: don\'t call that one public. ' : ''));
 
         return $same.$fee.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
+            // Never all there is: the city's places that list most for working, or the nearest the middle.
+            $whole => 'Across Cologne, '.($work ? 'those listing most for working (laptops welcome, Wi-Fi, sockets) first, then nearest them; not every place in the city:' : 'from the middle of the city out; not every place in the city:'),
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
             $this->location->hasOrigin() => 'Nearest to the person first:',
             default => "Across Cologne (where they are isn't known):",
@@ -1314,6 +1324,15 @@ final class AssistantTools
     }
 
     /** A place to work at: it lists Wi-Fi, sockets or laptops welcome. */
+    /** How much a place lists for working there: laptops welcome then (its rule, or people's answers), Wi-Fi, sockets. */
+    private static function workScore(Candidate $c, CarbonImmutable $at): int
+    {
+        $practical = $c->placeFacts['practical'] ?? [];
+
+        return (self::laptopsWelcome($c, $at) === true ? 4 : 0) + (PlaceAmenities::has($practical, 'wifi') ? 2 : 0)
+            + (mb_strtolower((string) ($practical['power_supply']['value'] ?? '')) === 'yes' ? 1 : 0);
+    }
+
     private static function workFriendly(Candidate $c): bool
     {
         $practical = $c->placeFacts['practical'] ?? [];

@@ -29,7 +29,7 @@ final class AroundCheck
         // A question back ("Which one do you mean?", "Did you mean…", "Shall I plan it?").
         'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride',
         // Order and place words a sentence starts with ("After that…", "Near you…", "Everything I found…").
-        'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything',
+        'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything', 'across', 'around', 'citywide', 'city-wide',
         'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we',
         // "Other options…", "None of these…", "Opening hours aren't listed…", "Their hours…", "Eight pharmacies…".
         'other', 'others', 'another', 'none', 'opening', 'their', 'its', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'many', 'several', 'more',
@@ -49,6 +49,9 @@ final class AroundCheck
         '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u',
         // "Every day" only as a source says it: a café's laptops "welcome every day" when its website says not at weekends.
         '/\bevery\s?day\b/u', '/\balways\b/u', '/\bany\s?time\b/u', '/\bdaily\b/u',
+        // All there is only as a source says it: a search reads some places, never every one (owner, 26 Oct 2026:
+        // "Café Kraus and Café Gieren are the only ones open now that are listed for working").
+        '/\bthe only\b/u', '/\bonly ones\b/u', '/\bnothing else\b/u', '/\bnone other\b/u', '/\bno other (places?|caf[eé]s?|spots?|libraries|options|ones)\b/u',
     ];
 
     /**

@@ -134,6 +134,23 @@ class CandidateRepository
     }
 
     /**
+     * Places of the kinds asked for anywhere in Cologne that list something for working there (Wi-Fi,
+     * sockets, laptops welcome) in any source: OSM, their website, people's answers. For "a café to work
+     * anywhere in Cologne", which the nearest few can't answer (owner, 26 Oct 2026). Their current facts
+     * still decide; this only says where to look.
+     *
+     * @return list<Candidate>
+     */
+    public function workSpots(Constraints $constraints, float $originLat, float $originLng): array
+    {
+        $ids = DB::table('place_fact_observations')
+            ->whereRaw("(payload #>> '{practical,internet_access}' IN ('yes', 'wlan', 'wifi', 'wired') OR payload #>> '{practical,power_supply}' = 'yes' OR payload #>> '{practical,laptops}' IN ('yes', 'limited'))")
+            ->distinct()->pluck('spot_id')->map(fn (mixed $id): int => (int) $id)->all();
+
+        return $ids === [] ? [] : $this->spotCandidates($constraints, $originLat, $originLng, PHP_INT_MAX, null, $ids);
+    }
+
+    /**
      * A diverse, bounded, LOCAL pool: the nearest ~12 per category to the plan's
      * origin. Per-category keeps it varied (2,000 playgrounds can't drown out
      * the museums and cafés); nearest-first makes it reflect where the day
@@ -144,20 +161,23 @@ class CandidateRepository
      *
      * @return list<Candidate>
      */
-    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng, int $perCategory = self::PER_CATEGORY, ?int $enough = null): array
+    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng, int $perCategory = self::PER_CATEGORY, ?int $enough = null, ?array $among = null): array
     {
         // The fact rules make these queries look costly to PostgreSQL, so it compiles them
         // first (JIT): 3–4 s for 30 ms of work. Off for these queries only, same results
         // (owner, 22 Oct 2026: every Composer reply under 6 s).
-        return DB::transaction(function () use ($constraints, $originLat, $originLng, $perCategory, $enough): array {
+        return DB::transaction(function () use ($constraints, $originLat, $originLng, $perCategory, $enough, $among): array {
             DB::statement('SET LOCAL jit = off');
 
-            return $this->nearestFitting($constraints, $originLat, $originLng, $perCategory, $enough);
+            return $this->nearestFitting($constraints, $originLat, $originLng, $perCategory, $enough, $among);
         });
     }
 
-    /** @return list<Candidate> */
-    private function nearestFitting(Constraints $constraints, float $originLat, float $originLng, int $perCategory, ?int $enough): array
+    /**
+     * @param  list<int>|null  $among  only these places, however far (workSpots)
+     * @return list<Candidate>
+     */
+    private function nearestFitting(Constraints $constraints, float $originLat, float $originLng, int $perCategory, ?int $enough, ?array $among = null): array
     {
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
@@ -170,6 +190,7 @@ class CandidateRepository
             ->when($constraints->activities === [] && $requestedFacilities !== [], fn ($query) => $query->where(fn ($where) => $where->where('spots.is_recommendable', true)->orWhereIn('spots.category', $requestedFacilities)))
             ->when(! $includeFacilities, fn ($query) => $query->where(fn ($where) => $where->whereNull('destination_spot_id')->orWhereIn('category', $requested)))
             ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested))
+            ->when($among !== null, fn ($query) => $query->whereIn('spots.id', $among))
             // A pharmacy or supermarket is an errand, not an afternoon out:
             // only a request that names one brings it into the plan.
             ->when($requested === [], fn ($query) => $query->whereNotIn('category', SpotCategory::errands()));
