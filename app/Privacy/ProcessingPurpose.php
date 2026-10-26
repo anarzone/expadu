@@ -24,6 +24,12 @@ enum ProcessingPurpose: string
      * on until they turn it off (ProcessingOptIns); each brief is still its own request.
      */
     case NotificationBrief = 'notification_brief_ai';
+    /**
+     * Today put in order by the AI from what personalisation learned (owner, 26 Oct 2026: "AI should
+     * be used for personalization"): on with personalisation under its second wording
+     * (PersonalisationWording, ProcessingOptIns), each ordering its own request (TodayRanker).
+     */
+    case TodayRank = 'today_rank';
 
     /** What each kind of data a Composer request sends is, in the notice's words (AssistantTools::CATEGORIES). */
     public const WORDS = [
@@ -61,6 +67,14 @@ enum ProcessingPurpose: string
         'shops_closed' => 'whether shops are closed tomorrow',
     ];
 
+    /** What a request to put Today in order carries (TodayRanker::CATEGORIES), in the notice's words. */
+    public const TODAY_WORDS = [
+        'the_day' => 'the day and the time of day',
+        'your_taste' => 'what Expadu learned you lean to: the kinds of places and events, the neighbourhoods, and the times of day and week',
+        'recent_interests' => 'what you looked at lately: the kinds of places and the neighbourhoods you asked Composer about or opened',
+        'todays_candidates' => 'the events and open places Today would show you: their name, kind, neighbourhood and start time',
+    ];
+
     /** What a Composer request never sends, in the notice's words. */
     public const NEVER = [
         'coordinates' => 'your coordinates',
@@ -88,7 +102,7 @@ enum ProcessingPurpose: string
     {
         $prefix = $this->configPrefix();
         $enabled = match ($this) {
-            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief => config($prefix.'.driver') === 'anthropic',
+            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank => config($prefix.'.driver') === 'anthropic',
             default => config($prefix.'.enabled') === true,
         };
         if (! $enabled) {
@@ -114,12 +128,12 @@ enum ProcessingPurpose: string
     public function disclosure(): array
     {
         return [
-            'purpose' => $this->value, 'scope' => $this === self::NotificationBrief ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
+            'purpose' => $this->value, 'scope' => in_array($this, [self::NotificationBrief, self::TodayRank], true) ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
             'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
             // Paperwork's own responses; Composer says what it keeps under `kept`.
-            ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
+            ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
             'payload_categories' => match ($this) {
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 // Everything Composer's request can carry, from its own map of what each part is
@@ -130,6 +144,8 @@ enum ProcessingPurpose: string
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
                 // What a brief's request can carry, from BriefWriter's own map of its items (NotificationBriefNoticeTest).
                 self::NotificationBrief => array_keys(self::BRIEF_WORDS),
+                // What a request to put Today in order can carry, from TodayRanker's own map (TodayRankTest).
+                self::TodayRank => array_keys(self::TODAY_WORDS),
             },
             ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork], true) ? [
                 'model' => config($this->configPrefix().'.model'),
@@ -137,6 +153,13 @@ enum ProcessingPurpose: string
                 // What Composer keeps (coordinator, 23 Oct 2026): the conversation in their History until they
                 // delete it, Undo for ComposerActions::HOURS, the permission for the request's minutes.
                 'kept' => ['history' => 'until_you_delete_it', 'undo_hours' => ComposerActions::HOURS, 'permission_minutes' => self::requestMinutes()],
+                'notice' => $this->notice(),
+            ] : []),
+            ...($this === self::TodayRank ? [
+                'model' => config($this->configPrefix().'.model'),
+                'never_sent' => [...array_keys(self::NEVER), 'paperwork', 'your_words', 'travel_stops'],
+                // Today's order for the day; the AI's reply for the request's minutes; a record without content for the audit days.
+                'kept' => ['order' => 'until_the_day_ends', 'reply_minutes' => self::requestMinutes(), 'record_days' => self::auditDays()],
                 'notice' => $this->notice(),
             ] : []),
             ...($this === self::NotificationBrief ? [
@@ -172,6 +195,9 @@ enum ProcessingPurpose: string
     {
         if ($this === self::NotificationBrief) {
             return $this->briefNotice();
+        }
+        if ($this === self::TodayRank) {
+            return $this->todayNotice();
         }
         $paperwork = $this === self::ComposerPaperwork;
         $minutes = self::requestMinutes();
@@ -214,6 +240,26 @@ enum ProcessingPurpose: string
         ];
     }
 
+    /**
+     * Putting Today in order's notice, from what its request carries (TODAY_WORDS).
+     *
+     * @return list<string>
+     */
+    private function todayNotice(): array
+    {
+        $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
+
+        return [
+            'With personalisation on, Expadu sends '.config($this->configPrefix().'.processor_name')." ({$model}), an AI service, what it needs to put Today’s events and places in order for you: "
+                .implode('; ', self::TODAY_WORDS).'.',
+            'It never sends '.self::either([...array_values(self::NEVER), 'your Paperwork', 'anything you typed', 'the stops you pick in Travel', 'your name or email']).'.',
+            'The AI service doesn’t use it to train its models. It only orders what Today would show anyway; nothing is hidden for it.',
+            'Today keeps the order until the day ends. The AI service’s reply is removed after '.self::requestMinutes().' minutes; '
+                .'a record that it was sent, without what it said, is kept for '.self::auditDays().' days.',
+            'Turning personalisation off in Settings stops it at once and deletes what was learned.',
+        ];
+    }
+
     /** "a, b, or c" */
     private static function either(array $items): string
     {
@@ -230,7 +276,7 @@ enum ProcessingPurpose: string
     {
         return match ($this) {
             self::FactExtraction => 'services.bureaucracy_llm',
-            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief => 'services.llm',
+            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
             self::PaperworkAnswer => 'services.paperwork_analyser',
         };
