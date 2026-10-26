@@ -39,7 +39,6 @@ test('onboarding can be completed with valid data', function () {
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'visa_free',
         'has_deutschlandticket' => true,
-        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -78,7 +77,6 @@ test('employee situations do not require the EU question', function () {
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
-        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -96,7 +94,6 @@ test('entry mode is offered but never required', function () {
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertSessionHasNoErrors();
 
     expect($user->fresh()->profile_attributes['entry_mode'] ?? null)->toBeNull();
@@ -113,49 +110,15 @@ test('german level is optional', function () {
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
-        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
-});
-
-test('interests are optional', function () {
-    $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->post(route('onboarding.complete'), [
-        'situation' => 'eu_employee',
-        'veedel' => 'Nippes',
-        'arrival_date' => '2026-01-15',
-        'arrival_planned' => false,
-        'address_registration_status' => 'not_registrable',
-        'interests' => [],
-    ]);
-
-    $response->assertRedirect(route('dashboard'));
-    expect($user->fresh()->interests)->toBe([]);
-});
-
-test('onboarding limits interests to the configured maximum', function () {
-    $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user);
-
-    $response = $this->post(route('onboarding.complete'), [
-        'situation' => 'eu_employee',
-        'veedel' => 'Nippes',
-        'arrival_date' => '2026-01-15',
-        'arrival_planned' => false,
-        'address_registration_status' => 'not_registrable',
-        'interests' => ['parks', 'museums', 'cafes', 'sports', 'swimming', 'sights', 'family'],
-    ]);
-
-    $response->assertSessionHasErrors('interests');
 });
 
 test('onboarding records occupancy separately from proof and does not infer registration completion', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20', 'interests' => []])->assertRedirect(route('dashboard'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => 'registrable', 'moved_in_at' => '2026-01-20'])->assertRedirect(route('dashboard'));
     $user->refresh();
     $facts = app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString());
     expect($facts['values']['moved_in_at'])->toBe('2026-01-20')
@@ -165,7 +128,7 @@ test('onboarding records occupancy separately from proof and does not infer regi
 test('unknown registration paperwork does not invent occupancy or a housing classification', function (string $status) {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
-    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => $status, 'interests' => []])->assertRedirect(route('dashboard'));
+    $this->post(route('onboarding.complete'), ['situation' => 'eu_employee', 'veedel' => 'Nippes', 'arrival_date' => '2026-01-15', 'arrival_planned' => false, 'address_registration_status' => $status])->assertRedirect(route('dashboard'));
     $user->refresh();
     $facts = app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString());
     expect($facts['values'])->not->toHaveKeys(['moved_in_at', 'registration_status', 'housing_provider_confirmation'])
@@ -184,7 +147,6 @@ test('a skipped address-registration answer is left unanswered, never assumed', 
         'veedel' => 'Nippes',
         'arrival_date' => '2026-01-15',
         'arrival_planned' => false,
-        'interests' => [],
     ])->assertSessionHasNoErrors();
 
     $user->refresh();
@@ -204,7 +166,6 @@ test('onboarding preserves a real move-in even when registration paperwork is un
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'moved_in_at' => '2026-01-20',
-        'interests' => [],
     ])->assertSessionHasNoErrors()->assertRedirect(route('dashboard'));
     expect($user->fresh()->bureaucracyCase->facts()->where('key', 'moved_in_at')->sole()->value)->toBe('2026-01-20');
 });
@@ -219,7 +180,6 @@ test('a goal matching the current title remains a goal rather than a contradicto
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'has_permit',
-        'interests' => [],
         ...$answers,
     ])->assertSessionHasNoErrors()->assertRedirect(route('dashboard'));
     $facts = app(ConfirmedFactView::class)->forCase($user->fresh()->bureaucracyCase, now()->toDateString());
@@ -321,7 +281,6 @@ test('entry mode is an encrypted attributed answer and is not duplicated in the 
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $user->refresh();
@@ -363,7 +322,6 @@ test('redo onboarding retains legacy rows without transferring their progress in
         'arrival_date' => now()->subDays(3)->toDateString(),
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     expect($userTask->fresh()->documents_checked)->toBe(['Passport'])
@@ -380,7 +338,6 @@ test('planning mode completes onboarding with no arrival date', function () {
         'arrival_planned' => true, // "Still planning" — no arrival date
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'd_visa',
-        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -406,7 +363,6 @@ test('family D-visa onboarding confirms explicit canonical facts without inventi
         'residence_title_expires_at' => '2026-10-15',
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
@@ -445,7 +401,6 @@ test('Blue Card onboarding keeps the requested goal separate from the current ti
         'case_goal' => 'blue_card',
         'german_level' => 'a2',
         'documented_german_level' => 'b1',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
@@ -474,7 +429,6 @@ test('re-onboarding requires an explicit change review instead of silently overw
         'current_residence_title' => 'national_d_visa',
         'case_goal' => 'family_reunification_permit',
         'sponsor_current_title' => 'blue_card',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('dashboard'));
 
     $case = $user->fresh()->bureaucracyCase;
@@ -491,7 +445,6 @@ test('re-onboarding requires an explicit change review instead of silently overw
         'residence_title_expires_at' => '2027-02-28',
         'case_goal' => 'blue_card',
         'sponsor_current_title' => 'blue_card',
-        'interests' => ['parks', 'museums', 'cafes'],
     ])->assertUnprocessable()->assertJsonValidationErrors('situation');
 
     $store = app(CaseFactStore::class);
@@ -514,7 +467,6 @@ test('onboarding makes no empty Home or Work: they exist once the person sets th
         'arrival_planned' => false,
         'address_registration_status' => 'not_registrable',
         'entry_mode' => 'visa_free',
-        'interests' => ['parks', 'museums', 'cafes'],
     ]);
 
     expect($user->fresh()->onboarded_at)->not->toBeNull()

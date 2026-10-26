@@ -39,7 +39,7 @@ test('confirmed onboarding retires only sample assertions and retains genuine an
     $realBefore = $real->fresh()->getRawOriginal();
     $sample = $case->facts()->create(['key' => 'current_residence_title', 'value' => 'blue_card',
         'state' => 'confirmed', 'source' => 'qa_scenario:sample', 'confirmed_at' => now()]);
-    app(ApplyOnboardingAnswers::class)->execute($actor, ['current_residence_title' => 'family_reunification', 'interests' => []]);
+    app(ApplyOnboardingAnswers::class)->execute($actor, ['current_residence_title' => 'family_reunification']);
     $view = app(ConfirmedFactView::class)->forCase($case, now()->toDateString());
     expect($view['values']['current_residence_title'])->toBe('family_reunification')
         ->and($real->fresh()->getRawOriginal())->toBe($realBefore)
@@ -80,7 +80,7 @@ test('failed real answer confirmation rolls back sample retirement and fact revi
     $sample = $case->facts()->create(['key' => 'current_residence_title', 'value' => 'blue_card',
         'state' => 'confirmed', 'source' => 'qa_scenario:sample', 'confirmed_at' => now()]);
     $before = $sample->fresh()->getRawOriginal();
-    expect(fn () => app(ApplyOnboardingAnswers::class)->execute($actor, ['documented_german_level' => 'b2', 'interests' => []]))
+    expect(fn () => app(ApplyOnboardingAnswers::class)->execute($actor, ['documented_german_level' => 'b2']))
         ->toThrow(ValidationException::class);
     expect($sample->fresh()->getRawOriginal())->toBe($before)->and($case->fresh()->fact_version)->toBe(2)
         ->and($actor->fresh()->onboarded_at)->toBeNull();

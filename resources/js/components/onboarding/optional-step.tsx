@@ -1,4 +1,3 @@
-import { InterestsStep } from '@/components/onboarding/interests-step';
 import { SituationStep } from '@/components/onboarding/situation-step';
 import type { OnboardingData } from '@/pages/onboarding';
 
@@ -21,8 +20,8 @@ const germanLevels = [
  * registered facts through PendingAnswers on the Paperwork page, the rest
  * through the task card that needs them.
  *
- * They share a screen with interests so there is exactly one thing to skip,
- * rather than a skip control on every question.
+ * They share one screen so there is exactly one thing to skip, rather than a
+ * skip control on every question.
  */
 export function OptionalStep({
     data,
@@ -146,17 +145,6 @@ export function OptionalStep({
                     </p>
                 </div>
             </div>
-
-            <InterestsStep
-                interests={data.interests}
-                onToggle={(v) =>
-                    onChange({
-                        interests: data.interests.includes(v)
-                            ? data.interests.filter((x) => x !== v)
-                            : [...data.interests, v],
-                    })
-                }
-            />
         </div>
     );
 }
