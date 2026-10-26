@@ -210,8 +210,7 @@ it('skips skipped stops when calculating max delay', function () {
     expect($result['delay'])->toBe(120); // skipped stop's delay excluded
 });
 
-it('waits for a held fetch lock once per request, not once per departure row', function () {
-    config(['services.vrs.gtfsrt_lock_wait' => 1]);
+it('never waits for another worker\'s fetch, not even once per request', function () {
     Http::fake();
     // Another worker's fetch, or a stale lock, holds it throughout.
     $held = Cache::lock('vrs_gtfsrt:fetch', 60);
@@ -229,7 +228,6 @@ it('waits for a held fetch lock once per request, not once per departure row', f
 });
 
 it('takes the fetch lock on the real clock, not a faked one', function () {
-    config(['services.vrs.gtfsrt_lock_wait' => 1]);
     $stolen = null;
     Http::fake(['*gtfs-rt-test.vrs.de*' => function () use (&$stolen) {
         // Mid-fetch, as if this worker hung: 20 real seconds on, its
@@ -245,4 +243,25 @@ it('takes the fetch lock on the real clock, not a faked one', function () {
     app(VrsRealtimeService::class)->getTripUpdates();
 
     expect($stolen)->toBeTrue();
+});
+
+it('serves the last good feed while it refreshes, never fetching on the request', function () {
+    Http::fake(['*gtfs-rt-test.vrs.de*' => Http::response('', 500)]);
+    Cache::put('vrs_gtfsrt_trip_updates_v2:stale', ['old-trip' => ['trip_id' => 'old-trip', 'cancelled' => false, 'stops' => []]], 600);
+
+    $started = microtime(true);
+    expect(app(VrsRealtimeService::class)->getTripUpdates())->toHaveKey('old-trip');
+
+    expect(microtime(true) - $started)->toBeLessThan(0.5);
+});
+
+it('keeps the feed fresh from the warmer, only while someone reads live times', function () {
+    Http::fake(['*gtfs-rt-test.vrs.de*' => Http::response('', 200)]);
+
+    $this->artisan('transit:fetch-gtfsrt')->expectsOutputToContain('not fetching')->assertSuccessful();
+    Http::assertNothingSent();
+
+    app(VrsRealtimeService::class)->getTripUpdates();
+    $this->artisan('transit:fetch-gtfsrt')->assertFailed();
+    Http::assertSentCount(2);
 });

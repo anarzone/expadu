@@ -277,7 +277,13 @@ export default function Timetable() {
     const today = day ?? lastDay.current;
 
     const location = useTravelLocation({
-        onAnchored: () => {
+        onAnchored: (moved) => {
+            // Within 100 m of where the page was worked out from: the
+            // station and the day it already shows are the ones from here.
+            if (!moved) {
+                return;
+            }
+
             // A picked stop stays picked; otherwise Nearby re-roots here.
             if (!new URLSearchParams(window.location.search).has('stop')) {
                 router.reload({ only: ['station', 'day'] });
