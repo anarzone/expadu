@@ -14,9 +14,9 @@ use Carbon\CarbonImmutable;
  * ahead ("Your Saturday plan · 3 stops") or a trip it worked out today
  * ("Your trip to Mülheim"). A conversation that came to nothing has no
  * card. Today's own plans are in Your day already. Read through
- * WorkspaceStore::read(), which upgrades and projects the stored state
- * (session 2); changes apply directly in Composer, so it only offers to
- * carry on.
+ * WorkspaceStore::stored(), the upgraded state without each place's
+ * availability projected (a stop that needs review still counts);
+ * changes apply directly in Composer, so it only offers to carry on.
  */
 final class TodayContinuation
 {
@@ -27,7 +27,7 @@ final class TodayContinuation
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
         $today = $now->format('Y-m-d');
-        $state = $this->workspaces->read($user);
+        $state = $this->workspaces->stored($user);
         $active = collect($state['conversations'] ?? [])->firstWhere('id', $state['active'] ?? null);
 
         // Its latest result first: what it came to last is what to pick up.

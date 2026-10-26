@@ -92,12 +92,12 @@ export default function ComposerPage({
     around,
 }: {
     workspace: Workspace;
-    /** Your day: the shared day projection (deferred). */
-    day?: DayProjection;
-    /** What the person's Paperwork record has coming up (deferred). */
-    paperwork?: PaperworkGlance;
-    /** Tonight's listings and what's near today's appointment (deferred). */
-    around?: DayAround;
+    /** Your day: the shared day projection. */
+    day: DayProjection;
+    /** What the person's Paperwork record has coming up. */
+    paperwork: PaperworkGlance;
+    /** Tonight's listings and what's near today's appointment. */
+    around: DayAround;
     /** What a page handed over by POST (Today's cards: the words and the page), once. */
     entry?: { prompt: string } | null;
     prompt?: string;

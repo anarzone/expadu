@@ -75,6 +75,12 @@ class PlanCatalogue
         return $this->projections[$key] = $plan;
     }
 
+    /** A past day's plan as it was kept, its places under their current ids. */
+    public function settled(array $plan): array
+    {
+        return $this->identity->normalizePlan($plan);
+    }
+
     /** New and rescheduled selections must qualify; unchanged saved items stay retained. */
     public function assertChangesAvailable(array $plan, ?array $before = null): void
     {
