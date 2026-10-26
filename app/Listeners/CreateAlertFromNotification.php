@@ -4,11 +4,9 @@ namespace App\Listeners;
 
 use App\Alerts\AlertClassifier;
 use App\Models\Alert;
-use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\BureaucracyPlanNotification;
 use App\Notifications\EventReminderNotification;
 use App\Notifications\MarketClosureNotification;
-use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -58,9 +56,7 @@ class CreateAlertFromNotification
             || $notification instanceof WeatherAlertNotification
             || $notification instanceof RhineFloodNotification
             || $notification instanceof MarketClosureNotification
-            || $notification instanceof BureaucracyDeadlineNotification
-            || $notification instanceof BureaucracyPlanNotification
-            || $notification instanceof PermanentResidencyEligibleNotification) {
+            || $notification instanceof BureaucracyPlanNotification) {
             return;
         }
 

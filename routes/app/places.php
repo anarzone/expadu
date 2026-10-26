@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\PlaceFeedbackController;
 use App\Http\Controllers\Api\PlacesController;
 use App\Http\Controllers\Api\SpotSearchController;
 use App\Http\Controllers\AroundHereController;
-use App\Http\Controllers\ReviewController;
 use App\Http\Middleware\KeepQueryPrivate;
 use Illuminate\Support\Facades\Route;
 
@@ -25,8 +24,3 @@ Route::post('api/places/{spot}/feedback', PlaceFeedbackController::class)->name(
 // Around here: places of a kind near a point (AH1); not in the navigation.
 // Its near and time say where someone will be: the session keeps neither.
 Route::get('explore', AroundHereController::class)->middleware(KeepQueryPrivate::class)->name('explore');
-
-// Spot reviews — public-facing content, so the tight ugc budget stacks under
-// the group-wide app-writes one.
-Route::get('explore/{spot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
-Route::post('explore/{spot}/reviews', [ReviewController::class, 'store'])->middleware('throttle:ugc')->name('reviews.store');

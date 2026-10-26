@@ -4,7 +4,6 @@ use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Models\Alert;
 use App\Models\User;
-use App\Notifications\PermanentResidencyEligibleNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -33,10 +32,4 @@ test('previously cached legacy eligibility actions cannot reappear in Today', fu
     Redis::zadd('pending_actions:'.$user->id, 90, json_encode($action, JSON_THROW_ON_ERROR));
 
     expect(app(ActionBus::class)->topK($user->id, 20))->toBeEmpty();
-});
-
-test('an already queued legacy eligibility push is not sent', function () {
-    $notification = new PermanentResidencyEligibleNotification(96, 36, 'Legacy estimate');
-
-    expect($notification->shouldSend(User::factory()->make(), 'database'))->toBeFalse();
 });

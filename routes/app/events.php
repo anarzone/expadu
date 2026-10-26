@@ -25,5 +25,3 @@ Route::delete('api/reminders/{event}', [EventReminderController::class, 'destroy
 Route::get('events', [EventController::class, 'index'])->name('events');
 Route::get('events/saved', [EventController::class, 'saved'])->name('events.saved');
 Route::get('events/{event}', [EventController::class, 'show'])->name('events.show');
-Route::post('events/{event}/join', [EventController::class, 'join'])->name('events.join');
-Route::delete('events/{event}/join', [EventController::class, 'leave'])->name('events.leave');
