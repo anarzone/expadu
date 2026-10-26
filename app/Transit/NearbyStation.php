@@ -111,11 +111,17 @@ class NearbyStation
      */
     public function warm(string $name): void
     {
-        $points = $this->kvb->stationPoints($name);
-        $cold = array_filter($this->areas($points), fn (array $a) => ! $this->timetable->hasBoard((float) $a['lat'], (float) $a['lng']));
-        if ($cold !== []) {
+        if (! $this->ready($name)) {
             $this->named($name);
         }
+    }
+
+    /** Whether every one of a station's boards is kept (fresh or not), so it reads in ~100 ms. */
+    public function ready(string $name): bool
+    {
+        $points = $this->kvb->stationPoints($name);
+
+        return $points !== [] && collect($this->areas($points))->every(fn (array $a) => $this->timetable->hasBoard((float) $a['lat'], (float) $a['lng']));
     }
 
     /**

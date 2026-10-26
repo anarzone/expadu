@@ -47,28 +47,34 @@ class TimetableController extends Controller
             }
         }
 
-        return Inertia::render('timetable', [
-            // Nearby: the picked station, else the closest one. An unknown
-            // name keeps the closest and says so.
-            'station' => Inertia::defer(function () use ($nearby, $location, $stop, $userId) {
-                $picked = $stop === null ? null : $nearby->named($stop);
-                if ($picked !== null) {
-                    return $picked;
-                }
-                // Never a saved home or the city centre: no location, no station.
-                $closest = $nearby->closestTo($location);
-                if ($closest !== null) {
-                    // Debug trail for "wrong station" reports: the station, its
-                    // lines and why it was chosen, without where the person was.
-                    GtfsDepartureService::logDepartureDebug($userId, 'timetable', [
-                        'stop_name' => $closest['name'],
-                        'source' => $closest['source'],
-                        'departures' => array_map(fn (array $line) => ['line' => $line['line']], $closest['lines']),
-                    ], locationSource: $location->source->value);
-                }
+        // Nearby: the picked station, else the closest one. An unknown name
+        // keeps the closest and says so.
+        $station = function () use ($nearby, $location, $stop, $userId) {
+            $picked = $stop === null ? null : $nearby->named($stop);
+            if ($picked !== null) {
+                return $picked;
+            }
+            // Never a saved home or the city centre: no location, no station.
+            $closest = $nearby->closestTo($location);
+            if ($closest !== null) {
+                // Debug trail for "wrong station" reports: the station, its
+                // lines and why it was chosen, without where the person was.
+                GtfsDepartureService::logDepartureDebug($userId, 'timetable', [
+                    'stop_name' => $closest['name'],
+                    'source' => $closest['source'],
+                    'departures' => array_map(fn (array $line) => ['line' => $line['line']], $closest['lines']),
+                ], locationSource: $location->source->value);
+            }
 
-                return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
-            }, 'station'),
+            return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
+        };
+        // With its boards kept, the station comes in the page itself (~100 ms),
+        // so its rows show with the first paint; a cold one follows deferred.
+        $shown = $stop ?? ($location->hasOrigin() ? $kvb->nearestStop((float) $location->lat, (float) $location->lng)['name'] ?? null : null);
+        $ready = $shown !== null && $nearby->ready((string) $shown);
+
+        return Inertia::render('timetable', [
+            'station' => $ready ? $station : Inertia::defer($station, 'station'),
             'stop' => $stop,
             // Events' "Open in Travel": the occurrence by its id and local start
             // (`context`, `date`, `arrive`), resolved here so its place never
