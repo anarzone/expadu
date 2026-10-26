@@ -2,17 +2,17 @@ import {
     Fragment,
     useCallback,
     useEffect,
-    useLayoutEffect,
     useMemo,
     useRef,
     useState,
 } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
-import { CardStrip, TravelBanner, TravelChip } from '../labels';
+import { TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
-import { LineStrip, StripTime } from '../line-strip';
+import { LineRow } from '../line-row';
+import { StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
@@ -94,145 +94,6 @@ type NearbyViewProps = {
     stepFreeNeed?: boolean;
 };
 
-/** The app's open easing (Composer's tray). */
-const OPEN = { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' };
-
-/**
- * A line's place in its area: its strip, or its detail when opened. Opening
- * unfolds the detail, at its own size and clipped, from the strip's height to
- * its own, while the strip over it fades; closing folds it back and the strip
- * fades in over it before taking its place (`opening` and `closing` keep the
- * strip on top until `onOpened` / `onClosed`). Nothing is squeezed to fit.
- * With reduced motion it just swaps. Its own updates (new times) don't animate.
- */
-function LineSlot({
-    open,
-    opening,
-    closing,
-    strip,
-    detail,
-    onOpened,
-    onClosed,
-}: {
-    open: boolean;
-    opening: boolean;
-    closing: boolean;
-    strip: ReactNode;
-    detail: ReactNode;
-    onOpened: () => void;
-    onClosed: () => void;
-}) {
-    const box = useRef<HTMLDivElement>(null);
-    const ghost = useRef<HTMLDivElement>(null);
-    const height = useRef(0);
-    // The strip's height when it opened: where closing goes back to.
-    const shut = useRef(0);
-    const was = useRef(open);
-    // The change under way and the height it goes to.
-    const running = useRef<{ anim: Animation; to: number } | null>(null);
-
-    // Before it paints: from the height it had to the one it goes to.
-    useLayoutEffect(() => {
-        const el = box.current;
-
-        if (!el || was.current === open) {
-            return;
-        }
-
-        was.current = open;
-        const from = height.current;
-        const to = open ? el.offsetHeight : shut.current;
-
-        if (open) {
-            shut.current = from;
-        }
-
-        running.current?.anim.cancel();
-
-        if (
-            !from ||
-            !to ||
-            from === to ||
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ) {
-            (open ? onOpened : onClosed)();
-
-            return;
-        }
-
-        el.style.overflow = 'hidden';
-        el.style.alignItems = 'start';
-        // Closing holds the last frame until the strip takes its place.
-        const anim = el.animate(
-            [{ height: `${from}px` }, { height: `${to}px` }],
-            { ...OPEN, fill: open ? 'none' : 'forwards' },
-        );
-        ghost.current?.animate(
-            open
-                ? [{ opacity: 1 }, { opacity: 0 }]
-                : [{ opacity: 0 }, { opacity: 1 }],
-            {
-                duration: 140,
-                delay: open ? 0 : OPEN.duration - 140,
-                easing: 'ease-out',
-                fill: 'both',
-            },
-        );
-        running.current = { anim, to };
-        const settle = () => {
-            el.style.overflow = '';
-            el.style.alignItems = '';
-        };
-        anim.onfinish = () => {
-            if (open) {
-                settle();
-                running.current = null;
-                onOpened();
-            } else {
-                onClosed();
-            }
-        };
-        anim.oncancel = () => {
-            settle();
-
-            if (running.current?.anim === anim) {
-                running.current = null;
-            }
-        };
-    }, [open, onOpened, onClosed]);
-
-    // The strip is back: let go of the closing's last frame.
-    useLayoutEffect(() => {
-        if (!open && !closing) {
-            running.current?.anim.cancel();
-        }
-    }, [open, closing]);
-
-    // Its height after every render, for the next change to start from (the
-    // one it's going to while a change is under way, not the frame now).
-    useLayoutEffect(() => {
-        height.current = running.current?.to ?? box.current?.offsetHeight ?? 0;
-    });
-
-    const shown = open || closing;
-
-    return (
-        <div ref={box} className={cn('nearby-line-slot', shown && 'is-open')}>
-            {shown ? detail : strip}
-            {(open && opening) || closing ? (
-                <div
-                    ref={ghost}
-                    className="nearby-line-ghost"
-                    aria-hidden="true"
-                    inert
-                >
-                    {strip}
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
 export function NearbyView({
     station,
     favourites,
@@ -252,23 +113,6 @@ export function NearbyView({
     const [picked, setPicked] = useState('');
     // A picked line that left the board closes.
     const openLine = station.lines.some((l) => l.line === picked) ? picked : '';
-    // The line unfolding into its detail, and the one folding back to its
-    // strip (the strip shown over it until it has).
-    const [opening, setOpening] = useState('');
-    const [closing, setClosing] = useState('');
-    const setOpenLine = (line: string) => {
-        setClosing(openLine && openLine !== line ? openLine : '');
-        setOpening(line);
-        setPicked(line);
-    };
-    const opened = useCallback(
-        (line: string) => setOpening((now) => (now === line ? '' : now)),
-        [],
-    );
-    const closed = useCallback(
-        (line: string) => setClosing((now) => (now === line ? '' : now)),
-        [],
-    );
     const [pinned, setPinned] = useState<string[]>(readPins);
     const root = useRef<HTMLDivElement>(null);
 
@@ -281,19 +125,6 @@ export function NearbyView({
     const [view, setView] = useState<'list' | 'map'>('list');
     const mapOpen = view === 'map' && !!linesMap;
     const closeMap = useCallback(() => setView('list'), []);
-    // A line tapped under the map opens in the list, once the list is back
-    // (opened while hidden, its unfolding had nothing to measure).
-    const openFromMap = (line: string) => {
-        closeMap();
-        requestAnimationFrame(() => {
-            setOpenLine(line);
-            requestAnimationFrame(() =>
-                root.current
-                    ?.querySelector('.nearby-line-slot.is-open')
-                    ?.scrollIntoView({ block: 'nearest' }),
-            );
-        });
-    };
     const board = useMemo(
         () =>
             nearbyView(station, filterDefaults(), {
@@ -585,20 +416,7 @@ export function NearbyView({
         }
     })();
 
-    const delayTag = (dir: ShownDir, long = false) => {
-        // A long wait: the open line says when the next one after comes.
-        if (wait) {
-            return long && dir.laterClocks.length ? (
-                <TravelChip
-                    kind="attention"
-                    icon={<TravelIcon name="moon" />}
-                    size="sm"
-                >
-                    {`Then ${dir.laterClocks[0]}`}
-                </TravelChip>
-            ) : null;
-        }
-
+    const delayTag = (dir: ShownDir) => {
         if (stale || dir.cancelled || !dir.delayMin) {
             return null;
         }
@@ -671,11 +489,51 @@ export function NearbyView({
         );
     };
 
-    const strip = (
-        l: ShownLine,
-        onOpen: (line: string) => void = setOpenLine,
-    ) => {
-        const [first, second] = l.shown;
+    // A long wait: each way's next one after, under its own time (the
+    // departure rows canvas: a band per way, not one bar across the card).
+    const peek = (dir: ShownDir) => {
+        const next = wait ? dir.later.find((run) => !run.cancelled) : null;
+
+        return next ? (
+            <span className="nearby-peek">
+                <TravelIcon name="moon" />
+                Then {next.time}
+            </span>
+        ) : null;
+    };
+
+    // The runs after the next one, a cancelled one marked; in a long wait
+    // the one under the time is said already, so "After that".
+    const thenLine = (dir: ShownDir) => {
+        const runs = wait
+            ? dir.later.filter(
+                  (run) => run !== dir.later.find((r) => !r.cancelled),
+              )
+            : dir.later;
+
+        return runs.length ? (
+            <span className="line-row-then">
+                {wait ? 'After that' : 'Then'}{' '}
+                {runs.map((run, index) => (
+                    <span key={run.id}>
+                        {index ? ' · ' : ''}
+                        {run.cancelled ? (
+                            <span className="tl-cancelled">
+                                <s>{run.time}</s> cancelled
+                            </span>
+                        ) : (
+                            run.time
+                        )}
+                    </span>
+                ))}
+            </span>
+        ) : null;
+    };
+
+    const row = (l: ShownLine) => {
+        const [first, second, ...also] = l.shown;
+        const kind =
+            l.mode === 'bus' ? 'bus' : l.mode === 'rail' ? 'rail' : 'tram';
         const end = (d: ShownDir | undefined) =>
             d
                 ? {
@@ -686,12 +544,11 @@ export function NearbyView({
                               {time(d)}
                               {delayTag(d)}
                               {cancelTag(d)}
+                              {peek(d)}
                           </>
                       ),
                   }
                 : null;
-        const kind =
-            l.mode === 'bus' ? 'bus' : l.mode === 'rail' ? 'rail' : 'tram';
         const label = `${vehicleWord(kind)} ${l.line}: ${l.shown
             .map((d) => {
                 const t = whenOf(d);
@@ -707,10 +564,42 @@ export function NearbyView({
                 return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}${d.live ? '' : ' (timetable)'}${gone}`;
             })
             .join(', ')}`;
+        // What opens under a way: its next one (only when stacked), the
+        // runs after, and what the front of the tram says.
+        const way = (d: ShownDir | undefined) => {
+            if (!d) {
+                return null;
+            }
+
+            const t = whenOf(d);
+            // Said as the strip says it: a paused board's clock, else minutes.
+            const shown =
+                stale || (!d.live && t.big === 'now')
+                    ? d.clock
+                    : `${t.big}${t.unit ? ` ${t.unit}` : ''}`;
+
+            return (
+                <>
+                    <strong className="line-row-lead">
+                        → {d.dest}{' '}
+                        <span>
+                            {d.cancelled ? `${d.clock} cancelled` : shown}
+                        </span>
+                    </strong>
+                    {thenLine(d)}
+                    <span className="line-row-front">
+                        On the front{' '}
+                        <LineBadge line={l.line} look={l.look} kind={kind} />
+                        <strong>{d.dest}</strong>
+                    </span>
+                </>
+            );
+        };
+        const pin = pinned.includes(l.line);
+        const towards = first?.dest ?? l.dirs[0]?.dest ?? '';
 
         return (
-            <LineStrip
-                key={l.line}
+            <LineRow
                 look={l.look}
                 badge={
                     <>
@@ -725,164 +614,63 @@ export function NearbyView({
                 first={end(first)}
                 second={end(second)}
                 empty={`Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not in the feed'}`}
-                extra={
-                    // A long wait is about the whole card: along its foot.
-                    wait && l.shown.some((d) => d.laterClocks.length) ? (
-                        <CardStrip
-                            kind="attention"
-                            icon={<TravelIcon name="moon" />}
-                        >
-                            {/* Each way's next one, soonest first: "Then 00:56 · 00:59". */}
-                            {`Then ${l.shown
-                                .flatMap((d) =>
-                                    d.later
-                                        .filter((run) => !run.cancelled)
-                                        .slice(0, 1),
-                                )
-                                .sort(
-                                    (a, b) =>
-                                        Date.parse(a.at) - Date.parse(b.at),
-                                )
-                                .map((run) => run.time)
-                                .join(' · ')}`}
-                        </CardStrip>
-                    ) : undefined
-                }
-                aria-pressed={false}
-                aria-label={label}
-                onClick={() => onOpen(l.line)}
-            />
-        );
-    };
-
-    const boardsWith = (line: string) => {
-        const area = station.areas.find((a) => a.lines.includes(line));
-        const rest = area ? area.lines.filter((x) => x !== line) : [];
-
-        return rest.length
-            ? `${station.name} · boards with ${rest.join(', ')}`
-            : station.name;
-    };
-
-    const detail = (l: ShownLine) => {
-        const kind =
-            l.mode === 'bus' ? 'bus' : l.mode === 'rail' ? 'rail' : 'tram';
-        const pin = pinned.includes(l.line);
-        const first = l.dirs[0]?.dest ?? '';
-        const noLater = l.shown.some((d) => !d.later_recorded);
-
-        return (
-            <section
-                key={l.line}
-                className="nearby-line is-inline"
-                aria-label={`${vehicleWord(kind)} ${l.line}`}
-                style={
-                    {
-                        '--line': l.look.colour,
-                        '--ink': l.look.ink,
-                        '--tint': l.look.tint,
-                    } as CSSProperties
-                }
-            >
-                <div className="nearby-line-head">
-                    <LineBadge
-                        line={l.line}
-                        look={l.look}
-                        kind={kind}
-                        size="big"
-                    />
-                    <span>
-                        <strong>
-                            {vehicleWord(kind)} {l.line}
-                        </strong>
-                        <small>{boardsWith(l.line)}</small>
-                    </span>
-                    <button
-                        type="button"
-                        className="nearby-line-close"
-                        aria-label={`Close line ${l.line}`}
-                        onClick={() => setOpenLine('')}
-                    >
-                        <TravelIcon name="close" />
-                    </button>
-                </div>
-                {l.shown.map((d) => {
-                    const t = whenOf(d);
-
-                    return (
-                        <div key={d.id} className="nearby-detail-dir">
-                            <span>
-                                <strong>→ {d.dest}</strong>
-                                {d.via.length ? (
-                                    <small>via {d.via.join(', ')}</small>
-                                ) : null}
-                                {d.laterClocks.length ? (
-                                    <small>
-                                        Then {d.laterClocks.join(' · ')}
-                                    </small>
-                                ) : null}
-                            </span>
-                            <span className="nearby-detail-time">
-                                <span
-                                    className={cn(
-                                        'nearby-time is-large',
-                                        d.cancelled
-                                            ? 'is-cancelled'
-                                            : (stale || !d.live) && 'is-paused',
-                                    )}
-                                >
-                                    {d.cancelled ? (
-                                        <strong>
-                                            <s>{d.clock}</s>
+                label={label}
+                open={openLine === l.line}
+                onToggle={() => setPicked(openLine === l.line ? '' : l.line)}
+                more={{
+                    first: (
+                        <>
+                            {way(first)}
+                            {/* A third way (18 to Bonn Hbf): with the first. */}
+                            {also.map((d) => (
+                                <span key={d.id} className="line-row-also">
+                                    <span>
+                                        Also <strong>{d.dest} →</strong>{' '}
+                                        <strong className="line-row-clock">
+                                            {d.cancelled
+                                                ? `${d.clock} cancelled`
+                                                : d.clock}
                                         </strong>
-                                    ) : (
-                                        <>
-                                            <strong>{t.big}</strong>
-                                            {t.unit ? (
-                                                <small>{t.unit}</small>
-                                            ) : null}
-                                        </>
-                                    )}
+                                        {d.via.length
+                                            ? `, via ${d.via.join(' · ')}`
+                                            : ''}
+                                    </span>
+                                    {thenLine(d)}
                                 </span>
-                                {delayTag(d, true)}
-                                {cancelTag(d)}
-                            </span>
-                        </div>
-                    );
-                })}
-                {noLater ? (
-                    <p className="nearby-later">
-                        Later departures aren’t in the feed yet.
-                    </p>
-                ) : null}
-                <p className="nearby-front">
-                    <small>
-                        {kind === 'bus'
-                            ? 'On the front of the bus'
-                            : 'On the front of the tram'}
-                    </small>
-                    <strong>
-                        {l.line} {first}
-                    </strong>{' '}
-                    · <span lang="de">Richtung</span> {first} means “towards{' '}
-                    {first}”.
-                </p>
-                <div className="nearby-line-actions">
-                    <button
-                        type="button"
-                        className="nearby-pin"
-                        aria-pressed={pin}
-                        onClick={() => {
-                            const next = toggleIn(pinned, l.line);
-                            setPinned(next);
-                            writePins(next);
-                        }}
-                    >
-                        <TravelIcon name="star" />
-                        {pin ? 'Pinned' : `Pin line ${l.line}`}
-                    </button>
-                </div>
-            </section>
+                            ))}
+                        </>
+                    ),
+                    second: way(second),
+                    foot: (
+                        <>
+                            <button
+                                type="button"
+                                className="nearby-pin"
+                                aria-pressed={pin}
+                                onClick={() => {
+                                    const next = toggleIn(pinned, l.line);
+                                    setPinned(next);
+                                    writePins(next);
+                                }}
+                            >
+                                <TravelIcon name="star" />
+                                {pin ? 'Pinned' : `Pin line ${l.line}`}
+                            </button>
+                            {towards ? (
+                                <small>
+                                    “<span lang="de">Richtung</span> {towards}”
+                                    on the front means towards {towards}.
+                                </small>
+                            ) : null}
+                            {l.shown.some((d) => !d.later_recorded) ? (
+                                <small>
+                                    Later departures aren’t in the feed yet.
+                                </small>
+                            ) : null}
+                        </>
+                    ),
+                }}
+            />
         );
     };
 
@@ -982,39 +770,28 @@ export function NearbyView({
                     <TravelIcon name="star" />
                 </button>
                 {linesMap ? (
-                    <>
-                        <div
-                            className="nearby-views"
-                            role="group"
-                            aria-label="Show as"
-                        >
-                            <button
-                                type="button"
-                                aria-pressed={!mapOpen}
-                                aria-label="List"
-                                onClick={closeMap}
-                            >
-                                <TravelIcon name="list" />
-                            </button>
-                            <button
-                                type="button"
-                                aria-pressed={mapOpen}
-                                aria-label="Map"
-                                onClick={() => setView('map')}
-                            >
-                                <TravelIcon name="map" />
-                            </button>
-                        </div>
+                    <div
+                        className="nearby-views"
+                        role="group"
+                        aria-label="Show as"
+                    >
                         <button
                             type="button"
-                            className="nearby-open-map"
-                            aria-label="Open the map"
-                            title="Map"
+                            aria-pressed={!mapOpen}
+                            aria-label="List"
+                            onClick={closeMap}
+                        >
+                            <TravelIcon name="list" />
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={mapOpen}
+                            aria-label="Map"
                             onClick={() => setView('map')}
                         >
                             <TravelIcon name="map" />
                         </button>
-                    </>
+                    </div>
                 ) : null}
             </div>
             <div className="nearby-stops" hidden={!stopsOpen}>
@@ -1143,20 +920,7 @@ export function NearbyView({
                                 <div className="nearby-cards">
                                     {area.cards.map((l) => (
                                         <Fragment key={l.line}>
-                                            <LineSlot
-                                                open={openLine === l.line}
-                                                opening={opening === l.line}
-                                                closing={closing === l.line}
-                                                strip={strip(l)}
-                                                detail={
-                                                    openLine === l.line ||
-                                                    closing === l.line
-                                                        ? detail(l)
-                                                        : null
-                                                }
-                                                onOpened={() => opened(l.line)}
-                                                onClosed={() => closed(l.line)}
-                                            />
+                                            {row(l)}
                                             {rowNotices.has(l.line) ? (
                                                 <NoticeLine
                                                     notice={
@@ -1202,7 +966,7 @@ export function NearbyView({
                     open={mapOpen}
                     onClose={closeMap}
                     board={board}
-                    renderLine={(l) => strip(l, openFromMap)}
+                    renderLine={row}
                 />
             ) : null}
             {station.credits?.map((credit) => (
