@@ -3,6 +3,7 @@ import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { LineBadge } from './line-badge';
 import type { LineLook } from './line-look';
+import { Slide } from './slide';
 import '../../../css/travel.css';
 
 /**
@@ -280,13 +281,9 @@ export function TripCard({
                 ) : null}
             </div>
             {more !== undefined ? (
-                <div
-                    className="trip-line-way"
-                    id={`${id}-way`}
-                    hidden={!moreOpen}
-                >
-                    {moreOpen ? more : null}
-                </div>
+                <Slide open={moreOpen} id={`${id}-way`}>
+                    <div className="trip-line-way">{more}</div>
+                </Slide>
             ) : null}
         </section>
     );
