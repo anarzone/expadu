@@ -73,24 +73,6 @@ export function NowPill({ look }: { look?: Partial<LineLook> }) {
     );
 }
 
-/** Something about a whole card, along its foot. */
-export function CardStrip({
-    kind,
-    icon,
-    children,
-}: {
-    kind: Extract<LabelKind, 'conflict' | 'attention'>;
-    icon?: ReactNode;
-    children: ReactNode;
-}) {
-    return (
-        <span className={cn('tl-strip', `is-${kind}`)}>
-            {icon}
-            <span>{children}</span>
-        </span>
-    );
-}
-
 /** A page-level situation: icon tile, title, one line. */
 export function TravelBanner({
     kind,
