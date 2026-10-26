@@ -2,7 +2,6 @@ import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { PLATFORM_NOT_KNOWN, sourceLabel } from '@/components/ui/state-notice';
 import { cn } from '@/lib/utils';
-import type { JourneyLeg } from '@/types/transit';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
@@ -13,10 +12,12 @@ import type { TravelIconName } from '../travel-icon';
 import {
     berlinNow,
     marginOf,
+    optionLabel,
     reasonsFor,
     rides,
     spareMin,
     stepsOf,
+    word,
 } from './plan-model';
 import type {
     Check,
@@ -32,9 +33,6 @@ import type {
  * planOption, stepsMarkup): what was checked, then the options as one
  * choice, best for you first, each with why and its Journey details.
  */
-
-const word = (leg: JourneyLeg) =>
-    `${vehicleWord(vehicleOf(leg.mode))} ${leg.line ?? ''}`.trim();
 
 /**
  * Around here at a stop you get off at: the stop is public, and the time
@@ -185,6 +183,9 @@ export function PlanChecks({
                                 key={check.title}
                                 kind={check.tone}
                                 icon={<TravelIcon name={check.icon} />}
+                                className={
+                                    check.pending ? 'plan-skel-chip' : undefined
+                                }
                             >
                                 {check.short}
                             </TravelChip>
@@ -334,24 +335,6 @@ function OptionTitle({ option }: { option: PlanOption }) {
             <span className="plan-option-at">{`at ${legs[0].depart_time}`}</span>
         </span>
     );
-}
-
-export function optionLabel(option: PlanOption): string {
-    const legs = rides(option.journey);
-
-    if (!legs.length) {
-        return option.journey.mode === 'bike' ? 'By bike' : 'On foot';
-    }
-
-    return `${word(legs[0])}${
-        legs.length > 1
-            ? `, then ${legs
-                  .slice(1)
-                  .map((leg) => leg.line ?? '')
-                  .filter(Boolean)
-                  .join(', ')}`
-            : ', no change'
-    }`;
 }
 
 const stepIcon: Record<string, TravelIconName> = {

@@ -1,6 +1,6 @@
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
-import { vehicleOf } from '../line-look';
+import { vehicleOf, vehicleWord } from '../line-look';
 import { noticeWords } from '../nearby/types';
 import type { NoticeBrief } from '../nearby/types';
 import { stopName } from '../stop-name';
@@ -67,6 +67,8 @@ export type PlanAnswer = {
     trouble?: PlanTrouble[];
     /** Runs the feeds say are cancelled, before a way's first ride. */
     gone?: PlanGone[];
+    /** While the boarding stops' live runs are still asked (`trouble`, `gone`): their id. */
+    checks?: string | null;
     conditions?: {
         weather: { available: boolean; hours: WeatherHour[] };
         lifts: { known: boolean; by_journey: (LiftOut[] | null)[] };
@@ -447,6 +449,8 @@ export type Check = {
     notices?: { words: string; lang: 'en' | 'de'; url: string | null }[];
     /** The ticket check: whether you said you hold a Deutschlandticket. */
     ticket?: { held: boolean };
+    /** Still being checked: its chip softly lit. */
+    pending?: boolean;
 };
 
 const conditionWord: Record<string, string> = {
@@ -501,7 +505,16 @@ export function checksFor(
     const trouble = answer.trouble ?? [];
     const gone = answer.gone ?? [];
 
-    if (trouble.length) {
+    if (answer.checks) {
+        checks.push({
+            short: 'Live runs',
+            title: 'Live times',
+            text: 'Checking the live runs at the stops these ways board…',
+            icon: 'clock',
+            tone: 'calm',
+            pending: true,
+        });
+    } else if (trouble.length) {
         checks.push({
             short: troubleShort(trouble[0]),
             title: 'Live times',
@@ -828,4 +841,27 @@ export function berlinInstant(date: string, time: string): string {
     const instant = new Date(guess.getTime() - drift);
 
     return instant.toISOString();
+}
+
+/** "Tram 16", "Bus 133": a ride as its vehicle and line. */
+export const word = (leg: JourneyLeg) =>
+    `${vehicleWord(vehicleOf(leg.mode))} ${leg.line ?? ''}`.trim();
+
+/** "Tram 16, then 5" or "Bus 133, no change": how an option reads aloud. */
+export function optionLabel(option: PlanOption): string {
+    const legs = rides(option.journey);
+
+    if (!legs.length) {
+        return option.journey.mode === 'bike' ? 'By bike' : 'On foot';
+    }
+
+    return `${word(legs[0])}${
+        legs.length > 1
+            ? `, then ${legs
+                  .slice(1)
+                  .map((leg) => leg.line ?? '')
+                  .filter(Boolean)
+                  .join(', ')}`
+            : ', no change'
+    }`;
 }
