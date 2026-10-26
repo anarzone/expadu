@@ -29,7 +29,7 @@ final class AroundCheck
         // A question back ("Which one do you mean?", "Did you mean…", "Shall I plan it?").
         'did', 'do', 'does', 'is', 'are', 'shall', 'should', 'leave', 'walk', 'ride',
         // Order and place words a sentence starts with ("After that…", "Near you…", "Everything I found…").
-        'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything', 'across', 'around', 'citywide', 'city-wide',
+        'after', 'afterwards', 'before', 'first', 'next', 'later', 'finally', 'near', 'nearby', 'close', 'closest', 'nearest', 'everything', 'across', 'around', 'citywide', 'city-wide', 'rain', 'line',
         'both', 'each', 'either', 'neither', 'only', 'two', 'three', 'earlier', 'instead', 'to', 'they', 'we',
         // "Other options…", "None of these…", "Opening hours aren't listed…", "Their hours…", "Eight pharmacies…".
         'other', 'others', 'another', 'none', 'opening', 'their', 'its', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'many', 'several', 'more',

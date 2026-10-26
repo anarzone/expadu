@@ -7,6 +7,7 @@
 | routes/web.php.
 */
 
+use App\Http\Controllers\AiBriefsController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\SignalController;
@@ -75,6 +76,9 @@ Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])-
 // Notification preferences
 Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
 Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+// AI-written day briefs: opt-in, its own notice (ProcessingPurpose::NotificationBrief).
+Route::get('notification-preferences/ai-briefs', [AiBriefsController::class, 'show'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.show');
+Route::put('notification-preferences/ai-briefs', [AiBriefsController::class, 'update'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.update');
 
 // User settings
 Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
