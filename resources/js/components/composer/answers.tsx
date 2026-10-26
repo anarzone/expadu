@@ -1,4 +1,5 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { travelDestinationParams } from '@/components/departures/travel-request';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf } from '@/components/travel/line-look';
@@ -15,6 +16,8 @@ import type { Journey } from '@/types/transit';
 import { EventAnswer } from './event-answer';
 import type { AnsweredEvent } from './event-answer';
 import type { Panel } from './frame';
+import { notThis } from './not-this';
+import { PersonaliseInvite } from './personalise-invite';
 import { PlaceAnswer } from './place-answer';
 import type { AnsweredPlace } from './place-answer';
 import type { Message } from './types';
@@ -55,6 +58,8 @@ type TripAnswer = {
     link: 'plan' | 'trip';
     label: string;
     basis: 'live' | 'scheduled';
+    /** "How far is it?": the line says it; the way waits, one tap to open. */
+    folded?: boolean;
 };
 
 export type AnswerMessage = Message & {
@@ -70,7 +75,34 @@ export type AnswerMessage = Message & {
     sources?: { label: string; href: string }[];
     /** Whether the AI wrote the sentences ('ai') or Composer's own words did. */
     written?: 'ai' | 'listings';
+    /** Some "because" came from the person's taste (opt-in). */
+    taste?: boolean;
+    /** Personalisation is off and would have changed this: invite, once. */
+    invite?: boolean;
+    /** Exactly what the AI was given; absent when Composer wrote it. */
+    read?: Read[];
 };
+
+type Read = 'listings' | 'places' | 'weather' | 'plans' | 'taste';
+
+const READ: Record<Read, string> = {
+    listings: 'the listings',
+    places: 'places',
+    weather: 'the weather',
+    plans: 'your plans',
+    taste: 'what you like',
+};
+
+/** "the listings, places and the weather": only what the AI was given (#330). */
+function readList(read: Read[] | undefined): string {
+    const named = (Object.keys(READ) as Read[])
+        .filter((key) => (read ?? ['listings', 'weather']).includes(key))
+        .map((key) => READ[key]);
+
+    return named.length > 1
+        ? `${named.slice(0, -1).join(', ')} and ${named.at(-1)}`
+        : (named[0] ?? '');
+}
 
 const READER: Record<NonNullable<Message['reader']>, string> = {
     limited:
@@ -197,6 +229,32 @@ export function AnswerBody({
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
         : 0;
+    // "Not this" on an assistant's suggestions, for people who turned learning on
+    // (only then is it kept): the card goes at once, with Undo.
+    const personalised =
+        (
+            usePage().props as {
+                userSettings?: Record<string, boolean | string>;
+            }
+        ).userSettings?.personalisation === true;
+    const [left, setLeft] = useState<string[]>([]);
+    const leave = (
+        key: string,
+        item: { type: 'event' | 'spot'; id: number },
+    ) => {
+        setLeft((keys) => [...keys, key]);
+        notThis(item, () => setLeft((keys) => keys.filter((k) => k !== key)));
+    };
+    const suggesting = message.kind === 'around' && personalised;
+    // The invitation stays once shown, so turning it on there can say it's on.
+    const [inviting] = useState(!personalised);
+    const events = message.events?.filter(
+        (event) =>
+            !left.includes(`event:${event.id}:${event.occurrence_start}`),
+    );
+    const places = message.places?.filter(
+        (place) => !left.includes(`spot:${place.id}`),
+    );
 
     return (
         <>
@@ -212,21 +270,52 @@ export function AnswerBody({
                     {!!message.facts?.length && (
                         <FactList facts={message.facts} />
                     )}
-                    {!!message.events?.length && (
+                    {!!events?.length && (
                         <EventAnswer
-                            events={message.events}
+                            events={events}
                             planned={planned}
                             onAdd={onAddEvent}
+                            onNotThis={
+                                suggesting
+                                    ? (event) =>
+                                          leave(
+                                              `event:${event.id}:${event.occurrence_start}`,
+                                              { type: 'event', id: event.id },
+                                          )
+                                    : undefined
+                            }
                         />
+                    )}
+                    {!!places?.length && (
+                        <PlaceAnswer
+                            places={places}
+                            onNotThis={
+                                suggesting
+                                    ? (place) =>
+                                          leave(`spot:${place.id}`, {
+                                              type: 'spot',
+                                              id: place.id,
+                                          })
+                                    : undefined
+                            }
+                        />
+                    )}
+                    {message.taste && (
+                        <p className="answer-fine">
+                            Suggested from what you’ve saved and opened.
+                        </p>
+                    )}
+                    {latest && message.invite && inviting && (
+                        <PersonaliseInvite />
                     )}
                     {(message.written === 'ai' ||
                         !!message.sources?.length) && (
                         <p className="answer-fine">
-                            {/* The AI only ever reads public listings and the weather
-                                (AI session, 22 Oct 2026); the person's own items are
-                                Composer's words, as recorded. */}
+                            {/* Names what the AI read; answers stored before #330 read
+                                only the listings and the weather. The person's own
+                                items are Composer's words, as recorded. */}
                             {message.written === 'ai' &&
-                                'Written by AI from public listings and the weather; your own items are as recorded. '}
+                                `Written by AI from ${readList(message.read)}; your own items are as recorded. `}
                             {!!message.sources?.length && (
                                 <>
                                     From:{' '}
@@ -257,8 +346,21 @@ export function AnswerBody({
             )}
             {trip && (
                 <>
-                    <TripWay trip={trip} />
-                    {paragraph}
+                    {trip.folded ? (
+                        // "How far is it?": the line answers; the way opens on a tap.
+                        <>
+                            {paragraph}
+                            <details className="answer-trip-fold">
+                                <summary>Show the way</summary>
+                                <TripWay trip={trip} />
+                            </details>
+                        </>
+                    ) : (
+                        <>
+                            <TripWay trip={trip} />
+                            {paragraph}
+                        </>
+                    )}
                     <div className="answer-actions">
                         <Link className="answer-button" href={tripHref(trip)}>
                             {trip.label}
