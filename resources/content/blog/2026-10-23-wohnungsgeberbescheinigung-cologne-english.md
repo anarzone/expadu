@@ -2,6 +2,10 @@
 title: Wohnungsgeberbestätigung in English: landlord form
 description: The Wohnungsgeberbestätigung (in Cologne: Wohnungsgeberbescheinigung) explained in English: what it must say, who signs it, and what to do if it's refused.
 updated: 2026-10-24
+glance_1: document | Your rental contract doesn't count | Without this form, there's no Anmeldung.
+glance_2: user | Your landlord signs it | Or the person you sublet from. Owners fill in a self-declaration.
+glance_3: calendar | Within two weeks of moving in | That's when your landlord must give it to you.
+glance_4: check | Four things it must say | Landlord and owner, move-in date, address, everyone's names.
 ---
 
 You can't register your address in Cologne without one piece of paper from your landlord: the **Wohnungsgeberbescheinigung**, a written confirmation that you've moved in. Cologne calls it that. The law calls it the Bestätigung des Wohnungsgebers ([§ 19 BMG](https://www.gesetze-im-internet.de/bmg/__19.html)), and many websites say Wohnungsgeberbestätigung. It's the same form.
