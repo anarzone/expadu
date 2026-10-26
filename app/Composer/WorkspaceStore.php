@@ -137,7 +137,7 @@ class WorkspaceStore
                     $kind = in_array($request['kind'], ['checklist', 'bureaucracy'], true) ? 'bureaucracy' : 'journey';
                     $this->message($s, 'assistant', self::REPLIES[$kind], ['kind' => $kind, 'query' => $asked['text']]);
                 } else {
-                    $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
+                    $this->message($s, 'assistant', $reply['text'], $this->withoutRepeatedFacts($s, $reply['extra']) + ['request' => $request['kind']]);
                 }
                 $s['focus'] = null;
 
@@ -621,7 +621,35 @@ class WorkspaceStore
     private function around(array &$s, User $user, string $text, array $request): void
     {
         $reply = app(Answers::class)->around($user, $text, $request, $s['plans'], CarbonImmutable::now('Europe/Berlin'));
-        $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);
+        $this->message($s, 'assistant', $reply['text'], $this->withoutRepeatedFacts($s, $reply['extra']) + ['request' => $request['kind']]);
+    }
+
+    /**
+     * An answer's facts less those this conversation already showed (owner's preview test,
+     * 22 Oct 2026: "Visa expires" under every answer). Each shows once per conversation.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    private function withoutRepeatedFacts(array $s, array $extra): array
+    {
+        if (! is_array($extra['facts'] ?? null)) {
+            return $extra;
+        }
+        $shown = collect(collect($s['conversations'])->firstWhere('id', $s['active'])['messages'] ?? [])
+            ->filter(fn (array $m): bool => $m['role'] === 'assistant' && is_array($m['facts'] ?? null))
+            ->flatMap(fn (array $m): array => array_map(fn (array $f): string => "{$f['label']}|{$f['value']}", $m['facts']))->flip();
+        $facts = array_values(array_filter($extra['facts'], fn (array $f): bool => ! $shown->has("{$f['label']}|{$f['value']}")));
+        // "From:" names only what this answer still shows (a dropped Paperwork card takes its link along).
+        $labels = array_column($facts, 'label');
+        $sources = array_values(array_filter($extra['sources'] ?? [], fn (array $source): bool => match ($source['label']) {
+            'Paperwork' => in_array('Paperwork', $labels, true),
+            'KVB notice' => collect($labels)->contains(fn (string $label): bool => str_starts_with($label, 'KVB')),
+            'Events' => ($extra['events'] ?? []) !== [],
+            default => true,
+        }));
+
+        return array_diff_key([...$extra, 'facts' => $facts, 'sources' => $sources], array_filter(['facts' => $facts === [], 'sources' => $sources === []]));
     }
 
     private function message(array &$s, string $role, string $text, array $extra = []): void
