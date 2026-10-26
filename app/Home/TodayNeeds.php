@@ -23,6 +23,9 @@ final class TodayNeeds
     /** What needs them now, of the brief's items. */
     private const NEEDS = ['trip_change', 'disruption', 'delay', 'weather', 'plan_closed', 'plan_disruption', 'plan_delay', 'plan_rain', 'plan_hazard', 'paperwork'];
 
+    /** Kinds as Session 1's strip names them for its icons (components/today/needs.tsx); the rest as they are. */
+    private const KINDS = ['plan_rain' => 'rain_outdoor', 'plan_disruption' => 'disruption'];
+
     /** A planned way leaving this soon says "Leave now", above everything. */
     private const LEAVE_WITHIN_MINUTES = 15;
 
@@ -71,7 +74,7 @@ final class TodayNeeds
                 // Which item it is today, never what it says: the same one keeps its id all day.
                 'id' => substr(hash('sha256', $now->toDateString().'|'.$item['about']), 0, 16),
                 'tier' => self::tier($item, $now),
-                'kind' => $item['kind'],
+                'kind' => self::KINDS[$item['kind']] ?? $item['kind'],
                 'headline' => $item['text'],
                 'detail' => $item['why'],
                 'at' => $item['at'],
