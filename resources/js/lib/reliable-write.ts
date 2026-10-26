@@ -1,3 +1,4 @@
+import { csrfHeaders } from '@/lib/csrf';
 import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
 
 /** Resolve only after the server has acknowledged a write, never a login page. */
@@ -6,10 +7,6 @@ export async function writeJson<T = Record<string, unknown>>(
     method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     data?: unknown,
 ): Promise<T> {
-    const token =
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? '';
     const response = await fetch(url, {
         method,
         credentials: 'same-origin',
@@ -18,7 +15,7 @@ export async function writeJson<T = Record<string, unknown>>(
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN': token,
+            ...csrfHeaders(),
         },
         body: data === undefined ? undefined : JSON.stringify(data),
     }).catch(() => {

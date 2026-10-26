@@ -12,7 +12,7 @@ test('failed start/end responses do not refresh state or report success', async 
         let refreshed = false;
         globalThis.fetch = async () => new Response('{}', { status: 422 });
         await assert.rejects(
-            persistTrip(url, {}, 'token', async () => {
+            persistTrip(url, {}, { 'X-CSRF-TOKEN': 'token' }, async () => {
                 refreshed = true;
 
                 return true;
@@ -34,7 +34,7 @@ test('successful persistence refreshes shared trip state before returning', asyn
     await persistTrip(
         '/api/trip/start',
         { destination: { name: 'Museum', lat: 50.9, lng: 6.95 } },
-        'csrf-token',
+        { 'X-XSRF-TOKEN': 'csrf-token' },
         async () => {
             refreshed = true;
 
@@ -44,7 +44,7 @@ test('successful persistence refreshes shared trip state before returning', asyn
     assert.equal(refreshed, true);
     assert.equal(request.url, '/api/trip/start');
     assert.equal(request.options.method, 'POST');
-    assert.equal(request.options.headers['X-CSRF-TOKEN'], 'csrf-token');
+    assert.equal(request.options.headers['X-XSRF-TOKEN'], 'csrf-token');
     assert.deepEqual(JSON.parse(request.options.body).destination, {
         name: 'Museum',
         lat: 50.9,
@@ -55,7 +55,12 @@ test('successful persistence refreshes shared trip state before returning', asyn
 test('an unavailable refresh does not claim a confirmed state', async () => {
     globalThis.fetch = async () => new Response('{}');
     await assert.rejects(
-        persistTrip('/api/trip/end', undefined, 'token', async () => false),
+        persistTrip(
+            '/api/trip/end',
+            undefined,
+            { 'X-CSRF-TOKEN': 'token' },
+            async () => false,
+        ),
         /status couldn’t refresh/i,
     );
 });
