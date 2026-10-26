@@ -281,6 +281,19 @@ export function NearbyView({
     const [view, setView] = useState<'list' | 'map'>('list');
     const mapOpen = view === 'map' && !!linesMap;
     const closeMap = useCallback(() => setView('list'), []);
+    // A line tapped under the map opens in the list, once the list is back
+    // (opened while hidden, its unfolding had nothing to measure).
+    const openFromMap = (line: string) => {
+        closeMap();
+        requestAnimationFrame(() => {
+            setOpenLine(line);
+            requestAnimationFrame(() =>
+                root.current
+                    ?.querySelector('.nearby-line-slot.is-open')
+                    ?.scrollIntoView({ block: 'nearest' }),
+            );
+        });
+    };
     const board = useMemo(
         () =>
             nearbyView(station, filterDefaults(), {
@@ -658,7 +671,10 @@ export function NearbyView({
         );
     };
 
-    const strip = (l: ShownLine) => {
+    const strip = (
+        l: ShownLine,
+        onOpen: (line: string) => void = setOpenLine,
+    ) => {
         const [first, second] = l.shown;
         const end = (d: ShownDir | undefined) =>
             d
@@ -734,7 +750,7 @@ export function NearbyView({
                 }
                 aria-pressed={false}
                 aria-label={label}
-                onClick={() => setOpenLine(l.line)}
+                onClick={() => onOpen(l.line)}
             />
         );
     };
@@ -1186,7 +1202,7 @@ export function NearbyView({
                     open={mapOpen}
                     onClose={closeMap}
                     board={board}
-                    renderLine={strip}
+                    renderLine={(l) => strip(l, openFromMap)}
                 />
             ) : null}
             {station.credits?.map((credit) => (
