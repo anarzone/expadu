@@ -192,6 +192,37 @@ export type NextTrip = {
     /** The person's own saved step-free need: a lift out is then no step-free way. */
     step_free_need?: boolean;
     alternatives: (TripOption & { journey: Journey })[];
+    /**
+     * A major problem on the trip's lines (the delays canvas, 22 Oct 2026):
+     * a major notice, else the line in trouble at its stop by its live runs.
+     * The card becomes its headline.
+     */
+    major?: {
+        notice: {
+            id: string;
+            title: string;
+            lines: string[];
+            source: string | null;
+            since: string | null;
+            brief: {
+                headline: string;
+                text: string | null;
+                kind?: 'brief' | 'translation';
+            } | null;
+            details: string | null;
+            url: string | null;
+        } | null;
+        trouble: {
+            line: string;
+            mode: 'tram' | 'bus' | 'rail';
+            dest: string;
+            kind: 'cancelled' | 'late';
+            count: number;
+            of: number;
+            runs: { time: string; delay: number; cancelled: boolean }[];
+            stop: string;
+        } | null;
+    } | null;
     /** Deep links when the router couldn't answer. */
     degraded?: { deep_links?: Record<string, string> } | null;
 };

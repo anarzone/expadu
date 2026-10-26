@@ -2,7 +2,6 @@
 
 namespace App\Composer\Answers;
 
-use App\Composer\DayAround;
 use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Services\CologneServiceArea;
@@ -11,75 +10,12 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * "What's on tonight?" (the mock's respond() `event` kind): the listings still to
- * come in the window asked about, as Events lists them. The AI relevance score
- * only orders them, it never hides one (owner, 21 Oct 2026); nothing is invented
- * when the listings are empty.
+ * Listings as Composer shows them: Events' posters, in time order, still to come. The AI
+ * relevance score only orders them, it never hides one (owner, 21 Oct 2026).
  */
 class EventAnswers
 {
-    /** Posters shown in the answer; the rest wait on Events. */
-    private const SHOWN = 6;
-
-    /** The mock's topic tests on a listing's own words. */
-    private const TOPICS = [
-        'music' => ['/music|concert|konzert/iu', 'concerts or live music'],
-        'exhibition' => ['/exhibition|ausstellung|museum|\bart\b|kunst/iu', 'exhibitions'],
-        'film' => ['/film|cinema|kino/iu', 'films'],
-        'football' => ['/football|fußball|match/iu', 'football screenings'],
-    ];
-
-    private const NUMBERS = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-
     public function __construct(private EventOccurrencePresenter $presenter, private CologneServiceArea $area) {}
-
-    /**
-     * @param  array<string, mixed>  $request  the router's event request (date, days, evening, topic)
-     * @return array{text: string, extra: array<string, mixed>}
-     */
-    public function whatsOn(array $request, CarbonImmutable $now): array
-    {
-        $now = $now->setTimezone('Europe/Berlin');
-        $day = CarbonImmutable::parse(max((string) $request['date'], $now->toDateString()), 'Europe/Berlin')->startOfDay();
-        $days = max(1, (int) ($request['days'] ?? 1));
-        $evening = (bool) ($request['evening'] ?? false);
-        $from = $day->toDateString() === $now->toDateString() ? $now : $day;
-        $until = $day->addDays($days - 1)->endOfDay();
-        // Tonight is the day row's tonight (DayAround): what starts from 18:00, or from now
-        // when that's later, until midnight; so both say the same count and first time.
-        $listed = $evening && $days === 1
-            ? Event::occurringBetween($from->max($day->setTimeFromTimeString(DayAround::EVENING)), $until)
-            : $this->stillToCome(Event::occurringBetween($day, $until), $from);
-        $topic = self::TOPICS[$request['topic'] ?? ''] ?? null;
-        $matching = $topic === null ? $listed : $listed->filter(fn (array $occurrence): bool => (bool) preg_match($topic[0],
-            $occurrence['event']->title.' '.$occurrence['event']->title_en.' '.$occurrence['event']->category.' '.$occurrence['event']->description));
-        $shown = $matching->isNotEmpty() ? $matching : $listed;
-
-        $when = match (true) {
-            $days === 2 => 'this weekend',
-            $days === 7 => 'this week',
-            $day->toDateString() === $now->toDateString() => $evening || $now->format('H:i') >= DayAround::EVENING ? 'tonight' : 'today',
-            default => 'on '.$day->isoFormat('dddd D MMMM'),
-        };
-        $browse = ['label' => 'See everything on Events', 'href' => route('events', ['date' => $day->toDateString()], false)];
-
-        if ($listed->isEmpty()) {
-            return ['text' => "Nothing more is listed {$when}.", 'extra' => ['kind' => 'event', 'suggestions' => [$browse]]];
-        }
-
-        $count = $shown->count();
-        $posters = $this->posters($shown, self::SHOWN);
-
-        return [
-            'text' => $topic !== null && $matching->isEmpty() ? "I don’t see {$topic[1]} {$when}. This is what’s on." : '',
-            'extra' => [
-                'kind' => 'event',
-                'title' => ($count === 1 ? 'One event' : (self::NUMBERS[$count - 1] ?? (string) $count).' events')." {$when}.",
-                'events' => $posters,
-                'suggestions' => $count > self::SHOWN ? [$browse] : null,
-            ],
-        ];
-    }
 
     /**
      * What's still on today, the listings Events would put first, as posters (Composer's
