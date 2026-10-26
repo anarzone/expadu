@@ -91,14 +91,21 @@ export function DateControl({
 
 type CalendarProps = {
     value: string;
+    /** Today's date when it isn't the device's (a page's sample clock). */
+    today?: string;
     min?: string;
     max?: string;
     onPick: (value: string) => void;
 };
 
 /** A month of days; arrow keys move between them. */
-export function Calendar({ value, min, max, onPick }: CalendarProps) {
-    const today = berlinToday();
+export function Calendar({
+    value,
+    today = berlinToday(),
+    min,
+    max,
+    onPick,
+}: CalendarProps) {
     const [month, setMonth] = useState(() => {
         const start = fromIso(value || today);
         start.setUTCDate(1);
