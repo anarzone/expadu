@@ -1,5 +1,7 @@
 import {
     Fragment,
+    Suspense,
+    lazy,
     useCallback,
     useEffect,
     useMemo,
@@ -14,15 +16,20 @@ import { lineLook, vehicleWord } from '../line-look';
 import { LineRow } from '../line-row';
 import { StripTime } from '../line-strip';
 import { TravelIcon } from '../travel-icon';
+import { useLinesMap } from './lines-map-data';
 import { filterDefaults, longWait, nearbyView, whenOf } from './nearby-model';
 import type { NearbyFilters, ShownDir, ShownLine } from './nearby-model';
 import { LiftLine, MajorHeadline, NoticeLine, rowNoticesOf } from './notices';
-import { StationMap, useLinesMap } from './station-map';
 import { StopPicker } from './stop-picker';
 import { closestNow, closestWords } from './types';
 import type { FavouriteStop, Station } from './types';
 import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
+
+// The lines map and a line's route: their code loads when Map is first wanted.
+const StationMap = lazy(() =>
+    import('./station-map').then((module) => ({ default: module.StationMap })),
+);
 
 /**
  * Travel's Nearby (departures-next/nearby-ui.js): the station by boarding
@@ -120,10 +127,16 @@ export function NearbyView({
         () => nearbyView(station, filters, { pinned, now, cancelled: true }),
         [station, filters, pinned, now],
     );
-    // List | Map: the map once the timetable knows the station.
-    const linesMap = useLinesMap(station);
+    // List | Map: the map's data and code are read once Map is wanted
+    // (pointed at, focused or tapped), not with every board.
     const [view, setView] = useState<'list' | 'map'>('list');
+    const [mapWanted, setMapWanted] = useState(false);
+    const linesMap = useLinesMap(station, mapWanted || view === 'map');
     const mapOpen = view === 'map' && !!linesMap;
+    const wantMap = useCallback(() => {
+        setMapWanted(true);
+        void import('./station-map');
+    }, []);
     const closeMap = useCallback(() => setView('list'), []);
     // A line's whole route under the map: the screen's one headline is that
     // line's own (owner, 23 Oct 2026).
@@ -782,7 +795,9 @@ export function NearbyView({
                 >
                     <TravelIcon name="star" />
                 </button>
-                {linesMap ? (
+                {linesMap !== null &&
+                station.lat !== null &&
+                station.lng !== null ? (
                     <div
                         className="nearby-views"
                         role="group"
@@ -800,7 +815,12 @@ export function NearbyView({
                             type="button"
                             aria-pressed={mapOpen}
                             aria-label="Map"
-                            onClick={() => setView('map')}
+                            onPointerEnter={wantMap}
+                            onFocus={wantMap}
+                            onClick={() => {
+                                wantMap();
+                                setView('map');
+                            }}
                         >
                             <TravelIcon name="map" />
                         </button>
@@ -972,20 +992,22 @@ export function NearbyView({
                 )}
             </div>
             {linesMap ? (
-                <StationMap
-                    key={station.name}
-                    station={station}
-                    data={linesMap}
-                    open={mapOpen}
-                    onClose={closeMap}
-                    board={board}
-                    renderLine={row}
-                    onOpenBoard={(name) => {
-                        closeMap();
-                        onPickStop(name);
-                    }}
-                    onRouteLine={setRouteLine}
-                />
+                <Suspense fallback={null}>
+                    <StationMap
+                        key={station.name}
+                        station={station}
+                        data={linesMap}
+                        open={mapOpen}
+                        onClose={closeMap}
+                        board={board}
+                        renderLine={row}
+                        onOpenBoard={(name) => {
+                            closeMap();
+                            onPickStop(name);
+                        }}
+                        onRouteLine={setRouteLine}
+                    />
+                </Suspense>
             ) : null}
             {station.credits?.map((credit) => (
                 <p key={credit.name} className="nearby-credit">
