@@ -40,6 +40,31 @@ class UserPlaceController extends Controller
         return $notFound ? back()->with('status', $notFound) : back();
     }
 
+    /**
+     * Your Home or Work from Travel's address line (the mock's "Add home"):
+     * the place you picked, with its point. It fills the one you have (an
+     * older account may hold an empty one) or makes it.
+     */
+    public function setCategory(Request $request, string $category): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $place = $request->user()->places()->firstOrNew(['category' => $category]);
+        $place->fill([
+            ...$validated,
+            'emoji' => $place->emoji ?: ($category === 'home' ? '🏠' : '💼'),
+        ]);
+        $place->sort_order ??= $request->user()->places()->count();
+        $place->save();
+
+        return back();
+    }
+
     public function update(Request $request, UserPlace $userPlace, AddressLocator $locator): RedirectResponse
     {
         if ($userPlace->user_id !== $request->user()->id) {
