@@ -27,10 +27,22 @@ export async function writeJson<T = Record<string, unknown>>(
         );
     });
 
-    if (
-        !response.ok ||
-        !response.headers.get('content-type')?.includes('application/json')
-    ) {
+    const json = response.headers
+        .get('content-type')
+        ?.includes('application/json');
+
+    // A refused value says why (the server's validation message).
+    if (response.status === 422 && json) {
+        const body = (await response.json().catch(() => null)) as {
+            message?: unknown;
+        } | null;
+
+        if (typeof body?.message === 'string' && body.message !== '') {
+            throw new Error(body.message);
+        }
+    }
+
+    if (!response.ok || !json) {
         throw new Error(
             isSignedOutStatus(response.status)
                 ? SIGNED_OUT
