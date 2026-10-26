@@ -41,13 +41,17 @@ class PlacesCheckMatrix extends Command
             $tools = new AssistantTools($user, $at, new LocationContext($lat, $lng, LocationSource::Confirmed, 'matrix'),
                 $catalogue, app(EventAnswers::class), app(WeatherService::class));
 
-            $answer = $tools->run('search_places', $case['input']);
+            // Most asks search; a place asked for by name ("IKEA") is looked up (find_place).
+            $answer = $tools->run($case['tool'] ?? 'search_places', $case['input']);
             $rows = $this->rows($answer);
             $candidates = collect($catalogue->byIds(array_column($rows, 'id'), $at))->keyBy('id');
             $problems = [];
 
             if (count($rows) < $case['min_results']) {
                 $problems[] = count($rows)." result(s), wanted ≥{$case['min_results']}";
+            }
+            if (isset($case['contains']) && ! str_contains($answer, $case['contains'])) {
+                $problems[] = "doesn't name {$case['contains']}";
             }
             if ($rows === [] && isset($case['if_empty_says']) && ! str_contains(mb_strtolower($answer), mb_strtolower($case['if_empty_says']))) {
                 $problems[] = "empty answer doesn't say \"{$case['if_empty_says']}\"";
