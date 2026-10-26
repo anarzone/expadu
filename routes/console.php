@@ -118,6 +118,11 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOne
 // trips: check daily, import only when a new feed is out. A run a deploy kills
 // blocks the next for at most 2 hours, and leaves the live tables untouched.
 Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer()->runInBackground();
+// gtfs.de's DELFI feed, for the cancellations VRS leaves out: its timetable
+// slice when a new one is out, and its realtime (30 MB a read) every two
+// minutes, only while someone has looked at Travel in the last ten.
+Schedule::command('transit:import-delfi')->dailyAt('04:15')->withoutOverlapping(60)->onOneServer()->runInBackground();
+Schedule::command('transit:fetch-delfi')->everyTwoMinutes()->withoutOverlapping(5)->onOneServer()->runInBackground();
 // Realtime trips that the timetable doesn't know, or a published feed left unimported → Sentry.
 Schedule::command('gtfs:health')->dailyAt('09:00')->withoutOverlapping(30)->onOneServer();
 
