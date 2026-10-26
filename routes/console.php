@@ -123,6 +123,9 @@ Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->on
 // minutes, only while someone has looked at Travel in the last ten.
 Schedule::command('transit:import-delfi')->dailyAt('04:15')->withoutOverlapping(60)->onOneServer()->runInBackground();
 Schedule::command('transit:fetch-delfi')->everyTwoMinutes()->withoutOverlapping(5)->onOneServer()->runInBackground();
+// VRS's live delays, kept fresh so no request waits 3 s to fetch them (only
+// while someone reads them).
+Schedule::command('transit:fetch-gtfsrt')->everyTwentySeconds()->withoutOverlapping(1)->onOneServer()->runInBackground();
 // Realtime trips that the timetable doesn't know, or a published feed left unimported → Sentry.
 Schedule::command('gtfs:health')->dailyAt('09:00')->withoutOverlapping(30)->onOneServer();
 
