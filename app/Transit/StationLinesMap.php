@@ -4,6 +4,7 @@ namespace App\Transit;
 
 use App\Composer\TravelEstimator;
 use App\Services\GtfsDepartureService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\DB;
  * Travel's "Lines and stops" map (departures-next/transit-map.js), for any
  * station: each tram and train line through it, with the next stops each way
  * and where it ends, from the static timetable (gtfs_*). Each way is the
- * line's most common trip in that direction. Buses are listed, not drawn.
+ * line's most common trip in that direction today, so works show as they
+ * run (17 not drawn while it doesn't run). Buses are listed, not drawn.
  * Nothing when the timetable isn't loaded or doesn't know the station.
  */
 class StationLinesMap
@@ -25,7 +27,10 @@ class StationLinesMap
     /** Under this share of the busiest line's runs here, a line each way is left out. */
     private const RARE = 0.05;
 
-    public function __construct(private readonly TravelEstimator $distance) {}
+    public function __construct(
+        private readonly TravelEstimator $distance,
+        private readonly GtfsDepartureService $gtfs,
+    ) {}
 
     /**
      * @return array{
@@ -36,21 +41,34 @@ class StationLinesMap
      */
     public function for(string $name, float $lat, float $lng): ?array
     {
-        $key = 'travel:lines-map:v2:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
+        $day = GtfsDepartureService::serviceDay();
+        $key = 'travel:lines-map:v3:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.$day->format('Ymd').':'.md5(mb_strtolower($name).'|'.round($lat, 4).'|'.round($lng, 4));
 
-        // Cached as scalars only (arrays), a day per timetable import.
-        return Cache::remember($key, 86_400, fn () => $this->build($name, $lat, $lng));
+        // Cached as scalars only (arrays), for the service day (to 03:00).
+        return Cache::remember($key, $day->copy()->addDay()->addHours(3), fn () => $this->build($name, $lat, $lng));
     }
 
-    private function build(string $name, float $lat, float $lng): ?array
+    /**
+     * The timetable's stops for the board's station: its name, near where the
+     * board says it is (a name alone would find Neumarkt in other towns too).
+     *
+     * @return Collection<int, object{stop_id: string, stop_name: string, stop_lat: string, stop_lng: string}>
+     */
+    public function stationStops(string $name, float $lat, float $lng): Collection
     {
-        $stops = DB::table('gtfs_stops')
+        return DB::table('gtfs_stops')
             ->where('location_type', 0)
             ->where('stop_name', 'ILIKE', '%'.addcslashes($name, '%_\\').'%')
             ->whereBetween('stop_lat', [$lat - 0.005, $lat + 0.005])
             ->whereBetween('stop_lng', [$lng - 0.008, $lng + 0.008])
             ->get(['stop_id', 'stop_name', 'stop_lat', 'stop_lng'])
-            ->filter(fn (object $stop) => 1000 * $this->distance->haversineKm($lat, $lng, (float) $stop->stop_lat, (float) $stop->stop_lng) <= self::NEAR_METRES);
+            ->filter(fn (object $stop) => 1000 * $this->distance->haversineKm($lat, $lng, (float) $stop->stop_lat, (float) $stop->stop_lng) <= self::NEAR_METRES)
+            ->values();
+    }
+
+    private function build(string $name, float $lat, float $lng): ?array
+    {
+        $stops = $this->stationStops($name, $lat, $lng);
 
         if ($stops->isEmpty()) {
             return null;
@@ -70,11 +88,13 @@ class StationLinesMap
 
         $ids = $stops->pluck('stop_id')->all();
 
-        // Each line's most common way through, per direction.
-        $patterns = DB::table('gtfs_stop_times as st')
+        // Each line's most common way through today, per direction.
+        $query = DB::table('gtfs_stop_times as st')
             ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
             ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
-            ->whereIn('st.stop_id', $ids)
+            ->whereIn('st.stop_id', $ids);
+        $this->gtfs->runningToday($query, 't');
+        $patterns = $query
             ->groupBy('r.route_short_name', 'r.route_type', 't.direction_id', 't.trip_headsign')
             ->selectRaw('r.route_short_name as line, r.route_type as type, t.direction_id as direction, t.trip_headsign as headsign, count(*) as trips, min(t.trip_id) as trip_id')
             ->get();
@@ -171,7 +191,7 @@ class StationLinesMap
     }
 
     /** GTFS route types (basic and extended) as Travel's modes; null for the rest. */
-    private static function mode(int $type): ?string
+    public static function mode(int $type): ?string
     {
         return match (true) {
             $type === 0, $type === 1, $type === 5, $type >= 900 && $type < 1000, $type >= 400 && $type < 500 => 'tram',
