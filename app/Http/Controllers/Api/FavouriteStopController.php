@@ -5,14 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\FavouriteStop;
 use App\Services\KvbApiService;
+use App\Transit\FavouriteStops;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Travel's ★ favourite stops for the signed-in account. Only a real KVB
- * station can be starred, and a favourite is only ever read or removed by
- * the account that made it.
+ * station can be starred (FavouriteStops, which Composer stars through too),
+ * and a favourite is only ever read or removed by the account that made it.
  */
 class FavouriteStopController extends Controller
 {
@@ -21,30 +21,22 @@ class FavouriteStopController extends Controller
         return response()->json(['favourites' => self::forUser($request->user()->id, $kvb)]);
     }
 
-    public function store(Request $request, KvbApiService $kvb): JsonResponse
+    public function store(Request $request, KvbApiService $kvb, FavouriteStops $stops): JsonResponse
     {
         $validated = $request->validate(['name' => ['required', 'string', 'max:120']]);
         $userId = $request->user()->id;
 
-        if ($kvb->stationPoints($validated['name']) === []) {
-            throw ValidationException::withMessages(['name' => 'That stop isn’t in KVB’s list.']);
-        }
-        $exists = FavouriteStop::query()->where('user_id', $userId)->where('name', $validated['name'])->exists();
-        if (! $exists && FavouriteStop::query()->where('user_id', $userId)->count() >= FavouriteStop::LIMIT) {
-            throw ValidationException::withMessages(['name' => 'You have '.FavouriteStop::LIMIT.' favourite stops. Remove one to add another.']);
-        }
+        $added = $stops->add($userId, $validated['name']);
 
-        FavouriteStop::query()->firstOrCreate(['user_id' => $userId, 'name' => $validated['name']]);
-
-        return response()->json(['favourites' => self::forUser($userId, $kvb)], $exists ? 200 : 201);
+        return response()->json(['favourites' => self::forUser($userId, $kvb)], $added ? 201 : 200);
     }
 
-    public function destroy(Request $request, KvbApiService $kvb): JsonResponse
+    public function destroy(Request $request, KvbApiService $kvb, FavouriteStops $stops): JsonResponse
     {
         $validated = $request->validate(['name' => ['required', 'string', 'max:120']]);
         $userId = $request->user()->id;
 
-        FavouriteStop::query()->where('user_id', $userId)->where('name', $validated['name'])->delete();
+        $stops->remove($userId, $validated['name']);
 
         return response()->json(['favourites' => self::forUser($userId, $kvb)]);
     }

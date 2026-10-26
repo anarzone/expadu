@@ -294,8 +294,8 @@ test('a permission given for another purpose or another input sends nothing', fu
     Http::fake(['api.anthropic.com/*' => Http::response(analyserReply(['answerable' => true, 'related_card_ids' => [], 'sentences' => [analyserGood()]]))]);
 
     // A request id already granted for Composer cannot carry a Paperwork question.
-    $composer = ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse);
-    app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerParse, ['text' => 'museum', 'veedel' => null], $composer);
+    $composer = ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist);
+    app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerAssist, ['text' => 'museum', 'veedel' => null], $composer);
     analyserAsk($user, $case->person_id, ['processing' => [...ExternalProcessingFixtures::acceptance(ProcessingPurpose::PaperworkAnswer),
         'request_id' => $composer['request_id']]])->assertUnprocessable();
     // A permission for one question cannot be reused for a different one.
@@ -303,7 +303,7 @@ test('a permission given for another purpose or another input sends nothing', fu
     analyserAsk($user, $case->person_id, ['processing' => $once])->assertSuccessful();
     analyserAsk($user, $case->person_id, ['processing' => $once, 'question' => 'What does the Blue Card cost?'])->assertUnprocessable();
     // A Composer permission is not a Paperwork permission.
-    analyserAsk($user, $case->person_id, ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse)])->assertUnprocessable();
+    analyserAsk($user, $case->person_id, ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])->assertUnprocessable();
     Http::assertSentCount(1);
 
     // At the transport boundary: the granted input, and only it, may be sent.
@@ -318,7 +318,7 @@ test('a permission given for another purpose or another input sends nothing', fu
     };
     $gate = app(ExternalProcessingGate::class);
     expect($gate->send($permit, ProcessingPurpose::PaperworkAnswer, [...$context, 'question' => 'changed'], $transport))->toBeNull()
-        ->and($gate->send($permit, ProcessingPurpose::ComposerParse, $context, $transport))->toBeNull()
+        ->and($gate->send($permit, ProcessingPurpose::ComposerAssist, $context, $transport))->toBeNull()
         ->and($sent)->toBeFalse();
 });
 

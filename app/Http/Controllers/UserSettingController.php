@@ -12,8 +12,7 @@ class UserSettingController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $settings = $request->user()->userSetting?->settings
-            ?? UserSetting::defaults();
+        $settings = [...UserSetting::defaults(), ...($request->user()->userSetting?->settings ?? [])];
 
         return response()->json(['settings' => $settings]);
     }
@@ -27,6 +26,8 @@ class UserSettingController extends Controller
             'settings.share_anonymised' => ['sometimes', 'boolean'],
             'settings.profile_visibility' => ['sometimes', 'string', 'in:everyone,partners,nobody'],
             'settings.personalisation' => ['sometimes', 'boolean'],
+            'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
+            'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
 
         $user = $request->user();

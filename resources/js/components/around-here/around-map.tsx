@@ -2,13 +2,15 @@ import type { Map as MaplibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
-import { PlaceIcon, placeShape } from './place-icon';
+import { PlaceIcon } from './place-icon';
+import { rowKey } from './place-model';
 import type { AroundPlace } from './place-model';
 
 /* Around here's map (the mock's around-here/app.js loadMap and
-   drawMarkers): the point you're around, and each place in the list as
-   its kind's icon. A tap on a place points it out in the list; the row
-   you hover or open stands out here. */
+   drawMarkers, direction A): the point you're around, and each place in
+   the list as a pin with its row's number in the kind's colour, at full
+   strength. A tap on a pin points out its row; hovering a row rings its
+   pin, and the open one is larger. */
 
 type Point = { name: string; lat: number; lng: number };
 
@@ -22,17 +24,18 @@ export function AroundMap({
 }: {
     point: Point;
     places: AroundPlace[];
-    selected: number | null;
-    hovered: number | null;
-    onSelect: (id: number) => void;
+    /** Rows' keys (rowKey): a big park's parts share its id. */
+    selected: string | null;
+    hovered: string | null;
+    onSelect: (key: string) => void;
     /** A place to bring to the middle (one just opened). */
-    flyTo: { id: number; at: number } | null;
+    flyTo: { key: string; at: number } | null;
 }) {
     const box = useRef<HTMLDivElement>(null);
     const map = useRef<MaplibreMap | null>(null);
     const basemap = useRef<Basemap | null>(null);
     const marks = useRef<
-        { id: number; element: HTMLElement; marker: Marker }[]
+        { key: string; element: HTMLElement; marker: Marker }[]
     >([]);
     const [state, setState] = useState<'loading' | 'ready' | 'failed'>(
         'loading',
@@ -100,41 +103,41 @@ export function AroundMap({
         }
 
         marks.current.forEach(({ marker }) => marker.remove());
-        marks.current = places.map((place) => {
+        marks.current = places.map((place, index) => {
             const element = document.createElement('button');
             element.type = 'button';
             element.className = 'around-marker';
             element.dataset.kind = place.icon;
-            element.setAttribute('aria-label', place.name);
-            // The kind's icon (static artwork, never user input).
-            element.innerHTML = `<svg class="place-icon" viewBox="0 0 24 24" aria-hidden="true">${placeShape(place.icon)}</svg>`;
+            element.setAttribute('aria-label', `${index + 1}. ${place.name}`);
+            // The row's number, in the kind's colour.
+            element.textContent = String(index + 1);
             element.addEventListener('click', (event) => {
                 event.stopPropagation();
-                onSelect(place.id);
+                onSelect(rowKey(place));
             });
             const marker = new bm.maplibregl.Marker({ element })
                 .setLngLat([place.lng, place.lat])
                 .addTo(m);
 
-            return { id: place.id, element, marker };
+            return { key: rowKey(place), element, marker };
         });
         const bounds = new bm.maplibregl.LngLatBounds();
         bounds.extend([point.lng, point.lat]);
         places.forEach((place) => bounds.extend([place.lng, place.lat]));
-        m.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 0 });
+        m.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 0 });
         // onSelect is the page's setter; the markers follow the list.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state, places, point.lat, point.lng]);
 
     useEffect(() => {
-        marks.current.forEach(({ id, element }) => {
-            element.classList.toggle('is-selected', id === selected);
-            element.classList.toggle('is-hovered', id === hovered);
+        marks.current.forEach(({ key, element }) => {
+            element.classList.toggle('is-selected', key === selected);
+            element.classList.toggle('is-hovered', key === hovered);
         });
     }, [selected, hovered, state, places]);
 
     useEffect(() => {
-        const place = flyTo && places.find((p) => p.id === flyTo.id);
+        const place = flyTo && places.find((p) => rowKey(p) === flyTo.key);
 
         if (!place || !map.current) {
             return;
