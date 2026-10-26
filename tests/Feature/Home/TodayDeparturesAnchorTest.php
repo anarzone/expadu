@@ -4,6 +4,9 @@ use App\Enums\LocationSource;
 use App\Models\FavouriteStop;
 use App\Models\User;
 use App\Models\UserPlace;
+use App\Personalisation\PersonalisationWording;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
 use App\Services\LocationContext;
 use App\Transit\NearbyStation;
 use Illuminate\Support\Facades\DB;
@@ -67,4 +70,27 @@ test('last, the station is near the Veedel', function () {
         ->andReturn(['name' => 'Nippes Bf']));
 
     expect(todayStationFor($user))->toBe(['name' => 'Nippes Bf']);
+});
+
+test('the stops they pick most are quick picks only under the current personalisation wording', function () {
+    $user = User::factory()->onboarded()->create(['veedel' => null]);
+    $learn = function () use ($user): void {
+        foreach (['Neumarkt', 'Neumarkt', 'Ebertplatz', 'Neumarkt', 'Ebertplatz'] as $stop) {
+            app(SignalRecorder::class)->transit($user, SignalItemType::Stop, $stop);
+        }
+    };
+    $picks = fn () => $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page')['props']['learnedStops'];
+
+    $learn();
+    expect($picks())->toBe([]);
+
+    // On under the first wording (places and events only): still none.
+    $user->userSetting()->updateOrCreate(['user_id' => $user->id], ['settings' => ['personalisation' => true, PersonalisationWording::SETTING => 1]]);
+    $learn();
+    expect($picks())->toBe([]);
+
+    $user->userSetting()->update(['settings' => ['personalisation' => true, PersonalisationWording::SETTING => PersonalisationWording::CURRENT]]);
+    $user->load('userSetting');
+    $learn();
+    expect($picks())->toBe(['Neumarkt', 'Ebertplatz']);
 });
