@@ -40,7 +40,19 @@ enum SignalAction: string
      */
     public static function placeFeedback(): array
     {
-        return [self::Saved, self::MoreLikeThis, self::NotForMe, self::BeenLiked, self::BeenDisliked];
+        return [...self::placeState(), ...self::placeBeen()];
+    }
+
+    /** The one-of choice on a place: saved, more like this, not for me. */
+    public static function placeState(): array
+    {
+        return [self::Saved, self::MoreLikeThis, self::NotForMe];
+    }
+
+    /** "Been there", kept apart so saving and visiting don't replace each other. */
+    public static function placeBeen(): array
+    {
+        return [self::BeenLiked, self::BeenDisliked];
     }
 
     public function hideDays(): ?int

@@ -1,0 +1,331 @@
+{
+  "about": "Places quality gate: 22 real asks, run through Composer's search_places tool without the AI (php artisan places:check-matrix). 'input' is the tool call the AI should make for the ask; the AI session's own eval checks that mapping. Times are Europe/Berlin; the person is at the Dom unless 'from' says otherwise.",
+  "defaults": {
+    "at": "2026-10-23 14:00",
+    "from": [
+      50.9413,
+      6.9583
+    ],
+    "min_results": 3
+  },
+  "asks": [
+    {
+      "ask": "where can I play football",
+      "input": {
+        "activity": "soccer"
+      },
+      "kinds": [
+        "Pitch",
+        "Sports centre",
+        "Park"
+      ]
+    },
+    {
+      "ask": "where can my kid play football",
+      "input": {
+        "kinds": [
+          "playground"
+        ]
+      },
+      "kinds": [
+        "Playground",
+        "Park"
+      ],
+      "note": "children's ask: playgrounds (with goals where the city lists them) are right here; the adult ask above stays pitches and parks"
+    },
+    {
+      "ask": "places to work in the city centre",
+      "input": {
+        "kinds": [
+          "cafe",
+          "library",
+          "coworking"
+        ],
+        "area": "city centre"
+      },
+      "kinds": [
+        "Café",
+        "Library",
+        "Coworking"
+      ],
+      "areas": [
+        "Altstadt-Nord",
+        "Altstadt-Süd",
+        "Neustadt-Nord",
+        "Neustadt-Süd"
+      ],
+      "from": [
+        51.027,
+        6.896
+      ]
+    },
+    {
+      "ask": "coffee shops",
+      "input": {
+        "kinds": [
+          "cafe"
+        ]
+      },
+      "kinds": [
+        "Café"
+      ]
+    },
+    {
+      "ask": "cofe shops",
+      "input": {
+        "kinds": [
+          "cafe"
+        ]
+      },
+      "kinds": [
+        "Café"
+      ],
+      "note": "the AI must map the typo to cafe, never coffee_tea_shop"
+    },
+    {
+      "ask": "quiet café with wifi near me",
+      "input": {
+        "kinds": [
+          "cafe"
+        ],
+        "mood": "quiet",
+        "features": [
+          "wifi"
+        ]
+      },
+      "kinds": [
+        "Café"
+      ],
+      "requires": "wifi"
+    },
+    {
+      "ask": "vegan restaurant in Ehrenfeld",
+      "input": {
+        "kinds": [
+          "restaurant"
+        ],
+        "area": "Ehrenfeld",
+        "features": [
+          "diet:vegan"
+        ]
+      },
+      "kinds": [
+        "Restaurant"
+      ],
+      "areas": [
+        "Ehrenfeld"
+      ],
+      "requires": "vegan",
+      "min_results": 1
+    },
+    {
+      "ask": "pharmacy open now",
+      "input": {
+        "kinds": [
+          "pharmacy"
+        ],
+        "open_at": "14:00"
+      },
+      "kinds": [
+        "Pharmacy"
+      ],
+      "open_from_listed_hours": true
+    },
+    {
+      "ask": "supermarket open Sunday",
+      "input": {
+        "kinds": [
+          "supermarket"
+        ],
+        "open_at": "11:00"
+      },
+      "at": "2026-10-25 11:00",
+      "kinds": [
+        "Supermarket"
+      ],
+      "min_results": 0,
+      "if_empty_says": "closed on Sundays",
+      "open_from_listed_hours": true
+    },
+    {
+      "ask": "playground near Neumarkt",
+      "input": {
+        "kinds": [
+          "playground"
+        ]
+      },
+      "from": [
+        50.9363,
+        6.9469
+      ],
+      "kinds": [
+        "Playground",
+        "Park",
+        "Sports centre"
+      ]
+    },
+    {
+      "ask": "where can I swim",
+      "input": {
+        "kinds": [
+          "swimming"
+        ]
+      },
+      "kinds": [
+        "Swimming",
+        "Lake"
+      ]
+    },
+    {
+      "ask": "picnic park",
+      "input": {
+        "kinds": [
+          "park"
+        ]
+      },
+      "kinds": [
+        "Park",
+        "Picnic spot",
+        "Lake",
+        "Woods & nature",
+        "Viewpoint",
+        "BBQ spot"
+      ]
+    },
+    {
+      "ask": "bakery open now",
+      "input": {
+        "kinds": [
+          "bakery"
+        ],
+        "open_at": "14:00"
+      },
+      "kinds": [
+        "Bakery"
+      ],
+      "open_from_listed_hours": true
+    },
+    {
+      "ask": "library open late",
+      "input": {
+        "kinds": [
+          "library"
+        ],
+        "open_at": "19:30"
+      },
+      "at": "2026-10-23 19:30",
+      "kinds": [
+        "Library"
+      ],
+      "min_results": 0,
+      "open_from_listed_hours": true,
+      "if_empty_says": "open at 19:30"
+    },
+    {
+      "ask": "coworking",
+      "input": {
+        "kinds": [
+          "coworking"
+        ]
+      },
+      "kinds": [
+        "Coworking"
+      ]
+    },
+    {
+      "ask": "wheelchair-accessible restaurant",
+      "input": {
+        "kinds": [
+          "restaurant"
+        ],
+        "features": [
+          "wheelchair"
+        ]
+      },
+      "kinds": [
+        "Restaurant"
+      ],
+      "requires": "wheelchair"
+    },
+    {
+      "ask": "brunch Sunday",
+      "input": {
+        "kinds": [
+          "cafe"
+        ],
+        "open_at": "11:00"
+      },
+      "at": "2026-10-25 11:00",
+      "kinds": [
+        "Café"
+      ]
+    },
+    {
+      "ask": "table tennis",
+      "input": {
+        "activity": "table_tennis"
+      },
+      "kinds": [
+        "Table tennis",
+        "Sports centre",
+        "Playground",
+        "Park"
+      ]
+    },
+    {
+      "ask": "dog park",
+      "input": {
+        "kinds": [
+          "dog_park"
+        ]
+      },
+      "kinds": [
+        "Dog park",
+        "Park",
+        "Sports centre"
+      ]
+    },
+    {
+      "ask": "climbing / gym",
+      "input": {
+        "kinds": [
+          "climbing",
+          "fitness_centre"
+        ]
+      },
+      "kinds": [
+        "Climbing",
+        "Gym",
+        "Sports centre"
+      ],
+      "min_results": 3,
+      "note": "gyms and climbing/bouldering halls import as Gym and Climbing (feat/places-fitness-climbing-dance, owner yes 23 Oct)"
+    },
+    {
+      "ask": "dance studio",
+      "input": {
+        "kinds": [
+          "dance_studio"
+        ]
+      },
+      "kinds": [
+        "Dance studio"
+      ],
+      "min_results": 3
+    },
+    {
+      "ask": "bar with live music tonight",
+      "input": {
+        "kinds": [
+          "bar"
+        ],
+        "open_at": "21:00"
+      },
+      "at": "2026-10-23 21:00",
+      "kinds": [
+        "Bar"
+      ],
+      "note": "live music is not in the data; the answer must say so (AI eval), then offer bars"
+    }
+  ]
+}

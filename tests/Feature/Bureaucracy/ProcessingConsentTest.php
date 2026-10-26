@@ -25,7 +25,7 @@ beforeEach(function () {
     config()->set('services.llm.processor_name', 'Synthetic processor');
     config()->set('services.llm.processor_privacy_url', 'https://processor.example.test/privacy');
     config()->set('services.llm.prompt_version', 'synthetic.1');
-    config()->set('bureaucracy_privacy.daily_limits.composer_parse', 2);
+    config()->set('bureaucracy_privacy.daily_limits.composer_assist', 2);
     $this->processingResponseStatus = 200;
     $this->processingResponseHook = null;
     Http::fake(function () {
@@ -56,13 +56,13 @@ test('transport requires a current single request permit even if a case has old 
     $user = User::factory()->create();
     BureaucracyCase::factory()->for($user)->create(['ai_consent_at' => now()]);
 
-    expect(app(ExternalProcessingGate::class)->send(null, ProcessingPurpose::ComposerParse, ['text' => 'PRIVATE-PROMPT'], consentTransport()))->toBeNull();
+    expect(app(ExternalProcessingGate::class)->send(null, ProcessingPurpose::ComposerAssist, ['text' => 'PRIVATE-PROMPT'], consentTransport()))->toBeNull();
     Http::assertNothingSent();
 });
 
 test('permission rejects absent consent and stale notices before creating a grant', function (string $field, mixed $value) {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $acceptance = array_replace(processingAcceptance($purpose), [$field => $value]);
 
     expect(fn () => app(ProcessingConsentStore::class)->grant($user, $purpose, ['text' => 'PRIVATE-PROMPT'], $acceptance))
@@ -79,7 +79,7 @@ test('permission rejects absent consent and stale notices before creating a gran
 
 test('an identical retry returns its encrypted result without another send or quota charge', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $acceptance = processingAcceptance($purpose);
     $store = app(ProcessingConsentStore::class);
@@ -100,7 +100,7 @@ test('an identical retry returns its encrypted result without another send or qu
 
 test('a reused request key cannot authorise a changed payload or purpose', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $acceptance = processingAcceptance($purpose);
     $store = app(ProcessingConsentStore::class);
     $store->grant($user, $purpose, ['text' => 'first'], $acceptance);
@@ -111,7 +111,7 @@ test('a reused request key cannot authorise a changed payload or purpose', funct
 
 test('transport withholds permission after withdrawal expiry provider changes and mismatched inputs', function (string $change) {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $store = app(ProcessingConsentStore::class);
     $permit = $store->grant($user, $purpose, $context, processingAcceptance($purpose));
@@ -131,7 +131,7 @@ test('transport withholds permission after withdrawal expiry provider changes an
 
 test('quota survives withdrawal and cannot be bypassed with a new request key', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $store = app(ProcessingConsentStore::class);
     $gate = app(ExternalProcessingGate::class);
@@ -149,7 +149,7 @@ test('quota survives withdrawal and cannot be bypassed with a new request key', 
 
 test('a delayed withdrawn result is discarded and cannot be replayed', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $store = app(ProcessingConsentStore::class);
     $permit = $store->grant($user, $purpose, $context, processingAcceptance($purpose));
@@ -162,7 +162,7 @@ test('a delayed withdrawn result is discarded and cannot be replayed', function 
 
 test('an uncertain or failed provider response is never automatically resent', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $permit = app(ProcessingConsentStore::class)->grant($user, $purpose, $context, processingAcceptance($purpose));
     $this->processingResponseStatus = 503;
@@ -194,7 +194,7 @@ test('withdrawal removes cached results and old raw messages but leaves confirme
 
 test('cleanup expires encrypted responses while retaining only bounded request metadata', function () {
     $user = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $permit = app(ProcessingConsentStore::class)->grant($user, $purpose, $context, processingAcceptance($purpose));
     app(ExternalProcessingGate::class)->send($permit, $purpose, $context, consentTransport());
@@ -208,7 +208,7 @@ test('cleanup expires encrypted responses while retaining only bounded request m
 });
 
 test('a permission handle cannot be borrowed by another actor', function () {
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $permit = app(ProcessingConsentStore::class)->grant(User::factory()->create(), $purpose, $context, processingAcceptance($purpose));
     $forged = new ProcessingPermit($permit->id, User::factory()->create()->id);
@@ -237,7 +237,7 @@ test('removing pre migration raw messages does not reset the rolling quota', fun
 
 test('withdrawal between reservation and dispatch prevents the transport from starting', function () {
     $actor = User::factory()->create();
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $store = app(ProcessingConsentStore::class);
     $permit = $store->grant($actor, $purpose, $context, processingAcceptance($purpose));
@@ -256,7 +256,7 @@ test('withdrawal between reservation and dispatch prevents the transport from st
 });
 
 test('a consent given for the old DeepSeek processor sends nothing once the processor is Claude', function () {
-    $purpose = ProcessingPurpose::ComposerParse;
+    $purpose = ProcessingPurpose::ComposerAssist;
     $context = ['text' => 'PRIVATE-PROMPT'];
     $deepSeek = ['base_url' => 'https://api.deepseek.com', 'model' => 'deepseek-chat', 'processor_name' => 'DeepSeek', 'processor_privacy_url' => 'https://www.deepseek.com/privacy'];
     $claude = ['base_url' => 'https://api.anthropic.com', 'model' => 'claude-haiku-5-5', 'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://www.anthropic.com/legal/privacy'];

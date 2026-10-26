@@ -3,6 +3,7 @@
 use App\Http\Controllers\Settings\NotificationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\Settings\StepFreeNeedController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'throttle:app-writes'])->group(function () {
@@ -15,6 +16,9 @@ Route::middleware(['auth', 'throttle:app-writes'])->group(function () {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('settings/notifications', [NotificationController::class, 'edit'])->name('notifications.edit');
+
+    // The step-free need: one writer (SetStepFreeNeed), which Composer's set_needs uses too.
+    Route::put('settings/needs/step-free', StepFreeNeedController::class)->name('needs.step-free.update');
 
     // Transit reads the shared userSettings / auth.user props and writes through
     // the existing /user-settings and /settings/profile endpoints, so it needs
