@@ -119,6 +119,42 @@
 .day-panel.has-no-plans {
     padding-bottom: 20px;
 }
+/* An empty day's prompts: Composer for what's left, Travel for a route. */
+.day-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+.day-prompts > * {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease-out;
+}
+.day-prompts > *:active {
+    background: var(--color-bg-hover);
+}
+.day-prompts svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-select-text);
+}
+@media (prefers-reduced-motion: reduce) {
+    .day-prompts > * {
+        transition: none;
+    }
+}
 @media (max-width: 700px) {
     /* An empty day keeps to one line on phones: no heading. */
     .day-panel.has-no-plans {
@@ -785,6 +821,23 @@ a.plan-link:hover {
     font-size: var(--text-micro);
     line-height: 16.5px;
     text-align: right;
+}
+/* The day ahead in one line: when rain comes, and cycling. */
+.forecast-line {
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+.forecast-strip .forecast-loading {
+    opacity: 0.6;
+}
+/* KVB's notices for the board's lines (Travel's own banner). */
+.board-notices {
+    display: grid;
+    gap: 8px;
+    margin: 10px 0 0;
 }
 /* Check departures: a stop, its next lines as Travel draws them. */
 .departure-board {

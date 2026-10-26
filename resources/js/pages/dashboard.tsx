@@ -65,9 +65,6 @@ export default function Today() {
         continuation?: TodayContinuationData;
         welcome?: boolean;
     }>().props;
-    const planned = !!day?.items.some(
-        (item) => !item.completed && item.state !== 'elapsed',
-    );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
     const lead = useSteadyLead(
@@ -118,7 +115,11 @@ export default function Today() {
         // fallback whenever `day` is re-read, and stays there if the re-read
         // fails. A day on screen stays while it refreshes.
         agenda: day ? (
-            <YourDay day={day} paperwork={paperwork?.processes} />
+            <YourDay
+                day={day}
+                paperwork={paperwork?.processes}
+                offer={!welcome}
+            />
         ) : (
             <DayLoading failed={dayLoad.failed} onRetry={dayLoad.retry} />
         ),
@@ -131,7 +132,6 @@ export default function Today() {
                     station={station}
                     stop={stop}
                     favourites={favouriteStops ?? []}
-                    planned={planned}
                 />
                 {cityFirst && personal}
             </div>
