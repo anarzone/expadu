@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
@@ -49,6 +49,8 @@ import { PlanSaved } from './plan-saved';
  * checked. A hand-off (?to_name=&to_lat=&to_lng=, ?to= by name, &from…,
  * &arrive_by= or &depart_at=/&at=, &activity=) opens on its options.
  */
+
+const placeLabels = { home: 'Home', work: 'Work' } as const;
 
 export type SavedPlace = {
     id: number;
@@ -257,6 +259,9 @@ export function PlanPanel({
     const [remindNote, setRemindNote] = useState<string | null>(null);
     const push = usePushSubscription();
     const toField = useRef<HTMLInputElement>(null);
+    // Home or Work without an address: the To line becomes its address line
+    // (the mock's "Add home"), and what you pick there is saved as it.
+    const [setting, setSetting] = useState<'home' | 'work' | null>(null);
     const request = useRef<AbortController | null>(null);
     const target = picked?.target ?? null;
 
@@ -537,6 +542,16 @@ export function PlanPanel({
         const activity = q.get('activity');
         const toKey = q.get('to');
         const name = (q.get('to_name') ?? toKey)?.trim().slice(0, 120);
+        const set = q.get('set');
+
+        // My day's (or anyone's) "Add home": straight to Home's address line.
+        if (set === 'home' || set === 'work') {
+            opened.current = true;
+            setSetting(set);
+            window.setTimeout(() => toField.current?.focus(), 0);
+
+            return;
+        }
 
         // Events' "Open in Travel": there by its start, or (back=1) from it
         // after it ends, to Home when you have one. An event the server
@@ -982,6 +997,52 @@ export function PlanPanel({
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
+    // What was picked (or typed and found) in the address line becomes your
+    // Home or Work, kept with your account.
+    const keepPlace = async (
+        kind: 'home' | 'work',
+        picked: PlanPlace | null,
+    ) => {
+        const typed = to.text.trim();
+        const place =
+            picked ?? (typed ? await findPlace(typed, 'destination') : null);
+
+        if (!place) {
+            setError(
+                typed
+                    ? 'No place matches that. Pick one from the list.'
+                    : `Type your ${kind} address, then pick it from the list.`,
+            );
+
+            return;
+        }
+
+        router.put(
+            `/user-places/${kind}`,
+            {
+                name: place.name,
+                address: place.detail ?? null,
+                lat: place.lat,
+                lng: place.lng,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['savedPlaces'],
+                onSuccess: () => {
+                    setSetting(null);
+                    setTo(EMPTY);
+                    setError(null);
+                    showToast(`${placeLabels[kind]} saved`);
+                },
+                onError: () =>
+                    setError(
+                        `Your ${kind} address couldn’t be saved. Try again.`,
+                    ),
+            },
+        );
+    };
+
     const barTitle = saved
         ? 'Saved'
         : results
@@ -1352,7 +1413,12 @@ export function PlanPanel({
                         hidden={compact}
                         onSubmit={(event) => {
                             event.preventDefault();
-                            void plan();
+
+                            if (setting) {
+                                void keepPlace(setting, to.place);
+                            } else {
+                                void plan();
+                            }
                         }}
                     >
                         <h2 className="planner-heading">
@@ -1365,7 +1431,21 @@ export function PlanPanel({
                             onTo={(value) => {
                                 setTo(value);
                                 setPicked(null);
+
+                                if (setting && value.place) {
+                                    void keepPlace(setting, value.place);
+                                }
                             }}
+                            toLabel={
+                                setting
+                                    ? `${placeLabels[setting]} address`
+                                    : undefined
+                            }
+                            toPlaceholder={
+                                setting
+                                    ? 'Street and number, or a place'
+                                    : undefined
+                            }
                             fromNote={nearName ? `near ${nearName}` : null}
                             picked={
                                 picked
@@ -1618,11 +1698,19 @@ export function PlanPanel({
                                         </span>
                                     </button>
                                 ) : (
-                                    <Link
+                                    <button
                                         key={kind}
-                                        href="/profile"
+                                        type="button"
                                         className="is-empty"
-                                        as="button"
+                                        aria-pressed={setting === kind}
+                                        onClick={() => {
+                                            setPicked(null);
+                                            setTo(EMPTY);
+                                            setSetting(
+                                                setting === kind ? null : kind,
+                                            );
+                                            toField.current?.focus();
+                                        }}
                                     >
                                         <TravelIcon
                                             name={
@@ -1633,9 +1721,13 @@ export function PlanPanel({
                                         />
                                         <span>
                                             <strong>{label}</strong>
-                                            <small>Add an address</small>
+                                            <small>
+                                                {setting === kind
+                                                    ? 'Type it in the line above'
+                                                    : 'Add an address'}
+                                            </small>
                                         </span>
-                                    </Link>
+                                    </button>
                                 ),
                             )}
                         </div>
