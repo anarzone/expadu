@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Responses\PasswordResetLinkFailedResponse;
+use App\Support\ReturnPath;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -62,12 +63,22 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $socialProviders = $this->enabledSocialProviders();
 
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-            'socialProviders' => $socialProviders,
-        ]));
+        Fortify::loginView(function (Request $request) use ($socialProviders) {
+            // "Sign in again" from a page whose session ended while it was
+            // open (resources/js/lib/signed-out.ts): back to that page once
+            // signed in. A path on this site only, never another host.
+            $return = ReturnPath::from($request->query('return'));
+            if ($return !== null) {
+                $request->session()->put('url.intended', url($return));
+            }
+
+            return Inertia::render('auth/login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => Features::enabled(Features::registration()),
+                'status' => $request->session()->get('status'),
+                'socialProviders' => $socialProviders,
+            ]);
+        });
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,
