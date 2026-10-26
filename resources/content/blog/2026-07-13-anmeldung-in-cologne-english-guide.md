@@ -2,6 +2,10 @@
 title: Anmeldung in Cologne: the English guide (2026)
 description: Register your address in Cologne: the two-week rule, walk-in days, the landlord form, who can register online and what you get. Official sources linked.
 updated: 2026-10-24
+glance_1: calendar | Within two weeks of moving in | The clock starts the day you move into the flat.
+glance_2: clock | Walk in on Monday or Wednesday | At any Kundenzentrum, or book Tuesday, Thursday or Friday.
+glance_3: document | Passport and the landlord form | A rental contract or letter isn't enough.
+glance_4: euro | Registration is free | Extra certificates cost €9 each.
 ---
 
 The **Anmeldung** is your address registration, and almost everything else waits for it: your tax ID, a bank account, your residence permit appointment. Here is how it works in Cologne, from the city's own pages.
