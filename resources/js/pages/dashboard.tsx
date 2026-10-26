@@ -7,11 +7,9 @@ import { ComingUp } from '@/components/today/coming-up';
 import type { ComingUpData } from '@/components/today/coming-up';
 import { AroundPlan, Discovery } from '@/components/today/discovery';
 import type { TodayDiscovery } from '@/components/today/discovery';
-import {
-    DeadlineStrip,
-    PaperworkPanel,
-    SettlingIn,
-} from '@/components/today/paperwork';
+import { NeedsStrip } from '@/components/today/needs';
+import type { TodayNeeds } from '@/components/today/needs';
+import { PaperworkPanel, SettlingIn } from '@/components/today/paperwork';
 import type { TodayPaperwork } from '@/components/today/paperwork';
 import { PickUp } from '@/components/today/pick-up';
 import type { TodayContinuationData } from '@/components/today/pick-up';
@@ -51,6 +49,7 @@ export default function Today() {
         saved,
         continuation,
         welcome,
+        needs,
     } = usePage<{
         day?: DayProjection;
         weather?: Weather;
@@ -64,10 +63,9 @@ export default function Today() {
         saved?: TodaySavedData;
         continuation?: TodayContinuationData;
         welcome?: boolean;
+        /** The engine's tier-1 and tier-2 items for today (Needs you). */
+        needs?: TodayNeeds;
     }>().props;
-    const planned = !!day?.items.some(
-        (item) => !item.completed && item.state !== 'elapsed',
-    );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
     const lead = useSteadyLead(
@@ -118,7 +116,11 @@ export default function Today() {
         // fallback whenever `day` is re-read, and stays there if the re-read
         // fails. A day on screen stays while it refreshes.
         agenda: day ? (
-            <YourDay day={day} paperwork={paperwork?.processes} />
+            <YourDay
+                day={day}
+                paperwork={paperwork?.processes}
+                offer={!welcome}
+            />
         ) : (
             <DayLoading failed={dayLoad.failed} onRetry={dayLoad.retry} />
         ),
@@ -131,7 +133,6 @@ export default function Today() {
                     station={station}
                     stop={stop}
                     favourites={favouriteStops ?? []}
-                    planned={planned}
                 />
                 {cityFirst && personal}
             </div>
@@ -173,7 +174,14 @@ export default function Today() {
             {/* The welcome and a deadline sit on the page, above the day's
                 surface (the mock's main). */}
             {welcome && <TodayWelcome />}
-            <DeadlineStrip strip={paperwork?.strip ?? null} />
+            <NeedsStrip
+                needs={needs}
+                paperwork={
+                    paperwork === undefined
+                        ? undefined
+                        : (paperwork?.strip ?? null)
+                }
+            />
             <div className="today-workspace">
                 {/* Phones read one column in priority order; wider screens
                     keep the day on the left and what's next on the right.
