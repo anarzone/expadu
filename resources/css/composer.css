@@ -783,10 +783,6 @@
 .composer-entry-actions button:disabled {
     opacity: 0.5;
 }
-.composer-entry-review button:active,
-.composer-entry-review a:active {
-    transform: scale(0.98);
-}
 .composer-entry-review button:focus-visible,
 .composer-entry-review a:focus-visible {
     outline: 2px solid #008ea7;
