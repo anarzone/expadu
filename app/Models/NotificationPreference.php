@@ -38,6 +38,8 @@ class NotificationPreference extends Model
             'checklist' => true,
             'digest' => false,
             'rhine' => true,
+            // The day's briefs (DayBriefs): the morning one, and the evening before an important day.
+            'brief' => true,
         ];
     }
 }
