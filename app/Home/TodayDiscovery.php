@@ -5,11 +5,16 @@ namespace App\Home;
 use App\Day\DayItem;
 use App\Day\DayProjection;
 use App\Enums\SpotCategory;
+use App\Enums\SpotFeedbackState;
 use App\Models\Event;
+use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Places\AroundKinds;
 use App\Places\OpenNearby;
 use App\Saved\SavedCollection;
+use App\Services\NearbyPlaces;
 use App\Support\EventOccurrencePresenter;
+use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -17,10 +22,12 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Today's discovery (the mock's "A little Cologne" and "Also in ‹area›"),
  * from listings and the person's own saved ideas: today's events still to
- * come or still on that fit around the person's plans, then (after the
- * evening's last start) tomorrow's, and the everyday places whose listed
- * hours say they're open near the next plan when it ends. Nothing is sample
- * or guessed; with nothing listed a block is simply absent.
+ * come or still on that fit around the person's plans, those near their
+ * Veedel (or Home) first, then tomorrow's only once nothing is left today;
+ * and the everyday places whose listed hours say they're open near the next
+ * plan when it ends, or, with no plan to go by, open now near their Veedel
+ * or Home (owner, 24 Oct 2026). Nothing is sample or guessed; with nothing
+ * listed a block is simply absent.
  */
 final class TodayDiscovery
 {
@@ -30,6 +37,9 @@ final class TodayDiscovery
      * "end not listed", never as on now.
      */
     private const NO_END_HOURS = 4;
+
+    /** Within this of the person's Veedel (or Home), an event is near and comes first. */
+    private const NEAR_KM = 3.0;
 
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
@@ -48,6 +58,7 @@ final class TodayDiscovery
         private EventOccurrencePresenter $presenter,
         private OpenNearby $open,
         private SavedCollection $saved,
+        private EventStartingPoint $points,
     ) {}
 
     /** @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
@@ -59,9 +70,14 @@ final class TodayDiscovery
             ->sortBy(fn (DayItem $item) => $item->startAt?->getTimestamp() ?? PHP_INT_MAX)
             ->values();
 
-        $events = $this->events($now, $active);
+        $home = $this->home($user);
+        $events = $this->events($now, $active, $home);
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
-        $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])));
+        $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])))
+            // No plan stop with a place to go by: open now near their Veedel or Home.
+            ?? ($home !== null && ! $active->contains(fn (DayItem $item) => $item->routable() && $item->locationLabel !== null)
+                ? $this->openNear($user, $now, $home)
+                : null);
         $idea = $around['idea']['id'] ?? null;
         $ideaStart = $around['idea']['occurrence_start'] ?? null;
 
@@ -86,16 +102,19 @@ final class TodayDiscovery
     }
 
     /**
-     * Today's events still to come or still on, soonest first, not clashing
-     * with a plan that's still ahead. A started event is on while its listed
-     * end is ahead; with no end listed, while Events keeps it (NO_END_HOURS).
-     * After the evening's last start, tomorrow's events follow, each marked
-     * `day: tomorrow` (owner, 21 Oct 2026).
+     * Today's events still to come or still on, not clashing with a plan
+     * that's still ahead: those near the person's Veedel (or Home) first,
+     * each group soonest first. Nothing is hidden for being far. A started
+     * event is on while its listed end is ahead; with no end listed, while
+     * Events keeps it (NO_END_HOURS). Only once nothing is left today do
+     * tomorrow's events follow, each marked `day: tomorrow` (owner, 21 and
+     * 24 Oct 2026).
      *
      * @param  Collection<int, DayItem>  $active
+     * @param  array{name: string, key: string, lat: float, lng: float}|null  $home
      * @return Collection<int, array<string, mixed>>
      */
-    private function events(CarbonImmutable $now, Collection $active): Collection
+    private function events(CarbonImmutable $now, Collection $active, ?array $home): Collection
     {
         $today = $this->listings($now, $now)
             ->filter(function (array $listing) use ($now, $active): bool {
@@ -113,14 +132,120 @@ final class TodayDiscovery
             ->pluck('event')
             ->values();
 
-        if ($today->contains(fn (array $event) => CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($now))) {
-            return $today;
+        if ($today->isNotEmpty()) {
+            return $this->nearFirst($today, $home);
         }
 
         // Today shows five at most, so only the first five are dressed.
-        return $today->concat($this->listings($now, $now->addDay(), 5)
+        return $this->nearFirst($this->listings($now, $now->addDay())
             ->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])
-            ->values())->values();
+            ->values(), $home)->take(5)->values();
+    }
+
+    /**
+     * Events near the person's point first, keeping each group's order. A
+     * venue without a position counts as not near; nothing is dropped.
+     *
+     * @param  Collection<int, array<string, mixed>>  $events
+     * @param  array{lat: float, lng: float}|null  $home
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function nearFirst(Collection $events, ?array $home): Collection
+    {
+        if ($home === null) {
+            return $events;
+        }
+
+        [$near, $rest] = $events->partition(fn (array $event) => is_numeric($event['venue']['lat'] ?? null) && is_numeric($event['venue']['lng'] ?? null)
+            && NearbyPlaces::km($home['lat'], $home['lng'], (float) $event['venue']['lat'], (float) $event['venue']['lng']) <= self::NEAR_KM);
+
+        return $near->concat($rest)->values();
+    }
+
+    /**
+     * The person's own point for ideas without a plan: their Veedel's
+     * centre, else their Home. Null when they have neither.
+     *
+     * @return array{name: string, key: string, lat: float, lng: float}|null
+     */
+    private function home(User $user): ?array
+    {
+        $veedel = trim((string) $user->veedel);
+        $centre = $veedel !== '' ? $this->points->public($veedel) : null;
+
+        return $centre ?? $this->points->resolve('home', $user);
+    }
+
+    /**
+     * With no plan to go by: everyday places open now near the person's
+     * Veedel (or Home), one of each kind, as Around here lists them. Named
+     * for that place ("Open now near Ehrenfeld"), never "around your plan".
+     *
+     * @param  array{name: string, key: string, lat: float, lng: float}  $home
+     * @return array<string, mixed>|null
+     */
+    private function openNear(User $user, CarbonImmutable $now, array $home): ?array
+    {
+        // A thin area looks a little further: 2 km, then 3 km, stopping at the
+        // first that finds any (the rows say how far).
+        $places = $this->places($user, $home['lat'], $home['lng'], $now, [1.0, 2.0, 3.0]);
+
+        return $places === [] ? null : [
+            'anchor' => null,
+            'near' => ['name' => $home['name'], 'key' => $home['key']],
+            'at' => $now->format('H:i'),
+            'idea' => null,
+            'place' => null,
+            'saved' => false,
+            'places' => $places,
+        ];
+    }
+
+    /**
+     * One place of each everyday kind whose listed hours say it's open at
+     * `$at`, nearest first, three at most: Around here's own rows. Each
+     * radius in turn (km) until one finds any.
+     *
+     * @param  list<float>  $radii
+     * @return list<array<string, mixed>>
+     */
+    private function places(User $user, float $lat, float $lng, CarbonImmutable $at, array $radii = [1.0]): array
+    {
+        $saved = SpotFeedback::effectiveForUser($user->id)
+            ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
+            ->keys()->map(fn (mixed $id): int => (int) $id)->all();
+        $open = collect();
+
+        foreach ($radii as $km) {
+            $open = collect(self::KINDS)
+                ->map(fn (array $kinds) => $this->open->listed(
+                    $lat,
+                    $lng,
+                    $at,
+                    array_map(fn (SpotCategory $kind) => $kind->value, $kinds),
+                    radiusKm: $km,
+                    // Further out, more of the nearest may be closed.
+                    limit: (int) round(8 * $km * $km),
+                    for: $user,
+                )->first(fn (array $row) => $row['hours']['state'] === 'open'))
+                ->filter();
+
+            if ($open->isNotEmpty()) {
+                break;
+            }
+        }
+
+        return $open
+            ->sortBy('km')
+            ->take(3)
+            ->map(fn (array $row) => [
+                ...$row,
+                'icon' => AroundKinds::icon($row['kind']),
+                'label' => AroundKinds::label($row['kind']),
+                'saved' => in_array($row['id'], $saved, true),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -191,20 +316,9 @@ final class TodayDiscovery
         ] : null;
         $idea = $kept['event'] ?? ($place === null ? $events->first($fits) : null);
 
-        $places = collect(self::KINDS)
-            ->map(fn (array $kinds) => $this->open->around(
-                (float) $anchor->lat,
-                (float) $anchor->lng,
-                $at,
-                array_map(fn (SpotCategory $kind) => $kind->value, $kinds),
-                limit: 1,
-            )->first())
-            ->filter()
-            ->take(3)
-            ->map(fn (array $place) => [...$place, 'label' => SpotCategory::tryFrom($place['kind'])?->label() ?? $place['kind']])
-            ->values();
+        $places = $this->places($user, (float) $anchor->lat, (float) $anchor->lng, $at);
 
-        if ($idea === null && $place === null && $places->isEmpty()) {
+        if ($idea === null && $place === null && $places === []) {
             return null;
         }
 
@@ -219,8 +333,9 @@ final class TodayDiscovery
             'at' => $at->format('H:i'),
             'idea' => $idea,
             'place' => $place,
+            'near' => null,
             'saved' => $kept !== null,
-            'places' => $places->all(),
+            'places' => $places,
         ];
     }
 }
