@@ -1,8 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
+import { ringWithdraw } from './ai-notice';
 import type { AiNotice } from './ai-notice';
 import {
     AnswerBody,
@@ -41,6 +42,7 @@ export default function TrayBody({
     notice,
     onOpen,
     onFocus,
+    onDraft,
 }: {
     view: TrayView;
     asked: TrayAsked | null;
@@ -50,6 +52,8 @@ export default function TrayBody({
     onOpen: () => void;
     /** The day in focus, so the box can say "Ask or change Saturday…". */
     onFocus: (date: string | null) => void;
+    /** Words in the tray's box for them to finish. */
+    onDraft: (text: string) => void;
 }) {
     const [initial, setInitial] = useState<Workspace | null>(null);
     const [failed, setFailed] = useState(false);
@@ -92,6 +96,7 @@ export default function TrayBody({
             notice={notice}
             onOpen={onOpen}
             onFocus={onFocus}
+            onDraft={onDraft}
         />
     );
 }
@@ -119,6 +124,7 @@ function Body({
     notice,
     onOpen,
     onFocus,
+    onDraft,
 }: {
     initial: Workspace;
     view: TrayView;
@@ -126,6 +132,7 @@ function Body({
     notice: AiNotice | null;
     onOpen: () => void;
     onFocus: (date: string | null) => void;
+    onDraft: (text: string) => void;
 }) {
     const engine = useComposerEngine(initial, notice, {});
     const { workspace, busy, error } = engine;
@@ -251,15 +258,17 @@ function Body({
         );
     }
 
-    return <Talk engine={engine} asked={asked} />;
+    return <Talk engine={engine} asked={asked} onDraft={onDraft} />;
 }
 
 function Talk({
     engine,
     asked,
+    onDraft,
 }: {
     engine: ReturnType<typeof useComposerEngine>;
     asked: TrayAsked | null;
+    onDraft: (text: string) => void;
 }) {
     const body = useRef<HTMLDivElement>(null);
     const { workspace, busy, error, retryMessage, pendingText } = engine;
@@ -343,6 +352,30 @@ function Talk({
         };
     }, []);
 
+    // A change Composer made or proposed: Undo, Apply, a record row changed here.
+    const calls = {
+        undo: engine.undo,
+        apply: engine.apply,
+        change: engine.change,
+        ask: (prompt: string) => void engine.send(prompt),
+        focusBox: () =>
+            document
+                .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
+                ?.focus({ preventScroll: true }),
+        draft: onDraft,
+        // Saved and My day are full Composer's panels for now (the panel's own
+        // menu is the Designer's next canvas); the AI notice is under this box.
+        nav: (
+            where: 'saved' | 'plans' | 'ai_notice',
+            purpose?: 'composer_assist' | 'composer_paperwork',
+        ) =>
+            where === 'ai_notice'
+                ? ringWithdraw(purpose)
+                : router.visit(composer.url({ query: { panel: where } })),
+        allow: engine.allow,
+        busy: !!busy,
+    };
+
     const entry = (message: Message) => (
         <article
             key={message.id}
@@ -380,6 +413,7 @@ function Talk({
                             date: event.date,
                         })
                     }
+                    calls={calls}
                 />
             ) : (
                 message.text && <p>{message.text}</p>

@@ -969,6 +969,27 @@ html {
     width: 14px;
     height: 14px;
 }
+/* Composer's mode (Ask first), to Settings › Composer. */
+.composer-mode-chip {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 28px;
+    margin-left: 4px;
+    padding: 0 10px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-decoration: none;
+}
+.composer-mode-chip:active {
+    background: var(--color-bg-hover, var(--color-border));
+}
 .composer-tray-full,
 .composer-tray-head-button {
     display: inline-flex;
@@ -1109,6 +1130,23 @@ html {
     color: var(--color-text-soft);
     font-size: var(--text-micro);
     line-height: 1.45;
+}
+/* Withdraw, in the notice's own words (Composer page and tray alike). */
+.composer-ai-withdraw {
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.composer-ai-withdraw.is-ringed {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px var(--color-paper-bg);
 }
 .composer-tray .composer-ai-notice a {
     color: inherit;
