@@ -19,6 +19,11 @@ Route::get('composer/workspace', [ComposerWorkspaceController::class, 'show'])->
 // Your day, the Paperwork glance, tonight and saved starting points, for the panel on any page.
 Route::get('composer/day', [ComposerWorkspaceController::class, 'day'])->name('composer.day');
 Route::post('composer/workspace', [ComposerWorkspaceController::class, 'update'])->name('composer.workspace.update');
+// One of the person's own conversations, renamed or deleted for good (the page asks first).
+Route::patch('composer/conversations/{conversation}', [ComposerWorkspaceController::class, 'renameConversation'])
+    ->where('conversation', '[A-Za-z0-9-]{1,64}')->name('composer.conversations.rename');
+Route::delete('composer/conversations/{conversation}', [ComposerWorkspaceController::class, 'deleteConversation'])
+    ->where('conversation', '[A-Za-z0-9-]{1,64}')->name('composer.conversations.destroy');
 Route::get('composer/event', [ComposerWorkspaceController::class, 'event'])->name('composer.event');
 Route::get('composer/guidance', [ComposerWorkspaceController::class, 'guidance'])->name('composer.guidance');
 Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue'])->name('composer.catalogue');
