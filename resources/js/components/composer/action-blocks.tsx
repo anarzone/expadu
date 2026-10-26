@@ -610,37 +610,55 @@ export function Handoff({
 }
 
 /**
- * Paperwork's say-so, for this one message (Ask first's Paperwork rule): what
- * Composer would read and who reads it, and Allow, which asks the same message
- * again with it. Without it, Composer neither reads nor changes the record.
+ * Paperwork's say-so, for this one message (Ask first's Paperwork rule): its
+ * title, the one line on what it does, and Allow, which asks the same message
+ * again with it. The whole notice stays, unchanged, folded under "What Composer
+ * sends": open the first time in a conversation, folded after that, since
+ * Paperwork asks again for each message. Without it, Composer neither reads
+ * nor changes the record.
  */
 export function Permission({
     block,
     calls,
+    first = false,
 }: {
     block: PermissionBlock;
     calls: ActionCalls;
+    /** The conversation's first ask: the notice starts open. */
+    first?: boolean;
 }) {
     const { disclosure } = block;
+    const said = !!disclosure.notice?.length || !!disclosure.processor_name;
 
     return (
         <div className="action-proposal action-permission">
             <strong>{block.title}</strong>
             {block.sub && <span className="action-sub">{block.sub}</span>}
-            {disclosure.notice?.length ? (
-                <div className="action-notice">
-                    {disclosure.notice.map((sentence) => (
-                        <p key={sentence}>{sentence}</p>
-                    ))}
-                </div>
-            ) : (
-                disclosure.processor_name && (
-                    <span className="action-sub">
-                        {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
-                    </span>
-                )
+            {said && (
+                <details className="action-notice" open={first}>
+                    <summary>What Composer sends</summary>
+                    {disclosure.notice?.length ? (
+                        disclosure.notice.map((sentence) => (
+                            <p key={sentence}>{sentence}</p>
+                        ))
+                    ) : (
+                        <p>
+                            {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
+                        </p>
+                    )}
+                    {disclosure.processor_privacy_url && (
+                        <a
+                            className="action-link"
+                            href={disclosure.processor_privacy_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Privacy notice
+                        </a>
+                    )}
+                </details>
             )}
-            {disclosure.processor_privacy_url && (
+            {!said && disclosure.processor_privacy_url && (
                 <a
                     className="action-link"
                     href={disclosure.processor_privacy_url}
