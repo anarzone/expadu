@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AskBody } from '@/components/paperwork/ask';
 import { TaskDetail, TaskTitleStatus } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
@@ -21,6 +21,7 @@ import {
     Sharing,
     StoppedRecord,
 } from '@/components/paperwork/sharing';
+import type { RecordRing } from '@/components/paperwork/sharing';
 import {
     StartRecord,
     StarterWelcome,
@@ -158,12 +159,47 @@ function Workspace({
     people: Person[];
     coverageWaitlist: CoverageWaitlist;
 }) {
-    const { plan, location, go, processByKey, openSheet, openSituation } =
-        usePaperwork();
+    const {
+        plan,
+        location,
+        go,
+        processByKey,
+        openSheet,
+        openSituation,
+        openEditor,
+    } = usePaperwork();
+    const self = people.find((p) => p.id === plan.person_id)?.is_self ?? false;
+
+    // Handed over from Composer (/bureaucracy?record=delete): your record's
+    // actions open with the one asked for ringed. Only on your own plan; the
+    // address forgets it once it's open.
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        const ring = url.searchParams.get('record');
+
+        if (!ring || !['download', 'stop', 'delete'].includes(ring)) {
+            return;
+        }
+
+        url.searchParams.delete('record');
+        window.history.replaceState(window.history.state, '', url);
+
+        if (self) {
+            openEditor({
+                title: 'Share your plan',
+                body: (
+                    <Sharing
+                        personId={plan.person_id}
+                        ring={ring as RecordRing}
+                    />
+                ),
+            });
+        }
+        // Read once, as the page opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     // No answers yet on your own plan: the starter path's welcome leads (PW7).
-    const fresh = useFreshStart(
-        people.find((p) => p.id === plan.person_id)?.is_self ?? false,
-    );
+    const fresh = useFreshStart(self);
     const situationAllowed = plan.scopes.includes('view_facts');
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
