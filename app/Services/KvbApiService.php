@@ -26,9 +26,6 @@ class KvbApiService
     /** After a failed fetch, wait this long before the next try: one timeout per minute, not per request. */
     private const STOPS_RETRY_SECONDS = 60;
 
-    /** The last good list on disk, for a cold cache while KVB is slow or down. */
-    private const STOPS_FILE = 'app/kvb-stops.json';
-
     /** That list, read once a process (again while there's none). */
     private static ?array $kept = null;
 
@@ -99,7 +96,8 @@ class KvbApiService
      */
     private function keptStops(): array
     {
-        $json = @file_get_contents(storage_path(self::STOPS_FILE));
+        $file = self::stopsFile();
+        $json = $file === null ? false : @file_get_contents($file);
         $stops = $json === false ? null : json_decode($json, true);
 
         return is_array($stops) ? $stops : [];
@@ -126,12 +124,23 @@ class KvbApiService
         }
 
         // Kept on disk too, written whole, for the next cold cache.
-        $file = storage_path(self::STOPS_FILE);
-        if (@file_put_contents($file.'.tmp', json_encode($stops)) !== false) {
+        $file = self::stopsFile();
+        if ($file !== null && @file_put_contents($file.'.tmp', json_encode($stops)) !== false) {
             @rename($file.'.tmp', $file);
         }
 
         return $stops;
+    }
+
+    /**
+     * The last good list on disk, for a cold cache while KVB is slow or down;
+     * none in tests, so one test's list never reaches another (or the disk).
+     */
+    private static function stopsFile(): ?string
+    {
+        $file = config('services.kvb.stops_file');
+
+        return is_string($file) && $file !== '' ? storage_path($file) : null;
     }
 
     /**
