@@ -175,7 +175,6 @@ test('real onboarding and explicit follow ups produce the canonical reviewed cas
         'moved_in_at' => '2026-07-24',
         'address_registration_status' => 'not_registrable',
         'registration_status' => 'not_registered',
-        'interests' => [],
         ...$journey['onboarding'],
     ])->assertRedirect(route('dashboard'));
 

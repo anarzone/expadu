@@ -89,16 +89,6 @@ class CategoryAffinity
             }
         }
 
-        // Explicit interests (user-picked) are the strongest cold-start signal:
-        // they outrank a merely situation-fit category, so picking "Museums"
-        // surfaces museums above the parks a settled employee also gets. Never
-        // lifts a category we've demoted for kid-safety.
-        foreach (Interest::categoriesFor($profile->interests) as $category) {
-            if (($map[$category] ?? self::NEUTRAL) > self::DEMOTE) {
-                $map[$category] = self::STRONG;
-            }
-        }
-
         return $map;
     }
 
