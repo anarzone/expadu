@@ -75,12 +75,11 @@ test('overdue Paperwork needs them, saying only that', function () {
     ]);
 });
 
-test('Today has it in the day’s deferred group', function () {
+test('Today has it in its first response', function () {
     needsTrip($this->user, '23:30', 'cancelled', 'Late shift');
 
     $this->actingAs($this->user)->get(route('dashboard'))->assertOk()->assertInertia(fn ($page) => $page
-        ->missing('needsYou')
-        ->loadDeferredProps('day', fn ($reload) => $reload->where('needsYou.items.0.kind', 'trip_change')->has('needsYou.checked_at')));
+        ->where('needsYou.items.0.kind', 'trip_change')->has('needsYou.checked_at'));
 });
 
 test('it’s worked out once and served from the cache until something in the day changes; leaving now follows the clock', function () {
