@@ -41,3 +41,13 @@ test('dashboard defers the day and weather', function () {
         )
     );
 });
+
+test('pages are history-encrypted unless a local preview turns it off', function () {
+    $user = User::factory()->onboarded()->create();
+
+    // Private props stay unreadable after logout on a shared device.
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'])->toBeTrue();
+
+    config(['inertia.history.encrypt' => false]);
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'] ?? false)->toBeFalse();
+});
