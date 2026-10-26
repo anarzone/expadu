@@ -2,6 +2,10 @@
 title: Ausländerbehörde Köln in English: offices, booking
 description: Cologne's immigration office in English: which of the nine offices handles your permit, how to book, the Kalk and Mülheim changes, and extending a permit.
 updated: 2026-10-24
+glance_1: calendar | No walk-ins | You need an appointment and an invitation letter.
+glance_2: pin | Your permit and address decide the office | Blue Card and work permits: the Arbeitsmigration unit.
+glance_3: clock | Apply before your permit runs out | It then stays valid until the office decides.
+glance_4: phone | District phone lines: Mon–Fri 8:00–12:00 | All nine numbers are in the table below.
 ---
 
 Cologne's immigration office, the **Ausländeramt** (the law calls it the Ausländerbehörde), isn't one building. It's a central office in Kalk plus nine district offices. Which one you deal with depends on your permit and where you live. One rule covers all of them: **no walk-ins**. You need an appointment and an invitation letter from the office.
