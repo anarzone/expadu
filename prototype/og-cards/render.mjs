@@ -4,6 +4,7 @@
 // Name files to render only those: node prototype/og-cards/render.mjs og/guides.png
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
