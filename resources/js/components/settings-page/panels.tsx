@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import type { IconName } from '@/components/ui/icon';
 import { csrfHeaders } from '@/lib/csrf';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
@@ -248,6 +249,15 @@ export function AccountPanel({
 }
 
 /** Personalised suggestions: the opt-in (EXP-182); off erases what was learned. */
+/** Where personalisation learns from (PersonalisationWording, the second wording). */
+const LEARNS_FROM: [IconName, string][] = [
+    ['pin', 'Places'],
+    ['calendar', 'Events'],
+    ['bell', 'Today alerts'],
+    ['train', 'Travel stops'],
+    ['spark', 'Composer topics'],
+];
+
 export function LearnPanel() {
     const { userSettings } = usePage<{
         userSettings?: Record<string, boolean | string>;
@@ -402,11 +412,15 @@ export function LearnPanel() {
                         : ''
                 }
             />
+            {/* What it learns from, as the text above says it. */}
             <div className="settings-learns">
                 <span>It learns from</span>
-                <span>What you open</span>
-                <span>What you save</span>
-                <span>What you skip</span>
+                {LEARNS_FROM.map(([icon, label]) => (
+                    <span key={label}>
+                        <SettingsIcon name={icon} />
+                        {label}
+                    </span>
+                ))}
             </div>
         </section>
     );
@@ -698,7 +712,7 @@ export function LaterPanel({
     children,
 }: {
     id: string;
-    icon: 'bell' | 'sliders';
+    icon: IconName;
     title: string;
     label: string;
     children: string;
