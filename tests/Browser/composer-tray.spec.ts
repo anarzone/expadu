@@ -105,11 +105,19 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     ).toBeVisible();
     expect(parsed).toHaveLength(2);
 
-    // Full Composer carries on with the same conversation.
-    await page
+    // Full Composer carries on with the same conversation; a phone has none
+    // (the panel is it, owner 23 Oct 2026).
+    const full = page
         .getByRole('region', { name: 'Composer', exact: true })
-        .getByRole('link', { name: 'Open full Composer' })
-        .click();
+        .getByRole('link', { name: 'Open full Composer' });
+
+    if (isMobile) {
+        await expect(full).toBeHidden();
+
+        return;
+    }
+
+    await full.click();
     await page.waitForURL(/\/composer$/);
     await expect(page.getByText(next, { exact: true }).last()).toBeVisible();
 });

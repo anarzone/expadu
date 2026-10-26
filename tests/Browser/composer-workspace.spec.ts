@@ -58,12 +58,11 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
         page.getByRole('button', { name: 'Send request' }),
     ).toBeDisabled();
     await input.fill('Keep this unsent thought');
-    await page.locator('summary[aria-label="Composer actions"]').click();
-    await page
-        .locator('.composer-actions-menu')
-        .getByRole('button', { name: 'Add appointment' })
-        .click();
-    const dialog = page.getByRole('dialog', { name: 'Add an appointment' });
+    await page.getByRole('button', { name: 'Composer menu' }).click();
+    await page.getByRole('menuitem', { name: 'Add appointment' }).click();
+    const dialog = page.locator('.composer-view', {
+        has: page.getByRole('heading', { name: 'Add an appointment' }),
+    });
     await expect(dialog).toBeVisible();
     const name = `Review ${testInfo.project.name} ${Date.now()}`;
     await dialog.getByLabel('What’s the appointment?').fill(name);
@@ -140,23 +139,17 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
     await expect(
         page.locator('#composer-current-plan').getByText(name, { exact: true }),
     ).toBeVisible();
-    await page.locator('summary[aria-label="Composer actions"]').click();
-    await page
-        .locator('.composer-actions-menu')
-        .getByRole('button', { name: 'Start fresh' })
-        .click();
+    await page.getByRole('button', { name: 'Composer menu' }).click();
+    await page.getByRole('menuitem', { name: 'Start fresh' }).click();
     await expect(
-        page.getByRole('heading', { name: 'What’s on your mind?' }),
+        page.getByRole('heading', { name: 'New conversation.' }),
     ).toBeVisible();
-    await page.locator('summary[aria-label="Composer actions"]').click();
-    await page
-        .locator('.composer-actions-menu')
-        .getByRole('button', { name: 'My Plans', exact: true })
-        .click();
+    await page.getByRole('button', { name: 'Composer menu' }).click();
+    await page.getByRole('menuitem', { name: 'My Plans', exact: true }).click();
     // My Plans opens on today's week; step to the test day's and open it.
-    const plans = page.locator('#workspace-panel');
+    const plans = page.locator('.composer-view');
     await expect(
-        plans.getByRole('heading', { name: 'My Plans' }),
+        plans.getByRole('heading', { name: 'Your days, together.' }),
     ).toBeVisible();
     const monday = (day: Date) => {
         const start = new Date(day);
@@ -205,11 +198,8 @@ test('server recommendation goes straight in, inline swap, preview and Undo', as
     test.setTimeout(90000);
     await page.goto('/composer');
     // Leave any previous test's confirmed plans intact.
-    await page.locator('summary[aria-label="Composer actions"]').click();
-    await page
-        .locator('.composer-actions-menu')
-        .getByRole('button', { name: 'Start fresh' })
-        .click();
+    await page.getByRole('button', { name: 'Composer menu' }).click();
+    await page.getByRole('menuitem', { name: 'Start fresh' }).click();
     // The assistant shows a plan as the usual change and plan messages; with no
     // AI here, the ask does what it does: tomorrow afternoon in Ehrenfeld,
     // composed from the seeded catalogue and applied as a proposal.

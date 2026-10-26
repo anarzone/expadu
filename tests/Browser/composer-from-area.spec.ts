@@ -33,16 +33,13 @@ test('chosen starting point is sent independently of the requested search area',
     });
     await page.goto('/composer');
     await page.reload();
-    await page.locator('summary[aria-label="Composer actions"]').click();
-    await page
-        .locator('.composer-actions-menu')
-        .getByRole('button', { name: /Starting point/ })
-        .click();
+    await page.getByRole('button', { name: 'Composer menu' }).click();
+    await page.getByRole('menuitem', { name: /Starting point/ }).click();
     await page
         .getByRole('textbox', { name: 'Search starting point' })
         .fill('Sülz');
     await page
-        .getByRole('dialog')
+        .locator('.composer-view')
         .getByRole('button', { name: 'Sülz', exact: true })
         .click();
     await page
