@@ -186,7 +186,9 @@ final class TodayDiscovery
      */
     private function openNear(User $user, CarbonImmutable $now, array $home): ?array
     {
-        $places = $this->places($user, $home['lat'], $home['lng'], $now);
+        // A thin area looks a little further: 2 km, then 3 km, stopping at the
+        // first that finds any (the rows say how far).
+        $places = $this->places($user, $home['lat'], $home['lng'], $now, [1.0, 2.0, 3.0]);
 
         return $places === [] ? null : [
             'anchor' => null,
@@ -201,27 +203,39 @@ final class TodayDiscovery
 
     /**
      * One place of each everyday kind whose listed hours say it's open at
-     * `$at`, nearest first, three at most: Around here's own rows.
+     * `$at`, nearest first, three at most: Around here's own rows. Each
+     * radius in turn (km) until one finds any.
      *
+     * @param  list<float>  $radii
      * @return list<array<string, mixed>>
      */
-    private function places(User $user, float $lat, float $lng, CarbonImmutable $at): array
+    private function places(User $user, float $lat, float $lng, CarbonImmutable $at, array $radii = [1.0]): array
     {
         $saved = SpotFeedback::effectiveForUser($user->id)
             ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
             ->keys()->map(fn (mixed $id): int => (int) $id)->all();
+        $open = collect();
 
-        return collect(self::KINDS)
-            ->map(fn (array $kinds) => $this->open->listed(
-                $lat,
-                $lng,
-                $at,
-                array_map(fn (SpotCategory $kind) => $kind->value, $kinds),
-                radiusKm: 1.0,
-                limit: 8,
-                for: $user,
-            )->first(fn (array $row) => $row['hours']['state'] === 'open'))
-            ->filter()
+        foreach ($radii as $km) {
+            $open = collect(self::KINDS)
+                ->map(fn (array $kinds) => $this->open->listed(
+                    $lat,
+                    $lng,
+                    $at,
+                    array_map(fn (SpotCategory $kind) => $kind->value, $kinds),
+                    radiusKm: $km,
+                    // Further out, more of the nearest may be closed.
+                    limit: (int) round(8 * $km * $km),
+                    for: $user,
+                )->first(fn (array $row) => $row['hours']['state'] === 'open'))
+                ->filter();
+
+            if ($open->isNotEmpty()) {
+                break;
+            }
+        }
+
+        return $open
             ->sortBy('km')
             ->take(3)
             ->map(fn (array $row) => [

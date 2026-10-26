@@ -103,3 +103,24 @@ test('without a Veedel it falls back to Home, and without either it shows nothin
 
     expect(app(TodayDiscovery::class)->for($nobody, discoveryNoon())['around'])->toBeNull();
 });
+
+test('with nothing open within 1 km of the Veedel, it looks at 2 km before giving up', function () {
+    $user = User::factory()->create(['veedel' => 'Ehrenfeld']);
+    Spot::factory()->create([
+        'name' => 'Closed at noon', 'category' => 'bakery',
+        'lat' => 50.9506, 'lng' => 6.9118, 'source' => 'osm', 'source_id' => 'node/4',
+        'tags' => ['opening_hours' => 'Mo-Sa 06:00-10:00'], 'public_access_allowed' => true,
+    ]);
+    // About 1.5 km north of Ehrenfeld's centre.
+    Spot::factory()->create([
+        'name' => 'Open a bit further', 'category' => 'bakery',
+        'lat' => 50.9638, 'lng' => 6.9113, 'source' => 'osm', 'source_id' => 'node/5',
+        'tags' => ['opening_hours' => 'Mo-Sa 06:00-18:00'], 'public_access_allowed' => true,
+    ]);
+
+    $around = app(TodayDiscovery::class)->for($user, discoveryNoon())['around'];
+
+    expect($around['near']['name'])->toBe('Ehrenfeld')
+        ->and(collect($around['places'])->pluck('name')->all())->toBe(['Open a bit further'])
+        ->and($around['places'][0]['km'])->toBeGreaterThan(1.0)->toBeLessThan(2.0);
+});
