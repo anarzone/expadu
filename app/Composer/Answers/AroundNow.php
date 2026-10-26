@@ -118,11 +118,19 @@ final class AroundNow
      */
     public function keepAssisted(User $user, string $text, array $assisted, CarbonImmutable $now): void
     {
-        Cache::put($this->key($user, $text), ['lead' => $assisted['lead'], 'places' => $assisted['places'],
+        Cache::put($this->key($user, $text), ['assistant' => true, 'lead' => $assisted['lead'], 'places' => $assisted['places'],
             'taste' => $assisted['taste'] ?? false, 'invite' => $assisted['invite'] ?? false, 'read' => $assisted['looked'] ?? [], 'listings' => [
                 'events' => $assisted['events'], 'weather' => $assisted['weather'] ?? $this->weatherNow(),
                 'when' => $now->setTimezone('Europe/Berlin')->format('H:i') >= '18:00' ? 'tonight' : 'today', 'items' => [],
             ]], now()->addMinutes(self::KEEP_MINUTES));
+    }
+
+    /** Whether the assistant answered this request (its answer waits for the workspace's). */
+    public function assisted(User $user, string $text): bool
+    {
+        $stash = Cache::get($this->key($user, $text));
+
+        return is_array($stash) && ($stash['assistant'] ?? false);
     }
 
     /**
@@ -154,7 +162,9 @@ final class AroundNow
     public function answer(User $user, string $text, array $request, array $plans, CarbonImmutable $now, ?string $first = null): array
     {
         $now = $now->setTimezone('Europe/Berlin');
-        $kept = $first === null ? Cache::get($this->key($user, $text)) : null;
+        // The assistant's answer, when it answered this request, stands whatever the words alone would say.
+        $stash = Cache::get($this->key($user, $text));
+        $kept = $first === null || (is_array($stash) && ($stash['assistant'] ?? false)) ? $stash : null;
         $listings = is_array($kept) ? $kept['listings'] : $this->listings($now);
         $notices = $this->notices($user);
         $deadline = $this->deadline($user, $now);
