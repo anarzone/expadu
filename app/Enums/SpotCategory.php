@@ -457,6 +457,9 @@ enum SpotCategory: string
         return array_map(fn (self $category) => $category->value, [
             self::Pharmacy, self::Drugstore, self::Supermarket, self::Convenience,
             self::Greengrocer, self::Kiosk, self::Butcher,
+            // Core shops (24 Oct 2026): found when asked for ("TK Maxx", "an electronics shop"), never an afternoon's idea.
+            self::Clothes, self::Shoes, self::DepartmentStore, self::ShoppingCentre, self::Electronics, self::PhoneShop,
+            self::ComputerShop, self::Bookshop, self::Furniture, self::Homeware, self::Hardware, self::SportsShop, self::SecondHand,
         ]);
     }
 
