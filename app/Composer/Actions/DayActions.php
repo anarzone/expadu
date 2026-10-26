@@ -36,13 +36,13 @@ final class DayActions implements ComposerAction
                     'sub' => is_string($input['_after'] ?? null) ? "After {$input['_after']}" : null, 'about' => $name.($veedel !== null ? " in {$veedel}" : '')];
             })(),
             'remove_from_day' => (function () use ($input, $plan, $date, $where): array {
-                $slot = $this->slot($plan, (string) ($input['item'] ?? ''), $where);
+                $slot = self::slot($plan, (string) ($input['item'] ?? ''), $where);
 
                 return ['date' => $date, 'edit' => ['action' => 'remove', 'date' => $date, 'id' => $slot['id']], 'name' => $slot['name'],
                     'propose' => "Take {$slot['name']} off {$where}?", 'sub' => self::span($slot)];
             })(),
             'swap_in_day' => (function () use ($input, $plan, $date, $where): array {
-                $slot = $this->slot($plan, (string) ($input['item'] ?? ''), $where);
+                $slot = self::slot($plan, (string) ($input['item'] ?? ''), $where);
                 [$candidate, $name, $veedel] = $this->candidate((string) ($input['with'] ?? ''), $date, is_string($input['area'] ?? null) ? $input['area'] : null);
 
                 return ['date' => $date, 'edit' => ['action' => 'replace', 'date' => $date, 'id' => $slot['id'], 'candidate' => $candidate],
@@ -50,7 +50,7 @@ final class DayActions implements ComposerAction
                     'about' => $name.($veedel !== null ? " in {$veedel}" : '')];
             })(),
             'move_in_day' => (function () use ($input, $plan, $date, $where): array {
-                $slot = $this->slot($plan, (string) ($input['item'] ?? ''), $where);
+                $slot = self::slot($plan, (string) ($input['item'] ?? ''), $where);
                 $start = self::clock($input['start'] ?? null) ?? throw new ActionRefused('Say the time to move it to.');
                 // Its stay is kept unless they said how long ("make it shorter": its new end).
                 $minutes = (int) CarbonImmutable::parse($slot['start_at'])->diffInMinutes(CarbonImmutable::parse($slot['end_at']));
@@ -149,7 +149,7 @@ final class DayActions implements ComposerAction
      *
      * @throws ActionRefused
      */
-    private function slot(?array $plan, string $item, string $where): array
+    public static function slot(?array $plan, string $item, string $where): array
     {
         $slots = $plan['slots'] ?? [];
         $said = mb_strtolower(trim($item));
@@ -175,7 +175,7 @@ final class DayActions implements ComposerAction
     }
 
     /** "My day" today, else the day's name ("Saturday"). */
-    private static function where(string $date, CarbonImmutable $now): string
+    public static function where(string $date, CarbonImmutable $now): string
     {
         return $date === $now->setTimezone('Europe/Berlin')->toDateString() ? 'My day' : CarbonImmutable::parse($date, 'Europe/Berlin')->isoFormat('dddd');
     }

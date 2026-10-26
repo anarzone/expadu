@@ -53,6 +53,27 @@ final class PlanFit
         return null;
     }
 
+    /**
+     * Whether the place can take a stop's own time, as a swap keeps it, by the check the swap itself
+     * makes (PlanCatalogue::available): if so, the minutes of the way there from the stop before and
+     * on to the one after; null when it's shut for any of that time or has a time of its own.
+     *
+     * @param  array<string, mixed>  $plan  the day's plan as kept (WorkspaceStore::plan)
+     * @param  array<string, mixed>  $slot  the stop it would take the place of
+     */
+    public function instead(Candidate $place, array $plan, array $slot): ?int
+    {
+        $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin');
+        $end = CarbonImmutable::parse($slot['end_at'])->setTimezone('Europe/Berlin');
+        if ($place->isFixedTime() || ! app(PlanCatalogue::class)->available($place, Constraints::fromArray($plan['constraints']), $start, $end)) {
+            return null;
+        }
+        $slots = collect($plan['slots'])->sortBy('start_at')->values();
+        $at = (int) $slots->search(fn (array $s): bool => $s['id'] === $slot['id']);
+
+        return $this->minutes($slots->get($at - 1), $place) + $this->minutes($slots->get($at + 1), $place);
+    }
+
     /** Minutes between a stop and the place, or none when the stop has no point (their own plan). */
     private function minutes(?array $slot, Candidate $place): int
     {

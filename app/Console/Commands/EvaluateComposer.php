@@ -19,6 +19,7 @@ use App\Composer\PrivatePlanCache;
 use App\Composer\WorkspaceStore;
 use App\Enums\AlertType;
 use App\Enums\Situation;
+use App\Enums\SpotCategory;
 use App\Models\Alert;
 use App\Models\ComposerWorkspace;
 use App\Models\EventBookmark;
@@ -74,7 +75,7 @@ class EvaluateComposer extends Command
     /** The fixture's keys about a plan (PlanChecks::expectations), as opposed to the answer. */
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
         'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'leave_out' => true, 'places_has' => true, 'no_step_free' => true,
-        'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true,
+        'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true, 'new_stop_kind' => true,
         'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
@@ -246,6 +247,9 @@ class EvaluateComposer extends Command
         $routing += isset($expect['plan_stops']) ? ['plan_stops' => is_array($expect['plan_stops']) ? $own >= $expect['plan_stops'][0] && $own <= $expect['plan_stops'][1] : $own === (int) $expect['plan_stops']] : [];
         $routing += isset($expect['not_before']) ? ['not_before' => collect((array) $expect['not_before'])->every(fn (string $time, string $name): bool => collect($stopsAfter)
             ->every(fn (array $s): bool => ! str_contains(mb_strtolower($s['name']), mb_strtolower($name)) || $s['start'] >= $time))] : [];
+        // What a swap put in ("replace Rheingarten with a museum"): a stop that wasn't there before, of that kind.
+        $added = array_filter($stopsAfter, fn (array $s): bool => ! in_array($s['name'], array_column(array_merge([], ...array_values($plansBefore)), 'name'), true));
+        $routing += isset($expect['new_stop_kind']) ? ['new_stop_kind' => collect($added)->contains(fn (array $s): bool => in_array($s['category'], SpotCategory::finesForSelector((string) $expect['new_stop_kind']), true))] : [];
         $routing += ($expect['no_step_free'] ?? false) ? ['no_step_free' => preg_match('/step-?free|wheelchair/iu', (string) ($answer['text'] ?? '')) !== 1] : [];
         // Every card drawn as Around here's row (a park found for its pitch included).
         $routing += ($expect['all_rows'] ?? false) ? ['all_rows' => $shownPlaces !== [] && collect($shownPlaces)->every(fn (array $p): bool => is_array($p['row'] ?? null))] : [];
@@ -533,12 +537,12 @@ class EvaluateComposer extends Command
      * Their plans' stops, by date: name, start, end, and whether it's one of their own.
      *
      * @param  array<string, mixed>  $plans
-     * @return array<string, list<array{name: string, start: string, end: ?string, own: bool}>>
+     * @return array<string, list<array{name: string, start: string, end: ?string, own: bool, category: ?string}>>
      */
     private static function stops(array $plans): array
     {
         return collect($plans)->map(fn (mixed $plan): array => collect(is_array($plan) ? ($plan['slots'] ?? []) : [])->map(fn (array $slot): array => [
-            'name' => (string) ($slot['name'] ?? ''), 'start' => (string) ($slot['start_time'] ?? ''), 'end' => $slot['end_time'] ?? null,
+            'name' => (string) ($slot['name'] ?? ''), 'start' => (string) ($slot['start_time'] ?? ''), 'end' => $slot['end_time'] ?? null, 'category' => $slot['category'] ?? null,
             'own' => ($slot['is_appointment'] ?? false) || in_array($slot['type'] ?? null, ['personal', 'appointment'], true)])->sortBy('start')->values()->all())->sortKeys()->all();
     }
 

@@ -8839,6 +8839,144 @@
    }
   },
   {
+   "id": "regression.plan_replace_museum",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "replace Rheingarten with a museum",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_lacks": [
+     "Rheingarten"
+    ],
+    "plan_has": [
+     "Kolumba",
+     "Domfontäne"
+    ],
+    "new_stop_kind": "museum"
+   }
+  },
+  {
+   "id": "regression.plan_swap_fountain_cafe",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "swap Domfontäne for a café",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_lacks": [
+     "Domfontäne"
+    ],
+    "plan_has": [
+     "Kolumba",
+     "Rheingarten"
+    ],
+    "new_stop_kind": "cafe"
+   }
+  },
+  {
+   "id": "regression.plan_replace_other_museum",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9393,
+    "lng": 6.952
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-10-24T18:00:00+02:00",
+   "weather": "dry",
+   "plan": {
+    "day": "sunday",
+    "stops": [
+     {
+      "spot": 1008081,
+      "start": "12:00",
+      "end": "13:00"
+     },
+     {
+      "spot": 1008155,
+      "start": "13:10",
+      "end": "13:25"
+     },
+     {
+      "spot": 1009401,
+      "start": "13:35",
+      "end": "14:50"
+     }
+    ]
+   },
+   "text": "replace Kolumba with a different museum",
+   "expect": {
+    "open": true,
+    "changed": "done",
+    "plan_lacks": [
+     "Kolumba"
+    ],
+    "plan_has": [
+     "Domfontäne",
+     "Rheingarten"
+    ],
+    "new_stop_kind": "museum"
+   }
+  },
+  {
    "id": "regression.plan_remove_fountain",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",

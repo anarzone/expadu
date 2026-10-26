@@ -6,6 +6,7 @@ use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Composer\Actions\ActionRefused;
 use App\Composer\Actions\ComposerActions;
+use App\Composer\Actions\DayActions;
 use App\Composer\Actions\InAppPlaces;
 use App\Composer\Actions\PaperworkActions;
 use App\Composer\Actions\PlaceFeedbackAction;
@@ -336,6 +337,7 @@ final class AssistantTools
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'suggest_for_day' => $this->suggestForDay($input),
+                'swap_in_day' => $this->swapInDay($input),
                 'guidance' => $this->guidance($input),
                 'paperwork' => match (true) {
                     $this->paperwork => $this->paperworkRecord(),
@@ -694,6 +696,61 @@ final class AssistantTools
     }
 
     /**
+     * Swaps a stop in their plan for another, with Undo. For a place they name, that one. For something
+     * of a kind ("replace Rheingarten with something indoors", "with a museum"), the replacement is found
+     * here, never picked by the AI from a list it might only show (coordinator, 26 Oct 2026: 1 in 4 runs
+     * offered one instead of swapping): of that kind (the stop's own when none is said), indoors or free
+     * when asked, open for all of the stop's time, listed hours before none listed, then the shortest
+     * way from the stop before and on to the next.
+     */
+    private function swapInDay(array $input): string
+    {
+        if (is_string($input['with'] ?? null) && trim($input['with']) !== '') {
+            return $this->act('swap_in_day', $input);
+        }
+        $day = PlanDay::dayOf($input['day'] ?? null, $this->now) ?? $this->now->startOfDay();
+        $date = $day->toDateString();
+        $plan = app(WorkspaceStore::class)->plan($this->user, $date);
+        try {
+            $slot = DayActions::slot($plan, (string) ($input['item'] ?? ''), DayActions::where($date, $this->now));
+        } catch (ActionRefused $refused) {
+            return $this->line('n'.(++$this->count), $refused->getMessage());
+        }
+        $asked = array_values(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string'));
+        $kinds = $asked !== [] ? array_values(array_intersect($asked, self::kindsWithPlaces()))
+            : array_values(array_filter([SpotCategory::tryFrom((string) ($slot['category'] ?? ''))?->value]));
+        if ($asked !== [] && $kinds === []) {
+            return $this->line('n'.(++$this->count), 'Expadu lists no '.implode(' or ', array_map(fn (string $k): string => self::kindName($k, plural: true), $asked)).' yet.');
+        }
+        $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin');
+        $end = CarbonImmutable::parse($slot['end_at'])->setTimezone('Europe/Berlin');
+        [$lat, $lng] = is_numeric($slot['lat'] ?? null) && is_numeric($slot['lng'] ?? null) ? [(float) $slot['lat'], (float) $slot['lng']]
+            : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG];
+        $stepFree = (bool) $this->user->needs_step_free;
+        $inPlan = array_column($plan['slots'] ?? [], 'id');
+        $listed = fn (Candidate $c): bool => ($c->placeFacts['hours']['status'] ?? null) === 'known' && ! $c->hoursAssumed;
+        $fits = collect($this->catalogue->nearestSpots(new Constraints(windowStart: $start, windowEnd: $end, categories: $kinds, needs: $stepFree ? ['step_free'] : []),
+            $lat, $lng, self::SHOWN * 2, self::SHOWN * 4))
+            ->reject(fn (Candidate $c): bool => in_array($c->id, $inPlan, true) || ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false))
+            ->filter(fn (Candidate $c): bool => (($input['indoors'] ?? false) !== true || self::setting($c) === 'indoors') && (($input['free'] ?? false) !== true || self::freeToUse($c)))
+            ->map(fn (Candidate $c): array => [$c, app(PlanFit::class)->instead($c, $plan, $slot)])
+            ->filter(fn (array $fit): bool => $fit[1] !== null)
+            ->sort(fn (array $a, array $b): int => [! $listed($a[0]), $a[1], $a[0]->distanceKmFromOrigin] <=> [! $listed($b[0]), $b[1], $b[0]->distanceKmFromOrigin]);
+        $thing = (($input['indoors'] ?? false) === true ? 'indoor ' : '').(($input['free'] ?? false) === true ? 'free ' : '')
+            .(count($kinds) === 1 ? self::kindName($kinds[0]) : 'place');
+        if ($fits->isEmpty()) {
+            return $this->line('n'.(++$this->count), "No {$thing} near \"{$slot['name']}\" is open for all of {$slot['start_time']}–{$slot['end_time']} that day, so their plan is unchanged.");
+        }
+        $chosen = $fits->first()[0];
+        $this->places[$chosen->id] = $chosen;
+        // Its distance is from the stop it replaces, not from them: never shown as theirs.
+        $this->measured[$chosen->id] = false;
+
+        return $this->line($chosen->id, 'Found for the swap, the '.$thing.' that fits that time best: '.self::placeText($chosen, $start, false, $stepFree))
+            ."\n".$this->act('swap_in_day', ['item' => $slot['id'], 'with' => $chosen->id, 'day' => $date]);
+    }
+
+    /**
      * Their plan for a day as it is now, for this conversation's own plan: its stops by time, name,
      * kind and Veedel; their own plans and appointments in it only as theirs.
      */
@@ -915,7 +972,7 @@ final class AssistantTools
                 // Free (coordinator's call, 23 Oct 2026): public use, by the places session's public_use. Only a
                 // place listed public, or with nothing listed, stays; one restricted (a school's, a daycare's, as
                 // their data marks it) or listing a fee is left out.
-                && (! $free || (in_array(self::publicUse($c)['value'], ['yes', 'unknown'], true) && self::publicUse($c)['free'] !== 'no')))
+                && (! $free || self::freeToUse($c)))
             ->values();
         // Listed as closed then: never offered; asked for open: only those whose listed hours say so.
         // Open: listed open, or an open-air place with no set hours (a public pitch), after those; never one listed closed.
@@ -1243,6 +1300,12 @@ final class AssistantTools
      *
      * @return array{value: string, free: string, basis: ?string, source_url: ?string}
      */
+    /** Free to use as its data says: public, or nothing listed of who may, and no fee listed. */
+    private static function freeToUse(Candidate $c): bool
+    {
+        return in_array(self::publicUse($c)['value'], ['yes', 'unknown'], true) && self::publicUse($c)['free'] !== 'no';
+    }
+
     public static function publicUse(Candidate $c): array
     {
         $use = $c->placeFacts['public_use'] ?? null;
@@ -1397,12 +1460,15 @@ final class AssistantTools
                 ], 'required' => ['item']]],
             ['name' => 'remove_from_day', 'description' => 'Takes something off their plans for a day, by its name as they said it.',
                 'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day], 'required' => ['item']]],
-            ['name' => 'swap_in_day', 'description' => 'Swaps something in their plans for a day for a place or listing, at the same time.',
+            ['name' => 'swap_in_day', 'description' => 'Swaps something in their plans for a day for another, at the same time, with Undo. For a place they name, give it as with. For something of a kind ("replace Rheingarten with something indoors", "swap it for a museum"), leave out with and give the kind: the swap finds the one that fits that time best and makes it; don\'t search first.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
-                    'with' => ['type' => 'string', 'description' => 'the new one\'s id from your lookups, else its name'],
+                    'with' => ['type' => 'string', 'description' => 'the new one\'s id from your lookups, else its name; leave out for something of a kind'],
+                    'kinds' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'without with: the kinds they asked for (museum, cafe, restaurant…); leave out for the same kind as the stop'],
+                    'indoors' => ['type' => 'boolean', 'description' => 'without with: only indoor places'],
+                    'free' => ['type' => 'boolean', 'description' => 'without with: only places free to use'],
                     'day' => $day,
-                ], 'required' => ['item', 'with']]],
+                ], 'required' => ['item']]],
             ['name' => 'move_in_day', 'description' => 'Moves one thing in their plans for a day to another time, or makes it shorter or longer: that one only, nothing else moves.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
