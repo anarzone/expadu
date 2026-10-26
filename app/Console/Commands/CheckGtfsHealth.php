@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Services\VrsRealtimeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -47,7 +46,7 @@ class CheckGtfsHealth extends Command
         }
 
         $published = RefreshGtfs::publishedVersion();
-        $imported = Cache::get(RefreshGtfs::VERSION_KEY);
+        $imported = RefreshGtfs::importedVersion();
         if ($published !== null && ! RefreshGtfs::sameVersion($published, $imported) && $published['last_modified'] !== null) {
             $age = CarbonImmutable::parse($published['last_modified'])->diffInHours(now(), true);
             if ($age > self::MAX_LAG_HOURS) {
