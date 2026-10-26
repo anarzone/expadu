@@ -29,7 +29,7 @@ import { Guidance } from './guidance';
 import { notThis } from './not-this';
 import { PersonaliseInvite } from './personalise-invite';
 import { PlaceAnswer } from './place-answer';
-import type { AnsweredPlace } from './place-answer';
+import type { AnsweredPlace, PlaceFrom } from './place-answer';
 import { readList } from './read-words';
 import type { Message } from './types';
 
@@ -146,7 +146,12 @@ type Block =
       }
     | { type: 'choices'; text: string; private?: boolean }
     | { type: 'events'; events: AnsweredEvent[] }
-    | { type: 'places'; places: AnsweredPlace[] }
+    | {
+          type: 'places';
+          places: AnsweredPlace[];
+          /** Where it searched from (the person, or the area's middle). */
+          from?: PlaceFrom | null;
+      }
     | {
           type: 'checklist';
           text: string;
@@ -255,6 +260,7 @@ function MajorHeadline({ major }: { major: Major }) {
     return (
         <Headline
             level="h3"
+            className="answer-major"
             lines={major.lines ?? []}
             title={major.title}
             text={major.text}
@@ -556,12 +562,16 @@ export function AnswerBody({
             />
         ) : null;
     };
-    const placesCard = (list: AnsweredPlace[] | undefined) => {
+    const placesCard = (
+        list: AnsweredPlace[] | undefined,
+        from?: PlaceFrom | null,
+    ) => {
         const places = shownPlaces(list);
 
         return places?.length ? (
             <PlaceAnswer
                 places={places}
+                from={from}
                 onNotThis={
                     suggesting
                         ? (place) =>
@@ -655,7 +665,7 @@ export function AnswerBody({
                 case 'places':
                     return (
                         <Fragment key={index}>
-                            {placesCard(block.places)}
+                            {placesCard(block.places, block.from)}
                         </Fragment>
                     );
                 case 'checklist':
@@ -691,6 +701,11 @@ export function AnswerBody({
             (block): block is Extract<Block, { type: 'trip' }> =>
                 block.type === 'trip' && !!block.major,
         )?.major;
+
+        // Nothing came back to show: it says so, rather than an empty reply.
+        if (emptyAnswer(message)) {
+            return <p>Composer couldn’t put an answer together for that.</p>;
+        }
 
         return (
             <>
@@ -744,6 +759,65 @@ export function AnswerBody({
             )}
             {next}
         </>
+    );
+}
+
+/** An assistant's answer with nothing in it: no words, no cards, nothing to do next. */
+const emptyAnswer = (message: AnswerMessage) =>
+    message.request === 'ask' &&
+    !message.lead &&
+    !message.blocks?.length &&
+    !message.suggestions?.length;
+
+/** The reply to a message that couldn't be answered, or came back empty. */
+export const unanswered = (message: Message) =>
+    message.kind === 'failed' || (isAnswer(message) && emptyAnswer(message));
+
+/**
+ * Try again under the newest reply that couldn't answer: the same message,
+ * asked again (the engine's `again`), never sent a second time.
+ */
+export function TryAgain({
+    onAgain,
+    disabled,
+}: {
+    onAgain: () => void;
+    disabled: boolean;
+}) {
+    return (
+        <div className="reply-suggestions">
+            <button
+                type="button"
+                className="suggestion-chip"
+                disabled={disabled}
+                onClick={onAgain}
+            >
+                Try again
+            </button>
+        </div>
+    );
+}
+
+/**
+ * The person's newest message with no reply after it, the request gone (the
+ * page reloaded or closed mid-answer): said, with Try again, never a gap.
+ */
+export function NotAnswered({
+    onAgain,
+    disabled,
+}: {
+    onAgain: () => void;
+    disabled: boolean;
+}) {
+    return (
+        <article className="chat-entry chat-assistant">
+            <span className="chat-speaker">
+                <Icon name="spark" variant="line" />
+                Composer
+            </span>
+            <p>This one didn’t get an answer.</p>
+            <TryAgain onAgain={onAgain} disabled={disabled} />
+        </article>
     );
 }
 
