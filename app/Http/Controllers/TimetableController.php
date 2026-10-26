@@ -6,6 +6,8 @@ use App\Day\DayProjection;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
 use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
@@ -36,9 +38,12 @@ class TimetableController extends Controller
         return Inertia::render('timetable', [
             // Nearby: the picked station, else the closest one. An unknown
             // name keeps the closest and says so.
-            'station' => Inertia::defer(function () use ($nearby, $location, $stop, $userId) {
+            'station' => Inertia::defer(function () use ($request, $nearby, $location, $stop, $userId) {
                 $picked = $stop === null ? null : $nearby->named($stop);
                 if ($picked !== null) {
+                    // A station they picked, for personalisation with their opt-in; never the closest one.
+                    app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
+
                     return $picked;
                 }
                 // Never a saved home or the city centre: no location, no station.

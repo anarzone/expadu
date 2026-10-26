@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 final class ProcessingOptIns
 {
     /** Only processing made to run without a request of theirs may be turned on for good. */
-    public const STANDING = [ProcessingPurpose::NotificationBrief];
+    public const STANDING = [ProcessingPurpose::NotificationBrief, ProcessingPurpose::TodayRank];
 
     public function __construct(private ProcessingConsentStore $consents) {}
 

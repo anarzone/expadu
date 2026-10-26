@@ -11,6 +11,8 @@ use App\Home\TodayNeeds;
 use App\Home\TodayPaperwork;
 use App\Home\TodaySaved;
 use App\Http\Controllers\Api\FavouriteStopController;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
 use App\Transit\NearbyStation;
@@ -36,6 +38,9 @@ class HomeFeedController extends Controller
             'station' => Inertia::defer(function () use ($request, $locations, $nearby, $stop) {
                 $picked = $stop === null ? null : $nearby->named($stop);
                 if ($picked !== null) {
+                    // A station they picked, for personalisation with their opt-in; never the closest one.
+                    app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
+
                     return $picked;
                 }
                 $location = $locations->context($request->user(), $request);

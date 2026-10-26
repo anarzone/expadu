@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\ActiveTrip;
 use App\Models\UserSetting;
+use App\Personalisation\PersonalisationWording;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,7 +60,8 @@ class HandleInertiaRequests extends Middleware
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // Settings saved before a key existed read it at its default.
-            'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? [])],
+            'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? []),
+                'personalisation_current' => $request->user() === null || PersonalisationWording::current($request->user())],
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.

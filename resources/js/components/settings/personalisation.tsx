@@ -63,7 +63,7 @@ export default function Personalisation() {
             <Heading
                 variant="small"
                 title="Personalised suggestions"
-                description="Let Expadu learn from the places and events you open, save or skip."
+                description="Let Expadu learn from the places, events, Today alerts, Travel stops and Composer topics you open, search, save, skip or dismiss, and let AI (Claude Haiku) put Today in order from that."
             />
             <ToggleCard>
                 <ToggleRow
