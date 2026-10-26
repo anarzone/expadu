@@ -26,6 +26,9 @@ Route::middleware(['auth', 'throttle:app-writes'])->group(function () {
     // setting); the old /settings/privacy path redirects for stray bookmarks.
     Route::redirect('settings/privacy', '/settings/transit');
     Route::inertia('settings/transit', 'settings/transit')->name('transit.edit');
+    // Whether Composer asks before it changes something (Ask first), from the shared
+    // userSettings prop, written through /user-settings like Transit's.
+    Route::inertia('settings/composer', 'settings/composer')->name('composer-settings.edit');
 });
 
 Route::middleware(['auth', 'verified', 'throttle:app-writes'])->group(function () {
