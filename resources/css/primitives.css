@@ -658,6 +658,13 @@
 .ui-time-input[aria-invalid='true'] {
     border-color: var(--color-conflict-text);
 }
+/* In a settings row: one time beside its label, the same touch height. */
+.ui-time-input.is-compact {
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: var(--text-body);
+    text-align: center;
+}
 .ui-time-options {
     position: fixed;
     z-index: 120;

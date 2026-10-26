@@ -30,6 +30,7 @@ type Place = {
     lat?: number | null;
     lng?: number | null;
     arrive_by?: string | null;
+    leave_at?: string | null;
     category?: string;
     day_mode?: string;
     active_days?: string[];
@@ -43,6 +44,7 @@ type UserPlaceData = {
     lat: number | null;
     lng: number | null;
     arrive_by?: string | null;
+    leave_at?: string | null;
     category?: string;
     day_mode?: string;
     active_days?: string[];
@@ -237,6 +239,7 @@ export default function Profile() {
         lat: p.lat ?? null,
         lng: p.lng ?? null,
         arrive_by: p.arrive_by ?? null,
+        leave_at: p.leave_at ?? null,
         category: p.category ?? 'custom',
         day_mode: p.day_mode ?? 'all',
         active_days: p.active_days ?? [],
@@ -256,6 +259,9 @@ export default function Profile() {
     const [placeEmoji, setPlaceEmoji] = useState('🏠');
     const [showIconPicker, setShowIconPicker] = useState(false);
     const [showArriveBy, setShowArriveBy] = useState(false);
+    // Work only: when they usually leave it, for the evening's way home.
+    const [placeLeaveAt, setPlaceLeaveAt] = useState('');
+    const [showLeaveAt, setShowLeaveAt] = useState(false);
     const [showDays, setShowDays] = useState(false);
     const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
 
@@ -425,6 +431,7 @@ export default function Profile() {
             setPlaceLat(place.lat ?? null);
             setPlaceLng(place.lng ?? null);
             setPlaceArriveBy(place.arrive_by?.slice(0, 5) ?? '');
+            setPlaceLeaveAt(place.leave_at?.slice(0, 5) ?? '');
             setPlaceDayMode(place.day_mode ?? 'all');
             setPlaceActiveDays(place.active_days ?? []);
         } else {
@@ -435,6 +442,7 @@ export default function Profile() {
             setPlaceLat(null);
             setPlaceLng(null);
             setPlaceArriveBy('');
+            setPlaceLeaveAt('');
             setPlaceDayMode('all');
             setPlaceActiveDays([]);
         }
@@ -442,8 +450,13 @@ export default function Profile() {
         setShowPlaceForm(true);
         setShowIconPicker(false);
         setShowArriveBy(!!place?.arrive_by);
+        setShowLeaveAt(!!place?.leave_at);
         setShowDays(!!place?.active_days?.length);
     }
+
+    // The Work place also says when they usually leave it.
+    const editingWork =
+        places.find((p) => p.id === editingPlaceId)?.category === 'work';
 
     function savePlace() {
         if (placeSaving) {
@@ -470,6 +483,7 @@ export default function Profile() {
                     lat: placeLat,
                     lng: placeLng,
                     arrive_by: placeArriveBy || null,
+                    ...(editingWork ? { leave_at: placeLeaveAt || null } : {}),
                     day_mode: placeDayMode,
                     active_days:
                         placeDayMode === 'custom' ? placeActiveDays : null,
@@ -506,6 +520,7 @@ export default function Profile() {
                     lat: placeLat,
                     lng: placeLng,
                     arrive_by: placeArriveBy || null,
+                    ...(editingWork ? { leave_at: placeLeaveAt || null } : {}),
                     day_mode: placeDayMode,
                     active_days:
                         placeDayMode === 'custom' ? placeActiveDays : null,
@@ -1244,6 +1259,17 @@ export default function Profile() {
                                         <IconClock size={14} stroke={1.7} />{' '}
                                         Arrive by
                                     </button>
+                                    {editingWork && (
+                                        <button
+                                            onClick={() =>
+                                                setShowLeaveAt(!showLeaveAt)
+                                            }
+                                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showLeaveAt ? 'bg-select-bg text-select-text' : 'bg-bg-quiet text-text-soft'}`}
+                                        >
+                                            <IconClock size={14} stroke={1.7} />{' '}
+                                            Leave at
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => setShowDays(!showDays)}
                                         className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-all ${showDays ? 'bg-select-bg text-select-text' : 'bg-bg-quiet text-text-soft'}`}
@@ -1287,6 +1313,36 @@ export default function Profile() {
                                         >
                                             For smart commute
                                         </span>
+                                    </div>
+                                )}
+                                {/* Work: when they usually leave */}
+                                {editingWork && showLeaveAt && (
+                                    <div className="mb-2.5 flex items-center gap-2">
+                                        <span
+                                            className="text-text-soft"
+                                            style={{
+                                                fontSize: 12,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            Usually leave work at
+                                        </span>
+                                        <input
+                                            type="time"
+                                            value={placeLeaveAt}
+                                            onChange={(e) =>
+                                                setPlaceLeaveAt(e.target.value)
+                                            }
+                                            aria-label="Usually leave work at"
+                                            className="flex-1 rounded-[9px] border border-border bg-bg-surface px-3 py-[9px] text-sm outline-none"
+                                            style={{
+                                                fontFamily:
+                                                    "'Geist Mono', monospace",
+                                                color: placeLeaveAt
+                                                    ? 'var(--color-select-text)'
+                                                    : 'var(--color-text-soft)',
+                                            }}
+                                        />
                                     </div>
                                 )}
                                 {/* Active days */}
