@@ -209,6 +209,8 @@ return [
         'client_cert' => env('VRS_CLIENT_CERT'),
         'client_cert_password' => env('VRS_CLIENT_CERT_PASSWORD'),
         'enabled' => env('VRS_REALTIME_ENABLED', false),
+        // Seconds a request waits for another worker's GTFS-RT fetch, once.
+        'gtfsrt_lock_wait' => (int) env('VRS_GTFSRT_LOCK_WAIT', 10),
         'requestor_ref' => env('VRS_REQUESTOR_REF', 'expadu'),
     ],
 
