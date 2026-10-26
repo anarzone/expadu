@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Places\PlaceAmenities;
 use Carbon\CarbonImmutable;
 
 /**
@@ -35,6 +36,10 @@ final readonly class Constraints
         public array $sequence = [],
         /** @var list<string> hard needs (Need values), e.g. step_free; places without the verified fact drop out */
         public array $needs = [],
+        /** @var list<string> listed features a place must have (PlaceAmenities): wifi, outdoor_seating, diet:vegan, cuisine:italian; hard */
+        public array $features = [],
+        /** how many stops they asked for ("two museums"), besides their own appointments; null: a sensible day */
+        public ?int $stops = null,
     ) {}
 
     /** Mood words the request may carry; soft preferences for ranking and the judge. */
@@ -101,6 +106,8 @@ final readonly class Constraints
             'avoid' => $this->avoid,
             'sequence' => $this->sequence,
             'needs' => $this->needs,
+            'features' => $this->features,
+            'stops' => $this->stops,
         ];
     }
 
@@ -124,6 +131,8 @@ final readonly class Constraints
             avoid: array_values((array) ($data['avoid'] ?? [])),
             sequence: array_values((array) ($data['sequence'] ?? [])),
             needs: array_values(array_intersect((array) ($data['needs'] ?? []), self::NEEDS)),
+            features: array_values(array_filter((array) ($data['features'] ?? []), fn (mixed $feature): bool => is_string($feature) && PlaceAmenities::valid($feature))),
+            stops: isset($data['stops']) && is_numeric($data['stops']) ? max(1, min(6, (int) $data['stops'])) : null,
         );
     }
 }

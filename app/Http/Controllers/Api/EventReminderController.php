@@ -5,19 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventReminder;
+use App\Services\EventReminders;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 /**
  * "🔔 Remind me" on an event occurrence. POST sets (or re-times) the
- * reminder, DELETE removes it; the scheduled dispatcher delivers
- * through the in-app/push notification channel.
+ * reminder, DELETE removes it (EventReminders, which Composer's remind_me
+ * uses too).
  */
 class EventReminderController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, EventReminders $reminders): JsonResponse
     {
         $validated = $request->validate([
             'event_id' => ['required', 'integer', 'exists:events,id'],
@@ -25,48 +25,13 @@ class EventReminderController extends Controller
             'offset' => ['required', 'in:1h,3h,morning'],
         ]);
 
-        $occurrenceStart = CarbonImmutable::parse($validated['occurrence_start'])->setTimezone('Europe/Berlin');
-        $occurrence = Event::occurringBetween($occurrenceStart->startOfDay(), $occurrenceStart->endOfDay(), [(int) $validated['event_id']])
-            ->first(fn ($item) => $item['starts_at']->equalTo($occurrenceStart));
-        if (! $occurrence || ! $occurrenceStart->isFuture()) {
-            throw ValidationException::withMessages(['occurrence_start' => 'This event occurrence is no longer available for a reminder.']);
-        }
-
-        [$offsetMinutes, $remindAt] = match ($validated['offset']) {
-            '1h' => [60, $occurrenceStart->subHour()],
-            '3h' => [180, $occurrenceStart->subHours(3)],
-            // "Morning of" an event that starts before 08:00 would land
-            // AFTER the start and never fire — fall back to 1h before.
-            'morning' => $occurrenceStart->hour < 8
-                ? [60, $occurrenceStart->subHour()]
-                : [0, $occurrenceStart->setTime(8, 0)],
-        };
-
-        $reminder = EventReminder::query()->updateOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'event_id' => $validated['event_id'],
-                'occurrence_start' => $occurrenceStart,
-            ],
-            [
-                'offset_minutes' => $offsetMinutes,
-                'remind_at' => $remindAt,
-                'sent_at' => null,
-            ],
-        );
-
-        return response()->json(['id' => $reminder->id, 'remind_at' => $remindAt->toIso8601String()]);
+        return response()->json($reminders->set($request->user(), (int) $validated['event_id'], CarbonImmutable::parse($validated['occurrence_start']), $validated['offset']));
     }
 
-    public function destroy(Request $request, Event $event): JsonResponse
+    public function destroy(Request $request, Event $event, EventReminders $reminders): JsonResponse
     {
         $request->validate(['occurrence_start' => ['required', 'date']]);
-
-        EventReminder::query()
-            ->where('user_id', $request->user()->id)
-            ->where('event_id', $event->id)
-            ->where('occurrence_start', CarbonImmutable::parse($request->input('occurrence_start')))
-            ->delete();
+        $reminders->forget($request->user(), $event->id, CarbonImmutable::parse($request->input('occurrence_start')));
 
         return response()->json(['deleted' => true]);
     }
