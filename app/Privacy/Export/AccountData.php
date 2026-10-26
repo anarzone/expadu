@@ -43,7 +43,7 @@ final class AccountData
             'travel.json' => ['Your places (Home, Work), favourite stops, saved and recent journeys, planned and active trips.', fn () => $this->travel($user)],
             'alerts.json' => ['Alerts and notifications sent to you, and what you muted.', fn () => $this->alerts($user)],
             'activity.json' => ['What you did in the app that Expadu recorded (opened, saved, skipped).', fn () => $this->activity($user)],
-            'personalisation.json' => ['What personalised suggestions learned, kept under a pseudonym.', fn () => $this->personalisation($user)],
+            'personalisation.json' => ['What personalisation learned (places, events, Today alerts, Travel stops and Composer topics), kept under a pseudonym; each signal says what it was.', fn () => $this->personalisation($user)],
             'location.json' => ['Locations kept for the last 7 days, when location sharing is on.', fn () => $this->location($user)],
         ];
 
@@ -202,10 +202,30 @@ final class AccountData
 
         return [
             'taste_profile' => $this->rows('taste_profiles', 'subject_key', $subject),
-            'signals' => $this->rows('user_signals', 'subject_key', $subject),
+            'signals' => array_map(fn (array $row): array => ['what' => self::signal($row), ...$row], $this->rows('user_signals', 'subject_key', $subject)),
             'affinities' => $this->rows('user_affinities', 'subject_key', $subject),
             'hidden_places' => $this->rows('user_place_negatives', 'subject_key', $subject),
         ];
+    }
+
+    /**
+     * One learned signal in words: what was done, on what (personalisation's second wording keeps
+     * things that aren't catalogue items, whose ids are only hashes: their words are here).
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private static function signal(array $row): string
+    {
+        $context = is_string($row['context'] ?? null) ? (json_decode($row['context'], true) ?: []) : (array) ($row['context'] ?? []);
+        $in = filled($row['veedel'] ?? null) ? " in {$row['veedel']}" : '';
+
+        return match ($row['item_type'] ?? null) {
+            'topic' => "Composer looked up: {$row['category']}{$in}",
+            'stop' => 'Travel stop you picked: '.($context['stop'] ?? 'a stop'),
+            'line' => 'Travel line on your way: '.($context['line'] ?? 'a line'),
+            'need' => "Today’s “Needs you” item ({$row['category']}): {$row['action']}",
+            default => "{$row['action']} on a {$row['item_type']} ({$row['category']}{$in})",
+        };
     }
 
     /** @return array<string, mixed> */
