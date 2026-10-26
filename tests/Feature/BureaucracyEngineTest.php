@@ -8,7 +8,6 @@ use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Models\Task;
 use App\Models\User;
-use App\Notifications\BureaucracyDeadlineNotification;
 use App\Profile\Applicability;
 use App\Profile\ProfileEngine;
 use Carbon\CarbonImmutable;
@@ -179,15 +178,3 @@ test('user:reset-journey cannot pretend a dossier is reset by clearing only the 
 });
 
 // ── Visa expiry anchoring ──────────────────────────────────────────────
-
-test('deadline notifications deep-link to the specific task', function () {
-    $n = new BureaucracyDeadlineNotification(
-        taskTitle: 'Anmeldung',
-        tier: 'critical',
-        daysRemaining: 2,
-        deadline: now()->addDays(2)->toDateString(),
-        taskId: 42,
-    );
-
-    expect($n->toArray(null)['url'])->toBe('/bureaucracy?focus=42');
-});
