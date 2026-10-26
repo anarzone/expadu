@@ -7,10 +7,12 @@ use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
 use App\Models\User;
+use App\Personalisation\Pseudonym;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Composer's answers about a trip, as the approved Composer gives them (composer-studio/
@@ -65,14 +67,18 @@ final class TripAnswers
         if ($found === []) {
             return $this->reply("I can’t find “{$named}” in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
         }
+        // One name, several places (owner, 22 Oct 2026: "it forgot that there are more than one
+        // Cafe Nova; it should have asked"): never picked silently. The one this conversation or
+        // the person's own history points to is planned, with the others offered; otherwise it asks.
+        $others = [];
         if (count($found) > 1) {
-            return ['text' => 'There’s more than one by that name. Which do you mean?', 'extra' => [
-                'kind' => 'places',
-                'places' => array_map(fn (array $place, int $i): array => ['id' => $place['spot'] ?? -1 - $i, 'name' => $place['name'],
-                    'kind' => $place['kind'], 'distance' => null, 'area' => $place['area'], 'href' => $this->planHref($place),
-                    // Where the place comes from (osm, overture, transit), for the cards' credit.
-                    'source' => $place['source']], $found, array_keys($found)),
-            ]];
+            $pick = $this->known($user, $found, $request['mentioned'] ?? []);
+            if ($pick === null) {
+                return $this->reply('There’s more than one '.$found[0]['name'].'. Which do you mean?', null, null,
+                    array_map(fn (array $place): array => $this->choice($place), $found));
+            }
+            $others = array_values(array_filter($found, fn (array $place, int $i): bool => $i !== $pick, ARRAY_FILTER_USE_BOTH));
+            $found = [$found[$pick]];
         }
 
         $to = $found[0];
@@ -114,8 +120,44 @@ final class TripAnswers
         ]);
         // The place, for a follow-up about it ("how far is it?").
         $answer['extra']['destination'] = ['name' => $to['name'], 'area' => $to['area']];
+        if ($others !== []) {
+            $other = $others[0];
+            $answer['text'] .= " There’s also a {$other['name']}".($other['area'] !== null ? " in {$other['area']}" : '').'. Did you mean that one?';
+            $answer['extra']['suggestions'] = [...array_map(fn (array $place): array => $this->choice($place), $others), ...($answer['extra']['suggestions'] ?? [])];
+        }
 
         return $answer;
+    }
+
+    /**
+     * Which of several places of one name the person means, when it's known: the one this
+     * conversation already named (a trip or a suggestion), else, with their opt-in, the one
+     * they saved, opened or went to before. Null when nothing (or more than one) says so.
+     *
+     * @param  list<array{name: string, area: ?string, spot: ?int}>  $found
+     * @param  array{spots?: list<int>, areas?: list<string>}  $mentioned  from this conversation (WorkspaceStore)
+     */
+    private function known(User $user, array $found, array $mentioned): ?int
+    {
+        $only = fn (array $hits): ?int => count($hits) === 1 ? array_key_first($hits) : null;
+        $pick = $only(array_filter($found, fn (array $place): bool => $place['spot'] !== null && in_array($place['spot'], $mentioned['spots'] ?? [], true)))
+            ?? $only(array_filter($found, fn (array $place): bool => $place['area'] !== null && in_array($place['area'], $mentioned['areas'] ?? [], true)));
+        if ($pick !== null || ! $user->personalises()) {
+            return $pick;
+        }
+        $spots = array_values(array_filter(array_column($found, 'spot')));
+        $been = $spots === [] ? [] : DB::table('user_signals')->where('subject_key', Pseudonym::for($user))->where('item_type', 'spot')
+            ->whereIn('item_id', $spots)->whereIn('action', ['saved', 'detail_viewed', 'get_there', 'trip_taken', 'been_liked'])
+            ->distinct()->pluck('item_id')->map(fn ($id): int => (int) $id)->all();
+
+        return $only(array_filter($found, fn (array $place): bool => in_array($place['spot'], $been, true)));
+    }
+
+    /** A tap that plans the trip to this one: "Take me to Café Nova in Deutz". */
+    private function choice(array $place): array
+    {
+        return ['label' => $place['name'].($place['area'] !== null ? " · {$place['area']}" : ''),
+            'prompt' => "Take me to {$place['name']}".($place['area'] !== null ? " in {$place['area']}" : '')];
     }
 
     /**
