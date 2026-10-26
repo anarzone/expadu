@@ -17,6 +17,7 @@ import type {
     ShownDir,
     ShownLine,
 } from '@/components/travel/nearby/nearby-model';
+import { closestNow, closestWords } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
@@ -276,7 +277,15 @@ function DepartureBoard({
                     <div>
                         <p className="board-capture">
                             {station.name}
-                            <span>{captureLabel(station)}</span>
+                            <span>
+                                {[
+                                    !closestNow(station) &&
+                                        closestWords(station),
+                                    captureLabel(station),
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </span>
                         </p>
                         {lines.length > 0 ? (
                             <LineStrips className="departure-strips">

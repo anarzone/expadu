@@ -12,6 +12,7 @@ use App\Saved\SavedCollection;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Today's discovery (the mock's "A little Cologne" and "Also in ‹area›"),
@@ -29,6 +30,9 @@ final class TodayDiscovery
      * "end not listed", never as on now.
      */
     private const NO_END_HOURS = 4;
+
+    /** How long a day's listings are kept (listings()). */
+    private const LISTINGS_SECONDS = 300;
 
     /** The kinds the mock looks for near a plan, one place each, in this order. */
     private const KINDS = [
@@ -93,40 +97,55 @@ final class TodayDiscovery
      */
     private function events(CarbonImmutable $now, Collection $active): Collection
     {
-        $today = Event::occurringBetween($now->startOfDay(), $now->endOfDay())
-            ->filter(function (array $occurrence) use ($now, $active): bool {
-                /** @var CarbonImmutable $start */
-                $start = $occurrence['starts_at'];
-                $end = $occurrence['ends_at'];
-                if ($start->lessThan($now)) {
-                    $until = $end ?? ($this->presenter->timeListed($start, null) ? $start->addHours(self::NO_END_HOURS) : null);
-                    if ($until === null || $until->lessThanOrEqualTo($now)) {
+        $today = $this->listings($now, $now)
+            ->filter(function (array $listing) use ($now, $active): bool {
+                ['start' => $start, 'end' => $end] = $listing;
+                if ($start < $now->getTimestamp()) {
+                    $until = $end ?? ($listing['time_listed'] ? $start + self::NO_END_HOURS * 3600 : null);
+                    if ($until === null || $until <= $now->getTimestamp()) {
                         return false;
                     }
                 }
 
                 return ! $active->contains(fn (DayItem $plan) => $end !== null && $plan->startAt !== null && $plan->endAt !== null
-                    && $start->lessThan($plan->endAt) && $end->greaterThan($plan->startAt));
+                    && $start < $plan->endAt->getTimestamp() && $end > $plan->startAt->getTimestamp());
             })
-            ->sortBy(fn (array $occurrence) => $occurrence['starts_at']->getTimestamp())
-            ->map(fn (array $occurrence) => $this->presenter->present($occurrence['event'], $occurrence['starts_at'], $occurrence['ends_at']))
+            ->pluck('event')
             ->values();
 
         if ($today->contains(fn (array $event) => CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($now))) {
             return $today;
         }
 
-        $tomorrow = $now->addDay();
-
         // Today shows five at most, so only the first five are dressed.
-        return $today->concat(Event::occurringBetween($tomorrow->startOfDay(), $tomorrow->endOfDay())
-            ->sortBy(fn (array $occurrence) => $occurrence['starts_at']->getTimestamp())
-            ->take(5)
-            ->map(fn (array $occurrence) => [
-                ...$this->presenter->present($occurrence['event'], $occurrence['starts_at'], $occurrence['ends_at']),
-                'day' => 'tomorrow',
-            ])
+        return $today->concat($this->listings($now, $now->addDay(), 5)
+            ->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])
             ->values())->values();
+    }
+
+    /**
+     * A day's listings as Events presents them on `$now`'s day, soonest
+     * first, each with its start, end (both as listed, unix seconds) and
+     * whether a time is listed. Public listings only, nothing of the person:
+     * a read is kept for everyone for five minutes.
+     *
+     * @return Collection<int, array{start: int, end: int|null, time_listed: bool, event: array<string, mixed>}>
+     */
+    private function listings(CarbonImmutable $now, CarbonImmutable $day, ?int $take = null): Collection
+    {
+        $key = sprintf('today-discovery:listings:%s:%s:%s', $now->format('Y-m-d'), $day->format('Y-m-d'), $take ?? 'all');
+
+        return collect(Cache::remember($key, self::LISTINGS_SECONDS, fn () => Event::occurringBetween($day->startOfDay(), $day->endOfDay())
+            ->sortBy(fn (array $occurrence) => $occurrence['starts_at']->getTimestamp())
+            ->when($take !== null, fn (Collection $occurrences) => $occurrences->take($take))
+            ->map(fn (array $occurrence) => [
+                'start' => $occurrence['starts_at']->getTimestamp(),
+                'end' => $occurrence['ends_at']?->getTimestamp(),
+                'time_listed' => $this->presenter->timeListed($occurrence['starts_at'], null),
+                'event' => $this->presenter->present($occurrence['event'], $occurrence['starts_at'], $occurrence['ends_at']),
+            ])
+            ->values()
+            ->all()));
     }
 
     /**
