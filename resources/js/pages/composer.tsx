@@ -1,7 +1,6 @@
 import { Head, Link, router, usePage, useRemember } from '@inertiajs/react';
 import {
     IconArrowRight,
-    IconBookmark,
     IconCalendar,
     IconChevronDown,
     IconPlus,
@@ -13,11 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { keep } from '@/actions/App/Http/Controllers/ComposerController';
 import { event as selectedEvent } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { AiNoticeLine, useAiNotice } from '@/components/composer/ai-notice';
-import {
-    AnswerBody,
-    isAnswer,
-    ReaderNote,
-} from '@/components/composer/answers';
+import { AnswerBody, isAnswer, guided } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
     readComposerEntry,
@@ -760,34 +755,9 @@ export default function ComposerPage({
                                                 )}
                                             </details>
                                         )}
-                                    {message.kind === 'bureaucracy' && (
+                                    {guided(message) && (
                                         <Guidance query={message.query ?? ''} />
                                     )}
-                                    {['find', 'journey'].includes(
-                                        message.kind ?? '',
-                                    ) && (
-                                        <button
-                                            className="composer-service-link"
-                                            onClick={() => {
-                                                setSwap(null);
-                                                openBrowse();
-                                            }}
-                                        >
-                                            <IconBookmark size={20} />
-                                            <span>
-                                                {message.kind === 'journey'
-                                                    ? 'Choose a destination'
-                                                    : 'Explore places and events'}
-                                                <small>
-                                                    {message.kind === 'journey'
-                                                        ? 'Check the actual route in the journey panel'
-                                                        : 'Add an activity without leaving this conversation'}
-                                                </small>
-                                            </span>
-                                            <IconArrowRight size={18} />
-                                        </button>
-                                    )}
-                                    <ReaderNote message={message} />
                                 </article>
                             );
                         })}
