@@ -147,7 +147,11 @@ export function PlaceRow({
 }
 
 /** The laptop tag's icon: a laptop, crossed out when not good; a calendar for a café's rule. */
-function LaptopTagIcon({ kind }: { kind: 'good' | 'mixed' | 'not' | 'rule' }) {
+export function LaptopTagIcon({
+    kind,
+}: {
+    kind: 'good' | 'mixed' | 'not' | 'rule';
+}) {
     return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
             {kind === 'rule' ? (
