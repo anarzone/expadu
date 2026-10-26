@@ -574,7 +574,7 @@
         color: var(--color-text-soft);
     }
 }
-/* When it leaves: minutes, "Now" in the line's colour, or a paused clock. */
+/* When it leaves: minutes, "Now" in the line's colour, a paused clock, or a struck one. */
 .nearby-time {
     display: flex;
     align-items: baseline;
@@ -593,6 +593,13 @@
 }
 .nearby-time.is-paused {
     color: var(--color-text-soft);
+}
+/* A cancelled run: its timetabled clock, struck, beside "Cancelled". */
+.nearby-time.is-cancelled {
+    color: var(--color-text-soft);
+}
+.nearby-time.is-cancelled s {
+    text-decoration-thickness: 2px;
 }
 .nearby-time.is-now {
     display: inline-flex;

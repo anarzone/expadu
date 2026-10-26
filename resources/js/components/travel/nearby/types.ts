@@ -80,6 +80,14 @@ export type Station = {
     }[];
     /** A `?stop=` name KVB doesn't know: the closest station shows instead. */
     unknown_stop?: string | null;
+    /** Who gave the board something it carries, as their licence asks. */
+    credits?: {
+        for: string;
+        name: string;
+        url: string;
+        licence: string;
+        licence_url: string;
+    }[];
 };
 
 export type FavouriteStop = {
