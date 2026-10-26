@@ -11,7 +11,7 @@ import type { Station, StationDir, StationRun, TimeBasis } from './types';
  * The lines map's picked line, its whole route (the Line route canvas,
  * Route-desk and Route-phone; owner's "build it", 23 Oct 2026): every stop
  * top to bottom the way the tram goes, from the timetable's most common trip
- * (App\Transit\LineRoute). Each stop shows its next tram that way from its
+ * running today (App\Transit\LineRoute), so works show as they run. Each stop shows its next tram that way from its
  * own board, read as its row comes into view, never all at once; live times
  * black, timetable grey. A tap opens a stop: the times after, its changes,
  * its board. The station you're at is marked and open. A break in the route
@@ -31,7 +31,10 @@ export type RouteStop = {
 export type LineRouteData = {
     line: string;
     mode: 'tram' | 'rail';
+    /** None when it doesn't run here today. */
     ways: { towards: string; minutes: number | null; stops: RouteStop[] }[];
+    /** Its sections today that don't come through here, end to end. */
+    elsewhere: { from: string; to: string }[];
 };
 
 /** The route of a line through the station, once picked. */
@@ -453,6 +456,43 @@ export function LineRoute({
 
         return () => window.clearInterval(timer);
     }, []);
+    const sections = route.elsewhere
+        .map((e) => `${e.from} – ${e.to}`)
+        .join(', ');
+
+    if (!route.ways.length) {
+        return (
+            <section
+                className="mapview-picked line-route"
+                aria-label={`Line ${route.line} today`}
+            >
+                <div className="mapview-pickbar">
+                    <button
+                        type="button"
+                        className="mapview-allback"
+                        onClick={onClear}
+                    >
+                        <TravelIcon name="back" />
+                        <span>All lines</span>
+                    </button>
+                    {badgeOf(route.line)}
+                    <span className="route-ends">
+                        <strong>
+                            {sections
+                                ? `Not at ${station.name} today`
+                                : `No ${route.mode === 'rail' ? 'trains' : 'trams'} today`}
+                        </strong>
+                        <small>
+                            {sections
+                                ? `Runs ${sections} today`
+                                : 'The timetable has none on this line today'}
+                        </small>
+                    </span>
+                </div>
+            </section>
+        );
+    }
+
     const stops = route.ways[way]?.stops ?? [];
     const here = stops.findIndex((s) => s.here);
     const herePosition = here < 0 ? null : stops[here];
@@ -590,6 +630,11 @@ export function LineRoute({
                     {station.name} isn’t on this way’s timetable route.
                 </p>
             )}
+            {sections ? (
+                <p className="mapview-none">
+                    Line {route.line} also runs {sections} today.
+                </p>
+            ) : null}
         </section>
     );
 }
