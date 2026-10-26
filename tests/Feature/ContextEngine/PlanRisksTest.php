@@ -2,6 +2,7 @@
 
 use App\ContextEngine\DayBriefs;
 use App\ContextEngine\DayImportance;
+use App\ContextEngine\PlanRisks;
 use App\Models\ComposerWorkspace;
 use App\Models\NotificationPreference;
 use App\Models\User;
@@ -57,7 +58,7 @@ beforeEach(function () {
 
         public function getLineDisruptions(): array
         {
-            return [['id' => 'news_1', 'affected_lines' => ['13'], 'scale' => 'minor', 'severity' => 'major']];
+            return [['id' => 'news_1', 'source' => 'kvb-betriebslage', 'affected_lines' => ['13'], 'affected_stops' => ['Köln Appellhofplatz'], 'scale' => 'minor', 'severity' => 'major']];
         }
     });
     app()->instance(NearbyStopService::class, new class extends NearbyStopService
@@ -106,6 +107,58 @@ test('what threatens their plan weighs on the day and leads the brief: closed, r
         'Rain from 14:00 during Rheinpark (13:00–15:00), outdoors.',
         'Your plan: 2 stops from 09:00, first Kolumba.',
     ]);
+});
+
+/** KVB's and others' notices, as DisruptionService gives them, for Kolumba's stop (Appellhofplatz: lines 13 and 16). */
+function riskNotices(array $notices): void
+{
+    app()->instance(DisruptionService::class, new class($notices) extends DisruptionService
+    {
+        public function __construct(private array $notices) {}
+
+        public function getLineDisruptions(): array
+        {
+            return array_map(fn (array $n): array => ['id' => $n[0], 'source' => $n[1], 'affected_lines' => [$n[2]], 'scale' => $n[3], 'affected_stops' => $n[4]], $this->notices);
+        }
+    });
+}
+
+/** @return list<array{0: string, 1: string}> Kolumba's disruptions: text and severity */
+function kolumbaDisruptions(User $user): array
+{
+    return collect(app(PlanRisks::class)->for($user, riskAt('00:00')))->where('slot', 'spot:1')->where('kind', 'disruption')
+        ->map(fn (array $r): array => [$r['text'], $r['severity']])->values()->all();
+}
+
+test('VRS’s and DELFI’s notices show on boards and are never a risk to the plan', function () {
+    riskPlan($this->user);
+    riskNotices([['news_2', 'delfi', '13', 'major', []], ['news_3', 'vrs-trias', '16', 'major', ['Köln Appellhofplatz']]]);
+
+    expect(kolumbaDisruptions($this->user))->toBe([]);
+});
+
+test('an everyday notice counts only where it is; a major one on the line counts anywhere', function () {
+    riskPlan($this->user);
+    riskNotices([
+        // Bus works at Bocklemünd say nothing of a stop at Appellhofplatz.
+        ['news_4', 'kvb-betriebslage', '16', 'minor', ['Köln Bocklemünd', 'Köln Schwindstr.']],
+        ['news_5', 'kvb-betriebslage', '13', 'minor', ['Köln Appellhofplatz']],
+    ]);
+    expect(kolumbaDisruptions($this->user))->toBe([['Line 13 disrupted near Kolumba (09:00).', 'moderate']]);
+
+    riskNotices([['news_6', 'kvb-betriebslage', '16', 'major', []]]);
+    expect(kolumbaDisruptions($this->user))->toBe([['Line 16 disrupted near Kolumba (09:00).', 'critical']]);
+});
+
+test('each line is one risk, at its worst, however many notices name it', function () {
+    riskPlan($this->user);
+    riskNotices([
+        ['news_5', 'kvb-betriebslage', '13', 'minor', ['Köln Appellhofplatz']],
+        ['news_6', 'kvb-betriebslage', '13', 'major', []],
+        ['news_7', 'kvb-betriebslage', '13', 'minor', ['Köln Appellhofplatz']],
+    ]);
+
+    expect(kolumbaDisruptions($this->user))->toBe([['Line 13 disrupted near Kolumba (09:00).', 'critical']]);
 });
 
 test('a stop’s risks push once, together, only when it starts within two hours', function () {

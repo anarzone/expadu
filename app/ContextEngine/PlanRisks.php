@@ -9,14 +9,15 @@ use App\Services\GtfsDepartureService;
 use App\Services\NearbyStopService;
 use App\Services\OpeningHoursParser;
 use App\Services\WeatherService;
+use App\Transit\TransitNotices;
 use Carbon\CarbonImmutable;
 use Throwable;
 
 /**
  * What threatens the stops of their plan for a day (coordinator, 26 Oct 2026, phase 2): a KVB
- * disruption on a line serving a stop near it (500 m), a delay there when it's under two hours
- * away, rain or a hazard (frost, heat, storms) forecast while they're at an outdoor stop, and a
- * stop listed closed that day. Disruptions and delays are live, so on the day itself only. Their
+ * disruption on a line serving a stop near it (500 m), major or naming one of those stops, a
+ * delay there when it's under two hours away, rain or a hazard (frost, heat, storms) forecast
+ * while they're at an outdoor stop, and a stop listed closed that day. Disruptions and delays are live, so on the day itself only. Their
  * own plans and appointments have no place of ours, so nothing is said of them. Each risk has its
  * own line and the facts it comes from (DayBriefs, BriefWriter), and weighs on the day
  * (DayImportance); one under two hours away pushes (notifications:watch-plans).
@@ -56,7 +57,9 @@ final class PlanRisks
         if ($slots->isEmpty()) {
             return [];
         }
-        $disruptions = $today ? self::quietly(fn () => app(DisruptionService::class)->getLineDisruptions(), []) : [];
+        // KVB's own notices: VRS's and DELFI's show on boards and aren't pushed (CheckTransitDisruptions, PlannedTripWatch).
+        $disruptions = $today ? array_values(array_filter(self::quietly(fn () => app(DisruptionService::class)->getLineDisruptions(), []),
+            fn (array $d): bool => ! in_array($d['source'] ?? null, TransitNotices::SOURCES, true))) : [];
         $hours = $slots->contains(fn (array $slot): bool => ($slot['outdoor'] ?? false) === true)
             ? self::quietly(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())['hours'] ?? [], []) : [];
 
@@ -78,15 +81,24 @@ final class PlanRisks
 
             $point = is_numeric($slot['lat'] ?? null) && is_numeric($slot['lng'] ?? null) ? [(float) $slot['lat'], (float) $slot['lng']] : null;
             if ($today && $point !== null && $end->greaterThan($now)) {
-                $lines = collect(self::quietly(fn () => app(NearbyStopService::class)->getWalkableStops($point[0], $point[1], self::NEAR_METRES), []))
-                    ->flatMap(fn (array $stop): array => array_map('strval', $stop['lines'] ?? []))->unique()->values()->all();
+                $near = collect(self::quietly(fn () => app(NearbyStopService::class)->getWalkableStops($point[0], $point[1], self::NEAR_METRES), []));
+                $lines = $near->flatMap(fn (array $stop): array => array_map('strval', $stop['lines'] ?? []))->unique()->values()->all();
+                $stops = $near->map(fn (array $stop): string => self::stopKey((string) ($stop['name'] ?? '')))->filter()->values()->all();
+                // A major notice on one of those lines counts wherever it is; an everyday one only when it names
+                // one of those stops (owner's two tiers: everyday stays in place). One risk a line, its worst.
+                $worst = [];
                 foreach ($disruptions as $disruption) {
-                    $hit = array_values(array_intersect(array_map('strval', $disruption['affected_lines'] ?? []), $lines));
-                    if ($hit === []) {
+                    $major = ($disruption['scale'] ?? null) === 'major';
+                    $here = collect($disruption['affected_stops'] ?? [])->contains(fn (mixed $stop): bool => is_string($stop) && in_array(self::stopKey($stop), $stops, true));
+                    if (! $major && ! $here) {
                         continue;
                     }
-                    $line = implode(', ', array_slice($hit, 0, 2));
-                    $add('disruption', ($disruption['scale'] ?? null) === 'major' ? 'critical' : 'major', "Line {$line} disrupted near {$name} ({$at}).",
+                    foreach (array_intersect(array_map('strval', $disruption['affected_lines'] ?? []), $lines) as $line) {
+                        $worst[$line] = $major || ($worst[$line] ?? null) === 'critical' ? 'critical' : 'moderate';
+                    }
+                }
+                foreach ($worst as $line => $severity) {
+                    $add('disruption', $severity, "Line {$line} disrupted near {$name} ({$at}).",
                         "KVB disruption on line {$line}, which serves a stop near \"{$name}\", in their plan at {$at}.");
                 }
                 if ($start->lessThanOrEqualTo($now->addMinutes(self::SOON_MINUTES))) {
@@ -135,6 +147,15 @@ final class PlanRisks
         }
 
         return ($hours['parsed'][strtolower($day->format('D'))] ?? []) === [] || OpeningHoursParser::closedOn($hours['raw'] ?? null, $day);
+    }
+
+    /** A stop's name as both KVB's stops and its notices say it ("Köln Bocklemünd", "Bocklemünd"; "Straße", "Str."). */
+    private static function stopKey(string $name): string
+    {
+        $name = mb_strtolower(trim($name));
+        $name = (string) preg_replace(['/^köln\s+/u', '/straße\b/u', '/[^\p{L}\p{N}]+/u'], ['', 'str', ''], $name);
+
+        return $name;
     }
 
     /** A lookup that fails says nothing rather than stopping the rest. */
