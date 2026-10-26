@@ -96,10 +96,12 @@ class TimetableController extends Controller
             // with Step-free on. Hidden from the user's serialisation, so it's
             // only ever read here, for them.
             'stepFreeNeed' => fn () => (bool) $request->user()->needs_step_free,
-            // Your next thing and My day: the shared server-side day projection.
-            'day' => DayProjection::deferred($request),
-            // My day's forecast for the rest of today, by the hour.
-            'dayWeather' => Inertia::defer(fn () => self::dayWeather(app(WeatherService::class)), 'day'),
+            // Your next thing and My day: the shared server-side day projection,
+            // in the page itself (~10 ms; 40–60 ms with a plan's way to work
+            // out): the page loads whole (owner, 26 Oct 2026).
+            'day' => fn () => app(DayProjection::class)->for($request->user(), CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
+            // My day's forecast for the rest of today, by the hour (cached).
+            'dayWeather' => fn () => self::dayWeather(app(WeatherService::class)),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey
