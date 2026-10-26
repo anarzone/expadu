@@ -170,6 +170,7 @@ test('🔒 a sentence keeps only the names, numbers and claims its items hold', 
     'what it can plan' => ['Sorry, I can’t tell jokes. It’s 9° though, and I can plan your day.', true],
     'a name after a full stop' => ['It’s 9°. Rhine Week starts today.', false],
     'a link' => ['See https://example.com for more.', false],
+    'access its listing doesn\'t state' => ['Jazz im Stadtgarten is step-free.', false],
 ]);
 
 test('casual and open messages are about now; about another day, they’re that day’s plan', function (string $text, string $kind) {

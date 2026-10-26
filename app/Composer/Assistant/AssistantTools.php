@@ -53,6 +53,9 @@ final class AssistantTools
         private array $day = [],
         // Where the page asks how far it's got ("composer:progress:…"), when it does.
         private ?string $progress = null,
+        // What the person turned down in this conversation ("nope, something else"): event and
+        // spot ids that no lookup returns again (owner's preview test, 22 Oct 2026).
+        private array $exclude = ['event' => [], 'spot' => []],
     ) {}
 
     /** Whether the person's own taste and day are tools here (the opt-in). */
@@ -83,9 +86,10 @@ final class AssistantTools
 
     /**
      * @param  bool  $personal  with the opt-in: the person's taste and day too
+     * @param  bool  $weather  whether there is weather to look at (without it, no weather tool, so no "the weather is unavailable")
      * @return list<array<string, mixed>> the tools, as the Messages API takes them
      */
-    public static function definitions(bool $personal = false): array
+    public static function definitions(bool $personal = false, bool $weather = true): array
     {
         $kinds = array_values(array_unique([...array_map(fn (SpotCategory $c): string => $c->value, SpotCategory::cases()), ...SpotCategory::placesCoarse()]));
 
@@ -96,16 +100,19 @@ final class AssistantTools
                     'from' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'until' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
+                    'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
                 ], 'required' => ['day']]],
-            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known.',
+            ['name' => 'search_places', 'description' => 'Places in Cologne from Expadu\'s catalogue (cafes, bars, museums, parks, sports places…), with verified hours where known, nearest to the person first.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kind' => ['type' => 'string', 'enum' => $kinds],
                     'activity' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES],
                     'area' => ['type' => 'string', 'description' => 'a Cologne Veedel, optional'],
                     'mood' => ['type' => 'string', 'enum' => Constraints::MOODS],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM today, optional'],
+                    'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
+                    'free' => ['type' => 'boolean', 'description' => 'only places that cost nothing'],
                 ]]],
-            ['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => ['type' => 'object', 'properties' => (object) []]],
+            ...($weather ? [['name' => 'weather', 'description' => 'Cologne\'s weather now and for the next hours.', 'input_schema' => ['type' => 'object', 'properties' => (object) []]]] : []),
             ...($personal ? [
                 ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.',
                     'input_schema' => ['type' => 'object', 'properties' => (object) []]],
@@ -154,8 +161,12 @@ final class AssistantTools
         $from = $from->max($day->isSameDay($this->now) ? $this->now : $day);
         $occurrences = Event::occurringBetween($day, $day->endOfDay())
             ->filter(fn (array $o): bool => $o['starts_at']->lessThanOrEqualTo($until) && ($o['ends_at'] ?? $o['starts_at'])->greaterThanOrEqualTo($from));
-        // What they marked "not for me" (with the opt-in) stays out.
-        $occurrences = $occurrences->reject(fn (array $o): bool => $this->affinities?->isHidden('event', $o['event']->id) ?? false);
+        // What they marked "not for me" (with the opt-in) or turned down in this conversation stays out.
+        $occurrences = $occurrences->reject(fn (array $o): bool => ($this->affinities?->isHidden('event', $o['event']->id) ?? false)
+            || in_array($o['event']->id, $this->exclude['event'] ?? [], true));
+        if (($input['free'] ?? false) === true) {
+            $occurrences = $occurrences->filter(fn (array $o): bool => $o['event']->is_free || preg_match('/\b(free|frei|kostenlos|gratis)\b/iu', (string) $o['event']->price_text) === 1);
+        }
         $topic = trim((string) ($input['topic'] ?? ''));
         if ($topic !== '') {
             $words = array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 3);
@@ -189,14 +200,21 @@ final class AssistantTools
         ), $this->lat, $this->lng))
             ->filter(fn (Candidate $c): bool => $c->type === 'spot' && ! $c->closedToday
                 && ! ($this->affinities?->isHidden('spot', (int) substr($c->id, 5)) ?? false)
+                && ! in_array((int) substr($c->id, 5), $this->exclude['spot'] ?? [], true)
+                && (($input['indoors'] ?? false) !== true || ! $c->outdoor)
+                && (($input['free'] ?? false) !== true || $c->costTier === 'free')
                 && ($c->hoursAssumed || $c->opensAt === null || ($c->opensAt->lessThanOrEqualTo($at) && $c->closesAt?->greaterThan($at))))
+            ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
+            // Nearest first, but no more than two of one kind, so a second look finds something different.
+            ->groupBy('category')->flatMap(fn ($kind) => $kind->take(2))
             ->sortBy(fn (Candidate $c): float => $c->distanceKmFromOrigin ?? INF)
             ->take(self::SHOWN)->values();
         if ($found->isEmpty()) {
             return 'No place listed for that.';
         }
 
-        return $found->map(function (Candidate $c): string {
+        // Nearest first ("closer to me" means the first ones), but no distances: where they are stays here.
+        return "Nearest to the person first:\n".$found->map(function (Candidate $c): string {
             $this->places[$c->id] = $c;
 
             return $this->line($c->id, self::placeText($c));

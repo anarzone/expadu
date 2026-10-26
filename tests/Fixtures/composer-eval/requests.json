@@ -6741,6 +6741,418 @@
     "open": true
    },
    "personalised": true
+  },
+  {
+   "id": "new_person.followup_nope_else",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_something_else",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "something else please",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_not_that",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T19:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "anything fun?"
+   ],
+   "text": "not that, something different",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_cheaper",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_closer",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T16:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what should I do now?"
+   ],
+   "text": "closer to me",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_indoors",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "indoors please",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_later",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T17:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "something chill after work"
+   ],
+   "text": "later tonight",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_twice",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T13:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored",
+    "nope, something else"
+   ],
+   "text": "no, another idea",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_meh",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's up?"
+   ],
+   "text": "meh",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "new_person.followup_free",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "free stuff only",
+   "expect": {
+    "open": true
+   }
+  },
+  {
+   "id": "opted_in.followup_nope_else",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T17:40:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "nope, I want something else",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_something_else",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T15:20:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "something else please",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_not_that",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T19:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "anything fun?"
+   ],
+   "text": "not that, something different",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_cheaper",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "cheaper",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_closer",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T16:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what should I do now?"
+   ],
+   "text": "closer to me",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_indoors",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T14:10:00+01:00",
+   "weather": "rain",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "indoors please",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_later",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-06T17:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "something chill after work"
+   ],
+   "text": "later tonight",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_twice",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-08T13:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored",
+    "nope, something else"
+   ],
+   "text": "no, another idea",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_meh",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-04T19:00:00+01:00",
+   "weather": "dry",
+   "before": [
+    "what's up?"
+   ],
+   "text": "meh",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
+  },
+  {
+   "id": "opted_in.followup_free",
+   "persona": "opted_in",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-07T11:30:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I'm bored"
+   ],
+   "text": "free stuff only",
+   "expect": {
+    "open": true
+   },
+   "personalised": true
   }
  ]
 }
