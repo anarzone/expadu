@@ -1684,6 +1684,10 @@ a.plan-link:hover {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
+/* Why Today's AI order put an event here for them: one quiet line. */
+.discovery-why {
+    font-style: italic;
+}
 .compact-category {
     margin-left: auto;
     padding: 6px 8px;
