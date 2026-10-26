@@ -188,6 +188,30 @@
     background: var(--color-bg-surface);
     animation: mapview-rise 320ms var(--ease-settle) both;
 }
+.nearby .mapview-stand-back {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-12) 0 var(--space-8);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.nearby .mapview-stand-back svg {
+    width: 18px;
+    height: 18px;
+}
+/* The picked lines' strips, as the board draws them (its `.nearby-list`):
+   full width, one under another, folding only when the card is narrow. */
+.nearby .mapview-lines {
+    display: flex;
+    flex-direction: column;
+    container-type: inline-size;
+}
 .nearby .mapview-stand-head strong {
     display: flex;
     flex-wrap: wrap;
