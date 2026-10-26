@@ -8,6 +8,7 @@ use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -55,13 +56,19 @@ class VrsRealtimeService
 
         $updates = Cache::get(self::FEED_KEY);
         if (! is_array($updates)) {
+            $lock = Cache::lock('vrs_gtfsrt:fetch', 15);
             try {
-                $updates = Cache::lock('vrs_gtfsrt:fetch', 15)->block(
-                    10,
-                    fn () => Cache::remember(self::FEED_KEY, self::FEED_SECONDS, fn () => $this->fetchAndParse()),
-                );
+                self::onRealClock(fn () => $lock->block((int) config('services.vrs.gtfsrt_lock_wait', 10)));
+                try {
+                    $updates = Cache::remember(self::FEED_KEY, self::FEED_SECONDS, fn () => $this->fetchAndParse());
+                } finally {
+                    $lock->release();
+                }
             } catch (LockTimeoutException) {
-                return [];
+                // Another worker's fetch (or a stale lock) held it the whole
+                // wait: this request goes without live times, and waits once,
+                // not once per departure row.
+                $updates = [];
             }
         }
 
@@ -69,6 +76,28 @@ class VrsRealtimeService
         $this->feedReadAt = now()->timestamp;
 
         return $updates;
+    }
+
+    /**
+     * Runs with the real clock: a lock taken under a faked one (the mock
+     * clock, composer:eval's day) expired days ahead and held every fetch.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private static function onRealClock(callable $callback): mixed
+    {
+        $faked = [Carbon::getTestNow(), CarbonImmutable::getTestNow()];
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        try {
+            return $callback();
+        } finally {
+            Carbon::setTestNow($faked[0]);
+            CarbonImmutable::setTestNow($faked[1]);
+        }
     }
 
     /**

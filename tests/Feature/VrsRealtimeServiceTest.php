@@ -209,3 +209,40 @@ it('skips skipped stops when calculating max delay', function () {
     $result = $service->getDelayForTrip('trip-skip');
     expect($result['delay'])->toBe(120); // skipped stop's delay excluded
 });
+
+it('waits for a held fetch lock once per request, not once per departure row', function () {
+    config(['services.vrs.gtfsrt_lock_wait' => 1]);
+    Http::fake();
+    // Another worker's fetch, or a stale lock, holds it throughout.
+    $held = Cache::lock('vrs_gtfsrt:fetch', 60);
+    expect($held->get())->toBeTrue();
+
+    $service = app(VrsRealtimeService::class);
+    $started = microtime(true);
+    foreach (range(1, 6) as $row) {
+        expect($service->getDelayForTripAtStop("trip-{$row}", 'stop-1'))->toBeNull();
+    }
+
+    expect(microtime(true) - $started)->toBeLessThan(2.0);
+    Http::assertNothingSent();
+    $held->release();
+});
+
+it('takes the fetch lock on the real clock, not a faked one', function () {
+    config(['services.vrs.gtfsrt_lock_wait' => 1]);
+    $stolen = null;
+    Http::fake(['*gtfs-rt-test.vrs.de*' => function () use (&$stolen) {
+        // Mid-fetch, as if this worker hung: 20 real seconds on, its
+        // 15-second lock has run out, though the faked clock is days ahead.
+        $this->travelBack();
+        $this->travel(20)->seconds();
+        $stolen = Cache::lock('vrs_gtfsrt:fetch', 15)->get();
+
+        return Http::response('', 200);
+    }]);
+    $this->travelTo(now()->addDays(5));
+
+    app(VrsRealtimeService::class)->getTripUpdates();
+
+    expect($stolen)->toBeTrue();
+});
