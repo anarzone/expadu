@@ -113,13 +113,16 @@ export function CityHelp({
     weather,
     forecast,
     station,
+    warming = null,
     stop,
     favourites,
     learned = [],
 }: {
     weather?: Weather;
     forecast?: Forecast;
-    station?: Station | null;
+    station: Station | null;
+    /** The stop whose board is being read (no station yet). */
+    warming?: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     /** The stops they pick most (TodayTaste, opt-in only). */
@@ -128,9 +131,6 @@ export function CityHelp({
     const [sheet, setSheet] = useState(false);
     const later = laterHours(forecast);
     const known = weather?.available && weather.temperature !== undefined;
-    // Still loading (the deferred 'widgets'): quiet. Unavailable only when
-    // the service says so.
-    const loading = weather === undefined;
     const line = dayLine(forecast);
 
     return (
@@ -156,8 +156,6 @@ export function CityHelp({
                         )}
                         <small>Forecast</small>
                     </>
-                ) : loading ? (
-                    <small className="forecast-loading">Forecast…</small>
                 ) : (
                     <small>Forecast unavailable right now</small>
                 )}
@@ -165,6 +163,7 @@ export function CityHelp({
             {known && line && <p className="forecast-line">{line}</p>}
             <DepartureBoard
                 station={station}
+                warming={warming}
                 stop={stop}
                 favourites={favourites}
                 learned={learned}
@@ -178,9 +177,7 @@ export function CityHelp({
                     <p className="detail-intro">
                         {known
                             ? 'Forecast · Open-Meteo'
-                            : loading
-                              ? 'The forecast is still loading.'
-                              : 'The forecast is unavailable right now.'}
+                            : 'The forecast is unavailable right now.'}
                     </p>
                     {known && line && <p>{line}</p>}
                     {known && (
@@ -248,11 +245,13 @@ function captureLabel(station: Station): string {
 
 function DepartureBoard({
     station,
+    warming,
     stop,
     favourites,
     learned,
 }: {
-    station?: Station | null;
+    station: Station | null;
+    warming: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     learned: string[];
@@ -321,7 +320,7 @@ function DepartureBoard({
             </summary>
             <div className="board-content">
                 <StopPicker
-                    current={station?.name ?? stop}
+                    current={station?.name ?? stop ?? warming}
                     favourites={favourites}
                     learned={learned}
                 />
@@ -403,11 +402,9 @@ function DepartureBoard({
                             Full timetable
                         </a>
                     </div>
-                ) : (
+                ) : warming ? null : (
                     <p className="board-empty">
-                        {station === undefined
-                            ? 'Loading departures…'
-                            : 'Choose a stop to see its departures.'}
+                        Choose a stop to see its departures.
                     </p>
                 )}
             </div>
@@ -466,7 +463,7 @@ function StopPicker({
 
         if (name !== current) {
             router.reload({
-                only: ['station', 'stop'],
+                only: ['station', 'stationWarming', 'stop'],
                 data: { stop: name },
             });
         }

@@ -103,7 +103,23 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "filament/actions",
+                "filament/filament",
+                "filament/forms",
+                "filament/infolists",
+                "filament/notifications",
+                "filament/query-builder",
+                "filament/schemas",
+                "filament/support",
+                "filament/tables",
+                "filament/widgets",
+                "livewire/livewire",
+                "livewire/blaze",
+                "blade-ui-kit/blade-icons",
+                "blade-ui-kit/blade-heroicons",
+                "ryangjchandler/blade-capture-directive"
+            ]
         }
     },
     "config": {

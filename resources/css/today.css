@@ -940,9 +940,6 @@ a.plan-link:hover {
     font-size: var(--text-small);
     line-height: 1.4;
 }
-.forecast-strip .forecast-loading {
-    opacity: 0.6;
-}
 /* KVB's notices for the board's lines (Travel's own banner). */
 .board-notices {
     display: grid;
