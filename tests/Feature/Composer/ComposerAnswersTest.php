@@ -8,8 +8,36 @@ use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Models\ActiveTrip;
 use App\Models\Task;
 use App\Models\User;
+use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Tests\Support\ExternalProcessingFixtures;
+
+/*
+ * The person's own records in Composer's answers: their checklist, their next appointment
+ * and their trip are the AI's to show, never to read (OwnCards), and always the asker's own.
+ */
+
+beforeEach(function () {
+    config()->set('services.llm', [
+        'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
+        'processor_name' => 'Synthetic processor', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
+    ]);
+    // The AI's turns, in the order the messages are asked.
+    app()->instance('answers.turns', $turns = new SplQueue);
+    Http::fake(['processor.example.test/*' => fn () => Http::response($turns->dequeue())]);
+});
+
+/** The AI's turns for one message: this tool call, then an answer that shows its card. */
+function answersTurns(string $tool, array $input, string $card): array
+{
+    $turn = fn (string $name, array $in): array => ['id' => 'msg_1', 'type' => 'message', 'role' => 'assistant', 'model' => 'claude-haiku-5-5', 'stop_reason' => 'tool_use',
+        'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => $name, 'input' => $in === [] ? (object) [] : $in]], 'usage' => ['input_tokens' => 300, 'output_tokens' => 40]];
+
+    return [$turn($tool, $input), $turn('answer', ['sentences' => [['text' => 'Here it is.', 'uses' => [$card]]], 'show' => [$card]])];
+}
 
 /** One reviewed fixture card that applies to everyone, with two documents to bring. */
 function answersCatalogue(): void
@@ -23,33 +51,38 @@ function answersCatalogue(): void
     ]]))->id, null);
 }
 
-/** Asks Composer as the page does: the message, then the answer to it. Returns the latest reply. */
-function askComposer($test, string $text): array
+/** Asks Composer as the page does: the message, then its answer, the AI using `$tool`. Returns the answer. */
+function askComposer($test, string $text, string $tool = 'my_next', array $input = [], string $card = 'next'): array
 {
+    foreach (answersTurns($tool, $input, $card) as $turn) {
+        app('answers.turns')->enqueue($turn);
+    }
     $revision = $test->getJson('/composer/workspace')->json('revision');
     $test->postJson('/composer/workspace', ['revision' => $revision, 'action' => 'message', 'text' => $text])->assertOk();
-    $state = $test->postJson('/composer/workspace', ['revision' => $revision + 1, 'action' => 'answer'])->assertOk()->json();
+    $state = $test->postJson(route('composer.ask'), ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])->assertOk()->json();
 
-    return collect($state['conversations'][0]['messages'])->last();
+    return collect($state['conversations'][0]['messages'])->last(fn (array $m): bool => ($m['request'] ?? null) === 'ask');
 }
 
-test('🔒 an answer is worked out from the stored request, never from words the page sends', function () {
+test('🔒 an answer is worked out from the stored message, never from words the page sends', function () {
     $this->actingAs(User::factory()->onboarded()->create());
+    foreach (answersTurns('weather', [], 'weather') as $turn) {
+        app('answers.turns')->enqueue($turn);
+    }
 
     // Nothing asked yet: nothing to answer, and nothing changes.
-    $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'answer'])->assertUnprocessable()
-        ->assertJsonPath('refusal.code', 'not_found')->assertJsonPath('workspace.revision', 0);
+    $this->postJson(route('composer.ask'))->assertUnprocessable()->assertJsonValidationErrors('text');
+    expect($this->getJson('/composer/workspace')->json('revision'))->toBe(0);
 
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'Hi'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'answer', 'text' => 'What do I need to bring?'])
-        ->assertUnprocessable()->assertJsonValidationErrors('text');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'answer'])->assertUnprocessable();
+    $this->postJson(route('composer.ask'), ['text' => 'PAGE-WORDS-6102', 'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])->assertOk();
 
-    $reply = collect($this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'answer'])->assertOk()
-        ->json('conversations.0.messages'))->last();
-    expect($reply)->role->toBe('assistant')->request->toBe('around');
+    Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'Message: \\"Hi\\"'));
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'PAGE-WORDS-6102'));
 });
 
-test('🔒 the checklist is the asker\'s own record, never another account\'s', function () {
+test('🔒 the Paperwork record is the asker\'s own: never another account\'s, and without their permission neither sent nor shown', function () {
     answersCatalogue();
     $owner = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($owner);
@@ -58,16 +91,17 @@ test('🔒 the checklist is the asker\'s own record, never another account\'s', 
         'reported_available' => true, 'requirement_refs' => ['fixture.answers.document.1']], 0, (string) Str::uuid());
 
     $this->actingAs($owner);
-    $reply = askComposer($this, 'What do I need to bring?');
-    expect($reply)->request->toBe('checklist')->kind->toBe('checklist')
-        ->and($reply['record'])->prepared->toBe(0)->total->toBe(2)
-        ->href->toBe('/bureaucracy?view=paperwork&process='.rawurlencode($process->occurrence_key))
-        ->and(collect($reply['record']['documents'])->pluck('state', 'label')->all())
-        ->toBe(['Synthetic passport' => 'You have it · not checked yet', 'Synthetic contract' => 'Still to get']);
+    $reply = askComposer($this, 'What do I need to bring?', 'paperwork', [], 'pw');
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'Synthetic passport') || str_contains($request->body(), 'EU Blue Card'));
+    // Without their permission for this message, the card asking for it is the whole answer
+    // (coordinator, 23 Oct 2026): nothing of the record is sent or shown.
+    expect(collect($reply['blocks'])->pluck('type')->all())->toBe(['permission'])
+        ->and($reply['blocks'][0]['purpose'])->toBe('composer_paperwork')
+        ->and(json_encode($reply))->not->toContain('You have it')->not->toContain('Synthetic contract')->not->toContain($process->occurrence_key);
 
     // Someone else asking the same gets their own state (or Paperwork's pointer), never the owner's.
     $this->actingAs(User::factory()->onboarded()->create());
-    $reply = json_encode(askComposer($this, 'What do I need to bring?'));
+    $reply = json_encode(askComposer($this, 'What do I need to bring?', 'paperwork', [], 'pw'));
     expect($reply)->not->toContain('You have it')->not->toContain($process->occurrence_key);
 });
 
@@ -77,7 +111,9 @@ test('🔒 answering changes no plan', function () {
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '10:00', 'end' => '11:00'])->assertOk();
     $before = $this->getJson('/composer/workspace')->json();
 
-    expect(askComposer($this, 'When is my next appointment?')['text'])->toBe('Your next appointment: Dentist, tomorrow at 10:00.');
+    $reply = askComposer($this, 'When is my next appointment?', 'my_next', ['appointment' => true]);
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'Dentist'));
+    expect($reply['blocks'][0]['text'])->toBe('Your next appointment: Dentist, tomorrow at 10:00.');
     foreach (['Cancel tomorrow', 'Move the dentist to 15:00', 'blorp fizz'] as $text) {
         askComposer($this, $text);
     }
@@ -119,14 +155,15 @@ test('🔒 on the way, Composer answers from the asker\'s own trip, never anothe
     tripUnderWay($traveller);
 
     $this->actingAs($traveller);
-    $reply = askComposer($this, 'Where do I get off?');
-    expect($reply)->kind->toBe('trip')->request->toBe('onway')
+    $reply = askComposer($this, 'Where do I get off?', 'my_trip', ['ask' => 'stop'], 'trip');
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->body(), 'Private appointment') || str_contains($request->body(), 'Wiener Platz'));
+    expect($reply)->kind->toBe('trip')->request->toBe('ask')
         ->title->toBe('Get off at Mülheim Wiener Platz at 14:32.')
         ->and($reply['trip'])->link->toBe('trip')
         ->and($reply['trip']['for']['place'])->toBe('Private appointment');
 
     // Someone else asking the same has no trip under way: nothing of the traveller's comes back.
     $this->actingAs(User::factory()->onboarded()->create());
-    $other = json_encode(askComposer($this, 'Where do I get off?'));
+    $other = json_encode(askComposer($this, 'Where do I get off?', 'my_trip', ['ask' => 'stop'], 'trip'));
     expect($other)->not->toContain('Private appointment')->not->toContain('Wiener Platz')->not->toContain('"trip"');
 });

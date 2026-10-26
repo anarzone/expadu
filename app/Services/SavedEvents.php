@@ -2,9 +2,14 @@
 
 namespace App\Services;
 
+use App\Composer\TasteSignals;
 use App\Models\Event;
 use App\Models\EventBookmark;
 use App\Models\User;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
+use App\Personalisation\SignalSurface;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
@@ -39,6 +44,25 @@ class SavedEvents
                     'event' => $exists ? $this->presenter->present($event, $start, $end) + ['distance_km' => null, 'travel_min' => null] : null,
                 ];
             })->all();
+    }
+
+    /**
+     * Saved (or not) as the person chose, with the taste signals a save gives: the event sheet's
+     * Save and Composer's save_event both save through here.
+     */
+    public function remember(User $user, int $eventId, CarbonImmutable $start, bool $saved): void
+    {
+        $this->set($user, $eventId, $start, $saved);
+        if ($saved && ($event = Event::query()->with('venue')->find($eventId)) !== null) {
+            app(TasteSignals::class)->eventSaved($user, $event);
+            app(SignalRecorder::class)->record($user, SignalAction::Saved, SignalSurface::EventSheet, SignalItemType::Event, $event->id, $start);
+        }
+    }
+
+    /** Whether the person saved this occurrence. */
+    public function isSaved(User $user, int $eventId, CarbonImmutable $start): bool
+    {
+        return EventBookmark::query()->where(['user_id' => $user->id, 'event_id' => $eventId, 'occurrence_start' => $start->toIso8601String()])->exists();
     }
 
     public function set(User $user, int $eventId, CarbonImmutable $start, bool $saved): void

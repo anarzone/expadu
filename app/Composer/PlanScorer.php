@@ -73,7 +73,8 @@ class PlanScorer
         $score += self::WEIGHTS['variety'] * max(0.0, 1.0 - 0.5 * $sameCategory);
 
         // Weather fit
-        $weatherFit = $candidate->outdoor && $context->rainExpected ? 0.0 : 1.0;
+        // ...and a beer garden in the cool (owner, 24 Oct 2026: none on a 13° late-October afternoon), unless asked for.
+        $weatherFit = ($candidate->outdoor && $context->rainExpected) || ($context->coolExpected && in_array('biergarten', $candidate->tags, true)) ? 0.0 : 1.0;
         $score += self::WEIGHTS['weather'] * $weatherFit;
 
         // Closes soon: a venue closing within 2h of the cursor gets a boost,
