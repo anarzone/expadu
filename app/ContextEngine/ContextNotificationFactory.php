@@ -5,7 +5,6 @@ namespace App\ContextEngine;
 use App\Bureaucracy\GuidancePublication;
 use App\Notifications\BureaucracyPlanNotification;
 use App\Notifications\MarketClosureNotification;
-use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -40,16 +39,6 @@ class ContextNotificationFactory
             'permanent_residency_eligible' => null,
             default => null,
         };
-    }
-
-    private function buildPermanentResidency(ScoredAction $action): PermanentResidencyEligibleNotification
-    {
-        return new PermanentResidencyEligibleNotification(
-            monthsHeld: (int) ($action->payload['months_held'] ?? 0),
-            thresholdMonths: (int) ($action->payload['threshold_months'] ?? 0),
-            trackNote: (string) ($action->payload['track_note'] ?? ''),
-            pushReservation: $this->pushReservation($action),
-        );
     }
 
     private function buildBureaucracyTask(ScoredAction $action): BureaucracyPlanNotification
@@ -125,19 +114,5 @@ class ContextNotificationFactory
         }
 
         return new MarketClosureNotification($reason, null);
-    }
-
-    /**
-     * The PushLedger reservation an evaluator put on the action, if any.
-     *
-     * @return array{key: string, nonce: string, sent_days: int}|null
-     */
-    private function pushReservation(ScoredAction $action): ?array
-    {
-        $reservation = $action->payload['push_reservation'] ?? null;
-
-        return is_array($reservation) && isset($reservation['key'], $reservation['nonce'], $reservation['sent_days'])
-            ? $reservation
-            : null;
     }
 }

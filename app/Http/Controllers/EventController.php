@@ -249,20 +249,4 @@ class EventController extends Controller
     {
         return redirect()->route('events', ['saved' => 1]);
     }
-
-    public function join(Request $request, Event $event): RedirectResponse
-    {
-        $event->attendees()->syncWithoutDetaching([
-            $request->user()->id => ['joined_at' => now()],
-        ]);
-
-        return back();
-    }
-
-    public function leave(Request $request, Event $event): RedirectResponse
-    {
-        $event->attendees()->detach($request->user()->id);
-
-        return back();
-    }
 }
