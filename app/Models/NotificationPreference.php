@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Home\TodayNeeds;
 use Database\Factories\NotificationPreferenceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,12 @@ use Illuminate\Support\Arr;
 
 class NotificationPreference extends Model
 {
+    /** What they turned on or off changes what Today's "Needs you" may say (TodayNeeds), as it does push. */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $preference) => TodayNeeds::forget($preference->user_id));
+    }
+
     /** @use HasFactory<NotificationPreferenceFactory> */
     use HasFactory;
 
