@@ -100,7 +100,7 @@ test('Nearby never uses a saved home or city centre when no location is known', 
 });
 
 test('the debug trail names the station and why, never where the person was', function () {
-    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('ready')->andReturn(false)->getMock()->shouldReceive('closest')->andReturn([
         'name' => 'Neumarkt', 'kind' => 'closest', 'source' => 'trias_rt', 'walk_min' => 3,
         'lines' => [['line' => '1', 'mode' => 'tram', 'area' => 'neumarkt-1-7-9', 'dirs' => []]],
     ]));
@@ -123,7 +123,7 @@ test('the debug trail names the station and why, never where the person was', fu
 });
 
 test('the closest station is "closest" only from a fix of the last few minutes; from an older one it says where you last were', function () {
-    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('ready')->andReturn(false)->getMock()->shouldReceive('closest')->andReturn([
         'name' => 'Merkenich Mitte', 'kind' => 'closest', 'source' => 'gtfs_static', 'walk_min' => 4, 'lines' => [],
     ]));
     $this->travelTo(now()->startOfMinute());
