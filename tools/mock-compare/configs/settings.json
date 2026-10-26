@@ -1,0 +1,141 @@
+{
+    "name": "settings",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\SettingsSeeder\"",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/settings-next/?signin=email",
+        "wait": ".settings-page",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/settings",
+        "wait": ".settings-page",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "seedNote": "The mock previews an email account named Anar in Cologne with personalised suggestions off (?signin=email); MockSample\\SettingsSeeder makes the compared account the same. Its email address stays its own.",
+    "pairs": [
+        {
+            "name": "page",
+            "mock": ".settings-page",
+            "app": ".settings-page",
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "Your account",
+            "mock": ".settings-account",
+            "app": ".settings-account",
+            "ignore": ["h"],
+            "contentDiffers": true,
+            "ignoreReason": "The sample's email (you@example.com) and the compared account's differ."
+        },
+        {
+            "name": "eyebrow",
+            "mock": ".settings-eyebrow",
+            "app": ".settings-eyebrow"
+        },
+        {
+            "name": "heading",
+            "mock": ".settings-account h1",
+            "app": ".settings-account h1"
+        },
+        {
+            "name": "account line",
+            "mock": ".settings-account > p:not(.settings-status)",
+            "app": ".settings-account > p:not(.settings-status)"
+        },
+        {
+            "name": "name tile",
+            "mock": "[data-open=\"name\"]",
+            "app": "[data-open=\"name\"]"
+        },
+        {
+            "name": "email tile",
+            "mock": "[data-open=\"email\"]",
+            "app": "[data-open=\"email\"]",
+            "contentDiffers": true,
+            "ignoreReason": "The sample's email (you@example.com) and the compared account's differ."
+        },
+        {
+            "name": "sign-in tile",
+            "mock": ".settings-tiles > div.settings-tile",
+            "app": ".settings-tiles > div.settings-tile",
+            "contentDiffers": true,
+            "ignoreReason": "The sample's email (you@example.com) and the compared account's differ."
+        },
+        {
+            "name": "password tile",
+            "mock": "[data-open=\"password\"]",
+            "app": "[data-open=\"password\"]"
+        },
+        {
+            "name": "sign out",
+            "mock": ".settings-out",
+            "app": ".settings-out"
+        },
+        {
+            "name": "personalised",
+            "mock": "section[aria-labelledby=\"learn-title\"]",
+            "app": "section[aria-labelledby=\"learn-title\"]"
+        },
+        {
+            "name": "personalised head",
+            "mock": "section[aria-labelledby=\"learn-title\"] .settings-head",
+            "app": "section[aria-labelledby=\"learn-title\"] .settings-head"
+        },
+        {
+            "name": "learn tile",
+            "mock": "section[aria-labelledby=\"learn-title\"] .settings-tile",
+            "app": "section[aria-labelledby=\"learn-title\"] .settings-tile"
+        },
+        {
+            "name": "switch",
+            "mock": ".settings-switch",
+            "app": ".settings-switch"
+        },
+        {
+            "name": "it learns from",
+            "mock": ".settings-learns",
+            "app": ".settings-learns"
+        },
+        {
+            "name": "city",
+            "mock": "section[aria-labelledby=\"city-title\"]",
+            "app": "section[aria-labelledby=\"city-title\"]"
+        },
+        {
+            "name": "city tile",
+            "mock": "[data-open=\"city\"]",
+            "app": "[data-open=\"city\"]"
+        },
+        {
+            "name": "city badge",
+            "mock": ".settings-badge",
+            "app": ".settings-badge"
+        },
+        {
+            "name": "notifications",
+            "mock": "section[aria-labelledby=\"notify-title\"]",
+            "app": "section[aria-labelledby=\"notify-title\"]"
+        },
+        {
+            "name": "AI limits",
+            "mock": "section[aria-labelledby=\"ai-title\"]",
+            "app": "section[aria-labelledby=\"ai-title\"]"
+        },
+        {
+            "name": "delete",
+            "mock": "section[aria-labelledby=\"delete-title\"]",
+            "app": "section[aria-labelledby=\"delete-title\"]"
+        },
+        {
+            "name": "delete button",
+            "mock": ".settings-danger-outline",
+            "app": ".settings-danger-outline"
+        }
+    ]
+}
