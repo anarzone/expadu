@@ -17,15 +17,12 @@ import { PHONE_ORDER, useSteadyLead } from '@/components/today/priority';
 import type { Block } from '@/components/today/priority';
 import { SavedForLater } from '@/components/today/saved';
 import type { TodaySavedData } from '@/components/today/saved';
-import { useDayLoad } from '@/components/today/use-day-load';
 import { useDayRefresh } from '@/components/today/use-day-refresh';
 import { TodayWelcome } from '@/components/today/welcome';
 import { YourDay } from '@/components/today/your-day';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
-import { LoadingLines, useDelayedLoading } from '@/components/ui/loading';
 import { usePhone } from '@/hooks/use-phone';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import '../../css/today.css';
 
@@ -52,32 +49,30 @@ export default function Today() {
         welcome,
         needsYou,
     } = usePage<{
-        day?: DayProjection;
-        weather?: Weather;
-        forecast?: Forecast;
-        station?: Station | null;
+        // All in the first response (HomeFeedController: pages load whole).
+        day: DayProjection;
+        weather: Weather;
+        forecast: Forecast;
+        station: Station | null;
         stop: string | null;
-        favouriteStops?: FavouriteStop[];
-        learnedStops?: string[];
-        paperwork?: TodayPaperwork;
-        discovery?: TodayDiscovery;
-        comingUp?: ComingUpData;
-        saved?: TodaySavedData;
-        continuation?: TodayContinuationData;
-        welcome?: boolean;
+        favouriteStops: FavouriteStop[];
+        learnedStops: string[];
+        paperwork: TodayPaperwork;
+        discovery: TodayDiscovery;
+        comingUp: ComingUpData;
+        saved: TodaySavedData;
+        continuation: TodayContinuationData;
+        welcome: boolean;
         /** The engine's tier-1 and tier-2 items for today (Needs you). */
-        needsYou?: TodayNeeds;
+        needsYou: TodayNeeds;
     }>().props;
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
     const lead = useSteadyLead(
         day,
-        !!welcome,
-        // Whether there are ideas left; unknown until discovery loads.
-        discovery === undefined
-            ? undefined
-            : !!discovery &&
-                  (discovery.events.length > 0 || !!discovery.around),
+        welcome,
+        // Whether there are ideas left.
+        !!discovery && (discovery.events.length > 0 || !!discovery.around),
     );
 
     useDayRefresh(day);
@@ -100,7 +95,6 @@ export default function Today() {
 
         return stopPoll;
     }, [noStation, startPoll, stopPoll]);
-    const dayLoad = useDayLoad(day !== undefined);
 
     // Paperwork's next step, or with no record yet its way in ("Settling
     // in?"). City help comes first where the essentials lead and on phones
@@ -111,20 +105,15 @@ export default function Today() {
             <PaperworkPanel focus={paperwork.focus} />
         </div>
     ) : (
-        (welcome || paperwork !== undefined) && <SettlingIn />
+        <SettlingIn />
     );
     const blocks: Record<Block, ReactNode> = {
-        // Straight from the prop, not <Deferred>: that drops back to its
-        // fallback whenever `day` is re-read, and stays there if the re-read
-        // fails. A day on screen stays while it refreshes.
-        agenda: day ? (
+        agenda: (
             <YourDay
                 day={day}
                 paperwork={paperwork?.processes}
                 offer={!welcome}
             />
-        ) : (
-            <DayLoading failed={dayLoad.failed} onRetry={dayLoad.retry} />
         ),
         essentials: (
             <div className="practical-surface">
@@ -134,8 +123,8 @@ export default function Today() {
                     forecast={forecast}
                     station={station}
                     stop={stop}
-                    favourites={favouriteStops ?? []}
-                    learned={learnedStops ?? []}
+                    favourites={favouriteStops}
+                    learned={learnedStops}
                 />
                 {cityFirst && personal}
             </div>
@@ -177,14 +166,7 @@ export default function Today() {
             {/* The welcome and a deadline sit on the page, above the day's
                 surface (the mock's main). */}
             {welcome && <TodayWelcome />}
-            <NeedsStrip
-                needs={needsYou}
-                paperwork={
-                    paperwork === undefined
-                        ? undefined
-                        : (paperwork?.strip ?? null)
-                }
-            />
+            <NeedsStrip needs={needsYou} paperwork={paperwork?.strip ?? null} />
             <div className="today-workspace">
                 {/* Phones read one column in priority order; wider screens
                     keep the day on the left and what's next on the right.
@@ -225,48 +207,5 @@ export default function Today() {
                 </div>
             </div>
         </AppLayout>
-    );
-}
-
-/**
- * Your day's place while it loads: nothing for 140ms, then quiet lines. If
- * it can't load, it says so and offers to try again.
- */
-function DayLoading({
-    failed,
-    onRetry,
-}: {
-    failed: boolean;
-    onRetry: () => void;
-}) {
-    const late = useDelayedLoading(!failed);
-
-    return (
-        <section
-            className={cn('day-panel', failed && 'has-no-plans')}
-            aria-busy={!failed || undefined}
-        >
-            <div className="day-heading">
-                <h2>Your day</h2>
-            </div>
-            {failed ? (
-                <>
-                    <div className="day-empty" role="status">
-                        <strong>Your day didn’t load.</strong>
-                    </div>
-                    <div className="day-actions">
-                        <button
-                            type="button"
-                            className="text-action"
-                            onClick={onRetry}
-                        >
-                            Try again
-                        </button>
-                    </div>
-                </>
-            ) : (
-                late && <LoadingLines lines={3} label="Loading your day" />
-            )}
-        </section>
     );
 }

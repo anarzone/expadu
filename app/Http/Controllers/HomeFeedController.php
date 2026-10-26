@@ -20,6 +20,7 @@ use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Transit\NearbyStation;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,47 +34,42 @@ class HomeFeedController extends Controller
         $stop = trim((string) $request->query('stop', ''));
         $stop = $stop === '' ? null : mb_substr($stop, 0, 120);
 
-        // Read once either way: on the page load to skip a station there's no
-        // anchor for, or in the deferred read.
-        $anchor = fn () => $this->stationAnchor($request, $locations);
-
+        // Today loads whole, in the first response (owner, 26 Oct 2026: pages
+        // load whole, never in steps). Every prop is a plain closure: a partial
+        // reload (the station's 30 s poll, the day's refresh) reads only its own.
         return Inertia::render('dashboard', [
             // The person's day: plans, the trips between them and when to
-            // leave for the next (DayProjection; deferred, its own group).
-            'day' => DayProjection::deferred($request),
+            // leave for the next (DayProjection).
+            'day' => fn () => app(DayProjection::class)->for($request->user(), CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
             // Check departures: Travel's station, the picked one, else at the
-            // anchor (stationAnchor). With neither there's nothing to read, so
-            // no deferred request; a partial reload keeps it and answers null.
-            'station' => $stop === null && $request->header('X-Inertia-Partial-Component') === null && $anchor() === null
-                ? null
-                : Inertia::defer(function () use ($request, $nearby, $stop, $anchor) {
-                    $picked = $stop === null ? null : $nearby->named($stop);
-                    if ($picked !== null) {
-                        // A station they picked, for personalisation with their opt-in; never the anchor's.
-                        app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
+            // anchor (stationAnchor); null with neither.
+            'station' => function () use ($request, $locations, $nearby, $stop) {
+                $picked = $stop === null ? null : $nearby->named($stop);
+                if ($picked !== null) {
+                    // A station they picked, for personalisation with their opt-in; never the anchor's.
+                    app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
 
-                        return $picked;
-                    }
+                    return $picked;
+                }
 
-                    return $this->station($anchor(), $nearby);
-                }, 'station'),
+                return $this->station($this->stationAnchor($request, $locations), $nearby);
+            },
             'stop' => $stop,
             // The deadline strip and the Paperwork panel: the reviewed v2
             // plan's urgent date and next step (TodayPaperwork).
-            // Same group as the day, so the strip never pushes the day down later.
-            'paperwork' => Inertia::defer(fn () => app(TodayPaperwork::class)->for($request->user()), 'day'),
+            'paperwork' => fn () => app(TodayPaperwork::class)->for($request->user()),
             // Needs you: what threatens the day and what can't wait, as push and the brief say it (TodayNeeds).
             // 'needsYou', not 'needs': that name is the shared step-free need the account menu reads.
-            'needsYou' => Inertia::defer(fn () => app(TodayNeeds::class)->for($request->user()), 'day'),
+            'needsYou' => fn () => app(TodayNeeds::class)->for($request->user()),
             // Discovery: tonight's events that fit around the plans, and the
             // everyday places open near the next plan (TodayDiscovery).
-            'discovery' => Inertia::defer(fn () => app(TodayDiscovery::class)->for($request->user()), 'discovery'),
+            'discovery' => fn () => app(TodayDiscovery::class)->for($request->user()),
             // Coming up: the next plans after today (ComingUp), with the day.
-            'comingUp' => Inertia::defer(fn () => app(ComingUp::class)->for($request->user()), 'day'),
+            'comingUp' => fn () => app(ComingUp::class)->for($request->user()),
             // Saved for later (the one Saved collection) and the Composer
             // conversation to pick up, both the person's own.
-            'saved' => Inertia::defer(fn () => app(TodaySaved::class)->for($request->user()), 'day'),
-            'continuation' => Inertia::defer(fn () => app(TodayContinuation::class)->for($request->user()), 'day'),
+            'saved' => fn () => app(TodaySaved::class)->for($request->user()),
+            'continuation' => fn () => app(TodayContinuation::class)->for($request->user()),
             // Someone new: nothing planned, saved, asked or recorded yet.
             'welcome' => fn () => app(FirstVisit::class)->for($request->user()),
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),

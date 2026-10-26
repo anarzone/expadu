@@ -119,7 +119,7 @@ export function CityHelp({
 }: {
     weather?: Weather;
     forecast?: Forecast;
-    station?: Station | null;
+    station: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
     /** The stops they pick most (TodayTaste, opt-in only). */
@@ -128,9 +128,6 @@ export function CityHelp({
     const [sheet, setSheet] = useState(false);
     const later = laterHours(forecast);
     const known = weather?.available && weather.temperature !== undefined;
-    // Still loading (the deferred 'widgets'): quiet. Unavailable only when
-    // the service says so.
-    const loading = weather === undefined;
     const line = dayLine(forecast);
 
     return (
@@ -156,8 +153,6 @@ export function CityHelp({
                         )}
                         <small>Forecast</small>
                     </>
-                ) : loading ? (
-                    <small className="forecast-loading">Forecast…</small>
                 ) : (
                     <small>Forecast unavailable right now</small>
                 )}
@@ -178,9 +173,7 @@ export function CityHelp({
                     <p className="detail-intro">
                         {known
                             ? 'Forecast · Open-Meteo'
-                            : loading
-                              ? 'The forecast is still loading.'
-                              : 'The forecast is unavailable right now.'}
+                            : 'The forecast is unavailable right now.'}
                     </p>
                     {known && line && <p>{line}</p>}
                     {known && (
@@ -252,7 +245,7 @@ function DepartureBoard({
     favourites,
     learned,
 }: {
-    station?: Station | null;
+    station: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
     learned: string[];
@@ -405,9 +398,7 @@ function DepartureBoard({
                     </div>
                 ) : (
                     <p className="board-empty">
-                        {station === undefined
-                            ? 'Loading departures…'
-                            : 'Choose a stop to see its departures.'}
+                        Choose a stop to see its departures.
                     </p>
                 )}
             </div>

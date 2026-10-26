@@ -19,27 +19,17 @@ use Illuminate\Support\Facades\DB;
 
 function todayStationFor(User $user): mixed
 {
-    $station = null;
-    test()->actingAs($user)->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(function ($page) use (&$station) {
-            $page->loadDeferredProps('station', function ($reload) use (&$station) {
-                $station = $reload->toArray()['props']['station'] ?? null;
-            });
-        });
-
-    return $station;
+    return test()->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page')['props']['station'];
 }
 
-test('with nothing to anchor it, Today sends no station and defers none', function () {
+test('with nothing to anchor it, Today sends no station', function () {
     $user = User::factory()->onboarded()->create(['veedel' => null]);
     $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldNotReceive('closestTo', 'named'));
 
     $page = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page');
 
     expect($page['props'])->toHaveKey('station')
-        ->and($page['props']['station'])->toBeNull()
-        ->and($page['deferredProps'] ?? [])->not->toHaveKey('station');
+        ->and($page['props']['station'])->toBeNull();
 });
 
 test('a favourite stop comes before Home', function () {
