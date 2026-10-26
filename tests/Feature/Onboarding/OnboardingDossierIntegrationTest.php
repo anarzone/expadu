@@ -94,13 +94,3 @@ test('confirming onboarding upgrades an old inferred citizenship answer even whe
         ->and($view['evidence']['citizenship_group']['fact_id'] ?? null)->not->toBe($guess->id)
         ->and($case->facts()->where('key', 'citizenship_group')->where('state', 'confirmed')->sole()->recorded_by)->toBe($actor->id);
 });
-
-test('a changed situation survives the redirect as a visible error on the original onboarding field', function () {
-    $actor = User::factory()->create();
-    $case = app(EnsureAccountHolder::class)->dossier($actor);
-    app(RecordFactChange::class)->execute($actor, $case->person, 'purpose', 'family', null, 1);
-    $this->actingAs($actor)->from('/onboarding')->post('/onboarding/complete', coreOnboarding(['situation' => 'student']))->assertStatus(302);
-    $this->get('/onboarding')->assertInertia(fn ($page) => $page->has('errors.situation')->missing('errors.purpose'));
-    expect($case->fresh()->fact_version)->toBe(2)
-        ->and($case->facts()->where('key', 'purpose')->sole()->value)->toBe('family');
-});

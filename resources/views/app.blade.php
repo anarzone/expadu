@@ -41,14 +41,14 @@
             // Only pages inside the app shell load its chunk and CSS; sign-in
             // and onboarding are outside it (the same list as
             // resources/js/lib/resolve-page.tsx).
-            $inShell = ! preg_match('/^(auth\/|onboarding$)/', $page['component']);
+            $inShell = ! preg_match('/^auth\//', $page['component']);
             $viteEntries = [
                 'resources/js/app.tsx',
                 ...($inShell ? ['resources/js/layouts/app-shell-layout.tsx'] : []),
                 "resources/js/pages/{$page['component']}.tsx",
             ];
             // Pages whose first screen sets a heading in Fraunces 500.
-            $firstScreenFraunces = in_array($page['component'], ['onboarding', 'alerts', 'profile'], true);
+            $firstScreenFraunces = in_array($page['component'], ['alerts', 'profile'], true);
         @endphp
 
         {{-- Preload only the faces painted above the fold: Geist 400 (body),
