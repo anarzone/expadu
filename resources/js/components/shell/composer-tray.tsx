@@ -37,6 +37,21 @@ const loadTrayBody = () =>
     });
 const LazyTrayBody = lazy(loadTrayBody);
 
+// Once per page: the panel's code, then its conversations and your day.
+let warmed = false;
+const warmTray = () => {
+    if (warmed) {
+        return;
+    }
+
+    warmed = true;
+    void loadTrayBody()
+        .then((module) => module.prefetchTray())
+        .catch(() => {
+            warmed = false;
+        });
+};
+
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
  * controls): one panel to ask in from any page, with the box at its foot.
@@ -504,28 +519,74 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }
     }, [onComposer, isOpen]);
 
-    // Once the page is idle, the panel's code and conversations load ahead,
-    // so opening it never shows an empty panel.
+    // The panel's code and conversations load ahead, so opening it never
+    // shows an empty panel, but only once the page itself is done: loaded,
+    // its own deferred requests back, then a quiet second and an idle moment
+    // (speed plan, 26 Oct 2026). Pointing at, focusing or touching what opens
+    // Composer loads them at once.
     useEffect(() => {
         if (onComposer) {
             return;
         }
 
-        const ahead = () =>
-            void loadTrayBody()
-                .then((module) => module.prefetchTray())
-                .catch(() => undefined);
-        const idle =
-            typeof window.requestIdleCallback === 'function'
-                ? window.requestIdleCallback(ahead, { timeout: 4000 })
-                : window.setTimeout(ahead, 2000);
+        let busy = 0;
+        let quiet = 0;
+        let idle = 0;
+        const stop = () => {
+            window.clearTimeout(quiet);
 
-        return () => {
             if (typeof window.cancelIdleCallback === 'function') {
                 window.cancelIdleCallback(idle);
             } else {
                 window.clearTimeout(idle);
             }
+        };
+        const settle = () => {
+            stop();
+
+            if (warmed || busy > 0 || document.readyState !== 'complete') {
+                return;
+            }
+
+            quiet = window.setTimeout(() => {
+                idle =
+                    typeof window.requestIdleCallback === 'function'
+                        ? window.requestIdleCallback(warmTray, {
+                              timeout: 3000,
+                          })
+                        : window.setTimeout(warmTray, 0);
+            }, 1000);
+        };
+        const offStart = router.on('start', () => {
+            busy += 1;
+            stop();
+        });
+        const offFinish = router.on('finish', () => {
+            busy = Math.max(0, busy - 1);
+            settle();
+        });
+        const intent = (event: Event) => {
+            if (
+                event.target instanceof Element &&
+                event.target.closest('[data-composer-opener]')
+            ) {
+                warmTray();
+            }
+        };
+        window.addEventListener('load', settle);
+        document.addEventListener('pointerover', intent);
+        document.addEventListener('focusin', intent);
+        document.addEventListener('touchstart', intent, { passive: true });
+        settle();
+
+        return () => {
+            stop();
+            offStart();
+            offFinish();
+            window.removeEventListener('load', settle);
+            document.removeEventListener('pointerover', intent);
+            document.removeEventListener('focusin', intent);
+            document.removeEventListener('touchstart', intent);
         };
     }, [onComposer]);
 
