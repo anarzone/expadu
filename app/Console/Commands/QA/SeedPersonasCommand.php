@@ -106,7 +106,6 @@ class SeedPersonasCommand extends Command
             'onboarded_at' => now(),
         ])->save();
 
-        $this->ensurePlaces($user);
         $this->scenarioFacts->sync($user, $persona);
 
         if ($fresh) {
@@ -142,23 +141,6 @@ class SeedPersonasCommand extends Command
         ])->save();
 
         return $user;
-    }
-
-    /**
-     * Create Home + Work places if they don't exist yet, as the old
-     * onboarding did for a seeded persona.
-     */
-    private function ensurePlaces(User $user): void
-    {
-        $user->places()->firstOrCreate(
-            ['category' => 'home'],
-            ['emoji' => '🏠', 'name' => 'Home', 'sort_order' => 0],
-        );
-
-        $user->places()->firstOrCreate(
-            ['category' => 'work'],
-            ['emoji' => '💼', 'name' => 'Work', 'sort_order' => 1],
-        );
     }
 
     private function hostIsAllowed(): bool
