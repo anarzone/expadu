@@ -5,11 +5,11 @@ test('transit setting stays unchanged after a failed save and can be retried', a
     page,
 }) => {
     await page.goto('/settings/transit');
-    const toggle = page.getByRole('button', {
+    const toggle = page.getByRole('switch', {
         name: 'Share location for transit',
         exact: true,
     });
-    const before = await toggle.getAttribute('aria-pressed');
+    const before = await toggle.getAttribute('aria-checked');
     let attempts = 0;
     await page.route('**/user-settings', async (route) => {
         attempts += 1;
@@ -20,11 +20,11 @@ test('transit setting stays unchanged after a failed save and can be retried', a
     });
     await toggle.click();
     await expect(page.getByRole('alert')).toContainText('couldn’t save');
-    await expect(toggle).toHaveAttribute('aria-pressed', before!);
+    await expect(toggle).toHaveAttribute('aria-checked', before!);
     await expect(toggle).toBeEnabled();
     await toggle.click();
     await expect(toggle).toHaveAttribute(
-        'aria-pressed',
+        'aria-checked',
         before === 'true' ? 'false' : 'true',
     );
     await expect(page.getByRole('alert')).toHaveCount(0);
@@ -34,21 +34,21 @@ test('notification preferences do not silently succeed on expired sessions', asy
     page,
 }) => {
     await page.goto('/settings/notifications');
-    // Device controls appear after React has mounted and detected support.
+    // The device's line appears once React has mounted and checked support.
     await expect(
-        page.getByRole('button', { name: 'Push notifications', exact: true }),
-    ).toBeVisible();
-    const toggle = page.getByRole('button', {
+        page.getByText('Checking this device…', { exact: true }),
+    ).toHaveCount(0);
+    const toggle = page.getByRole('switch', {
         name: 'Transit disruptions',
         exact: true,
     });
-    const before = await toggle.getAttribute('aria-pressed');
+    const before = await toggle.getAttribute('aria-checked');
     await page.route('**/notification-preferences', (route) =>
         route.fulfill({ status: 419, json: { message: 'CSRF expired' } }),
     );
     await toggle.click();
     await expect(page.getByRole('alert')).toContainText('session expired');
-    await expect(toggle).toHaveAttribute('aria-pressed', before!);
+    await expect(toggle).toHaveAttribute('aria-checked', before!);
     await expect(toggle).toBeEnabled();
 });
 
@@ -62,7 +62,7 @@ test('settings controls have touch targets and do not overflow a narrow phone', 
         'I have a Deutschlandticket',
         'Share location for transit',
     ]) {
-        const toggle = page.getByRole('button', { name, exact: true });
+        const toggle = page.getByRole('switch', { name, exact: true });
         await expect(toggle).toBeVisible();
         const rect = await toggle.boundingBox();
         expect(rect!.width).toBeGreaterThanOrEqual(44);
@@ -116,27 +116,29 @@ test('push status failures show unknown status and allow retry', async ({
     await expect(
         page.getByText('Status unavailable', { exact: true }),
     ).toBeVisible();
+    // No Turn on or Turn off while the status is unknown.
     await expect(
-        page.getByRole('button', { name: 'Push notifications', exact: true }),
-    ).toBeDisabled();
+        page.getByRole('button', { name: /^Turn (on|off)$/ }),
+    ).toHaveCount(0);
     await page.unroute('**/push/status');
     await page.route('**/push/status', (route) =>
         route.fulfill({ status: 200, json: { subscribed: true } }),
     );
     await page.getByRole('button', { name: 'Try again', exact: true }).click();
     await expect(
-        page.getByRole('button', { name: 'Push notifications', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true');
+        page.getByText('On · this browser', { exact: true }),
+    ).toBeVisible();
 });
 
 test('service worker activation does not reload an open page', async ({
     page,
 }) => {
-    await page.goto('/settings/profile');
+    await page.goto('/settings/account');
     await page.evaluate(() => navigator.serviceWorker.ready);
     // Reload once so even the previous worker's controller-change guard would
     // be armed; the check must exercise an already controlled, open page.
     await page.reload();
+    await page.getByRole('button', { name: /^Name: .*\. Edit$/ }).click();
     const input = page.getByLabel('Name', { exact: true });
     await input.fill('Unsaved draft survives');
     let documentRequests = 0;
@@ -185,8 +187,10 @@ test('logout clears encrypted private page history on a shared browser', async (
             },
         });
         expect(login.ok()).toBe(true);
-        await page.goto('/settings/profile');
-        await expect(page.getByLabel('Name', { exact: true })).toBeVisible();
+        await page.goto('/settings/account');
+        await expect(
+            page.getByRole('heading', { name: 'Your account', exact: true }),
+        ).toBeVisible();
         await expect
             .poll(() =>
                 page.evaluate(
@@ -203,7 +207,9 @@ test('logout clears encrypted private page history on a shared browser', async (
         await expect(page).toHaveURL(/\/login$/);
         await page.goBack();
         await expect(page).toHaveURL(/\/login$/);
-        await expect(page.getByLabel('Name', { exact: true })).toHaveCount(0);
+        await expect(
+            page.getByRole('heading', { name: 'Your account', exact: true }),
+        ).toHaveCount(0);
     } finally {
         await context.close();
     }
