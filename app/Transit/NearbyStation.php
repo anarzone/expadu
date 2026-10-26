@@ -357,7 +357,9 @@ class NearbyStation
     private function lines(array $rows, array $areas, array $headways = []): array
     {
         $byLine = [];
+        // Per station: one request can read several (a trip's boarding stops).
         $this->byDirection = [];
+        $this->referenced = [];
         foreach ($rows as $row) {
             $services = array_values(array_filter($row['services'] ?? [], fn ($s) => is_array($s) && isset($s['departure_at'])));
             $runs = array_map(fn (array $s) => $this->service($s, (string) $row['line']), $services);
