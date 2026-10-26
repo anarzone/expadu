@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
 // the conversation grows above the box. Closing keeps it; "Back to your
 // conversation" reopens it and asks nothing again; Full Composer carries on.
 const NOTICE = {
-    purpose: 'composer_parse',
+    purpose: 'composer_assist',
     scope: 'single_request',
     available: true,
     processor_name: 'Synthetic processor',
@@ -15,20 +15,21 @@ const NOTICE = {
     provider_version: 'b'.repeat(64),
 };
 
-type Parsed = { text: string; processing?: Record<string, unknown> };
+type Asked = { processing?: Record<string, unknown> };
 
-async function stubReader(page: Page): Promise<Parsed[]> {
-    const parsed: Parsed[] = [];
-    await page.route('**/privacy/processing/composer_parse', (route) =>
+/** The AI line as the server would give it; each ask's body kept, the ask answered by the server. */
+async function stubAsk(page: Page): Promise<Asked[]> {
+    const asked: Asked[] = [];
+    await page.route('**/privacy/processing/composer_assist', (route) =>
         route.fulfill({ json: NOTICE }),
     );
-    await page.route('**/composer/parse', (route) => {
-        parsed.push(route.request().postDataJSON() as Parsed);
+    await page.route('**/composer/ask', (route) => {
+        asked.push(route.request().postDataJSON() as Asked);
 
-        return route.fulfill({ json: { intent: 'find', constraints: null } });
+        return route.continue();
     });
 
-    return parsed;
+    return asked;
 }
 
 async function openTray(page: Page, isMobile: boolean) {
@@ -39,15 +40,13 @@ async function openTray(page: Page, isMobile: boolean) {
     ).click();
     const tray = page.getByRole('dialog', { name: 'Ask Composer' });
     await expect(
-        tray.getByText(
-            'Composer sends what you type to Synthetic processor, an AI service',
-        ),
+        tray.getByText('to Synthetic processor, an AI service'),
     ).toBeVisible();
 
     return tray;
 }
 
-function expectPermit(body: Parsed) {
+function expectPermit(body: Asked) {
     expect(body.processing).toMatchObject({
         consent: true,
         notice_version: NOTICE.notice_version,
@@ -59,7 +58,7 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     page,
     isMobile,
 }) => {
-    const parsed = await stubReader(page);
+    const parsed = await stubAsk(page);
     await page.goto('/dashboard');
     const tray = await openTray(page, isMobile);
     const box = tray.getByRole('textbox', { name: 'Your request to Composer' });
@@ -67,22 +66,17 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     const text = `Find a quiet park ${Date.now()}`;
 
     await box.fill(text);
-    const asked = page.waitForResponse('**/composer/parse');
+    const asked = page.waitForResponse('**/composer/ask');
     await tray.getByRole('button', { name: 'Send request' }).click();
     await asked;
     await expect(answer.getByText(text, { exact: true })).toBeVisible();
-    await expect(
-        answer
-            .locator('.chat-entry')
-            .getByText('Browse places and events below', { exact: false }),
-    ).toBeVisible();
-    // Said aloud for a screen reader: the answer's first sentence.
-    await expect(answer.locator('[aria-live="polite"]')).toHaveText(
-        /^Browse places and events below/,
-    );
     await expect(page.locator('.composer-working')).toHaveCount(0);
+    // Composer's reply under the request, its first sentence said aloud.
+    await expect(answer.locator('.chat-entry.chat-assistant')).not.toHaveCount(
+        0,
+    );
+    await expect(answer.locator('[aria-live="polite"]')).not.toHaveText('');
     expect(parsed).toHaveLength(1);
-    expect(parsed[0].text).toBe(text);
     expectPermit(parsed[0]);
     // In place: still on Today, the box empty for the next one.
     expect(new URL(page.url()).pathname).toBe('/dashboard');

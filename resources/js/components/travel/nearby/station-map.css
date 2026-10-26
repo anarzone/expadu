@@ -1,0 +1,330 @@
+/* Nearby's Map (departures-next/nearby.css "The map"): the List | Map
+   switch, and "Lines and stops" in place of the list on desktop or as its
+   own screen on phones. */
+
+.nearby .nearby-views {
+    flex: none;
+    display: flex;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.nearby .nearby-views button {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: var(--touch-target);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    background-clip: padding-box;
+    color: var(--color-text-soft);
+}
+.nearby .nearby-views button[aria-pressed='true'] {
+    background-color: var(--color-select-bg);
+    color: var(--color-text);
+}
+.nearby .nearby-open-map {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+.nearby :is(.nearby-views, .nearby-open-map) svg {
+    width: 18px;
+    height: 18px;
+}
+
+.nearby .nearby-mapview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-14);
+}
+.nearby .mapview-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+.nearby .mapview-head > span {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.nearby .mapview-head strong {
+    font-size: var(--text-title-sm);
+    letter-spacing: -0.3px;
+}
+.nearby .mapview-head small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.nearby .mapview-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.nearby .mapview-close svg {
+    width: 18px;
+    height: 18px;
+}
+.nearby .mapview-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+.nearby .mapview-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard);
+}
+.nearby .mapview-chip i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--line);
+}
+.nearby .mapview-chip[aria-pressed='true'] {
+    border-color: var(--color-text);
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+/* The drawing sets its own paint; Travel's icon defaults don't reach it. */
+.nearby .tmap-diagram {
+    display: block;
+    width: auto;
+    height: auto;
+    fill: none;
+    stroke: none;
+    stroke-width: 1;
+}
+.nearby .tmap-diagram :is(path, rect, text, g) {
+    transition: opacity 260ms var(--ease-standard);
+}
+.nearby .tmap-diagram [data-line] {
+    cursor: pointer;
+}
+.nearby .mapview-buses {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.nearby .mapview-buses svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+.nearby .mapview-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.nearby .mapview-groups h3 {
+    margin: 0;
+    font-size: var(--text-small);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.nearby .mapview-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-8) var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    text-align: left;
+}
+.nearby .mapview-group > span:nth-child(2) {
+    flex: 1;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: var(--leading-snug);
+}
+.nearby .mapview-group > svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+.nearby .mapview-groups p,
+.nearby .mapview-none {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.nearby .mapview-stand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding: var(--space-16);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-bg-surface);
+    animation: mapview-rise 320ms var(--ease-settle) both;
+}
+.nearby .mapview-stand-head strong {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+@keyframes mapview-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+/* Phones and tablets: the map is its own screen; it slides in from the
+   right and Back slides it away. */
+@media (max-width: 999px) {
+    .nearby .nearby-views,
+    .nearby .mapview-close.is-close {
+        display: none;
+    }
+    .nearby .nearby-mapview {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        gap: var(--space-10);
+        padding-top: env(safe-area-inset-top, 0px);
+        background: var(--color-bg-canvas);
+        box-shadow: -18px 0 40px -30px #211d1580;
+        transform: translateX(104%);
+        visibility: hidden;
+        transition:
+            transform 420ms var(--ease-settle),
+            visibility 0s linear 420ms;
+    }
+    html:has(.nearby[data-view='map']) {
+        overflow: hidden;
+        scrollbar-gutter: auto;
+    }
+    .nearby[data-view='map'] .nearby-mapview {
+        transform: none;
+        visibility: visible;
+        transition: transform 420ms var(--ease-settle);
+    }
+    .nearby .mapview-head {
+        padding: var(--space-10) var(--space-12) 0;
+    }
+    .nearby .mapview-head strong {
+        font-size: 17px;
+    }
+    .nearby .mapview-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 2px var(--space-16) var(--space-4);
+        scrollbar-width: none;
+    }
+    .nearby .mapview-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-12);
+        padding: var(--space-4) var(--space-12)
+            calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    /* The diagram keeps its size: drag it around. */
+    .nearby .mapview-window {
+        flex: none;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: 20px;
+        background: var(--color-bg-canvas);
+    }
+    .nearby .mapview-frame {
+        height: 380px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            transparent,
+            #000 22px,
+            #000 calc(100% - 22px),
+            transparent
+        );
+        mask-image: linear-gradient(
+            90deg,
+            transparent,
+            #000 22px,
+            #000 calc(100% - 22px),
+            transparent
+        );
+    }
+    .nearby .tmap-diagram {
+        max-width: none;
+    }
+}
+
+/* Desktop: the map takes the list's place; ✕ brings the list back. */
+@media (min-width: 1000px) {
+    .nearby .nearby-open-map,
+    .nearby .mapview-close.is-back,
+    .nearby[data-view='list'] .nearby-mapview,
+    .nearby[data-view='map']
+        :is(
+            .nearby-list,
+            .nearby-chips,
+            .nearby-panel,
+            .nearby-stepnote,
+            .nearby-count
+        ) {
+        display: none;
+    }
+    .nearby .nearby-mapview {
+        margin-top: var(--space-4);
+        padding: 20px 24px 24px;
+        border: 1px solid var(--color-border);
+        border-radius: 26px;
+        background: var(--color-bg-surface);
+        animation: mapview-rise 320ms var(--ease-settle) both;
+    }
+    .nearby .mapview-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-20);
+    }
+    .nearby .tmap-diagram {
+        width: auto;
+        max-width: min(100%, 760px);
+        height: auto;
+        margin-inline: auto;
+    }
+    .nearby .mapview-groups {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .nearby .mapview-groups > :is(h3, p) {
+        grid-column: 1 / -1;
+    }
+}
