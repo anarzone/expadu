@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserTask;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\Support\PaperworkStart;
 use Tests\Support\ReviewedHomePlan;
 
 beforeEach(function () {
@@ -114,12 +115,12 @@ test('verification revoked between requests stops the account entry even with a 
     $this->getJson('/bureaucracy/v2/plan')->assertForbidden();
 });
 
-test('skipped onboarding dates become a visible question without hiding known preparation', function () {
+test('unanswered dates become a visible question without hiding known preparation', function () {
     $user = User::factory()->create(['onboarded_at' => null]);
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee', 'veedel' => 'Ehrenfeld',
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu', 'purpose' => 'employment',
         'arrival_planned' => false, 'arrival_date' => '2026-09-01',
-    ])->assertSessionHasNoErrors();
+    ]);
     $fixture = ReviewedHomePlan::activate($user, ['fixture.occupancy' => [
         'title' => 'Synthetic occupancy preparation', 'deadline_type' => 'days_since_move_in',
         'applies_if' => [['citizenship_group' => 'non_eu']],
@@ -145,10 +146,9 @@ test('skipped onboarding dates become a visible question without hiding known pr
 
 test('a supplied move-in date drives the new plan independently of registration proof', function () {
     $user = User::factory()->create(['onboarded_at' => null]);
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'other', 'veedel' => 'Ehrenfeld', 'arrival_planned' => false, 'arrival_date' => '2026-09-01',
-        'moved_in_at' => '2026-09-05', 'address_registration_status' => 'not_registrable',
-    ])->assertSessionHasNoErrors();
+    PaperworkStart::answer($user, [
+        'purpose' => 'other', 'arrival_planned' => false, 'arrival_date' => '2026-09-01', 'moved_in_at' => '2026-09-05',
+    ]);
     ReviewedHomePlan::activate($user, ['fixture.occupancy' => ['deadline_type' => 'days_since_move_in']], []);
     $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()
         ->assertJsonPath('plan.actions.0.dates.0.date', '2026-09-19')
