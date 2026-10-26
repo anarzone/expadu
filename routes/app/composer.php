@@ -16,6 +16,8 @@ Route::post('composer/entry', [ComposerController::class, 'entry'])
     ->middleware('throttle:composer-ask')
     ->name('composer.entry.store');
 Route::get('composer/workspace', [ComposerWorkspaceController::class, 'show'])->name('composer.workspace.show');
+// Your day, the Paperwork glance, tonight and saved starting points, for the panel on any page.
+Route::get('composer/day', [ComposerWorkspaceController::class, 'day'])->name('composer.day');
 Route::post('composer/workspace', [ComposerWorkspaceController::class, 'update'])->name('composer.workspace.update');
 Route::get('composer/event', [ComposerWorkspaceController::class, 'event'])->name('composer.event');
 Route::get('composer/guidance', [ComposerWorkspaceController::class, 'guidance'])->name('composer.guidance');

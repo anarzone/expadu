@@ -1758,6 +1758,18 @@ a.plan-link:hover {
     font-size: var(--text-body);
     line-height: 1.3;
 }
+/* Saved's ways in that open Composer in place are buttons, drawn as the links beside them. */
+button:is(.saved-all, .saved-title, .around-open) {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+button.saved-all {
+    color: var(--color-action-text);
+    font-size: var(--text-caption);
+}
 .saved-all {
     display: inline-flex;
     text-align: center;

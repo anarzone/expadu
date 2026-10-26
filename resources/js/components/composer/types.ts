@@ -31,6 +31,12 @@ export type Slot = {
     destination_group_id?: string | null;
     is_appointment?: boolean;
     closes_at?: string | null;
+    /** In the catalogue: what Around here calls it ("Café"), its kind (colour, icon) and group ("Cafés"). */
+    label?: string;
+    kind?: string;
+    group?: string;
+    /** The day's listed hours ("Open 09:00–18:00", "Hours not listed"); events have their time. */
+    hours?: string | null;
 };
 /** A slot's time as said: "13:00–14:00", or the start alone when its end isn't known or listed. */
 export const slotSpan = (slot: Slot) =>
@@ -56,8 +62,6 @@ export type ChangeRow = {
 };
 export type Message = {
     id: string;
-    /** Read without the AI, and why; said under the reply (older answers only). */
-    reader?: 'limited' | 'off' | 'failed' | 'unpermitted';
     role: 'user' | 'assistant';
     text: string;
     created_at: string;
@@ -136,6 +140,8 @@ export async function api<T>(
     url: string,
     body?: object,
     signal?: AbortSignal,
+    /** How long to wait; the assistant's answer gets longer than a command. */
+    timeoutMs = 30_000,
 ): Promise<T> {
     const controller = new AbortController();
     const cancel = () => controller.abort(signal?.reason);
@@ -144,7 +150,7 @@ export async function api<T>(
             controller.abort(
                 new DOMException('Request timed out', 'TimeoutError'),
             ),
-        30_000,
+        timeoutMs,
     );
     signal?.addEventListener('abort', cancel, { once: true });
 

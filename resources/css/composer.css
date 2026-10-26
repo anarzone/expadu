@@ -10,80 +10,19 @@
     --composer-soft: #e5f1f4;
     --composer-orange: #c64423;
 }
-.composer-panel button,
 .composer-time-popover button,
 .composer-item-preview button {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
-.composer-panel button:disabled {
-    cursor: default;
-    opacity: 0.5;
-}
-.composer-panel button:focus-visible,
-.composer-panel input:focus-visible,
 .composer-time-popover :focus-visible,
 .composer-item-preview :focus-visible {
     outline: 2px solid #50b1c8;
     outline-offset: 3px;
 }
-.composer-message {
-    margin-bottom: 26px;
-    scroll-margin: 24px;
-    animation: composer-arrive 220ms ease-out;
-}
-.composer-speaker {
-    display: flex;
-    gap: 7px;
-    align-items: center;
-    color: var(--composer-muted);
-    font-size: 11px;
-    margin-bottom: 9px;
-}
-.composer-speaker svg {
-    color: var(--composer-blue);
-}
-.composer-message > p {
-    font-size: 15px;
-    color: var(--composer-blue);
-    line-height: 1.7;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    margin-bottom: 14px;
-}
-.composer-message.is-user {
-    margin-left: auto;
-    max-width: 84%;
-    width: fit-content;
-}
-.composer-message.is-user .composer-speaker {
-    justify-content: flex-end;
-}
-.composer-message.is-user > p {
-    padding: 11px 16px;
-    border-radius: 18px 18px 4px 18px;
-    background: var(--composer-soft);
-    color: var(--composer-ink);
-}
 .composer-text-button:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
-}
-.composer-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 42px;
-    border-radius: 13px;
-    background: #c64423;
-    color: #fff;
-    padding: 10px 15px;
-    font-size: 13px;
-    font-weight: 600;
-}
-.composer-primary:disabled {
-    opacity: 0.5;
 }
 .composer-text-button {
     display: inline-flex;
@@ -93,20 +32,6 @@
     color: var(--composer-blue, #356774);
     font-size: 12px;
     text-align: left;
-}
-.composer-plan-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 20px;
-    margin-top: 5px;
-}
-.composer-plan-links button {
-    display: inline-flex;
-    gap: 7px;
-    align-items: center;
-    color: var(--composer-muted);
-    font-size: 11px;
-    min-height: 42px;
 }
 .composer-plan-reference {
     border: 1px solid var(--composer-line);
@@ -128,43 +53,9 @@
     color: var(--composer-muted);
 }
 /* A change's rows, old → new, under its reply. */
-.composer-change-rows {
-    display: grid;
-    gap: 4px;
-    margin: 6px 0 2px;
-    font-size: 12px;
-    color: var(--composer-muted);
-}
-.composer-change-rows strong {
-    font-weight: 500;
-    color: var(--foreground);
-}
 .composer-plan-gone {
     font-size: 12px;
     color: var(--composer-muted);
-}
-.composer-service-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 15px;
-    border: 1px solid var(--composer-line);
-    border-radius: 16px;
-    width: 100%;
-    color: var(--composer-blue);
-    text-align: left;
-    background: var(--composer-paper);
-}
-.composer-service-link > span {
-    flex: 1;
-    font-weight: 600;
-}
-.composer-service-link small {
-    display: block;
-    font-weight: 400;
-    color: var(--composer-muted);
-    margin-top: 5px;
-    font-size: 11px;
 }
 .composer-working {
     padding: 10px 0 20px;
@@ -182,21 +73,6 @@
 .composer-icon-button:hover,
 .composer-icon-button.is-soft {
     background: var(--composer-soft, #e5f1f4);
-}
-.composer-new-messages {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    border: 1px solid var(--composer-line);
-    border-radius: 30px;
-    background: var(--composer-paper);
-    box-shadow: 0 4px 14px #233f4612;
-    padding: 9px 14px;
-    font-size: 12px;
 }
 .composer-error {
     display: flex;
@@ -218,176 +94,72 @@
     min-height: 32px;
     flex: none;
 }
-.composer-panel {
-    --composer-blue: #356774;
-    --composer-muted: #647c84;
-    --composer-line: #dce7e9;
-    --composer-paper: var(--card);
-    width: min(520px, 100%);
-    max-width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
-    left: auto;
-    right: 0;
-    top: 0;
-    translate: none !important;
-    transform: none !important;
-    border-radius: 24px 0 0 24px;
-    padding: 23px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-.composer-panel [data-slot='dialog-title'] {
-    font-size: 20px;
-    padding-right: 24px;
-}
-.composer-panel-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-bottom: env(safe-area-inset-bottom);
-}
-.composer-panel-note {
-    font-size: 12px;
-    line-height: 1.7;
-    color: var(--composer-muted);
-    margin: 18px 0;
-}
-.composer-collection-item {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 15px 12px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-}
-.composer-collection-item > span {
-    flex: 1;
-    font-size: 14px;
-    font-weight: 500;
-}
-.composer-collection-item small {
-    display: block;
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--muted-foreground);
-    margin-top: 5px;
-}
-.composer-collection-item > svg {
-    color: var(--composer-blue);
-    flex: none;
-}
-.composer-empty {
-    display: block !important;
-    font-size: 13px;
-    color: var(--muted-foreground);
-    line-height: 1.7;
-    padding: 18px 0;
-}
-.composer-browse-date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--composer-blue);
-    padding: 8px 0 15px;
-    flex-wrap: wrap;
-}
-.composer-browse-date input {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    padding: 8px;
-    margin-left: auto;
-}
 .composer-search {
     display: flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    padding: 10px 13px;
-    color: #647c84;
-    background: var(--card);
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+}
+.composer-search svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
 }
 .composer-search input {
-    outline: 0;
     width: 100%;
-    background: transparent;
-    font-size: 14px;
     min-height: 24px;
+    border: 0;
+    outline-offset: 4px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 16px;
 }
-.composer-category-rail {
+/* Add a place or event: the kinds as the app names them, then the rows. */
+.composer-catalogue {
     display: flex;
-    overflow-x: auto;
-    gap: 7px;
-    margin: 12px 0 16px;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
+    flex-direction: column;
+    gap: 12px;
 }
-.composer-category-rail button {
+.composer-kinds {
+    display: flex;
+    gap: 6px;
+    margin: 0 calc(-1 * var(--gutter, 0px));
+    padding: 0 var(--gutter, 0px) 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.composer-page .composer-kinds button {
     flex: none;
     min-height: 36px;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 30px;
-    font-size: 11px;
-    text-transform: capitalize;
-}
-.composer-category-rail button[aria-pressed='true'] {
-    background: #e4f1f4;
-    border-color: #9dcbd7;
-    color: #356774;
-}
-.composer-options {
-    display: grid;
-    gap: 8px;
-}
-.composer-catalogue.is-compact .composer-options {
-    max-height: 252px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 3px 5px 3px 0;
-    scrollbar-width: thin;
-}
-.composer-option {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    border: 1px solid var(--composer-line, var(--border));
-    border-radius: 14px;
-    background: var(--composer-paper, var(--card));
-}
-.composer-option-choose {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-    padding: 13px;
-    min-width: 0;
-    color: var(--composer-blue, #356774);
-}
-.composer-option-choose > span {
-    flex: 1;
-    min-width: 0;
-}
-.composer-option strong {
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
     font-size: 13px;
     font-weight: 600;
-    display: block;
-    overflow-wrap: anywhere;
+    cursor: pointer;
 }
-.composer-option small {
-    font-size: 11px;
-    margin-top: 5px;
-    color: var(--composer-muted, #647c84);
-    display: block;
+.composer-page .composer-kinds button[aria-pressed='true'] {
+    border-color: var(--color-select-text);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
 }
-.composer-option > .composer-preview-trigger {
+.composer-page .composer-icon-button.is-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+.composer-page .composer-icon-button.is-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.composer-preview-trigger {
     padding: 10px;
     min-height: 42px;
     color: var(--composer-muted, #647c84);
@@ -574,21 +346,6 @@
     min-height: 30px;
     font-size: 11px;
 }
-.composer-appointment {
-    display: grid;
-    gap: 16px;
-}
-.composer-appointment > label {
-    display: grid;
-    gap: 8px;
-    font-size: 12px;
-}
-.composer-appointment > label input {
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    padding: 12px;
-    font-size: 16px;
-}
 .is-danger {
     color: #a93e29;
 }
@@ -675,10 +432,6 @@
     }
 }
 @media (max-width: 640px) {
-    .composer-panel {
-        border-radius: 0;
-        padding: 20px 16px;
-    }
     .composer-time-editor {
         gap: 4px;
         padding: 6px;
@@ -695,7 +448,6 @@
 @media (prefers-reduced-motion: reduce) {
     .composer-loading svg,
     .composer-loading path,
-    .composer-panel,
     .composer-menu {
         animation: none !important;
         transition: none !important;
@@ -806,17 +558,11 @@
 .composer-entry-actions button:disabled {
     opacity: 0.5;
 }
-.composer-entry-review button:active,
-.composer-entry-review a:active {
-    transform: scale(0.98);
-}
 .composer-entry-review button:focus-visible,
 .composer-entry-review a:focus-visible {
     outline: 2px solid #008ea7;
     outline-offset: 2px;
 }
-
-/* "About: …" from the page a request came from; × leaves it out. */
 
 /* The AI disclosure (owner, 21 Oct 2026; the mock's style.css and approved.css): the
    box's helper text, 6px under it, inside the box's edges. Beside Your day it takes the
@@ -833,13 +579,6 @@
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
-}
-@media (min-width: 1000px) {
-    .composer-page.has-composer-day:not(.has-panel) .composer-ai-notice {
-        width: calc(var(--composer-column) - 12px);
-        max-width: none;
-        margin: 6px 0 0 calc(var(--composer-column-left) + 6px);
-    }
 }
 
 /* "What's on": Events' own posters in the answer, at the approved answer's sizes
@@ -859,23 +598,7 @@
 .composer-page .event-answer-item .answer-fine {
     margin: 0;
 }
-/* A suggested place's card, with its "because" line and Not this under it. */
-.composer-page .nearby-answer > .nearby-answer-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-.composer-page .nearby-answer > .nearby-answer-item > .nearby-answer-card {
-    flex: 1 1 auto;
-    height: auto;
-}
-.composer-page .nearby-answer-item .answer-fine {
-    margin: 0;
-}
-.composer-page
-    :is(.nearby-answer-item, .event-answer-item)
-    > .composer-text-button {
+.composer-page .event-answer-item > .composer-text-button {
     align-self: flex-start;
 }
 @media (max-width: 700px) {
@@ -891,159 +614,159 @@
     }
 }
 
-/* ── B · Answer under the box (owner, 22 Oct 2026; the Composer review canvas
-   and the mock's connected/composer-entry.css): the tray's answer card, the dim,
-   the way back to the conversation, and the dot on what opens Composer. The
-   card sits above the box (a phone, or a box at the bottom) or, `.is-top`,
-   under a box at the top; its height is the room left (tray-answer's useFit).
-   It loads with the first answer. */
-.composer-tray-answer {
-    position: absolute;
-    left: -1px;
-    right: -1px;
-    bottom: calc(100% + 12px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 22px;
-    background: var(--color-bg-canvas);
-    color: var(--color-text);
-    text-align: left;
-    box-shadow: 0 30px 70px -30px rgb(33 29 21 / 0.7);
-    animation: composer-tray-answer-up 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.composer-tray-answer.is-top {
-    top: calc(100% + 14px);
-    bottom: auto;
-    border-radius: 24px;
-    animation-name: composer-tray-answer-down;
-}
-@keyframes composer-tray-answer-down {
-    from {
-        opacity: 0;
-        clip-path: inset(0 0 100% 0 round 24px);
-    }
-    40% {
-        opacity: 1;
-    }
-    to {
-        clip-path: inset(0 0 0 0 round 24px);
-    }
-}
-@keyframes composer-tray-answer-up {
-    from {
-        opacity: 0;
-        clip-path: inset(100% 0 0 0 round 22px);
-    }
-    40% {
-        opacity: 1;
-    }
-    to {
-        clip-path: inset(0 0 0 0 round 22px);
-    }
-}
-/* The card's close is the one close while it shows. */
-.composer-tray:has(.composer-tray-answer) .composer-tray-dismiss {
-    display: none;
-}
-.composer-tray-answer-head {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 52px;
-    padding: 0 8px 0 16px;
-    border-bottom: 1px solid #efe7d8;
-}
-.composer-tray-answer-head strong {
-    font-size: 15px;
-    font-weight: 700;
-}
-.composer-tray-answer-mark {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--color-select-text);
-    color: #ffffff;
-}
-.composer-tray .composer-tray-answer-mark svg {
-    width: 14px;
-    height: 14px;
-}
-.composer-tray-answer-full,
-.composer-tray-answer-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 40px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-text);
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-}
-.composer-tray-answer-full {
-    margin-left: auto;
-    padding: 0 12px;
-}
-.composer-tray-answer-close {
-    width: 44px;
-    height: 44px;
-}
-.composer-tray
-    :is(.composer-tray-answer-full, .composer-tray-answer-close)
-    svg {
-    width: 17px;
-    height: 17px;
-}
-.composer-tray-answer-full:hover,
-.composer-tray-answer-close:hover {
-    background: var(--color-bg-quiet);
-}
-.composer-tray-answer-body {
-    position: relative;
-    flex: 1;
+/* ── The tray's panel (owner, 22 Oct 2026: "anchor at the bottom"; the
+   Composer in place canvas, row Proposal, and the mock's connected/
+   composer-entry.css): its start (the conversation to go back to and recent
+   ones) or the conversation, between its head and the box (shell.css). Also
+   the way back after closing and the dot on what opens Composer. It loads
+   when the panel first opens. */
+.composer-tray-start,
+.composer-tray-body {
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 18px 18px 28px;
 }
-/* The page's conversation, at the card's measure. */
-.composer-tray-answer-body .chat-feed {
+.composer-tray-start {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 14px 6px;
+}
+.composer-tray-body {
+    --gutter: 18px;
+    position: relative;
+    padding: 18px var(--gutter) 28px;
+}
+/* The page's conversation, at the panel's measure. */
+.composer-tray-body .chat-feed {
     max-width: none;
     margin: 0;
     display: flex;
     flex-direction: column;
     gap: 26px;
 }
-.composer-tray-answer-body .chat-entry {
+.composer-tray-body .chat-entry {
     margin: 0;
 }
-.composer-tray-answer-body .chat-entry > p {
+.composer-tray-body .chat-entry > p {
     margin: 0 0 10px;
 }
-.composer-tray-earlier {
-    align-self: center;
+.composer-tray-start-back,
+.composer-tray-start-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-tray-start-back {
+    min-height: 72px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-tray-start-back:hover,
+.composer-tray-start-row:hover {
+    background: var(--color-bg-quiet);
+}
+.composer-tray-start-row svg {
+    flex: none;
+    color: var(--color-text-soft);
+}
+.composer-tray .composer-tray-start-row svg {
+    width: 18px;
+    height: 18px;
+}
+.composer-tray .composer-tray-start-row svg:last-child {
+    width: 16px;
+    height: 16px;
+}
+.composer-tray-start-mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-round);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.composer-tray .composer-tray-start-mark svg {
+    width: 18px;
+    height: 18px;
+}
+.composer-tray-start-copy {
+    display: grid;
+    flex: 1;
+    gap: 1px;
+    min-width: 0;
+}
+.composer-tray-start-copy > span {
+    color: var(--color-select-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.composer-tray-start-copy strong {
+    overflow: hidden;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.composer-tray-start-row .composer-tray-start-copy strong {
+    font-weight: var(--weight-medium);
+}
+.composer-tray-start-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.composer-tray-start-recent {
+    display: grid;
+    gap: 2px;
+}
+.composer-tray-start-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    padding: 0 2px 0 4px;
+}
+.composer-tray-start-head h2 {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.composer-tray-start-all {
     display: inline-flex;
     align-items: center;
     min-height: 36px;
-    padding: 0 14px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: var(--color-bg-surface);
-    color: #5d5647;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
     font: inherit;
-    font-size: 13px;
     cursor: pointer;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.composer-tray-start-empty {
+    margin: 4px 4px 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
 }
 /* Closed with a conversation kept: the way back, under the header's button
    (top and left set by the tray), or above the round button on a phone. */
@@ -1105,26 +828,7 @@
     border-radius: 50%;
     background: var(--color-action);
 }
-@media (max-width: 700px) {
-    .composer-tray-answer-head {
-        height: 48px;
-        padding: 0 4px 0 14px;
-    }
-    .composer-tray-answer-full {
-        width: 44px;
-        height: 44px;
-        padding: 0;
-    }
-    .composer-tray-answer-full span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-    }
-}
 @media (prefers-reduced-motion: reduce) {
-    .composer-tray-answer,
     .composer-tray-resume {
         animation: none;
     }
@@ -1137,9 +841,7 @@
     text-underline-offset: 2px;
 }
 /* Its quiet actions (Not this, the invitation's two) read as the fine print's links. */
-.composer-page
-    :is(.nearby-answer-item, .event-answer-item, .answer-fine)
-    .composer-text-button {
+.composer-page :is(.event-answer-item, .answer-fine) .composer-text-button {
     min-height: 36px;
     padding: 0;
     color: var(--color-text-soft);
@@ -1151,4 +853,1986 @@
     min-height: 0;
     color: inherit;
     font-size: inherit;
+}
+
+/* A stop's departures in an answer: Travel's strips, as Today's Check
+   departures sets them (today.css .board-capture and its neighbours). */
+.composer-page .answer-departures {
+    margin: 12px 0 0;
+}
+.composer-page .answer-board-capture {
+    margin: 0 0 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.composer-page .answer-board-capture span {
+    display: inline-block;
+    margin-left: 5px;
+    font-weight: var(--weight-semibold);
+}
+.composer-page .answer-board-strips {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 4px;
+}
+.composer-page .answer-board-empty {
+    margin: 8px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.composer-page .answer-board-full {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.composer-page .answer-board-full::after {
+    content: '→';
+}
+
+/* A trip answer's major headline (Travel's Headline, open or closed): the
+   same gap to the answer's words as between its other parts. */
+.composer-page .answer-major {
+    margin: 0 0 var(--space-14);
+}
+
+/* ── What Composer did, or would do (the "Composer does things" canvas, owner
+   23 Oct 2026): a change made with Undo, its undoing, a proposal with Apply,
+   the Paperwork record's rows with Change, what moved in the plan, and where
+   it hands over. Each slides in (the owner's Slide); presses only tint. ── */
+.composer-page
+    :is(
+        .action-done,
+        .action-undone,
+        .action-proposal,
+        .action-record,
+        .action-plan,
+        .action-handoff
+    ) {
+    margin: 12px 0 0;
+    animation: action-in 250ms ease-out both;
+}
+@keyframes action-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+.composer-page .action-done {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px 10px 12px;
+    border: 1px solid
+        color-mix(in srgb, var(--color-success) 22%, var(--color-bg-canvas));
+    border-radius: 14px;
+    background: var(--color-success-soft);
+}
+.composer-page .action-done-tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-round);
+    background: var(--color-success);
+    color: var(--color-text-on-action);
+    font-size: 13px;
+    font-weight: 800;
+}
+.composer-page .action-done-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.composer-page .action-done-copy strong {
+    font-size: var(--text-body);
+}
+.composer-page :is(.action-done-copy span, .action-sub) {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.composer-page .action-undo {
+    flex: none;
+    min-height: 40px;
+    margin-left: auto;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.composer-page .action-undone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.composer-page .action-proposal {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-proposal > strong {
+    font-size: var(--text-body);
+}
+.composer-page .action-proposal-change {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.composer-page .action-proposal-change s {
+    color: var(--color-text-muted);
+}
+.composer-page .action-proposal-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.composer-page
+    :is(
+        .action-apply,
+        .action-ghost,
+        .action-save,
+        .action-change,
+        .composer-apply,
+        .composer-ghost
+    ) {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) ease;
+}
+.composer-page :is(.action-apply, .action-save, .composer-apply) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+.composer-page
+    :is(.action-apply, .action-save, .composer-apply):active:not(:disabled) {
+    background: color-mix(
+        in srgb,
+        var(--color-text) 82%,
+        var(--color-bg-surface)
+    );
+}
+.composer-page :is(.action-ghost, .action-change, .composer-ghost) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: 600;
+}
+.composer-page
+    :is(.action-ghost, .action-change, .composer-ghost):active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .action-change {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+}
+.composer-page .action-record {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-record-row {
+    display: grid;
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    min-height: 50px;
+    padding: 4px 8px 4px 14px;
+    border-top: 1px solid var(--color-bg-quiet);
+    font-size: 14px;
+}
+.composer-page .action-record-row:first-child {
+    border-top: 0;
+}
+.composer-page .action-record-row > span:first-child {
+    color: var(--color-text-soft);
+}
+.composer-page .action-record-row strong {
+    font-weight: var(--weight-semibold);
+}
+.composer-page .action-record-row small {
+    color: var(--color-attention-text);
+    font-weight: var(--weight-semibold);
+}
+.composer-page .action-record-edit {
+    display: flex;
+    grid-column: 2 / -1;
+    align-items: center;
+    gap: 8px;
+}
+.composer-page .action-record-edit input {
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+    font: inherit;
+    font-size: 16px;
+}
+.composer-page .action-record-edit .action-save {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+.composer-page .action-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.composer-page .action-plan h3 {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.composer-page .action-plan-task {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+}
+.composer-page .action-plan-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-bg-quiet);
+}
+.composer-page .action-plan-step small {
+    color: var(--color-text-soft);
+}
+.composer-page .action-plan-when {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+.composer-page .action-plan-when s {
+    display: block;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+.composer-page .action-link {
+    align-self: flex-start;
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-underline-offset: 3px;
+}
+.composer-page .action-handoff {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    font-size: 14px;
+}
+.composer-page .action-handoff-crumb {
+    color: var(--color-paper-text);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.composer-page .action-handoff-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.composer-page .action-handoff-actions span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-soft);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.composer-page .action-handoff-actions span.is-here {
+    border: 2px solid var(--color-text);
+    color: var(--color-text);
+    box-shadow: 0 0 0 4px var(--color-paper-bg);
+}
+.composer-page .action-go {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+/* My day as it is now, the new item marked; and what Paperwork would like to know next. */
+.composer-page .action-day {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    animation: action-in 250ms 60ms ease-out both;
+}
+.composer-page .action-day div {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--color-bg-quiet);
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+}
+.composer-page .action-day div:first-child {
+    border-top: 0;
+}
+.composer-page .action-day div.is-new {
+    background: var(--color-success-soft);
+    font-weight: 700;
+}
+.composer-page .action-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--color-bg-quiet);
+    font-size: 13.5px;
+    animation: action-in 250ms 100ms ease-out both;
+}
+.composer-page .action-ask button {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.composer-page .action-ask button:active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .action-record h3 {
+    margin: 0;
+    padding: 10px 14px 6px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+/* An AI permission's notice, sentence by sentence, as the server words it,
+   folded under "What Composer sends" (open on a conversation's first ask). */
+.composer-page .action-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.composer-page .action-notice > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    width: fit-content;
+    margin: -8px 0;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+.composer-page .action-notice > summary::-webkit-details-marker {
+    display: none;
+}
+.composer-page .action-notice > summary::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    margin-top: -3px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+}
+.composer-page .action-notice[open] > summary {
+    margin-bottom: 0;
+}
+.composer-page .action-notice[open] > summary::after {
+    margin-top: 3px;
+    transform: rotate(225deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-page .action-notice > summary::after {
+        transition: none;
+    }
+}
+.composer-page .action-notice p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.composer-page button.action-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+@media (max-width: 700px) {
+    .composer-page .action-record-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 10px;
+        padding: 8px 8px 8px 12px;
+    }
+    .composer-page .action-record-row > span:first-child {
+        grid-column: 1 / -1;
+        font-size: 13px;
+    }
+    .composer-page .action-record-edit {
+        grid-column: 1 / -1;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-page
+        :is(
+            .action-day,
+            .action-ask,
+            .action-done,
+            .action-undone,
+            .action-proposal,
+            .action-record,
+            .action-plan,
+            .action-handoff
+        ) {
+        animation: none;
+    }
+}
+
+/* ── Place results as small cards (option B, owner 23 Oct 2026) ──────────
+   A strip in the panel and on a phone, bleeding to the panel's padding; four
+   across in Full Composer. Each preview is the place's own spot on the map
+   (or its credited photo) washed in its kind's colour, with its pin. Classes
+   are unscoped: the map layer is drawn into the panel, outside the page. */
+.place-card,
+.place-map-selected {
+    --kind-wash: color-mix(in srgb, var(--kind) 18%, var(--color-bg-surface));
+}
+.place-card:is([data-kind='cafe'], [data-kind='bakery']),
+.place-map-selected:is([data-kind='cafe'], [data-kind='bakery']) {
+    --kind-wash: #ead9c2;
+}
+.place-card:is([data-kind='restaurant'], [data-kind='fastfood']),
+.place-map-selected:is([data-kind='restaurant'], [data-kind='fastfood']) {
+    --kind-wash: #f1d3c8;
+}
+.place-answer {
+    margin-top: 12px;
+}
+.place-cards {
+    display: flex;
+    gap: 10px;
+    margin: 0 calc(-1 * var(--gutter, 0px));
+    padding: 0 var(--gutter, 0px) 2px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter, 0px);
+    scrollbar-width: none;
+    list-style: none;
+}
+.place-cards::-webkit-scrollbar {
+    display: none;
+}
+.place-card {
+    position: relative;
+    display: flex;
+    flex: 0 0 172px;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    scroll-snap-align: start;
+}
+.place-card-preview {
+    position: relative;
+    flex: none;
+    height: 104px;
+}
+.place-card-map {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: var(--kind-wash);
+    cursor: zoom-in;
+}
+.place-card-map img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.place-card-tint {
+    position: absolute;
+    inset: 0;
+    background: var(--kind-wash);
+    mix-blend-mode: multiply;
+}
+.place-card-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--kind);
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transform: translate(-50%, -50%);
+}
+.place-card-pin svg,
+.place-map-pin svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: var(--color-text-on-action);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.place-card-expand {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+    color: var(--color-text);
+    font-size: 15px;
+    line-height: 1;
+}
+.place-card-hours {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.place-card-hours.is-open {
+    background: var(--color-success-soft);
+    color: var(--color-success);
+}
+/* Save: 36 to see, 44 to tap. */
+.place-card-save {
+    position: relative;
+    display: grid;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.place-card-preview > .place-card-save {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+.place-card-save::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-bg-surface) 94%, transparent);
+}
+.place-map-selected .place-card-save::before {
+    background: var(--color-bg-quiet);
+}
+.place-card-save svg {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+}
+.place-card-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+.place-card-body {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+}
+.place-card-open {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px 12px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.place-card-open:active {
+    background: var(--color-bg-quiet);
+}
+.place-card-body:has(.place-card-more) .place-card-open {
+    padding-right: 36px;
+}
+.place-card-open strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+.place-card-open span {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+.place-card-open small,
+.place-card-open em {
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-style: normal;
+    line-height: 1.35;
+}
+/* "Good for laptop work?" (the laptop canvas): the tag's words in its colour. */
+.place-card-open .place-card-laptop {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+.place-card-laptop svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.place-card-open .place-card-laptop.is-good {
+    color: #1f5530;
+}
+.place-card-open .place-card-laptop.is-mixed {
+    color: #4f4839;
+}
+.place-card-open .place-card-laptop.is-not {
+    color: #7a2e12;
+}
+.place-card-open .place-card-laptop.is-rule {
+    color: #8a3413;
+}
+.place-card-more {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+.place-card-more > button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 18px;
+    cursor: pointer;
+}
+.place-card-menu {
+    position: absolute;
+    right: 6px;
+    bottom: 42px;
+    z-index: 2;
+    min-width: 140px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    box-shadow: 0 8px 24px -12px rgb(33 29 21 / 0.45);
+}
+.place-card-menu button {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+.place-card-menu button:active {
+    background: var(--color-bg-quiet);
+}
+/* Not this: the card folds to its stub, with Undo. */
+.place-card.is-dismissed {
+    justify-content: center;
+    gap: 2px;
+    padding: 12px;
+    border-style: dashed;
+    border-color: var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.35;
+}
+.place-card.is-dismissed button {
+    align-self: flex-start;
+    min-height: 44px;
+    margin: -8px 0 -12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.place-answer-credit {
+    margin: 8px 0 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+/* Full Composer: four across (a phone keeps the strip). */
+@media (min-width: 701px) {
+    .composer-full .place-cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+    }
+    .composer-full .place-card-preview {
+        height: auto;
+        aspect-ratio: 14 / 9;
+    }
+}
+@media (max-width: 700px) {
+    .place-card {
+        flex-basis: 156px;
+    }
+    .place-card-preview {
+        height: 96px;
+    }
+    .place-card-pin {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* ── The answer's places on one map, over the conversation ─────────────── */
+[data-layer-host] {
+    --layer-top: 53px;
+}
+.place-map-layer {
+    position: absolute;
+    inset: var(--layer-top) 0 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 16px 16px;
+    background: var(--color-bg-canvas);
+    animation: place-map-in 250ms var(--ease-settle);
+}
+/* Slide (the canvas's): it fades in, dropping 10px into place. */
+@keyframes place-map-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+.place-map-bar {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.place-map-bar strong {
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+.place-map-layer .place-map-close {
+    flex: none;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.place-map-frame {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+}
+/* Two classes: MapLibre's own sheet, loaded later, sets the map relative. */
+.place-map-frame > .place-map-canvas {
+    position: absolute;
+    inset: 0;
+}
+.place-map-failed {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    margin: 0;
+    padding: 24px;
+    place-items: center;
+    color: var(--color-text-soft);
+    font-size: 14px;
+    text-align: center;
+}
+/* MapLibre places the marker by its own transform; the pin scales inside it. */
+.place-map-pin {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.place-map-pin > span {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--kind);
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transition: transform var(--duration-base) var(--ease-settle);
+}
+.place-map-pin.is-selected > span {
+    box-shadow:
+        0 0 0 2px var(--color-bg-surface),
+        0 0 0 6px rgb(33 29 21 / 0.28),
+        0 2px 8px rgb(33 29 21 / 0.4);
+    transform: scale(1.3);
+}
+.place-map-origin {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+.place-map-origin i {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--color-bg-surface);
+    background: var(--color-text);
+}
+.place-map-origin span {
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgb(33 29 21 / 0.25);
+}
+.place-map-selected {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.place-map-card {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.place-map-card:active {
+    background: var(--color-bg-quiet);
+}
+.place-map-card > i {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--kind);
+}
+.place-map-card > span {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+.place-map-card strong {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.place-map-card small {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+.place-map-step {
+    display: flex;
+    align-items: center;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.place-map-step button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+@media (max-width: 700px) {
+    [data-layer-host] {
+        --layer-top: 49px;
+    }
+    .place-map-pin > span {
+        width: 30px;
+        height: 30px;
+    }
+    .place-map-selected {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .place-map-step {
+        grid-column: 1 / -1;
+        justify-content: center;
+        border-top: 1px solid var(--color-border);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .place-map-layer {
+        animation: none;
+    }
+    .place-map-pin > span,
+    .place-card-open {
+        transition: none;
+    }
+}
+
+/* ── The + menu's views, in place of the conversation (owner, 23 Oct 2026;
+   the Full Composer canvas, boards 1 and 2): the way back, a title and
+   what it holds. They slide in from the side, as a view does. ─────────── */
+.composer-page .composer-view {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: composer-view-in 250ms var(--ease-settle) both;
+}
+@keyframes composer-view-in {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+}
+.composer-page .composer-view-back {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    margin: -8px 0 -6px -4px;
+    padding: 0 12px 0 4px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.composer-page .composer-view-back:active {
+    background: var(--color-bg-quiet);
+}
+.composer-page .composer-view-back svg {
+    width: 18px;
+    height: 18px;
+}
+.composer-page .composer-view-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.composer-page :is(.composer-view-head h2, .composer-new h2) {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+.composer-page .composer-view-count {
+    flex: none;
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.composer-page .composer-view-sub {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 15px;
+    line-height: 1.45;
+}
+.composer-page .composer-view-note {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.composer-page .composer-view > .composer-apply {
+    align-self: flex-start;
+}
+.composer-page .composer-view-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.composer-page .composer-label {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.composer-page .composer-plain {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.composer-page .composer-plain:active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .composer-plain.is-danger {
+    color: var(--color-danger);
+}
+.composer-page :is(.composer-plain, .composer-ghost, .composer-apply) svg {
+    width: 17px;
+    height: 17px;
+}
+.composer-page .composer-icon-button {
+    display: grid;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.composer-page .composer-icon-button.is-saved {
+    color: var(--color-select-text);
+}
+.composer-page .composer-icon-button.is-saved svg {
+    fill: currentColor;
+}
+.composer-page .composer-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 22px 20px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: 18px;
+}
+.composer-page .composer-empty h3,
+.composer-page .composer-plans-date h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* My Plans: the week, the day's date, and its plan on paper. */
+.composer-page .composer-week {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.composer-page .composer-week-step {
+    display: grid;
+    flex: none;
+    width: 36px;
+    height: 56px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.composer-page .composer-week-day {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    height: 64px;
+    padding: 8px 0 0;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+}
+.composer-page .composer-week-day span {
+    color: var(--color-text-soft);
+    font-size: 12px;
+}
+.composer-page .composer-week-day strong {
+    font-size: 17px;
+}
+.composer-page .composer-week-day i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.composer-page .composer-week-day i.has-plan {
+    background: var(--color-select-text);
+}
+.composer-page .composer-week-day[aria-current='date'] span {
+    color: var(--color-action-text);
+    font-weight: 600;
+}
+.composer-page .composer-week-day[aria-pressed='true'] {
+    border-color: var(--color-select-text);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.composer-page .composer-plans-date {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.composer-page .composer-date-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.composer-page .composer-paper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
+}
+.composer-page .composer-paper-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 10px;
+}
+.composer-page .composer-paper-head > * {
+    white-space: nowrap;
+}
+.composer-page .composer-in-plans {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-success);
+    font-size: 13px;
+    font-weight: 700;
+}
+.composer-page .composer-in-plans svg {
+    width: 16px;
+    height: 16px;
+}
+.composer-page .composer-plan-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.composer-page .composer-plan-rows li {
+    display: grid;
+    grid-template-columns: 96px 10px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--color-bg-quiet);
+}
+.composer-page .composer-plan-rows li:first-child {
+    border-top: 0;
+}
+.composer-page .composer-plan-time {
+    padding-top: 1px;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.composer-page .composer-plan-mark {
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    border-radius: 3px;
+    background: var(--color-border-strong);
+}
+.composer-page .composer-plan-mark.is-fixed {
+    background: var(--color-text);
+}
+.composer-page .composer-plan-mark.is-record {
+    background: var(--color-paper-text);
+}
+.composer-page .composer-plan-rows strong {
+    display: block;
+    font-size: 15px;
+}
+.composer-page .composer-plan-rows li > span > span {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+
+/* Saved: each idea on a row, with Add and its bookmark. */
+.composer-page .composer-ideas,
+.composer-page .composer-history {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.composer-page .composer-idea {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 64px;
+    padding: 10px 6px 10px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+}
+.composer-page .composer-idea-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-page .composer-idea-copy strong {
+    font-size: 15px;
+}
+.composer-page .composer-idea-copy span {
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+
+/* History: each conversation, the open one marked; Delete asks first. */
+.composer-page .composer-history-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-page .composer-history-row > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.composer-page .composer-history-row strong {
+    font-size: 15px;
+}
+.composer-page .composer-history-row span span {
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+.composer-page .composer-history-row[aria-current='true'] {
+    border-color: var(--color-select-text);
+    background: var(--color-select-bg);
+}
+.composer-page .composer-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    animation: composer-view-in 250ms var(--ease-settle) both;
+}
+.composer-page .composer-confirm strong {
+    font-size: 16px;
+}
+.composer-page .composer-confirm > span:not(.composer-view-buttons) {
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+
+/* Add appointment, Add a place or event: plain fields. */
+.composer-page .composer-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+.composer-page .composer-field small {
+    color: var(--color-text-soft);
+    font-weight: 500;
+}
+.composer-page .composer-field input {
+    height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 400;
+}
+.composer-page .composer-field-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+}
+.composer-page .composer-add-day {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 4px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+.composer-page .composer-add-day > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.composer-page .composer-add-day input {
+    height: 40px;
+    border-color: var(--color-border);
+}
+.composer-page .composer-add-day svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* Starting point: where it is now, then the choices. */
+.composer-page .composer-origin-now {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--color-success-soft);
+}
+.composer-page .composer-origin-now > span {
+    display: flex;
+    flex-direction: column;
+}
+.composer-page .composer-origin-now small {
+    color: var(--color-success);
+    font-size: 12px;
+    font-weight: 700;
+}
+.composer-page .composer-origin-now strong {
+    font-size: 15px;
+}
+.composer-page .composer-origin-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-page .composer-origin-row small {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    font-weight: 500;
+}
+.composer-page :is(.composer-origin-row, .composer-origin-now) svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+
+/* A new conversation: the way back to the last one, then the starters. */
+.composer-page .composer-new {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.composer-page .composer-back-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-page .composer-back-card > span:nth-child(2) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+.composer-page .composer-back-card small {
+    color: var(--color-select-text);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+.composer-page .composer-back-card strong {
+    font-size: 15px;
+}
+.composer-page .composer-back-card span span {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+}
+.composer-page .composer-back-card-mark {
+    display: grid;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.composer-page .composer-starters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.composer-page .composer-starter {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 72px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.composer-page .composer-starter:active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-page .composer-starter strong {
+    font-size: 15px;
+    line-height: 1.3;
+}
+.composer-page .composer-starter span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.composer-page .composer-starter svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+}
+.composer-page .composer-starter.is-travel {
+    border-color: color-mix(in srgb, var(--color-select-text) 25%, transparent);
+    background: var(--color-select-bg);
+}
+.composer-page .composer-starter.is-travel span {
+    color: var(--color-select-text);
+}
+.composer-page .composer-starter.is-paperwork {
+    border-color: var(--color-paper-track);
+    background: var(--color-paper-bg-quiet);
+}
+.composer-page .composer-starter.is-paperwork span {
+    color: var(--color-paper-text);
+}
+.composer-page .composer-starter.is-events {
+    border-color: color-mix(
+        in srgb,
+        var(--color-event-chip-text) 22%,
+        transparent
+    );
+    background: var(--color-event-chip-bg);
+}
+.composer-page .composer-starter.is-events span {
+    color: var(--color-event-chip-text);
+}
+.composer-page .composer-starter.is-nearby {
+    border-color: color-mix(in srgb, var(--color-success) 22%, transparent);
+    background: var(--color-success-soft);
+}
+.composer-page .composer-starter.is-nearby span {
+    color: var(--color-success);
+}
+@media (max-width: 700px) {
+    .composer-page :is(.composer-view-head h2, .composer-new h2) {
+        font-size: 24px;
+    }
+    .composer-page .composer-starters {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .composer-page .composer-field-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .composer-page .composer-week {
+        gap: 3px;
+    }
+    .composer-page .composer-week-step {
+        width: 28px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .composer-page :is(.composer-view, .composer-confirm) {
+        animation: none;
+    }
+}
+
+/* ── Full Composer: the rail beside a 760 conversation, the box at its foot
+   (laptops); the panel's column at full height (phones). Only the column
+   scrolls; the box stays at its foot. ──────────────────────────────────── */
+.composer-full {
+    display: flex;
+    box-sizing: border-box;
+    height: var(--composer-height, calc(100dvh - 72px));
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding: 0 var(--page-gutter, 16px);
+    background: var(--color-bg-canvas);
+}
+.composer-full .composer-column {
+    --layer-top: 0px;
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+}
+.composer-full .composer-column-scroll {
+    box-sizing: border-box;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    padding: 28px max(0px, calc((100% - 760px) / 2)) 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.composer-full .composer-column-scroll .chat-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    max-width: none;
+    margin: 0;
+}
+.composer-full .composer-column-foot {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 760px;
+    padding: 0 0 18px;
+}
+.composer-full .place-map-layer {
+    left: max(0px, calc((100% - 760px) / 2));
+    right: max(0px, calc((100% - 760px) / 2));
+    padding: 16px 0;
+}
+.composer-rail {
+    display: none;
+}
+@media (min-width: 1000px) {
+    .composer-rail {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        gap: 14px;
+        box-sizing: border-box;
+        width: 300px;
+        padding: 16px 20px 20px 0;
+        overflow-y: auto;
+        border-right: 1px solid var(--color-border);
+    }
+}
+.composer-rail :is(button, a) {
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.composer-rail :is(button, a):active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+.composer-rail svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+.composer-rail .composer-rail-back {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 8px 0 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 14px;
+    font-weight: 600;
+}
+.composer-rail .composer-rail-new {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+    font-size: 15px;
+    font-weight: 600;
+}
+.composer-rail .composer-rail-new:disabled {
+    color: var(--color-text-soft);
+    cursor: default;
+}
+.composer-rail-group,
+.composer-rail-nav,
+.composer-rail-day {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.composer-rail .composer-label {
+    margin: 0 0 4px;
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.composer-rail .composer-rail-conversation {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    min-height: 52px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+}
+.composer-rail .composer-rail-conversation strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 14.5px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-rail .composer-rail-conversation span {
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+}
+.composer-rail .composer-rail-conversation[data-open] {
+    background: var(--color-bg-quiet);
+}
+.composer-rail-nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 15px;
+}
+.composer-rail-nav button[aria-current='page'] {
+    background: var(--color-bg-quiet);
+    font-weight: 600;
+}
+.composer-rail-hair {
+    height: 1px;
+    margin: 0 0 12px;
+    background: var(--color-border);
+}
+.composer-rail .composer-rail-switch {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.composer-rail .composer-rail-fact {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 8px 6px 4px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+}
+.composer-rail .composer-rail-fact:disabled {
+    cursor: default;
+}
+.composer-rail-time {
+    padding-top: 1px;
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.composer-rail-time.is-line {
+    color: var(--color-select-text);
+}
+.composer-rail-time.is-paper {
+    color: var(--color-paper-text);
+}
+.composer-rail-time.is-attention {
+    color: var(--color-attention-text);
+}
+.composer-rail-time.is-changed {
+    color: var(--color-success);
+}
+.composer-rail-fact strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+}
+.composer-rail-fact span span {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+}
+.composer-rail .composer-view-note {
+    margin: 6px 0 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+}
+/* A phone: Full Composer is the panel at full height (owner, 23 Oct 2026;
+   the canvas, phone): its own head, no app header or floating sections. */
+@media (max-width: 700px) {
+    :root:has(#composer-page) .shell-header {
+        display: none;
+    }
+    .composer-full {
+        padding: 0;
+    }
+    .composer-full .composer-full-head {
+        align-self: stretch;
+        background: var(--color-bg-canvas);
+    }
+    .composer-full .composer-column-scroll {
+        --gutter: 16px;
+        padding: 18px var(--gutter) 16px;
+    }
+    .composer-full .composer-column-foot {
+        padding: 0 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    }
 }

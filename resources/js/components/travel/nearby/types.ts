@@ -27,6 +27,8 @@ export type StationDir = {
     later_recorded: boolean;
     cancelled: boolean;
     disrupted: boolean;
+    /** Its usual minutes between runs here now, by the timetable; null when it doesn't say. */
+    headway?: number | null;
 };
 
 export type StationLine = {
