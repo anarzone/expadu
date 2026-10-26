@@ -31,6 +31,10 @@ Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping
 Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapping(2);
 // Its "We keep watching it": a Change of plan when the planned way changes.
 Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
+// How important each person's day is (DayImportance), fresh each morning; and the day's briefs,
+// the morning one and the evening before an important day (DayBriefs).
+Schedule::command('notifications:score-days')->timezone('Europe/Berlin')->dailyAt('05:30')->withoutOverlapping(30)->onOneServer();
+Schedule::command('notifications:send-briefs')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
 // People's laptop-work answers: kept 18 months at most (docs/places/design/laptop-answers.md).

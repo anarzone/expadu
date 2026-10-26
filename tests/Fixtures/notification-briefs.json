@@ -1,0 +1,119 @@
+{
+ "cases": [
+  {
+   "id": "brief.cancelled_way_first",
+   "kind": "morning",
+   "day": "2026-11-11",
+   "items": [
+    {
+     "kind": "trip_change",
+     "text": "Your 08:10 way to Ausländerbehörde is cancelled.",
+     "facts": "Planned way to \"Ausländerbehörde\", leaving 08:10, is cancelled."
+    },
+    {
+     "kind": "disruption",
+     "text": "Line 13 disrupted at Sülzgürtel.",
+     "facts": "KVB disruption on line 13, stops affected: Sülzgürtel, one of their lines."
+    },
+    {
+     "kind": "event",
+     "text": "12:00 Jazz im Stadtgarten at Stadtgarten.",
+     "facts": "An event they're going to: \"Jazz im Stadtgarten\", starting 12:00 at Stadtgarten."
+    },
+    {
+     "kind": "trip",
+     "text": "17:30 leave for Dinner.",
+     "facts": "Planned way to \"Dinner\", leaving 17:30."
+    },
+    {
+     "kind": "paperwork",
+     "text": "Your Paperwork needs attention.",
+     "facts": "Their Paperwork needs attention."
+    }
+   ],
+   "expect": {
+    "first": "08:10.*cancel|cancel.*08:10",
+    "last": "^Your Paperwork needs attention\\.$",
+    "not_says": "strike|umbrella|instead|alternative"
+   }
+  },
+  {
+   "id": "brief.no_merge_without_a_shared_fact",
+   "kind": "morning",
+   "day": "2026-11-11",
+   "items": [
+    {
+     "kind": "disruption",
+     "text": "Line 13 disrupted.",
+     "facts": "KVB disruption on line 13, one of their lines."
+    },
+    {
+     "kind": "trip",
+     "text": "08:10 leave for Work meeting.",
+     "facts": "Planned way to \"Work meeting\", leaving 08:10."
+    },
+    {
+     "kind": "weather",
+     "text": "Rain expected from 16:00.",
+     "facts": "Weather today: Rain expected from 16:00."
+    }
+   ],
+   "expect": {
+    "first": "13",
+    "not_says": "(way|trip|meeting|departure).{0,60}line 13|line 13.{0,60}your\\b.{0,12}(way|trip|departure|meeting)"
+   }
+  },
+  {
+   "id": "brief.plan_and_weather",
+   "kind": "morning",
+   "day": "2026-11-14",
+   "items": [
+    {
+     "kind": "plan",
+     "text": "Your plan: 3 stops from 12:00, first Kolumba Kunstmuseum.",
+     "facts": "Their plan for the day: 3 stops, the first \"Kolumba Kunstmuseum\" at 12:00."
+    },
+    {
+     "kind": "weather",
+     "text": "Rain expected from 14:00.",
+     "facts": "Weather today: Rain expected from 14:00."
+    },
+    {
+     "kind": "event",
+     "text": "20:00 Comedy Night at Gloria.",
+     "facts": "An event they're going to: \"Comedy Night\", starting 20:00 at Gloria."
+    }
+   ],
+   "expect": {
+    "says": "12:00",
+    "not_says": "indoor|umbrella|outdoor"
+   }
+  },
+  {
+   "id": "brief.evening_before",
+   "kind": "evening",
+   "day": "2026-11-15",
+   "items": [
+    {
+     "kind": "trip",
+     "text": "07:45 leave for Flughafen.",
+     "facts": "Planned way to \"Flughafen\", leaving 07:45."
+    },
+    {
+     "kind": "event",
+     "text": "19:30 Kölsch tasting at Früh am Dom.",
+     "facts": "An event they're going to: \"Kölsch tasting\", starting 19:30 at Früh am Dom."
+    },
+    {
+     "kind": "shops",
+     "text": "Shops are closed tomorrow (Sunday).",
+     "facts": "Shops are closed tomorrow: Sunday."
+    }
+   ],
+   "expect": {
+    "first": "07:45",
+    "says": "[Ss]hops"
+   }
+  }
+ ]
+}
