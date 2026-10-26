@@ -11,6 +11,7 @@ use App\Personalisation\SignalAction;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
 use App\Personalisation\TodayTaste;
+use App\Privacy\Export\AccountData;
 use App\Services\LocationContext;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
@@ -120,4 +121,18 @@ test('the read API says nothing personal below the threshold, then ranks what th
     $taste = app(TodayTaste::class)->for($this->user);
     expect($taste)->toMatchArray(['personal' => true, 'categories' => ['cafe', 'bar'], 'areas' => ['Ehrenfeld', 'Nippes'], 'stops' => ['Neumarkt', 'Ebertplatz'], 'lines' => ['13']])
         ->and(app(TodayTaste::class)->stops($this->user, 1))->toBe(['Neumarkt']);
+});
+
+test('the account export says each learned signal in words', function () {
+    learnOn($this->user);
+    $this->signals->topic($this->user, 'cafe', 'Ehrenfeld');
+    $this->signals->transit($this->user, SignalItemType::Stop, 'Neumarkt');
+    $this->signals->need($this->user, SignalAction::Dismissed, 'disruption', '0123456789abcdef');
+
+    $signals = json_decode(app(AccountData::class)->files($this->user)['personalisation.json'], true)['data']['signals'];
+    expect(array_column($signals, 'what'))->toEqualCanonicalizing([
+        'Composer looked up: cafe in Ehrenfeld',
+        'Travel stop you picked: Neumarkt',
+        'Today’s “Needs you” item (disruption): dismissed',
+    ]);
 });
