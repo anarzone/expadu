@@ -995,7 +995,7 @@ export function DataPanel() {
                     className="settings-confirm is-calm"
                     data-form="export"
                     role="group"
-                    aria-labelledby="export-title"
+                    aria-label="Download your data"
                     noValidate
                     onKeyDown={(event) => event.key === 'Escape' && keep()}
                     onSubmit={(event) => {
@@ -1014,12 +1014,6 @@ export function DataPanel() {
                         void ask(secret.value);
                     }}
                 >
-                    <strong id="export-title">Download your data</strong>
-                    <p>
-                        A ZIP with your profile, settings, plans, places,
-                        Composer conversations and Paperwork record. It can be
-                        downloaded for 24 hours, then it’s deleted.
-                    </p>
                     {hasPassword ? (
                         <Field
                             id="export_password"
@@ -1124,22 +1118,37 @@ export function DataPanel() {
                             That file couldn’t be made. Try again.
                         </p>
                     ) : null}
-                    <button
-                        type="button"
-                        className="settings-quiet"
-                        style={{ justifySelf: 'start' }}
-                        data-export
-                        onClick={() => {
-                            setAsking(true);
-                            focusSoon(
-                                hasPassword
-                                    ? '#export_password'
-                                    : '[data-export-code]',
-                            );
-                        }}
-                    >
-                        Download your data
-                    </button>
+                    <div className="settings-tiles">
+                        <div className="settings-tile">
+                            <span className="settings-tile-copy">
+                                <strong id="export-title">
+                                    Download your data
+                                </strong>
+                                <span className="settings-tile-note">
+                                    A ZIP with your profile, settings, plans,
+                                    places, Composer conversations and Paperwork
+                                    record. It can be downloaded for 24 hours,
+                                    then it’s deleted.
+                                </span>
+                            </span>
+                            <button
+                                type="button"
+                                className="settings-quiet"
+                                aria-describedby="export-title"
+                                data-export
+                                onClick={() => {
+                                    setAsking(true);
+                                    focusSoon(
+                                        hasPassword
+                                            ? '#export_password'
+                                            : '[data-export-code]',
+                                    );
+                                }}
+                            >
+                                Prepare my file
+                            </button>
+                        </div>
+                    </div>
                 </>
             )}
         </section>
@@ -1309,21 +1318,31 @@ export function DeletePanel() {
                     </div>
                 </form>
             ) : (
-                <button
-                    type="button"
-                    className="settings-danger-outline"
-                    data-delete
-                    onClick={() => {
-                        setAsking(true);
-                        focusSoon(
-                            hasPassword
-                                ? '#delete_password'
-                                : '[data-send-code]',
-                        );
-                    }}
-                >
-                    Delete account
-                </button>
+                <div className="settings-tiles">
+                    <div className="settings-tile">
+                        <span className="settings-tile-copy">
+                            <strong>Delete account</strong>
+                            <span className="settings-tile-note">
+                                Download your data first if you want a copy.
+                            </span>
+                        </span>
+                        <button
+                            type="button"
+                            className="settings-danger-outline"
+                            data-delete
+                            onClick={() => {
+                                setAsking(true);
+                                focusSoon(
+                                    hasPassword
+                                        ? '#delete_password'
+                                        : '[data-send-code]',
+                                );
+                            }}
+                        >
+                            Delete account
+                        </button>
+                    </div>
+                </div>
             )}
         </section>
     );

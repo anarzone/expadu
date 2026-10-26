@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import {
     NotificationsPanel,
@@ -71,6 +71,15 @@ const SECTIONS: Record<
     delete: { label: 'Delete account', icon: 'trash', tone: 'delete' },
 };
 
+/** From 1000px the menu and a section show side by side. */
+const WIDE = '(min-width: 1000px)';
+const subscribeWide = (notify: () => void) => {
+    const query = window.matchMedia(WIDE);
+    query.addEventListener('change', notify);
+
+    return () => query.removeEventListener('change', notify);
+};
+
 /** The city names Paperwork reads as Cologne (as CityPanel does). */
 const isCologne = (city: string) => /^(cologne|köln|koeln)$/i.test(city.trim());
 
@@ -85,6 +94,14 @@ export default function Settings() {
             userSettings?: Record<string, boolean | string>;
         }>().props;
     const current: SectionId = section ?? 'account';
+    // Your account shows beside the menu at /settings only on a laptop; the
+    // phone's /settings is the list alone, with no section showing.
+    const wide = useSyncExternalStore(
+        subscribeWide,
+        () => window.matchMedia(WIDE).matches,
+        () => false,
+    );
+    const showing: SectionId | null = section ?? (wide ? 'account' : null);
     // One tile open at a time, kept to its section: another section opens
     // with none open.
     const [open, setOpen] = useState<{ in: SectionId; key: EditKey }>({
@@ -171,8 +188,11 @@ export default function Settings() {
                                             preserveScroll
                                             only={['section']}
                                             className="settings-item"
+                                            data-current={
+                                                current === id || undefined
+                                            }
                                             aria-current={
-                                                current === id
+                                                showing === id
                                                     ? 'page'
                                                     : undefined
                                             }
@@ -217,6 +237,8 @@ export default function Settings() {
                     </Link>
                 </nav>
                 <main className="settings-content">
+                    {/* The menu's h1 is hidden while a phone shows a section. */}
+                    <h1 className="settings-phone-h1 sr-only">Settings</h1>
                     <Link
                         href="/settings"
                         preserveState
