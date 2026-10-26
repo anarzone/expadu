@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\FavouriteStopController;
 use App\Models\FavouriteStop;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TodayTaste;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
@@ -76,6 +77,8 @@ class HomeFeedController extends Controller
             // Someone new: nothing planned, saved, asked or recorded yet.
             'welcome' => fn () => app(FirstVisit::class)->for($request->user()),
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
+            // The stops they pick most (TodayTaste, opt-in only; [] otherwise): quick picks after favourites.
+            'learnedStops' => fn () => app(TodayTaste::class)->stops($request->user(), 5),
         ]);
     }
 
