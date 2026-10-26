@@ -78,10 +78,10 @@ export function NeedsStrip({
     needs,
     paperwork,
 }: {
-    /** Undefined while loading, or where the engine isn't there to answer. */
-    needs?: TodayNeeds;
-    /** Paperwork's strip: undefined while it loads, null with nothing due. */
-    paperwork?: NonNullable<TodayPaperwork>['strip'] | null;
+    /** Null where the engine can't say. */
+    needs: TodayNeeds;
+    /** Paperwork's strip: null with nothing due. */
+    paperwork: NonNullable<TodayPaperwork>['strip'] | null;
 }) {
     const items = needs?.items ?? [];
     const others = items.filter((item) => item.kind !== 'paperwork');
@@ -98,12 +98,7 @@ export function NeedsStrip({
 
     // Paperwork alone (or the engine not answering) keeps today's strip.
     if (others.length === 0 && (paperwork || !needs)) {
-        return <DeadlineStrip strip={paperwork ?? null} />;
-    }
-
-    // A calm day is said only once Paperwork has answered too.
-    if (others.length === 0 && paperwork === undefined) {
-        return null;
+        return <DeadlineStrip strip={paperwork} />;
     }
 
     if (items.length === 0) {
