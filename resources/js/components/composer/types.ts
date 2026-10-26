@@ -1,4 +1,5 @@
 import type { PlaceEvidence } from '@/components/place-shared/types';
+import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
 
 export type Slot = {
     id: string;
@@ -186,8 +187,8 @@ export async function api<T>(
                     ? body
                         ? unconfirmedWrite
                         : 'Could not load this information. Please try again.'
-                    : response.status === 401 || response.status === 419
-                      ? 'Your session expired. Refresh the page to continue.'
+                    : isSignedOutStatus(response.status)
+                      ? SIGNED_OUT
                       : data.errors
                         ? String(Object.values(data.errors).flat()[0])
                         : (data.message ??

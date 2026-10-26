@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { SIGNED_OUT, useSignedOut } from '@/lib/signed-out';
 import { cn } from '@/lib/utils';
 
 /*
@@ -63,6 +64,9 @@ export function Toaster() {
         () => current,
         () => null,
     );
+    // Signed out while the page was open: that, until they sign in, in
+    // place of any failure ("try again" can't work).
+    const signedOut = useSignedOut();
     const [doneId, setDoneId] = useState(0);
     const [doneFlash, setDoneFlash] = useState<string | null>(null);
 
@@ -98,6 +102,22 @@ export function Toaster() {
         : flashVisible
           ? { id: 0, message: flashMessage, error: flashIsError }
           : null;
+
+    if (signedOut) {
+        return (
+            <div role="alert" aria-live="assertive">
+                <div className="ui-toast is-error">
+                    <span>{SIGNED_OUT}</span>
+                    {/* Sign-in comes back to this page (?return). */}
+                    <a
+                        href={`/login?return=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`}
+                    >
+                        Sign in again
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
