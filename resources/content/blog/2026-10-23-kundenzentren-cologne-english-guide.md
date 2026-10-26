@@ -1,7 +1,7 @@
 ---
-title: Kundenzentren in Cologne: every office, walk-in days and how to book (2026)
-description: Cologne's Bürgeramt is called the Kundenzentrum. All nine offices with addresses and step-free access, the Monday and Wednesday walk-in days, what you can do there, and how to book.
-updated: 2026-10-23
+title: Bürgeramt Köln: Kundenzentren, walk-ins, booking
+description: Cologne's Bürgeramt is the Kundenzentrum: all nine offices with addresses and step-free access, the Monday and Wednesday walk-in days, and how to book.
+updated: 2026-10-24
 ---
 
 Looking for the **Bürgeramt** in Cologne? Here it's called a **Kundenzentrum**. There are nine, one in each district, and you can use any of them, wherever you live: "Sie können jedes Kundenzentrum besuchen, egal, wo Sie in Köln wohnen."
@@ -64,4 +64,5 @@ Checked on 23 October 2026:
 - [Stadt Köln: Kundenzentren](https://www.stadt-koeln.de/service/kundenzentren/index.html) (any centre, wherever you live) · [all addresses](https://www.stadt-koeln.de/service/alle-adressen/kundenzentren)
 - [Stadt Köln: visiting without an appointment](https://www.stadt-koeln.de/service/besuch-der-kundenzentren-ohne-termin) (hours, walk-in days, info-desk services)
 - [Stadt Köln: online appointments](https://www.stadt-koeln.de/service/kontakt/terminvereinbarung-online) (booking, phone 115)
+- [Stadt Köln: Kundenzentrum Innenstadt](https://www.stadt-koeln.de/service/adressen/kundenzentrum-innenstadt) (same-day appointments on 0221 221-0)
 - [Stadt Köln: Meldebescheinigung](https://www.stadt-koeln.de/service/produkte/00420/index.html) · [Personalausweis](https://www.stadt-koeln.de/service/produkte/00416/index.html)

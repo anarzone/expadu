@@ -1,7 +1,7 @@
 ---
-title: Anmeldung in Cologne: the complete English guide (2026)
-description: How to register your address in Cologne: the two-week rule, walk-in days, the landlord form, who can register online, and what you get afterwards. Linked to official sources.
-updated: 2026-10-23
+title: Anmeldung in Cologne: the English guide (2026)
+description: Register your address in Cologne: the two-week rule, walk-in days, the landlord form, who can register online and what you get. Official sources linked.
+updated: 2026-10-24
 ---
 
 The **Anmeldung** is your address registration, and almost everything else waits for it: your tax ID, a bank account, your residence permit appointment. Here is how it works in Cologne, from the city's own pages.
@@ -42,7 +42,7 @@ Moving within Cologne is an **Ummeldung**: same rules, same landlord form for th
 
 Checked on 23 October 2026:
 
-- [Stadt Köln: Anmeldung Ihres Wohnsitzes](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes) (deadline, walk-in days, documents, online route, fee)
+- [Stadt Köln: Anmeldung Ihres Wohnsitzes](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1) (deadline, walk-in days, documents, online route, fee)
 - [Stadt Köln: Meldebescheinigung](https://www.stadt-koeln.de/service/produkte/00420/index.html) (free confirmation, €9 certificates)
 - [Stadt Köln: Kundenzentren](https://www.stadt-koeln.de/service/kundenzentren/index.html) (any centre, wherever you live)
 - [§ 17 BMG](https://www.gesetze-im-internet.de/bmg/__17.html) · [§ 19 BMG](https://www.gesetze-im-internet.de/bmg/__19.html) · [§ 54 BMG](https://www.gesetze-im-internet.de/bmg/__54.html)
