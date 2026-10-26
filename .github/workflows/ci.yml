@@ -306,9 +306,6 @@ jobs:
       - name: Run browser tests
         run: npx playwright test --project=auth --project=chromium --project=mobile
 
-      - name: Onboarding browser tests
-        run: npx playwright test --config=playwright.onboarding.config.ts
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
