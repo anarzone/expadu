@@ -1,86 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import ProcessingNoticeController from '@/actions/App/Http/Controllers/ProcessingNoticeController';
 import { writeJson } from '@/lib/reliable-write';
+import {
+    knownAiNotice,
+    readAiNotice,
+    subscribeAiNotice,
+} from './ai-notice-read';
+import type { AiNotice } from './ai-notice-read';
 
 /**
  * Composer answers a message with an AI service only with the person's say-so (owner,
  * 21 Oct 2026: sending is the consent, with the line under the box always in view).
  * The processor, its privacy notice and the versions a permit names come from the
  * server (GET privacy/processing/composer_assist); nothing about the provider is
- * written here. When the service is off, or the notice can't be read, nothing is
- * shown and no permit is sent: the request is read without AI.
+ * written here. When the service is off, nothing is shown and no permit is sent.
+ * Sending waits for the notice (readAiNotice): a message never goes without its
+ * permit while the notice could still be read.
  */
-export type AiNotice = {
-    processor_name: string;
-    processor_privacy_url: string | null;
-    notice_version: string;
-    provider_version: string;
-};
+export type { AiNotice } from './ai-notice-read';
+export { aiPermit } from './ai-notice-read';
 
-type Disclosure = Partial<AiNotice> & { available?: boolean };
+/** The notice's address, for a send that has to wait for it. */
+export const aiNoticeUrl = () =>
+    ProcessingNoticeController.url('composer_assist');
 
 /**
- * The notice, read once per page load (or once the tray first opens, `wanted`);
- * null while it's loading, off or unreadable.
+ * The notice, read once per page load (asked for once the tray opens, `wanted`,
+ * or earlier by its prefetch); null while it's loading, off or unreadable. A
+ * read that succeeds later, such as one a send waited for, shows it too.
  */
 export function useAiNotice(wanted = true): AiNotice | null {
-    const [notice, setNotice] = useState<AiNotice | null>(null);
-    const read = useRef(false);
+    const notice = useSyncExternalStore(
+        subscribeAiNotice,
+        knownAiNotice,
+        () => null,
+    );
 
     useEffect(() => {
-        if (!wanted || read.current) {
-            return;
+        if (wanted) {
+            void readAiNotice(aiNoticeUrl());
         }
-
-        read.current = true;
-        let live = true;
-
-        fetch(ProcessingNoticeController.url('composer_assist'), {
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-        })
-            .then((response) =>
-                response.ok ? (response.json() as Promise<Disclosure>) : null,
-            )
-            .then((disclosure) => {
-                if (
-                    live &&
-                    disclosure?.available &&
-                    disclosure.processor_name &&
-                    disclosure.notice_version &&
-                    disclosure.provider_version
-                ) {
-                    setNotice({
-                        processor_name: disclosure.processor_name,
-                        processor_privacy_url:
-                            disclosure.processor_privacy_url ?? null,
-                        notice_version: disclosure.notice_version,
-                        provider_version: disclosure.provider_version,
-                    });
-                }
-            })
-            .catch(() => undefined);
-
-        return () => {
-            live = false;
-        };
     }, [wanted]);
 
     return notice;
-}
-
-/** The permit a message sends: one request's say-so, for the notice the person saw. */
-export function aiPermit(notice: AiNotice | null): object {
-    return notice
-        ? {
-              processing: {
-                  consent: true,
-                  request_id: crypto.randomUUID(),
-                  notice_version: notice.notice_version,
-                  provider_version: notice.provider_version,
-              },
-          }
-        : {};
 }
 
 type Purpose = 'composer_assist' | 'composer_paperwork';
