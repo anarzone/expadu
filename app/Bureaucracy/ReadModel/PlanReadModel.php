@@ -24,6 +24,7 @@ use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
 use App\Models\User;
 use App\Privacy\ProcessingPurpose;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -33,7 +34,7 @@ final class PlanReadModel
     public function __construct(private PrepareAssessmentInput $inputs, private PersonAccess $access,
         private DiscoverProcesses $discover, private ProjectProcess $workflows, private ProjectPaperwork $paperwork,
         private QuestionPreview $questions, private ReviewedGuidance $guidance, private AssessmentRevision $revisions,
-        private NextAssessmentBoundary $boundaries) {}
+        private NextAssessmentBoundary $boundaries, private PlanCache $cache) {}
 
     /** Single authorised scalar projection. Reads never create offers, facts or process records. */
     public function for(User $actor, BureaucracyPerson $person, string $jurisdiction): array
@@ -46,6 +47,14 @@ final class PlanReadModel
                 : new ConflictHttpException(PersonAccess::STOPPED);
         }
 
+        // Kept for exactly what it reads (PlanCache): any write reads afresh.
+        $today = CarbonImmutable::now(config('bureaucracy_catalogue.jurisdictions.'.$jurisdiction.'.timezone', 'UTC'));
+
+        return $this->cache->remember($actor, $person, $jurisdiction, $today, fn (): array => $this->build($actor, $person, $jurisdiction));
+    }
+
+    private function build(User $actor, BureaucracyPerson $person, string $jurisdiction): array
+    {
         return DB::transaction(function () use ($actor, $person, $jurisdiction): array {
             $input = $this->inputs->for($actor, $person, $jurisdiction);
             $person = $person->fresh();
