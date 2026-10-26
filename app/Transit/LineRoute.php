@@ -14,12 +14,17 @@ use Illuminate\Support\Facades\DB;
  * static timetable's most common trip that way through here, with the town
  * each stop is in, the other trams that stop there, and how long it takes
  * end to end. Each stop's own times come from its own board (LineStopController).
- * Nothing when the timetable doesn't know the station or the line.
+ * Only today's trips count, so works show as they run (16 ends at Ubierring,
+ * 17 Oct to 2 Nov 2026); a line with none today has no ways. Nothing when
+ * the timetable doesn't know the station or the line.
  */
 class LineRoute
 {
     /** Under this share of a line's busiest pattern here, a pattern is left out. */
     private const RARE = 0.05;
+
+    /** Under this share of its busiest, a section elsewhere is a short working. */
+    private const SHORT_WORKING = 0.25;
 
     /** How far a KVB stop may be from the timetable's stop of its name. */
     private const SIGN_METRES = 250;
@@ -28,21 +33,24 @@ class LineRoute
         private readonly StationLinesMap $map,
         private readonly KvbApiService $kvb,
         private readonly TravelEstimator $distance,
+        private readonly GtfsDepartureService $gtfs,
     ) {}
 
     /**
      * @return array{
      *     line: string,
      *     mode: 'tram'|'rail',
-     *     ways: list<array{towards: string, minutes: int|null, stops: list<array{name: string, city: string|null, board: bool, here: bool, changes: list<string>}>}>
-     * }|null
+     *     ways: list<array{towards: string, minutes: int|null, stops: list<array{name: string, city: string|null, board: bool, here: bool, changes: list<string>}>}>,
+     *     elsewhere: list<array{from: string, to: string}>
+     * }|null  no ways when the line doesn't run here today
      */
     public function for(string $station, float $lat, float $lng, string $line): ?array
     {
-        $key = 'travel:line-route:v2:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.md5(mb_strtolower($station).'|'.round($lat, 4).'|'.round($lng, 4).'|'.$line);
+        $day = GtfsDepartureService::serviceDay();
+        $key = 'travel:line-route:v3:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.$day->format('Ymd').':'.md5(mb_strtolower($station).'|'.round($lat, 4).'|'.round($lng, 4).'|'.$line);
 
-        // Cached as scalars only (arrays), a day per timetable import.
-        return Cache::remember($key, 86_400, fn () => $this->build($station, $lat, $lng, $line));
+        // Cached as scalars only (arrays), for the service day (to 03:00).
+        return Cache::remember($key, $day->copy()->addDay()->addHours(3), fn () => $this->build($station, $lat, $lng, $line));
     }
 
     private function build(string $station, float $lat, float $lng, string $line): ?array
@@ -53,19 +61,27 @@ class LineRoute
         }
         $ids = $here->pluck('stop_id')->all();
 
-        // The line's ways through here: per direction its most common trip,
-        // leaving out rare runs (a diversion, a short working).
-        $patterns = DB::table('gtfs_stop_times as st')
+        // The line's ways through here today: per direction its most common
+        // trip, leaving out rare runs (a diversion, a short working).
+        $query = DB::table('gtfs_stop_times as st')
             ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
             ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
             ->whereIn('st.stop_id', $ids)
-            ->where('r.route_short_name', $line)
-            ->groupBy('r.route_type', 't.direction_id', 't.trip_headsign')
-            ->selectRaw('r.route_type as type, t.direction_id as direction, t.trip_headsign as headsign, count(*) as trips, min(t.trip_id) as trip_id')
-            ->get();
-        $mode = $patterns->isEmpty() ? null : StationLinesMap::mode((int) $patterns->first()->type);
+            ->where('r.route_short_name', $line);
+        $type = (clone $query)->value('r.route_type');
+        $mode = $type === null ? null : StationLinesMap::mode((int) $type);
         if ($mode === null || $mode === 'bus') {
             return null;
+        }
+        $this->gtfs->runningToday($query, 't');
+        $patterns = $query
+            ->groupBy('t.direction_id', 't.trip_headsign')
+            ->selectRaw('t.direction_id as direction, t.trip_headsign as headsign, count(*) as trips, min(t.trip_id) as trip_id')
+            ->get();
+        // Its sections today that don't come through here (16's Bonn part).
+        $elsewhere = $this->elsewhere($ids, $line);
+        if ($patterns->isEmpty()) {
+            return ['line' => $line, 'mode' => $mode, 'ways' => [], 'elsewhere' => $elsewhere];
         }
         $often = self::RARE * (int) $patterns->max('trips');
         $chosen = [];
@@ -107,7 +123,50 @@ class LineRoute
             ];
         }
 
-        return $ways === [] ? null : ['line' => $line, 'mode' => $mode, 'ways' => $ways];
+        return $ways === [] ? null : ['line' => $line, 'mode' => $mode, 'ways' => $ways, 'elsewhere' => $elsewhere];
+    }
+
+    /**
+     * The line's other sections today, end to end, each once whichever way
+     * it runs, leaving out short workings.
+     *
+     * @param  list<string>  $ids  the station's stops
+     * @return list<array{from: string, to: string}>
+     */
+    private function elsewhere(array $ids, string $line): array
+    {
+        $query = DB::table('gtfs_trips as t')
+            ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
+            ->where('r.route_short_name', $line)
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('gtfs_stop_times as st')
+                ->whereColumn('st.trip_id', 't.trip_id')
+                ->whereIn('st.stop_id', $ids));
+        $this->gtfs->runningToday($query, 't');
+        $patterns = $query
+            ->groupBy('t.direction_id', 't.trip_headsign')
+            ->selectRaw('count(*) as trips, min(t.trip_id) as trip_id')
+            ->get();
+        $often = self::SHORT_WORKING * (int) $patterns->max('trips');
+        $trips = $patterns->filter(fn (object $p) => $p->trips >= $often)->pluck('trip_id')->all();
+        if ($trips === []) {
+            return [];
+        }
+
+        $sections = [];
+        $runs = DB::table('gtfs_stop_times as st')
+            ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+            ->whereIn('st.trip_id', $trips)
+            ->orderBy('st.stop_sequence')
+            ->get(['st.trip_id', 's.stop_name'])
+            ->groupBy('trip_id');
+        foreach ($runs as $run) {
+            // Signs don't say the city: "Bf Deutz/Messe", not "Köln Bf Deutz/Messe".
+            $ends = array_map(fn (string $name) => (string) preg_replace('/^Köln[ -]/u', '', $name), [(string) $run->first()->stop_name, (string) $run->last()->stop_name]);
+            $key = implode('|', collect($ends)->sort()->all());
+            $sections[$key] ??= ['from' => $ends[0], 'to' => $ends[1]];
+        }
+
+        return array_values($sections);
     }
 
     /**
@@ -119,10 +178,12 @@ class LineRoute
      */
     private function changesAt(array $stopIds, string $line): array
     {
-        $rows = DB::table('gtfs_stop_times as st')
+        $query = DB::table('gtfs_stop_times as st')
             ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
             ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
-            ->whereIn('st.stop_id', $stopIds)
+            ->whereIn('st.stop_id', $stopIds);
+        $this->gtfs->runningToday($query, 't');
+        $rows = $query
             ->groupBy('st.stop_id', 'r.route_short_name', 'r.route_type')
             ->selectRaw('st.stop_id as stop_id, r.route_short_name as line, r.route_type as type, count(*) as trips')
             ->get()

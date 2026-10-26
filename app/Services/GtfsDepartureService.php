@@ -245,6 +245,8 @@ class GtfsDepartureService
                 return $this->fallbackDepartures($stopName);
             }
 
+            $departures = $this->toRealEnds($departures, $stops->keys()->map(fn ($id) => (string) $id)->all());
+
             // Get disrupted lines to mark them
             $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
 
@@ -377,11 +379,13 @@ class GtfsDepartureService
 
     /**
      * Static route context for a line + headsign at a stop: the GTFS travel
-     * direction (direction_id) and the next stops ridden after this one ("via").
+     * direction (direction_id), the next stops ridden after this one ("via")
+     * and, when today's runs of that headsign end elsewhere, where (`end`:
+     * live times keep 16's "Bonn-Bad Godesberg" while it ends at Ubierring).
      * Timetable-static, so cached long; a miss (renamed headsigns, no GTFS)
      * degrades to nulls and the board simply renders ungrouped.
      *
-     * @return array{direction: int|null, via: array<int, string>}
+     * @return array{direction: int|null, via: array<int, string>, end?: string|null}
      */
     public function routeContext(string $stopName, string $line, string $destination): array
     {
@@ -389,7 +393,8 @@ class GtfsDepartureService
             return ['direction' => null, 'via' => []];
         }
 
-        $cacheKey = 'gtfs_route_ctx_'.md5("{$stopName}|{$line}|{$destination}");
+        // Per service day: works change a line's run (16 ends at Ubierring).
+        $cacheKey = 'gtfs_route_ctx_v2_'.self::serviceDay()->format('Ymd').'_'.md5("{$stopName}|{$line}|{$destination}");
 
         return Cache::remember($cacheKey, 21600, function () use ($stopName, $line, $destination) {
             $stopIds = $this->stopsNamed($stopName)->pluck('stop_id');
@@ -398,10 +403,10 @@ class GtfsDepartureService
                 return ['direction' => null, 'via' => []];
             }
 
-            // A representative trip of this line through this stop whose
+            // A representative trip of this line through this stop today whose
             // headsign matches the live destination (exact, else fuzzy — TRIAS
             // destinations don't always equal GTFS headsigns verbatim).
-            $trip = DB::table('gtfs_stop_times as st')
+            $query = DB::table('gtfs_stop_times as st')
                 ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
                 ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
                 ->whereIn('st.stop_id', $stopIds)
@@ -409,7 +414,17 @@ class GtfsDepartureService
                 ->where(fn ($q) => $q
                     ->where('t.trip_headsign', $destination)
                     ->orWhere('t.trip_headsign', 'ILIKE', "%{$destination}%")
-                    ->orWhereRaw('? ILIKE \'%\' || t.trip_headsign || \'%\'', [$destination]))
+                    ->orWhereRaw('? ILIKE \'%\' || t.trip_headsign || \'%\'', [$destination]));
+            $this->runningToday($query, 't');
+            // Where today's runs of it most often end.
+            $lastStop = DB::table('gtfs_stop_times as st')
+                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+                ->whereIn('st.trip_id', (clone $query)->select('t.trip_id'))
+                ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
+                ->groupBy('s.stop_name')
+                ->orderByRaw('count(*) desc')
+                ->value('s.stop_name');
+            $trip = $query
                 ->orderByRaw('(t.trip_headsign = ?) DESC', [$destination])
                 ->select('t.trip_id', 't.direction_id', 'st.stop_sequence')
                 ->first();
@@ -433,6 +448,7 @@ class GtfsDepartureService
             return [
                 'direction' => $trip->direction_id !== null ? (int) $trip->direction_id : null,
                 'via' => $via,
+                'end' => self::realEnd($destination, $lastStop),
             ];
         });
     }
@@ -460,91 +476,6 @@ class GtfsDepartureService
                     'lng' => (float) $s->stop_lng,
                 ])
                 ->all();
-        });
-    }
-
-    /**
-     * Get ordered stop coordinates for a transit line between two stops.
-     * Used for drawing transit route segments on the map.
-     *
-     * @return array{line: string, color: string, stops: array<int, array{name: string, lat: float, lng: float}>, from_stop: string, to_stop: string}|null
-     */
-    public function getRouteStopSequence(string $line, string $fromStopName, string $toStopName): ?array
-    {
-        return Cache::remember("route_stops_{$line}_{$fromStopName}_{$toStopName}", 3600, function () use ($line, $fromStopName, $toStopName) {
-            // Find route for this line
-            $route = DB::table('gtfs_routes')
-                ->where('route_short_name', $line)
-                ->first();
-
-            if (! $route) {
-                return null;
-            }
-
-            // Find a trip that visits both stops
-            $trip = DB::table('gtfs_trips as t')
-                ->where('t.route_id', $route->route_id)
-                ->whereExists(function ($q) use ($fromStopName) {
-                    $q->select(DB::raw(1))
-                        ->from('gtfs_stop_times as st1')
-                        ->join('gtfs_stops as s1', 's1.stop_id', '=', 'st1.stop_id')
-                        ->whereColumn('st1.trip_id', 't.trip_id')
-                        ->where('s1.stop_name', 'ILIKE', "%{$fromStopName}%");
-                })
-                ->whereExists(function ($q) use ($toStopName) {
-                    $q->select(DB::raw(1))
-                        ->from('gtfs_stop_times as st2')
-                        ->join('gtfs_stops as s2', 's2.stop_id', '=', 'st2.stop_id')
-                        ->whereColumn('st2.trip_id', 't.trip_id')
-                        ->where('s2.stop_name', 'ILIKE', "%{$toStopName}%");
-                })
-                ->first();
-
-            if (! $trip) {
-                return null;
-            }
-
-            // Get all stops for this trip in sequence order
-            $allStops = DB::table('gtfs_stop_times as st')
-                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
-                ->where('st.trip_id', $trip->trip_id)
-                ->orderBy('st.stop_sequence')
-                ->get(['s.stop_name', 's.stop_lat', 's.stop_lng', 'st.stop_sequence']);
-
-            // Find the indices of from and to stops
-            $fromIdx = null;
-            $toIdx = null;
-            foreach ($allStops as $i => $stop) {
-                if ($fromIdx === null && str_contains(mb_strtolower($stop->stop_name), mb_strtolower($fromStopName))) {
-                    $fromIdx = $i;
-                }
-                if (str_contains(mb_strtolower($stop->stop_name), mb_strtolower($toStopName))) {
-                    $toIdx = $i;
-                }
-            }
-
-            if ($fromIdx === null || $toIdx === null || $fromIdx >= $toIdx) {
-                // Try reverse direction
-                if ($fromIdx !== null && $toIdx !== null && $fromIdx > $toIdx) {
-                    [$fromIdx, $toIdx] = [$toIdx, $fromIdx];
-                } else {
-                    return null;
-                }
-            }
-
-            $slice = $allStops->slice($fromIdx, $toIdx - $fromIdx + 1)->values();
-
-            return [
-                'line' => $line,
-                'color' => $route->route_color ? "#{$route->route_color}" : '#1A4CD4',
-                'from_stop' => $slice->first()->stop_name,
-                'to_stop' => $slice->last()->stop_name,
-                'stops' => $slice->map(fn ($s) => [
-                    'name' => $s->stop_name,
-                    'lat' => (float) $s->stop_lat,
-                    'lng' => (float) $s->stop_lng,
-                ])->all(),
-            ];
         });
     }
 
@@ -622,25 +553,97 @@ class GtfsDepartureService
     }
 
     /**
+     * Each run towards where it really ends. Works keep the usual headsign:
+     * line 16 said "Bonn-Bad Godesberg" while it ended at Ubierring (17 Oct
+     * to 2 Nov 2026). A headsign the run's last stop doesn't carry gives way
+     * to that stop's name, less "Köln". A run that ends here doesn't leave
+     * from here (line 9 ended at Neumarkt).
+     *
+     * @param  Collection<int, object>  $departures
+     * @param  list<string>  $here  the station's stop ids
+     * @return Collection<int, object>
+     */
+    private function toRealEnds(Collection $departures, array $here): Collection
+    {
+        $last = DB::table('gtfs_stop_times as st')
+            ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+            ->whereIn('st.trip_id', $departures->pluck('trip_id')->unique()->values())
+            ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
+            ->get(['st.trip_id', 'st.stop_id', 's.stop_name'])
+            ->keyBy('trip_id');
+        $departures = $departures->reject(fn (object $dep) => in_array((string) ($last[$dep->trip_id]->stop_id ?? ''), $here, true))->values();
+        $ends = $last->map(fn (object $row) => $row->stop_name);
+
+        return $departures->map(function (object $dep) use ($ends) {
+            $end = self::realEnd($dep->direction, $ends[$dep->trip_id] ?? null);
+            if ($end !== null) {
+                $dep->direction = $end;
+            }
+
+            return $dep;
+        });
+    }
+
+    /**
+     * The last stop's name, less "Köln", when the headsign isn't it; null
+     * when it is. Either may carry the district: "Braunsfeld Eupener Str."
+     * ends at "Köln Eupener Str.".
+     */
+    private static function realEnd(?string $headsign, ?string $lastStop): ?string
+    {
+        if ($lastStop === null || ! $headsign) {
+            return null;
+        }
+        $plain = fn (string $name) => mb_strtolower(trim((string) preg_replace(['/^Köln[ -]/u', '/[\s-]+/u'], ['', ' '], $name)));
+        $end = (string) preg_replace('/^Köln[ -]/u', '', $lastStop);
+
+        return str_contains($plain($end), $plain($headsign)) || str_contains($plain($headsign), $plain($end)) ? null : $end;
+    }
+
+    /**
+     * Today's service day: until 03:00 the night still belongs to yesterday's
+     * (KVB's works also start and end at about 03:00).
+     */
+    public static function serviceDay(): Carbon
+    {
+        return Carbon::now('Europe/Berlin')->subHours(3)->startOfDay();
+    }
+
+    /**
+     * Only the trips running on today's service day, so a line's route and
+     * stops follow the timetable for works (lines 16 and 17 split, 17 Oct to
+     * 2 Nov 2026) rather than the year's usual run. `$trips` is the query's
+     * name for gtfs_trips. A feed without a calendar isn't filtered.
+     */
+    public function runningToday(Builder $query, string $trips = 'gtfs_trips'): void
+    {
+        $hasCalendar = Cache::remember('gtfs_has_calendar:'.Cache::get(self::GENERATION_KEY, 0), 3600, fn () => DB::table('gtfs_calendar')->exists() || DB::table('gtfs_calendar_dates')->exists());
+        if ($hasCalendar) {
+            $day = self::serviceDay();
+            $this->runningOn($query, $day->format('Y-m-d'), strtolower($day->format('l')), $trips);
+        }
+    }
+
+    /**
      * Only trips whose service runs on the date: its weekday in the calendar,
      * less the dates taken out, plus the dates added.
      */
-    private function runningOn(Builder $query, string $date, string $dayColumn): void
+    private function runningOn(Builder $query, string $date, string $dayColumn, string $trips = 'gtfs_trips'): void
     {
         $removed = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id');
         $added = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id');
-        $query->where(function ($q) use ($dayColumn, $date, $removed, $added) {
-            $q->where(function ($normal) use ($dayColumn, $date, $removed) {
-                $normal->whereExists(function ($calendar) use ($dayColumn, $date) {
+        $query->where(function ($q) use ($dayColumn, $date, $removed, $added, $trips) {
+            $q->where(function ($normal) use ($dayColumn, $date, $removed, $trips) {
+                $normal->whereExists(function ($calendar) use ($dayColumn, $date, $trips) {
                     $calendar->select(DB::raw(1))->from('gtfs_calendar')
-                        ->whereColumn('gtfs_calendar.service_id', 'gtfs_trips.service_id')
+                        ->whereColumn('gtfs_calendar.service_id', "{$trips}.service_id")
                         ->where("gtfs_calendar.{$dayColumn}", true)
                         ->where('gtfs_calendar.start_date', '<=', $date)
                         ->where('gtfs_calendar.end_date', '>=', $date);
-                })->whereNotIn('gtfs_trips.service_id', $removed);
+                })->whereNotIn("{$trips}.service_id", $removed);
             });
             if ($added->isNotEmpty()) {
-                $q->orWhereIn('gtfs_trips.service_id', $added);
+                $q->orWhereIn("{$trips}.service_id", $added);
             }
         });
     }
