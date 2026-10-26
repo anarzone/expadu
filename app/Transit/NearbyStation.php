@@ -78,6 +78,8 @@ class NearbyStation
             'located' => [
                 'fresh' => $fresh,
                 'source' => $location->source->value,
+                // What it's near, when that's a place or area, not the person.
+                'label' => $location->label,
                 'at' => $location->at === null ? null : CarbonImmutable::createFromTimestamp($location->at, config('app.timezone'))->toIso8601String(),
             ],
         ];
