@@ -1,21 +1,21 @@
 ---
-title: Ausländerbehörde Cologne in English: which office, and how to get an appointment (2026)
-description: Cologne's immigration office is a central office plus nine district offices. Which one handles your permit, how to book, the 2026 changes in Kalk and Mülheim, and what to do before your permit runs out.
-updated: 2026-10-23
+title: Ausländerbehörde Köln in English: offices, booking
+description: Cologne's immigration office in English: which of the nine offices handles your permit, how to book, the Kalk and Mülheim changes, and extending a permit.
+updated: 2026-10-24
 ---
 
 Cologne's immigration office, the **Ausländeramt** (the law calls it the Ausländerbehörde), isn't one building. It's a central office in Kalk plus nine district offices. Which one you deal with depends on your permit and where you live. One rule covers all of them: **no walk-ins**. You need an appointment and an invitation letter from the office.
 
 ## Which office handles you
 
-| Your situation                                      | Where                                                                                                                             | How to get an appointment                                                            |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Blue Card, work permit, self-employment             | Arbeitsmigration unit, Dillenburger Straße 56–66, 51105 Köln (phone [0221 221-93381](tel:+4922122193381), Mon–Thu 8–15, Fri 8–12) | Send the Blue Card application online; the office then invites you                   |
-| Study                                               | Your district office (table below)                                                                                                | Book it online yourself, by postcode                                                 |
-| Humanitarian or legal grounds                       | Your district office                                                                                                              | Book it online yourself, by postcode                                                 |
-| Other residence permits and most settlement permits | Your district office                                                                                                              | Write by email, contact form or post                                                 |
-| EU citizen                                          | No visit needed: just register your address at a Kundenzentrum                                                                    | No appointment                                                                       |
-| Naturalisation (Einbürgerung)                       | Einbürgerung unit, Kalker Hauptstraße 247–273, 51103 Köln (phone [0221 221-29835](tel:+4922122129835), Mon–Fri 8–12)              | Contact form; the city says the wait for an appointment is currently about 12 months |
+| Your situation                                      | Where                                                                                                                                                   | How to get an appointment                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Blue Card, work permit, self-employment             | Arbeitsmigration unit, Dillenburger Straße 56–66, 51105 Köln (phone [0221 221-93381](tel:+4922122193381), Mon–Thu 8–15, Fri 8–12)                       | Send the Blue Card application online; the office then invites you                   |
+| Study                                               | Your district office (table below)                                                                                                                      | Book it online yourself, by postcode                                                 |
+| Humanitarian or legal grounds                       | Your district office                                                                                                                                    | Book it online yourself, by postcode                                                 |
+| Other residence permits and most settlement permits | Your district office                                                                                                                                    | Write by email, contact form or post                                                 |
+| EU citizen                                          | No visit needed: just [register your address](/blog/anmeldung-in-cologne-english-guide) at a [Kundenzentrum](/blog/kundenzentren-cologne-english-guide) | No appointment                                                                       |
+| Naturalisation (Einbürgerung)                       | Einbürgerung unit, Kalker Hauptstraße 247–273, 51103 Köln (phone [0221 221-29835](tel:+4922122129835), Mon–Fri 8–12)                                    | Contact form; the city says the wait for an appointment is currently about 12 months |
 
 ## Booking an appointment
 
@@ -56,5 +56,5 @@ Checked on 23 October 2026:
 - [Stadt Köln: online appointment booking](https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/74526/index.html)
 - [Stadt Köln: Arbeitsmigration](https://www.stadt-koeln.de/service/adressen/auslaenderangelegenheiten-arbeitsmigration) · [Blaue Karte EU](https://www.stadt-koeln.de/service/produkt/blaue-karte-eu-1)
 - [Stadt Köln: extending a residence permit](https://www.stadt-koeln.de/service/produkte/20320/index.html) · [online services](https://www.stadt-koeln.de/service/onlinedienste/auslaenderamt/index.html)
-- [Stadt Köln: EU citizens](https://www.stadt-koeln.de/service/produkt/einreise-und-aufenthalt-von-unionsbuergerinnen-eu-freizuegigkeit) · [Einbürgerung](https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband)
+- [Stadt Köln: EU citizens](https://www.stadt-koeln.de/service/produkt/einreise-und-aufenthalt-von-unionsbuergerinnen-eu-freizuegigkeit) · [Einbürgerung](https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband-1)
 - [§ 81 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__81.html)
