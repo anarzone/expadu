@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { GermanToggle, Headline } from '../headline';
-import type { HeadlineGerman } from '../headline';
+import type { HeadlineGerman, HeadlineItem } from '../headline';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
 import { TravelIcon } from '../travel-icon';
@@ -134,88 +134,56 @@ function troubleWords(t: Trouble) {
     };
 }
 
-type Major =
-    | { key: string; notice: Notice; trouble?: never }
-    | { key: string; trouble: Trouble; notice?: never };
+/** A major notice's words for the shared headline. */
+function noticeItem(notice: Notice): HeadlineItem & { key: string } {
+    const { headline, text, lang } = noticeWords(notice);
 
-/** One major, in the shared headline. */
-function MajorItem({ item, level }: { item: Major; level: 'h2' | 'h3' }) {
-    if (item.notice) {
-        const { headline, text, lang } = noticeWords(item.notice);
+    return {
+        key: notice.id,
+        lines: notice.lines,
+        title: headline,
+        text,
+        lang,
+        german: germanOf(notice),
+        source: sourceOf(notice),
+        chip:
+            lang === 'de' ? (
+                <InGermanChip fromKvb={fromKvb(notice)} />
+            ) : (
+                <Translated notice={notice} />
+            ),
+    };
+}
 
-        return (
-            <Headline
-                lines={item.notice.lines}
-                title={headline}
-                text={text}
-                lang={lang}
-                level={level}
-                german={germanOf(item.notice)}
-                source={sourceOf(item.notice)}
-                chip={
-                    lang === 'de' ? (
-                        <InGermanChip fromKvb={fromKvb(item.notice)} />
-                    ) : (
-                        <Translated notice={item.notice} />
-                    )
-                }
-            />
-        );
-    }
-
-    const words = troubleWords(item.trouble);
-
-    return (
-        <Headline
-            lines={[item.trouble.line]}
-            title={words.title}
-            text={words.text}
-            todo={words.todo}
-            level={level}
-            source="From the live times · no KVB notice"
-        />
-    );
+/** A live major's words for the shared headline. */
+function troubleItem(t: Trouble): HeadlineItem & { key: string } {
+    return {
+        key: `${t.line}|${t.dest}|${t.kind}`,
+        lines: [t.line],
+        ...troubleWords(t),
+        source: 'From the live times · no KVB notice',
+    };
 }
 
 /**
  * The one headline at the top of the board: a major problem on this stop's
  * lines, in English when a brief or checked translation passed, with the
- * notice's own words a tap away. Further majors wait behind "and N more".
+ * notice's own words a tap away. The others follow in its fold.
  */
 export function MajorHeadline({ station }: { station: Station }) {
-    const [more, setMore] = useState(false);
     const { notices, trouble } = majorsOf(station);
-    const items: Major[] = [
-        ...notices.map((notice) => ({ key: notice.id, notice })),
-        ...trouble.map((t) => ({
-            key: `${t.line}|${t.dest}|${t.kind}`,
-            trouble: t,
-        })),
+    const [first, ...more] = [
+        ...notices.map(noticeItem),
+        ...trouble.map(troubleItem),
     ];
 
-    if (!items.length) {
+    if (!first) {
         return null;
     }
 
     return (
         <section className="nearby-major" aria-label="Major disruption">
-            {(more ? items : items.slice(0, 1)).map((item, index) => (
-                <MajorItem
-                    key={item.key}
-                    item={item}
-                    level={index ? 'h3' : 'h2'}
-                />
-            ))}
-            {items.length > 1 ? (
-                <button
-                    type="button"
-                    className="tl-german nearby-major-more"
-                    aria-expanded={more}
-                    onClick={() => setMore(!more)}
-                >
-                    {more ? 'Show less' : `and ${items.length - 1} more`}
-                </button>
-            ) : null}
+            <Headline {...first} more={more} />
         </section>
     );
 }
