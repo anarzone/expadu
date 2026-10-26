@@ -3,8 +3,6 @@ import { vehicleOf, vehicleWord } from '@/components/travel/line-look';
 import { stopName } from '@/components/travel/stop-name';
 import type { IconName } from '@/components/ui/icon';
 import type { DayProjection } from '@/types/day';
-import { markLabel, marksFor } from './plan-card';
-import { slotSpan } from './types';
 import type { Plan, Workspace } from './types';
 
 /*
@@ -284,32 +282,6 @@ export function planningDay(workspace: Workspace, today: string): Plan | null {
 
 export const weekdayOf = (date: string) =>
     berlin(`${date}T12:00:00Z`, { weekday: 'long' });
-
-/** The planned day's items, its latest change marked where it happened. */
-export function planningFacts(plan: Plan, workspace: Workspace): DayFact[] {
-    const marks = marksFor(plan, workspace.changes);
-
-    return plan.slots.map((slot) => {
-        const mark = marks.get(slot.id);
-        const held = ['event', 'appointment', 'personal'].includes(slot.type);
-        const where = slot.location || slot.veedel || '';
-        const what = mark
-            ? mark.kind === 'moved'
-                ? `moved from ${(mark.from ?? '').split('–')[0]}`
-                : markLabel(mark).toLowerCase()
-            : 'in your plans';
-
-        return {
-            key: slot.id,
-            tile: mark ? 'is-changed' : held ? 'is-paper' : '',
-            icon: held ? 'calendar' : 'pin',
-            small: `${slotSpan(slot)} · ${what}`,
-            strong: where ? `${slot.name}, ${where}` : slot.name,
-            plan: plan.date,
-            changed: !!mark,
-        };
-    });
-}
 
 export type Starter = {
     key: string;

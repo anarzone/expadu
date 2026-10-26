@@ -17,7 +17,13 @@ export type Slot = {
     /** False for an event with no listed end: end_time is only the plan's length. */
     end_listed?: boolean;
     swappable: boolean;
-    travel_min_from_previous?: number;
+    travel_min_from_previous?: number | null;
+    /** False when the way in isn't estimated (a place with no map point). */
+    travel_known?: boolean;
+    /** The latest to leave the stop before, when there's travel into this one. */
+    leave_by?: string | null;
+    /** The planner's length of the visit ("~1h"), when known. */
+    duration_label?: string | null;
     summary?: string | null;
     saved?: boolean;
     available?: boolean;

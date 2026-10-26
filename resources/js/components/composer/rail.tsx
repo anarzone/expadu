@@ -9,10 +9,10 @@ import {
     comingUp,
     dayFacts,
     planningDay,
-    planningFacts,
     useComposerOrigin,
     weekdayOf,
 } from './day';
+import { daySummary } from './plan-card';
 import type { Surface } from './surface';
 import type { Workspace } from './types';
 import { askedConversations, conversationMeta } from './views';
@@ -199,9 +199,9 @@ function YourDay({
 
     const planning = planningDay(workspace, day.date);
     const showPlanning = planning && todayFor !== planning.date;
-    const facts = showPlanning
-        ? planningFacts(planning, workspace)
-        : dayFacts(day, paperwork, around);
+    // The day you're planning is one line (the day-plan canvas, A): its card
+    // is in the conversation, not listed again here.
+    const facts = showPlanning ? [] : dayFacts(day, paperwork, around);
     const later = showPlanning ? [] : comingUp(workspace, day.date);
 
     if (facts.length === 0 && later.length === 0 && !planning) {
@@ -228,6 +228,33 @@ function YourDay({
                         ? 'Show today'
                         : `Show ${weekdayOf(planning.date)}`}
                 </button>
+            )}
+            {showPlanning && (
+                <div className="composer-rail-plan">
+                    <span>
+                        {daySummary(planning)
+                            .split(' · ')
+                            .slice(0, 2)
+                            .join(' · ')}
+                    </span>
+                    <button
+                        type="button"
+                        className="composer-rail-switch"
+                        onClick={() => {
+                            const card = document.getElementById(
+                                'composer-current-plan',
+                            );
+
+                            if (card) {
+                                card.scrollIntoView({ block: 'start' });
+                            } else {
+                                onOpenPlan(planning.date);
+                            }
+                        }}
+                    >
+                        In this conversation ↓
+                    </button>
+                </div>
             )}
             {facts.map((fact) => (
                 <DayFactRow
