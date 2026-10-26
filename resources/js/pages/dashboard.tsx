@@ -49,7 +49,7 @@ export default function Today() {
         saved,
         continuation,
         welcome,
-        needs,
+        needsYou,
     } = usePage<{
         day?: DayProjection;
         weather?: Weather;
@@ -64,7 +64,7 @@ export default function Today() {
         continuation?: TodayContinuationData;
         welcome?: boolean;
         /** The engine's tier-1 and tier-2 items for today (Needs you). */
-        needs?: TodayNeeds;
+        needsYou?: TodayNeeds;
     }>().props;
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
@@ -175,7 +175,7 @@ export default function Today() {
                 surface (the mock's main). */}
             {welcome && <TodayWelcome />}
             <NeedsStrip
-                needs={needs}
+                needs={needsYou}
                 paperwork={
                     paperwork === undefined
                         ? undefined
