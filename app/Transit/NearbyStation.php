@@ -8,7 +8,9 @@ use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Services\TimetableService;
+use App\Services\VrsRealtimeService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Travel's Nearby: one station by boarding area, each line with where it goes
@@ -30,6 +32,16 @@ class NearbyStation
     private const LATER_SHOWN = 2;
 
     private const WALK_KMH = 4.5;
+
+    /**
+     * A built station is kept whole: fresh this many seconds, then served
+     * (its gone runs dropped, marked stale) while it's rebuilt after the
+     * response, for up to the second. A read of a kept one is a cache read.
+     */
+    private const KEPT_SECONDS = [15, 900];
+
+    /** A kept station this old says its times are stale. */
+    private const KEPT_STALE_SECONDS = 90;
 
     /** Cancelled runs one way in the next hour that put a line in trouble (and at least half). */
     private const TROUBLE_CANCELLED = 2;
@@ -108,31 +120,110 @@ class NearbyStation
     }
 
     /**
-     * Builds a station's boards when none is kept, so its first view is
-     * ready (a favourite, after Travel's response).
+     * Builds a station when none is kept, so its first view is a cache read
+     * (a favourite or the place you are, after a page's response).
      */
     public function warm(string $name): void
     {
-        if (! $this->ready($name)) {
+        if (! Cache::has(self::keptKey($name))) {
             $this->named($name);
         }
     }
 
-    /** Whether every one of a station's boards is kept (fresh or not), so it reads in ~100 ms. */
+    /**
+     * Whether a station reads without asking live services: kept whole, or
+     * every one of its boards kept (fresh or not, ~25–80 ms to assemble).
+     */
     public function ready(string $name): bool
     {
+        if (Cache::has(self::keptKey($name))) {
+            return true;
+        }
         $points = $this->kvb->stationPoints($name);
 
         return $points !== [] && collect($this->areas($points))->every(fn (array $a) => $this->timetable->hasBoard((float) $a['lat'], (float) $a['lng']));
     }
 
     /**
+     * A kept station as it is now, never built or refreshed here (Today's
+     * Check departures; under a millisecond to a few); null when none is kept.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function kept(string $name): ?array
+    {
+        $station = Cache::get(self::keptKey($name));
+        if (! is_array($station)) {
+            return null;
+        }
+        $this->reading();
+
+        return self::rolledForward($station);
+    }
+
+    /**
      * A station by its KVB name (the stop picker, a favourite, `?stop=`).
-     * Null when no KVB station has that name.
+     * Null when no KVB station has that name. Kept whole (KEPT_SECONDS).
      *
      * @return array<string, mixed>|null
      */
     public function named(string $name): ?array
+    {
+        $this->reading();
+        $station = Cache::flexible(self::keptKey($name), self::KEPT_SECONDS, fn () => $this->build($name));
+
+        return is_array($station) ? self::rolledForward($station) : null;
+    }
+
+    /** Someone is reading departures: DELFI's cancellations and VRS's delays are kept fresh while they are. */
+    private function reading(): void
+    {
+        $this->delfi->markWanted();
+        app(VrsRealtimeService::class)->markWanted();
+    }
+
+    private static function keptKey(string $name): string
+    {
+        return 'nearby_station:v1:'.Cache::get(GtfsDepartureService::GENERATION_KEY, 0).':'.md5(mb_strtolower(trim($name)));
+    }
+
+    /**
+     * A kept station as of now: the runs already gone dropped (a cancelled one
+     * stays its ten minutes), each way's next being its first left, and an
+     * old one said to be stale.
+     *
+     * @param  array<string, mixed>  $station
+     * @return array<string, mixed>
+     */
+    private static function rolledForward(array $station): array
+    {
+        $now = time();
+        $built = strtotime((string) ($station['generated_at'] ?? '')) ?: $now;
+        if ($now - $built < 5) {
+            return $station;
+        }
+        $keep = fn (?array $run) => $run !== null && (strtotime((string) $run['at']) >= $now - 30 || ($run['cancelled'] && strtotime((string) $run['at']) >= $now - 600));
+        foreach ($station['lines'] ?? [] as $l => $line) {
+            foreach ($line['dirs'] ?? [] as $d => $dir) {
+                $runs = array_values(array_filter([$dir['next'] ?? null, ...($dir['later'] ?? [])], $keep));
+                foreach ($runs as $r => $run) {
+                    $runs[$r]['minutes'] = max(0, intdiv(strtotime((string) $run['at']) - $now, 60));
+                }
+                $station['lines'][$l]['dirs'][$d]['next'] = $runs[0] ?? null;
+                $station['lines'][$l]['dirs'][$d]['later'] = array_slice($runs, 1);
+            }
+        }
+        if ($now - $built > self::KEPT_STALE_SECONDS) {
+            $station['is_stale'] = true;
+        }
+
+        return $station;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function build(string $name): ?array
     {
         $points = $this->kvb->stationPoints($name);
         if ($points === []) {
@@ -161,8 +252,6 @@ class NearbyStation
             }
         }
 
-        // Someone's looking: DELFI's cancellations are read while they are.
-        $this->delfi->markWanted();
         [$rows, $credited] = $this->withCancellations($name, $rows, $areas);
 
         return [
