@@ -12,6 +12,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\LocationConfirmController;
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\TasteProfileController;
+use App\Http\Controllers\Api\TodayNeedSignalController;
 use App\Http\Controllers\Api\TrackEventController;
 use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\EmailConfirmationController;
@@ -28,6 +29,8 @@ use Inertia\Inertia;
 Route::post('api/track', TrackEventController::class)->name('api.track');
 // Personalisation ledger: impressions and detail views only (opt-in; dropped otherwise).
 Route::post('api/signals', SignalController::class)->middleware('throttle:signals')->name('api.signals');
+// Today's "Needs you": shown, tapped, dismissed, kept, undone (TodayNeeds, SignalRecorder::need).
+Route::post('api/signals/needs', TodayNeedSignalController::class)->middleware('throttle:signals')->name('api.signals.needs');
 // The person's taste profile: read, edit or delete it (opt-in only).
 Route::middleware('throttle:taste-profile')->controller(TasteProfileController::class)->group(function () {
     Route::get('api/taste-profile', 'show')->name('api.taste-profile.show');

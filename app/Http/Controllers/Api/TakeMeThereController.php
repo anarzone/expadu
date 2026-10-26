@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TravelEstimator;
 use App\Http\Controllers\Controller;
 use App\Models\Gtfs\GtfsStop;
 use App\Models\JourneyRecent;
+use App\Models\User;
+use App\Personalisation\PersonalisationWording;
+use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Services\KvbApiService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
@@ -205,6 +210,8 @@ class TakeMeThereController extends Controller
         );
         $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), array_values($result->journeys)), $from, $to) : null;
 
+        $this->learn($user, $validated, $from, $to, $journeys);
+
         return response()->json([
             'source' => $result->source,
             'journeys' => $journeys,
@@ -350,5 +357,42 @@ class TakeMeThereController extends Controller
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
         return $r * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    /**
+     * What they looked up in Travel, for personalisation with their opt-in (SignalRecorder::transit):
+     * a KVB station they picked as where they go or start, and the lines of the way from one they
+     * picked; never where they are, a saved place (Home, Work) or an address.
+     *
+     * @param  array<string, mixed>  $validated
+     * @param  list<array<string, mixed>>  $journeys
+     */
+    private function learn(User $user, array $validated, GeoPoint $from, GeoPoint $to, array $journeys): void
+    {
+        if (! PersonalisationWording::covers($user, 2)) {
+            return;
+        }
+        $own = $user->places()->pluck('name')->map(fn (mixed $name): string => mb_strtolower(trim((string) $name)))->all();
+        $station = function (mixed $name, GeoPoint $at) use ($own): ?string {
+            $name = is_string($name) ? trim($name) : '';
+            if ($name === '' || in_array(mb_strtolower($name), $own, true)) {
+                return null;
+            }
+
+            return collect(app(KvbApiService::class)->stationPoints($name))
+                ->contains(fn (array $stop): bool => (new TravelEstimator)->haversineKm($at->lat, $at->lng, (float) $stop['lat'], (float) $stop['lng']) <= 0.3) ? $name : null;
+        };
+        $signals = app(SignalRecorder::class);
+        $where = $station($validated['to_name'] ?? null, $to);
+        if ($where !== null) {
+            $signals->transit($user, SignalItemType::Stop, $where);
+        }
+        $start = isset($validated['from_lat'], $validated['from_name']) ? $station($validated['from_name'], $from) : null;
+        if ($start !== null) {
+            $signals->transit($user, SignalItemType::Stop, $start);
+            foreach (collect($journeys[0]['legs'] ?? [])->pluck('line')->filter(fn (mixed $line): bool => is_string($line) && $line !== '')->unique()->take(3) as $line) {
+                $signals->transit($user, SignalItemType::Line, $line);
+            }
+        }
     }
 }

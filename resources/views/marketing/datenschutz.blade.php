@@ -189,13 +189,24 @@
 
     <h3>Personalisation (opt-in)</h3>
     <p>
-        If you turn on personalisation in your settings, we learn from what you do in the app,
-        such as which places and events you open, save, travel to or turn down, to rank
-        suggestions for you (Art. 6(1)(a) GDPR). This is stored under a pseudonymous key, never
-        includes your location or anything you type, and individual records are deleted after 90
-        days. With it on, Composer may also use what you like and your plans for today and
-        tomorrow to answer you, as described under AI features. Turning
-        personalisation off deletes everything learned. It is off unless you turn it on.
+        If you turn on personalisation in your settings, we learn from what you do in the app:
+        which places, events, Today alerts, Travel stops and lines and Composer topics you open,
+        search, save, travel to, skip or dismiss, to rank suggestions and put Today in order for
+        you (Art. 6(1)(a) GDPR). From Composer we keep only the kind of place and the
+        neighbourhood it looked up, never what you wrote; from Travel only the stops and lines
+        you picked, never where you are, your Home or an address; nothing from Paperwork. To put
+        Today in order, what was learned (the kinds of places and events, the neighbourhoods and
+        times of day you lean to, and what you looked at recently) and today's events and open
+        places are sent each time to Anthropic PBC (Claude Haiku), an AI service that doesn't use
+        them to train its models; its reply is removed after 15 minutes, and a record that it was
+        sent, without what it said, after 30 days. What we learn is stored under a pseudonymous
+        key, never includes your location or anything you type, and individual records are
+        deleted after 90 days. With it on, Composer may also use what you like and your plans
+        for today and tomorrow to answer you, as described under AI features. Turning
+        personalisation off deletes everything learned and stops all of this at once. It is off
+        unless you turn it on; if you turned it on before 26 October 2026, it keeps learning only
+        from the places and events you open, save, travel to or turn down until you turn it on
+        again.
     </p>
 
     <h3>“Good for laptop work?” answers</h3>

@@ -88,9 +88,11 @@ final class DayBriefs
 
     /**
      * What a brief says, most important first: each item's own line, the facts it comes from (all a
-     * written line may use), whether it's theirs only (never sent to an AI) and its order.
+     * written line may use), whether it's theirs only (never sent to an AI) and its order; and, for
+     * Today's "Needs you" (TodayNeeds), its push type, severity, a short why, a link and what it's
+     * about (never shown). One list for the brief, push and Today.
      *
-     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int}>
+     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int, type: ?string, severity: string, why: ?string, link: string, about: string, at: ?string}>
      */
     public function items(User $user, CarbonImmutable $day, string $kind): array
     {
@@ -98,17 +100,23 @@ final class DayBriefs
         $today = $day->isSameDay(CarbonImmutable::now('Europe/Berlin'));
         $actions = $this->bus->topK($user->id, 50);
         $items = [];
-        $add = function (string $kind, string $text, string $facts, bool $own, int $rank) use (&$items): void {
-            $items[] = ['id' => 'i'.(count($items) + 1), 'kind' => $kind, 'text' => $text, 'facts' => $facts, 'own' => $own, 'rank' => $rank];
+        $add = function (string $kind, string $text, string $facts, bool $own, int $rank, array $more = []) use (&$items): void {
+            $items[] = ['id' => 'i'.(count($items) + 1), 'kind' => $kind, 'text' => $text, 'facts' => $facts, 'own' => $own, 'rank' => $rank,
+                'type' => $more['type'] ?? null, 'severity' => $more['severity'] ?? 'minor', 'why' => $more['why'] ?? null,
+                'link' => $more['link'] ?? '/dashboard', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
         };
+        $journey = fn (string $activity): string => '/timetable?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
 
         // What threatens the day: their planned ways changing; on the day itself, live disruptions on their lines and delays.
         foreach (PlannedTrip::query()->where('user_id', $user->id)->whereDate('date', $day->toDateString())->orderBy('depart_at')->get() as $trip) {
             $time = $trip->depart_at->setTimezone('Europe/Berlin')->format('H:i');
             $change = ['cancelled' => 'is cancelled', 'late' => 'is running late', 'notice' => 'has a KVB notice'][$trip->alerted_kind] ?? null;
+            $way = ['link' => $journey((string) $trip->target_id), 'about' => "trip:{$trip->id}", 'at' => $trip->depart_at->setTimezone('Europe/Berlin')->toIso8601String()];
             $change !== null
-                ? $add('trip_change', "Your {$time} way to {$trip->title} {$change}.", "Planned way to \"{$trip->title}\", leaving {$time}, {$change}.", true, self::RANK['risk'] * 10000)
-                : $add('trip', "{$time} leave for {$trip->title}.", "Planned way to \"{$trip->title}\", leaving {$time}.", true, self::RANK['timed'] * 10000 + self::minutes($time));
+                ? $add('trip_change', "Your {$time} way to {$trip->title} {$change}.", "Planned way to \"{$trip->title}\", leaving {$time}, {$change}.", true, self::RANK['risk'] * 10000,
+                    [...$way, 'type' => 'planned_trip_change', 'severity' => ['cancelled' => 'critical', 'late' => 'major'][$trip->alerted_kind] ?? 'moderate'])
+                : $add('trip', "{$time} leave for {$trip->title}.", "Planned way to \"{$trip->title}\", leaving {$time}.", true, self::RANK['timed'] * 10000 + self::minutes($time),
+                    [...$way, 'type' => 'planned_trip_leave']);
         }
         if ($today) {
             foreach ($actions as $action) {
@@ -116,26 +124,33 @@ final class DayBriefs
                 if ($action->type === 'transit_disruption' && ($action->payload['on_user_line'] ?? false) === true && $lines !== '') {
                     $stops = implode(', ', array_slice((array) ($action->payload['stops_affected'] ?? []), 0, 2));
                     $text = "Line {$lines} disrupted".($stops !== '' ? " at {$stops}" : '').'.';
-                    $add('disruption', $text, "KVB disruption on line {$lines}".($stops !== '' ? ", stops affected: {$stops}" : '').', one of their lines.', false, self::RANK['risk'] * 10000);
+                    $add('disruption', $text, "KVB disruption on line {$lines}".($stops !== '' ? ", stops affected: {$stops}" : '').', one of their lines.', false, self::RANK['risk'] * 10000,
+                        ['type' => 'transit_disruption', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/timetable', 'about' => $action->actionKey]);
                 } elseif ($action->type === 'transit_delay' && is_string($action->payload['line'] ?? null) && (int) ($action->payload['delay_min'] ?? 0) > 0) {
                     $delay = (int) $action->payload['delay_min'];
                     $stop = (string) ($action->payload['stop_id'] ?? '');
                     $add('delay', "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').'.',
-                        "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').', one of their lines.', false, self::RANK['risk'] * 10000 + 1);
+                        "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').', one of their lines.', false, self::RANK['risk'] * 10000 + 1,
+                        ['type' => 'transit_delay', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/timetable', 'about' => $action->actionKey]);
                 } elseif ($action->type === 'weather_alert' && is_string($action->payload['alert']['summary'] ?? null)) {
-                    $add('weather', $action->payload['alert']['summary'].'.', 'Weather today: '.$action->payload['alert']['summary'].'.', false, self::RANK['weather'] * 10000);
+                    $add('weather', $action->payload['alert']['summary'].'.', 'Weather today: '.$action->payload['alert']['summary'].'.', false, self::RANK['weather'] * 10000,
+                        ['type' => 'weather_alert', 'severity' => $action->severity, 'link' => '/timetable', 'about' => $action->actionKey]);
                 }
             }
         }
 
         // What threatens the stops of their plan (PlanRisks): closed, weather while outdoors, a disruption or delay near one.
         foreach ($this->planRisks->for($user, $day) as $risk) {
-            $add('plan_'.$risk['kind'], $risk['text'], $risk['facts'], true, self::RANK['risk'] * 10000 + 2 + self::minutes($risk['start']));
+            $add('plan_'.$risk['kind'], $risk['text'], $risk['facts'], true, self::RANK['risk'] * 10000 + 2 + self::minutes($risk['start']), [
+                'type' => ['closed' => 'plan_closed', 'disruption' => 'plan_disruption', 'delay' => 'plan_delay'][$risk['kind']] ?? 'plan_weather',
+                'severity' => $risk['severity'], 'why' => "In your plan at {$risk['start']}.", 'link' => $journey($risk['slot']), 'about' => "plan:{$risk['slot']}:{$risk['kind']}",
+                'at' => $risk['at']->toIso8601String()]);
         }
 
         // The day in order: events they set a reminder for or joined, and their plan.
         foreach ($this->events($user, $day) as [$title, $start, $venue]) {
-            $add('event', "{$start} {$title}".($venue !== '' ? " at {$venue}" : '').'.', "An event they're going to: \"{$title}\", starting {$start}".($venue !== '' ? " at {$venue}" : '').'.', true, self::RANK['timed'] * 10000 + self::minutes($start));
+            $add('event', "{$start} {$title}".($venue !== '' ? " at {$venue}" : '').'.', "An event they're going to: \"{$title}\", starting {$start}".($venue !== '' ? " at {$venue}" : '').'.', true, self::RANK['timed'] * 10000 + self::minutes($start),
+                ['type' => 'event_reminder', 'link' => '/events']);
         }
         $stops = collect($this->workspace->plan($user, $day->toDateString())['slots'] ?? [])->sortBy('start_at')->values();
         if ($stops->isNotEmpty()) {
@@ -148,17 +163,18 @@ final class DayBriefs
         // Paperwork only as needing attention, nothing of what; overdue or critical, it leads the brief
         // (coordinator, 26 Oct 2026).
         $commitments = collect($this->importance->for($user, $day)['commitments'])->pluck('kind');
+        $paperwork = ['type' => 'bureaucracy_task', 'link' => '/bureaucracy', 'about' => 'paperwork'];
         if ($commitments->contains('paperwork_urgent')) {
-            $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, -1);
+            $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, -1, [...$paperwork, 'severity' => 'critical']);
         } elseif ($commitments->contains('paperwork') || collect($actions)->contains(fn (ScoredAction $a): bool => $a->type === 'bureaucracy_task')) {
-            $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, self::RANK['paperwork'] * 10000);
+            $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, self::RANK['paperwork'] * 10000, [...$paperwork, 'severity' => 'moderate']);
         }
 
         // The evening before: shops closed tomorrow.
         $holidays = app(GermanHolidayService::class);
         if ($kind === self::EVENING && ($day->isSunday() || $holidays->isHoliday($day))) {
             $why = $holidays->getHolidayName($day) ?? 'Sunday';
-            $add('shops', "Shops are closed tomorrow ({$why}).", "Shops are closed tomorrow: {$why}.", false, self::RANK['shops'] * 10000);
+            $add('shops', "Shops are closed tomorrow ({$why}).", "Shops are closed tomorrow: {$why}.", false, self::RANK['shops'] * 10000, ['type' => 'market_closure']);
         }
 
         usort($items, fn (array $a, array $b): int => $a['rank'] <=> $b['rank']);
