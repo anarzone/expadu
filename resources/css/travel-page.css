@@ -2892,6 +2892,76 @@
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
+:where(.travel-page) .plan-loading-line {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-medium);
+}
+/* Bars in the words' place: a line's own height holds them, so the results
+   take the same room when they come in. */
+:where(.travel-page) .plan-skel {
+    display: inline-block;
+    width: 100%;
+    max-width: 100%;
+    height: 0.8em;
+    vertical-align: -0.05em;
+    border-radius: var(--radius-pill);
+    background:
+        linear-gradient(
+                90deg,
+                transparent 30%,
+                color-mix(in srgb, var(--color-bg-surface) 70%, transparent) 50%,
+                transparent 70%
+            )
+            0 0 / 300% 100%,
+        color-mix(in srgb, var(--color-text) 8%, transparent);
+    animation: plan-skel 1.6s var(--ease-standard) infinite;
+}
+:where(.travel-page) .plan-skel.is-chip {
+    height: 24px;
+    vertical-align: middle;
+}
+:where(.travel-page) .plan-skel.is-badge {
+    height: 28px;
+    border-radius: var(--radius-sm);
+}
+:where(.travel-page) .plan-loading .plan-checks-toggle {
+    cursor: default;
+}
+:where(.travel-page) .plan-loading .plan-option-pick {
+    cursor: default;
+}
+/* The checks' own chips, their words soft while they're asked. */
+.travel-page .tl-chip.plan-skel-chip {
+    background:
+        linear-gradient(
+                90deg,
+                transparent 30%,
+                color-mix(in srgb, var(--color-bg-surface) 70%, transparent) 50%,
+                transparent 70%
+            )
+            0 0 / 300% 100%,
+        var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    animation: plan-skel 1.6s var(--ease-standard) infinite;
+}
+@keyframes plan-skel {
+    from {
+        background-position:
+            100% 0,
+            0 0;
+    }
+    to {
+        background-position:
+            0% 0,
+            0 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(.travel-page) .plan-skel,
+    .travel-page .tl-chip.plan-skel-chip {
+        animation: none;
+    }
+}
 :where(.travel-page) .plan-checks {
     margin-bottom: var(--space-12);
     border-block: 1px solid var(--color-border);
