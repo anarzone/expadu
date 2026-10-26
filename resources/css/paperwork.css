@@ -4659,9 +4659,7 @@
             .journey-popover,
             .toast,
             .discovery-card,
-            .timeline-paper,
             .answer-plan,
-            .inline-confirmed-plan,
             .replacement-search,
             .replacement-categories,
             .replacement-card,
@@ -4674,7 +4672,6 @@
 
     & #event-calendar-panel,
     & dialog#sheet,
-    &.studio #studio-form,
     & .date-picker form,
     & .form-field :is(input, select, textarea),
     & .case-time-fields input {
@@ -4719,7 +4716,6 @@
     }
 
     /* Composer retains its layout and cyan/purple meaning; only the base is shared. */
-    & #workspace-panel,
     & .replacement-footer {
         background-color: var(--paper);
     }

@@ -2227,111 +2227,6 @@
         display: block;
         color: var(--color-text);
     }
-    .timeline-paper {
-        background: var(--color-bg-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-xl);
-        min-width: 0;
-    }
-    .plan-timeline {
-        list-style: none;
-        padding: 18px 26px 0;
-        margin: 0;
-    }
-    .plan-timeline li {
-        display: grid;
-        grid-template-columns: 54px 32px minmax(0, 1fr);
-        gap: 12px;
-        position: relative;
-        padding-bottom: 16px;
-    }
-    .timeline-time {
-        display: flex;
-        flex-direction: column;
-        font-size: var(--text-control);
-    }
-    .timeline-time strong {
-        font-weight: var(--weight-semibold);
-    }
-    .timeline-time span {
-        color: var(--color-text-soft);
-        font-size: var(--text-caption);
-        margin-top: 4px;
-    }
-    .timeline-node {
-        background: var(--color-select-bg);
-        color: var(--color-select-text);
-        width: 32px;
-        height: 32px;
-        border-radius: var(--radius-md);
-        display: grid;
-        place-items: center;
-    }
-    .timeline-node svg {
-        width: 18px;
-        height: 18px;
-    }
-    .plan-timeline li:not(:last-child):before {
-        content: '';
-        position: absolute;
-        top: 40px;
-        bottom: 7px;
-        left: 82px;
-        border-left: 1px dashed var(--color-border);
-    }
-    .fixed-item .timeline-node {
-        background: var(--color-paper-bg-quiet);
-        color: var(--color-paper-text);
-    }
-    .timeline-content {
-        padding-top: 1px;
-        min-width: 0;
-    }
-    .timeline-content h3 {
-        font-size: var(--text-section);
-    }
-    .timeline-content > p {
-        color: var(--color-text-soft);
-        font-size: var(--text-caption);
-        margin-top: 4px;
-    }
-    .fixed-label,
-    .changed-label {
-        display: block;
-        color: var(--color-paper-text);
-        font-size: var(--text-micro);
-        margin-bottom: 5px;
-    }
-    .changed-label {
-        color: var(--color-select-text);
-    }
-    .timeline-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px 15px;
-        margin-top: 2px;
-        align-items: flex-start;
-    }
-    .timeline-actions .plain-button {
-        font-size: var(--text-caption);
-        min-height: 36px;
-    }
-    .travel-note {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 18px 26px;
-        color: var(--color-text-soft);
-        border-top: 1px dashed var(--color-border);
-        font-size: var(--text-caption);
-    }
-    .travel-note svg {
-        width: 19px;
-        height: 19px;
-    }
-    .travel-note span {
-        font-size: var(--text-micro);
-    }
     .answer-actions {
         display: flex;
         align-items: center;
@@ -2506,40 +2401,6 @@
             width: 20px;
             height: 20px;
         }
-        .plan-timeline {
-            padding: 24px 17px 0;
-        }
-        .plan-timeline li {
-            grid-template-columns: 43px 26px minmax(0, 1fr);
-            gap: 9px;
-            padding-bottom: 26px;
-        }
-        .timeline-node {
-            width: 26px;
-            height: 28px;
-            border-radius: var(--radius-sm);
-        }
-        .timeline-node svg {
-            width: 16px;
-            height: 16px;
-        }
-        .plan-timeline li:not(:last-child):before {
-            left: 64px;
-            top: 35px;
-        }
-        .timeline-time {
-            font-size: var(--text-small);
-        }
-        .timeline-time span {
-            font-size: var(--text-micro);
-        }
-        .timeline-content h3 {
-            font-size: var(--text-section);
-        }
-        .timeline-actions {
-            gap: 2px 12px;
-        }
-        .travel-note,
         .plan-reminders {
             padding: 16px 17px;
         }
@@ -2626,30 +2487,6 @@
         padding-top: 24px;
         max-width: 850px;
         margin: 0 auto;
-    }
-    &.composer-page .timeline-actions .plain-button {
-        min-height: 40px;
-    }
-    &.composer-page .plan-timeline li:last-child {
-        padding-bottom: 18px;
-    }
-    @media (max-width: 700px) {
-        &.composer-page .plan-timeline {
-            padding: 16px 16px 0;
-        }
-        &.composer-page .plan-timeline li {
-            padding-bottom: 14px;
-        }
-        &.composer-page .plan-timeline li:last-child {
-            padding-bottom: 16px;
-        }
-        &.composer-page .timeline-actions {
-            column-gap: 12px;
-            row-gap: 0;
-        }
-        &.composer-page .timeline-actions .plain-button {
-            min-height: 44px;
-        }
     }
 
     /* Replacement is a focused choice inside the Composer workspace. */
@@ -3008,16 +2845,6 @@
         text-decoration: underline;
         text-underline-offset: 4px;
     }
-    &.composer-page .plan-management {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 18px;
-        padding: 8px 18px 14px;
-    }
-    &.composer-page .plan-management button {
-        min-height: 44px;
-    }
     &.composer-page .preview-item-icon {
         display: grid;
         place-items: center;
@@ -3165,9 +2992,6 @@
     @media (max-width: 700px) {
         &.composer-page .service-card {
             padding: 16px;
-        }
-        &.composer-page .timeline-content {
-            min-width: 0;
         }
     }
     &.composer-page .preview-image {
@@ -3388,30 +3212,6 @@
     .chat-user .chat-speaker {
         justify-content: flex-end;
     }
-    .chat-plan-label {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin: 8px 0;
-        color: var(--color-text);
-        font-size: var(--text-caption);
-    }
-    .chat-plan-label > span {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-    .chat-plan-label svg {
-        width: 16px;
-        height: 16px;
-    }
-    .chat-plan-label small {
-        font-size: var(--text-micro);
-    }
-    .chat-live-plan .timeline-paper {
-        margin: 0;
-    }
     .history-readonly {
         font-size: var(--text-micro);
         color: var(--color-text-soft);
@@ -3422,9 +3222,6 @@
     }
     .history-view .chat-entry button {
         pointer-events: none;
-    }
-    &.composer-page .chat-live-plan .plan-timeline li {
-        scroll-margin-top: 130px;
     }
     @media (max-width: 700px) {
         .chat-feed {
@@ -3859,19 +3656,6 @@
         width: 18px;
         height: 18px;
         color: var(--color-text-soft);
-    }
-    /* A change comes to you (owner, 18 Oct 2026, Composer review canvas board
-       9): the reply carries it, old → new, with its Undo; the plan marks the
-       item where it happened. */
-    &.composer-page .plan-timeline li.is-changed {
-        margin-inline: -12px;
-        padding-inline: 12px;
-        border-radius: var(--radius-lg);
-        background: var(--color-select-bg);
-    }
-    &.composer-page .plan-timeline li.is-changed .changed-label {
-        font-size: var(--text-caption);
-        font-weight: var(--weight-semibold);
     }
 
     /* ── composer-studio/place-ideas.css ── */
