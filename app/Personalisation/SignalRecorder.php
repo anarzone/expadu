@@ -4,6 +4,7 @@ namespace App\Personalisation;
 
 use App\Composer\TasteSignals;
 use App\Enums\SpotFeedbackState;
+use App\Jobs\RankToday;
 use App\Models\Spot;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -172,6 +173,48 @@ final class SignalRecorder
         $this->write($user, array_values($unique));
     }
 
+    /**
+     * A kind of place or event Composer looked up for them (search_places, search_events,
+     * suggest_for_day, plan_day), with the Veedel they asked about: never their words, never where
+     * they are. Under the second wording only (PersonalisationWording).
+     */
+    public function topic(User $user, string $kind, ?string $area): void
+    {
+        $this->interest($user, SignalAction::Searched, SignalSurface::Composer, SignalItemType::Topic, self::key("{$kind}|{$area}"), ['category' => $kind, 'veedel' => $area]);
+    }
+
+    /**
+     * A KVB stop they picked in Travel (a board opened, a journey to or from it), or a line from one,
+     * by KVB's own stop name and line: never a stop near where they are, Home or an address (callers
+     * pass only stops they picked). Under the second wording only.
+     */
+    public function transit(User $user, SignalItemType $type, string $name): void
+    {
+        $name = trim($name);
+        if ($name === '' || ! in_array($type, [SignalItemType::Stop, SignalItemType::Line], true)) {
+            return;
+        }
+        $this->interest($user, SignalAction::LookedUp, SignalSurface::Travel, $type, self::key(mb_strtolower($name)), ['context' => [$type->value => $name]]);
+    }
+
+    /**
+     * What they did with an item of Today's "Needs you": shown (once a day an item), tapped,
+     * dismissed, kept, undone; by its kind and today's id only, never what it said, never Paperwork.
+     * Under the second wording only.
+     */
+    public function need(User $user, SignalAction $action, string $kind, string $id): void
+    {
+        if ($kind === 'paperwork' || ! preg_match('/^[0-9a-f]{16}$/', $id)) {
+            return;
+        }
+        $item = (int) hexdec(substr($id, 0, 12));
+        if ($action === SignalAction::Impression && DB::table('user_signals')->where('subject_key', Pseudonym::for($user))->where('item_type', SignalItemType::Need->value)
+            ->where('item_id', $item)->where('action', $action->value)->where('created_at', '>=', now()->startOfDay()->toIso8601String())->exists()) {
+            return;
+        }
+        $this->interest($user, $action, SignalSurface::Today, SignalItemType::Need, $item, ['category' => $kind]);
+    }
+
     /** Erase everything learned about the person: ledger, affinities, hides. */
     public function forget(User|int $user): void
     {
@@ -230,6 +273,37 @@ final class SignalRecorder
                 }
             }
         });
+    }
+
+    /**
+     * One row of what they looked at that isn't a catalogue item, under the second wording only.
+     *
+     * @param  array{category?: ?string, veedel?: ?string, context?: array<string, string>}  $what
+     */
+    private function interest(User $user, SignalAction $action, SignalSurface $surface, SignalItemType $type, int $id, array $what): void
+    {
+        if (! PersonalisationWording::covers($user, 2)) {
+            return;
+        }
+        $subject = Pseudonym::for($user);
+        $userId = $user->id;
+        $this->afterCommit(function () use ($subject, $userId, $action, $surface, $type, $id, $what): void {
+            DB::table('user_signals')->insert([
+                'subject_key' => $subject, 'action' => $action->value, 'surface' => $surface->value, 'item_type' => $type->value, 'item_id' => $id,
+                'position' => null, 'category' => isset($what['category']) ? mb_substr((string) $what['category'], 0, 64) : null,
+                'veedel' => isset($what['veedel']) ? mb_substr((string) $what['veedel'], 0, 100) : null, 'price_band' => null,
+                'context' => json_encode([...$this->context->at(null, null), ...($what['context'] ?? [])], JSON_THROW_ON_ERROR),
+                'created_at' => now()->toIso8601String(),
+            ]);
+            // What they look at changes how Today is ordered (TodayRank).
+            RankToday::soon($userId);
+        });
+    }
+
+    /** A stable id for something that isn't a catalogue item: its words, hashed. */
+    private static function key(string $words): int
+    {
+        return (int) hexdec(substr(hash('sha256', $words), 0, 12));
     }
 
     /** Hides apply as the person acts; the nightly run only refreshes them. */

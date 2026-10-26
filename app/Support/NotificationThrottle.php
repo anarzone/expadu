@@ -101,6 +101,18 @@ class NotificationThrottle
         'plan_weather' => 'weather',
     ];
 
+    /**
+     * Whether this may be said to them at all, before when and how often: not one for the app only,
+     * not one they turned off. Today's "Needs you" says what's eligible (TodayNeeds); a push also
+     * has to be on time and in the day's budget (decide()).
+     */
+    public static function eligible(User $user, string $type): bool
+    {
+        $prefKey = self::PREF_KEYS[$type] ?? null;
+
+        return ! in_array($type, self::IN_APP_ONLY, true) && (! $prefKey || $user->wantsNotification($prefKey));
+    }
+
     /** Whether it may push now; the caller still records it in the app. */
     public static function canPush(User $user, string $type, ?string $severity = null): bool
     {
