@@ -15,7 +15,9 @@ import { alerts, bureaucracy, logout, settings } from '@/routes';
  */
 export function AccountMenu() {
     const { auth, unreadAlertCount, needs } = usePage().props;
-    const user = auth.user;
+    // A response without the shared props (no `auth`) crashed the preview's
+    // SSR (26 Oct 2026): with nobody signed in there's no menu to show.
+    const user = auth?.user;
     const unread = Number(unreadAlertCount) || 0;
     // Shown at once; put back if the save fails.
     const [stepFree, setStepFree] = useState<boolean | null>(null);
@@ -37,6 +39,10 @@ export function AccountMenu() {
                 showToast(error.message, { error: true });
             });
     };
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <Menu.Root modal={false}>
