@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands\Travel;
 
+use App\ContextEngine\ActionBus;
+use App\ContextEngine\DayImportance;
+use App\ContextEngine\ScoredAction;
 use App\Day\PlannedTripWatch;
 use App\Models\PlannedTrip;
 use App\Notifications\PlannedTripChangeOfPlan;
@@ -21,6 +24,9 @@ use Throwable;
  */
 class WatchPlannedTrips extends Command
 {
+    /** Each change, as severe as it is for the way (PlannedTrip::ALERTS, mildest first). */
+    private const SEVERITY = ['weather' => 'minor', 'notice' => 'moderate', 'late' => 'major', 'cancelled' => 'critical'];
+
     protected $signature = 'travel:watch-planned-trips';
 
     protected $description = 'Push a "Change of plan" when a planned way is cancelled, runs late into its margin or gets a KVB notice';
@@ -74,19 +80,30 @@ class WatchPlannedTrips extends Command
         if ($claimed !== 1) {
             return false;
         }
+        // A change of plan is a risk to the day (DayImportance).
+        DayImportance::forget($trip->user_id, $trip->date);
 
+        $back = fn () => PlannedTrip::query()->whereKey($trip->id)->update([
+            'alerted_kind' => $trip->getRawOriginal('alerted_kind'),
+            'alerted_at' => $trip->getRawOriginal('alerted_at'),
+        ]);
         try {
-            $trip->user->notify(new PlannedTripChangeOfPlan($trip, $change));
+            // Through the one push gate, on time: it's about the way they're taking. Worse is a
+            // higher severity, so once per situation pushes again only on a worse change.
+            $decision = app(ActionBus::class)->deliver($trip->user,
+                ScoredAction::claimed('planned_trip_change', "planned_trip_change:{$trip->id}", self::SEVERITY[$change['kind']] ?? 'moderate', $trip->depart_at, ['trip' => $trip->id]),
+                new PlannedTripChangeOfPlan($trip, $change), $trip->depart_at);
         } catch (Throwable $e) {
             // Not sent: the trip goes back to what it was told before.
-            PlannedTrip::query()->whereKey($trip->id)->update([
-                'alerted_kind' => $trip->getRawOriginal('alerted_kind'),
-                'alerted_at' => $trip->getRawOriginal('alerted_at'),
-            ]);
+            $back();
 
             throw $e;
         }
+        // Held (quiet hours, for a way more than two hours off): told again on a later run.
+        if ($decision->later) {
+            $back();
+        }
 
-        return true;
+        return $decision->send;
     }
 }

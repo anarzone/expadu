@@ -122,6 +122,7 @@ class AlertClassifier
             'bureaucracy_task' => 'bureaucracy_deadline',
             'permanent_residency_eligible' => 'permanent_residency',
             'market_closure' => 'market_closure',
+            'event_tomorrow' => 'event_reminder',
             default => 'generic',
         };
     }
