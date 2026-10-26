@@ -607,15 +607,14 @@ export function ComposerSurface({
                         swap={swap}
                         onAsk={ask}
                         onCollection={openCollection}
-                        onOpenPlan={(plan) => void openPlan(plan)}
+                        onOpenPlans={(date) => {
+                            setPlansDate(date);
+                            setView('plans');
+                        }}
                         onStartSwap={(slot) => void startSwap(slot)}
                         onChoose={choose}
                         onKeepPlace={() => setSwap(null)}
                         onBrowse={() => setView('add')}
-                        onAddPlace={() => {
-                            setSwap(null);
-                            openAdd(focused?.date ?? dayDate);
-                        }}
                         onFull={setDetail}
                         preview={preview}
                         empty={
