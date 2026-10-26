@@ -87,8 +87,10 @@ Route::put('user-settings', [UserSettingController::class, 'update'])->name('use
 
 // User places
 Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
-Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->name('user-places.update');
-Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->name('user-places.destroy');
+// Travel's "Add home" / "Add work": your one Home or Work, set or replaced.
+Route::put('user-places/{category}', [UserPlaceController::class, 'setCategory'])->whereIn('category', ['home', 'work'])->name('user-places.set');
+Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->whereNumber('userPlace')->name('user-places.update');
+Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->whereNumber('userPlace')->name('user-places.destroy');
 
 // Services stays hidden from navigation (d38295bf).
 Route::get('services', [ServicesController::class, 'index'])->name('services');
