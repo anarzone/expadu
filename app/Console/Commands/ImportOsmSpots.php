@@ -762,6 +762,7 @@ class ImportOsmSpots extends Command
         foreach ($elements as $element) {
             $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
         }
+        $unique = $this->withoutNodeWayDoubles($unique);
 
         // A forest and the reserve covering it often share a name. Offer the
         // larger object first; the import keeps the first one inside the city.
@@ -771,6 +772,54 @@ class ImportOsmSpots extends Command
         return [...array_values(array_diff_key($unique, $green)), ...array_values($green)];
 
     }
+
+    /**
+     * One place mapped twice in OSM, as a point and as a building or room ("Kolumba",
+     * "TK Maxx" in a mall mapped indoors): the same name and kind within DOUBLE_METRES
+     * keeps the richer of the two. Courts, tables and playgrounds often really are two.
+     *
+     * @param  array<string, array<string, mixed>>  $elements  keyed type/id
+     * @return array<string, array<string, mixed>>
+     */
+    protected function withoutNodeWayDoubles(array $elements): array
+    {
+        $key = function (array $element): ?string {
+            $name = mb_strtolower(trim((string) ($element['tags']['name'] ?? '')));
+            $category = $this->resolveCategory($element['tags'] ?? [], $element['_category'] ?? 'cafe');
+
+            return $name === '' || in_array($category, self::MAY_REPEAT, true) ? null : $category.'|'.$name;
+        };
+        $ways = [];
+        foreach ($elements as $id => $element) {
+            if (($element['type'] ?? 'node') !== 'node' && ($k = $key($element)) !== null) {
+                $ways[$k][] = $id;
+            }
+        }
+        foreach ($elements as $id => $element) {
+            if (($element['type'] ?? 'node') !== 'node' || ($k = $key($element)) === null || ! isset($ways[$k])) {
+                continue;
+            }
+            [$lat, $lng] = $this->elementPoint($element);
+            foreach ($ways[$k] as $wayId) {
+                if (! isset($elements[$wayId], $elements[$id])) {
+                    continue;
+                }
+                [$wLat, $wLng] = $this->elementPoint($elements[$wayId]);
+                if ($lat && $wLat && hypot(($lat - $wLat) * 111_320, ($lng - $wLng) * 111_320 * cos(deg2rad($lat))) <= self::DOUBLE_METRES) {
+                    // The richer record stays (a shop's point usually carries its hours and website).
+                    unset($elements[count($element['tags'] ?? []) >= count($elements[$wayId]['tags'] ?? []) ? $wayId : $id]);
+                }
+            }
+        }
+
+        return $elements;
+    }
+
+    /** How close a point and a building or room of the same name must be to be one place. */
+    public const DOUBLE_METRES = 40;
+
+    /** Kinds that often stand twice with the same name: two table tennis tables, two pitches. */
+    public const MAY_REPEAT = ['pitch', 'tennis', 'basketball', 'table_tennis', 'boules', 'skatepark', 'playground', 'dog_park', 'picnic', 'bbq'];
 
     /** @param array<string, mixed> $payload */
     protected function dataAgeHours(array $payload): ?float
