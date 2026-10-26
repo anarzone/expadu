@@ -3,7 +3,9 @@
 namespace App\ContextEngine;
 
 use App\Bureaucracy\GuidancePublication;
+use App\Models\Event;
 use App\Notifications\BureaucracyPlanNotification;
+use App\Notifications\EventReminderNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
@@ -35,6 +37,7 @@ class ContextNotificationFactory
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
             'bureaucracy_task' => $this->buildBureaucracyTask($action),
+            'event_tomorrow' => ($event = Event::query()->find($action->payload['event_id'] ?? null)) instanceof Event ? new EventReminderNotification($event) : null,
             // Old queued/cached estimates have no approved rule evidence.
             'permanent_residency_eligible' => null,
             default => null,
