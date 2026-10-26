@@ -1567,12 +1567,6 @@
         border-radius: var(--radius-lg);
         background: #ffffffb3;
     }
-    .case-plan-choice .shared-date-toggle {
-        min-height: 44px;
-        border: 0;
-        border-radius: var(--radius-md);
-        font-weight: var(--weight-medium);
-    }
     .case-time-fields {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
@@ -4138,7 +4132,7 @@
         font-weight: var(--weight-semibold);
         margin: 16px 0;
     }
-    .details-date > :is(input, .shared-date) {
+    .details-date > input {
         width: 100%;
         flex-basis: 100%;
     }
@@ -4683,8 +4677,7 @@
     &.studio #studio-form,
     & .date-picker form,
     & .form-field :is(input, select, textarea),
-    & .case-time-fields input,
-    & .shared-date .shared-date-toggle {
+    & .case-time-fields input {
         background-color: var(--surface);
     }
 
