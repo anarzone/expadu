@@ -92,7 +92,7 @@ final class DayBriefs
      * Today's "Needs you" (TodayNeeds), its push type, severity, a short why, a link and what it's
      * about (never shown). One list for the brief, push and Today.
      *
-     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int, type: ?string, severity: string, why: ?string, link: string, about: string}>
+     * @return list<array{id: string, kind: string, text: string, facts: string, own: bool, rank: int, type: ?string, severity: string, why: ?string, link: string, about: string, at: ?string}>
      */
     public function items(User $user, CarbonImmutable $day, string $kind): array
     {
@@ -103,7 +103,7 @@ final class DayBriefs
         $add = function (string $kind, string $text, string $facts, bool $own, int $rank, array $more = []) use (&$items): void {
             $items[] = ['id' => 'i'.(count($items) + 1), 'kind' => $kind, 'text' => $text, 'facts' => $facts, 'own' => $own, 'rank' => $rank,
                 'type' => $more['type'] ?? null, 'severity' => $more['severity'] ?? 'minor', 'why' => $more['why'] ?? null,
-                'link' => $more['link'] ?? '/dashboard', 'about' => $more['about'] ?? $kind];
+                'link' => $more['link'] ?? '/dashboard', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
         };
         $journey = fn (string $activity): string => '/timetable?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
 
@@ -111,7 +111,7 @@ final class DayBriefs
         foreach (PlannedTrip::query()->where('user_id', $user->id)->whereDate('date', $day->toDateString())->orderBy('depart_at')->get() as $trip) {
             $time = $trip->depart_at->setTimezone('Europe/Berlin')->format('H:i');
             $change = ['cancelled' => 'is cancelled', 'late' => 'is running late', 'notice' => 'has a KVB notice'][$trip->alerted_kind] ?? null;
-            $way = ['link' => $journey((string) $trip->target_id), 'about' => "trip:{$trip->id}"];
+            $way = ['link' => $journey((string) $trip->target_id), 'about' => "trip:{$trip->id}", 'at' => $trip->depart_at->setTimezone('Europe/Berlin')->toIso8601String()];
             $change !== null
                 ? $add('trip_change', "Your {$time} way to {$trip->title} {$change}.", "Planned way to \"{$trip->title}\", leaving {$time}, {$change}.", true, self::RANK['risk'] * 10000,
                     [...$way, 'type' => 'planned_trip_change', 'severity' => ['cancelled' => 'critical', 'late' => 'major'][$trip->alerted_kind] ?? 'moderate'])
@@ -143,7 +143,8 @@ final class DayBriefs
         foreach ($this->planRisks->for($user, $day) as $risk) {
             $add('plan_'.$risk['kind'], $risk['text'], $risk['facts'], true, self::RANK['risk'] * 10000 + 2 + self::minutes($risk['start']), [
                 'type' => ['closed' => 'plan_closed', 'disruption' => 'plan_disruption', 'delay' => 'plan_delay'][$risk['kind']] ?? 'plan_weather',
-                'severity' => $risk['severity'], 'why' => "In your plan at {$risk['start']}.", 'link' => $journey($risk['slot']), 'about' => "plan:{$risk['slot']}:{$risk['kind']}"]);
+                'severity' => $risk['severity'], 'why' => "In your plan at {$risk['start']}.", 'link' => $journey($risk['slot']), 'about' => "plan:{$risk['slot']}:{$risk['kind']}",
+                'at' => $risk['at']->toIso8601String()]);
         }
 
         // The day in order: events they set a reminder for or joined, and their plan.

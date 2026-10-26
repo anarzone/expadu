@@ -43,31 +43,35 @@ test('what needs them, leave now first, then the brief’s order, in quiet hours
 
     $needs = app(TodayNeeds::class)->for($this->user);
 
-    expect(array_map(fn (array $n): array => [$n['kind'], $n['severity'], $n['line'], $n['why']], $needs))->toBe([
-        ['leave_now', 'major', 'Leave now for Night bus home.', 'Your way leaves at 22:40.'],
-        ['trip_change', 'critical', 'Your 23:30 way to Late shift is cancelled.', null],
-        ['disruption', 'major', 'Line 13 disrupted.', 'On one of your lines.'],
-    ])->and($needs[0]['link'])->toStartWith('/timetable?view=journey&activity=plan-')
+    expect(array_map(fn (array $n): array => [$n['tier'], $n['kind'], $n['severity'], $n['headline'], $n['detail']], $needs['items']))->toBe([
+        [1, 'leave_now', 'conflict', 'Leave now for Night bus home.', 'Your way leaves at 22:40.'],
+        [1, 'trip_change', 'conflict', 'Your 23:30 way to Late shift is cancelled.', null],
+        [1, 'disruption', 'conflict', 'Line 13 disrupted.', 'On one of your lines.'],
+    ])->and($needs['items'][0]['href'])->toStartWith('/timetable?view=journey&activity=plan-')
+        ->and($needs['items'][0]['at'])->toBe(needsAt('22:40')->toIso8601String())
+        ->and($needs['checked_at'])->toBe(needsAt('22:30')->toIso8601String())
         // The same item keeps its id, which says nothing of what it is.
-        ->and(app(TodayNeeds::class)->for($this->user)[1]['id'])->toBe($needs[1]['id'])
-        ->and($needs[1]['id'])->toMatch('/^[0-9a-f]{16}$/');
+        ->and(app(TodayNeeds::class)->for($this->user)['items'][1]['id'])->toBe($needs['items'][1]['id'])
+        ->and($needs['items'][1]['id'])->toMatch('/^[0-9a-f]{16}$/');
 });
 
 test('what they turned off for push isn’t on Today either', function () {
     needsTrip($this->user, '23:30', 'late');
     $this->user->notificationPreference()->create(['preferences' => ['transit' => false]]);
 
-    expect(app(TodayNeeds::class)->for($this->user->fresh()))->toBe([]);
+    // Checked, and nothing: an empty list, not null.
+    expect(app(TodayNeeds::class)->for($this->user->fresh())['items'])->toBe([]);
 });
 
 test('overdue Paperwork needs them, saying only that', function () {
     $this->travelTo(needsAt('10:00'));
     ReviewedHomePlan::activate($this->user, ['fixture.entry' => ['title' => 'Synthetic preparation']], ['arrival_date' => '2026-06-01', 'visa_expires_at' => '2026-11-10']);
 
-    expect(app(TodayNeeds::class)->for($this->user))->toMatchArray([[
-        'id' => app(TodayNeeds::class)->for($this->user)[0]['id'], 'kind' => 'paperwork', 'severity' => 'critical',
-        'line' => 'Your Paperwork needs attention.', 'why' => null, 'link' => '/bureaucracy',
-    ]]);
+    $items = app(TodayNeeds::class)->for($this->user)['items'];
+    expect($items)->toHaveCount(1)->and($items[0])->toMatchArray([
+        'tier' => 1, 'kind' => 'paperwork', 'headline' => 'Your Paperwork needs attention.', 'detail' => null, 'at' => null,
+        'severity' => 'conflict', 'href' => '/bureaucracy',
+    ]);
 });
 
 test('Today has it in the day’s deferred group', function () {
@@ -75,5 +79,5 @@ test('Today has it in the day’s deferred group', function () {
 
     $this->actingAs($this->user)->get(route('dashboard'))->assertOk()->assertInertia(fn ($page) => $page
         ->missing('needs')
-        ->loadDeferredProps('day', fn ($reload) => $reload->where('needs.0.kind', 'trip_change')));
+        ->loadDeferredProps('day', fn ($reload) => $reload->where('needs.items.0.kind', 'trip_change')->has('needs.checked_at')));
 });
