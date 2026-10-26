@@ -81,6 +81,38 @@ test('a proposal goes straight into the plans with its change rows and Undo', fu
         ->assertJsonCount(0, 'plans')->assertJsonPath('changes.0.undoable', false);
 });
 
+test('Put it back restores an undone day as a change of its own, only while the day is as the Undo left it', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $date = array_key_first($state['plans']);
+    $plan = $state['plans'][$date];
+    $planned = $state['changes'][0]['id'];
+
+    // Nothing undone yet: nothing to put back.
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'nothing_to_redo');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'redo'])->assertUnprocessable()->assertJsonValidationErrors('change');
+
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'undo', 'change' => $planned])->assertOk()->assertJsonCount(0, 'plans');
+    $state = $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'redo', 'change' => $planned])->assertOk()->json();
+
+    expect($state['plans'][$date]['slots'])->toEqual($plan['slots'])
+        ->and($state['changes'])->toHaveCount(2)
+        ->and(collect($state['changes'])->firstWhere('id', $planned)['undone_at'])->not->toBeNull()
+        ->and(collect($state['changes'])->firstWhere('id', '!=', $planned)['undoable'])->toBeTrue();
+
+    // Once put back, the same Undo can't be put back again.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since');
+
+    // A day changed after the Undo isn't overwritten by putting the old one back.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '10:00', 'end' => '11:00'])->assertOk();
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since')
+        ->assertJsonPath("workspace.plans.{$date}.slots.0.name", 'Dentist');
+});
+
 test('a moved item is said as it is now, old to new', function () {
     seedWorkspaceProposal($this, User::factory()->onboarded()->create());
     $state = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '14:00', 'end' => '15:00'])->assertOk()->json();
