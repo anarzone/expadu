@@ -28,7 +28,7 @@ class SpotFeedbackFactory extends Factory
 
     public function been(?string $rating = 'up'): static
     {
-        return $this->state(fn () => ['state' => SpotFeedbackState::Been, 'rating' => $rating]);
+        return $this->state(fn () => ['state' => null, 'rating' => null, 'been_at' => now(), 'been_rating' => $rating]);
     }
 
     public function notInterested(): static

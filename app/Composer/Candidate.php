@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 
 /**
@@ -76,6 +77,10 @@ final readonly class Candidate
         if (($hours['status'] ?? null) === 'known' && is_array($week)
             && array_key_exists(strtolower($earliest->format('D')), $week)) {
             for ($day = $earliest->startOfDay()->subDay(); $day->lessThanOrEqualTo($latestEnd); $day = $day->addDay()) {
+                // One of its closing dates ("Dec 24 off"): closed that day, whatever the week says.
+                if (OpeningHoursParser::closedOn($hours['raw'] ?? null, $day)) {
+                    continue;
+                }
                 foreach ($week[strtolower($day->format('D'))] ?? [] as $interval) {
                     if (! is_array($interval) || count($interval) !== 2) {
                         continue;

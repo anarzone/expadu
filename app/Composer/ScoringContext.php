@@ -29,5 +29,7 @@ final readonly class ScoringContext
         public array $llmRankWeights = [],
         /** @var list<string> mood words from the request (Constraints::MOODS) */
         public array $moods = [],
+        /** cool enough (under 15°) that a beer garden is no afternoon out, unless asked for */
+        public bool $coolExpected = false,
     ) {}
 }

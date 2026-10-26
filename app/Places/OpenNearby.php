@@ -4,6 +4,7 @@ namespace App\Places;
 
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
+use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -18,9 +19,9 @@ use Illuminate\Support\Facades\DB;
  * here's list (listed(): every one, open until, opens at, closed or not
  * listed). Unknown or conflicting hours are never guessed open.
  *
- * Given a person, it leaves out the places they marked "not interested" or
- * "been" (SpotFeedbackState::hiddenFromDiscovery), matched on the canonical
- * place.
+ * Given a person, around() leaves out the places they marked "not interested"
+ * or Been there; listed() only the "not interested" ones (Around here still
+ * lists the places they know). Matched on the canonical place.
  *
  * The point, the time and the person are inputs only: nothing here stores,
  * caches or logs them (they can say where someone will be), so the answer is
@@ -44,7 +45,7 @@ final class OpenNearby
     public function around(float $lat, float $lng, CarbonImmutable $at, array $kinds = self::EVERYDAY, float $radiusKm = 1.0, int $limit = 6, ?User $for = null): Collection
     {
         // A few more than asked, since closed places drop out below.
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit * 4, $for, hideBeen: true);
         $local = $at->setTimezone('Europe/Berlin');
 
         return $spots
@@ -84,37 +85,194 @@ final class OpenNearby
      */
     public function listed(float $lat, float $lng, CarbonImmutable $at, array $kinds, float $radiusKm = 15.0, int $limit = 12, ?User $for = null): Collection
     {
-        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for);
+        [$spots, $facts] = $this->nearest($lat, $lng, $kinds, $radiusKm, $limit, $for, hideBeen: false);
         $local = $at->setTimezone('Europe/Berlin');
 
-        return $spots->map(function (Spot $spot) use ($facts, $local, $lat, $lng): array {
-            $fact = $facts->get($spot->id) ?? [];
-            $practical = fn (string $key): ?string => ($fact['practical'][$key]['status'] ?? null) === 'known' && is_scalar($fact['practical'][$key]['value'] ?? null)
-                ? (string) $fact['practical'][$key]['value']
-                : null;
-            $point = $fact['location']['map_point'] ?? [];
+        return $this->folded($spots, $facts, $local, $lat, $lng);
+    }
+
+    /**
+     * Rows in the given order, with facilities folded into their park: the park's
+     * name and what it has, at the nearest matching facility's point.
+     *
+     * @param  Collection<int, Spot>  $spots
+     * @param  Collection<int, array<string, mixed>>  $facts
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function folded(Collection $spots, Collection $facts, CarbonImmutable $local, ?float $lat, ?float $lng): Collection
+    {
+        $groups = app(FacilityGroups::class);
+        $folds = $groups->fold($spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all());
+        // A large park listed by its parts doesn't also appear whole.
+        $split = array_column(array_filter($folds, fn (array $fold): bool => ($fold['part'] ?? null) !== null), 'id');
+        $folds = array_values(array_filter($folds, fn (array $fold): bool => ! (($fold['part'] ?? null) === null && $fold['members'] === [] && in_array($fold['id'], $split, true))));
+        $parkIds = array_values(array_diff(array_column($folds, 'id'), $spots->pluck('id')->map(fn (mixed $id): int => (int) $id)->all()));
+        $parks = $parkIds === [] ? collect() : Spot::query()->whereIn('id', $parkIds)
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])->get()->keyBy('id');
+        $facts = $facts->union($parks->isEmpty() ? collect() : $this->facts->resolveMany($parks->values()));
+        $counts = $groups->counts(array_column($folds, 'id'));
+        $byId = $spots->keyBy('id')->union($parks);
+        // People's laptop verdicts (from 3 people, counts only), by canonical place.
+        $canonical = fn (Spot $spot): int => (int) ($spot->canonical_spot_id ?? $spot->id);
+        $people = app(PlaceWorkAnswers::class)->totalsMany(collect($folds)->map(fn (array $fold): ?Spot => $byId->get($fold['id']))->filter()
+            ->map($canonical)->unique()->values()->all());
+
+        $rows = collect($folds)->map(function (array $fold) use ($byId, $facts, $local, $lat, $lng, $counts, $groups, $people, $canonical): ?array {
+            $place = $byId->get($fold['id']);
+            if (! $place instanceof Spot) {
+                return null;
+            }
+            $row = $this->row($place, $facts->get($place->id) ?? [], $local, $lat, $lng);
+            $first = $fold['members'] === [] ? null : $byId->get($fold['members'][0]);
+            if ($first instanceof Spot) {
+                // Walk to the pitch, not to the middle of the park.
+                $row = [...$row, 'lat' => (float) $first->lat, 'lng' => (float) $first->lng, 'area' => false,
+                    'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $first->lat, (float) $first->lng), 3) : null];
+            }
+
+            $matched = array_values(array_unique(array_map(
+                fn (int $id): string => PlaceDisplayName::kind($byId->get($id)->category->value, $byId->get($id)->tags['sport'] ?? null),
+                $fold['members'],
+            )));
+
+            // A park too big to walk round answers for its part in this Veedel.
+            $part = $fold['part'] ?? null;
 
             return [
-                'id' => (int) $spot->id,
-                'name' => (string) ($fact['name']['value'] ?? $spot->name),
-                'kind' => $spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category,
-                'veedel' => $spot->veedel,
-                'lat' => (float) ($point['lat'] ?? $spot->lat),
-                'lng' => (float) ($point['lng'] ?? $spot->lng),
-                'km' => round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3),
-                // A park or a wood is measured to its middle: "about".
-                'area' => ($point['kind'] ?? null) === 'area',
-                'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
-                'wheelchair' => $practical('wheelchair'),
-                'outdoor_seating' => $practical('outdoor_seating'),
-                'cuisine' => $practical('cuisine'),
-                'diets' => array_filter([
-                    'vegetarian' => $practical('diet:vegetarian'),
-                    'vegan' => $practical('diet:vegan'),
-                ]),
-                'internet_access' => $practical('internet_access'),
+                ...$row,
+                ...($part !== null ? ['name' => "{$row['name']} ({$part})", 'part' => $part, 'veedel' => $part] : []),
+                // What fitted the ask ("Football pitch"), and what the park (or its part) has, that first.
+                'matched' => $matched,
+                'facilities' => FacilityGroups::summary($part !== null ? $groups->partCounts($place->id, $part) : ($counts[$place->id] ?? []), $matched),
+                // Its laptop tag: people's verdict and the café's own website rule.
+                'laptop' => self::laptop(($facts->get($place->id) ?? [])['practical'] ?? [], $people[$canonical($place)]['laptop'] ?? null),
             ];
-        })->values();
+        })->filter()->values();
+
+        // Two unnamed pitches by the same stop read the same: one entry, the nearer.
+        return $rows->reject(fn (array $row, int $i): bool => $rows->take($i)->contains(fn (array $earlier): bool => $earlier['name'] === $row['name']
+            && NearbyPlaces::km($earlier['lat'], $earlier['lng'], $row['lat'], $row['lng']) < 0.4))->values();
+    }
+
+    /**
+     * The same rows for places already chosen (a Composer answer), in the order
+     * given: distance from where they were searched from, when known.
+     *
+     * @param  list<int>  $spotIds
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function rows(array $spotIds, ?float $fromLat, ?float $fromLng, CarbonImmutable $at, ?User $for = null): Collection
+    {
+        $saved = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
+            ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
+            ->keys()->map(fn (mixed $id): int => (int) $id)->all();
+        $spots = Spot::query()->whereIn('id', $spotIds)
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
+            ->get()->keyBy('id');
+        $facts = $this->facts->resolveMany($spots->values());
+        $local = $at->setTimezone('Europe/Berlin');
+
+        $ordered = collect($spotIds)->map(fn (int $id): ?Spot => $spots->get($id))->filter()->values();
+
+        return $this->folded($ordered, $facts, $local, $fromLat, $fromLng)
+            // What Around here's PlaceRow needs besides the facts: its icon, label and saved state.
+            ->map(fn (array $row): array => [
+                ...$row,
+                'icon' => AroundKinds::icon($row['kind']),
+                'label' => AroundKinds::label($row['kind']),
+                'saved' => in_array($row['id'], $saved, true),
+            ])->values();
+    }
+
+    /** "Frankenwerft 35, 50667 Köln" → "Frankenwerft 35"; a postcode or town alone is no street. */
+    public static function street(?string $address): ?string
+    {
+        $first = trim(explode(',', (string) $address)[0]);
+
+        return $first === '' || preg_match('/^\d{5}\b/u', $first) === 1 || preg_match('/^(köln|cologne)$/iu', $first) === 1 ? null : $first;
+    }
+
+    /** "IMG_1.jpg — Molgreen — CC BY-SA 4.0" → "Molgreen · CC BY-SA 4.0": author and licence, no file name. */
+    public static function shortCredit(?string $attribution): ?string
+    {
+        $parts = collect(preg_split('/\s+[—·|]\s+/u', trim((string) $attribution)) ?: [])
+            ->map(fn (string $part): string => trim($part))
+            ->reject(fn (string $part): bool => $part === '' || preg_match('/\.(jpe?g|png|webp|gif|tiff?)$/iu', $part) === 1 || $part === 'Wikimedia Commons');
+
+        return $parts->isEmpty() ? null : $parts->implode(' · ');
+    }
+
+    /**
+     * A place as Around here and Composer show it: only listed facts, a photo
+     * only when its rights are cleared, never a placeholder.
+     *
+     * @param  array<string, mixed>  $fact  its resolved PlaceFacts
+     * @return array<string, mixed>
+     */
+    private function row(Spot $spot, array $fact, CarbonImmutable $local, ?float $lat, ?float $lng): array
+    {
+        $practical = fn (string $key): ?string => ($fact['practical'][$key]['status'] ?? null) === 'known' && is_scalar($fact['practical'][$key]['value'] ?? null)
+            ? (string) $fact['practical'][$key]['value']
+            : null;
+        $point = $fact['location']['map_point'] ?? [];
+        $address = ($fact['contact']['address']['status'] ?? null) === 'known' ? (string) $fact['contact']['address']['value'] : null;
+        $photo = app(PublishedMediaSelector::class)->select($spot, 'hero');
+
+        return [
+            'id' => (int) $spot->id,
+            // Generic facility names carry their park, street or Veedel ("Bolzplatz · Merkenich").
+            'name' => (string) ($fact['display_name'] ?? $fact['name']['value'] ?? $spot->name),
+            'kind' => $spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category,
+            'veedel' => $spot->veedel,
+            'lat' => (float) ($point['lat'] ?? $spot->lat),
+            'lng' => (float) ($point['lng'] ?? $spot->lng),
+            'km' => $lat !== null && $lng !== null ? round(NearbyPlaces::km($lat, $lng, (float) $spot->lat, (float) $spot->lng), 3) : null,
+            // A park, a lake or a wood drawn as an area: its point is its
+            // middle, so its distance is "about".
+            'area' => ($point['kind'] ?? null) === 'source_center' && AroundKinds::of($spot->category instanceof SpotCategory ? $spot->category->value : (string) $spot->category) === 'green',
+            'hours' => self::hoursAt(is_array($fact['hours'] ?? null) ? $fact['hours'] : [], $local),
+            'street' => self::street($address),
+            'photo' => $photo === null ? null : [
+                'url' => $photo->remote_url,
+                'credit' => self::shortCredit($photo->attribution),
+                'source_url' => $photo->source_page_url,
+                'licence_url' => $photo->license_url,
+            ],
+            'wheelchair' => $practical('wheelchair'),
+            'outdoor_seating' => $practical('outdoor_seating'),
+            'cuisine' => $practical('cuisine'),
+            'diets' => array_filter([
+                'vegetarian' => $practical('diet:vegetarian'),
+                'vegan' => $practical('diet:vegan'),
+            ]),
+            'internet_access' => $practical('internet_access'),
+            // A sports centre's sports as listed ("fencing;tai_chi;qi_gong").
+            'sport' => $practical('sport'),
+        ];
+    }
+
+    /**
+     * The row's laptop tag: people's verdict (from 3 people, counts only) and
+     * the café's own rule from its website, with the days it names. Null when
+     * neither exists; the client decides whether the rule's days include its date.
+     *
+     * @param  array<string, mixed>  $practical  resolved practical facts
+     * @param  array{value: string, yes: int, total: int}|null  $people
+     * @return array{people: ?array{value: string, yes: int, total: int}, rule: ?array{value: string, days: ?string}}|null
+     */
+    private static function laptop(array $practical, ?array $people): ?array
+    {
+        $fact = $practical['laptops'] ?? [];
+        $rule = null;
+        if (($fact['provider'] ?? null) === 'website' && ($fact['status'] ?? null) === 'known' && is_string($fact['value'] ?? null)) {
+            // "no @ (Sa-Su)": the rule is what applies on those days.
+            $conditional = ($practical['laptops:conditional']['status'] ?? null) === 'known' ? (string) $practical['laptops:conditional']['value'] : '';
+            $rule = preg_match('/^\s*(no|limited|yes)\s*@\s*\((.+)\)\s*$/i', $conditional, $m) === 1
+                ? ['value' => mb_strtolower($m[1]), 'days' => trim($m[2])]
+                : ['value' => $fact['value'], 'days' => null];
+        }
+
+        return $people === null && $rule === null ? null : ['people' => $people, 'rule' => $rule];
     }
 
     /**
@@ -158,10 +316,10 @@ final class OpenNearby
      * @param  list<string>  $kinds
      * @return array{0: Collection<int, Spot>, 1: Collection<int, array<string, mixed>>}
      */
-    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for): array
+    private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for, bool $hideBeen): array
     {
         $hidden = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
-            ->filter(fn (SpotFeedback $row): bool => in_array($row->state, SpotFeedbackState::hiddenFromDiscovery(), true))
+            ->filter(fn (SpotFeedback $row): bool => $hideBeen ? $row->hiddenFromDiscovery() : $row->state === SpotFeedbackState::NotInterested)
             ->keys()
             ->map(fn (mixed $id): int => (int) $id)
             ->all();
@@ -172,6 +330,8 @@ final class OpenNearby
             ->when($hidden !== [], fn ($q) => $q->whereNotIn(DB::raw('coalesce(spots.canonical_spot_id, spots.id)'), $hidden));
         $spots = $this->nearby->orderByDistance($this->nearby->withinKm($query, $lat, $lng, $radiusKm), $lat, $lng)
             ->limit($take)
+            // Each row looks for a rights-cleared photo: load them with the places.
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
             ->get();
 
         return [$spots, $this->facts->resolveMany($spots)];

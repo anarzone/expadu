@@ -10,6 +10,7 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\Dto\Leg;
+use App\Transit\TransitNotices;
 use Carbon\CarbonImmutable;
 
 /**
@@ -243,6 +244,10 @@ class PlannedTripWatch
     {
         $lines = $planned->lines();
         foreach ($this->disruptions->getLineDisruptions() as $notice) {
+            // VRS's and DELFI's notices show on boards; they aren't pushed yet.
+            if (in_array($notice['source'] ?? null, TransitNotices::SOURCES, true)) {
+                continue;
+            }
             $published = CarbonImmutable::parse($notice['started_at']);
             if ($since !== null && ! $published->greaterThan($since)) {
                 continue;

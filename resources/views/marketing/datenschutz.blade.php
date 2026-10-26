@@ -124,15 +124,45 @@
     </p>
     <ul>
         <li>
-            <strong>Composer.</strong> When you send a request in Composer, what you typed, your
-            home neighbourhood and the current time are sent to Anthropic to read the request and,
-            for an open request such as “I’m bored”, to answer it. To answer, Composer looks up
-            public information (event listings, places from our catalogue and the weather) and
-            sends what it finds as well. If you turned on personalisation, it may also send what
-            you tend to like and skip (kinds of places and events, areas and times of day, never
-            place names or your history) and your own plans for today and tomorrow, so the
-            suggestions fit you. The line next to the box says so; sending is your consent for
-            that one request (Art. 6(1)(a) GDPR). Nothing else from your account is sent.
+            <strong>Composer.</strong> When you send a message in Composer, your message as you wrote
+            it, your earlier messages in that conversation and Composer’s answers to them, your home
+            neighbourhood, the current time and the page you asked from are sent to Anthropic (Claude
+            Haiku) to answer it. To answer, Composer looks things up and sends what it finds: public
+            information (event listings, places from our catalogue with what their listings and
+            websites say and, for working there, the anonymous counts of people’s answers about them,
+            never who answered; the weather, departures, routes to places you name, public transport
+            notices and the titles of our reviewed paperwork guides),
+            the plans our planner puts together for you, the names you gave your saved places (Home and
+            Work only as such, with their neighbourhood), where you are only as your nearest stop and
+            neighbourhood, from your browser’s location or the start you chose, and the changes you ask
+            Composer to make (saving a place or an event, a reminder, your plans, Home or Work, a favourite
+            stop, how you travel, your alerts and notifications, your step-free need, your profile except
+            your email) and whether they were made. When
+            it shows you one of your own cards (a trip you’re on, your next plan, your Paperwork
+            checklist), it only sends that it is showing one, never what is on it. It never sends your
+            coordinates, the addresses of your saved places, your documents or evidence, or anyone
+            else’s Paperwork record. If you turned on personalisation, it may also send what you tend
+            to like and skip (kinds of places and events, areas and times of day, never place names or
+            your history) and your own plans and appointments for today and tomorrow, including those
+            recorded in Paperwork, so the suggestions fit you. The line next to the box says so;
+            sending is your consent for that one request (Art. 6(1)(a) GDPR), and it lasts 15 minutes.
+            Nothing else from your account is sent. Composer keeps the conversation, its answers and
+            their cards, in your History until you delete it; a change it makes for you can be undone
+            for 24 hours.
+        </li>
+        <li>
+            <strong>Composer with your Paperwork.</strong> Composer reads your Paperwork record, and
+            can change it, only for a message you allow it on. That is a separate permission with its
+            own notice, for that one message (Art. 6(1)(a) GDPR). With it, Composer also sends your
+            Paperwork answers (such as your residence title and the dates it keeps), your open
+            Paperwork tasks with their steps and dates, and the changes to your Paperwork you ask for
+            and what they change in your plan. A change to your answers always waits for you to tap
+            Apply; nothing is sent to an authority. The permission lasts 15 minutes, for that message.
+            Composer keeps that conversation, with its Paperwork cards, in your History until you
+            delete it, and its changes can be undone for 24 hours; deleting your Paperwork record
+            removes Composer’s copies of it, and stopping its processing ends the permission. You can
+            withdraw the permission in the notice under Composer’s box, and withdrawing Composer’s AI
+            withdraws it too.
         </li>
         <li>
             <strong>Paperwork: your own words and questions.</strong> When you tap “Suggest an
@@ -150,7 +180,8 @@
         </li>
     </ul>
     <p>
-        Anthropic’s reply is kept by us for at most 15 minutes for that request. Transfers to the
+        For Paperwork’s own suggestions and answers, Anthropic’s reply is kept by us for at most
+        15 minutes for that request; Composer keeps its conversations as described above. Transfers to the
         USA are covered by the European Commission’s standard contractual clauses in Anthropic’s
         data processing addendum. You can withdraw your consent at any time; it then ends for any
         request not yet sent.
@@ -163,7 +194,7 @@
         suggestions for you (Art. 6(1)(a) GDPR). This is stored under a pseudonymous key, never
         includes your location or anything you type, and individual records are deleted after 90
         days. With it on, Composer may also use what you like and your plans for today and
-        tomorrow to answer an open request, as described under AI features. Turning
+        tomorrow to answer you, as described under AI features. Turning
         personalisation off deletes everything learned. It is off unless you turn it on.
     </p>
 
