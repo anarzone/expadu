@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 import { TravelIcon } from '../travel-icon';
 import type { TravelIconName } from '../travel-icon';
 import type { PlanPlace } from './plan-model';
@@ -42,10 +43,7 @@ function suggest(
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+            ...csrfHeaders(),
         },
         body: JSON.stringify({ ...(q ? { q: q.slice(0, 100) } : {}), role }),
         signal,

@@ -36,3 +36,13 @@ test('Today sends everything in its first response', function () {
         ->and($page['props']['day'])->toHaveKey('items')
         ->and($page['deferredProps'] ?? [])->toBe([]);
 });
+
+test('pages are history-encrypted unless a local preview turns it off', function () {
+    $user = User::factory()->onboarded()->create();
+
+    // Private props stay unreadable after logout on a shared device.
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'])->toBeTrue();
+
+    config(['inertia.history.encrypt' => false]);
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'] ?? false)->toBeFalse();
+});

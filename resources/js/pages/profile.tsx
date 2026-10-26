@@ -13,6 +13,7 @@ import type { ComponentType } from 'react';
 import { showToast } from '@/components/ui/toast';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
+import { csrfHeaders } from '@/lib/csrf';
 import { writeJson } from '@/lib/reliable-write';
 import type { Auth } from '@/types';
 
@@ -563,12 +564,7 @@ export default function Profile() {
                             headers: {
                                 'Content-Type': 'application/json',
                                 Accept: 'application/json',
-                                'X-CSRF-TOKEN':
-                                    document
-                                        .querySelector(
-                                            'meta[name="csrf-token"]',
-                                        )
-                                        ?.getAttribute('content') ?? '',
+                                ...csrfHeaders(),
                             },
                             body: JSON.stringify({
                                 q: query.trim().slice(0, 100),
