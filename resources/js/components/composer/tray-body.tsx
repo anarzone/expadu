@@ -4,7 +4,7 @@ import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 import type { AiNotice } from './ai-notice';
-import { AnswerBody, isAnswer, ReaderNote } from './answers';
+import { AnswerBody, guided, isAnswer } from './answers';
 import { Guidance } from './guidance';
 import { ComposerLoading } from './loading';
 import { PlanCard } from './plan-card';
@@ -358,22 +358,7 @@ function Talk({
                         Undo
                     </button>
                 )}
-            {message.kind === 'bureaucracy' && (
-                <Guidance query={message.query ?? ''} />
-            )}
-            {['find', 'journey'].includes(message.kind ?? '') && (
-                <Link className="composer-service-link" href={composer.url()}>
-                    <Icon name="bookmark" variant="line" />
-                    <span>
-                        {message.kind === 'journey'
-                            ? 'Choose a destination'
-                            : 'Explore places and events'}
-                        <small>In full Composer, with this conversation</small>
-                    </span>
-                    <Icon name="arrow" variant="line" />
-                </Link>
-            )}
-            <ReaderNote message={message} />
+            {guided(message) && <Guidance query={message.query ?? ''} />}
         </article>
     );
 

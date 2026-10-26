@@ -217,12 +217,21 @@ export function whenOf(dir: ShownDir): { big: string; unit: string } {
 }
 
 /** A wait this long or longer after the departures shown is "a while". */
-export const LONG_WAIT_MIN = 20;
+/** A wait this long at least, and well beyond the line's usual gap, before it's a long one. */
+export const LONG_WAIT_MIN = 30;
+
+/** How far beyond its usual gap (the timetable's, now) a wait must be. */
+const LONG_WAIT_FACTOR = 1.5;
+
+/** With no usual gap known: a wait longer than any daytime service here. */
+const LONG_WAIT_UNKNOWN_MIN = 45;
 
 /**
  * Late at night (the mock's "Last trams for a while"): every direction shown
- * that has a later run waits LONG_WAIT_MIN or more for it after the next
- * one. The gaps come from the board's own times; null otherwise.
+ * that has a later run waits well beyond its usual gap for it after the next
+ * one: 30 min or more and 1.5 times the timetable's gap around now, so a
+ * line's ordinary 20-minute service never reads as the night's last trams.
+ * The gaps come from the board's own times; null otherwise.
  */
 export function longWait(
     view: NearbyView,
@@ -233,7 +242,7 @@ export function longWait(
         ),
     );
     const gaps = dirs.flatMap(({ dir, mode }) => {
-        const later = dir.later[0];
+        const later = dir.later.find((run) => !run.cancelled);
 
         return dir.next && later
             ? [
@@ -243,12 +252,18 @@ export function longWait(
                           (Date.parse(later.at) - Date.parse(dir.next.at)) /
                               60_000,
                       ),
+                      long: dir.headway
+                          ? Math.max(
+                                LONG_WAIT_MIN,
+                                dir.headway * LONG_WAIT_FACTOR,
+                            )
+                          : LONG_WAIT_UNKNOWN_MIN,
                   },
               ]
             : [];
     });
 
-    if (!gaps.length || gaps.some(({ gap }) => gap < LONG_WAIT_MIN)) {
+    if (!gaps.length || gaps.some(({ gap, long }) => gap < long)) {
         return null;
     }
 
