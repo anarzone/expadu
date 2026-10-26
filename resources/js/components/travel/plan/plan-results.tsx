@@ -185,6 +185,9 @@ export function PlanChecks({
                                 key={check.title}
                                 kind={check.tone}
                                 icon={<TravelIcon name={check.icon} />}
+                                className={
+                                    check.pending ? 'plan-skel-chip' : undefined
+                                }
                             >
                                 {check.short}
                             </TravelChip>

@@ -123,3 +123,25 @@ test('requires an explicit or confirmed location instead of routing from home', 
         ->assertUnprocessable()
         ->assertJsonPath('code', 'location_required');
 });
+
+test('Plan a trip gets its ways first and the boarding stops\' live runs by a second request, its own only', function () {
+    fakeRoutingToKoeln();
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user);
+
+    $plan = $this->postJson('/api/journey/plan', ['to_lat' => 50.9413, 'to_lng' => 6.9583, 'to_name' => 'Bürgeramt', 'from_lat' => 50.9513, 'from_lng' => 6.9185, 'checks_later' => true])
+        ->assertOk()
+        ->assertJsonPath('trouble', [])
+        ->assertJsonPath('gone', []);
+    $checks = $plan->json('checks');
+    expect($checks)->toBeString();
+
+    $this->postJson('/api/journey/checks', ['checks' => $checks])->assertOk()->assertJsonStructure(['trouble', 'gone']);
+
+    // Another account can't read them.
+    $this->actingAs(User::factory()->onboarded()->create())->postJson('/api/journey/checks', ['checks' => $checks])->assertNotFound();
+
+    // Without checks_later, the plan answers it all at once, as before.
+    $this->actingAs($user)->postJson('/api/journey/plan', ['to_lat' => 50.9413, 'to_lng' => 6.9583, 'from_lat' => 50.9513, 'from_lng' => 6.9185])
+        ->assertOk()->assertJsonPath('checks', null);
+});

@@ -67,6 +67,8 @@ export type PlanAnswer = {
     trouble?: PlanTrouble[];
     /** Runs the feeds say are cancelled, before a way's first ride. */
     gone?: PlanGone[];
+    /** While the boarding stops' live runs are still asked (`trouble`, `gone`): their id. */
+    checks?: string | null;
     conditions?: {
         weather: { available: boolean; hours: WeatherHour[] };
         lifts: { known: boolean; by_journey: (LiftOut[] | null)[] };
@@ -447,6 +449,8 @@ export type Check = {
     notices?: { words: string; lang: 'en' | 'de'; url: string | null }[];
     /** The ticket check: whether you said you hold a Deutschlandticket. */
     ticket?: { held: boolean };
+    /** Still being checked: its chip softly lit. */
+    pending?: boolean;
 };
 
 const conditionWord: Record<string, string> = {
@@ -501,7 +505,16 @@ export function checksFor(
     const trouble = answer.trouble ?? [];
     const gone = answer.gone ?? [];
 
-    if (trouble.length) {
+    if (answer.checks) {
+        checks.push({
+            short: 'Live runs',
+            title: 'Live times',
+            text: 'Checking the live runs at the stops these ways board…',
+            icon: 'clock',
+            tone: 'calm',
+            pending: true,
+        });
+    } else if (trouble.length) {
         checks.push({
             short: troubleShort(trouble[0]),
             title: 'Live times',

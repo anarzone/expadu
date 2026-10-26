@@ -435,6 +435,8 @@ export function PlanPanel({
                 to_name: toPlace.name,
                 to_lat: String(toPlace.lat),
                 to_lng: String(toPlace.lng),
+                // The ways at once; the boarding stops' live runs after.
+                checks_later: '1',
             });
 
             if (fromPlace) {
@@ -584,6 +586,32 @@ export function PlanPanel({
                 }
 
                 setStatus({ kind: 'done', answer: data });
+
+                if (data.checks) {
+                    const live = await fetch('/api/journey/checks', {
+                        method: 'POST',
+                        headers: jsonHeaders(),
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ checks: data.checks }),
+                        signal: controller.signal,
+                    })
+                        .then((r) => (r.ok ? r.json() : null))
+                        .catch(() => null);
+                    // Missed: these ways just say nothing about live runs.
+                    setStatus((now) =>
+                        now.kind === 'done' && now.answer === data
+                            ? {
+                                  kind: 'done',
+                                  answer: {
+                                      ...data,
+                                      trouble: live?.trouble ?? [],
+                                      gone: live?.gone ?? [],
+                                      checks: null,
+                                  },
+                              }
+                            : now,
+                    );
+                }
             } catch (failure) {
                 if ((failure as Error).name !== 'AbortError') {
                     setStatus({
