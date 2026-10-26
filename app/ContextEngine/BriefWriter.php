@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Http;
  * the items' own facts in, at most three lines out, each saying which items it says, each checked
  * against those items' facts as Composer's answers are (AroundCheck). A line that doesn't hold is
  * dropped; with the top items or a risk unsaid, the template writes the brief (BriefText).
- * Paperwork never goes to it: its line ("needs attention") is added after.
+ * Paperwork never goes to it: its line ("needs attention") is added, first when it's overdue or critical.
  *
  * Only for someone who turned AI-written briefs on (owner, 26 Oct 2026: opt-in, off by default):
  * each brief gets its own permission under their standing yes (ProcessingOptIns) and goes through
@@ -32,7 +32,7 @@ final class BriefWriter
      * "your way may be affected by the line 13 disruption", "check whether your way uses it").
      */
     /** Items about what threatens the day (DayBriefs): a brief always says them. */
-    private const RISKS = ['trip_change', 'disruption', 'delay'];
+    private const RISKS = ['trip_change', 'disruption', 'delay', 'plan_closed', 'plan_disruption', 'plan_delay', 'plan_rain', 'plan_hazard'];
 
     private const SPECULATION = '/\b(may|might|could|would|probably|likely|perhaps|maybe|possibly|check|consider|make sure|should|better|remember)\b/iu';
 
@@ -49,7 +49,9 @@ final class BriefWriter
 
     /** What each item a brief sends is, as its notice names it (ProcessingPurpose::BRIEF_WORDS). */
     public const CATEGORIES = ['trip' => 'your_planned_ways', 'trip_change' => 'your_planned_ways', 'event' => 'events_you_are_going_to',
-        'plan' => 'your_plan_for_the_day', 'disruption' => 'transit_notices', 'delay' => 'transit_notices', 'weather' => 'weather', 'shops' => 'shops_closed'];
+        'plan' => 'your_plan_for_the_day', 'plan_closed' => 'your_plan_for_the_day', 'disruption' => 'transit_notices', 'delay' => 'transit_notices',
+        'plan_disruption' => 'transit_notices', 'plan_delay' => 'transit_notices', 'weather' => 'weather', 'plan_rain' => 'weather', 'plan_hazard' => 'weather',
+        'shops' => 'shops_closed'];
 
     public function __construct(private AroundCheck $check, private ProcessingOptIns $optIns, private ExternalProcessingGate $gate) {}
 
@@ -161,6 +163,8 @@ final class BriefWriter
             return null;
         }
 
-        return [...$kept, ...array_column($paperwork, 'text')];
+        // Overdue or critical Paperwork leads the brief (DayBriefs ranks it first); otherwise it comes last.
+        return [...array_column(array_filter($paperwork, fn (array $item): bool => $item['rank'] < 0), 'text'), ...$kept,
+            ...array_column(array_filter($paperwork, fn (array $item): bool => $item['rank'] >= 0), 'text')];
     }
 }

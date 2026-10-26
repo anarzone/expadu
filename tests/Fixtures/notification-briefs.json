@@ -114,6 +114,44 @@
     "first": "07:45",
     "says": "[Ss]hops"
    }
+  },
+  {
+   "id": "brief.plan_risks_paperwork_first",
+   "kind": "morning",
+   "day": "2026-11-11",
+   "items": [
+    {
+     "kind": "paperwork",
+     "text": "Your Paperwork needs attention.",
+     "facts": "Their Paperwork needs attention.",
+     "rank": -1
+    },
+    {
+     "kind": "plan_closed",
+     "text": "Kolumba is listed closed today.",
+     "facts": "\"Kolumba\", in their plan at 09:00, is listed closed today."
+    },
+    {
+     "kind": "plan_disruption",
+     "text": "Line 13 disrupted near Kolumba (09:00).",
+     "facts": "KVB disruption on line 13, which serves a stop near \"Kolumba\", in their plan at 09:00."
+    },
+    {
+     "kind": "plan_rain",
+     "text": "Rain from 14:00 during Rheinpark (13:00–15:00), outdoors.",
+     "facts": "Rain forecast from 14:00, during \"Rheinpark\" (13:00–15:00), an outdoor stop in their plan."
+    },
+    {
+     "kind": "plan",
+     "text": "Your plan: 2 stops from 09:00, first Kolumba.",
+     "facts": "Their plan for the day: 2 stops, the first \"Kolumba\" at 09:00."
+    }
+   ],
+   "expect": {
+    "first": "^Your Paperwork needs attention\\.$",
+    "says": "Kolumba",
+    "not_says": "instead|try|open (later|at)|umbrella|indoor"
+   }
   }
  ]
 }

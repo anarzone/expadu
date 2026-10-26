@@ -17,9 +17,10 @@ use Illuminate\Support\Facades\Redis;
  * Tiers: 1 pushes now; 2 waits for the day's brief (DayBriefs), never pushed alone; 3 stays in
  * the app. Then, in order:
  * - Their preference for the type, off: never.
- * - Quiet hours (22–06): a critical disruption goes; what they asked for, or about the way they're
- *   taking (ON_TIME), goes when what it's about is within two hours, else waits until 06:00;
- *   anything else doesn't go.
+ * - Quiet hours (their own, from Settings, else 22–06): a critical disruption goes; what they
+ *   asked for, or about the way they're taking (ON_TIME), goes when what it's about is within two
+ *   hours, else waits until they end; anything else doesn't go.
+ * - Paperwork pushes once a day at most, however many things need attention.
  * - Delays and weather only on their way (CommuteWindows: Home's and Work's arrive-by on their
  *   days, else 6–9 and 16–19).
  * - The day's budget, by how important the day is (DayImportance): 2 an hour and 5 a day, 3 and 8
@@ -38,9 +39,10 @@ class NotificationThrottle
 
     private const MIN_INTERVAL_SECONDS = 900; // 15 minutes
 
-    private const QUIET_START = 22; // 10 PM
+    /** Quiet hours when they haven't set their own (notification_preferences.quiet_from / quiet_to). */
+    private const QUIET_FROM = '22:00';
 
-    private const QUIET_END = 6;   // 6 AM
+    private const QUIET_TO = '06:00';
 
     /** How close what an ON_TIME push is about must be for it to go in quiet hours. */
     private const ON_TIME_WITHIN_MINUTES = 120;
@@ -93,6 +95,10 @@ class NotificationThrottle
         'event_reminder' => 'events',
         'event_tomorrow' => 'events',
         'day_brief' => 'brief',
+        // What threatens a stop of their plan (PlanRisks), under the two hours before it.
+        'plan_disruption' => 'transit',
+        'plan_delay' => 'transit',
+        'plan_weather' => 'weather',
     ];
 
     /** Whether it may push now; the caller still records it in the app. */
@@ -123,13 +129,18 @@ class NotificationThrottle
         $now = CarbonImmutable::now('Europe/Berlin');
         $onTime = in_array($type, self::ON_TIME, true);
 
-        if (self::quiet($now) && ! self::quietExempt($type, $severity)) {
+        $quietUntil = self::quietUntil($user, $now);
+        if ($quietUntil !== null && ! self::quietExempt($type, $severity)) {
             if (! $onTime) {
                 return PushDecision::drop('quiet_hours');
             }
             if ($about === null || $about->greaterThan($now->addMinutes(self::ON_TIME_WITHIN_MINUTES))) {
-                return PushDecision::hold('quiet_hours', $now->hour >= self::QUIET_START ? $now->addDay()->setTime(self::QUIET_END, 0) : $now->setTime(self::QUIET_END, 0));
+                return PushDecision::hold('quiet_hours', $quietUntil);
             }
+        }
+
+        if ($type === 'bureaucracy_task' && self::paperworkToday($user, $now)) {
+            return PushDecision::drop('paperwork_today');
         }
 
         if (in_array($type, self::COMMUTE_ONLY, true) && ! CommuteWindows::contains($user, $now)) {
@@ -173,13 +184,18 @@ class NotificationThrottle
     }
 
     /**
-     * Record that a push was sent — update throttle counters.
+     * Record that a push was sent — update throttle counters; a Paperwork one, its once a day.
      */
-    public static function recordSent(User $user): void
+    public static function recordSent(User $user, ?string $type = null): void
     {
         try {
             $userId = $user->id;
             $now = CarbonImmutable::now('Europe/Berlin');
+
+            if ($type === 'bureaucracy_task') {
+                Redis::set("notif_throttle:paperwork:{$userId}:".$now->format('Y-m-d'), 1);
+                Redis::expire("notif_throttle:paperwork:{$userId}:".$now->format('Y-m-d'), 86400);
+            }
 
             Redis::set("notif_throttle:last:{$userId}", $now->timestamp);
             Redis::expire("notif_throttle:last:{$userId}", self::MIN_INTERVAL_SECONDS);
@@ -196,9 +212,43 @@ class NotificationThrottle
         }
     }
 
-    private static function quiet(CarbonImmutable $now): bool
+    /**
+     * When their quiet hours end, if it's quiet now; null when it isn't. Their own from Settings
+     * (phase 3: notification_preferences.quiet_from / quiet_to), else 22:00–06:00; either may
+     * span midnight.
+     */
+    public static function quietUntil(User $user, CarbonImmutable $now): ?CarbonImmutable
     {
-        return $now->hour >= self::QUIET_START || $now->hour < self::QUIET_END;
+        $own = $user->notificationPreference;
+        $from = $now->setTimeFromTimeString(self::clock($own?->quiet_from) ?? self::QUIET_FROM);
+        $to = $now->setTimeFromTimeString(self::clock($own?->quiet_to) ?? self::QUIET_TO);
+        if ($from->equalTo($to)) {
+            return null;
+        }
+        if ($from->lessThan($to)) {
+            return $now->greaterThanOrEqualTo($from) && $now->lessThan($to) ? $to : null;
+        }
+
+        return match (true) {
+            $now->greaterThanOrEqualTo($from) => $to->addDay(),
+            $now->lessThan($to) => $to,
+            default => null,
+        };
+    }
+
+    /** "HH:MM" or "HH:MM:SS" as stored, or null. */
+    private static function clock(mixed $time): ?string
+    {
+        return is_string($time) && preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', $time) === 1 ? substr($time, 0, 5) : null;
+    }
+
+    private static function paperworkToday(User $user, CarbonImmutable $now): bool
+    {
+        try {
+            return (bool) Redis::exists("notif_throttle:paperwork:{$user->id}:".$now->format('Y-m-d'));
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** A critical disruption on the user's line can't wait until morning. */

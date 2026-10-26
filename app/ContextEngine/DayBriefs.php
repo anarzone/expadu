@@ -44,7 +44,7 @@ final class DayBriefs
     /** What comes first in a brief: what threatens the day, then the day in order, then the rest. */
     private const RANK = ['risk' => 0, 'timed' => 1, 'paperwork' => 2, 'weather' => 3, 'shops' => 4];
 
-    public function __construct(private DayImportance $importance, private ActionBus $bus, private WorkspaceStore $workspace) {}
+    public function __construct(private DayImportance $importance, private ActionBus $bus, private WorkspaceStore $workspace, private PlanRisks $planRisks) {}
 
     /**
      * The brief due now, if one is: which, for which day, and when it was due.
@@ -69,9 +69,16 @@ final class DayBriefs
         return null;
     }
 
-    /** When the morning brief is due: 45 minutes before they set off to their first commitment, not before 06:30. */
+    /**
+     * When the morning brief is due: the time they chose (phase 3: notification_preferences.brief_at),
+     * else 45 minutes before they set off to their first commitment, not before 06:30.
+     */
     public function morningAt(User $user, CarbonImmutable $day): CarbonImmutable
     {
+        $chosen = $user->notificationPreference?->brief_at;
+        if (is_string($chosen) && preg_match('/^([01]\d|2[0-3]):[0-5]\d/', $chosen) === 1) {
+            return $day->setTimeFromTimeString(substr($chosen, 0, 5));
+        }
         $leads = collect($this->importance->for($user, $day)['commitments'])->filter(fn (array $c): bool => $c['at'] !== null)
             ->map(fn (array $c): CarbonImmutable => $day->setTimeFromTimeString($c['at'])->subMinutes(self::LEAD[$c['kind']] ?? 45));
         $at = $leads->isEmpty() ? $day->setTimeFromTimeString(self::UNTIMED) : $leads->min();
@@ -121,6 +128,11 @@ final class DayBriefs
             }
         }
 
+        // What threatens the stops of their plan (PlanRisks): closed, weather while outdoors, a disruption or delay near one.
+        foreach ($this->planRisks->for($user, $day) as $risk) {
+            $add('plan_'.$risk['kind'], $risk['text'], $risk['facts'], true, self::RANK['risk'] * 10000 + 2 + self::minutes($risk['start']));
+        }
+
         // The day in order: events they set a reminder for or joined, and their plan.
         foreach ($this->events($user, $day) as [$title, $start, $venue]) {
             $add('event', "{$start} {$title}".($venue !== '' ? " at {$venue}" : '').'.', "An event they're going to: \"{$title}\", starting {$start}".($venue !== '' ? " at {$venue}" : '').'.', true, self::RANK['timed'] * 10000 + self::minutes($start));
@@ -133,8 +145,12 @@ final class DayBriefs
                 "Their plan for the day: {$count} ".($count === 1 ? 'stop' : 'stops').", the first \"{$first['name']}\" at {$first['start_time']}.", true, self::RANK['timed'] * 10000 + self::minutes((string) $first['start_time']));
         }
 
-        // Paperwork only as its own alerts say it: that it needs attention, nothing of what.
-        if (collect($actions)->contains(fn (ScoredAction $a): bool => $a->type === 'bureaucracy_task')) {
+        // Paperwork only as needing attention, nothing of what; overdue or critical, it leads the brief
+        // (coordinator, 26 Oct 2026).
+        $commitments = collect($this->importance->for($user, $day)['commitments'])->pluck('kind');
+        if ($commitments->contains('paperwork_urgent')) {
+            $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, -1);
+        } elseif ($commitments->contains('paperwork') || collect($actions)->contains(fn (ScoredAction $a): bool => $a->type === 'bureaucracy_task')) {
             $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, self::RANK['paperwork'] * 10000);
         }
 

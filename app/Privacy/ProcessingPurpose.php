@@ -55,9 +55,9 @@ enum ProcessingPurpose: string
         'the_day' => 'which day the brief is for',
         'your_planned_ways' => 'the ways you planned in Travel: where to, when they leave, and whether one is cancelled, late or has a notice',
         'events_you_are_going_to' => 'the events you set a reminder for or joined: their title, start time and venue',
-        'your_plan_for_the_day' => 'your plan for the day in Plans: how many stops, and the first one’s name and time',
-        'transit_notices' => 'public transport disruptions and delays on your lines',
-        'weather' => 'the weather',
+        'your_plan_for_the_day' => 'your plan for the day in Plans: how many stops, their names and times, and whether one is listed closed',
+        'transit_notices' => 'public transport disruptions and delays on your lines and near your plan’s stops',
+        'weather' => 'the weather, and rain or a hazard forecast while you’re at an outdoor stop',
         'shops_closed' => 'whether shops are closed tomorrow',
     ];
 

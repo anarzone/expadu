@@ -35,6 +35,8 @@ Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverl
 // the morning one and the evening before an important day (DayBriefs).
 Schedule::command('notifications:score-days')->timezone('Europe/Berlin')->dailyAt('05:30')->withoutOverlapping(30)->onOneServer();
 Schedule::command('notifications:send-briefs')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+// What threatens a stop of today's plan starting within two hours (PlanRisks).
+Schedule::command('notifications:watch-plans')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
 // People's laptop-work answers: kept 18 months at most (docs/places/design/laptop-answers.md).

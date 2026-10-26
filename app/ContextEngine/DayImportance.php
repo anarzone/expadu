@@ -2,6 +2,8 @@
 
 namespace App\ContextEngine;
 
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
+use App\Bureaucracy\ReadModel\PlanAttention;
 use App\Composer\WorkspaceStore;
 use App\Models\EventReminder;
 use App\Models\PlannedTrip;
@@ -10,14 +12,15 @@ use App\Models\UserPlace;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * How much a person's day holds (owner, 26 Oct 2026: "the frequency depends on how important the
  * day is"): its commitments, each weighed, times the worst risk to them, as a band. The band sets
  * the day's push budget (NotificationThrottle) and its briefs (DayBriefs). Worked out from what
  * we hold (their planned ways, Work's arrive-by, events they set a reminder for or joined, their
- * plan's stops, Paperwork's own alerts, live disruptions, delays and weather), kept as plain data
- * for half an hour, and forgotten when any of it changes.
+ * plan's stops and what threatens them, their Paperwork, live disruptions, delays and weather),
+ * kept as plain data for half an hour, and forgotten when any of it changes.
  */
 final class DayImportance
 {
@@ -31,7 +34,7 @@ final class DayImportance
     public const WEIGHTS = ['paperwork_urgent' => 5, 'paperwork' => 3, 'planned_trip' => 3, 'work' => 3, 'event' => 2, 'plan_stop_fixed' => 2, 'plan_stop' => 1];
 
     /** What a risk to the day multiplies it by; only the worst one counts. */
-    public const RISKS = ['cancelled' => 3.0, 'critical_disruption' => 3.0, 'disruption' => 2.0, 'late' => 2.0, 'delay' => 2.0, 'hazard' => 1.5, 'rain' => 1.5];
+    public const RISKS = ['cancelled' => 3.0, 'critical_disruption' => 3.0, 'disruption' => 2.0, 'late' => 2.0, 'delay' => 2.0, 'closed' => 2.0, 'hazard' => 1.5, 'rain' => 1.5];
 
     /** A day scoring below this is quiet; from it, normal. */
     public const NORMAL_FROM = 3;
@@ -42,7 +45,7 @@ final class DayImportance
     /** Kept this long at most; any change forgets it sooner. */
     private const MINUTES = 30;
 
-    public function __construct(private ActionBus $bus, private WorkspaceStore $workspace) {}
+    public function __construct(private ActionBus $bus, private WorkspaceStore $workspace, private PlanRisks $planRisks) {}
 
     /**
      * @return array{date: string, score: float, band: string, commitments: list<array{kind: string, at: ?string}>, risks: list<string>}
@@ -76,12 +79,14 @@ final class DayImportance
         $risks = $this->risks($user, $day, $commitments !== []);
         $weight = array_sum(array_map(fn (array $c): int => self::WEIGHTS[$c['kind']], $commitments));
         $score = round($weight * max([1.0, ...array_map(fn (string $risk): float => self::RISKS[$risk], $risks)]), 1);
+        // Overdue or critical Paperwork is never a quiet day (coordinator, 26 Oct 2026: a visa expired the day before scored quiet).
+        $floor = collect($commitments)->contains('kind', 'paperwork_urgent');
 
         return [
             'date' => $day->toDateString(), 'score' => $score,
             'band' => match (true) {
                 $score >= self::IMPORTANT_FROM => self::IMPORTANT,
-                $score >= self::NORMAL_FROM => self::NORMAL,
+                $score >= self::NORMAL_FROM || $floor => self::NORMAL,
                 default => self::QUIET,
             },
             'commitments' => $commitments, 'risks' => array_values(array_unique($risks)),
@@ -89,19 +94,29 @@ final class DayImportance
     }
 
     /**
-     * Paperwork's own alerts, as its reminders gate them (GuidancePublication): critical counts most.
-     * Nothing about the task itself is read here; its alert says only that it needs attention.
+     * Their own Paperwork as its plan says it now (AccountHolderPlan: their own record only, while
+     * verified and not stopped): a deadline or a document that's overdue or critical is a floor for
+     * the day; an appointment that day counts too. Nothing of what it is leaves here.
      *
      * @return list<array{kind: string, at: ?string}>
      */
     private function paperwork(User $user, CarbonImmutable $day): array
     {
-        if ($day->greaterThan(CarbonImmutable::now('Europe/Berlin')->addDay()->startOfDay())) {
+        $today = CarbonImmutable::now('Europe/Berlin')->startOfDay();
+        if ($day->lessThan($today) || $day->greaterThan($today->addDay())) {
             return [];
         }
+        try {
+            $plan = app(AccountHolderPlan::class)->for($user);
+        } catch (Throwable) {
+            return [];
+        }
+        $rows = collect($plan === null ? [] : app(PlanAttention::class)->for($plan));
+        $urgent = $rows->filter(fn (array $row): bool => in_array($row['kind'], ['legal_due', 'document_expiry'], true) && in_array($row['urgency'], ['overdue', 'critical'], true));
+        $appointments = $rows->filter(fn (array $row): bool => $row['urgency'] === ($day->isSameDay($today) ? 'appointment_today' : 'appointment_tomorrow'));
 
-        return collect($this->bus->topK($user->id, 50))->filter(fn (ScoredAction $a): bool => $a->type === 'bureaucracy_task')
-            ->map(fn (ScoredAction $a): array => ['kind' => $a->severity === 'critical' ? 'paperwork_urgent' : 'paperwork', 'at' => null])->take(2)->values()->all();
+        return [...$urgent->take(2)->map(fn (): array => ['kind' => 'paperwork_urgent', 'at' => null])->values()->all(),
+            ...$appointments->take(2)->map(fn (): array => ['kind' => 'paperwork', 'at' => null])->values()->all()];
     }
 
     /** @return list<array{kind: string, at: ?string}> */
@@ -160,6 +175,10 @@ final class DayImportance
     {
         $risks = PlannedTrip::query()->where('user_id', $user->id)->whereDate('date', $day->toDateString())->whereIn('alerted_kind', ['notice', 'late', 'cancelled'])
             ->pluck('alerted_kind')->map(fn (string $kind): string => $kind === 'notice' ? 'disruption' : $kind)->all();
+        // The stops of their plan (PlanRisks): closed that day, weather during an outdoor one, a disruption or delay near one.
+        foreach ($this->planRisks->for($user, $day) as $risk) {
+            $risks[] = $risk['kind'] === 'disruption' && $risk['severity'] === 'critical' ? 'critical_disruption' : $risk['kind'];
+        }
         if (! $day->isSameDay(CarbonImmutable::now('Europe/Berlin'))) {
             return $risks;
         }
