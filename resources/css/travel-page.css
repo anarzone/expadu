@@ -3560,6 +3560,29 @@
 :where(.travel-page) #results > .tl-headline {
     margin-bottom: var(--space-12);
 }
+:where(.travel-page) .plan-on-board {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    margin-bottom: var(--space-12);
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+:where(.travel-page) .plan-on-board .tl-headline-mark {
+    width: 16px;
+    height: 16px;
+}
+:where(.travel-page) .plan-on-board .tl-headline-mark svg {
+    width: 10px;
+    height: 10px;
+}
 :where(.travel-page) .plan-option-actions .plan-go {
     flex: 1.5 1 0px;
     min-width: 0px;
