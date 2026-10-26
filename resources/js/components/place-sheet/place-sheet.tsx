@@ -371,6 +371,7 @@ export function PlaceSheet({
                     markedAt={markedAt}
                     marked={marked}
                     onMarkedDone={clearMarked}
+                    part={preview?.id === place ? (preview.part ?? null) : null}
                 />
             ) : preview && preview.id === place ? (
                 <PreviewDetail place={preview} />
@@ -497,6 +498,7 @@ function PlaceDetail({
     been,
     onBeen,
     markedAt,
+    part,
     marked,
     onMarkedDone,
 }: {
@@ -509,6 +511,8 @@ function PlaceDetail({
     onBeen: () => void;
     /** When Save or Been there last reached the server. */
     markedAt: number;
+    /** A large park's part this sheet was opened from (its row's Veedel). */
+    part: string | null;
     /** A mark just turned on, shown over the footer with Undo. */
     marked: Marked | null;
     onMarkedDone: () => void;
@@ -923,7 +927,13 @@ function PlaceDetail({
                                 <Link
                                     className="place-way"
                                     href={timetable.url({
-                                        query: { view: 'journey', place: d.id },
+                                        // A large park's part: the way leads to
+                                        // that part ("Äußerer Grüngürtel (Sülz)").
+                                        query: {
+                                            view: 'journey',
+                                            place: d.id,
+                                            ...(part ? { part } : {}),
+                                        },
                                     })}
                                 >
                                     Show the way →
