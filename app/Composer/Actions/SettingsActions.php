@@ -24,7 +24,7 @@ final class SettingsActions implements ComposerAction
 
     /** The kinds Settings › Notifications shows, as it names them. */
     public const NOTIFICATIONS = ['transit' => 'Transit disruptions', 'checklist' => 'Bureaucracy deadlines', 'events' => 'Event reminders',
-        'weather' => 'Weather alerts', 'rhine' => 'Rhine flood alerts', 'digest' => 'Weekly digest'];
+        'weather' => 'Weather alerts', 'rhine' => 'Rhine flood alerts', 'brief' => 'Morning and evening briefs'];
 
     /** The profile fields Composer may change, as the profile names them. */
     public const PROFILE = ['name' => 'Name', 'city' => 'City', 'situation' => 'Situation', 'german_level' => 'German level'];
