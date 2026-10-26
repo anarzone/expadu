@@ -139,6 +139,9 @@ export function PlaceRow({
                             ))}
                         </span>
                     ) : null}
+                    {place.why ? (
+                        <span className="around-row-why">{place.why}</span>
+                    ) : null}
                 </span>
                 <span className="around-row-away">{away}</span>
             </button>
