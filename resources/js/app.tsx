@@ -6,6 +6,12 @@ import { showToast } from '@/components/ui/toast';
 // Before the app starts: its Back listener must come before Inertia's.
 import '@/lib/history-steps';
 import { resolvePage } from '@/lib/resolve-page';
+import {
+    isSignedOutStatus,
+    markSignedOut,
+    setSignedIn,
+    watchFetch,
+} from '@/lib/signed-out';
 import '../css/app.css';
 
 /**
@@ -81,6 +87,16 @@ function afterLoadWhenIdle(task: () => void): void {
     }
 }
 
+const userOf = (props: Record<string, unknown>) =>
+    (props.auth as { user?: unknown } | undefined)?.user;
+
+// A session that ends while a page is open (lib/signed-out.ts): every
+// request the page makes is watched, and each page says who it was for.
+watchFetch();
+router.on('navigate', (event) =>
+    setSignedIn(Boolean(userOf(event.detail.page.props))),
+);
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: resolvePage,
@@ -98,6 +114,8 @@ createInertiaApp({
                 : options,
     },
     setup({ el, App, props }) {
+        setSignedIn(Boolean(userOf(props.initialPage.props)));
+
         // Reuse server markup so a slow startup does not replace an already
         // visible form or discard input. SSR can be unavailable, so keep the
         // empty-root fallback and the duplicate-module guard.
@@ -201,6 +219,11 @@ router.on('invalid', (event) => {
     event.preventDefault();
 
     const status = event.detail.response?.status;
+
+    // Signed out while the page was open: the shell's toast says so once.
+    if (isSignedOutStatus(status) && markSignedOut()) {
+        return;
+    }
 
     showToast(
         status === 419
