@@ -21,6 +21,9 @@ enum LocationSource: string
     /** A Veedel centroid — either explicitly picked or the area being browsed. */
     case Area = 'area';
 
+    /** One of the person's saved places (Home): near it, never where they are. */
+    case Place = 'place';
+
     /** Nothing known — callers must not invent an origin. */
     case None = 'none';
 
