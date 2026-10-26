@@ -12,6 +12,8 @@ export type AnsweredPlace = {
     href: string;
     /** Where the place comes from, for its credit; cards stored without it were OSM's. */
     source?: 'osm' | 'overture' | 'transit';
+    /** Why the assistant suggests it, from the person's own taste (opt-in only). */
+    because?: string | null;
 };
 
 /** Each source asks for its own credit where it's shown; timetable stops need none. */
@@ -26,7 +28,14 @@ const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
  * with its kind and distance, opening the place in Around here (or Travel).
  * Each source the cards come from is credited once, as each asks.
  */
-export function PlaceAnswer({ places }: { places: AnsweredPlace[] }) {
+export function PlaceAnswer({
+    places,
+    onNotThis,
+}: {
+    places: AnsweredPlace[];
+    /** "Not this" on an assistant's suggestion. */
+    onNotThis?: (place: AnsweredPlace) => void;
+}) {
     const credits = [
         ...new Set(
             places.flatMap((place) => {
@@ -46,7 +55,14 @@ export function PlaceAnswer({ places }: { places: AnsweredPlace[] }) {
                         : place.kind;
 
                     return (
-                        <li key={place.id}>
+                        <li
+                            key={place.id}
+                            className={
+                                place.because || onNotThis
+                                    ? 'nearby-answer-item'
+                                    : undefined
+                            }
+                        >
                             <Link
                                 className="nearby-answer-card"
                                 href={place.href}
@@ -64,6 +80,19 @@ export function PlaceAnswer({ places }: { places: AnsweredPlace[] }) {
                                     {place.area && <small>{place.area}</small>}
                                 </span>
                             </Link>
+                            {place.because && (
+                                <p className="answer-fine">{place.because}</p>
+                            )}
+                            {onNotThis && (
+                                <button
+                                    type="button"
+                                    className="composer-text-button"
+                                    aria-label={`Not this: ${place.name}`}
+                                    onClick={() => onNotThis(place)}
+                                >
+                                    Not this
+                                </button>
+                            )}
                         </li>
                     );
                 })}
