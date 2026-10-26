@@ -428,6 +428,18 @@ button.settings-tile:hover {
 .settings-switch[aria-checked='true']::after {
     transform: translateX(20px);
 }
+/* On under the older wording: a quiet way to take in the new one. */
+.settings-learn-older {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.settings-learn-older .settings-link {
+    min-height: 0;
+    padding-block: 6px;
+    font-size: inherit;
+}
 .settings-learns {
     display: flex;
     flex-wrap: wrap;
