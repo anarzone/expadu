@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\ContextEngine\DayImportance;
 use App\Transit\Dto\Journey;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PlannedTrip extends Model
 {
+    /** A planned way added, changed or dropped changes how important its day is (DayImportance). */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $trip) => DayImportance::forget($trip->user_id, $trip->date));
+        static::deleted(fn (self $trip) => DayImportance::forget($trip->user_id, $trip->date));
+    }
+
     use MassPrunable;
 
     /** "Remind me when to leave": this long before the way leaves. */

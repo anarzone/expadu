@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\ContextEngine\ActionBus;
+use App\ContextEngine\ScoredAction;
+use App\ContextEngine\Scorer;
 use App\Models\Event;
-use App\Notifications\EventReminderNotification;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -44,7 +47,13 @@ class SendEventReminders extends Command
                     continue;
                 }
 
-                $user->notify(new EventReminderNotification($event));
+                // Tier 2 (owner, 26 Oct 2026): on the Alerts page now, said in the day's brief (DayBriefs),
+                // never pushed alone; through the bus like every other alert.
+                app(ActionBus::class)->insert($user, new ScoredAction(
+                    type: 'event_tomorrow', actionKey: "event_tomorrow:{$event->id}:user:{$user->id}", score: Scorer::SEVERITY_BASE['info'],
+                    severity: 'info', validUntil: CarbonImmutable::instance($event->starts_at), deliverChannels: [ScoredAction::CHANNEL_ALERT_PAGE],
+                    payload: ['event_id' => $event->id], createdAt: CarbonImmutable::now(),
+                ));
 
                 // Mark as reminded so we don't send again
                 $event->attendees()->updateExistingPivot($user->id, [
