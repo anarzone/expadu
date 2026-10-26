@@ -65,7 +65,6 @@ class ProfilePageController extends Controller
                     ? max(0, (int) $user->arrival_date->diffInDays(now()))
                     : null,
             ],
-            'interests' => $user->interests ?? [],
         ]);
     }
 }
