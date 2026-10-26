@@ -125,6 +125,19 @@ export function NearbyView({
     const [view, setView] = useState<'list' | 'map'>('list');
     const mapOpen = view === 'map' && !!linesMap;
     const closeMap = useCallback(() => setView('list'), []);
+    // A line's whole route under the map: the screen's one headline is that
+    // line's own (owner, 23 Oct 2026).
+    const [routeLine, setRouteLine] = useState<string | null>(null);
+    const headlined =
+        routeLine && mapOpen
+            ? {
+                  ...station,
+                  notices: station.notices.filter((n) =>
+                      n.lines.includes(routeLine),
+                  ),
+                  lines: station.lines.filter((l) => l.line === routeLine),
+              }
+            : station;
     const board = useMemo(
         () =>
             nearbyView(station, filterDefaults(), {
@@ -695,7 +708,7 @@ export function NearbyView({
 
     return (
         <div className="nearby" data-view={mapOpen ? 'map' : 'list'} ref={root}>
-            <MajorHeadline station={station} />
+            <MajorHeadline station={headlined} />
             {station.unknown_stop ? (
                 <div className="nearby-banner is-labelled">
                     <TravelBanner
@@ -967,6 +980,11 @@ export function NearbyView({
                     onClose={closeMap}
                     board={board}
                     renderLine={row}
+                    onOpenBoard={(name) => {
+                        closeMap();
+                        onPickStop(name);
+                    }}
+                    onRouteLine={setRouteLine}
                 />
             ) : null}
             {station.credits?.map((credit) => (
