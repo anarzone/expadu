@@ -1,5 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import type { AroundPlace } from '@/components/around-here/place-model';
+import { PlaceRow } from '@/components/around-here/place-row';
 import { occurrenceKey } from '@/components/events/event-presentation';
+import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { PosterArt } from '@/components/posters/poster-art';
 import {
     berlinDate,
@@ -11,16 +15,17 @@ import type { PosterSource } from '@/components/posters/poster-model';
 import { weatherIcon } from '@/components/today/city-help';
 import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
-import type { IconName } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
-import { composer, events } from '@/routes';
+import { composer, events, explore } from '@/routes';
 
 /*
  * Today's discovery (the mock's .discovery and .around-plan), from
- * App\Home\TodayDiscovery: tonight's listed events that fit around the
- * plans, and the everyday places whose listed hours say they're open near
- * the next plan. Each card opens the event's own details in Events.
+ * App\Home\TodayDiscovery: today's listed events that fit around the
+ * plans, those near the person's Veedel first, and the everyday places
+ * whose listed hours say they're open near the next plan, or, with no plan
+ * to go by, open now near their Veedel or Home. Each event opens its own
+ * details in Events; each place is Around here's row and opens its sheet.
  */
 
 export type DiscoveryEvent = PosterSource & {
@@ -32,32 +37,26 @@ export type DiscoveryEvent = PosterSource & {
     venue: { name: string | null; veedel: string | null };
 };
 
-export type DiscoveryPlace = {
-    id: number;
-    name: string;
-    kind: string;
-    label: string;
-    km: number;
-    open_until: string;
-    osm: boolean;
-};
-
 export type TodayDiscovery = {
     part: 'morning' | 'afternoon' | 'evening' | 'tomorrow';
     events: DiscoveryEvent[];
     around: {
+        /** The next plan with a place; null when there's none to go by. */
         anchor: {
             id: string;
             title: string;
             area: string;
             start: string | null;
             end: string | null;
-        };
+        } | null;
+        /** With no plan to go by: the person's Veedel, else Home. */
+        near: { name: string; key: string } | null;
         at: string;
         idea: DiscoveryEvent | null;
         place: { id: number; title: string; area: string } | null;
         saved: boolean;
-        places: DiscoveryPlace[];
+        /** Around here's rows, open at `at`. */
+        places: AroundPlace[];
     } | null;
 } | null;
 
@@ -70,21 +69,6 @@ const eventHref = (event: DiscoveryEvent) =>
             start: event.occurrence_start,
         },
     });
-
-const placeIcon: Record<string, IconName> = {
-    bakery: 'bakery',
-    cafe: 'cafe',
-    pharmacy: 'pharmacy',
-    drugstore: 'grocery',
-    supermarket: 'grocery',
-    convenience: 'grocery',
-};
-
-/** "50 m", "150 m", "1.2 km", as the mock rounds a walk. */
-const distance = (km: number) =>
-    km < 1
-        ? `${Math.max(50, Math.round(km * 20) * 50)} m`
-        : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 
 /** "Tomorrow · " before a time of tomorrow's listing. */
 const dayPrefix = (event: DiscoveryEvent) =>
@@ -323,32 +307,56 @@ function CompactEvent({
     );
 }
 
-/** Around the next plan: an event in its area and the places open there. */
+/**
+ * Around the next plan: an event in its area and the places open there.
+ * With no plan to go by, the places open now near the person's Veedel (or
+ * Home), named for it ("Open now near Ehrenfeld"), never "your plan". The
+ * places are Around here's rows and open its sheet.
+ */
 export function AroundPlan({
     around,
 }: {
     around: NonNullable<NonNullable<TodayDiscovery>['around']>;
 }) {
-    const { anchor, idea, place, saved, places } = around;
+    const { anchor, near, idea, place, saved, places } = around;
     const also = idea !== null || place !== null;
+    const [sheet, setSheet] = useState<number | null>(null);
 
     return (
         <section className="around-plan" aria-labelledby="around-plan-title">
             <div className="around-heading">
                 <h3 id="around-plan-title">
-                    {also ? `Also in ${anchor.area}` : `Near ${anchor.title}`}
+                    {!anchor
+                        ? `Open now near ${near?.name ?? 'you'}`
+                        : also
+                          ? `Also in ${anchor.area}`
+                          : `Near ${anchor.title}`}
                 </h3>
-                {also && (
+                {anchor && also ? (
                     <small>
                         {saved ? 'From your saved ideas' : 'From Events'}
                     </small>
-                )}
+                ) : null}
+                {!anchor && near ? (
+                    <Link
+                        className="around-more"
+                        href={explore({ query: { near: near.key } })}
+                    >
+                        Around here
+                    </Link>
+                ) : null}
             </div>
-            <p className="around-context">
-                {also
-                    ? `Today · ${anchor.title}`
-                    : `Today · ${[anchor.start, anchor.end].filter(Boolean).join('–')}`}
-            </p>
+            {anchor ? (
+                <p className="around-context">
+                    {also
+                        ? `Today · ${anchor.title}`
+                        : `Today · ${[anchor.start, anchor.end].filter(Boolean).join('–')}`}
+                </p>
+            ) : (
+                <p className="around-context">
+                    Listed hours at {around.at} · nothing in your plan to go by
+                </p>
+            )}
             {/* A saved place opens Composer's Saved ideas, as in Saved for later. */}
             {place && (
                 <div className="around-item">
@@ -402,42 +410,35 @@ export function AroundPlan({
             )}
             {places.length > 0 && (
                 <div className="around-places">
-                    <p className="around-places-title">
-                        {`Open near ${anchor.area} at ${around.at}`}
-                        <small>Listed hours</small>
-                    </p>
-                    {places.map((place) => (
-                        <article
-                            key={place.id}
-                            className="nearby-place nearby-place--line"
-                        >
-                            <div className="nearby-place-open">
-                                <span className="nearby-place-icon">
-                                    <Icon
-                                        name={placeIcon[place.kind] ?? 'pin'}
-                                        variant="line"
-                                        className="place-icon"
-                                    />
-                                </span>
-                                <span className="nearby-place-copy">
-                                    <strong>{place.name}</strong>
-                                    <small>
-                                        {`${place.label} · ${distance(place.km)} · `}
-                                        <span className="place-hours is-open">
-                                            {`Open until ${['24:00', '00:00'].includes(place.open_until) ? 'midnight' : place.open_until}`}
-                                        </span>
-                                    </small>
-                                </span>
-                            </div>
-                        </article>
-                    ))}
-                    {places.some((place) => place.osm) && (
-                        <p className="around-places-source">
-                            From OpenStreetMap contributors (ODbL)
+                    {anchor ? (
+                        <p className="around-places-title">
+                            {`Open near ${anchor.area} at ${around.at}`}
+                            <small>Listed hours</small>
                         </p>
-                    )}
+                    ) : null}
+                    <ol className="around-places-rows">
+                        {places.map((row) => (
+                            <li key={`${row.id}-${row.part ?? ''}`}>
+                                <PlaceRow
+                                    place={row}
+                                    selected={sheet === row.id}
+                                    onOpen={() => setSheet(row.id)}
+                                    onHover={() => {}}
+                                />
+                            </li>
+                        ))}
+                    </ol>
+                    <p className="around-places-source">
+                        From OpenStreetMap contributors (ODbL)
+                    </p>
                 </div>
             )}
+            <PlaceSheet
+                place={sheet}
+                at={around.at}
+                preview={places.find((row) => row.id === sheet) ?? null}
+                onClose={() => setSheet(null)}
+            />
         </section>
     );
 }
