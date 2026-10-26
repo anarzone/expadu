@@ -245,7 +245,7 @@ class GtfsDepartureService
                 return $this->fallbackDepartures($stopName);
             }
 
-            $departures = $this->toRealEnds($departures, $stops->keys()->map(fn ($id) => (string) $id)->all());
+            $departures = $this->toRealEnds($departures);
 
             // Get disrupted lines to mark them
             $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
@@ -556,22 +556,22 @@ class GtfsDepartureService
      * Each run towards where it really ends. Works keep the usual headsign:
      * line 16 said "Bonn-Bad Godesberg" while it ended at Ubierring (17 Oct
      * to 2 Nov 2026). A headsign the run's last stop doesn't carry gives way
-     * to that stop's name, less "Köln". A run that ends here doesn't leave
-     * from here (line 9 ended at Neumarkt).
+     * to that stop's name, less "Köln". A run arriving at its last stop
+     * doesn't leave from there (line 9 ended at Neumarkt).
      *
      * @param  Collection<int, object>  $departures
-     * @param  list<string>  $here  the station's stop ids
      * @return Collection<int, object>
      */
-    private function toRealEnds(Collection $departures, array $here): Collection
+    private function toRealEnds(Collection $departures): Collection
     {
         $last = DB::table('gtfs_stop_times as st')
             ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
             ->whereIn('st.trip_id', $departures->pluck('trip_id')->unique()->values())
             ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
+            ->whereRaw('st.stop_sequence > (select min(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
             ->get(['st.trip_id', 'st.stop_id', 's.stop_name'])
             ->keyBy('trip_id');
-        $departures = $departures->reject(fn (object $dep) => in_array((string) ($last[$dep->trip_id]->stop_id ?? ''), $here, true))->values();
+        $departures = $departures->reject(fn (object $dep) => (string) ($last[$dep->trip_id]->stop_id ?? '') === (string) $dep->stop_id)->values();
         $ends = $last->map(fn (object $row) => $row->stop_name);
 
         return $departures->map(function (object $dep) use ($ends) {
