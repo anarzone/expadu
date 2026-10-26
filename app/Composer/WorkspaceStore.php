@@ -132,6 +132,84 @@ class WorkspaceStore
     }
 
     /**
+     * Renames one of the person's conversations; an empty title goes back to the
+     * automatic one (its first message, as Composer names it). Null when it isn't theirs.
+     *
+     * @return array<string, mixed>|null the projected workspace
+     */
+    public function renameConversation(User $user, string $id, string $title): ?array
+    {
+        return $this->onConversation($user, $id, function (array &$s, int $i) use ($title): void {
+            $first = collect($s['conversations'][$i]['messages'])->firstWhere('role', 'user');
+            $title = trim(preg_replace('/\s+/', ' ', $title) ?? '');
+            $s['conversations'][$i]['title'] = $title !== ''
+                ? Str::limit($title, 64)
+                : ($first !== null ? Str::limit($first['text'], 64) : 'New conversation');
+        });
+    }
+
+    /**
+     * Deletes one of the person's conversations for good: its messages, and what Composer
+     * kept for it (the action records whose cards it holds, Paperwork's among them, and
+     * the plan changes its messages made, with their Undo). Plans stay as they are. When
+     * it's the open one, the next one opened is empty and listed nowhere until its first
+     * message. Null when it isn't theirs.
+     *
+     * @return array<string, mixed>|null the projected workspace
+     */
+    public function deleteConversation(User $user, string $id): ?array
+    {
+        return $this->onConversation($user, $id, function (array &$s, int $i) use ($user): void {
+            $messages = $s['conversations'][$i]['messages'];
+            $cards = collect($messages)->flatMap(fn (array $m): array => array_column($m['blocks'] ?? [], 'id'))
+                ->map(fn (mixed $card): string => preg_replace('/:plan$/', '', (string) $card) ?? '')->filter()->all();
+            $changes = collect($messages)->flatMap(fn (array $m): array => [$m['change_id'] ?? null, $m['reapplied_change'] ?? null])->filter()->all();
+            // Its plans waiting to be added (a proposal's hand-off), gone with it.
+            $handoffs = collect($messages)->flatMap(fn (array $m): array => array_column($m['blocks'] ?? [], 'token'))->filter(fn (mixed $t): bool => is_string($t))->all();
+            DB::afterCommit(fn () => collect($handoffs)->each(fn (string $token) => app(PrivatePlanCache::class)->forgetHandoff($user, $token)));
+            if (isset($s['actions'])) {
+                $s['actions'] = array_filter($s['actions'], fn (mixed $record, string $token): bool => ! in_array($token, $cards, true), ARRAY_FILTER_USE_BOTH);
+            }
+            $s['changes'] = array_values(array_filter($s['changes'], fn (array $change): bool => ! in_array($change['id'], $changes, true)));
+            $wasOpen = $s['conversations'][$i]['id'] === $s['active'];
+            array_splice($s['conversations'], $i, 1);
+            if ($wasOpen) {
+                // An empty one to open (an existing one, else a new one): never listed, so no chat appears.
+                $empty = collect($s['conversations'])->first(fn (array $c): bool => $c['messages'] === []);
+                if ($empty === null) {
+                    $empty = $this->conversation();
+                    $s['conversations'][] = $empty;
+                }
+                $s['active'] = $empty['id'];
+                $s['focus'] = null;
+            }
+        });
+    }
+
+    /**
+     * @param  callable(array<string, mixed>&, int): void  $change
+     * @return array<string, mixed>|null
+     */
+    private function onConversation(User $user, string $id, callable $change): ?array
+    {
+        return DB::transaction(function () use ($user, $id, $change): ?array {
+            $row = ComposerWorkspace::query()->where('user_id', $user->id)->lockForUpdate()->first();
+            if ($row === null) {
+                return null;
+            }
+            $s = $this->state($row);
+            $i = collect($s['conversations'])->search(fn (array $c): bool => $c['id'] === $id);
+            if ($i === false) {
+                return null;
+            }
+            $change($s, $i);
+            $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+
+            return $this->projectState($s) + ['revision' => $row->revision];
+        });
+    }
+
+    /**
      * Erasure worker: the copies of a person's Paperwork that Composer keeps (its record and
      * change cards, the checklist card, and the proposals and Undo it holds for Paperwork).
      */

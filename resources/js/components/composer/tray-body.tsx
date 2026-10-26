@@ -6,6 +6,7 @@ import {
 import { Icon } from '@/components/ui/icon';
 import type { AiNotice } from './ai-notice';
 import type { MenuPick } from './composer-box';
+import { ManagedConversation } from './conversation-menu';
 import { ComposerLoading } from './loading';
 import { ComposerSurface, useComposerSurface } from './surface';
 import type { SurfaceContext } from './surface';
@@ -320,22 +321,40 @@ function Body({
                             </button>
                         </div>
                         {recent.map((conversation) => (
-                            <button
-                                type="button"
+                            <ManagedConversation
                                 key={conversation.id}
-                                className="composer-tray-start-row"
-                                disabled={!!busy}
-                                onClick={() => void open(conversation.id)}
-                            >
-                                <Icon name="clock" variant="line" />
-                                <span className="composer-tray-start-copy">
-                                    <strong>{conversation.title}</strong>
-                                    <small>
-                                        {conversationMeta(conversation)}
-                                    </small>
-                                </span>
-                                <Icon name="next" variant="line" />
-                            </button>
+                                conversation={conversation}
+                                busy={!!busy}
+                                onRename={(title) =>
+                                    surface.renameConversation(
+                                        conversation.id,
+                                        title,
+                                    )
+                                }
+                                onDelete={() =>
+                                    surface.deleteConversation(conversation.id)
+                                }
+                                row={
+                                    <button
+                                        type="button"
+                                        className="composer-tray-start-row"
+                                        disabled={!!busy}
+                                        onClick={() =>
+                                            void open(conversation.id)
+                                        }
+                                    >
+                                        <Icon name="clock" variant="line" />
+                                        <span className="composer-tray-start-copy">
+                                            <strong>
+                                                {conversation.title}
+                                            </strong>
+                                            <small>
+                                                {conversationMeta(conversation)}
+                                            </small>
+                                        </span>
+                                    </button>
+                                }
+                            />
                         ))}
                     </div>
                 )}
