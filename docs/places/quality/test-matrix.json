@@ -344,6 +344,49 @@
         "Bar"
       ],
       "note": "live music is not in the data; the answer must say so (AI eval), then offer bars"
+    },
+    {
+      "ask": "TK Maxx near Neumarkt",
+      "tool": "find_place",
+      "input": {
+        "name": "TK Maxx",
+        "area": "Altstadt-Süd"
+      },
+      "kinds": [
+        "Department store",
+        "Clothes shop"
+      ],
+      "areas": [
+        "Altstadt-Süd"
+      ],
+      "min_results": 1,
+      "contains": "TK Maxx",
+      "note": "owner, 24 Oct: \"I am looking for a TkMaxx only … near Neumarkt\" found nothing; core shops import"
+    },
+    {
+      "ask": "an electronics shop near me",
+      "input": {
+        "kinds": [
+          "electronics"
+        ]
+      },
+      "kinds": [
+        "Electronics shop"
+      ],
+      "note": "core shops import, 24 Oct"
+    },
+    {
+      "ask": "IKEA",
+      "tool": "find_place",
+      "input": {
+        "name": "IKEA"
+      },
+      "kinds": [
+        "Furniture shop"
+      ],
+      "min_results": 0,
+      "contains": "IKEA",
+      "note": "two IKEAs (Godorf, Ossendorf): an answer that names IKEA, one or both"
     }
   ]
 }
