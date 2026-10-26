@@ -1140,3 +1140,30 @@
 .composer-page .answer-board-full::after {
     content: '→';
 }
+
+/* Places as Around here draws them (its .around rows), one under another,
+   each with its "because" and Not this under it. */
+.composer-page .answer-place-rows {
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.composer-page .answer-place-rows > li {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.composer-page .answer-place-rows .answer-fine {
+    margin: 0;
+}
+.composer-page .nearby-answer-copy .nearby-answer-hours {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+
+/* A trip answer's major headline (Travel's Headline, open or closed): the
+   same gap to the answer's words as between its other parts. */
+.composer-page .answer-major {
+    margin: 0 0 var(--space-14);
+}
