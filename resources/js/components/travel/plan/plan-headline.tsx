@@ -29,7 +29,8 @@ const vehicles = (mode: string, count: number) =>
             ? 'tram'
             : 'trams';
 
-const publisher = (source: string | null | undefined) =>
+/** Who published a notice, by its feed (Composer's trip answer says it too). */
+export const publisher = (source: string | null | undefined) =>
     source?.startsWith('kvb')
         ? 'KVB’s notice'
         : source === 'vrs-trias'
@@ -38,7 +39,8 @@ const publisher = (source: string | null | undefined) =>
             ? 'DELFI’s notice (gtfs.de)'
             : 'Notice';
 
-const day = (iso: string | null | undefined) =>
+/** A notice's start, "23 Oct". */
+export const day = (iso: string | null | undefined) =>
     iso
         ? new Date(iso).toLocaleDateString('en-GB', {
               day: 'numeric',
@@ -46,6 +48,9 @@ const day = (iso: string | null | undefined) =>
               timeZone: 'Europe/Berlin',
           })
         : null;
+
+/** A major from the live times, where there's no notice. */
+export const LIVE_SOURCE = 'From the live times · no notice';
 
 const rides = (option: PlanOption, lines: string[]) =>
     linesOf(option.journey).some((line) => lines.includes(line));
@@ -135,7 +140,7 @@ export function PlanHeadline({
                       ? `By bike it’s ${bike.journey.duration_min} min.`
                       : null
             }
-            source="From the live times · no notice"
+            source={LIVE_SOURCE}
         />
     );
 }

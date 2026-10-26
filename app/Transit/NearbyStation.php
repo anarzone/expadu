@@ -4,6 +4,7 @@ namespace App\Transit;
 
 use App\Composer\TravelEstimator;
 use App\Services\DisruptionService;
+use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Services\TimetableService;
@@ -250,7 +251,7 @@ class NearbyStation
      */
     private function station(string $name, array $points, array $areas, array $rows, array $boards): array
     {
-        $lines = $this->lines($rows, $areas);
+        $lines = $this->lines($rows, $areas, app(GtfsDepartureService::class)->headways($name));
 
         // A line the KVB points don't list gets an area of its own mode.
         foreach ($lines as $i => $line) {
@@ -350,9 +351,10 @@ class NearbyStation
      *
      * @param  list<array<string, mixed>>  $rows
      * @param  array<string, array<string, mixed>>  $areas
+     * @param  array<string, int>  $headways  usual minutes between runs, by "line|headsign" (GtfsDepartureService::headways)
      * @return list<array<string, mixed>>
      */
-    private function lines(array $rows, array $areas): array
+    private function lines(array $rows, array $areas, array $headways = []): array
     {
         $byLine = [];
         $this->byDirection = [];
@@ -391,6 +393,10 @@ class NearbyStation
                 'later_recorded' => count($runs) >= self::LATER_SHOWN,
                 'cancelled' => $cancelled,
                 'disrupted' => (bool) ($row['disrupted'] ?? false),
+                // Its usual minutes between runs here now, by the timetable
+                // (null when it doesn't say): a long wait is one beyond it.
+                'headway' => collect($headways)->first(fn (int $minutes, string $key) => str_starts_with($key, $line.'|')
+                    && self::sameWay((string) ($row['destination'] ?? ''), substr($key, strlen($line) + 1))),
             ];
         }
 
