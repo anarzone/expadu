@@ -64,7 +64,7 @@ class TimetableController extends Controller
                 : null,
             // A place's "Get there": the place by its id, resolved here too.
             'handoffPlace' => fn () => $request->filled('place')
-                ? app(PlaceHandoff::class)->for($request->query('place'))
+                ? app(PlaceHandoff::class)->for($request->query('place'), $request->query('part'))
                 : null,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             // The person's own step-free need: Plan a trip and Nearby start
