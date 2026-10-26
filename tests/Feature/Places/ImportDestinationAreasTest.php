@@ -3,6 +3,7 @@
 use App\Models\Spot;
 use App\Models\SpotEnrichment;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -190,3 +191,24 @@ test('area import refresh preserves reviewed component and independent decisions
 /**
  * @return array<string, mixed>
  */
+test('shops inside a mapped mall stand in it, and the mall says what it holds', function () {
+    $mall = Spot::factory()->create(['name' => 'Rhein-Center', 'category' => 'shopping_centre', 'source' => 'osm', 'source_id' => 'way/401', 'lat' => 50.9505, 'lng' => 6.9505]);
+    $clothes = Spot::factory()->create(['name' => 'TK Maxx', 'category' => 'clothes', 'lat' => 50.9504, 'lng' => 6.9504]);
+    $shoes = Spot::factory()->create(['name' => 'Deichmann', 'category' => 'shoes', 'lat' => 50.9506, 'lng' => 6.9506]);
+    $outside = Spot::factory()->create(['name' => 'Saturn', 'category' => 'electronics', 'lat' => 50.9704, 'lng' => 6.9704]);
+
+    $area = areaWay(401, 'Rhein-Center', 'park', 50.95, 6.95);
+    unset($area['tags']['leisure']);
+    $area['tags']['shop'] = 'mall';
+    Http::fake(['*' => Http::response(['elements' => [$area]])]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+
+    $facts = app(PlaceFacts::class);
+    expect(DB::table('park_areas')->where('osm_id', 4011)->value('kind'))->toBe('mall')
+        ->and($mall->fresh()->parent_spot_id)->toBeNull() // never inside itself
+        ->and($facts->resolve($clothes->fresh())['within'])->toBe(['id' => $mall->id, 'name' => 'Rhein-Center', 'kind' => 'shopping_centre'])
+        ->and($facts->resolve($outside->fresh())['within'])->toBeNull()
+        ->and($facts->resolve($mall->fresh())['inside'])->toBe(['Clothes shop' => 1, 'Shoe shop' => 1])
+        ->and($facts->resolve($shoes->fresh())['inside'])->toBeNull();
+});
