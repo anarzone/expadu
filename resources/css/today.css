@@ -1050,6 +1050,14 @@ a.plan-link:hover {
 .stop-list li[aria-selected='false'] svg {
     visibility: hidden;
 }
+.stop-list li > span {
+    flex: 1;
+}
+/* A stop they pick often (learned, opt-in), after their favourites. */
+.stop-often {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
 .board-capture {
     margin: 8px 0 2px;
     color: var(--color-text-soft);
