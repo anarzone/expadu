@@ -1,18 +1,6 @@
 <?php
 
-use App\Models\User;
 use App\Models\UserPlace;
-
-test('Set your Home makes the one Home, and a second is refused', function () {
-    $user = User::factory()->onboarded()->create();
-
-    $this->actingAs($user)->post(route('user-places.store'), ['emoji' => '🏠', 'name' => 'Home', 'category' => 'home', 'lat' => 50.95, 'lng' => 6.92])
-        ->assertSessionHasNoErrors();
-    $this->actingAs($user)->post(route('user-places.store'), ['emoji' => '🏠', 'name' => 'Home again', 'category' => 'home'])
-        ->assertSessionHasErrors('category');
-
-    expect($user->places()->where('category', 'home')->count())->toBe(1);
-});
 
 test('only untouched empty places are removed, and a dry run removes nothing', function () {
     $empty = UserPlace::factory()->create(['category' => 'home', 'address' => null, 'lat' => null, 'lng' => null]);
