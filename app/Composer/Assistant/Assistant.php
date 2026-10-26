@@ -23,6 +23,7 @@ use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 /**
  * Composer's assistant (owner, 22 Oct 2026: "it should act as a proper assistant"). For an
@@ -34,13 +35,31 @@ use Illuminate\Support\Facades\Http;
  * personalisation, also their taste and their day, and then it may say why it suggests
  * something ("You like live music"), checked against that taste.
  *
+ * It knows this conversation (owner's preview test, 22 Oct 2026: "still dumb, not thinking"):
+ * what the person asked before and what it suggested. "Nope, something else" leaves all of
+ * that out of its lookups and changes direction; "cheaper", "closer" or "later" adjusts the
+ * last suggestions instead of starting over.
+ *
  * One permit covers the whole exchange (ExternalProcessingGate::session); a withdrawal
- * stops the next call. One round of lookups, then the answer, within a time budget.
+ * stops the next call. A round of lookups, a second only when the first found nothing that
+ * fits and time allows, then the answer, within a time budget.
  */
 final class Assistant
 {
-    /** Calls: one round of lookups (several at once), then the answer (owner: open requests in 3–6 s). */
-    private const ROUNDS = 2;
+    /** Calls: a round of lookups, a second if needed, then the answer (owner: open requests in 3–6 s). */
+    private const ROUNDS = 3;
+
+    /** Past this many seconds it answers with what it has, rather than look again. */
+    private const LOOK_AGAIN_SECONDS = 4.5;
+
+    /** Earlier turns of this conversation it's given. */
+    private const TURNS = 6;
+
+    /** Turning down what was suggested ("nope", "something else", "not that"). */
+    public const REFUSAL = '/^\s*(no+|nope|nah|meh|neither|none|boring)\b|\bnot (really|that|those|these|this|it|them|for me|interested|my thing)\b|\b(something|anything|somewhere) (else|different|new)\b|\b(another|other|different|new) (one|thing|things|idea|ideas|option|options|place|places|suggestion|suggestions)\b|\bdon\'?t (like|want|fancy) (that|those|these|it|them|any)\b|\binstead\b/iu';
+
+    /** Adjusting what was suggested ("cheaper", "closer to me", "indoors", "later tonight"). */
+    private const REFINES = '/\b(cheaper|cheap|free|less expensive|closer|nearer|near me|nearby|close by|indoors?|inside|outdoors?|outside|later|earlier|tonight|tomorrow|quieter|livelier|calmer|smaller|bigger|with (kids|friends|my partner)|for (kids|two))\b/iu';
 
     /** The whole exchange, in seconds. */
     private const BUDGET_SECONDS = 14.0;
@@ -52,7 +71,8 @@ final class Assistant
         You are Composer, the assistant in Expadu, an app for people new to Cologne. The person asked something open or vague ("I'm bored", "anything fun?", "something chill after work?"). Look things up with the tools, then answer with the answer tool.
 
         How to work:
-        - Decide what to look at: what's on (search_events), places to go (search_places), the weather. You get one round of lookups, so make them all at once (several tools in one go); then you answer.
+        - Decide what to look at: what's on (search_events), places to go (search_places), the weather. Make your lookups all at once (several tools in one go). Look again only when what you found doesn't fit the request or everything was left out; then answer.
+        - Use the conversation: when they turn your suggestions down ("nope", "something else"), suggest something of another kind or in another area, never the same things again. When they adjust ("cheaper", "closer", "indoors", "later"), keep what still fits and change what they asked (free, indoors, a later time), saying how it differs.
         - Suggest two or three concrete things that fit the time of day, the weather and what the person said. Prefer what's still to come today, unless they named another day.
         - Lead with your best suggestion. When nothing is listed, don't dwell on it: suggest places instead, or offer to plan something.
         - When they ask something you can't do (a joke, a booking, an order, general knowledge), say so in a few words first, then suggest.
@@ -96,6 +116,9 @@ final class Assistant
     /** Ids of the person's own facts (my_taste, my_day): a sentence citing one may speak of them. */
     private const PERSONAL_IDS = '/^(t|a|h|w|d)\d+$/';
 
+    /** The last answer as written, before the checks (composer:eval reads what was dropped). */
+    public ?array $written = null;
+
     public function __construct(
         private ExternalProcessingGate $gate,
         private CandidateRepository $catalogue,
@@ -119,6 +142,55 @@ final class Assistant
                 && $plan->categories === [] && $plan->activities === [] && $plan->areas === [] && $plan->sequence === [] && $plan->needs === []);
     }
 
+    /**
+     * Whether a message follows up the assistant's last answer in this conversation: it turns
+     * those suggestions down or adjusts them ("cheaper", "closer", "later tonight"), or is a
+     * few words that only make sense after it. Then the assistant answers it, whatever the
+     * words alone would be read as.
+     *
+     * @param  array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>}}  $history
+     */
+    public static function followsUp(string $text, array $history): bool
+    {
+        $suggested = $history['suggested']['event'] + $history['suggested']['spot'];
+        $last = end($history['turns']);
+
+        return $suggested !== [] && is_array($last) && $last['role'] === 'assistant' && preg_match('/\bplan(en)?\b/iu', $text) !== 1
+            && (preg_match(self::REFUSAL, $text) === 1 || preg_match(self::REFINES, $text) === 1 || str_word_count($text) <= 4);
+    }
+
+    /**
+     * This conversation so far, as the assistant may read it: the person's earlier messages
+     * and what was answered, and what the assistant suggested in its last answers.
+     *
+     * @param  list<array<string, mixed>>  $messages  the conversation's messages before the one being answered
+     * @return array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>}}
+     */
+    public static function history(array $messages): array
+    {
+        $recent = array_slice(array_values(array_filter($messages, fn (mixed $m): bool => is_array($m) && in_array($m['role'] ?? null, ['user', 'assistant'], true)
+            && trim((string) ($m['text'] ?? '')) !== '')), -self::TURNS);
+        $suggested = ['event' => [], 'spot' => []];
+        $turns = [];
+        foreach ($recent as $m) {
+            $text = trim((string) $m['text']);
+            if ($m['role'] === 'assistant' && ($m['kind'] ?? null) === 'around') {
+                foreach ($m['events'] ?? [] as $event) {
+                    $suggested['event'][(int) $event['id']] = (string) $event['title'];
+                }
+                foreach ($m['places'] ?? [] as $place) {
+                    $suggested['spot'][(int) $place['id']] = (string) $place['name'];
+                }
+                $named = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing)", $m['events'] ?? []),
+                    ...array_map(fn (array $p): string => "\"{$p['name']}\" (place)", $m['places'] ?? [])];
+                $text .= $named !== [] ? ' Suggested: '.implode(', ', $named).'.' : '';
+            }
+            $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 600)];
+        }
+
+        return ['turns' => $turns, 'suggested' => $suggested];
+    }
+
     /** What one request sends, which its permit is bound to: the words and the home Veedel. */
     public static function processingContext(string $text, Profile $profile): array
     {
@@ -133,26 +205,39 @@ final class Assistant
      * @param  array{0: float, 1: float}  $origin  where nearness is measured from (never sent)
      * @param  array<string, array<string, mixed>>  $plans  the person's Composer plans, by date (sent only with the opt-in)
      * @param  string|null  $progress  where the page reads how far it's got
+     * @param  array{turns: list<array{role: string, text: string}>, suggested: array{event: array<int, string>, spot: array<int, string>}}|null  $history  this conversation so far (self::history)
      * @return array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string, read: array<string, string>, taste: bool, invite: bool}|null
      */
-    public function answer(User $user, string $text, Profile $profile, CarbonImmutable $now, array $origin, ?ProcessingPermit $permit, array $plans = [], ?string $progress = null): ?array
+    public function answer(User $user, string $text, Profile $profile, CarbonImmutable $now, array $origin, ?ProcessingPermit $permit, array $plans = [], ?string $progress = null, ?array $history = null): ?array
     {
         $now = $now->setTimezone('Europe/Berlin');
         $personal = $user->personalises();
+        $history ??= ['turns' => [], 'suggested' => ['event' => [], 'spot' => []]];
+        // Turned down: what it suggested in this conversation is left out of every lookup.
+        $refused = preg_match(self::REFUSAL, $text) === 1;
         $tools = new AssistantTools($now, $origin[0], $origin[1], $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
             $personal ? app(TasteFacts::class)->for($user) : null,
             $personal ? app(AroundNow::class)->day($user, $plans, $now) : [],
-            $progress);
+            $progress,
+            $refused ? ['event' => array_keys($history['suggested']['event']), 'spot' => array_keys($history['suggested']['spot'])] : ['event' => [], 'spot' => []]);
+        try {
+            $weather = ($this->weather->getCurrentWeather()['available'] ?? false) === true;
+        } catch (Throwable) {
+            $weather = false;
+        }
         $started = hrtime(true);
 
         $result = $this->gate->session($permit, ProcessingPurpose::ComposerAssist, self::processingContext($text, $profile),
-            fn (Closure $call): ?array => $this->converse($call, $tools, $text, $profile, $now, $started));
-        if (! is_array($result['answer'] ?? null)) {
+            fn (Closure $call): ?array => $this->converse($call, $tools, $text, $profile, $now, $started, $history, $refused, $weather));
+        $this->written = is_array($result['answer'] ?? null) ? $result['answer'] : null;
+        if ($this->written === null) {
             return null;
         }
 
-        $built = $this->built($result['answer'], $tools, $now);
+        // A sentence may also name the home Veedel and what was suggested earlier in this conversation.
+        $built = $this->built($result['answer'], $tools, $now, 'Home Veedel: '.($profile->veedel ?? '')."\n"
+            .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']]));
 
         // Without the opt-in, the answer invites it (session 2 shows the line); `looked` says what
         // the AI was given (listings, places, weather, and with the opt-in plans, taste).
@@ -164,18 +249,28 @@ final class Assistant
      *
      * @return array{answer: array<string, mixed>, rounds: int}|null
      */
-    private function converse(Closure $call, AssistantTools $tools, string $text, Profile $profile, CarbonImmutable $now, int $started): ?array
+    private function converse(Closure $call, AssistantTools $tools, string $text, Profile $profile, CarbonImmutable $now, int $started, array $history, bool $refused, bool $weather): ?array
     {
-        $messages = [['role' => 'user', 'content' => "Now: {$now->format('l j F, H:i')}, Cologne.\n"
-            .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nRequest: \"{$text}\""]];
+        // The conversation so far, then the request; earlier messages are untrusted words like it.
+        $earlier = $history['turns'] === [] ? '' : "Earlier in this conversation (oldest first):\n"
+            .collect($history['turns'])->map(fn (array $t): string => ($t['role'] === 'user' ? '- They asked: "' : '- You answered: "').$t['text'].'"')->implode("\n")."\n\n";
+        $direction = match (true) {
+            $refused && ($history['suggested']['event'] !== [] || $history['suggested']['spot'] !== []) => "\n\nThey turned down what you suggested: none of it comes back in your lookups. Suggest something of another kind or in another area.",
+            $history['turns'] !== [] => "\n\nIf this adjusts your last suggestions, keep what still fits and change what they asked.",
+            default => '',
+        };
+        $messages = [['role' => 'user', 'content' => $earlier."Now: {$now->format('l j F, H:i')}, Cologne.\n"
+            .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nRequest: \"{$text}\"".$direction]];
 
         for ($round = 1; $round <= self::ROUNDS; $round++) {
-            $tools->progress($round === 1 ? 'reading' : 'writing');
-            $left = self::BUDGET_SECONDS - (hrtime(true) - $started) / 1e9;
+            $elapsed = (hrtime(true) - $started) / 1e9;
+            $left = self::BUDGET_SECONDS - $elapsed;
             if ($left < 1.5) {
                 return null;
             }
-            $last = $round === self::ROUNDS || $left < 4.0;
+            // A second look only while there's time for it; then the answer.
+            $last = $round === self::ROUNDS || ($round > 1 && $elapsed >= self::LOOK_AGAIN_SECONDS) || $left < 4.0;
+            $tools->progress($round > 1 && $last ? 'writing' : 'reading');
             $callStarted = hrtime(true);
             $body = $call(fn () => Http::baseUrl((string) config('services.llm.base_url'))
                 ->withOptions(['allow_redirects' => false])
@@ -186,7 +281,7 @@ final class Assistant
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
-                    'tools' => [...AssistantTools::definitions($tools->personal()), self::ANSWER],
+                    'tools' => [...AssistantTools::definitions($tools->personal(), $weather), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
                     'system' => [['type' => 'text', 'text' => self::SYSTEM, 'cache_control' => ['type' => 'ephemeral']],
@@ -220,9 +315,9 @@ final class Assistant
      * @param  array<string, mixed>  $answer
      * @return array{lead: string, events: list<array<string, mixed>>, places: list<array<string, mixed>>, weather: ?string}|null
      */
-    private function built(array $answer, AssistantTools $tools, CarbonImmutable $now): ?array
+    private function built(array $answer, AssistantTools $tools, CarbonImmutable $now, string $known = ''): ?array
     {
-        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '');
+        $always = $now->format('l j F, H:i').', Cologne'."\n".($tools->read['weather'] ?? '')."\n".$known;
         $cited = fn (mixed $uses): array => array_values(array_filter(is_array($uses) ? $uses : [], fn (mixed $id): bool => is_string($id) && isset($tools->read[$id])));
         // A sentence citing the person's own facts may speak of them (only they were given those).
         $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,

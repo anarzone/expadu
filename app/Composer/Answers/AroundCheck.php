@@ -33,7 +33,9 @@ final class AroundCheck
         '/\bstorm\w*/u', '/\bcloud\w*/u', '/\bovercast\b/u', '/\bfog\w*/u', '/\bclear\b/u', '/\bthunder\w*/u',
         '/\bdelay\w*/u', '/\bcancel\w*/u', '/\bdivert\w*/u', '/\bstrikes?\b/u', '/\bclosed\b/u', '/\bcrowd\w*/u', '/\bbusy\b/u',
         '/\bpopular\b/u', '/\bfamous\b/u', '/\bbest\b/u', '/\biconic\b/u', '/\blegendary\b/u', '/\baward\w*/u', '/\bpremiere\b/u',
-        '/\boutdoors?\b/u', '/\bindoors?\b/u', '/\bopen[ -]air\b/u', '/\blast chance\b/u', '/\bfamil(y|ies)\b/u', '/\bkids?\b/u', '/\bchildren\b/u'];
+        '/\boutdoors?\b/u', '/\bindoors?\b/u', '/\bopen[ -]air\b/u', '/\blast chance\b/u', '/\bfamil(y|ies)\b/u', '/\bkids?\b/u', '/\bchildren\b/u',
+        // Access is a fact only a listing can state (the assistant called a museum "step-free", 22 Oct 2026).
+        '/\bstep[- ]?free\b/u', '/\bwheelchair\w*/u', '/\baccessib\w*/u', '/\bbarrier[- ]?free\b/u', '/\blifts?\b/u'];
 
     /** Counts are claims too; none is checked against the listings, so none is kept. */
     private const COUNTS = '/\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|dozens?|hundreds?|thousands?)\b/u';

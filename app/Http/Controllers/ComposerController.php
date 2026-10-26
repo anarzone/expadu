@@ -224,8 +224,12 @@ class ComposerController extends Controller
                 AnthropicPromptParser::processingContext($validated['text'], $profile, $facts), $validated['processing'])
             : null;
 
-        // Plainly casual ("What's up?"): the assistant answers without a read first, a second sooner.
-        $parsed = $permit !== null && $routed['kind'] === 'around' && ProcessingPurpose::ComposerAssist->available()
+        // This conversation so far: a follow-up to the assistant ("nope, something else", "cheaper")
+        // goes back to it with what it suggested.
+        $history = Assistant::history(self::earlierMessages(app(WorkspaceStore::class)->read($request->user())));
+        $followsUp = Assistant::followsUp($validated['text'], $history);
+        // Plainly casual ("What's up?") or a follow-up: the assistant answers without a read first, a second sooner.
+        $parsed = $permit !== null && ($routed['kind'] === 'around' || $followsUp) && ProcessingPurpose::ComposerAssist->available()
             ? new ParsedPrompt(PromptIntent::Open, source: 'llm')
             : ($parser instanceof AnthropicPromptParser
                 ? $parser->parse($validated['text'], $profile, $now, $permit, $facts)
@@ -240,7 +244,7 @@ class ComposerController extends Controller
         }
         // The assistant first: an open request is answered either way, and its answer waits for the workspace's.
         $assisted = $this->assisted($request->user(), $validated['text'], $profile, $parsed, $permit, $now,
-            self::progressKey($request->user(), (string) ($validated['processing']['request_id'] ?? '')));
+            self::progressKey($request->user(), (string) ($validated['processing']['request_id'] ?? '')), $history, $followsUp);
         $answered = $assisted || Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered,
@@ -277,22 +281,37 @@ class ComposerController extends Controller
      * things up and answers, under the same say-so as the read; its answer waits for the
      * workspace's. False when it doesn't answer (off, refused, or nothing it wrote held).
      */
-    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?string $progress): bool
+    private function assisted(User $user, string $text, Profile $profile, ParsedPrompt $parsed, ?ProcessingPermit $permit, CarbonImmutable $now, ?string $progress, array $history, bool $followsUp): bool
     {
-        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || ! Assistant::wanted($parsed, $text)) {
+        if ($permit === null || ! ProcessingPurpose::ComposerAssist->available() || (! $followsUp && ! Assistant::wanted($parsed, $text))) {
             return false;
         }
         $location = app(UserLocationService::class)->context($user, null, $user->veedel);
         $answer = app(Assistant::class)->answer($user, $text, $profile, $now, $location->hasOrigin()
             ? [(float) $location->lat, (float) $location->lng] : [CandidateRepository::COLOGNE_LAT, CandidateRepository::COLOGNE_LNG],
             app(ProcessingConsentStore::class)->derive($permit, ProcessingPurpose::ComposerAssist, Assistant::processingContext($text, $profile)),
-            app(WorkspaceStore::class)->read($user)['plans'] ?? [], $progress);
+            app(WorkspaceStore::class)->read($user)['plans'] ?? [], $progress, $history);
         if ($answer === null) {
             return false;
         }
         app(AroundNow::class)->keepAssisted($user, $text, $answer, $now);
 
         return true;
+    }
+
+    /**
+     * The active conversation's messages before the one being answered (the page sends the
+     * message to the workspace before it asks for the read).
+     *
+     * @param  array<string, mixed>  $workspace
+     * @return list<array<string, mixed>>
+     */
+    public static function earlierMessages(array $workspace): array
+    {
+        $messages = collect($workspace['conversations'] ?? [])->firstWhere('id', $workspace['active'] ?? null)['messages'] ?? [];
+        $last = array_key_last(array_filter($messages, fn (mixed $m): bool => is_array($m) && ($m['role'] ?? null) === 'user'));
+
+        return $last === null ? $messages : array_slice($messages, 0, $last);
     }
 
     /** Where a request's progress is kept for the page (its permit's request id); null without one. */

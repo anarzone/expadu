@@ -33,7 +33,8 @@ class CandidateRepository
 
     public const COLOGNE_LNG = 6.9603;
 
-    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite'];
+    // As SpotCategory::isOutdoor() has them (a zoo is outdoors: the assistant called one "indoor", 22 Oct 2026).
+    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite', 'zoo'];
 
     private const GENERIC_MICRO_FACILITY_LABELS = [
         'Spielplatz', 'Bolzplatz', 'Basketballplatz', 'Tennisplatz',

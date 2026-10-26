@@ -121,6 +121,10 @@ final class Answers
     /** @return array{kind: string, date: string}&array<string, mixed> */
     public function route(User $user, string $text, CarbonImmutable $now, ?string $focus): array
     {
+        // The assistant answered this request ("later tonight" after its suggestions): its answer stands.
+        if ($this->around->assisted($user, $text)) {
+            return ['kind' => 'around', 'date' => $now->setTimezone('Europe/Berlin')->toDateString()];
+        }
         $routed = $this->router->route($text, $this->context($user, $now, $focus));
         // A trip the AI read where the words alone didn't say so ("how cn i get 2 cafe nova").
         $trip = in_array($routed['kind'], self::UNSPECIFIC, true) && ! isset($routed['place']) ? Cache::get(self::tripKey($user, $text)) : null;
