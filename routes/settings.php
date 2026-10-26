@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AccountExportController;
 use App\Http\Controllers\Settings\NotificationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -32,5 +33,11 @@ Route::middleware(['auth', 'verified', 'throttle:app-writes'])->group(function (
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    // Download your data: confirmed like deleting the account; the file is
+    // only the asker's and lasts 24 hours (AccountExportController).
+    Route::get('settings/export', [AccountExportController::class, 'show'])->name('account-export.show');
+    Route::post('settings/export', [AccountExportController::class, 'store'])->middleware('throttle:6,1')->name('account-export.store');
+    Route::get('settings/export/{export}', [AccountExportController::class, 'download'])->name('account-export.download');
 
 });
