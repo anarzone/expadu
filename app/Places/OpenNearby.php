@@ -10,6 +10,7 @@ use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Services\NearbyPlaces;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -318,6 +319,39 @@ final class OpenNearby
      */
     private function nearest(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for, bool $hideBeen): array
     {
+        $spots = $this->candidates($lat, $lng, $kinds, $radiusKm, $take, $for, $hideBeen)
+            // Each row looks for a rights-cleared photo: load them with the places.
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
+            ->get();
+
+        return [$spots, $this->facts->resolveMany($spots)];
+    }
+
+    /**
+     * nearest()'s places as ids only, nearest first, without resolving their
+     * facts: for a caller that keeps each place's row in a cache by its id
+     * (Today, rows()). The point stays in this query.
+     *
+     * @param  list<string>  $kinds
+     * @return list<int>
+     */
+    public function nearestIds(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for = null, bool $hideBeen = false): array
+    {
+        return $this->candidates($lat, $lng, $kinds, $radiusKm, $take, $for, $hideBeen)
+            ->pluck('spots.id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * The query for the nearest places of these kinds that may be
+     * recommended and that the person hasn't set aside, nearest first.
+     *
+     * @param  list<string>  $kinds
+     * @return Builder<Spot>
+     */
+    private function candidates(float $lat, float $lng, array $kinds, float $radiusKm, int $take, ?User $for, bool $hideBeen): Builder
+    {
         $hidden = $for === null ? [] : SpotFeedback::effectiveForUser($for->id)
             ->filter(fn (SpotFeedback $row): bool => $hideBeen ? $row->hiddenFromDiscovery() : $row->state === SpotFeedbackState::NotInterested)
             ->keys()
@@ -328,13 +362,9 @@ final class OpenNearby
             ->whereNotNull('lng')
             ->whereIn('category', $kinds)
             ->when($hidden !== [], fn ($q) => $q->whereNotIn(DB::raw('coalesce(spots.canonical_spot_id, spots.id)'), $hidden));
-        $spots = $this->nearby->orderByDistance($this->nearby->withinKm($query, $lat, $lng, $radiusKm), $lat, $lng)
-            ->limit($take)
-            // Each row looks for a rights-cleared photo: load them with the places.
-            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
-            ->get();
 
-        return [$spots, $this->facts->resolveMany($spots)];
+        return $this->nearby->orderByDistance($this->nearby->withinKm($query, $lat, $lng, $radiusKm), $lat, $lng)
+            ->limit($take);
     }
 
     /**
