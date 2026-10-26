@@ -64,30 +64,21 @@ function weekOf(date: string): string[] {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-/** When a conversation was last written in: its newest message, else its start. */
-export const lastActive = (conversation: Conversation) =>
-    conversation.messages.at(-1)?.created_at ?? conversation.created_at;
-
 /** The conversations with at least one message, the most recent first. */
 export const askedConversations = (conversations: Conversation[]) =>
     conversations
-        .filter((conversation) =>
-            conversation.messages.some((message) => message.role === 'user'),
-        )
-        .toSorted((a, b) => lastActive(b).localeCompare(lastActive(a)));
+        .filter((conversation) => conversation.asked > 0)
+        .toSorted((a, b) => b.last_at.localeCompare(a.last_at));
 
 /** "23 Oct · 3 messages", as History counts a conversation. */
 export function conversationMeta(conversation: Conversation): string {
-    const asked = conversation.messages.filter(
-        (message) => message.role === 'user',
-    ).length;
     const day = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Europe/Berlin',
         day: 'numeric',
         month: 'short',
     }).format(new Date(conversation.created_at));
 
-    return `${day} · ${plural(asked, 'message')}`;
+    return `${day} · ${plural(conversation.asked, 'message')}`;
 }
 
 /**
