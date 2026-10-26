@@ -63,7 +63,7 @@ export default function Personalisation() {
             <Heading
                 variant="small"
                 title="Personalised suggestions"
-                description="Let Expadu learn from the places and events you open, save or skip."
+                description="Let Expadu learn from the places and events you open, save or skip. When you ask Composer something open, its AI then reads what you like and your plans for today and tomorrow."
             />
             <ToggleCard>
                 <ToggleRow
@@ -91,7 +91,9 @@ export default function Personalisation() {
                     <DialogDescription>
                         What Expadu learned from what you opened, saved or
                         skipped is deleted, and can’t be brought back.
-                        Suggestions go back to the same ones everyone sees.
+                        Suggestions go back to the same ones everyone sees, and
+                        Composer’s AI no longer reads what you like or your
+                        plans.
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>
