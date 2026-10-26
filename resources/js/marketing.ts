@@ -1,8 +1,29 @@
 /**
  * Marketing site (expadu.com): the small script every marketing page ships.
- * The header's menu on narrow screens, and the launch waitlist form. Every
- * page renders complete server-side; this file only enhances.
+ * The header's menu on narrow screens, the band the page slides over, and
+ * the launch waitlist form. Every page renders complete server-side; this
+ * file only enhances.
  */
+
+/* ── The band the page slides over ─────────────────────────────── */
+(() => {
+    const band = document.querySelector<HTMLElement>('.mk-band');
+
+    if (!band) {
+        return;
+    }
+
+    // A band taller than the screen (a long title on a phone) scrolls until
+    // its bottom is in view, then stays while the page covers it.
+    const place = () =>
+        band.style.setProperty(
+            '--band-top',
+            `${Math.min(0, window.innerHeight - band.offsetHeight)}px`,
+        );
+
+    place();
+    window.addEventListener('resize', place);
+})();
 
 /* ── Header menu (narrow screens) ──────────────────────────────── */
 (() => {
