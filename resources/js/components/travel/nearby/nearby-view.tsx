@@ -8,7 +8,7 @@ import {
     useRef,
     useState,
 } from 'react';
-import type { CSSProperties } from 'react';
+import type { ComponentProps, CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
@@ -27,9 +27,17 @@ import '../../../../css/travel.css';
 import '../../../../css/travel-page.css';
 
 // The lines map and a line's route: their code loads when Map is first wanted.
-const StationMap = lazy(() =>
+const LazyStationMap = lazy(() =>
     import('./station-map').then((module) => ({ default: module.StationMap })),
 );
+
+function StationMap(props: ComponentProps<typeof LazyStationMap>) {
+    return (
+        <Suspense fallback={null}>
+            <LazyStationMap {...props} />
+        </Suspense>
+    );
+}
 
 /**
  * Travel's Nearby (departures-next/nearby-ui.js): the station by boarding
@@ -992,22 +1000,20 @@ export function NearbyView({
                 )}
             </div>
             {linesMap ? (
-                <Suspense fallback={null}>
-                    <StationMap
-                        key={station.name}
-                        station={station}
-                        data={linesMap}
-                        open={mapOpen}
-                        onClose={closeMap}
-                        board={board}
-                        renderLine={row}
-                        onOpenBoard={(name) => {
-                            closeMap();
-                            onPickStop(name);
-                        }}
-                        onRouteLine={setRouteLine}
-                    />
-                </Suspense>
+                <StationMap
+                    key={station.name}
+                    station={station}
+                    data={linesMap}
+                    open={mapOpen}
+                    onClose={closeMap}
+                    board={board}
+                    renderLine={row}
+                    onOpenBoard={(name) => {
+                        closeMap();
+                        onPickStop(name);
+                    }}
+                    onRouteLine={setRouteLine}
+                />
             ) : null}
             {station.credits?.map((credit) => (
                 <p key={credit.name} className="nearby-credit">
