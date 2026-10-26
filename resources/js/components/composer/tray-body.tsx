@@ -11,7 +11,7 @@ import { ComposerLoading } from './loading';
 import { ComposerSurface, useComposerSurface } from './surface';
 import type { SurfaceContext } from './surface';
 import { api, ApiError } from './types';
-import type { Conversation, Workspace } from './types';
+import type { Workspace } from './types';
 import { askedConversations, conversationMeta } from './views';
 import type { ComposerView } from './views';
 import '../../../css/composer.css';
@@ -168,10 +168,6 @@ export default function TrayBody({
     );
 }
 
-/** The person's own messages in a conversation, as History counts them. */
-const askedIn = (conversation: Conversation) =>
-    conversation.messages.filter((message) => message.role === 'user').length;
-
 const focusBox = () =>
     document
         .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
@@ -271,8 +267,7 @@ function Body({
     if (view === 'start') {
         const current = workspace.conversations.find(
             (conversation) =>
-                conversation.id === workspace.active &&
-                askedIn(conversation) > 0,
+                conversation.id === workspace.active && conversation.asked > 0,
         );
         // The three most recent others with messages.
         const recent = askedConversations(workspace.conversations)
