@@ -11,14 +11,12 @@ use Inertia\Response;
 class NotificationController extends Controller
 {
     /**
-     * Show the notification settings page. Saving is handled by the existing
-     * NotificationPreferenceController@update (PUT /notification-preferences).
+     * Show the notification settings page: the toggles, quiet hours and the
+     * brief's time. Saving is NotificationPreferenceController@update
+     * (PUT /notification-preferences).
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('settings/notifications', [
-            'preferences' => $request->user()->notificationPreference?->preferences
-                ?? NotificationPreference::defaults(),
-        ]);
+        return Inertia::render('settings/notifications', NotificationPreference::stateFor($request->user()));
     }
 }
