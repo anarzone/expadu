@@ -5,6 +5,7 @@ import { GermanToggle, Headline } from '../headline';
 import type { HeadlineGerman, HeadlineItem } from '../headline';
 import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
+import { Slide } from '../slide';
 import { TravelIcon } from '../travel-icon';
 import type { Station } from './types';
 import { noticeWords } from './types';
@@ -228,7 +229,9 @@ function ReasonLine({
                 </span>
                 <TravelIcon name="down" />
             </button>
-            {open ? <div className="tl-reason-more">{children}</div> : null}
+            <Slide open={open}>
+                <div className="tl-reason-more">{children}</div>
+            </Slide>
         </div>
     );
 }

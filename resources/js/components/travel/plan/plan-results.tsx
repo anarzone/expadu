@@ -7,6 +7,7 @@ import { InGermanChip, KvbNoticeLink } from '../kvb-notice';
 import { TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleOf, vehicleWord } from '../line-look';
+import { Slide } from '../slide';
 import { TravelIcon } from '../travel-icon';
 import type { TravelIconName } from '../travel-icon';
 import {
@@ -94,58 +95,60 @@ export function PlanChecks({
                     <TravelIcon name="down" />
                 </span>
             </button>
-            <div
-                id="plan-checks-detail"
-                className="plan-checks-detail"
-                hidden={!open}
-            >
-                {checks.map((check) => (
-                    <p key={check.title}>
-                        <strong>{check.title}</strong>
-                        {check.notices ? (
-                            check.notices.map((notice, i) => (
-                                <span key={i} className="plan-check-notice">
-                                    {notice.lang === 'de' ? (
-                                        <InGermanChip
-                                            fromKvb={notice.url !== null}
-                                        />
-                                    ) : null}
-                                    <span
-                                        lang={
-                                            notice.lang === 'de'
-                                                ? 'de'
-                                                : undefined
-                                        }
-                                    >
-                                        {notice.words}
+            <Slide open={open} id="plan-checks-detail">
+                <div className="plan-checks-detail">
+                    {checks.map((check) => (
+                        <p key={check.title}>
+                            <strong>{check.title}</strong>
+                            {check.notices ? (
+                                check.notices.map((notice, i) => (
+                                    <span key={i} className="plan-check-notice">
+                                        {notice.lang === 'de' ? (
+                                            <InGermanChip
+                                                fromKvb={notice.url !== null}
+                                            />
+                                        ) : null}
+                                        <span
+                                            lang={
+                                                notice.lang === 'de'
+                                                    ? 'de'
+                                                    : undefined
+                                            }
+                                        >
+                                            {notice.words}
+                                        </span>
+                                        {notice.url ? (
+                                            <>
+                                                {' '}
+                                                <KvbNoticeLink
+                                                    url={notice.url}
+                                                />
+                                            </>
+                                        ) : null}
                                     </span>
-                                    {notice.url ? (
-                                        <>
-                                            {' '}
-                                            <KvbNoticeLink url={notice.url} />
-                                        </>
-                                    ) : null}
-                                </span>
-                            ))
-                        ) : (
-                            <span>{check.text}</span>
-                        )}
-                        {check.ticket && onTicket ? (
-                            <button
-                                type="button"
-                                className="plan-ticket-toggle"
-                                aria-pressed={check.ticket.held}
-                                disabled={ticketBusy}
-                                onClick={() => onTicket(!check.ticket!.held)}
-                            >
-                                {check.ticket.held
-                                    ? 'I don’t have one'
-                                    : 'I have a Deutschlandticket'}
-                            </button>
-                        ) : null}
-                    </p>
-                ))}
-            </div>
+                                ))
+                            ) : (
+                                <span>{check.text}</span>
+                            )}
+                            {check.ticket && onTicket ? (
+                                <button
+                                    type="button"
+                                    className="plan-ticket-toggle"
+                                    aria-pressed={check.ticket.held}
+                                    disabled={ticketBusy}
+                                    onClick={() =>
+                                        onTicket(!check.ticket!.held)
+                                    }
+                                >
+                                    {check.ticket.held
+                                        ? 'I don’t have one'
+                                        : 'I have a Deutschlandticket'}
+                                </button>
+                            ) : null}
+                        </p>
+                    ))}
+                </div>
+            </Slide>
         </section>
     );
 }
@@ -539,27 +542,21 @@ export function PlanOptions({
                                     </button>
                                 </>
                             )}
-                            <div
+                            <Slide
+                                open={open}
                                 id={disclosure}
                                 className="route-disclosure"
-                                aria-hidden={!open}
-                                inert={!open}
+                                innerClassName="route-disclosure-inner"
                             >
-                                <div className="route-disclosure-inner">
-                                    {open ? (
-                                        <>
-                                            <JourneySteps
-                                                option={option}
-                                                destination={destination}
-                                                answer={answer}
-                                                target={target}
-                                                onBoardStop={onBoardStop}
-                                            />
-                                            {actions?.(option)}
-                                        </>
-                                    ) : null}
-                                </div>
-                            </div>
+                                <JourneySteps
+                                    option={option}
+                                    destination={destination}
+                                    answer={answer}
+                                    target={target}
+                                    onBoardStop={onBoardStop}
+                                />
+                                {actions?.(option)}
+                            </Slide>
                         </article>
                     </Fragment>
                 );

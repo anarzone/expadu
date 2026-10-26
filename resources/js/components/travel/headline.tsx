@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { KvbNoticeLink } from './kvb-notice';
 import { LineBadge } from './line-badge';
+import { Slide } from './slide';
 import { TravelIcon } from './travel-icon';
 import '../../../css/travel.css';
 
@@ -10,7 +11,7 @@ import '../../../css/travel.css';
  * A major disruption: the one headline on a screen (owner, 22 Oct 2026,
  * "Delays and disruptions" canvas), compact (owner, 23 Oct 2026, "Departure
  * rows" canvas, Head-spec): one closed bar with the mark, the lines and the
- * title; a tap anywhere on it slides the rest open. Shared by the station
+ * title; a tap anywhere on it opens the rest with Travel's Slide. Shared by the station
  * board, Plan a trip, Leave now and Composer; each says what's major and
  * passes the words, which come from the classified data, never the model.
  */
@@ -214,38 +215,31 @@ export function Headline({
                         </span>
                     </button>
                 </Heading>
-                <div
-                    id={`${id}-fold`}
-                    role="region"
-                    aria-labelledby={`${id}-bar`}
-                    className="tl-headline-fold"
-                    inert={!open}
-                >
-                    <div className="tl-headline-in">
-                        <div className="tl-headline-body">
-                            {cut ? (
-                                <p className="tl-headline-whole" lang={lang}>
-                                    {item.title}
-                                </p>
-                            ) : null}
-                            <Words item={item} />
-                            {more.map((next) => (
-                                <div
-                                    key={next.key}
-                                    className="tl-headline-next"
-                                >
-                                    <span className="tl-headline-next-title">
-                                        <HeadlineBadges lines={next.lines} />
-                                        <strong lang={next.lang ?? 'en'}>
-                                            {next.title}
-                                        </strong>
-                                    </span>
-                                    <Words item={next} />
-                                </div>
-                            ))}
-                        </div>
+                <Slide open={open} id={`${id}-fold`}>
+                    <div
+                        role="region"
+                        aria-labelledby={`${id}-bar`}
+                        className="tl-headline-body"
+                    >
+                        {cut ? (
+                            <p className="tl-headline-whole" lang={lang}>
+                                {item.title}
+                            </p>
+                        ) : null}
+                        <Words item={item} />
+                        {more.map((next) => (
+                            <div key={next.key} className="tl-headline-next">
+                                <span className="tl-headline-next-title">
+                                    <HeadlineBadges lines={next.lines} />
+                                    <strong lang={next.lang ?? 'en'}>
+                                        {next.title}
+                                    </strong>
+                                </span>
+                                <Words item={next} />
+                            </div>
+                        ))}
                     </div>
-                </div>
+                </Slide>
             </div>
             {action}
         </>
