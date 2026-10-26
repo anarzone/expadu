@@ -4,9 +4,12 @@ namespace App\Console\Commands;
 
 use App\Services\GtfsDepartureService;
 use App\Services\GtfsRailStations;
+use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,15 +19,12 @@ class RefreshGtfs extends Command
 
     protected $description = 'Download and re-import GTFS static timetable data from VRS when it has published a new feed';
 
-    /** The feed version last imported: etag, last_modified (as VRS sent them) and imported_at. */
-    public const VERSION_KEY = 'gtfs:feed_version';
-
     public function handle(): int
     {
         // VRS republishes several times a week, and each publication renames
         // trips; realtime only names the newest. Daily, but only when changed.
         $published = self::publishedVersion();
-        $imported = Cache::get(self::VERSION_KEY);
+        $imported = self::importedVersion();
         if (! $this->option('force') && $published !== null && self::sameVersion($published, $imported)) {
             $this->info('VRS has not published a new timetable since the last import; nothing to do.');
 
@@ -64,11 +64,7 @@ class RefreshGtfs extends Command
             }
 
             try {
-                Cache::forever(self::VERSION_KEY, [
-                    'etag' => $published['etag'] ?? null,
-                    'last_modified' => $published['last_modified'] ?? null,
-                    'imported_at' => now()->toIso8601String(),
-                ]);
+                self::recordVersion($published);
             } catch (\Throwable $exception) {
                 Log::warning('gtfs:refresh — could not record the imported feed version', ['error' => $exception->getMessage()]);
             }
@@ -104,6 +100,33 @@ class RefreshGtfs extends Command
         $version = ['etag' => $response->header('ETag') ?: null, 'last_modified' => $response->header('Last-Modified') ?: null];
 
         return $version['etag'] === null && $version['last_modified'] === null ? null : $version;
+    }
+
+    /**
+     * The feed version last imported: etag, last_modified (as VRS sent them)
+     * and imported_at. In the database, not the cache: a lost key made a
+     * healthy feed look stale.
+     *
+     * @return array{etag: ?string, last_modified: ?string, imported_at: string}|null
+     */
+    public static function importedVersion(): ?array
+    {
+        $row = DB::table('gtfs_imports')->find(1);
+
+        return $row === null ? null : [
+            'etag' => $row->etag,
+            'last_modified' => $row->last_modified,
+            'imported_at' => Carbon::parse($row->imported_at)->toIso8601String(),
+        ];
+    }
+
+    /** @param  array{etag: ?string, last_modified: ?string}|null  $published */
+    public static function recordVersion(?array $published, ?CarbonInterface $at = null): void
+    {
+        DB::table('gtfs_imports')->upsert(
+            [['id' => 1, 'etag' => $published['etag'] ?? null, 'last_modified' => $published['last_modified'] ?? null, 'imported_at' => $at ?? now()]],
+            ['id'],
+        );
     }
 
     /** @param  array{etag: ?string, last_modified: ?string}  $published */
