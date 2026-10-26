@@ -113,6 +113,7 @@ export function CityHelp({
     weather,
     forecast,
     station,
+    warming = null,
     stop,
     favourites,
     learned = [],
@@ -120,6 +121,8 @@ export function CityHelp({
     weather?: Weather;
     forecast?: Forecast;
     station: Station | null;
+    /** The stop whose board is being read (no station yet). */
+    warming?: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     /** The stops they pick most (TodayTaste, opt-in only). */
@@ -160,6 +163,7 @@ export function CityHelp({
             {known && line && <p className="forecast-line">{line}</p>}
             <DepartureBoard
                 station={station}
+                warming={warming}
                 stop={stop}
                 favourites={favourites}
                 learned={learned}
@@ -241,11 +245,13 @@ function captureLabel(station: Station): string {
 
 function DepartureBoard({
     station,
+    warming,
     stop,
     favourites,
     learned,
 }: {
     station: Station | null;
+    warming: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     learned: string[];
@@ -314,7 +320,7 @@ function DepartureBoard({
             </summary>
             <div className="board-content">
                 <StopPicker
-                    current={station?.name ?? stop}
+                    current={station?.name ?? stop ?? warming}
                     favourites={favourites}
                     learned={learned}
                 />
@@ -396,7 +402,7 @@ function DepartureBoard({
                             Full timetable
                         </a>
                     </div>
-                ) : (
+                ) : warming ? null : (
                     <p className="board-empty">
                         Choose a stop to see its departures.
                     </p>
@@ -457,7 +463,7 @@ function StopPicker({
 
         if (name !== current) {
             router.reload({
-                only: ['station', 'stop'],
+                only: ['station', 'stationWarming', 'stop'],
                 data: { stop: name },
             });
         }

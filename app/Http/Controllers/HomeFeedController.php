@@ -37,23 +37,23 @@ class HomeFeedController extends Controller
         // Today loads whole, in the first response (owner, 26 Oct 2026: pages
         // load whole, never in steps). Every prop is a plain closure: a partial
         // reload (the station's 30 s poll, the day's refresh) reads only its own.
+        // Check departures, read once for both props below.
+        $read = null;
+        $board = function () use (&$read, $request, $locations, $nearby, $kvb, $stop): array {
+            return $read ??= $this->board($request, $locations, $nearby, $kvb, $stop);
+        };
+
         return Inertia::render('dashboard', [
             // The person's day: plans, the trips between them and when to
             // leave for the next (DayProjection).
             'day' => fn () => app(DayProjection::class)->for($request->user(), CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
             // Check departures: Travel's station, the picked one, else at the
-            // anchor (stationAnchor); null with neither.
-            'station' => function () use ($request, $locations, $nearby, $stop) {
-                $picked = $stop === null ? null : $nearby->named($stop);
-                if ($picked !== null) {
-                    // A station they picked, for personalisation with their opt-in; never the anchor's.
-                    app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
-
-                    return $picked;
-                }
-
-                return $this->station($this->stationAnchor($request, $locations), $nearby);
-            },
+            // anchor (stationAnchor); null with neither, or while the anchor's
+            // station is being read for the first time (stationWarming).
+            'station' => fn () => $board()['station'],
+            // The stop whose board is being read after this response: the
+            // board shows its name and the next poll fills it.
+            'stationWarming' => fn () => $board()['warming'],
             'stop' => $stop,
             // The deadline strip and the Paperwork panel: the reviewed v2
             // plan's urgent date and next step (TodayPaperwork).
@@ -105,6 +105,43 @@ class HomeFeedController extends Controller
     }
 
     /** @return array<string, mixed>|null */
+    /**
+     * Check departures without waiting on a cold board: a picked stop reads
+     * at once (named(), a cache read once kept); the anchor's station is
+     * read only when Travel already keeps it, and otherwise it's read after
+     * this response (NearbyStation::warm) and the page polls for it.
+     *
+     * @return array{station: array<string, mixed>|null, warming: string|null}
+     */
+    private function board(Request $request, UserLocationService $locations, NearbyStation $nearby, KvbApiService $kvb, ?string $stop): array
+    {
+        $picked = $stop === null ? null : $nearby->named($stop);
+        if ($picked !== null) {
+            // A station they picked, for personalisation with their opt-in; never the anchor's.
+            app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
+
+            return ['station' => $picked, 'warming' => null];
+        }
+
+        $anchor = $this->stationAnchor($request, $locations);
+        $name = match (true) {
+            $anchor === null => null,
+            is_string($anchor) => $anchor,
+            default => $anchor->hasOrigin() ? ($kvb->nearestStop((float) $anchor->lat, (float) $anchor->lng)['name'] ?? null) : null,
+        };
+        if ($name === null) {
+            return ['station' => null, 'warming' => null];
+        }
+        if ($nearby->kept((string) $name) === null) {
+            $warm = (string) $name;
+            dispatch(fn () => app(NearbyStation::class)->warm($warm))->afterResponse();
+
+            return ['station' => null, 'warming' => $warm];
+        }
+
+        return ['station' => $this->station($anchor, $nearby), 'warming' => null];
+    }
+
     private function station(string|LocationContext|null $anchor, NearbyStation $nearby): ?array
     {
         return match (true) {

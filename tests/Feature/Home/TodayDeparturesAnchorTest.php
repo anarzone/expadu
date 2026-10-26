@@ -7,6 +7,7 @@ use App\Models\UserPlace;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Services\KvbApiService;
 use App\Services\LocationContext;
 use App\Transit\NearbyStation;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +15,16 @@ use Illuminate\Support\Facades\DB;
 /*
  * Today's Check departures without a picked stop: where the person is, else
  * their first favourite stop, else near Home, else near their Veedel. With
- * none of these there is no station and no deferred read for one.
+ * none of these there is no station. A station Travel doesn't keep yet is
+ * read after the response (warm), never while Today waits.
  */
+
+/** The KVB stop nearest any point, as KvbApiService::nearestStop answers. */
+function nearestStopIs(string $name): void
+{
+    test()->mock(KvbApiService::class, fn ($mock) => $mock->shouldReceive('nearestStop')->andReturn(['name' => $name, 'lat' => 50.96, 'lng' => 6.95])
+        ->shouldReceive('stationPoints')->andReturn([]));
+}
 
 function todayStationFor(User $user): mixed
 {
@@ -36,7 +45,8 @@ test('a favourite stop comes before Home', function () {
     $user = User::factory()->onboarded()->create(['veedel' => null]);
     FavouriteStop::create(['user_id' => $user->id, 'name' => 'Neumarkt']);
     UserPlace::factory()->for($user)->create(['category' => 'home']);
-    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('named')->once()->with('Neumarkt')->andReturn(['name' => 'Neumarkt']));
+    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Neumarkt')->andReturn(['name' => 'Neumarkt'])
+        ->shouldReceive('named')->once()->with('Neumarkt')->andReturn(['name' => 'Neumarkt']));
 
     expect(todayStationFor($user))->toBe(['name' => 'Neumarkt']);
 });
@@ -44,7 +54,9 @@ test('a favourite stop comes before Home', function () {
 test('without a favourite, the station is near Home, with no walk from it', function () {
     $user = User::factory()->onboarded()->create(['veedel' => 'Nippes']);
     UserPlace::factory()->for($user)->create(['category' => 'home', 'lat' => 50.96, 'lng' => 6.95]);
-    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('closestTo')->once()
+    nearestStopIs('Florastr.');
+    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Florastr.')->andReturn(['name' => 'Florastr.'])
+        ->shouldReceive('closestTo')->once()
         ->withArgs(fn (LocationContext $at) => $at->source === LocationSource::Place && $at->label === 'Home'
             && $at->lat === 50.96 && $at->lng === 6.95 && ! $at->isFresh())
         ->andReturn(['name' => 'Florastr.']));
@@ -55,11 +67,26 @@ test('without a favourite, the station is near Home, with no walk from it', func
 test('last, the station is near the Veedel', function () {
     DB::table('veedels')->insert(['name' => 'Nippes', 'bezirk' => 'Nippes', 'centroid_lat' => 50.965, 'centroid_lng' => 6.955]);
     $user = User::factory()->onboarded()->create(['veedel' => 'Nippes']);
-    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('closestTo')->once()
+    nearestStopIs('Nippes Bf');
+    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Nippes Bf')->andReturn(['name' => 'Nippes Bf'])
+        ->shouldReceive('closestTo')->once()
         ->withArgs(fn (LocationContext $at) => $at->source === LocationSource::Area && $at->label === 'Nippes')
         ->andReturn(['name' => 'Nippes Bf']));
 
     expect(todayStationFor($user))->toBe(['name' => 'Nippes Bf']);
+});
+
+test('a board Travel doesn’t keep yet is read after the response, and the page names its stop', function () {
+    $user = User::factory()->onboarded()->create(['veedel' => null]);
+    FavouriteStop::create(['user_id' => $user->id, 'name' => 'Neumarkt']);
+    $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Neumarkt')->andReturn(null)
+        ->shouldNotReceive('named', 'closestTo')
+        ->shouldReceive('warm')->once()->with('Neumarkt'));
+
+    $page = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page');
+
+    expect($page['props']['station'])->toBeNull()
+        ->and($page['props']['stationWarming'])->toBe('Neumarkt');
 });
 
 test('the stops they pick most are quick picks only under the current personalisation wording', function () {

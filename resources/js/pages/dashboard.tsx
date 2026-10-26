@@ -1,4 +1,4 @@
-import { Head, usePage, usePoll } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { Fragment, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
@@ -38,6 +38,7 @@ export default function Today() {
         weather,
         forecast,
         station,
+        stationWarming,
         stop,
         favouriteStops,
         learnedStops,
@@ -54,6 +55,8 @@ export default function Today() {
         weather: Weather;
         forecast: Forecast;
         station: Station | null;
+        /** The stop whose board is read after this response (no station yet). */
+        stationWarming: string | null;
         stop: string | null;
         favouriteStops: FavouriteStop[];
         learnedStops: string[];
@@ -81,10 +84,10 @@ export default function Today() {
     // None to read when there's nothing to anchor one (the server sends null).
     const { start: startPoll, stop: stopPoll } = usePoll(
         30_000,
-        { only: ['station'], async: true },
+        { only: ['station', 'stationWarming'], async: true },
         { autoStart: false },
     );
-    const noStation = station === null;
+    const noStation = station === null && !stationWarming;
 
     useEffect(() => {
         if (noStation) {
@@ -95,6 +98,25 @@ export default function Today() {
 
         return stopPoll;
     }, [noStation, startPoll, stopPoll]);
+
+    // A board being read for the first time is ready in a moment: look once
+    // soon, in place, rather than wait for the poll.
+    useEffect(() => {
+        if (!stationWarming) {
+            return;
+        }
+
+        const soon = window.setTimeout(
+            () =>
+                router.reload({
+                    only: ['station', 'stationWarming'],
+                    async: true,
+                }),
+            2500,
+        );
+
+        return () => window.clearTimeout(soon);
+    }, [stationWarming]);
 
     // Paperwork's next step, or with no record yet its way in ("Settling
     // in?"). City help comes first where the essentials lead and on phones
@@ -122,6 +144,7 @@ export default function Today() {
                     weather={weather}
                     forecast={forecast}
                     station={station}
+                    warming={stationWarming}
                     stop={stop}
                     favourites={favouriteStops}
                     learned={learnedStops}
