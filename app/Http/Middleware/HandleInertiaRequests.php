@@ -60,6 +60,11 @@ class HandleInertiaRequests extends Middleware
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // Settings saved before a key existed read it at its default.
             'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? [])],
+            // The person's own saved needs, for the account menu's switch
+            // (needs_step_free stays out of the user's serialisation).
+            'needs' => fn () => $request->user() === null ? null : [
+                'step_free' => (bool) $request->user()->needs_step_free,
+            ],
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.
