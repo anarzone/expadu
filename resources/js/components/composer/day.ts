@@ -48,7 +48,6 @@ const ORIGIN_KEY = 'expadu-composer-origin';
 /** The page Composer was opened from, by path; anything else goes back to Today. */
 const pages: [RegExp, string][] = [
     [/^\/today(\/|$)/, 'Today'],
-    [/^\/events(\/|$)/, 'Events'],
     [/^\/paperwork(\/|$)/, 'Paperwork'],
     [/^\/travel(\/|$)/, 'Travel'],
     [/^\/places(\/|$)/, 'Places'],

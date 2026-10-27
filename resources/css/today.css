@@ -943,6 +943,8 @@ a.plan-link:hover {
 /* KVB's notices for the board's lines (Travel's headline and notice lines). */
 .board-notices {
     display: grid;
+    /* The column's own width: a long headline ends in "…", never past the card. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin: 10px 0 0;
 }

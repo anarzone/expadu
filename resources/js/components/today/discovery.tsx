@@ -354,7 +354,7 @@ export function AroundPlan({
                 </h3>
                 {anchor && also ? (
                     <small>
-                        {saved ? 'From your saved ideas' : 'From Events'}
+                        {saved ? 'From your saved ideas' : 'From What’s on'}
                     </small>
                 ) : null}
                 {!anchor && near ? (
