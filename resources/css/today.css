@@ -216,6 +216,11 @@
     .next-area:has(.departure-board[open]) > :not(.practical-surface) {
         grid-column: 1;
     }
+    /* Half as wide, the posters go one at a time, the next showing at the
+       edge: a poster keeps the width its title is set for. */
+    .next-area:has(.departure-board[open]) .event-rail {
+        grid-auto-columns: 86%;
+    }
 }
 
 /* ── Your day ───────────────────────────────────────────────────────── */
