@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -484,7 +485,7 @@ class ImportDatenHubEvents extends Command
     {
         $info = collect($item['texts'] ?? [])->first(fn ($text) => is_array($text) && ($text['rel'] ?? null) === 'PRICE_INFO');
         if ($info !== null && ($clean = $this->cleanText($info['value'] ?? null)) !== null) {
-            return mb_substr($clean, 0, 500);
+            return Str::limit($clean, 250);
         }
         $adult = $this->adultPrice($item);
 
@@ -500,7 +501,7 @@ class ImportDatenHubEvents extends Command
     }
 
     /**
-     * The listing's own page, else its booking page.
+     * The listing's own page, else its booking page (a link too long to keep whole is none).
      *
      * @param  array<string, mixed>  $item
      */
@@ -509,8 +510,8 @@ class ImportDatenHubEvents extends Command
         $booking = collect($item['media_objects'] ?? [])->first(fn ($media) => is_array($media) && ($media['rel'] ?? null) === 'booking');
         foreach ([$item['web'] ?? null, $booking['url'] ?? null] as $url) {
             if (is_string($url) && filter_var($url = preg_replace('/^http:\/\//i', 'https://', trim($url)), FILTER_VALIDATE_URL)
-                && parse_url($url, PHP_URL_SCHEME) === 'https') {
-                return mb_substr($url, 0, 2048);
+                && parse_url($url, PHP_URL_SCHEME) === 'https' && strlen($url) <= 255) {
+                return $url;
             }
         }
 
