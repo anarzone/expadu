@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -150,6 +149,11 @@ class ImportDatenHubEvents extends Command
             }
             $end = $this->instant($interval['end'] ?? null);
             $end = $end?->greaterThan($start) ? $end : null;
+            // A whole day (midnight to midnight) is stored as the other feeds store a day with no
+            // time: start to end of that day.
+            if ($end !== null && $start->format('H:i') === '00:00' && $end->format('H:i') === '00:00') {
+                $end = $end->subSecond();
+            }
             $until = $this->instant($interval['repeatUntil'] ?? null);
             $uid = $item['global_id'].'#'.$index;
 
@@ -480,12 +484,19 @@ class ImportDatenHubEvents extends Command
         return null;
     }
 
-    /** @param  array<string, mixed>  $item */
+    /**
+     * A price, never the note's small print: the note's first line when it names an amount
+     * ("ab 19,90 Euro"), else the adult price. Fees ("Zuzüglich 1,68 €") and terms are none.
+     *
+     * @param  array<string, mixed>  $item
+     */
     private function priceText(array $item): ?string
     {
         $info = collect($item['texts'] ?? [])->first(fn ($text) => is_array($text) && ($text['rel'] ?? null) === 'PRICE_INFO');
-        if ($info !== null && ($clean = $this->cleanText($info['value'] ?? null)) !== null) {
-            return Str::limit($clean, 250);
+        $line = trim(strtok((string) $this->cleanText($info['value'] ?? null), "\n") ?: '');
+        if ($line !== '' && mb_strlen($line) <= 60 && ! preg_match('/^zuzüglich/iu', $line)
+            && preg_match('/\d(?:[,.]\d+)?\s*(?:€|euro\b)|€\s*\d/iu', $line)) {
+            return $line;
         }
         $adult = $this->adultPrice($item);
 
