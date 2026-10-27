@@ -103,7 +103,7 @@ final class DayBriefs
         $add = function (string $kind, string $text, string $facts, bool $own, int $rank, array $more = []) use (&$items): void {
             $items[] = ['id' => 'i'.(count($items) + 1), 'kind' => $kind, 'text' => $text, 'facts' => $facts, 'own' => $own, 'rank' => $rank,
                 'type' => $more['type'] ?? null, 'severity' => $more['severity'] ?? 'minor', 'why' => $more['why'] ?? null,
-                'link' => $more['link'] ?? '/dashboard', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
+                'link' => $more['link'] ?? '/today', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
         };
         $journey = fn (string $activity): string => '/travel?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
 

@@ -5,9 +5,9 @@ beforeEach(function () {
 });
 
 test('auth screens on the marketing host move permanently to the app host', function (string $path) {
-    $this->get("http://expadu.com/{$path}?next=%2Fdashboard")
+    $this->get("http://expadu.com/{$path}?next=%2Ftoday")
         ->assertStatus(301)
-        ->assertRedirect("http://app.expadu.com/{$path}?next=%2Fdashboard");
+        ->assertRedirect("http://app.expadu.com/{$path}?next=%2Ftoday");
 })->with(['login', 'register']);
 
 test('auth screens stay put on the app host', function () {

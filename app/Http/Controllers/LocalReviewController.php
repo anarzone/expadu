@@ -28,7 +28,7 @@ class LocalReviewController extends Controller
             $request->session()->regenerate();
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('today');
     }
 
     private function isLocalReview(Request $request): bool

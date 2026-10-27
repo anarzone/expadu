@@ -12,7 +12,7 @@ import {
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { sectionAgain } from '@/hooks/use-shell-scroll';
-import { bureaucracy, composer, dashboard, events, travel } from '@/routes';
+import { bureaucracy, composer, events, today, travel } from '@/routes';
 
 const sections: {
     key: string;
@@ -20,7 +20,7 @@ const sections: {
     icon: IconName;
     url: string;
 }[] = [
-    { key: 'today', label: 'Today', icon: 'home', url: dashboard.url() },
+    { key: 'today', label: 'Today', icon: 'home', url: today.url() },
     { key: 'events', label: 'Events', icon: 'calendar', url: events.url() },
     {
         key: 'paperwork',
@@ -74,7 +74,7 @@ export function ShellHeader() {
         <div className="shell">
             <header className="shell-header">
                 <Link
-                    href={dashboard()}
+                    href={today()}
                     className="shell-brand"
                     aria-label="Expadu home"
                 >

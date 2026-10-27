@@ -62,6 +62,6 @@ class SocialLoginController extends Controller
         Auth::login($user, remember: true);
 
         // Back to the page "Sign in again" came from, as with a password.
-        return redirect()->intended(config('fortify.home', '/dashboard'));
+        return redirect()->intended(config('fortify.home', '/today'));
     }
 }

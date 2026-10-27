@@ -40,7 +40,7 @@ class ActionBus
 
         // Per-user mute (Roadmap #6 backend) — when a user has muted a
         // specific instance (e.g. Line 12 disruptions for the day), we
-        // strip the push channel. Dashboard card still shows so the
+        // strip the push channel. Today card still shows so the
         // user can see "yes, the thing you muted is happening" if they
         // open the app deliberately.
         $muteSubject = app(MuteService::class)->muteSubjectFor($action->type, $action->payload);
@@ -50,7 +50,7 @@ class ActionBus
 
         // Preference off, quiet hours, commute-only types and the per-user caps
         // all live in NotificationThrottle, keyed by these same action types.
-        // The dashboard card still shows when the push is stripped.
+        // Today's card still shows when the push is stripped.
         if (in_array(ScoredAction::CHANNEL_PUSH, $action->deliverChannels, true)
             && ! NotificationThrottle::canPush($user, $action->type, $action->severity)) {
             $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);

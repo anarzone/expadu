@@ -20,7 +20,7 @@ class RobotsController extends Controller
             : implode("\n", [
                 'User-agent: *',
                 'Allow: /',
-                'Disallow: /dashboard',
+                'Disallow: /today',
                 'Disallow: /alerts',
                 'Disallow: /events',
                 'Disallow: /transit',
