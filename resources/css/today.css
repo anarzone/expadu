@@ -193,6 +193,41 @@
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     }
 }
+/* Check departures open makes City help tall: it takes the right column on
+   its own, and the ideas (always first), Paperwork and the links follow each
+   other on the left. The last row takes City help's extra height, so the
+   rows on the left stay as tall as their content. Closed, the ideas use the
+   whole width. */
+@media (min-width: 701px) {
+    .next-area:has(.departure-board[open]) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(6, auto) 1fr;
+        align-items: start;
+    }
+    .next-area:has(.departure-board[open]) > .practical-surface {
+        display: contents;
+    }
+    .next-area:has(.departure-board[open]) > .practical-surface > * {
+        grid-column: 1;
+        padding: 16px;
+    }
+    .next-area:has(.departure-board[open]) > .practical-surface > .city-help {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        padding: 16px 16px 16px 20px;
+    }
+    .next-area:has(.departure-board[open]) > :not(.practical-surface) {
+        grid-column: 1;
+    }
+    .next-area:has(.departure-board[open]) > .discovery {
+        order: -1;
+    }
+    /* Half as wide, the posters go one at a time, the next showing at the
+       edge: a poster keeps the width its title is set for. */
+    .next-area:has(.departure-board[open]) .event-rail {
+        grid-auto-columns: 86%;
+    }
+}
 
 /* ── Your day ───────────────────────────────────────────────────────── */
 .day-panel {
@@ -1098,18 +1133,6 @@ a.plan-link:hover {
     }
     .city-help {
         grid-column: auto;
-        padding: 16px 0 0;
-    }
-}
-/* Open departures make City help tall: Paperwork and City help stack, as on
-   a narrower screen, so no half stands empty beside the board. */
-@media (min-width: 1000px) {
-    .practical-surface:has(.departure-board[open]) {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 18px;
-        padding: 20px;
-    }
-    .practical-surface:has(.departure-board[open]) > .city-help {
         padding: 16px 0 0;
     }
 }
