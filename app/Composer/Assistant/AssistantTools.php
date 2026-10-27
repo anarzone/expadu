@@ -93,6 +93,7 @@ final class AssistantTools
         'move_in_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
+        'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
         'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for',
         'set_notifications' => 'changes_you_ask_for', 'set_needs' => 'changes_you_ask_for', 'update_profile' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
@@ -1536,6 +1537,15 @@ final class AssistantTools
                 ], 'required' => ['item']]],
             ['name' => 'remove_from_day', 'description' => 'Takes something off their plans for a day, by its name as they said it.',
                 'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day], 'required' => ['item']]],
+            ['name' => 'add_appointment', 'description' => 'Adds their own appointment or plan to a day ("dentist at 15:00", "dinner with Anna at 19:30"), at the time they say, as Plans\' Add your own does. Not for a place or listing from your lookups: that is add_to_day.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'name' => ['type' => 'string', 'description' => 'what it is, in their words, short'],
+                    'day' => $day,
+                    'start' => ['type' => 'string', 'description' => 'HH:MM'], 'end' => ['type' => 'string', 'description' => 'HH:MM, when they say; else an hour'],
+                    'location' => ['type' => 'string', 'description' => 'where, as they said it, optional'],
+                ], 'required' => ['name', 'start']]],
+            ['name' => 'mark_done', 'description' => 'Marks something in their plans for a day as done, or not done after all (done: false).',
+                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day, 'done' => ['type' => 'boolean']], 'required' => ['item']]],
             ['name' => 'swap_in_day', 'description' => 'Swaps something in their plans for a day for another, at the same time, with Undo. For a place they name, give it as with. For something of a kind ("replace Rheingarten with something indoors", "swap it for a museum"), leave out with and give the kind: the swap finds the one that fits that time best and makes it; don\'t search first.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
@@ -1578,6 +1588,15 @@ final class AssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'plan' => ['type' => 'string', 'description' => 'the plan as they named it, or "next" for their next one'],
                     'remind' => ['type' => 'boolean', 'description' => 'false for no reminder'],
+                ]]],
+            ['name' => 'way_reminder', 'description' => 'Turns on or off the reminder to leave for a plan whose way they kept already (with plan_trip_for_later or Travel\'s Add to plan): "don\'t remind me to leave for dinner". You don\'t see their kept ways: name the plan as they did, and the result says if there\'s none.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'plan' => ['type' => 'string', 'description' => 'the plan as they named it, or "next"'],
+                    'on' => ['type' => 'boolean'],
+                ], 'required' => ['on']]],
+            ['name' => 'remove_way', 'description' => 'Takes a way they kept to a plan out of their plan ("I\'m getting a lift, take the planned way out"); the plan itself stays. You don\'t see their kept ways: name the plan as they did, or "next".',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'plan' => ['type' => 'string', 'description' => 'the plan as they named it, or "next"'],
                 ]]],
             ['name' => 'mute_alerts', 'description' => 'Mutes alerts about a KVB line\'s disruptions and delays until midnight or for a week (or turns them back on).',
                 'input_schema' => ['type' => 'object', 'properties' => [
