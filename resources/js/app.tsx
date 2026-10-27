@@ -3,6 +3,8 @@ import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/ui/toast';
+// Before the app starts: its Back listener must come before Inertia's.
+import '@/lib/history-steps';
 import { resolvePage } from '@/lib/resolve-page';
 import '../css/app.css';
 
