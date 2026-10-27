@@ -408,7 +408,8 @@ class ImportDatenHubEvents extends Command
                 provider: 'koeln-tourismus',
                 remoteUrl: $photo['url'],
                 providerAssetId: $photo['id'],
-                sourcePageUrl: $event->source === self::SOURCE ? ($event->source_url ?? $photo['url']) : $photo['url'],
+                // The photo itself: one photo serves several listings, so no one listing's page.
+                sourcePageUrl: $photo['url'],
                 role: 'poster',
                 priority: $primary ? 10 : 5,
                 isPrimary: $primary,
