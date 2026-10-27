@@ -37,6 +37,24 @@
 .ui-sheet::backdrop {
     background: #0005;
 }
+/* A side panel (What's on): down the window's right edge, over the page,
+   which stays where it was behind the scrim. A phone gets the bottom sheet,
+   as tall as the screen allows. */
+@media (min-width: 701px) {
+    .ui-sheet.is-side {
+        inset: 12px 12px 12px auto;
+        width: min(560px, calc(100vw - 24px));
+        height: auto;
+        max-height: none;
+        margin: 0;
+        border-radius: 24px;
+    }
+}
+@media (max-width: 700px) {
+    .ui-sheet.is-side {
+        height: calc(100dvh - 40px);
+    }
+}
 .ui-sheet-head {
     position: relative;
     display: flex;

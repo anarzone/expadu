@@ -42,7 +42,7 @@ const facts = () => [
     { label: 'Paperwork', value: 'Visa expires · Tomorrow', known: true },
 ];
 const sources = [
-    { label: 'Events', href: '/events?date=2026-10-22' },
+    { label: 'What’s on', href: '/today?whats_on=1&date=2026-10-22' },
     { label: 'Paperwork', href: '/paperwork' },
 ];
 const answer = (written: 'ai' | 'code', read?: string[]) => ({
@@ -124,8 +124,8 @@ test('🔒 an "around you now" answer draws every block it rests on', async ({
         }),
     ).toBeVisible();
     await expect(
-        reply.getByRole('link', { name: 'Events', exact: true }),
-    ).toHaveAttribute('href', '/events?date=2026-10-22');
+        reply.getByRole('link', { name: 'What’s on', exact: true }),
+    ).toHaveAttribute('href', '/today?whats_on=1&date=2026-10-22');
     await expect(
         reply.getByRole('link', { name: 'Paperwork', exact: true }),
     ).toBeVisible();

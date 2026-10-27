@@ -248,7 +248,7 @@ test('the notification path still records + tags a direct (non-context) notifica
         /** @return array<string, string> */
         public function toArray(mixed $notifiable): array
         {
-            return ['title' => 'Tomorrow: Jazz Night', 'body' => 'Starts at 19:00.', 'url' => '/events'];
+            return ['title' => 'Tomorrow: Jazz Night', 'body' => 'Starts at 19:00.', 'url' => '/today?whats_on=1'];
         }
     };
 

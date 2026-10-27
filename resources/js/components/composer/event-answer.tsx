@@ -1,10 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
 import { occurrenceKey } from '@/components/events/event-presentation';
+import {
+    noFilters,
+    whatsOnUrl,
+} from '@/components/events-filters/event-filters';
 import { Poster } from '@/components/posters/poster-art';
 import { berlinDate, posterEvent } from '@/components/posters/poster-model';
 import type { PosterSource } from '@/components/posters/poster-model';
 import { useSavedEvents } from '@/hooks/use-saved-events';
-import { events as eventsPage } from '@/routes';
 
 /** A listing as the answer carries it (App\Composer\Answers\EventAnswers). */
 export type AnsweredEvent = PosterSource & {
@@ -74,13 +77,7 @@ export function EventAnswer({
                             }
                             onOpen={() =>
                                 router.visit(
-                                    eventsPage.url({
-                                        query: {
-                                            date: event.date,
-                                            event: event.id,
-                                            start: event.occurrence_start,
-                                        },
-                                    }),
+                                    `${whatsOnUrl(event.date, noFilters)}&event=${event.id}&start=${encodeURIComponent(event.occurrence_start)}`,
                                 )
                             }
                         />

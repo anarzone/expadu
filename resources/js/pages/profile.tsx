@@ -1347,14 +1347,14 @@ export default function Profile() {
                             ))
                         ) : (
                             <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-soft">
-                                No upcoming events. Browse the{' '}
+                                No upcoming events. See{' '}
                                 <a
-                                    href="/events"
+                                    href="/today?whats_on=1"
                                     className="text-select-text underline"
                                 >
-                                    Events
+                                    What’s on
                                 </a>{' '}
-                                page to find something.
+                                to find something.
                             </div>
                         )}
                         {(pastEvents ?? []).length > 0 && (

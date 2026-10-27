@@ -192,6 +192,7 @@ export function EventDetails({
     saved,
     onSave,
     onClose,
+    onBack,
     starts = [],
 }: {
     /** The listing shown; null closes the page. */
@@ -209,6 +210,8 @@ export function EventDetails({
     saved: boolean;
     onSave: () => void;
     onClose: () => void;
+    /** Opened from What's on's list: back to it (the panel's own close closes both). */
+    onBack?: () => void;
     /** Get there's starts: Home, Work and starred stops, real ones. */
     starts?: WayPlace[];
 }) {
@@ -263,8 +266,9 @@ export function EventDetails({
                     shareItem(
                         {
                             title: l.poster.title,
-                            url: `${location.origin}/events?${new URLSearchParams(
+                            url: `${location.origin}/today?${new URLSearchParams(
                                 {
+                                    whats_on: '1',
                                     date,
                                     event: String(l.occurrence.id),
                                     start: l.occurrence.occurrence_start,
@@ -287,6 +291,15 @@ export function EventDetails({
         <Sheet
             open={!!listing}
             onClose={onClose}
+            side={!!onBack}
+            lead={
+                onBack ? (
+                    <button type="button" className="evd-back" onClick={onBack}>
+                        <Icon name="back" variant="line" />
+                        What’s on
+                    </button>
+                ) : undefined
+            }
             className={cn(
                 'ev-details',
                 `pp--${posterInk(l?.poster.start)}`,

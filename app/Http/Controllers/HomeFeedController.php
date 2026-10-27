@@ -11,6 +11,7 @@ use App\Home\TodayDiscovery;
 use App\Home\TodayNeeds;
 use App\Home\TodayPaperwork;
 use App\Home\TodaySaved;
+use App\Home\WhatsOn;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Jobs\WarmStation;
 use App\Models\FavouriteStop;
@@ -76,6 +77,8 @@ class HomeFeedController extends Controller
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             // The stops they pick most (TodayTaste, opt-in only; [] otherwise): quick picks after favourites.
             'learnedStops' => fn () => app(TodayTaste::class)->stops($request->user(), 5),
+            // What's on: the day's listings in the panel over Today, read only while it's open.
+            'whatsOn' => fn () => $request->boolean('whats_on') ? app(WhatsOn::class)->for($request) : null,
         ]);
     }
 

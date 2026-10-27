@@ -3,6 +3,7 @@
 namespace App\ContextEngine;
 
 use App\Composer\WorkspaceStore;
+use App\Home\WhatsOn;
 use App\Models\EventReminder;
 use App\Models\PlannedTrip;
 use App\Models\User;
@@ -150,7 +151,7 @@ final class DayBriefs
         // The day in order: events they set a reminder for or joined, and their plan.
         foreach ($this->events($user, $day) as [$title, $start, $venue]) {
             $add('event', "{$start} {$title}".($venue !== '' ? " at {$venue}" : '').'.', "An event they're going to: \"{$title}\", starting {$start}".($venue !== '' ? " at {$venue}" : '').'.', true, self::RANK['timed'] * 10000 + self::minutes($start),
-                ['type' => 'event_reminder', 'link' => '/events']);
+                ['type' => 'event_reminder', 'link' => WhatsOn::url(['date' => $day->toDateString()])]);
         }
         $stops = collect($this->workspace->plan($user, $day->toDateString())['slots'] ?? [])->sortBy('start_at')->values();
         if ($stops->isNotEmpty()) {
@@ -163,7 +164,7 @@ final class DayBriefs
         // Paperwork only as needing attention, nothing of what; overdue or critical, it leads the brief
         // (coordinator, 26 Oct 2026).
         $commitments = collect($this->importance->for($user, $day)['commitments'])->pluck('kind');
-        $paperwork = ['type' => 'bureaucracy_task', 'link' => '/bureaucracy', 'about' => 'paperwork'];
+        $paperwork = ['type' => 'bureaucracy_task', 'link' => '/paperwork', 'about' => 'paperwork'];
         if ($commitments->contains('paperwork_urgent')) {
             $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, -1, [...$paperwork, 'severity' => 'critical']);
         } elseif ($commitments->contains('paperwork') || collect($actions)->contains(fn (ScoredAction $a): bool => $a->type === 'bureaucracy_task')) {

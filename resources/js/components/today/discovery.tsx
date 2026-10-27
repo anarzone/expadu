@@ -3,6 +3,10 @@ import { useState } from 'react';
 import type { AroundPlace } from '@/components/around-here/place-model';
 import { PlaceRow } from '@/components/around-here/place-row';
 import { occurrenceKey } from '@/components/events/event-presentation';
+import {
+    noFilters,
+    whatsOnUrl,
+} from '@/components/events-filters/event-filters';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { PosterArt } from '@/components/posters/poster-art';
 import {
@@ -18,7 +22,7 @@ import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
-import { aroundHere, events } from '@/routes';
+import { aroundHere } from '@/routes';
 
 /*
  * Today's discovery (the mock's .discovery and .around-plan), from
@@ -63,15 +67,16 @@ export type TodayDiscovery = {
     } | null;
 } | null;
 
-/** The event's own details in Events. */
+/** The event's own details, in What's on over Today. */
 const eventHref = (event: DiscoveryEvent) =>
-    events({
-        query: {
-            date: berlinDate(event.occurrence_start),
-            event: event.id,
-            start: event.occurrence_start,
-        },
-    });
+    `${whatsOnUrl(berlinDate(event.occurrence_start), noFilters)}&event=${event.id}&start=${encodeURIComponent(event.occurrence_start)}`;
+
+/** What's on opens over Today, which stays where it was. */
+const panel = {
+    only: ['whatsOn'],
+    preserveState: true,
+    preserveScroll: true,
+};
 
 /** "Tomorrow · " before a time of tomorrow's listing. */
 const dayPrefix = (event: DiscoveryEvent) =>
@@ -153,7 +158,9 @@ export function Discovery({
                 ) : (
                     <h2 id="discovery-title">A little {CURRENT_CITY.name}</h2>
                 )}
-                <Link href={events()}>All events</Link>
+                <Link href={whatsOnUrl(berlinDate(), noFilters)} {...panel}>
+                    See more
+                </Link>
             </div>
             {posters.length > 0 && (
                 <div
@@ -185,7 +192,7 @@ export function Discovery({
             )}
             {discovery.events.length === 0 && (
                 <p className="discovery-empty">
-                    More dates and ideas in Events.
+                    More dates and ideas in What’s on.
                 </p>
             )}
         </section>
@@ -211,6 +218,7 @@ function EventCard({
             <Link
                 className="event-open"
                 href={href}
+                {...panel}
                 aria-label={`Explore ${poster.title}`}
             >
                 <PosterArt event={poster} variant="slot" />
@@ -238,6 +246,7 @@ function EventCard({
             <Link
                 className="event-plan"
                 href={href}
+                {...panel}
                 aria-label={`Plan to go to ${poster.title}`}
                 title="Plan to go"
             >
@@ -276,6 +285,7 @@ function CompactEvent({
             <Link
                 className="compact-event-open"
                 href={href}
+                {...panel}
                 aria-label={`Explore ${poster.title}`}
             >
                 <Thumb event={event} />
@@ -308,6 +318,7 @@ function CompactEvent({
             <Link
                 className="icon-button compact-plan"
                 href={href}
+                {...panel}
                 aria-label={`Plan to go to ${poster.title}`}
             >
                 <Icon name="plus" />

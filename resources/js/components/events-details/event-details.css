@@ -33,6 +33,16 @@
     box-shadow: none;
 }
 
+/* In What's on: the panel's own place, over its list, from 701px. */
+@media (min-width: 701px) {
+    .ui-sheet.ev-details.is-side {
+        inset: 12px 12px 12px auto;
+        width: min(560px, calc(100vw - 24px));
+        height: auto;
+        margin: 0;
+    }
+}
+
 /* A phone gives the page the whole screen. */
 @media (max-width: 700px) {
     .ui-sheet.ev-details {
@@ -178,6 +188,42 @@
     font-weight: 800;
     line-height: 0.9;
     -webkit-text-stroke: 1.5px var(--pp-text);
+}
+
+/* Back to What's on's list: a glass pill at the poster's top left. */
+.ev-details .evd-back {
+    position: absolute;
+    z-index: 2;
+    top: 11px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 44px;
+    padding: 0 14px 0 8px;
+    border: 1px solid #ffffff59;
+    border-radius: var(--radius-pill);
+    background: #ffffff2e;
+    color: #fff;
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    -webkit-text-stroke: 0;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+}
+.ev-details .evd-back svg {
+    width: 20px;
+    height: 20px;
+}
+.ev-details .evd-back:hover {
+    background: #ffffff47;
+}
+.ev-details:is(.pp--day, .pp--paper) .evd-back {
+    border-color: var(--evd-line);
+    background: var(--evd-tile);
+    color: var(--color-text);
+    backdrop-filter: none;
 }
 
 /* Close floats on the poster; Share is a glass button like it. */
