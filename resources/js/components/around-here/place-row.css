@@ -198,6 +198,12 @@ li:first-child > .around-row {
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
 }
+/* Why Today's AI order put it here for them: one quiet line. */
+.around-row-why {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-style: italic;
+}
 .around-row-away {
     padding-top: 2px;
     font-size: var(--text-body);

@@ -35,6 +35,8 @@ export type DiscoveryEvent = PosterSource & {
     /** Tomorrow's listing, after the evening's last start. */
     day?: 'tomorrow';
     category_label: string;
+    /** Why the AI put it here for them (TodayTaste), when it gave one. */
+    why?: string;
     venue: { name: string | null; veedel: string | null };
 };
 
@@ -218,6 +220,9 @@ function EventCard({
                     </strong>
                     <small>{timeRange(event)}</small>
                     <small>{poster.venue}</small>
+                    {event.why ? (
+                        <small className="discovery-why">{event.why}</small>
+                    ) : null}
                 </span>
             </Link>
             <button
@@ -285,6 +290,9 @@ function CompactEvent({
                         </time>
                         {poster.area ? ` · ${poster.area}` : ''}
                     </small>
+                    {event.why ? (
+                        <small className="discovery-why">{event.why}</small>
+                    ) : null}
                 </span>
                 <span className="compact-category">{event.category_label}</span>
             </Link>
