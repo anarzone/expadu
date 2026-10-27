@@ -9,6 +9,7 @@ use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
+use App\Privacy\ProcessingOptIns;
 use Illuminate\Auth\Access\AuthorizationException;
 
 final class WithdrawPersonProcessing
@@ -25,6 +26,8 @@ final class WithdrawPersonProcessing
             $inFlight = (clone $permissions)->where('state', 'processing')->whereNotNull('dispatched_at')->count();
             $permissions->update(['result' => null, 'withdrawn_at' => now()->utc(), 'state' => 'withdrawn']);
             BureaucracyExtractionCandidate::query()->where('case_id', $case->id)->update(['value' => null, 'confirmation_token' => null, 'state' => 'invalidated']);
+            // Composer's remembered Allow for their own record ends with it.
+            ProcessingOptIns::endPaperwork($person->account_user_id);
 
             return $inFlight;
         });

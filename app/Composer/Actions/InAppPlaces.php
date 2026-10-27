@@ -32,7 +32,7 @@ final class InAppPlaces
         ],
         'withdraw_paperwork_permission' => [
             'title' => 'Stop Composer reading it',
-            'text' => 'Composer reads your Paperwork record only for a message you allow it on. Withdrawing that permission is your choice to make, in the notice under the box; it stops any request still on its way.',
+            'text' => 'Composer reads your Paperwork record only once you’ve allowed it, and remembers that until you turn it off. Turning it off is your choice to make, in the notice under the box or in Settings › Composer; it stops any request still on its way.',
             'place' => ['crumb' => 'Composer › About the AI › Your Paperwork', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
                 'label' => 'Open the AI notice →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
             'note' => 'Withdrawing Composer’s AI withdraws this too.',

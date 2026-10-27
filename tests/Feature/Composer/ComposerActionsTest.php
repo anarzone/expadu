@@ -4,6 +4,7 @@ use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\PaperworkActions;
 use App\Composer\Answers\EventAnswers;
+use App\Composer\Assistant\Ask;
 use App\Composer\Assistant\AssistantTools;
 use App\Composer\CandidateRepository;
 use App\Composer\WorkspaceStore;
@@ -87,6 +88,52 @@ test('a date typed into its record row is their own answer, proposed while they 
         ->assertSuccessful()->assertJsonPath('conversations.0.messages.1.blocks.0.type', 'done');
     expect(visaOn($this->user))->toBe('2027-03-01')
         ->and(BureaucracyCaseFact::query()->where('key', 'visa_expires_at')->latest('id')->firstOrFail()->provenance['input_method'])->toBe('structured');
+});
+
+test('🔒 an answer their words don’t settle is asked as choices; their tap is made at once in the card’s place, with Undo', function () {
+    withVisa($this->user);
+    $title = fn (): ?string => app(ConfirmedFactView::class)->forCase($this->user->bureaucracyCase()->firstOrFail(), now()->toDateString())['values']['current_residence_title'] ?? null;
+    $before = $title();
+    $actions = app(ComposerActions::class);
+    $store = app(WorkspaceStore::class);
+
+    // "Not known" would be proposed: a card asks which instead, with a line on each, and nothing changes.
+    $asked = $actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title', 'value' => 'settlement_permit_unknown'], CarbonImmutable::now());
+    $card = $asked['blocks'][0];
+    expect($card)->toMatchArray(['type' => 'proposal', 'area' => 'paperwork', 'title' => 'Which settlement permit do you have?', 'fact_key' => 'current_residence_title'])
+        ->and($card)->not->toHaveKey('token')
+        ->and(array_column($card['edit']['options'], 'value'))->toBe(['settlement_permit_9', 'settlement_permit_18c'])
+        ->and($card['edit']['options'][1]['hint'])->toContain('§18c')
+        ->and($card['unsure']['keep'])->toBe(['value' => 'settlement_permit_unknown', 'label' => 'Keep “type unknown”'])
+        ->and($asked['said'])->toStartWith('Not done')
+        ->and($title())->toBe($before)
+        // One answer to propose, or a choice of one: no card.
+        ->and($actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title', 'value' => 'blue_card'], CarbonImmutable::now()))->toBeNull()
+        ->and($actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title', 'choices' => ['blue_card', 'astronaut']], CarbonImmutable::now()))->toBeNull()
+        // A section their words don't name is asked about, never guessed; named, it's proposed.
+        ->and($actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title', 'value' => 'settlement_permit_9', '_said' => 'I got my Niederlassungserlaubnis'], CarbonImmutable::now())['blocks'][0]['title'])
+        ->toBe('Which settlement permit do you have?')
+        ->and($actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title', 'value' => 'settlement_permit_18c', '_said' => 'it’s a § 18c one'], CarbonImmutable::now()))->toBeNull()
+        // "Not known" among the choices is what "Not sure" keeps, not an option.
+        ->and(array_column($actions->choose($this->user, 'change_paperwork_fact', ['key' => 'current_residence_title',
+            'choices' => ['settlement_permit_9', 'settlement_permit_unknown']], CarbonImmutable::now())['blocks'][0]['edit']['options'], 'value'))->toBe(['settlement_permit_9', 'settlement_permit_18c']);
+    $store->answer($this->user, (string) $store->read($this->user)['active'], Ask::message('', $asked['blocks'], ['written' => 'ai']), null);
+
+    // Their tap, while they ask first for Paperwork (on by default): the answer to Composer's own
+    // question, so made at once, its Done with Undo in the card's place.
+    $workspace = $this->actingAs($this->user)->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'current_residence_title', 'value' => 'settlement_permit_18c'])
+        ->assertSuccessful()->json();
+    $blocks = collect($workspace['conversations'][0]['messages'])->flatMap(fn (array $m): array => $m['blocks'] ?? []);
+    expect($title())->toBe('settlement_permit_18c')
+        ->and($blocks->firstWhere('id', $card['id']))->toMatchArray(['type' => 'done', 'undo' => ['token' => $card['id'], 'until' => $card['until']]])
+        ->and($blocks->where('edit.kind', 'choice'))->toBeEmpty();
+
+    $actions->undo($this->user, $card['id'], CarbonImmutable::now());
+    expect($title())->toBe($before);
+
+    // Not one of the card's options: an answer typed in, proposed while they ask first.
+    $this->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'current_residence_title', 'value' => 'blue_card'])->assertSuccessful();
+    expect($title())->toBe($before);
 });
 
 test('every Paperwork record row changes in place: a date, or the answer\'s own choices, saved as their own answer', function () {
@@ -187,7 +234,7 @@ test('without their Paperwork permission for the message, Paperwork is neither r
     withVisa($this->user);
     $paperwork = fn (bool $permitted): string => collect(AssistantTools::definitions(false, false, $permitted))->firstWhere('name', 'paperwork')['description'];
     expect($paperwork(false))->toContain('You don\'t get its contents')
-        ->and($paperwork(true))->toContain('They allowed you to read it for this message');
+        ->and($paperwork(true))->toContain('They allowed you to read it.');
 
     $tools = new AssistantTools($this->user, CarbonImmutable::now(), new LocationContext(null, null, LocationSource::None),
         app(CandidateRepository::class), app(EventAnswers::class), app(WeatherService::class));

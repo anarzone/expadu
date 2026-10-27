@@ -187,7 +187,7 @@ test('🔒 without the Paperwork permission, the request is Composer’s own not
 test('🔒 withdrawing Composer’s AI withdraws its Paperwork permission too, and its notice is served', function () {
     $this->actingAs($this->user)->getJson('/privacy/processing/composer_paperwork')->assertOk()
         ->assertJsonPath('purpose', 'composer_paperwork')->assertJsonPath('never_sent', ['coordinates', 'addresses', 'documents', 'other_people'])
-        ->assertJsonPath('notice.0', fn (string $line): bool => str_starts_with($line, 'For this message, Composer reads and can change your Paperwork record.'));
+        ->assertJsonPath('notice.0', fn (string $line): bool => str_starts_with($line, 'Once you allow it, Composer reads and can change your Paperwork record when a message needs it.'));
     $case = $this->user->bureaucracyCase()->firstOrFail();
     app(ProcessingConsentStore::class)->grant($this->user, ProcessingPurpose::ComposerPaperwork, ['text' => 'x', 'veedel' => 'Ehrenfeld', 'page' => null],
         ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerPaperwork), $case);
