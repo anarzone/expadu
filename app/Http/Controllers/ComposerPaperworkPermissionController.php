@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BureaucracyPerson;
+use App\Models\User;
 use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPurpose;
 use Illuminate\Http\JsonResponse;
@@ -17,17 +18,22 @@ class ComposerPaperworkPermissionController extends Controller
 {
     public function show(Request $request, ProcessingOptIns $optIns): JsonResponse
     {
-        $purpose = ProcessingPurpose::ComposerPaperwork;
-        $user = $request->user();
+        return response()->json(self::state($request->user(), $optIns));
+    }
 
-        return response()->json([
+    /** @return array{enabled: bool, available: bool, has_record: bool, disclosure: mixed} */
+    public static function state(User $user, ProcessingOptIns $optIns): array
+    {
+        $purpose = ProcessingPurpose::ComposerPaperwork;
+
+        return [
             'enabled' => $optIns->active($user, $purpose),
             'available' => $purpose->available(),
             // Nothing for Composer to read without a record in use.
             'has_record' => BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')
                 ->whereNull('processing_stopped_at')->exists(),
             'disclosure' => $purpose->disclosure(),
-        ]);
+        ];
     }
 
     public function update(Request $request, ProcessingOptIns $optIns): JsonResponse
