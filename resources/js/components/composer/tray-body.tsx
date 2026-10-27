@@ -4,7 +4,14 @@ import { show } from '@/actions/App/Http/Controllers/ComposerWorkspaceController
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 import type { AiNotice } from './ai-notice';
-import { AnswerBody, guided, isAnswer } from './answers';
+import {
+    AnswerBody,
+    guided,
+    isAnswer,
+    NotAnswered,
+    TryAgain,
+    unanswered,
+} from './answers';
 import { Guidance } from './guidance';
 import { ComposerLoading } from './loading';
 import { PlanCard } from './plan-card';
@@ -275,12 +282,15 @@ function Talk({
 
     // The newest exchange sits just above the box; a long one opens at its
     // start, the person's message 12px from the top. Older ones scroll up.
-    useLayoutEffect(() => {
+    // It stays so as the panel's room changes (the viewport, the keyboard, a
+    // poster loading) until the person scrolls it themselves.
+    const following = useRef(true);
+    const follow = () => {
         const element = body.current;
         const turns = element?.querySelectorAll('.chat-entry.chat-user');
         const turn = turns?.[turns.length - 1];
 
-        if (!element) {
+        if (!element || !following.current) {
             return;
         }
 
@@ -292,7 +302,46 @@ function Talk({
               12
             : end;
         element.scrollTop = Math.max(0, Math.min(end, top));
+    };
+    const followRef = useRef(follow);
+    useLayoutEffect(() => {
+        followRef.current = follow;
+    });
+
+    useLayoutEffect(() => {
+        following.current = true;
+        followRef.current();
     }, [messages.length, pendingText, busy]);
+
+    useEffect(() => {
+        const element = body.current;
+
+        if (!element) {
+            return;
+        }
+
+        const again = () => followRef.current();
+        const away = () => {
+            following.current = false;
+        };
+        const observer = new ResizeObserver(again);
+        observer.observe(element);
+
+        if (element.firstElementChild) {
+            observer.observe(element.firstElementChild);
+        }
+
+        window.visualViewport?.addEventListener('resize', again);
+        element.addEventListener('wheel', away, { passive: true });
+        element.addEventListener('touchmove', away, { passive: true });
+
+        return () => {
+            observer.disconnect();
+            window.visualViewport?.removeEventListener('resize', again);
+            element.removeEventListener('wheel', away);
+            element.removeEventListener('touchmove', away);
+        };
+    }, []);
 
     const entry = (message: Message) => (
         <article
@@ -359,6 +408,12 @@ function Talk({
                     </button>
                 )}
             {guided(message) && <Guidance query={message.query ?? ''} />}
+            {message.id === messages.at(-1)?.id && unanswered(message) && (
+                <TryAgain
+                    onAgain={() => void engine.again()}
+                    disabled={!!busy}
+                />
+            )}
         </article>
     );
 
@@ -369,6 +424,12 @@ function Talk({
             </p>
             <div className="chat-feed" aria-label="Conversation">
                 {messages.map(entry)}
+                {engine.leftUnanswered() && (
+                    <NotAnswered
+                        onAgain={() => void engine.again()}
+                        disabled={!!busy}
+                    />
+                )}
                 {pendingText && (
                     <article className="chat-entry chat-user">
                         <span className="chat-speaker">You</span>
@@ -386,7 +447,7 @@ function Talk({
                         {retryMessage && (
                             <button
                                 type="button"
-                                onClick={() => void engine.send(retryMessage)}
+                                onClick={engine.retry}
                                 disabled={!!busy}
                             >
                                 Retry
