@@ -1,3 +1,5 @@
+import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
+
 /** Resolve only after the server has acknowledged a write, never a login page. */
 export async function writeJson<T = Record<string, unknown>>(
     url: string,
@@ -30,8 +32,8 @@ export async function writeJson<T = Record<string, unknown>>(
         !response.headers.get('content-type')?.includes('application/json')
     ) {
         throw new Error(
-            response.status === 401 || response.status === 419
-                ? 'Your session expired. Refresh the page and try again.'
+            isSignedOutStatus(response.status)
+                ? SIGNED_OUT
                 : 'We couldn’t save that. Please try again.',
         );
     }
