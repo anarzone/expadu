@@ -3,8 +3,9 @@
 return [
     // Product minimisation limits, not statutory retention periods.
     // Bumped when what a request sends changes (22 Oct 2026: Composer's one assistant, with
-    // the nearest stop and Veedel, the page and saved places' names).
-    'notice_version' => '2026-10-24.subject-bound-request.10',
+    // the nearest stop and Veedel, the page and saved places' names; 27 Oct: the names of saved
+    // places and events and of favourite stops, when asked about, owner-approved).
+    'notice_version' => '2026-10-27.subject-bound-request.11',
     'request_minutes' => 15,
     'audit_days' => 30,
     'max_response_bytes' => 65536,

@@ -175,7 +175,7 @@ final class Ask
             'listings' => $now->setTimezone('Europe/Berlin')->format('H') >= 17 ? 'tonight’s listings' : 'today’s listings',
             'places' => 'places', 'weather' => 'the weather', 'location' => 'your nearest stop and Veedel', 'departures' => 'departures',
             'trip' => 'the trip planner', 'planner' => 'the day planner', 'notices' => 'KVB notices', 'guidance' => 'reviewed paperwork guides',
-            'my_places' => 'your saved places’ names', 'taste' => 'what you like', 'plans' => 'your plans', 'paperwork_record' => 'your Paperwork record',
+            'my_places' => 'your saved places’ names', 'my_saved' => 'what you saved', 'taste' => 'what you like', 'plans' => 'your plans', 'paperwork_record' => 'your Paperwork record',
         ];
 
         return array_values(array_unique(array_filter(array_map(fn (string $key): ?string => $words[$key] ?? null, $looked))));

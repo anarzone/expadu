@@ -1,15 +1,22 @@
 <?php
 
+use App\Composer\Answers\EventAnswers;
 use App\Composer\Assistant\Assistant;
+use App\Composer\Assistant\AssistantTools;
+use App\Composer\CandidateRepository;
 use App\Composer\WorkspaceUpgrade;
+use App\Enums\LocationSource;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
 use App\Models\EventBookmark;
+use App\Models\FavouriteStop;
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\Pseudonym;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPurpose;
+use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
@@ -452,4 +459,22 @@ test('without the AI, Composer shows what\'s around, and a fact shows once per c
     Http::assertNothingSent();
     expect($first)->without_ai->toBe('off')->and(collect($first['facts'])->pluck('label')->all())->toContain('Weather')
         ->and($second)->not->toHaveKey('facts');
+});
+
+test('🔒 what they saved is read by name only: places with their Veedel, events still ahead, favourite stops', function () {
+    $user = User::factory()->onboarded()->create();
+    $spot = Spot::factory()->create(['name' => 'Synthetic Café', 'veedel' => 'Ehrenfeld', 'address' => 'Synthetic Straße 1']);
+    SpotFeedback::query()->create(['user_id' => $user->id, 'spot_id' => $spot->id, 'state' => 'saved']);
+    $ahead = Event::factory()->create(['title' => 'Synthetic concert', 'starts_at' => now()->addDays(2)]);
+    $past = Event::factory()->create(['title' => 'Synthetic past', 'starts_at' => now()->subDays(2)]);
+    EventBookmark::query()->create(['user_id' => $user->id, 'event_id' => $ahead->id, 'occurrence_start' => $ahead->starts_at, 'title' => 'Synthetic concert']);
+    EventBookmark::query()->create(['user_id' => $user->id, 'event_id' => $past->id, 'occurrence_start' => $past->starts_at, 'title' => 'Synthetic past']);
+    FavouriteStop::query()->create(['user_id' => $user->id, 'name' => 'Neumarkt']);
+
+    $tools = new AssistantTools($user, CarbonImmutable::now(), new LocationContext(null, null, LocationSource::None),
+        app(CandidateRepository::class), app(EventAnswers::class), app(WeatherService::class));
+    $said = $tools->run('my_saved', ['what' => 'all']);
+
+    expect($said)->toContain('saved place "Synthetic Café" in Ehrenfeld')->toContain('saved event "Synthetic concert"')
+        ->toContain('favourite stop Neumarkt')->not->toContain('Synthetic past')->not->toContain('Synthetic Straße');
 });
