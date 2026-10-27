@@ -46,7 +46,7 @@ const TYPES = [
     },
     {
         id: 'checklist',
-        label: 'Bureaucracy deadlines',
+        label: 'Paperwork deadlines',
         sub: 'Reminders before your paperwork is due',
     },
     {
