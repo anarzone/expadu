@@ -126,6 +126,7 @@ export function WhatsOn({
     const hidden = useHidden();
     const f = { ...noFilters, ...data.filters };
     const [open, setOpen] = useState(true);
+    const [view, setView] = useView();
     const [earlierOpen, setEarlierOpen] = useState(false);
 
     // The search follows typing at once; the URL catches up after a pause.
@@ -487,6 +488,83 @@ export function WhatsOn({
         );
     };
 
+    // The grid's tile: the listing as a small poster, in its own ink.
+    const tile = (l: Listing, position: number) => {
+        const p = l.poster;
+        const why = whyOf(l);
+        const isSaved = saved.keys.has(l.key);
+        const when = p.start
+            ? p.end
+                ? `${p.start}–${p.end}`
+                : `${p.start} · end not listed`
+            : 'Time not listed';
+        const ink = posterInk(p.start);
+
+        return (
+            <li
+                key={l.key}
+                ref={shown(l.occurrence.id, position)}
+                className="wo-tile"
+            >
+                <button
+                    type="button"
+                    className={cn('wo-tile-poster', `pp--${ink}`)}
+                    aria-label={`${p.title}, ${when}. Open details`}
+                    onClick={() =>
+                        showDetail({
+                            event: l.occurrence.id,
+                            start: l.occurrence.occurrence_start,
+                        })
+                    }
+                >
+                    <span className="wo-tile-stamp">
+                        {date === today
+                            ? ink === 'day'
+                                ? 'Today'
+                                : 'Tonight'
+                            : longDate(date)}
+                    </span>
+                    <span
+                        className="wo-tile-title"
+                        lang={p.titleLang ?? undefined}
+                    >
+                        {p.title}
+                    </span>
+                    <span className="wo-tile-time">{p.start ?? '—'}</span>
+                </button>
+                <div className="wo-tile-foot">
+                    <div>
+                        {p.venue && <span className="wo-where">{p.venue}</span>}
+                        <span className="wo-when">
+                            {[p.end ? `until ${p.end}` : null, p.price]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        </span>
+                        {why && (
+                            <span className={cn('wo-why', `is-${why.tone}`)}>
+                                {why.text}
+                            </span>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        className={cn('wo-save', isSaved && 'is-saved')}
+                        aria-label={
+                            isSaved ? `Saved: ${p.title}` : `Save ${p.title}`
+                        }
+                        aria-pressed={isSaved}
+                        onClick={() => toggleSave(l)}
+                    >
+                        <Icon
+                            name="bookmark"
+                            variant={isSaved ? 'default' : 'line'}
+                        />
+                    </button>
+                </div>
+            </li>
+        );
+    };
+
     let position = 0;
 
     return (
@@ -536,6 +614,30 @@ export function WhatsOn({
                         mode={mode}
                         onFrom={onFrom}
                         onMode={onMode}
+                        trailing={
+                            <div
+                                className="wo-views"
+                                role="group"
+                                aria-label="Show as"
+                            >
+                                <button
+                                    type="button"
+                                    aria-label="List"
+                                    aria-pressed={view === 'list'}
+                                    onClick={() => setView('list')}
+                                >
+                                    <Icon name="list" variant="line" />
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-label="Grid"
+                                    aria-pressed={view === 'grid'}
+                                    onClick={() => setView('grid')}
+                                >
+                                    <Icon name="grid" variant="line" />
+                                </button>
+                            </div>
+                        }
                     />
                     <FromNote from={shownFrom} />
                 </div>
@@ -622,8 +724,14 @@ export function WhatsOn({
                                         {g.label}
                                     </h3>
                                 )}
-                                <ul>
-                                    {g.items.map((l) => row(l, ++position))}
+                                <ul
+                                    className={cn(view === 'grid' && 'wo-grid')}
+                                >
+                                    {g.items.map((l) =>
+                                        view === 'grid'
+                                            ? tile(l, ++position)
+                                            : row(l, ++position),
+                                    )}
                                 </ul>
                             </section>
                         ))}
@@ -652,6 +760,33 @@ export function WhatsOn({
             />
         </>
     );
+}
+
+/** List or Grid, as this device last had it (a convenience: it falls back to List). */
+function useView(): ['list' | 'grid', (view: 'list' | 'grid') => void] {
+    const [view, setView] = useState<'list' | 'grid'>(() => {
+        try {
+            return window.localStorage.getItem('expadu-whats-on-view') ===
+                'grid'
+                ? 'grid'
+                : 'list';
+        } catch {
+            return 'list';
+        }
+    });
+
+    return [
+        view,
+        (next) => {
+            setView(next);
+
+            try {
+                window.localStorage.setItem('expadu-whats-on-view', next);
+            } catch {
+                // Private windows may refuse; the choice holds until the panel closes.
+            }
+        },
+    ];
 }
 
 /** The minute of the day in Cologne, moving on each minute. */

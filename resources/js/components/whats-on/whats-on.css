@@ -190,6 +190,125 @@
     outline-offset: 2px;
 }
 
+/* List or Grid, at the end of the filters. */
+.wo-views {
+    display: flex;
+    flex: none;
+    margin-left: auto;
+    padding: 2px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+}
+.wo-views button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+}
+.wo-views button[aria-pressed='true'] {
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 1px 3px #211d152e;
+}
+.wo-views svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* The grid: two small posters a row, in their own ink. */
+.wo-group ul.wo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 10px 0 6px;
+}
+.wo-tile {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-surface);
+}
+.wo-tile-poster {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 190px;
+    padding: 14px;
+    border: 0;
+    background: var(--pp-ground);
+    color: var(--pp-text);
+    text-align: left;
+    cursor: pointer;
+}
+.wo-tile-stamp {
+    align-self: flex-start;
+    padding: 1px 6px;
+    background: var(--poster-yellow);
+    color: var(--color-text);
+    font-family: 'Festival Marker', var(--font-sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    rotate: -2deg;
+}
+.wo-tile-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 0.98;
+    text-transform: uppercase;
+    hyphens: auto;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}
+.wo-tile-time {
+    color: transparent;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    -webkit-text-stroke: 1.2px var(--pp-text);
+}
+.wo-tile-foot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    gap: 6px;
+    align-items: start;
+    padding: 10px 10px 12px 12px;
+}
+.wo-tile-foot > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.wo-tile-foot .wo-where {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wo-tile-foot .wo-why {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+.wo-tile-foot .wo-save {
+    width: 40px;
+    height: 40px;
+}
+.whats-on .wo-tile-poster:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+
 /* The way to anything else: Composer. */
 .whats-on .ui-sheet-foot {
     padding: 14px 24px 18px;
@@ -248,6 +367,25 @@
     }
     .wo-title {
         font-size: 15px;
+    }
+    .wo-group ul.wo-grid {
+        gap: 10px;
+    }
+    .wo-tile-poster {
+        min-height: 150px;
+        padding: 10px;
+    }
+    .wo-tile-stamp {
+        font-size: 11px;
+    }
+    .wo-tile-title {
+        font-size: 15px;
+    }
+    .wo-tile-time {
+        font-size: 22px;
+    }
+    .wo-tile-foot {
+        padding: 8px 8px 10px 10px;
     }
     .wo-composer .wo-long {
         display: none;
