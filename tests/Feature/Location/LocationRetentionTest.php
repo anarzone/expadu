@@ -48,8 +48,9 @@ test('a new ping cannot extend the oldest retained location beyond seven days', 
     $user = User::factory()->onboarded()->create();
     $user->userSetting()->create(['settings' => ['share_location' => true]]);
     $key = "location_history:{$user->id}";
-    Redis::zadd($key, now()->subDays(8)->timestamp, 'expired');
-    Redis::zadd($key, now()->subDays(6)->timestamp, 'recent');
+    // In seconds, not calendar days: across a clock change a day isn't 86,400 s.
+    Redis::zadd($key, now()->subSeconds(8 * 86400)->timestamp, 'expired');
+    Redis::zadd($key, now()->subSeconds(6 * 86400)->timestamp, 'recent');
     Redis::expire($key, 2592000);
 
     app(EventTrackingService::class)->track($user, 'location_ping', [
@@ -64,8 +65,8 @@ test('retention cleanup reports a dry run then removes expired members and redac
     $user = User::factory()->onboarded()->create();
     // This deliberately has no corresponding user: the sweep must cover orphaned keys too.
     $key = 'location_history:987654321';
-    Redis::zadd($key, now()->subDays(7)->timestamp, 'boundary');
-    Redis::zadd($key, now()->subDays(7)->addSeconds(300)->timestamp, 'within-window');
+    Redis::zadd($key, now()->subSeconds(7 * 86400)->timestamp, 'boundary');
+    Redis::zadd($key, now()->subSeconds(7 * 86400 - 300)->timestamp, 'within-window');
     Redis::expire($key, 2592000);
     $old = UserEvent::factory()->for($user)->create([
         'event_type' => 'location_ping', 'payload' => ['lat' => 50.94, 'lng' => 6.94],
