@@ -34,6 +34,24 @@
       "note": "children's ask: playgrounds (with goals where the city lists them) are right here; the adult ask above stays pitches and parks"
     },
     {
+      "ask": "free open places to play football",
+      "input": {
+        "activity": "soccer",
+        "free": true
+      },
+      "kinds": [
+        "Pitch",
+        "Sports centre",
+        "Park"
+      ],
+      "from": [
+        50.8658,
+        7.0467
+      ],
+      "public_only": true,
+      "note": "coordinator, 24 Oct: never a pitch on a school's or daycare's grounds (public_use no, basis school_grounds) or any place whose public_use is no; from Zündorf, next to Gemeinschaftsgrundschule Schmittgasse's football pitch (spot 1007287)"
+    },
+    {
       "ask": "places to work in the city centre",
       "input": {
         "kinds": [
