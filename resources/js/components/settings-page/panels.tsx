@@ -104,16 +104,16 @@ export function AccountPanel({
         };
 
     return (
-        <section
-            className="settings-panel settings-account"
-            aria-labelledby="settings-title"
-        >
-            <div className="settings-eyebrow">
-                <SettingsIcon name="sliders" />
-                Settings
+        <section className="settings-panel" aria-labelledby="account-title">
+            <div className="settings-head">
+                <span className="settings-chip account">
+                    <SettingsIcon name="user" />
+                </span>
+                <div>
+                    <h2 id="account-title">Your account</h2>
+                    <p>How you sign in, and what Expadu keeps about you.</p>
+                </div>
             </div>
-            <h1 id="settings-title">Your account</h1>
-            <p>How you sign in, and what Expadu keeps about you.</p>
             <div className="settings-tiles">
                 {edit === 'name' ? (
                     <EditForm
@@ -248,7 +248,6 @@ export function AccountPanel({
     );
 }
 
-/** Personalised suggestions: the opt-in (EXP-182); off erases what was learned. */
 /** Where personalisation learns from (PersonalisationWording, the second wording). */
 const LEARNS_FROM: [IconName, string][] = [
     ['pin', 'Places'],
@@ -258,6 +257,7 @@ const LEARNS_FROM: [IconName, string][] = [
     ['spark', 'Composer topics'],
 ];
 
+/** Personalised suggestions: the opt-in (EXP-182); off erases what was learned. */
 export function LearnPanel() {
     const { userSettings } = usePage<{
         userSettings?: Record<string, boolean | string>;
@@ -323,33 +323,35 @@ export function LearnPanel() {
                     </p>
                 </div>
             </div>
-            <div className="settings-tile">
-                <span className="settings-tile-copy">
-                    <strong id="learn-label">Learn what I like</strong>
-                    <span className="settings-tile-note" id="learn-state">
-                        {on
-                            ? 'On: suggestions follow what you open and save'
-                            : 'Off: everyone sees the same suggestions'}
+            <div className="settings-tiles">
+                <div className="settings-tile">
+                    <span className="settings-tile-copy">
+                        <strong id="learn-label">Learn what I like</strong>
+                        <span className="settings-tile-note" id="learn-state">
+                            {on
+                                ? 'On: suggestions follow what you open and save'
+                                : 'Off: everyone sees the same suggestions'}
+                        </span>
                     </span>
-                </span>
-                <button
-                    type="button"
-                    className="settings-switch"
-                    role="switch"
-                    aria-checked={on}
-                    aria-labelledby="learn-label"
-                    aria-describedby="learn-state"
-                    aria-busy={busy || undefined}
-                    data-learn
-                    onClick={() => {
-                        if (on) {
-                            setAsking(true);
-                            focusSoon('[data-keep-on]');
-                        } else {
-                            void save(true);
-                        }
-                    }}
-                />
+                    <button
+                        type="button"
+                        className="settings-switch"
+                        role="switch"
+                        aria-checked={on}
+                        aria-labelledby="learn-label"
+                        aria-describedby="learn-state"
+                        aria-busy={busy || undefined}
+                        data-learn
+                        onClick={() => {
+                            if (on) {
+                                setAsking(true);
+                                focusSoon('[data-keep-on]');
+                            } else {
+                                void save(true);
+                            }
+                        }}
+                    />
+                </div>
             </div>
             {older && !asking ? (
                 <p className="settings-learn-older">
@@ -412,16 +414,23 @@ export function LearnPanel() {
                         : ''
                 }
             />
-            {/* What it learns from, as the text above says it. */}
-            <div className="settings-learns">
-                <span>It learns from</span>
-                {LEARNS_FROM.map(([icon, label]) => (
-                    <span key={label}>
-                        <SettingsIcon name={icon} />
-                        {label}
-                    </span>
-                ))}
-            </div>
+            {/* What it learns from, as the text above says it: under the
+                older wording, places and events only. */}
+            {on ? (
+                <>
+                    <h3 className="settings-sub">It learns from</h3>
+                    <ul className="settings-learns">
+                        {(older ? LEARNS_FROM.slice(0, 2) : LEARNS_FROM).map(
+                            ([icon, label]) => (
+                                <li key={label}>
+                                    <SettingsIcon name={icon} />
+                                    {label}
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                </>
+            ) : null}
         </section>
     );
 }
@@ -462,112 +471,125 @@ export function CityPanel({
                     </p>
                 </div>
             </div>
-            {edit === 'city' ? (
-                <EditForm
-                    name="city"
-                    onCancel={() => close()}
-                    onSave={(form) => {
-                        const name = String(
-                            new FormData(form).get('city') ?? '',
-                        ).trim();
+            <div className="settings-tiles">
+                {edit === 'city' ? (
+                    <EditForm
+                        name="city"
+                        onCancel={() => close()}
+                        onSave={(form) => {
+                            const name = String(
+                                new FormData(form).get('city') ?? '',
+                            ).trim();
 
-                        // Laravel takes an empty city, so this one is asked here.
-                        if (draft === 'other' && name === '') {
-                            setErrors({ city: 'The city field is required.' });
-                            focusSoon('#city');
+                            // Laravel takes an empty city, so this one is asked here.
+                            if (draft === 'other' && name === '') {
+                                setErrors({
+                                    city: 'The city field is required.',
+                                });
+                                focusSoon('#city');
 
-                            return;
+                                return;
+                            }
+
+                            send(
+                                'patch',
+                                ProfileController.update.url(),
+                                {
+                                    city:
+                                        draft === 'cologne' ? 'Cologne' : name,
+                                },
+                                form,
+                                () => close('Saved.'),
+                                setErrors,
+                            );
+                        }}
+                    >
+                        <fieldset className="settings-choices">
+                            <legend>Your city</legend>
+                            <label className="settings-choice">
+                                <input
+                                    type="radio"
+                                    name="city-kind"
+                                    value="cologne"
+                                    checked={draft === 'cologne'}
+                                    onChange={() => setDraft('cologne')}
+                                />
+                                <span>
+                                    <strong>Cologne</strong>
+                                    Reviewed Paperwork guidance
+                                </span>
+                            </label>
+                            <label className="settings-choice">
+                                <input
+                                    type="radio"
+                                    name="city-kind"
+                                    value="other"
+                                    checked={draft === 'other'}
+                                    onChange={() => setDraft('other')}
+                                />
+                                <span>
+                                    <strong>Another city</strong>
+                                    No reviewed guidance yet
+                                </span>
+                            </label>
+                        </fieldset>
+                        {draft === 'other' ? (
+                            <>
+                                <Field
+                                    id="city"
+                                    label="City name"
+                                    autoComplete="address-level2"
+                                    placeholder="Your city"
+                                    maxLength={255}
+                                    defaultValue={covered ? '' : city}
+                                    error={errors.city}
+                                />
+                                <p className="settings-hint paper">
+                                    Paperwork covers Cologne so far, and doesn’t
+                                    guess for other cities. Your answers stay.
+                                </p>
+                            </>
+                        ) : null}
+                        <Actions onCancel={() => close()} />
+                    </EditForm>
+                ) : (
+                    <Tile
+                        id="city"
+                        label="Your city"
+                        value={
+                            city === ''
+                                ? 'Not set yet'
+                                : covered
+                                  ? 'Cologne'
+                                  : city
                         }
-
-                        send(
-                            'patch',
-                            ProfileController.update.url(),
-                            { city: draft === 'cologne' ? 'Cologne' : name },
-                            form,
-                            () => close('Saved.'),
-                            setErrors,
-                        );
-                    }}
-                >
-                    <fieldset className="settings-choices">
-                        <legend>Your city</legend>
-                        <label className="settings-choice">
-                            <input
-                                type="radio"
-                                name="city-kind"
-                                value="cologne"
-                                checked={draft === 'cologne'}
-                                onChange={() => setDraft('cologne')}
-                            />
-                            <span>
-                                <strong>Cologne</strong>
-                                Reviewed Paperwork guidance
-                            </span>
-                        </label>
-                        <label className="settings-choice">
-                            <input
-                                type="radio"
-                                name="city-kind"
-                                value="other"
-                                checked={draft === 'other'}
-                                onChange={() => setDraft('other')}
-                            />
-                            <span>
-                                <strong>Another city</strong>
-                                No reviewed guidance yet
-                            </span>
-                        </label>
-                    </fieldset>
-                    {draft === 'other' ? (
-                        <>
-                            <Field
-                                id="city"
-                                label="City name"
-                                autoComplete="address-level2"
-                                placeholder="Your city"
-                                maxLength={255}
-                                defaultValue={covered ? '' : city}
-                                error={errors.city}
-                            />
-                            <p className="settings-hint paper">
-                                Paperwork covers Cologne so far, and doesn’t
-                                guess for other cities. Your answers stay.
-                            </p>
-                        </>
-                    ) : null}
-                    <Actions onCancel={() => close()} />
-                </EditForm>
-            ) : (
-                <Tile
-                    id="city"
-                    label="Your city"
-                    value={
-                        city === '' ? 'Not set yet' : covered ? 'Cologne' : city
-                    }
-                    editLabel="Change your city"
-                    extra={
-                        city === '' ? null : (
-                            <span
-                                className={
-                                    covered
-                                        ? 'settings-badge'
-                                        : 'settings-badge none'
-                                }
-                            >
-                                {covered
-                                    ? 'Reviewed guidance'
-                                    : 'No reviewed guidance'}
-                            </span>
-                        )
-                    }
-                    onOpen={() => {
-                        setDraft(city === '' || covered ? 'cologne' : 'other');
-                        setErrors({});
-                        setSaved('');
-                        onEdit('city');
-                    }}
-                />
-            )}
+                        editLabel="Change your city"
+                        extra={
+                            city === '' ? null : (
+                                <span
+                                    className={
+                                        covered
+                                            ? 'settings-badge'
+                                            : 'settings-badge none'
+                                    }
+                                >
+                                    {covered
+                                        ? 'Reviewed guidance'
+                                        : 'No reviewed guidance'}
+                                </span>
+                            )
+                        }
+                        onOpen={() => {
+                            setDraft(
+                                city === '' || covered ? 'cologne' : 'other',
+                            );
+                            setErrors({});
+                            setSaved('');
+                            onEdit('city');
+                        }}
+                    />
+                )}
+            </div>
             <Status text={edit === 'city' ? '' : saved} />
         </section>
     );
@@ -577,7 +599,7 @@ export function CityPanel({
  * The settings Composer reads before it changes something for you (owner,
  * 23 Oct 2026, "Composer does things" canvas). Off, it makes the change and
  * offers Undo; on, it proposes the change and waits for Apply. Composer's
- * header chip links here (#composer).
+ * Ask first chip links here (/settings/composer).
  */
 const ASK_FIRST = [
     {
@@ -645,11 +667,7 @@ export function ComposerPanel() {
     }
 
     return (
-        <section
-            id="composer"
-            className="settings-panel"
-            aria-labelledby="composer-title"
-        >
+        <section className="settings-panel" aria-labelledby="composer-title">
             <div className="settings-head">
                 <span className="settings-chip composer">
                     <SettingsIcon name="spark-small" />
@@ -694,6 +712,9 @@ export function ComposerPanel() {
                     </div>
                 ))}
             </div>
+            <p className="settings-hint">
+                Either way, a change Composer makes can be undone for 24 hours.
+            </p>
             {error ? (
                 <p className="settings-error" role="alert">
                     {error}
@@ -703,33 +724,120 @@ export function ComposerPanel() {
     );
 }
 
-/** A part that comes later: dashed, with a label saying when, offering nothing. */
-export function LaterPanel({
-    id,
-    icon,
-    title,
-    label,
-    children,
-}: {
-    id: string;
-    icon: IconName;
-    title: string;
-    label: string;
-    children: string;
-}) {
+/**
+ * Transit & tickets: the Deutschlandticket (the profile, as Travel's own
+ * switch sets it) and location sharing for departures (/user-settings).
+ */
+export function TransitPanel() {
+    const { auth, userSettings } = usePage<{
+        auth: Auth;
+        userSettings?: Record<string, boolean | string>;
+    }>().props;
+    const [ticket, setTicket] = useState<boolean>(
+        Boolean(auth.user.has_deutschlandticket),
+    );
+    const [share, setShare] = useState<boolean>(
+        (userSettings?.share_location as boolean | undefined) ?? true,
+    );
+    const [busy, setBusy] = useState<'ticket' | 'location' | null>(null);
+    const [error, setError] = useState('');
+
+    async function save(kind: 'ticket' | 'location') {
+        if (busy) {
+            return;
+        }
+
+        setBusy(kind);
+        setError('');
+
+        try {
+            if (kind === 'ticket') {
+                await writeJson(ProfileController.update.url(), 'PATCH', {
+                    has_deutschlandticket: !ticket,
+                });
+                setTicket(!ticket);
+            } else {
+                await writeJson('/user-settings', 'PUT', {
+                    settings: { share_location: !share },
+                });
+                setShare(!share);
+            }
+
+            router.reload({ only: ['userSettings', 'auth'] });
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? e.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            setBusy(null);
+        }
+    }
+
+    const rows = [
+        {
+            id: 'ticket',
+            label: 'I have a Deutschlandticket',
+            note: 'Shows trips as covered instead of a single fare',
+            on: ticket,
+        },
+        {
+            id: 'location',
+            label: 'Share location for transit',
+            note: 'Improves departure-time accuracy near you',
+            on: share,
+        },
+    ] as const;
+
     return (
-        <section
-            className="settings-panel is-later"
-            aria-labelledby={`${id}-title`}
-        >
+        <section className="settings-panel" aria-labelledby="transit-title">
             <div className="settings-head">
-                <span className="settings-chip">
-                    <SettingsIcon name={icon} />
+                <span className="settings-chip transit">
+                    <SettingsIcon name="train" />
                 </span>
-                <h2 id={`${id}-title`}>{title}</h2>
-                <span className="settings-later-label">{label}</span>
+                <div>
+                    <h2 id="transit-title">Transit &amp; tickets</h2>
+                    <p>
+                        Your ticket and location, so fares and departure times
+                        show up right.
+                    </p>
+                </div>
             </div>
-            <p>{children}</p>
+            <div className="settings-tiles">
+                {rows.map((row) => (
+                    <div key={row.id} className="settings-tile">
+                        <span className="settings-tile-copy">
+                            <strong id={`${row.id}-label`}>{row.label}</strong>
+                            <span
+                                className="settings-tile-note"
+                                id={`${row.id}-note`}
+                            >
+                                {row.note}
+                            </span>
+                        </span>
+                        <button
+                            type="button"
+                            className="settings-switch"
+                            role="switch"
+                            aria-checked={row.on}
+                            aria-labelledby={`${row.id}-label`}
+                            aria-describedby={`${row.id}-note`}
+                            aria-busy={busy === row.id || undefined}
+                            onClick={() => void save(row.id)}
+                        />
+                    </div>
+                ))}
+            </div>
+            <p className="settings-hint">
+                Travel shows the same Deutschlandticket switch where you plan a
+                trip.
+            </p>
+            {error ? (
+                <p className="settings-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
         </section>
     );
 }
@@ -887,7 +995,7 @@ export function DataPanel() {
                     className="settings-confirm is-calm"
                     data-form="export"
                     role="group"
-                    aria-labelledby="export-title"
+                    aria-label="Download your data"
                     noValidate
                     onKeyDown={(event) => event.key === 'Escape' && keep()}
                     onSubmit={(event) => {
@@ -906,12 +1014,6 @@ export function DataPanel() {
                         void ask(secret.value);
                     }}
                 >
-                    <strong id="export-title">Download your data</strong>
-                    <p>
-                        A ZIP with your profile, settings, plans, places,
-                        Composer conversations and Paperwork record. It can be
-                        downloaded for 24 hours, then it’s deleted.
-                    </p>
                     {hasPassword ? (
                         <Field
                             id="export_password"
@@ -1016,22 +1118,37 @@ export function DataPanel() {
                             That file couldn’t be made. Try again.
                         </p>
                     ) : null}
-                    <button
-                        type="button"
-                        className="settings-quiet"
-                        style={{ justifySelf: 'start' }}
-                        data-export
-                        onClick={() => {
-                            setAsking(true);
-                            focusSoon(
-                                hasPassword
-                                    ? '#export_password'
-                                    : '[data-export-code]',
-                            );
-                        }}
-                    >
-                        Download your data
-                    </button>
+                    <div className="settings-tiles">
+                        <div className="settings-tile">
+                            <span className="settings-tile-copy">
+                                <strong id="export-title">
+                                    Download your data
+                                </strong>
+                                <span className="settings-tile-note">
+                                    A ZIP with your profile, settings, plans,
+                                    places, Composer conversations and Paperwork
+                                    record. It can be downloaded for 24 hours,
+                                    then it’s deleted.
+                                </span>
+                            </span>
+                            <button
+                                type="button"
+                                className="settings-quiet"
+                                aria-describedby="export-title"
+                                data-export
+                                onClick={() => {
+                                    setAsking(true);
+                                    focusSoon(
+                                        hasPassword
+                                            ? '#export_password'
+                                            : '[data-export-code]',
+                                    );
+                                }}
+                            >
+                                Prepare my file
+                            </button>
+                        </div>
+                    </div>
                 </>
             )}
         </section>
@@ -1201,21 +1318,31 @@ export function DeletePanel() {
                     </div>
                 </form>
             ) : (
-                <button
-                    type="button"
-                    className="settings-danger-outline"
-                    data-delete
-                    onClick={() => {
-                        setAsking(true);
-                        focusSoon(
-                            hasPassword
-                                ? '#delete_password'
-                                : '[data-send-code]',
-                        );
-                    }}
-                >
-                    Delete account
-                </button>
+                <div className="settings-tiles">
+                    <div className="settings-tile">
+                        <span className="settings-tile-copy">
+                            <strong>Delete account</strong>
+                            <span className="settings-tile-note">
+                                Download your data first if you want a copy.
+                            </span>
+                        </span>
+                        <button
+                            type="button"
+                            className="settings-danger-outline"
+                            data-delete
+                            onClick={() => {
+                                setAsking(true);
+                                focusSoon(
+                                    hasPassword
+                                        ? '#delete_password'
+                                        : '[data-send-code]',
+                                );
+                            }}
+                        >
+                            Delete account
+                        </button>
+                    </div>
+                </div>
             )}
         </section>
     );

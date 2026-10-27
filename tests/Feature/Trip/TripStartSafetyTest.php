@@ -84,11 +84,11 @@ test('only a journey-shaped payload is stored', function (callable $break) {
 
 test('where a trip started is kept only while the trip runs', function () {
     $this->postJson('/api/trip/start', tripTo('Wiener Platz'))->assertSuccessful();
-    $this->get('/settings/profile')->assertInertia(fn ($page) => $page->where('activeTrip.origin.name', 'Home street'));
+    $this->followingRedirects()->get('/settings/profile')->assertInertia(fn ($page) => $page->where('activeTrip.origin.name', 'Home street'));
 
     // Two hours after arrival the trip is over: not shown, and the row goes.
     $this->travel(2 * 60 + 23)->minutes();
-    $this->get('/settings/profile')->assertInertia(fn ($page) => $page->where('activeTrip', null));
+    $this->followingRedirects()->get('/settings/profile')->assertInertia(fn ($page) => $page->where('activeTrip', null));
     expect(ActiveTrip::query()->count())->toBe(0);
 });
 
