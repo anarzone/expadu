@@ -2,94 +2,43 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\SpotFeedbackState;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
-use App\Models\SpotFeedback;
-use App\Personalisation\SignalRecorder;
-use App\Places\PlaceIdentity;
-use App\Services\EventTrackingService;
+use App\Places\RecordPlaceFeedback;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * POST /api/places/{spot}/feedback
+ * POST /api/places/{spot}/feedback — the one-of choice: more like this, saved,
+ * not interested (or clear). PUT / DELETE /api/places/{spot}/been — Been there,
+ * kept apart so a place can be both saved and visited.
  *
- * Records the user's standing relationship to a place (the SpotFeedback row)
- * AND emits a ranking signal as a user_event so IntentWeights tunes the feed.
- * "More like this" / "Save" are forward-looking interest signals — no visit
- * implied; "been" / "not interested" also drop the place from discovery.
+ * Each records through RecordPlaceFeedback, which Composer's place_feedback uses too.
  */
 class PlaceFeedbackController extends Controller
 {
-    public function __invoke(Request $request, Spot $spot, EventTrackingService $tracking): JsonResponse
+    public function __invoke(Request $request, Spot $spot, RecordPlaceFeedback $feedback): JsonResponse
     {
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:more_like_this,saved,been,not_interested,clear'],
             'rating' => ['nullable', 'string', 'in:up,down'],
         ]);
 
-        $user = $request->user();
-
-        return app(PlaceIdentity::class)->withCanonicalLock($spot->id, function (Spot $spot) use ($validated, $user, $tracking): JsonResponse {
-            if ($validated['action'] === 'clear') {
-                SpotFeedback::query()
-                    ->where('user_id', $user->id)
-                    ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id))
-                    ->delete();
-                app(SignalRecorder::class)->placeFeedback($user, $spot, null);
-
-                return response()->json(['state' => null, 'rating' => null]);
-            }
-
-            $state = SpotFeedbackState::from($validated['action']);
-            $rating = $state === SpotFeedbackState::Been ? ($validated['rating'] ?? null) : null;
-
-            $feedback = SpotFeedback::updateOrCreate(
-                ['user_id' => $user->id, 'spot_id' => $spot->id],
-                ['state' => $state, 'rating' => $rating],
-            );
-            $feedback->touch();
-            app(SignalRecorder::class)->placeFeedback($user, $spot, $state, $rating);
-
-            // Emit the ranking signal through the same pipeline as every other
-            // intent signal, keyed on category × Veedel (what IntentWeights reads).
-            if ($eventType = $this->signalFor($state, $rating)) {
-                $tracking->track($user, $eventType, [
-                    'category' => $this->categoryValue($spot),
-                    'veedel' => $spot->veedel,
-                    'spot_id' => $spot->id,
-                ]);
-            }
-
-            return response()->json(['state' => $state->value, 'rating' => $rating]);
-        });
+        // Older clients set Been through this endpoint; it never touches the choice.
+        return response()->json($feedback->execute($request->user(), $spot, $validated['action'], $validated['rating'] ?? null));
     }
 
-    /**
-     * The user_event type for this feedback, or null when there's no taste
-     * signal to record (a "been" with no rating just leaves discovery).
-     */
-    private function signalFor(SpotFeedbackState $state, ?string $rating): ?string
+    /** PUT /api/places/{spot}/been {rating?: up|down} */
+    public function been(Request $request, Spot $spot, RecordPlaceFeedback $feedback): JsonResponse
     {
-        return match ($state) {
-            SpotFeedbackState::MoreLikeThis => 'spot_more_like_this',
-            SpotFeedbackState::Saved => 'spot_saved',
-            SpotFeedbackState::NotInterested => 'spot_not_interested',
-            SpotFeedbackState::Been => match ($rating) {
-                'up' => 'spot_been_liked',
-                'down' => 'spot_been_disliked',
-                default => null,
-            },
-        };
+        $validated = $request->validate(['rating' => ['nullable', 'string', 'in:up,down']]);
+
+        return response()->json($feedback->been($request->user(), $spot, $validated['rating'] ?? null));
     }
 
-    private function categoryValue(Spot $spot): ?string
+    /** DELETE /api/places/{spot}/been */
+    public function forgetBeen(Request $request, Spot $spot, RecordPlaceFeedback $feedback): JsonResponse
     {
-        if ($spot->category instanceof \BackedEnum) {
-            return $spot->category->value;
-        }
-
-        return $spot->category ? (string) $spot->category : null;
+        return response()->json($feedback->forgetBeen($request->user(), $spot));
     }
 }

@@ -30,6 +30,21 @@ class NearbyStation
 
     private const WALK_KMH = 4.5;
 
+    /** Cancelled runs one way in the next hour that put a line in trouble (and at least half). */
+    private const TROUBLE_CANCELLED = 2;
+
+    /** Minutes late that count towards a line in trouble. */
+    private const TROUBLE_LATE_MIN = 15;
+
+    /** @var array{keys: array<string, string>, trips: array<string, string>, lines: list<array<string, mixed>>}|null */
+    private ?array $noticeIndex = null;
+
+    /** @var list<string> notices a departure points to, listed with the station's own */
+    private array $referenced = [];
+
+    /** @var array<string, array{line: string, mode: string, dest: string, runs: list<array<string, mixed>>}> each line's runs by direction, for trouble() */
+    private array $byDirection = [];
+
     public function __construct(
         private readonly TimetableService $timetable,
         private readonly KvbApiService $kvb,
@@ -183,7 +198,8 @@ class NearbyStation
                     continue;
                 }
                 $rows[$key]['services'][] = ['id' => $call['id'], 'departure_at' => $call['at'], 'scheduled_at' => $call['at'],
-                    'expected_at' => null, 'time_basis' => 'realtime', 'delay' => 0, 'cancelled' => true];
+                    'expected_at' => null, 'time_basis' => 'realtime', 'delay' => 0, 'cancelled' => true,
+                    'trip' => $call['trip'] ?? null];
                 $added = true;
             }
         }
@@ -271,7 +287,10 @@ class NearbyStation
             'areas' => array_values($areas),
             'lines' => $lines,
             'lifts' => $this->lifts($points),
-            'notices' => $this->notices(array_column($lines, 'line')),
+            // Its lines as KVB lists them too: one that doesn't stop here now (a closure) still counts.
+            'notices' => $this->notices(array_values(array_unique([...array_column($lines, 'line'),
+                ...array_map('strval', array_merge(...array_column(array_values($areas), 'lines')))])), $this->referenced),
+            'trouble' => $this->trouble($stale),
         ];
     }
 
@@ -336,9 +355,10 @@ class NearbyStation
     private function lines(array $rows, array $areas): array
     {
         $byLine = [];
+        $this->byDirection = [];
         foreach ($rows as $row) {
             $services = array_values(array_filter($row['services'] ?? [], fn ($s) => is_array($s) && isset($s['departure_at'])));
-            $runs = array_map(fn (array $s) => $this->service($s), $services);
+            $runs = array_map(fn (array $s) => $this->service($s, (string) $row['line']), $services);
             $next = collect($runs)->first(fn (array $r) => ! $r['cancelled']);
             $cancelled = $runs !== [] && $next === null;
             if ($runs === [] && ($row['minutes'] ?? []) === []) {
@@ -351,6 +371,9 @@ class NearbyStation
                 default => 'tram',
             };
             $byLine[$line] ??= ['line' => $line, 'mode' => $mode, 'area' => null, 'dirs' => []];
+            $way = $line.'|'.($row['direction'] ?? $row['destination'] ?? '');
+            $this->byDirection[$way] ??= ['line' => $line, 'mode' => $mode, 'dest' => (string) ($row['destination'] ?? ''), 'runs' => []];
+            array_push($this->byDirection[$way]['runs'], ...$runs);
             $first = $next ?? ($runs[0] ?? null);
             $later = array_values(array_filter($runs, fn (array $r) => $first === null || $r['id'] !== $first['id']));
             // The next few that leave, and the first few cancelled ones.
@@ -389,12 +412,59 @@ class NearbyStation
     }
 
     /**
+     * A line in trouble at this stop by its own runs, one way (the delays
+     * canvas, 22 Oct 2026): most of the next hour's runs cancelled (at least
+     * two, and all or at least half), or three in a row each 15+ min late, or every
+     * run in the next 30 min (at least two) that late. Only what the feeds
+     * say: lateness only from live times, none while they're paused.
+     *
+     * @return list<array{line: string, mode: string, dest: string, kind: 'cancelled'|'late', count: int, of: int, runs: list<array{time: string, delay: int, cancelled: bool}>}>
+     */
+    private function trouble(bool $stale): array
+    {
+        $now = CarbonImmutable::now();
+        $trouble = [];
+        foreach ($this->byDirection as $way) {
+            $runs = collect($way['runs'])->unique('id')->sortBy('at')->values();
+            $hour = $runs->filter(fn (array $r) => CarbonImmutable::parse($r['at'])->lte($now->addHour()))->values();
+            $gone = $hour->where('cancelled', true);
+            $brief = fn ($list) => $list->map(fn (array $r) => ['time' => $r['time'], 'delay' => $r['delay'], 'cancelled' => $r['cancelled']])->values()->all();
+            if ($gone->count() >= self::TROUBLE_CANCELLED && $gone->count() * 2 >= $hour->count()) {
+                $trouble[] = ['line' => $way['line'], 'mode' => $way['mode'], 'dest' => $way['dest'], 'kind' => 'cancelled',
+                    'count' => $gone->count(), 'of' => $hour->count(), 'runs' => $brief($gone)];
+
+                continue;
+            }
+            if ($stale) {
+                continue;
+            }
+            $live = $runs->filter(fn (array $r) => ! $r['cancelled'] && $r['time_basis'] === 'realtime')->values();
+            $streak = [];
+            $longest = [];
+            foreach ($live as $run) {
+                $streak = $run['delay'] >= self::TROUBLE_LATE_MIN ? [...$streak, $run] : [];
+                $longest = count($streak) > count($longest) ? $streak : $longest;
+            }
+            $soon = $runs->filter(fn (array $r) => ! $r['cancelled'] && CarbonImmutable::parse($r['at'])->lte($now->addMinutes(30)))->values();
+            $allLate = $soon->count() >= 2 && $soon->every(fn (array $r) => $r['time_basis'] === 'realtime' && $r['delay'] >= self::TROUBLE_LATE_MIN);
+            if (count($longest) >= 3 || $allLate) {
+                $late = count($longest) >= 3 ? collect($longest) : $soon;
+                $trouble[] = ['line' => $way['line'], 'mode' => $way['mode'], 'dest' => $way['dest'], 'kind' => 'late',
+                    'count' => $late->count(), 'of' => $late->count(), 'runs' => $brief($late)];
+            }
+        }
+
+        return $trouble;
+    }
+
+    /**
      * @param  array<string, mixed>  $service
      * @return array<string, mixed>
      */
-    private function service(array $service): array
+    private function service(array $service, string $line = ''): array
     {
         $at = CarbonImmutable::parse($service['departure_at']);
+        $cancelled = (bool) ($service['cancelled'] ?? false);
 
         return [
             'id' => (string) ($service['id'] ?? sha1($service['departure_at'])),
@@ -403,9 +473,72 @@ class NearbyStation
             'minutes' => max(0, (int) floor(($at->getTimestamp() - CarbonImmutable::now()->getTimestamp()) / 60)),
             'scheduled_at' => isset($service['scheduled_at']) ? CarbonImmutable::parse($service['scheduled_at'])->setTimezone('Europe/Berlin')->toIso8601String() : null,
             'delay' => (int) ($service['delay'] ?? 0),
-            'cancelled' => (bool) ($service['cancelled'] ?? false),
+            'cancelled' => $cancelled,
             'time_basis' => (string) ($service['time_basis'] ?? 'scheduled'),
+            // The notice that explains it (its id in `notices`), or null.
+            'notice' => $this->noticeFor($service, $line, $at, $cancelled),
         ];
+    }
+
+    /**
+     * The open notice that explains a departure, matched in code, never
+     * guessed: a VRS situation the departure itself names; for a cancelled
+     * one, DELFI's alert on its own trip, else a notice on its line whose
+     * time covers it (KVB's, VRS's or DELFI's). None when nothing matches.
+     *
+     * @param  array<string, mixed>  $service
+     */
+    private function noticeFor(array $service, string $line, CarbonImmutable $at, bool $cancelled): ?string
+    {
+        $index = $this->noticeIndex();
+        foreach ((array) ($service['notices'] ?? []) as $key) {
+            if (isset($index['keys'][$key])) {
+                return $this->referenced[] = $index['keys'][$key];
+            }
+        }
+        if (! $cancelled) {
+            return null;
+        }
+        if (is_string($service['trip'] ?? null) && isset($index['trips'][$service['trip']])) {
+            return $this->referenced[] = $index['trips'][$service['trip']];
+        }
+        foreach ($index['lines'] as $notice) {
+            if (in_array($line, $notice['lines'], true) && $at->between($notice['from'], $notice['until'])) {
+                return $this->referenced[] = $notice['id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The open notices by what a departure can match: a feed's own id, a
+     * DELFI trip, a line over a time. Read once per request.
+     *
+     * @return array{keys: array<string, string>, trips: array<string, string>, lines: list<array{id: string, lines: list<string>, from: CarbonImmutable, until: CarbonImmutable}>}
+     */
+    private function noticeIndex(): array
+    {
+        if ($this->noticeIndex !== null) {
+            return $this->noticeIndex;
+        }
+        $index = ['keys' => [], 'trips' => [], 'lines' => []];
+        foreach ($this->disruptions->openNotices() as $notice) {
+            $id = 'news_'.$notice->id;
+            $index['keys'][(string) $notice->source_url] = $id;
+            foreach ((array) ($notice->affected_trips ?? []) as $trip) {
+                $index['trips'][(string) $trip] = $id;
+            }
+            $lines = array_map('strval', (array) ($notice->affected_lines ?? []));
+            if ($lines !== []) {
+                // A live KVB notice's published_at is when it was last seen; it started when first seen.
+                $from = CarbonImmutable::parse($notice->source === 'kvb-betriebslage' ? $notice->created_at : ($notice->published_at ?? $notice->created_at));
+                $index['lines'][] = ['id' => $id, 'lines' => $lines, 'from' => $from,
+                    'until' => $notice->expires_at !== null ? CarbonImmutable::parse($notice->expires_at) : $from->addDays(30)];
+            }
+        }
+
+        return $this->noticeIndex = $index;
     }
 
     /**
@@ -450,19 +583,25 @@ class NearbyStation
     }
 
     /**
-     * Published notices that name this station's lines.
+     * Published notices that name this station's lines, and any notice one
+     * of its departures points to.
      *
      * @param  list<string>  $lines
+     * @param  list<string>  $referenced
      * @return list<array<string, mixed>>
      */
-    private function notices(array $lines): array
+    private function notices(array $lines, array $referenced = []): array
     {
         return collect($this->disruptions->getLineDisruptions())
-            ->filter(fn (array $d) => array_intersect(array_map('strval', $d['affected_lines'] ?? []), $lines) !== [])
+            ->filter(fn (array $d) => array_intersect(array_map('strval', $d['affected_lines'] ?? []), $lines) !== []
+                || in_array($d['id'], $referenced, true))
             ->map(fn (array $d) => [
                 'id' => $d['id'],
                 'title' => $d['title'],
                 'severity' => $d['severity'],
+                // Major (a headline) or minor (small, in place), and why (NoticeScale).
+                'scale' => $d['scale'] ?? 'minor',
+                'reasons' => $d['scale_reasons'] ?? [],
                 'lines' => array_values(array_map('strval', $d['affected_lines'] ?? [])),
                 'source' => $d['source'] ?? null,
                 'since' => $d['started_at'] ?? null,
