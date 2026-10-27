@@ -940,7 +940,7 @@ a.plan-link:hover {
     font-size: var(--text-small);
     line-height: 1.4;
 }
-/* KVB's notices for the board's lines (Travel's own banner). */
+/* KVB's notices for the board's lines (Travel's headline and notice lines). */
 .board-notices {
     display: grid;
     gap: 8px;
