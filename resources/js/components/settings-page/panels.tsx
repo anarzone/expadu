@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
@@ -694,6 +695,315 @@ export function LaterPanel({
                 <span className="settings-later-label">{label}</span>
             </div>
             <p>{children}</p>
+        </section>
+    );
+}
+
+type ExportState = {
+    id: string;
+    status: 'queued' | 'ready' | 'failed';
+    bytes: number | null;
+    expires_at: string | null;
+    url: string | null;
+} | null;
+
+const csrf = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') ?? '';
+
+const megabytes = (bytes: number | null) =>
+    bytes === null
+        ? ''
+        : bytes < 1_000_000
+          ? `${Math.max(1, Math.round(bytes / 1000))} KB`
+          : `${(bytes / 1_000_000).toFixed(1)} MB`;
+
+const until = (iso: string | null) =>
+    iso
+        ? new Date(iso).toLocaleString('en-GB', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Europe/Berlin',
+          })
+        : '';
+
+/**
+ * Your data: one ZIP of everything Expadu keeps about you (a JSON file per
+ * area and a README naming each). Asking confirms it's you as deleting the
+ * account does; the file is built in the background and can be downloaded
+ * for 24 hours, then it's deleted.
+ */
+export function DataPanel() {
+    const { user, has_password: hasPassword } = usePageAuth();
+    const [exportState, setExportState] = useState<ExportState>(null);
+    const [asking, setAsking] = useState(false);
+    const [codeSent, setCodeSent] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [errors, setErrors] = useState<Errors>({});
+    const queued = exportState?.status === 'queued';
+
+    // The latest request, and while one is being built, its progress.
+    useEffect(() => {
+        let live = true;
+        const read = () =>
+            fetch(AccountExportController.show.url(), {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+            })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((body) => live && body && setExportState(body.export))
+                .catch(() => {});
+
+        read();
+        const timer = queued ? window.setInterval(read, 3000) : undefined;
+
+        return () => {
+            live = false;
+            window.clearInterval(timer);
+        };
+    }, [queued]);
+
+    const keep = () => {
+        setAsking(false);
+        setCodeSent(false);
+        setErrors({});
+        focusSoon('[data-export]');
+    };
+
+    function emailCode() {
+        setErrors({});
+        router.post(
+            sendCode.url(),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    setCodeSent(true);
+                    focusSoon('#export_code');
+                },
+                onError: (e) => setErrors(e),
+            },
+        );
+    }
+
+    async function ask(secret: string) {
+        setBusy(true);
+        setErrors({});
+
+        try {
+            const response = await fetch(AccountExportController.store.url(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf(),
+                },
+                body: JSON.stringify(
+                    hasPassword ? { password: secret } : { code: secret },
+                ),
+            });
+            const body = await response.json().catch(() => ({}));
+
+            if (response.status === 422) {
+                setErrors(
+                    Object.fromEntries(
+                        Object.entries(
+                            (body.errors ?? {}) as Record<string, string[]>,
+                        ).map(([key, list]) => [key, list[0]]),
+                    ),
+                );
+                focusSoon('#export_code, #export_password');
+
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            setExportState(body.export);
+            setAsking(false);
+            setCodeSent(false);
+        } catch {
+            setErrors({
+                export: 'We couldn’t start that. Check your connection and try again.',
+            });
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <section className="settings-panel" aria-labelledby="data-title">
+            <div className="settings-head">
+                <span className="settings-chip data">
+                    <SettingsIcon name="lock" />
+                </span>
+                <div>
+                    <h2 id="data-title">Your data</h2>
+                    <p>
+                        Download everything Expadu keeps about you, in one file.
+                    </p>
+                </div>
+            </div>
+            {asking ? (
+                <form
+                    className="settings-confirm is-calm"
+                    data-form="export"
+                    role="group"
+                    aria-labelledby="export-title"
+                    noValidate
+                    onKeyDown={(event) => event.key === 'Escape' && keep()}
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        const secret =
+                            event.currentTarget.querySelector<HTMLInputElement>(
+                                '#export_code, #export_password',
+                            );
+
+                        if (!secret) {
+                            focusSoon('[data-export-code]');
+
+                            return;
+                        }
+
+                        void ask(secret.value);
+                    }}
+                >
+                    <strong id="export-title">Download your data</strong>
+                    <p>
+                        A ZIP with your profile, settings, plans, places,
+                        Composer conversations and Paperwork record. It can be
+                        downloaded for 24 hours, then it’s deleted.
+                    </p>
+                    {hasPassword ? (
+                        <Field
+                            id="export_password"
+                            label="Enter your password to confirm"
+                            className="short"
+                            type="password"
+                            autoComplete="current-password"
+                            error={errors.password}
+                        />
+                    ) : codeSent ? (
+                        <>
+                            <Field
+                                id="export_code"
+                                label="Code from your email"
+                                className="code"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                error={errors.code}
+                            />
+                            <button
+                                type="button"
+                                className="settings-link"
+                                data-export-code
+                                onClick={emailCode}
+                            >
+                                Send a new code
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <p>
+                                To confirm, enter the code we email to{' '}
+                                {user.email}.
+                            </p>
+                            <button
+                                type="button"
+                                className="settings-quiet"
+                                style={{ justifySelf: 'start' }}
+                                data-export-code
+                                onClick={emailCode}
+                            >
+                                Email me a code
+                            </button>
+                            <p className="settings-error" hidden={!errors.code}>
+                                {errors.code}
+                            </p>
+                        </>
+                    )}
+                    {errors.export ? (
+                        <p className="settings-error" role="alert">
+                            {errors.export}
+                        </p>
+                    ) : null}
+                    <div className="settings-actions">
+                        <button
+                            type="button"
+                            className="settings-quiet"
+                            onClick={keep}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="settings-primary"
+                            aria-busy={busy || undefined}
+                        >
+                            Prepare my file
+                        </button>
+                    </div>
+                </form>
+            ) : exportState?.status === 'ready' && exportState.url ? (
+                <div className="settings-tile" role="status">
+                    <span className="settings-tile-copy">
+                        <strong>Your file is ready</strong>
+                        <span className="settings-tile-note">
+                            {`ZIP, ${megabytes(exportState.bytes)} · until ${until(exportState.expires_at)}`}
+                        </span>
+                    </span>
+                    <a
+                        className="settings-primary"
+                        href={exportState.url}
+                        download
+                    >
+                        Download
+                    </a>
+                </div>
+            ) : queued ? (
+                <div className="settings-tile" aria-busy="true">
+                    <span className="settings-tile-copy">
+                        <strong>Preparing your file…</strong>
+                        <span className="settings-tile-note">
+                            This takes a minute. You can leave this page; the
+                            file waits here for 24 hours.
+                        </span>
+                    </span>
+                </div>
+            ) : (
+                <>
+                    {exportState?.status === 'failed' ? (
+                        <p className="settings-error" role="alert">
+                            That file couldn’t be made. Try again.
+                        </p>
+                    ) : null}
+                    <button
+                        type="button"
+                        className="settings-quiet"
+                        style={{ justifySelf: 'start' }}
+                        data-export
+                        onClick={() => {
+                            setAsking(true);
+                            focusSoon(
+                                hasPassword
+                                    ? '#export_password'
+                                    : '[data-export-code]',
+                            );
+                        }}
+                    >
+                        Download your data
+                    </button>
+                </>
+            )}
         </section>
     );
 }
