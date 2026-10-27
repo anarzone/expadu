@@ -28,7 +28,7 @@ import type { Command, Slot, Workspace } from './types';
 
 /** The pages Composer can be opened on, by the name the assistant is told. */
 const PAGES: Record<string, string> = {
-    dashboard: 'Today',
+    today: 'Today',
     timetable: 'Travel',
     events: 'Events',
     'around-here': 'Places',

@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test';
 
 // Session is injected via storageState from global-setup.ts — no login needed.
 
-test.describe('Dashboard (Today)', () => {
+test.describe('Today', () => {
     test('renders without JS errors', async ({ page }) => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
-        await page.goto('/dashboard');
+        await page.goto('/today');
         // Wait for Inertia hydration
         await page.waitForLoadState('networkidle');
 
@@ -17,7 +17,7 @@ test.describe('Dashboard (Today)', () => {
     test('keeps four labelled sections and account settings accessible', async ({
         page,
     }) => {
-        await page.goto('/dashboard');
+        await page.goto('/today');
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('h1')).toContainText('Today');
@@ -51,7 +51,7 @@ test.describe('Dashboard (Today)', () => {
     test('Add a plan opens its sheet and closes with Escape', async ({
         page,
     }) => {
-        await page.goto('/dashboard');
+        await page.goto('/today');
         await page.getByRole('button', { name: 'Add a plan' }).click();
         const sheet = page.getByRole('dialog', { name: 'Add a plan' });
         await expect(sheet).toBeVisible();

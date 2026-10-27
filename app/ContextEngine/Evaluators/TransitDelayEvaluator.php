@@ -17,7 +17,7 @@ use Illuminate\Queue\InteractsWithQueue;
  * Alert-page only: a line delay is a genuine Today need only when the user is
  * actually about to board it (a live departure), which this evaluator can't yet
  * know — "a saved place is on this line" is not "boarding now", so it isn't
- * act-now enough for a dashboard tile. It stays on the record, and a major delay
+ * act-now enough for a Today tile. It stays on the record, and a major delay
  * (>= 30 min or cancellation) still pushes. Fusing with a live leave-by (Phase 2)
  * is what earns it back onto Today.
  */

@@ -20,7 +20,7 @@ test('POST /mutes redirects back for Inertia (not 204)', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/dashboard'])
+    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/today'])
         ->post(route('mutes.store'), [
             'type' => 'transit_disruption',
             'key' => 'all',
@@ -46,7 +46,7 @@ test('POST /mutes/thumbs-down redirects back for Inertia', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/dashboard'])
+    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/today'])
         ->post(route('mutes.thumbs-down'), [
             'action_key' => 'alert:42',
             'card_type' => 'transit_disruption',
@@ -61,7 +61,7 @@ test('DELETE /mutes redirects back', function () {
     $this->actingAs($user);
     app(MuteService::class)->mute($user, 'transit_disruption', 'all', 3600);
 
-    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/dashboard'])
+    $response = $this->withHeaders(['X-Inertia' => 'true', 'Referer' => '/today'])
         ->delete(route('mutes.destroy'), [
             'type' => 'transit_disruption',
             'key' => 'all',

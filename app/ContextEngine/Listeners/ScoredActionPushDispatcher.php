@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * kill switch if push delivery misbehaves.
  *
  * Action types without a Notification class (alternative_route,
- * disruption_no_alt) are skipped silently — they're dashboard-only.
+ * disruption_no_alt) are skipped silently — they're Today-only.
  *
  * One push per situation: an action key that already pushed pushes again only
  * when its severity rose, the way Alert::record re-surfaces a card only on
@@ -49,7 +49,7 @@ class ScoredActionPushDispatcher
                 app(PlanReminderDelivery::class)->release($action->payload);
             }
 
-            return; // dashboard-only action type
+            return; // Today-only action type
         }
 
         $context = [

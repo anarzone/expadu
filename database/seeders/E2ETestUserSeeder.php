@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * The dedicated end-to-end browser-test user. Verified + onboarded so the
- * Playwright suite's global-setup (which logs in and waits for /dashboard)
+ * Playwright suite's global-setup (which logs in and waits for /today)
  * never hits the verify-email wall or the onboarding redirect.
  *
  * Defaults mirror tests/Browser/global-setup.ts (e2e@expadu.test / e2e-password);
