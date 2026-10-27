@@ -18,7 +18,7 @@ import { starters } from './day';
 import { Guidance } from './guidance';
 import type { ItemDetails } from './item-preview';
 import { ComposerLoading } from './loading';
-import { PlanCard } from './plan-card';
+import { DayCard, dayLong, daySummary, PlanCard, weekdayOf } from './plan-card';
 import { api, dateLabel } from './types';
 import type { ChangeRow, Conversation, Message, Plan, Slot } from './types';
 import type { EngineSwap, useComposerEngine } from './use-composer-engine';
@@ -37,6 +37,24 @@ const rowText = (row: ChangeRow) =>
             ? `${row.title} · ${row.to} · in place of ${row.was}`
             : `${row.title} · ${row.to} · added`;
 
+/** "Sunday changed · 2 added · 1 moved · 2 removed": what a later change did. */
+function changedRows(rows: ChangeRow[]): string {
+    const count = (kind: ChangeRow['kind']) =>
+        rows.filter((row) => row.kind === kind).length;
+
+    return (
+        [
+            ['added', count('added')],
+            ['moved', count('moved')],
+            ['swapped', count('replaced')],
+            ['removed', count('removed')],
+        ] as const
+    )
+        .filter(([, n]) => n > 0)
+        .map(([word, n]) => `${n} ${word}`)
+        .join(' · ');
+}
+
 const activities = (plan: Plan) =>
     `${dateLabel(plan.date)} · ${plan.slots.length} ${plan.slots.length === 1 ? 'activity' : 'activities'}`;
 
@@ -54,12 +72,11 @@ export function ConversationFeed({
     swap,
     onAsk,
     onCollection,
-    onOpenPlan,
+    onOpenPlans,
     onStartSwap,
     onChoose,
     onKeepPlace,
     onBrowse,
-    onAddPlace,
     onFull,
     preview,
     empty,
@@ -71,14 +88,13 @@ export function ConversationFeed({
     swap: EngineSwap | null;
     onAsk: (prompt: string) => void;
     onCollection: (collection: Collection) => void;
-    onOpenPlan: (plan: Plan) => void;
+    /** A day card's "Open in My Plans": that day there. */
+    onOpenPlans: (date: string) => void;
     onStartSwap: (slot: Slot) => void;
     onChoose: (slot: Slot) => Promise<boolean>;
     onKeepPlace: () => void;
     /** A swap's "More choices": Add a place or event, replacing it. */
     onBrowse: () => void;
-    /** The plan card's Add: Add a place or event for its day. */
-    onAddPlace: () => void;
     onFull: (detail: ItemDetails) => void;
     preview: (slot: Slot, children: ReactNode) => ReactNode;
     /** What an empty conversation shows (its starters). */
@@ -106,15 +122,23 @@ export function ConversationFeed({
         (message) => message.role === 'assistant',
     )?.id;
     const firstAsk = firstAskId(messages);
-    // The day in focus is edited on its newest plan message; older ones fold away.
-    const livePlan = messages.findLast(
-        (message) =>
-            message.kind === 'plan' && message.date === workspace.focus,
-    )?.id;
-    // Undo goes newest first for the day you're looking at.
-    const latestUndo = workspace.changes
-        .filter((change) => change.date === focused?.date && change.undoable)
-        .at(-1);
+    // One card per day planned here (the day-plan canvas, A): on the day's
+    // newest plan message. Its change and undone lines fold into the card's head.
+    const anchors = new Map<string, string>();
+    messages.forEach((message) => {
+        if (message.kind === 'plan' && message.date) {
+            anchors.set(message.date, message.id);
+        }
+    });
+    const record = (id?: string) =>
+        workspace.changes.find((change) => change.id === id);
+    const hidden = (message: Message) =>
+        (message.kind === 'plan' &&
+            message.date !== undefined &&
+            anchors.get(message.date) !== message.id) ||
+        ((message.kind === 'change' || message.kind === 'undone') &&
+            !!message.date &&
+            anchors.has(message.date));
     // "Keep this plan" (#210): the latest composed plan, kept as it came, teaches
     // personalisation. Only the newest "Planned …" change offers it.
     const latestPlanned = messages.findLast(
@@ -133,9 +157,140 @@ export function ConversationFeed({
             // Nothing to keep any more (a newer plan, or none): the button stays.
         }
     };
-    const undoable = (message: Message) =>
-        workspace.changes.find((change) => change.id === message.change_id)
-            ?.undoable;
+    const undoable = (message: Message) => record(message.change_id)?.undoable;
+    const undo = (id?: string) => () =>
+        void command({ action: 'undo', change: id });
+
+    /** A day's card, or the line in its place once it's gone. */
+    const day = (date: string) => {
+        const plan = workspace.plans[date] ?? null;
+        const events = messages.filter(
+            (message) =>
+                (message.kind === 'change' || message.kind === 'undone') &&
+                message.date === date,
+        );
+        const latest = events.at(-1);
+
+        if (!plan) {
+            // Undone from its start: it can be put back.
+            const back =
+                latest?.kind === 'undone' &&
+                latest.text.endsWith('is no longer in your plans.');
+            const change = latest?.kind === 'change' && undoable(latest);
+
+            return (
+                <div className="plan-day-status" role="status">
+                    <span>
+                        {back
+                            ? `Undone. ${weekdayOf(date)} is empty again.`
+                            : change
+                              ? latest.text
+                              : `${dayLong(date)} is no longer in your plans.`}
+                    </span>
+                    {(back || change) && (
+                        <button
+                            type="button"
+                            className="plan-day-undo"
+                            disabled={!!busy}
+                            onClick={() =>
+                                void command(
+                                    back
+                                        ? {
+                                              action: 'redo',
+                                              change: latest!.change_id,
+                                          }
+                                        : {
+                                              action: 'undo',
+                                              change: latest!.change_id,
+                                          },
+                                )
+                            }
+                        >
+                            {back ? 'Put it back' : 'Undo'}
+                        </button>
+                    )}
+                </div>
+            );
+        }
+
+        // What the head says: the newest change still in place.
+        const shown = events.findLast(
+            (message) =>
+                message.kind === 'change' &&
+                !record(message.change_id)?.undone_at,
+        );
+        const rows = shown?.rows ?? [];
+        const made = !shown || shown.text.endsWith('is in your plans.');
+        const one = !made && rows.length === 1 && rows[0].kind === 'removed';
+        const live = !!shown && !!undoable(shown);
+        const planned = latestPlanned
+            ? messages.find((message) => message.id === latestPlanned)
+            : undefined;
+        const keepable =
+            planned?.date === date && !record(planned.change_id)?.undone_at;
+
+        return (
+            <DayCard
+                plan={plan}
+                head={{
+                    // Phones drop the date: "Sunday is in your plans".
+                    title: made ? (
+                        <>
+                            {weekdayOf(date)}
+                            <span className="plan-day-date">
+                                {dayLong(date).slice(weekdayOf(date).length)}
+                            </span>{' '}
+                            is in your plans
+                        </>
+                    ) : (
+                        `${weekdayOf(date)} changed`
+                    ),
+                    sub: made ? daySummary(plan) : changedRows(rows),
+                    undo: live && !one ? undo(shown!.change_id) : null,
+                }}
+                removed={
+                    one && live
+                        ? { row: rows[0], onUndo: undo(shown!.change_id) }
+                        : null
+                }
+                changes={workspace.changes}
+                busy={!!busy}
+                command={command}
+                swap={onStartSwap}
+                preview={preview}
+                footer={
+                    <>
+                        {keepable && (
+                            <button
+                                type="button"
+                                className="plan-day-keep"
+                                aria-pressed={kept === latestPlanned}
+                                disabled={!!busy || kept === latestPlanned}
+                                onClick={() => void keepPlan(latestPlanned!)}
+                            >
+                                {kept === latestPlanned ? (
+                                    <>
+                                        <Icon name="check" variant="line" />
+                                        Kept
+                                    </>
+                                ) : (
+                                    'Keep this plan'
+                                )}
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className="plan-day-link"
+                            onClick={() => onOpenPlans(date)}
+                        >
+                            <span className="plan-day-date">Open in </span>
+                            My Plans
+                        </button>
+                    </>
+                }
+            />
+        );
+    };
     // Said aloud when it arrives: the answer's first sentence (or its title).
     const latest = messages.findLast((message) => message.role === 'assistant');
     const said = (
@@ -145,7 +300,11 @@ export function ConversationFeed({
     ).split(/(?<=[.!?])\s/)[0];
 
     const entry = (message: Message) => {
-        const live = message.id === livePlan && !!focused;
+        const live =
+            message.kind === 'plan' &&
+            !!message.date &&
+            message.date === workspace.focus &&
+            anchors.get(message.date) === message.id;
 
         return (
             <article
@@ -226,69 +385,7 @@ export function ConversationFeed({
                 ) : (
                     message.text && <p>{message.text}</p>
                 )}
-                {message.kind === 'change' && message.id === latestPlanned && (
-                    <button
-                        type="button"
-                        className="composer-text-button"
-                        disabled={!!busy || kept === message.id}
-                        onClick={() => void keepPlan(message.id)}
-                    >
-                        {kept === message.id ? 'Kept' : 'Keep this plan'}
-                    </button>
-                )}
-                {message.kind === 'plan' &&
-                    (live ? (
-                        <>
-                            <PlanCard
-                                plan={focused!}
-                                changes={workspace.changes}
-                                busy={!!busy}
-                                command={command}
-                                swap={onStartSwap}
-                                preview={preview}
-                                onAdd={onAddPlace}
-                            />
-                            {latestUndo && (
-                                <button
-                                    type="button"
-                                    className="composer-text-button"
-                                    disabled={!!busy}
-                                    onClick={() =>
-                                        void command({
-                                            action: 'undo',
-                                            change: latestUndo.id,
-                                        })
-                                    }
-                                >
-                                    Undo last change
-                                </button>
-                            )}
-                        </>
-                    ) : message.plan ? (
-                        <details className="composer-plan-reference">
-                            <summary>
-                                <Icon name="calendar" variant="line" />
-                                {activities(message.plan)}
-                                <span>In your plans</span>
-                            </summary>
-                            <PlanCard plan={message.plan} readonly />
-                            <button
-                                type="button"
-                                className="composer-text-button"
-                                disabled={!!busy}
-                                onClick={() => onOpenPlan(message.plan!)}
-                            >
-                                Open this day
-                                <Icon name="arrow" variant="line" />
-                            </button>
-                        </details>
-                    ) : (
-                        <p className="composer-plan-gone">
-                            {message.date
-                                ? `${dateLabel(message.date)} is no longer in your plans.`
-                                : 'This day is no longer in your plans.'}
-                        </p>
-                    ))}
+                {message.kind === 'plan' && message.date && day(message.date)}
                 {message.kind === 'earlier_draft' && message.plan && (
                     <details className="composer-plan-reference">
                         <summary>
@@ -328,7 +425,7 @@ export function ConversationFeed({
                 {busy ? '' : said}
             </p>
             {messages.length === 0 && !pendingText && empty}
-            {messages.map(entry)}
+            {messages.filter((message) => !hidden(message)).map(entry)}
             {!blank && leftUnanswered() && (
                 <NotAnswered onAgain={() => void again()} disabled={!!busy} />
             )}
