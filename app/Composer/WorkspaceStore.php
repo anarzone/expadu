@@ -734,7 +734,19 @@ class WorkspaceStore
         foreach ($state['plans'] as $date => $plan) {
             $state['plans'][$date] = $date < $today ? $catalogue->settled($plan) : $catalogue->project($plan);
         }
+        // Only the open conversation's messages travel; the others are listed by their title,
+        // how many times they asked and when they last wrote (owner, 26 Oct 2026). Opening
+        // one (resume) brings its messages.
         foreach ($state['conversations'] as $i => $conversation) {
+            $state['conversations'][$i] += [
+                'asked' => count(array_filter($conversation['messages'], fn (array $message): bool => ($message['role'] ?? null) === 'user')),
+                'last_at' => ($conversation['messages'] === [] ? null : end($conversation['messages'])['created_at'] ?? null) ?? $conversation['created_at'],
+            ];
+            if ($conversation['id'] !== $state['active']) {
+                $state['conversations'][$i]['messages'] = [];
+
+                continue;
+            }
             foreach ($conversation['messages'] as $j => $message) {
                 $kind = $message['kind'] ?? null;
                 if ($kind === 'plan') {
