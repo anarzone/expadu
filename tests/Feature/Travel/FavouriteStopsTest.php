@@ -65,9 +65,9 @@ test('the Travel page lists only the signed-in account\'s favourites', function 
     $b = User::factory()->onboarded()->create();
     FavouriteStop::query()->create(['user_id' => $a->id, 'name' => 'Neumarkt']);
 
-    $this->actingAs($b)->get('/timetable')
+    $this->actingAs($b)->get('/travel')
         ->assertOk()
         ->assertInertia(fn ($page) => $page->component('timetable')->where('favouriteStops', []));
-    $this->actingAs($a)->get('/timetable')
+    $this->actingAs($a)->get('/travel')
         ->assertInertia(fn ($page) => $page->where('favouriteStops.0.name', 'Neumarkt'));
 });

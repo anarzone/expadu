@@ -39,7 +39,7 @@ class GetOffReminderNotification extends Notification
             ->options(['TTL' => 300])
             // One tag so a fresh reminder replaces a stale one on screen.
             ->tag('trip-get-off')
-            ->data(['url' => '/timetable?view=route']);
+            ->data(['url' => '/travel?view=route']);
     }
 
     private function title(): string

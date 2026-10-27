@@ -90,7 +90,7 @@ test('core pages attach without hydration errors', async ({ page }) => {
         '/dashboard',
         '/events',
         '/bureaucracy',
-        '/timetable',
+        '/travel',
         '/profile',
         '/alerts',
     ]) {

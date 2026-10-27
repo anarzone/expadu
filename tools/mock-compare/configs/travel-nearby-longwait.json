@@ -12,7 +12,7 @@
         ]
     },
     "app": {
-        "url": "/timetable?stop=Merkenich%20Mitte",
+        "url": "/travel?stop=Merkenich%20Mitte",
         "wait": "#departures .nearby-strip",
         "login": {
             "email": "e2e@expadu.test",

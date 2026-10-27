@@ -98,7 +98,7 @@ final class OwnCards
                 return $this->trips->appointment($user, ['status' => $ask === 'status'], $now, is_string($start) ? $start : null);
             })();
         if ($answer === null) {
-            return self::note('You’re not on a trip, and there’s no appointment today to plan the way to.', [['label' => 'Open Travel', 'href' => '/timetable']]);
+            return self::note('You’re not on a trip, and there’s no appointment today to plan the way to.', [['label' => 'Open Travel', 'href' => '/travel']]);
         }
 
         return [...$answer['extra'], 'type' => isset($answer['extra']['trip']) ? 'trip' : 'note', 'text' => $answer['text']];

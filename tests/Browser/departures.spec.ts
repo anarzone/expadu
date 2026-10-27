@@ -8,7 +8,7 @@ test.describe('Travel', () => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
-        await page.goto('/timetable?view=journey');
+        await page.goto('/travel?view=journey');
         await page.waitForLoadState('networkidle');
         // Nearby and the day defer, so let them settle after first paint.
         await page.waitForTimeout(1200);

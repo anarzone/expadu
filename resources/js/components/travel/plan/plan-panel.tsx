@@ -559,7 +559,7 @@ export function PlanPanel({
             shown.set('compare', '1');
             address.current = {
                 from: window.location.pathname + window.location.search,
-                to: `/timetable?${shown}`,
+                to: `/travel?${shown}`,
             };
 
             asked.current = `${whenMode}|${overrides?.date ?? date}|${overrides?.time ?? time}`;

@@ -74,7 +74,7 @@ it('a partial reload builds only the props it returns', function () {
             'X-Inertia-Partial-Component' => 'timetable',
             'X-Inertia-Partial-Data' => 'boards',
         ]))
-        ->get('/timetable')
+        ->get('/travel')
         ->assertOk();
 
     $recents = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $sql) => str_contains($sql, 'journey_recents'));

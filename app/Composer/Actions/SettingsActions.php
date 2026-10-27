@@ -145,7 +145,7 @@ final class SettingsActions implements ComposerAction
         app(SetStepFreeNeed::class)->execute($user, $on);
         $title = $on ? 'Travel and Composer plan step-free ways for you' : 'Ways aren’t limited to step-free any more';
 
-        return ['title' => $title, 'link' => ['label' => 'See it in Travel →', 'href' => '/timetable'], 'said' => "{$title}."];
+        return ['title' => $title, 'link' => ['label' => 'See it in Travel →', 'href' => '/travel'], 'said' => "{$title}."];
     }
 
     /** @return array{title: string, link: array<string, string>, said: string} */

@@ -98,6 +98,6 @@ class PlannedTripChangeOfPlan extends Notification
 
     private function url(): string
     {
-        return '/timetable?'.http_build_query(['view' => 'journey', 'activity' => $this->trip->target_id]);
+        return '/travel?'.http_build_query(['view' => 'journey', 'activity' => $this->trip->target_id]);
     }
 }

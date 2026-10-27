@@ -53,7 +53,7 @@ test('location opt-out does not prevent non-location events', function () {
     $user->userSetting()->create(['settings' => ['share_location' => false]]);
 
     $this->actingAs($user)->postJson('/api/track', [
-        'event_type' => 'page_viewed', 'payload' => ['page' => '/timetable'],
+        'event_type' => 'page_viewed', 'payload' => ['page' => '/travel'],
     ])->assertNoContent();
 
     expect(UserEvent::where('user_id', $user->id)->where('event_type', 'page_viewed')->count())->toBe(1);
