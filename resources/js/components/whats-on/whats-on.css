@@ -220,6 +220,16 @@
     height: 18px;
 }
 
+/* A phone's row of filters: the switch takes less room so it all fits. */
+@container evf (max-width: 440px) {
+    .wo-views button {
+        width: 32px;
+    }
+    .wo-views {
+        margin-left: 0;
+    }
+}
+
 /* The grid: two small posters a row, in their own ink. */
 .wo-group ul.wo-grid {
     display: grid;
