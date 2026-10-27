@@ -23,7 +23,6 @@
 :where(
         .tl-line,
         .tl-chip,
-        .tl-strip,
         .tl-tile,
         .tl-banner,
         .nearby-strip,
@@ -157,13 +156,11 @@
     width: 12px;
     height: 12px;
 }
-.tl-chip.is-conflict,
-.tl-strip.is-conflict {
+.tl-chip.is-conflict {
     background: var(--color-conflict-text);
     color: var(--color-text-on-action);
 }
-.tl-chip.is-attention,
-.tl-strip.is-attention {
+.tl-chip.is-attention {
     background: var(--color-attention);
     color: var(--color-attention-text);
 }
@@ -216,26 +213,6 @@
     50% {
         opacity: 0.35;
     }
-}
-.tl-strip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: var(--space-8);
-    padding: 6px 9px;
-    border-radius: 11px;
-    font-size: 12.5px;
-    font-weight: var(--weight-bold);
-    line-height: 1.25;
-    text-align: left;
-}
-.tl-strip svg {
-    flex: none;
-    width: 15px;
-    height: 15px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
 }
 .tl-banner {
     display: flex;
@@ -390,9 +367,6 @@
 .nearby-strip:hover {
     background: color-mix(in srgb, var(--line) 5%, transparent);
 }
-.nearby-strip.is-selected {
-    background: color-mix(in srgb, var(--line) 9%, transparent);
-}
 .nearby-strip:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: -2px;
@@ -473,10 +447,6 @@
     border: 4px solid var(--line);
     border-radius: 50%;
     background: var(--color-bg-surface);
-}
-.nearby-strip > .tl-strip {
-    grid-column: 1 / -1;
-    margin-top: var(--space-8);
 }
 @container (max-width: 620px) {
     .nearby-strip {
@@ -572,6 +542,328 @@
     .strip-end.is-right .strip-dest::before {
         content: '→';
         color: var(--color-text-soft);
+    }
+}
+/* ---------- A line's row that opens into itself (line-row.tsx) ----------
+   The departure rows canvas, "Slide" (owner, 23 Oct 2026): the strip stays
+   exactly where it is, a press only tints it, the chevron turns, and the
+   details unfold under each way in the strip's own columns: no second card,
+   no squeeze. Shared by the station board and the lines map. */
+.line-row {
+    margin-inline: -12px;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    transition:
+        background-color 200ms ease,
+        border-radius 200ms ease,
+        border-color 200ms ease;
+}
+.line-row:first-child,
+.line-row.is-open,
+.line-row.is-open + .line-row {
+    border-top-color: transparent;
+}
+.line-row.is-open {
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--line) 8%, var(--color-bg-surface));
+}
+.line-row > .nearby-strip {
+    padding-inline: 12px;
+    border-top: 0;
+    border-radius: 16px;
+}
+.line-row > .nearby-strip:active {
+    transform: none;
+    background: color-mix(in srgb, var(--line) 7%, transparent);
+}
+.nearby-strip.has-chev {
+    grid-template-columns: 64px minmax(0, 1fr) 150px minmax(0, 1fr) 36px;
+}
+/* Pinned: the ★ under the badge, centred in its column. */
+.nearby-strip.has-chev .strip-badge {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+}
+.strip-chev {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.strip-chev svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.line-row.is-open .strip-chev {
+    transform: rotate(180deg);
+}
+/* A long wait: each way's next one after, under its own time. */
+.nearby-peek {
+    display: inline-flex;
+    flex-basis: 100%;
+    align-items: center;
+    gap: 5px;
+    color: var(--color-attention-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.strip-end.is-left .nearby-peek {
+    justify-content: flex-end;
+}
+.nearby-peek svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+/* Slide: the details grow 0fr→1fr in 180 ms while their words drop 10 px
+   into place; closing folds them in 200 ms. */
+.line-row-more {
+    display: grid;
+    grid-template-rows: 1fr;
+    animation: line-row-open 180ms ease-out both;
+}
+.line-row-more.is-closing {
+    animation: line-row-close 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.line-row-in {
+    min-height: 0;
+    overflow: hidden;
+}
+.line-row-grid {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 150px minmax(0, 1fr) 36px;
+    column-gap: var(--space-20);
+    row-gap: var(--space-12);
+    padding: 0 12px 16px;
+}
+.line-row-grid > * {
+    animation: line-row-words 250ms ease-out both;
+}
+.line-row-more.is-closing .line-row-grid > * {
+    animation: line-row-fade 120ms ease-in both;
+}
+@keyframes line-row-open {
+    from {
+        grid-template-rows: 0fr;
+    }
+    to {
+        grid-template-rows: 1fr;
+    }
+}
+@keyframes line-row-close {
+    from {
+        grid-template-rows: 1fr;
+    }
+    to {
+        grid-template-rows: 0fr;
+    }
+}
+@keyframes line-row-words {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes line-row-fade {
+    to {
+        opacity: 0;
+    }
+}
+.line-row-way {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+/* Each way's details under its own column: the other way left, the sooner right. */
+.line-row-way.is-second {
+    grid-column: 2;
+    grid-row: 1;
+    align-items: flex-end;
+    text-align: right;
+}
+.line-row-way.is-first {
+    grid-column: 4;
+    grid-row: 1;
+}
+/* Its next one, said again only when the ways stack. */
+.line-row-lead {
+    display: none;
+}
+.line-row-then,
+.line-row-clock {
+    font-variant-numeric: tabular-nums;
+}
+.line-row-front {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.line-row-front strong {
+    color: var(--color-text);
+}
+/* The badge as the front of the tram shows it, small. */
+.line-row-front .tl-line {
+    gap: 3px;
+    height: 18px;
+    padding: 0 5px 0 4px;
+    border-radius: 5px;
+    font-size: 11px;
+}
+.line-row-front .tl-line svg {
+    width: 11px;
+    height: 11px;
+}
+.line-row-also {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed
+        color-mix(in srgb, var(--line) 30%, var(--color-border));
+}
+.line-row-foot {
+    grid-column: 2 / 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8) var(--space-14);
+    padding-top: 10px;
+    border-top: 1px solid
+        color-mix(in srgb, var(--line) 22%, var(--color-border));
+}
+.line-row-foot small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+/* Pin: the board's own outlined button (departures-next nearby.css),
+   filled dark when pinned (owner: "use what mock used", 23 Oct 2026). */
+.line-row .nearby-pin {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-14);
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.line-row .nearby-pin svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.line-row .nearby-pin[aria-pressed='true'] {
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+.line-row .nearby-pin[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+/* A narrow column: the ways stacked, their details under them. */
+@container (max-width: 620px) {
+    .line-row {
+        margin-inline: -8px;
+    }
+    .line-row > .nearby-strip {
+        padding-inline: 8px;
+    }
+    .nearby-strip.has-chev {
+        grid-template-columns: 52px 10px minmax(0, 1fr) 28px;
+        grid-template-areas:
+            'badge track first chev'
+            'badge track second chev';
+    }
+    .strip-chev {
+        grid-area: chev;
+        align-self: start;
+        width: 28px;
+        height: 28px;
+    }
+    .strip-chev svg {
+        width: 14px;
+        height: 14px;
+    }
+    .line-row-grid {
+        grid-template-columns: 52px 10px minmax(0, 1fr);
+        column-gap: var(--space-12);
+        row-gap: var(--space-10);
+        padding: 0 8px 14px;
+    }
+    /* The line carries on beside them, fainter. */
+    .line-row-grid::before {
+        content: '';
+        grid-column: 2;
+        grid-row: 1 / span 3;
+        justify-self: center;
+        width: 4px;
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--line) 35%, transparent);
+    }
+    .line-row-way.is-first {
+        grid-column: 3;
+        grid-row: 1;
+    }
+    .line-row-way.is-second {
+        grid-column: 3;
+        grid-row: 2;
+        align-items: stretch;
+        text-align: left;
+    }
+    .line-row-lead {
+        display: block;
+        font-size: var(--text-control);
+    }
+    .line-row-foot {
+        grid-column: 3;
+        grid-row: 3;
+        justify-content: flex-start;
+        padding-top: 0;
+        border-top: 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .line-row,
+    .strip-chev {
+        transition: none;
+    }
+    .line-row-more,
+    .line-row-more.is-closing,
+    .line-row-grid > *,
+    .line-row-more.is-closing .line-row-grid > * {
+        animation: none;
     }
 }
 /* When it leaves: minutes, "Now" in the line's colour, a paused clock, or a struck one. */
