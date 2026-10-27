@@ -26,13 +26,21 @@ class KvbApiService
     /** After a failed fetch, wait this long before the next try: one timeout per minute, not per request. */
     private const STOPS_RETRY_SECONDS = 60;
 
+    /** The last good list on disk, for a cold cache while KVB is slow or down. */
+    private const STOPS_FILE = 'app/kvb-stops.json';
+
+    /** That list, read once a process (again while there's none). */
+    private static ?array $kept = null;
+
     /**
      * All KVB stops with coordinates and line assignments.
      *
      * The list changes rarely, so a board never waits on KVB once it has been
      * fetched: it is served stale-while-revalidate, a failed refresh keeps the
-     * last good copy, and a failure is never cached as an empty list. Only a
-     * cold cache fetches on the request, one worker at a time.
+     * last good copy, and a failure is never cached as an empty list. A cold
+     * cache serves the last good list kept on disk and fetches after the
+     * response; only with neither does it fetch on the request, one worker
+     * at a time.
      *
      * @return array<int, array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
      */
@@ -53,6 +61,15 @@ class KvbApiService
                 });
             }
 
+            // Cold, with the last good list on disk: serve it now (a slow KVB
+            // never blanks a picked stop) and fetch after the response.
+            $kept = self::$kept = self::$kept ?: $this->keptStops();
+            if ($kept !== []) {
+                dispatch(fn () => app(self::class)->refreshColdStops())->afterResponse();
+
+                return $kept;
+            }
+
             // Cold: one fetch at a time. The others wait, then read what it stored.
             return Cache::lock('kvb:stops:fetch', 20)->block(
                 12,
@@ -61,6 +78,31 @@ class KvbApiService
         } catch (KvbUnavailableException|LockTimeoutException) {
             return [];
         }
+    }
+
+    /** A cold cache's fetch, after the response: one worker, no waiting. */
+    public function refreshColdStops(): void
+    {
+        try {
+            Cache::lock('kvb:stops:fetch', 20)->get(
+                fn () => Cache::flexible(self::STOPS_KEY, self::STOPS_TTL, fn () => $this->fetchStopsOrFail()),
+            );
+        } catch (KvbUnavailableException) {
+            // The kept list serves until KVB answers.
+        }
+    }
+
+    /**
+     * The last good list kept on disk, or none.
+     *
+     * @return array<int, array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
+     */
+    private function keptStops(): array
+    {
+        $json = @file_get_contents(storage_path(self::STOPS_FILE));
+        $stops = $json === false ? null : json_decode($json, true);
+
+        return is_array($stops) ? $stops : [];
     }
 
     /**
@@ -81,6 +123,12 @@ class KvbApiService
             Cache::put('kvb:stops:retry-after', true, self::STOPS_RETRY_SECONDS);
 
             throw new KvbUnavailableException('KVB stop list unavailable');
+        }
+
+        // Kept on disk too, written whole, for the next cold cache.
+        $file = storage_path(self::STOPS_FILE);
+        if (@file_put_contents($file.'.tmp', json_encode($stops)) !== false) {
+            @rename($file.'.tmp', $file);
         }
 
         return $stops;
