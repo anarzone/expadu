@@ -1530,7 +1530,7 @@ final class AssistantTools
                 ], 'required' => ['line']]],
             ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind. You\'re told only how many.',
                 'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => ['all', 'transit', 'city', 'events']]]]],
-            ['name' => 'set_notifications', 'description' => 'Turns a kind of notification on or off, as Settings › Notifications does: transit (disruptions on their lines and trips), checklist (Paperwork deadlines), events (event reminders), weather, rhine (Rhine flood alerts), digest (the weekly digest). Push on this device needs their own tap in the browser: for that, open_in_app "push_notifications".',
+            ['name' => 'set_notifications', 'description' => 'Turns a kind of notification on or off, as Settings › Notifications does: transit (disruptions on their lines and trips), checklist (Paperwork deadlines), events (event reminders), weather, rhine (Rhine flood alerts), brief (their morning and evening briefs). Push on this device needs their own tap in the browser: for that, open_in_app "push_notifications".',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kind' => ['type' => 'string', 'enum' => array_keys(SettingsActions::NOTIFICATIONS)],
                     'on' => ['type' => 'boolean'],

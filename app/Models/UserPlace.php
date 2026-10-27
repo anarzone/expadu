@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\ContextEngine\DayImportance;
 use App\Services\GermanHolidayService;
+use Carbon\CarbonInterface;
 use Database\Factories\UserPlaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,23 +28,19 @@ class UserPlace extends Model
         ];
     }
 
+    /** Home's or Work's arrive-by or days changed: today's and tomorrow's importance is worked out again (DayImportance). */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $place) => DayImportance::forget($place->user_id));
+        static::deleted(fn (self $place) => DayImportance::forget($place->user_id));
+    }
+
     /**
      * Check if this place is active/relevant today.
      */
     public function isActiveToday(): bool
     {
-        $dayName = strtolower(now()->format('D')); // mon, tue, wed...
-
-        $isHoliday = app(GermanHolidayService::class)->isHoliday();
-
-        $dayActive = match ($this->day_mode ?? 'all') {
-            'weekdays' => now()->isWeekday() && ! $isHoliday,
-            'weekends' => now()->isWeekend() || $isHoliday,
-            'custom' => in_array($dayName, $this->active_days ?? [], true),
-            default => true, // 'all'
-        };
-
-        if (! $dayActive) {
+        if (! $this->isActiveOn(now())) {
             return false;
         }
 
@@ -56,6 +54,19 @@ class UserPlace extends Model
         }
 
         return true;
+    }
+
+    /** Whether its days include this one: every day, weekdays (not a holiday), weekends and holidays, or the days they picked. */
+    public function isActiveOn(CarbonInterface $day): bool
+    {
+        $isHoliday = app(GermanHolidayService::class)->isHoliday($day);
+
+        return match ($this->day_mode ?? 'all') {
+            'weekdays' => $day->isWeekday() && ! $isHoliday,
+            'weekends' => $day->isWeekend() || $isHoliday,
+            'custom' => in_array(strtolower($day->format('D')), $this->active_days ?? [], true),
+            default => true, // 'all'
+        };
     }
 
     /** @return BelongsTo<User, $this> */
