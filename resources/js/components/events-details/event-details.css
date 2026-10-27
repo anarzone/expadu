@@ -839,3 +839,31 @@
         left: 72px;
     }
 }
+
+/* The venue's own photo, freely licensed, with its credit. */
+.ev-details .evd-venue-photo {
+    margin: 16px 0 0;
+}
+.ev-details .evd-venue-photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+    background: var(--evd-tile);
+    object-fit: cover;
+}
+.ev-details .evd-venue-photo figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 2px 12px;
+    margin-top: 6px;
+    color: var(--evd-label);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.ev-details .evd-venue-photo a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}

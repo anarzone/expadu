@@ -617,6 +617,36 @@ function Body({
                     </dl>
                 </details>
             </section>
+            {/* A photo we may show: the venue's own, freely licensed, with its credit. The
+                listing's photos stay out until their owners allow them. */}
+            {o.photo_url ? (
+                <figure className="evd-venue-photo">
+                    <img
+                        src={o.photo_url}
+                        alt={o.venue.name ?? 'The venue'}
+                        loading="lazy"
+                    />
+                    <figcaption>
+                        <span>
+                            At the venue
+                            {o.venue.name ? ` · ${o.venue.name}` : ''}
+                        </span>
+                        {o.photo_attribution ? (
+                            o.photo_source_url ? (
+                                <a
+                                    href={o.photo_source_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    {o.photo_attribution}
+                                </a>
+                            ) : (
+                                <span>{o.photo_attribution}</span>
+                            )
+                        ) : null}
+                    </figcaption>
+                </figure>
+            ) : null}
             <div className="evd-facts">
                 <Row
                     icon="clock"
