@@ -4,6 +4,7 @@ use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Models\BureaucracyProcess;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Tests\Support\PaperworkStart;
 use Tests\Support\ReviewedHomePlan;
 
 beforeEach(function () {
@@ -46,13 +47,12 @@ function assertPlanContract(array $plan): void
     }
 }
 
-test('onboarding answer progress reopen and reload follow one HTTP plan contract', function () {
+test('start answer progress reopen and reload follow one HTTP plan contract', function () {
     $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee', 'veedel' => 'Ehrenfeld',
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu', 'purpose' => 'employment',
         'arrival_planned' => false, 'arrival_date' => '2026-08-01',
-    ])->assertSessionHasNoErrors();
-    expect($user->fresh()->onboarded_at)->not->toBeNull();
+    ]);
     $fixture = ReviewedHomePlan::activate($user, ['fixture.contract' => [
         'deadline_type' => 'days_since_move_in', 'applies_if' => [['citizenship_group' => 'non_eu']],
         'documents_required' => [['id' => 'identity', 'label' => 'Synthetic identity document', 'evidence_kind' => 'identity', 'requirement_version' => '1']],

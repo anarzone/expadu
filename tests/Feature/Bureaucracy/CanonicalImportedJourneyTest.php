@@ -7,6 +7,7 @@ use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
 use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Tests\Support\PaperworkStart;
 
 test('a confirmed D visa and Blue Card goal unlock preparation without a duplicate route question', function () {
     $this->travelTo('2026-09-08 10:00:00');
@@ -15,13 +16,12 @@ test('a confirmed D visa and Blue Card goal unlock preparation without a duplica
     $release = $store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()));
     $store->activate($release->id, null);
     $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee', 'veedel' => 'Nippes',
-        'arrival_date' => '2026-07-24', 'arrival_planned' => false,
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu', 'purpose' => 'employment',
+        'arrival_planned' => false, 'arrival_date' => '2026-07-24',
         'entry_mode' => 'd_visa', 'visa_expires_at' => '2026-10-01',
         'current_residence_title' => 'national_d_visa', 'case_goal' => 'blue_card',
-    ])->assertSessionHasNoErrors();
-    expect($user->fresh()->onboarded_at)->not->toBeNull();
+    ]);
     $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
     $preparation = collect($plan['guidance'])->firstWhere('id', 'case.bc.first_application.prepare');
     expect($preparation['missing_facts'])->toBe([])
@@ -107,10 +107,10 @@ test('official verification context is available without choosing a Blue Card ro
     $store = app(CatalogueReleaseStore::class);
     $store->activate($store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()))->id, null);
     $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user)->post('/onboarding/complete', [
-        'situation' => 'non_eu_employee', 'veedel' => 'Nippes', 'arrival_planned' => false, 'arrival_date' => '2026-07-24',
+    PaperworkStart::answer($user, [
+        'citizenship_group' => 'non_eu', 'purpose' => 'employment', 'arrival_planned' => false, 'arrival_date' => '2026-07-24',
         'current_residence_title' => 'other', 'case_goal' => 'blue_card',
-    ])->assertSessionHasNoErrors();
+    ]);
     $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
     $verification = collect($plan['guidance'])->firstWhere('id', 'case.bc.verify_status_source');
     expect($verification)->not->toBeNull()
