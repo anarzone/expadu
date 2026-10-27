@@ -12,8 +12,8 @@ test('a post renders with its sources and article metadata', function () {
     $response = $this->get('/blog/anmeldung-in-cologne-english-guide');
 
     $response->assertOk();
-    $response->assertSee('the complete English guide');
-    $response->assertSee('Wohnungsgeberbestätigung');
+    $response->assertSee('Anmeldung in Cologne: the English guide');
+    $response->assertSee('Wohnungsgeberbescheinigung');
     // Trust discipline: a guide without sources must not ship.
     $response->assertSee('Sources');
     $response->assertSee('stadt-koeln.de', escape: false);
