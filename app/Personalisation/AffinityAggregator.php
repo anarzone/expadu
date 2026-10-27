@@ -82,7 +82,8 @@ final class AffinityAggregator
                 select distinct on (subject_key, action, item_type, item_id, floor(extract(epoch from created_at) / {$window}))
                        subject_key, action, item_type, item_id, category, veedel, price_band, context, created_at
                 from user_signals
-                where created_at >= ?::timestamptz
+                -- Catalogue items only: topics, stops, lines and Today's needs are read by TodayTaste.
+                where created_at >= ?::timestamptz and item_type in ('spot', 'event')
                 order by subject_key, action, item_type, item_id, floor(extract(epoch from created_at) / {$window}), created_at
             ),
             showings as (
