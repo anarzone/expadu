@@ -1,7 +1,7 @@
 ---
-title: The landlord form for your Cologne Anmeldung (Wohnungsgeberbescheinigung), in English
-description: The Wohnungsgeberbescheinigung (also called Wohnungsgeberbestätigung) in English: what it must say, who signs it, the two-week rule for landlords, and what to do if yours won't give it to you.
-updated: 2026-10-23
+title: Wohnungsgeberbestätigung in English: landlord form
+description: The Wohnungsgeberbestätigung (in Cologne: Wohnungsgeberbescheinigung) explained in English: what it must say, who signs it, and what to do if it's refused.
+updated: 2026-10-24
 ---
 
 You can't register your address in Cologne without one piece of paper from your landlord: the **Wohnungsgeberbescheinigung**, a written confirmation that you've moved in. Cologne calls it that. The law calls it the Bestätigung des Wohnungsgebers ([§ 19 BMG](https://www.gesetze-im-internet.de/bmg/__19.html)), and many websites say Wohnungsgeberbestätigung. It's the same form.
@@ -19,7 +19,7 @@ The law lists four things ([§ 19 (3) BMG](https://www.gesetze-im-internet.de/bm
 3. The address of the flat.
 4. The names of everyone who is registering.
 
-The city's form has fields for all of these. Download it from the city's [Anmeldung page](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes).
+The city's form has fields for all of these. Download it from the city's [Anmeldung page](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1).
 
 ## Who signs it, and by when
 
@@ -49,6 +49,6 @@ Then take it, with your passport, to your Anmeldung: see the [Anmeldung guide](/
 
 Checked on 23 October 2026:
 
-- [Stadt Köln: Anmeldung Ihres Wohnsitzes](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes) (contract not enough, owners' self-declaration, the form)
+- [Stadt Köln: Anmeldung Ihres Wohnsitzes](https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1) (contract not enough, owners' self-declaration, the form)
 - [Stadt Köln: Wohnungsgeberbescheinigung](https://www.stadt-koeln.de/service/produkte/20120/index.html) (landlord's two weeks, no informal email)
 - [§ 19 BMG](https://www.gesetze-im-internet.de/bmg/__19.html) · [§ 54 BMG](https://www.gesetze-im-internet.de/bmg/__54.html)
