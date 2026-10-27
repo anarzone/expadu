@@ -15,5 +15,7 @@ final readonly class AssessmentInput
         public string $jurisdiction,
         public CarbonImmutable $at,
         public ?string $goal = null,
+        /** The catalogue's revision from CatalogueReleaseStore::current(); without it, the whole catalogue is hashed. */
+        public ?string $catalogueRevision = null,
     ) {}
 }

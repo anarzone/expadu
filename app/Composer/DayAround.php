@@ -76,7 +76,7 @@ final class DayAround
                 'end' => $recorded->endAt?->setTimezone('Europe/Berlin')];
         }
 
-        $slot = collect($this->workspace->read($user)['plans'][$now->toDateString()]['slots'] ?? [])
+        $slot = collect($this->workspace->stored($user)['plans'][$now->toDateString()]['slots'] ?? [])
             ->first(fn (array $slot): bool => ($slot['type'] ?? null) === 'appointment' && isset($slot['lat'], $slot['lng'])
                 && CarbonImmutable::parse($slot['end_at'] ?? $slot['start_at'])->greaterThan($now));
 
