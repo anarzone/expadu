@@ -38,12 +38,27 @@ final readonly class Leg
     }
 
     /**
+     * The mode a rider knows it by. Routers give S-Bahn (and sometimes RE or
+     * RB) legs the Stadtbahn's 'subway', so Travel said "Tram S12": a line
+     * named S…, RE…, RB…, IC…, ICE… or EC… is a train. The Stadtbahn's own
+     * numbered lines stay as they are.
+     */
+    public function riderMode(): string
+    {
+        $line = strtoupper(trim((string) $this->lineName));
+
+        return in_array($this->mode, ['subway', 'tram'], true) && preg_match('/^(S|RE|RB|IC|ICE|EC)\s?\d/', $line) === 1
+            ? 'rail'
+            : $this->mode;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
     {
         return [
-            'mode' => $this->mode,
+            'mode' => $this->riderMode(),
             'line' => $this->lineName,
             'headsign' => $this->headsign,
             'from' => $this->from->toArray(),
