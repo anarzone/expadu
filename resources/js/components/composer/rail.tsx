@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import type { DayProjection } from '@/types/day';
+import { ManagedConversation } from './conversation-menu';
 import type { DayAround, DayFact, PaperworkGlance } from './day';
 import {
     comingUp,
@@ -29,17 +30,19 @@ const NAV: { view: Collection; label: string; icon: IconName }[] = [
     { view: 'history', label: 'History', icon: 'clock' },
 ];
 
-/** The conversations the rail lists: the open one first, then the most recent with messages. */
+/**
+ * The conversations the rail lists: the open one first, then the most recent,
+ * each with a message (an empty one, new or left by a delete, is listed nowhere).
+ */
 function railConversations(workspace: Workspace) {
-    const active = workspace.conversations.find(
+    const asked = askedConversations(workspace.conversations);
+    const active = asked.find(
         (conversation) => conversation.id === workspace.active,
     );
 
     return [
         ...(active ? [active] : []),
-        ...askedConversations(workspace.conversations).filter(
-            (conversation) => conversation !== active,
-        ),
+        ...asked.filter((conversation) => conversation !== active),
     ].slice(0, 5);
 }
 
@@ -96,28 +99,43 @@ export function ComposerRail({
                         const current = conversation.id === workspace.active;
 
                         return (
-                            <button
-                                type="button"
+                            <ManagedConversation
                                 key={conversation.id}
-                                className="composer-rail-conversation"
-                                aria-current={current ? 'true' : undefined}
-                                data-open={
-                                    current && view === 'chat' ? '' : undefined
+                                conversation={conversation}
+                                busy={!!busy}
+                                onRename={(title) =>
+                                    surface.renameConversation(
+                                        conversation.id,
+                                        title,
+                                    )
                                 }
-                                disabled={!!busy}
-                                onClick={() => void resume(conversation.id)}
-                            >
-                                <strong>
-                                    {conversation.messages.length
-                                        ? conversation.title
-                                        : 'New conversation'}
-                                </strong>
-                                <span>
-                                    {conversation.messages.length
-                                        ? conversationMeta(conversation)
-                                        : 'Just now'}
-                                </span>
-                            </button>
+                                onDelete={() =>
+                                    surface.deleteConversation(conversation.id)
+                                }
+                                row={
+                                    <button
+                                        type="button"
+                                        className="composer-rail-conversation"
+                                        aria-current={
+                                            current ? 'true' : undefined
+                                        }
+                                        data-open={
+                                            current && view === 'chat'
+                                                ? ''
+                                                : undefined
+                                        }
+                                        disabled={!!busy}
+                                        onClick={() =>
+                                            void resume(conversation.id)
+                                        }
+                                    >
+                                        <strong>{conversation.title}</strong>
+                                        <span>
+                                            {conversationMeta(conversation)}
+                                        </span>
+                                    </button>
+                                }
+                            />
                         );
                     })}
                 </div>
