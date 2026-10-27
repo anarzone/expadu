@@ -192,8 +192,8 @@ final class AroundNow
 
         return [
             'fact' => ['label' => 'Paperwork', 'value' => "{$what} · {$day}", 'known' => true],
-            'source' => ['label' => 'Paperwork', 'href' => $deadline['occurrence_key'] !== null
-                ? '/bureaucracy?view=detail&process='.rawurlencode((string) $deadline['occurrence_key']) : '/bureaucracy'],
+            'source' => ['label' => 'Paperwork', 'href' => route('paperwork', $deadline['occurrence_key'] !== null
+                ? ['view' => 'detail', 'process' => (string) $deadline['occurrence_key']] : [], false)],
         ];
     }
 

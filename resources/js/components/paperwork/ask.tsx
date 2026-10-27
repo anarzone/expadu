@@ -90,7 +90,7 @@ export function AskBody() {
             setReply(
                 await send<AskReply>(
                     'POST',
-                    `/bureaucracy/v2/people/${plan.person_id}/ask`,
+                    `/paperwork/v2/people/${plan.person_id}/ask`,
                     {
                         question: question.trim(),
                         jurisdiction: plan.jurisdiction,

@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import { IconArrowUpRight, IconShieldCheck } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { guidance } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
-import { bureaucracy } from '@/routes';
+import { paperwork } from '@/routes';
 import { ComposerLoading } from './loading';
 import { api } from './types';
 
@@ -80,7 +80,7 @@ export function Guidance({ query }: { query: string }) {
                     </details>
                 ))
             )}
-            <Link className="composer-text-button" href={bureaucracy()}>
+            <Link className="composer-text-button" href={paperwork()}>
                 Open my paperwork case
                 <IconArrowUpRight size={15} />
             </Link>

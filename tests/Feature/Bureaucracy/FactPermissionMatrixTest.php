@@ -27,7 +27,7 @@ beforeEach(function () {
     $this->owner = User::factory()->onboarded()->create();
     $this->case = app(EnsureAccountHolder::class)->dossier($this->owner);
     $this->fact = app(RecordFactChange::class)->execute($this->owner, $this->case->person, 'residence_title_expires_at', matrixCanary(), null, 1);
-    $this->people = '/bureaucracy/v2/people/'.$this->case->person_id;
+    $this->people = '/paperwork/v2/people/'.$this->case->person_id;
 });
 
 /** Someone the owner shared their plan with, with exactly these permissions. */
@@ -92,7 +92,7 @@ test('edit only sees no current value: the helper gets the offered question alon
     $this->getJson($this->people.'/facts')->assertForbidden();
     $this->getJson($this->people.'/facts/residence_title_expires_at/history')->assertForbidden();
     $this->getJson($this->people.'/fact-conflicts')->assertForbidden();
-    expect(json_encode($this->get('/bureaucracy?person='.$this->case->person_id)->assertOk()->viewData('page')))
+    expect(json_encode($this->get('/paperwork?person='.$this->case->person_id)->assertOk()->viewData('page')))
         ->not->toContain(matrixCanary());
 
     // A direct change works, and its receipt carries no saved value.
@@ -107,11 +107,11 @@ test('edit only sees no current value: the helper gets the offered question alon
     expect($preview->json('question.fact_key'))->toBeString()->and($preview->getContent())->not->toContain(matrixCanary());
     $session = $this->postJson($this->people.'/question-sessions', ['request_id' => (string) Str::uuid(), 'jurisdiction' => 'de-nrw-cologne'])
         ->assertCreated()->json('session_id');
-    $next = $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
+    $next = $this->postJson('/paperwork/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
         ->assertOk()->assertJsonPath('status', 'offered');
     expect($next->getContent())->not->toContain(matrixCanary());
     $offer = $next->json('question');
-    $receipt = $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/answers/'.$offer['id'], ['token' => $offer['token'], 'value' => matrixAnswerTo($offer)])
+    $receipt = $this->postJson('/paperwork/v2/question-sessions/'.$session.'/answers/'.$offer['id'], ['token' => $offer['token'], 'value' => matrixAnswerTo($offer)])
         ->assertOk()->json();
     expect(array_keys($receipt))->toEqualCanonicalizing(['fact_id', 'fact_revision', 'status'])
         ->and(json_encode($receipt))->not->toContain(matrixCanary());
@@ -127,6 +127,6 @@ test('a helper with neither permission may not see or change answers, nor answer
     $this->getJson($this->people.'/question-preview?jurisdiction=de-nrw-cologne')->assertOk()
         ->assertJsonPath('status', 'permission_required')->assertJsonPath('question', null);
     $this->postJson($this->people.'/question-sessions', ['request_id' => (string) Str::uuid(), 'jurisdiction' => 'de-nrw-cologne'])->assertForbidden();
-    expect(json_encode($this->get('/bureaucracy?person='.$this->case->person_id)->assertOk()->viewData('page')))
+    expect(json_encode($this->get('/paperwork?person='.$this->case->person_id)->assertOk()->viewData('page')))
         ->not->toContain(matrixCanary());
 });

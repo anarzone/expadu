@@ -46,13 +46,13 @@ final class BureaucracyPlanNotification extends Notification implements ShouldBe
     {
         // Lock-screen text remains discreet. Exact current timing is available after authentication.
         return (new BureaucracyWebPushMessage($this->reference))->title('Your paperwork needs attention')
-            ->body('Open Bureaucracy to review your current next step.')
-            ->action('Open Bureaucracy', 'view_bureaucracy')->options(['TTL' => 900])->data(['url' => '/bureaucracy']);
+            ->body('Open Paperwork to review your current next step.')
+            ->action('Open Paperwork', 'view_paperwork')->options(['TTL' => 900])->data(['url' => route('paperwork', [], false)]);
     }
 
     public function toArray(mixed $notifiable): array
     {
         return ['type' => 'bureaucracy_deadline', 'title' => 'Your paperwork needs attention',
-            'body' => 'Open Bureaucracy to review your current next step.', 'url' => '/bureaucracy'];
+            'body' => 'Open Paperwork to review your current next step.', 'url' => route('paperwork', [], false)];
     }
 }

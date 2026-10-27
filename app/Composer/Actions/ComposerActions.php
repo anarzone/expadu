@@ -266,7 +266,7 @@ final class ComposerActions
                     'sub' => $fields['sub'] ?? null, 'undo' => ['token' => $token, 'until' => $record['expires_at']],
                     'link' => $fields['link'] ?? null, 'day' => $fields['day'] ?? null, 'ask' => $fields['ask'] ?? null], fn ($v) => $v !== null),
                 ($fields['changes'] ?? []) === [] ? null : ['type' => 'plan_changes', 'id' => "{$token}:plan", 'area' => $record['domain'],
-                    'changes' => $fields['changes'], 'link' => ['label' => 'Open Paperwork', 'href' => '/bureaucracy']],
+                    'changes' => $fields['changes'], 'link' => ['label' => 'Open Paperwork', 'href' => route('paperwork', [], false)]],
             ])),
             default => [['type' => 'undone', 'id' => $token, 'area' => $record['domain'], 'action' => $record['action'], 'text' => $line]],
         };

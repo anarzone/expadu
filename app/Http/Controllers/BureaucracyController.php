@@ -20,7 +20,7 @@ class BureaucracyController extends Controller
     /**
      * Paperwork: the v2 plan for the signed-in account holder, or for someone who shared
      * theirs (?person=). Everything on the page comes from the plan read model; changes go
-     * through the bureaucracy/v2 JSON commands.
+     * through the paperwork/v2 JSON commands.
      *
      * The plan and the people are read only when the response carries them: a partial
      * reload (the page's own `only: ['entry']`, the shared widgets) doesn't assess the

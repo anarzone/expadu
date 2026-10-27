@@ -103,7 +103,7 @@ test('it records a canonical sealed reminder even when push was never granted', 
         ->and($alert->category)->toBe('bureau')
         ->and($alert->lane)->toBe('action')
         ->and($alert->severity)->toBe('danger')
-        ->and($alert->deep_link)->toBe('/bureaucracy')
+        ->and($alert->deep_link)->toBe('/paperwork')
         ->and($alert->guidance_reference)->toEqual($reference)
         ->and($references->resolve($alert->guidance_reference, $user->id)['event_revision'])->toBe($attention[0]['event_revision'])
         ->and($alert->title)->toBe('Your paperwork needs attention')

@@ -54,7 +54,7 @@ test('the shared plan is bounded on overview but retains every actionable proces
     expect(BureaucracyProcess::query()->count())->toBe(0)->and(BureaucracyCaseQuestion::query()->count())->toBe(0)
         ->and(BureaucracyOutboxEvent::query()->count())->toBe($before);
     expect(app(PaperworkReadModel::class)->for($this->actor, $this->case->person, 'de-nrw-cologne'))->toBe($one['paperwork']);
-    $this->actingAs($this->actor)->getJson('/bureaucracy/v2/people/'.$this->case->person_id.'/plan?jurisdiction=de-nrw-cologne')
+    $this->actingAs($this->actor)->getJson('/paperwork/v2/people/'.$this->case->person_id.'/plan?jurisdiction=de-nrw-cologne')
         ->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertJsonPath('assessment_revision', $one['assessment_revision']);
 });
 
@@ -123,7 +123,7 @@ test('process detail and questionnaire preview reflect the same scoped plan and 
     $detail = app(ReadProcess::class)->for($this->actor, $process);
     expect($detail['assessment_revision'])->toBe($plan['assessment_revision'])
         ->and($detail['state'])->toBe(collect($plan['processes'])->firstWhere('id', $process->id)['state']);
-    $this->actingAs($this->actor)->getJson('/bureaucracy/v2/people/'.$this->case->person_id.'/question-preview?jurisdiction=de-nrw-cologne')
+    $this->actingAs($this->actor)->getJson('/paperwork/v2/people/'.$this->case->person_id.'/question-preview?jurisdiction=de-nrw-cologne')
         ->assertOk()->assertJsonPath('assessment_revision', $plan['assessment_revision'])
         ->assertJsonPath('question.fact_key', $plan['overview']['question']['fact_key']);
 });
@@ -182,7 +182,7 @@ test('the next reassessment boundary cannot outlast the current session or offer
 test('starting one proposal is explicit idempotent and does not create every suggested process', function () {
     $plan = app(PlanReadModel::class)->for($this->actor, $this->case->person, 'de-nrw-cologne');
     $proposal = $plan['processes'][0];
-    $url = '/bureaucracy/v2/people/'.$this->case->person_id.'/processes';
+    $url = '/paperwork/v2/people/'.$this->case->person_id.'/processes';
     $request = ['jurisdiction' => 'de-nrw-cologne', 'occurrence_key' => $proposal['occurrence_key'],
         'review_token' => $proposal['review_token'], 'request_id' => (string) Str::uuid()];
     $receipt = $this->actingAs($this->actor)->postJson($url, $request)->assertSuccessful()
@@ -190,14 +190,14 @@ test('starting one proposal is explicit idempotent and does not create every sug
     expect(BureaucracyProcess::query()->count())->toBe(1);
     $this->postJson($url, $request)->assertSuccessful()->assertExactJson($receipt);
     $this->postJson($url, [...$request, 'occurrence_key' => $plan['processes'][1]['occurrence_key']])->assertConflict();
-    $this->getJson('/bureaucracy/v2/processes/'.$receipt['process_id'])->assertOk()->assertJsonPath('state.workflow', 'not_started');
+    $this->getJson('/paperwork/v2/processes/'.$receipt['process_id'])->assertOk()->assertJsonPath('state.workflow', 'not_started');
 });
 
 test('a changed proposal or missing management permission cannot start a process', function () {
     $proposal = app(PlanReadModel::class)->for($this->actor, $this->case->person, 'de-nrw-cologne')['processes'][0];
     $request = ['jurisdiction' => 'de-nrw-cologne', 'occurrence_key' => $proposal['occurrence_key'],
         'review_token' => $proposal['review_token'], 'request_id' => (string) Str::uuid()];
-    $url = '/bureaucracy/v2/people/'.$this->case->person_id.'/processes';
+    $url = '/paperwork/v2/people/'.$this->case->person_id.'/processes';
     $this->actingAs(User::factory()->create())->postJson($url, $request)->assertForbidden();
     app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'arrival_planned', true, null, 1);
     $this->actingAs($this->actor)->postJson($url, $request)->assertConflict();

@@ -51,7 +51,7 @@ it('does not offer Blue Card settlement tracking to a permanent resident but kee
     $store = app(CatalogueReleaseStore::class);
     $store->activate($store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()))->id, null);
     $holder = onboardAs('settlement_permit_18c');
-    $plan = $this->actingAs($holder)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->actingAs($holder)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     expect(array_column($plan['guidance'], 'id'))->not->toContain('case.bc.settlement.track_21_months')
         ->and(array_column($plan['actions'], 'source_rule_id'))->toContain('core.anmeldung');
 
@@ -62,7 +62,7 @@ it('does not offer Blue Card settlement tracking to a permanent resident but kee
     foreach (['blue_card_qualifying_months' => 12, 'german_level' => 'b1'] as $key => $value) {
         app(RecordFactChange::class)->execute($blueCard, $case->person, $key, $value, null, $case->fresh()->fact_version);
     }
-    $candidate = $this->actingAs($blueCard)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $candidate = $this->actingAs($blueCard)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     expect(collect($candidate['guidance'])->firstWhere('id', 'case.bc.settlement.track_21_months')['assessment'])->toBe('supported_preparation')
         ->and(array_column($candidate['guidance'], 'assessment'))->not->toContain('requirements_met');
 });
@@ -78,7 +78,7 @@ it('changing an existing title requires an explicit correction rather than silen
     $before = app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString());
     expect($before['values']['current_residence_title'])->toBe('settlement_permit_18c');
     $factId = $before['evidence']['current_residence_title']['fact_id'];
-    $this->postJson('/bureaucracy/v2/people/'.$user->bureaucracyCase->person_id.'/facts/'.$factId.'/corrections', [
+    $this->postJson('/paperwork/v2/people/'.$user->bureaucracyCase->person_id.'/facts/'.$factId.'/corrections', [
         'value' => 'standard_work_permit', 'expected_revision' => $before['revision'],
     ])->assertSuccessful();
     expect(data_get($user->profile_attributes, 'settled_at'))->toBeNull()

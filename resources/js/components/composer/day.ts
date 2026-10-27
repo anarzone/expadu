@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { vehicleOf, vehicleWord } from '@/components/travel/line-look';
 import { stopName } from '@/components/travel/stop-name';
 import type { IconName } from '@/components/ui/icon';
+import { paperwork as paperworkPage } from '@/routes';
 import type { DayProjection } from '@/types/day';
 import type { Plan, Workspace } from './types';
 
@@ -48,7 +49,7 @@ const ORIGIN_KEY = 'expadu-composer-origin';
 const pages: [RegExp, string][] = [
     [/^\/today(\/|$)/, 'Today'],
     [/^\/events(\/|$)/, 'Events'],
-    [/^\/bureaucracy(\/|$)/, 'Paperwork'],
+    [/^\/paperwork(\/|$)/, 'Paperwork'],
     [/^\/travel(\/|$)/, 'Travel'],
     [/^\/places(\/|$)/, 'Places'],
 ];
@@ -221,8 +222,13 @@ export function dayFacts(
                         : 'Document expires'
                     : (deadline.process ?? 'A date to aim for'),
             href: deadline.occurrence_key
-                ? `/bureaucracy?view=detail&process=${encodeURIComponent(deadline.occurrence_key)}`
-                : '/bureaucracy',
+                ? paperworkPage.url({
+                      query: {
+                          view: 'detail',
+                          process: deadline.occurrence_key,
+                      },
+                  })
+                : paperworkPage.url(),
         });
     }
 

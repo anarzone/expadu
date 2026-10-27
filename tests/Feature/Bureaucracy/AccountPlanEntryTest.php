@@ -24,7 +24,7 @@ test('the account entry returns actionable canonical guidance without importing 
     DB::enableQueryLog();
     DB::flushQueryLog();
 
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJsonPath('state', 'ready')
         ->assertJsonPath('plan.person_id', $fixture['case']->person_id)
@@ -42,7 +42,7 @@ test('the account entry returns actionable canonical guidance without importing 
 
 test('an account without a dossier receives an explicit setup state without creating one', function () {
     $user = User::factory()->onboarded()->create();
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('state', 'setup_required')->assertJsonPath('plan', null);
     expect(BureaucracyPerson::query()->count())->toBe(0)
         ->and($user->bureaucracyCase()->count())->toBe(0);
@@ -51,11 +51,11 @@ test('an account without a dossier receives an explicit setup state without crea
 test('an active account identity without a dossier can explicitly finish setup', function () {
     $user = User::factory()->onboarded()->create();
     $person = app(EnsureAccountHolder::class)->person($user);
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('state', 'setup_required')->assertJsonPath('plan', null);
     expect($person->dossier()->exists())->toBeFalse();
-    $this->postJson('/bureaucracy/v2/people/self')->assertSuccessful();
-    $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->assertJsonPath('state', 'ready')
+    $this->postJson('/paperwork/v2/people/self')->assertSuccessful();
+    $this->getJson('/paperwork/v2/plan')->assertSuccessful()->assertJsonPath('state', 'ready')
         ->assertJsonPath('plan.person_id', $person->id)->assertJsonPath('plan.coverage.state', 'not_activated');
 });
 
@@ -63,18 +63,18 @@ test('the same account entry rechecks source withdrawal and changed city on ever
     $user = User::factory()->onboarded()->create();
     $fixture = ReviewedHomePlan::activate($user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
         ['arrival_date' => '2026-09-01']);
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->assertJsonCount(1, 'plan.actions');
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->assertJsonCount(1, 'plan.actions');
     $fixture['tasks']['fixture.entry']->update(['review_status' => 'legacy']);
-    $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->assertJsonCount(0, 'plan.actions');
+    $this->getJson('/paperwork/v2/plan')->assertSuccessful()->assertJsonCount(0, 'plan.actions');
     User::query()->whereKey($user->id)->update(['city' => 'Berlin']);
-    $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->assertJsonPath('plan.coverage.state', 'outside_coverage');
+    $this->getJson('/paperwork/v2/plan')->assertSuccessful()->assertJsonPath('plan.coverage.state', 'outside_coverage');
 });
 
 test('a closed or erased dossier is unavailable rather than offered a silent reset', function (string $state) {
     $user = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($user);
     $case->update(['status' => $state]);
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('state', 'record_unavailable')->assertJsonPath('plan', null);
     expect($case->fresh()->status)->toBe($state);
 })->with(['closed', 'erased']);
@@ -84,14 +84,14 @@ test('the account entry never accepts another person or city from query paramete
     $self = app(EnsureAccountHolder::class)->dossier($user);
     $other = User::factory()->onboarded()->create();
     $otherCase = app(EnsureAccountHolder::class)->dossier($other);
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan?person_id='.$otherCase->person_id.'&jurisdiction=de-nrw-cologne')
+    $this->actingAs($user)->getJson('/paperwork/v2/plan?person_id='.$otherCase->person_id.'&jurisdiction=de-nrw-cologne')
         ->assertSuccessful()->assertJsonPath('plan.person_id', $self->person_id)
         ->assertJsonPath('plan.coverage.state', 'outside_coverage');
 });
 
 test('the account entry requires a verified authenticated account', function () {
-    $this->getJson('/bureaucracy/v2/plan')->assertUnauthorized();
-    $this->actingAs(User::factory()->unverified()->create())->getJson('/bureaucracy/v2/plan')->assertForbidden();
+    $this->getJson('/paperwork/v2/plan')->assertUnauthorized();
+    $this->actingAs(User::factory()->unverified()->create())->getJson('/paperwork/v2/plan')->assertForbidden();
 });
 
 test('an inactive or erased account person cannot be silently recreated', function (string $state, bool $withDossier) {
@@ -100,7 +100,7 @@ test('an inactive or erased account person cannot be silently recreated', functi
     $person->update(['record_status' => $state]);
     $before = $person->fresh()->getRawOriginal();
     // A record its holder deleted says so (owner, 21 Oct 2026); an inactive one is unavailable.
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('state', $state === 'erased' ? 'erased' : 'record_unavailable')->assertJsonPath('plan', null);
     expect($person->fresh()->getRawOriginal())->toBe($before)
         ->and(BureaucracyPerson::query()->count())->toBe(1)
@@ -110,9 +110,9 @@ test('an inactive or erased account person cannot be silently recreated', functi
 test('verification revoked between requests stops the account entry even with a stale authenticated model', function () {
     $user = User::factory()->onboarded()->create();
     app(EnsureAccountHolder::class)->dossier($user);
-    $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->assertJsonPath('state', 'ready');
+    $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->assertJsonPath('state', 'ready');
     User::query()->whereKey($user->id)->update(['email_verified_at' => null]);
-    $this->getJson('/bureaucracy/v2/plan')->assertForbidden();
+    $this->getJson('/paperwork/v2/plan')->assertForbidden();
 });
 
 test('unanswered dates become a visible question without hiding known preparation', function () {
@@ -125,20 +125,20 @@ test('unanswered dates become a visible question without hiding known preparatio
         'title' => 'Synthetic occupancy preparation', 'deadline_type' => 'days_since_move_in',
         'applies_if' => [['citizenship_group' => 'non_eu']],
     ]], []);
-    $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $plan = $this->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('plan.overview.question.fact_key', 'moved_in_at')
         ->assertJsonPath('plan.actions.0.dates.0.state', 'date_unknown')
         ->assertJsonPath('plan.actions.0.dates.0.date', null)
         ->assertJsonPath('plan.actions.0.title', 'Synthetic occupancy preparation')->json('plan');
     expect(BureaucracyCaseQuestion::query()->count())->toBe(0);
-    $session = $this->postJson('/bureaucracy/v2/people/'.$plan['person_id'].'/question-sessions', [
+    $session = $this->postJson('/paperwork/v2/people/'.$plan['person_id'].'/question-sessions', [
         'jurisdiction' => 'de-nrw-cologne', 'request_id' => (string) Str::uuid(),
     ])->assertCreated()->json('session_id');
-    $offer = $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/next', [
+    $offer = $this->postJson('/paperwork/v2/question-sessions/'.$session.'/next', [
         'request_id' => (string) Str::uuid(),
     ])->assertSuccessful()->json('question');
-    $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/defer/'.$offer['id'], ['token' => $offer['token']])->assertSuccessful();
-    $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->postJson('/paperwork/v2/question-sessions/'.$session.'/defer/'.$offer['id'], ['token' => $offer['token']])->assertSuccessful();
+    $this->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('plan.actions.0.title', 'Synthetic occupancy preparation')
         ->assertJsonPath('plan.actions.0.dates.0.date', null);
     expect($fixture['case']->facts()->where('key', 'moved_in_at')->exists())->toBeFalse();
@@ -150,7 +150,7 @@ test('a supplied move-in date drives the new plan independently of registration 
         'purpose' => 'other', 'arrival_planned' => false, 'arrival_date' => '2026-09-01', 'moved_in_at' => '2026-09-05',
     ]);
     ReviewedHomePlan::activate($user, ['fixture.occupancy' => ['deadline_type' => 'days_since_move_in']], []);
-    $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()
+    $this->getJson('/paperwork/v2/plan')->assertSuccessful()
         ->assertJsonPath('plan.actions.0.dates.0.date', '2026-09-19')
         ->assertJsonPath('plan.actions.0.dates.0.state', 'dated');
 });

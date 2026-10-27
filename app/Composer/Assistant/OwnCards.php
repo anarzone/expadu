@@ -46,7 +46,7 @@ final class OwnCards
     {
         $plan = $this->plans->for($user)['plan'] ?? null;
         if (! is_array($plan)) {
-            return self::note('Nothing is recorded in Paperwork yet. It sorts out what to do first, from your own situation.', [['label' => 'Open Paperwork', 'href' => '/bureaucracy']]);
+            return self::note('Nothing is recorded in Paperwork yet. It sorts out what to do first, from your own situation.', [['label' => 'Open Paperwork', 'href' => route('paperwork', [], false)]]);
         }
         $requirements = collect($plan['paperwork']['requirements'] ?? []);
         $processes = collect($plan['processes'] ?? [])->filter(fn (array $process): bool => $process['id'] !== null && ! ($process['is_closed'] ?? false));
@@ -60,7 +60,7 @@ final class OwnCards
                 .' · '.CarbonImmutable::parse($deadline['date'], 'Europe/Berlin')->format('D j M')]];
 
         if ($required->isEmpty()) {
-            return [...self::note('That’s from your own Paperwork record. The steps and their official sources are in Paperwork.', [['label' => 'Open Paperwork', 'href' => '/bureaucracy']]),
+            return [...self::note('That’s from your own Paperwork record. The steps and their official sources are in Paperwork.', [['label' => 'Open Paperwork', 'href' => route('paperwork', [], false)]]),
                 ...($facts !== [] ? ['facts' => $facts] : [])];
         }
         $prepared = $required->where('readiness', 'confirmed_for_use')->count();
@@ -73,7 +73,7 @@ final class OwnCards
                 'title' => (string) ($process['title'] ?? 'Paperwork'),
                 'prepared' => $prepared,
                 'total' => $required->count(),
-                'href' => '/bureaucracy?view=paperwork&process='.rawurlencode((string) $process['occurrence_key']),
+                'href' => route('paperwork', ['view' => 'paperwork', 'process' => (string) $process['occurrence_key']], false),
                 'documents' => $required->map(fn (array $r): array => ['label' => (string) $r['label'],
                     'ready' => $r['readiness'] === 'confirmed_for_use', 'state' => self::READINESS[$r['readiness']] ?? self::READINESS['missing']])->all(),
             ],

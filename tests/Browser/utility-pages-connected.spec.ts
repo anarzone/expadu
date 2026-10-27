@@ -63,7 +63,7 @@ test('Services keeps optional preferences by category and opens an unsent reques
 test('Paperwork has one page heading and an Overview / Documents switch', async ({
     page,
 }) => {
-    await page.goto('/bureaucracy');
+    await page.goto('/paperwork');
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(
         page.getByRole('heading', { level: 1, name: 'Paperwork' }),

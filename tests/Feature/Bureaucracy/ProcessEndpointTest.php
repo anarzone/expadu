@@ -20,7 +20,7 @@ beforeEach(function () {
     ]]));
     $store->activate($release->id, null);
     $this->process = app(ReconcileProcesses::class)->execute($this->actor, $this->case->person, 'de-nrw-cologne')[0];
-    $this->url = '/bureaucracy/v2/processes/'.$this->process->id;
+    $this->url = '/paperwork/v2/processes/'.$this->process->id;
 });
 
 test('process reads are private and progress reports remain explicit through HTTP', function () {
