@@ -25,7 +25,7 @@ import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { sourceLabel } from '@/components/ui/state-notice';
 import { CURRENT_CITY } from '@/lib/cities';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 
 /*
  * City help (the mock's .city-help): the forecast for the next hours and
@@ -281,7 +281,7 @@ function DepartureBoard({
               .slice(0, 3)
         : [];
     const paused = !!station && isPaused(station);
-    const href = timetable({
+    const href = travel({
         query: station ? { stop: station.name } : {},
     });
 

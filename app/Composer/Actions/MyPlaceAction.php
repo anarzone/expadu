@@ -53,7 +53,7 @@ final class MyPlaceAction implements ComposerAction
             ->where('record_status', 'active')->whereNull('processing_stopped_at')->exists();
 
         return array_filter(['title' => "{$label} is now {$prepared['place']['name']}", 'sub' => $prepared['sub'],
-            'link' => ['label' => 'See your places →', 'href' => '/timetable'],
+            'link' => ['label' => 'See your places →', 'href' => '/travel'],
             'ask' => $paperwork ? ['text' => 'When did you move in? Paperwork dates your address registration from it.',
                 'options' => [['label' => 'Today', 'prompt' => 'I moved in today'], ['label' => 'Another day…', 'draft' => 'I moved in on ']]] : null,
             // The address stays out of what the AI is told; the card says it.

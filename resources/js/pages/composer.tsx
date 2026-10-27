@@ -40,7 +40,7 @@ import type { EventOccurrence } from '@/components/events/types';
 import type { SavedPlace } from '@/components/place-shared/from-types';
 import { Icon } from '@/components/ui/icon';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import type { DayProjection } from '@/types/day';
 import '../../css/composer.css';
 import '../../css/composer-page.css';
@@ -605,7 +605,7 @@ function EntryReview({
                     </small>
                     <div className="composer-entry-actions">
                         <Link
-                            href={timetable({
+                            href={travel({
                                 query: travelDestinationParams(
                                     reviewTravelDestination(entry.context),
                                 ),

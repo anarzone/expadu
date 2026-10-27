@@ -17,7 +17,7 @@ import type {
 } from '@/components/travel/nearby/nearby-model';
 import type { Station, StationArea } from '@/components/travel/nearby/types';
 import { sourceLabel } from '@/components/ui/state-notice';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 
 /** A stop's board as the answer carries it (App\Transit\NearbyStation::named, trimmed). */
 export type AnsweredBoard = Pick<
@@ -74,7 +74,7 @@ export function DeparturesAnswer({ board }: { board: AnsweredBoard }) {
         .filter((line) => line.shown.length > 0)
         .sort((a, b) => leaves(a.shown[0]) - leaves(b.shown[0]))
         .slice(0, 4);
-    const href = timetable({ query: { stop: board.name } });
+    const href = travel({ query: { stop: board.name } });
     const capture =
         board.time_basis === 'unavailable'
             ? 'Times unavailable right now'

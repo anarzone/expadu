@@ -69,7 +69,7 @@ export function tripMoment(
  * destination and no starting point in links or history.
  */
 export function activeTripHref(trip: ActiveTrip | null): string {
-    return trip ? '/timetable?view=route' : '/timetable';
+    return trip ? '/travel?view=route' : '/travel';
 }
 
 /*

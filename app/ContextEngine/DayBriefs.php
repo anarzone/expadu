@@ -105,7 +105,7 @@ final class DayBriefs
                 'type' => $more['type'] ?? null, 'severity' => $more['severity'] ?? 'minor', 'why' => $more['why'] ?? null,
                 'link' => $more['link'] ?? '/dashboard', 'about' => $more['about'] ?? $kind, 'at' => $more['at'] ?? null];
         };
-        $journey = fn (string $activity): string => '/timetable?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
+        $journey = fn (string $activity): string => '/travel?'.http_build_query(['view' => 'journey', 'activity' => $activity]);
 
         // What threatens the day: their planned ways changing; on the day itself, live disruptions on their lines and delays.
         foreach (PlannedTrip::query()->where('user_id', $user->id)->whereDate('date', $day->toDateString())->orderBy('depart_at')->get() as $trip) {
@@ -125,16 +125,16 @@ final class DayBriefs
                     $stops = implode(', ', array_slice((array) ($action->payload['stops_affected'] ?? []), 0, 2));
                     $text = "Line {$lines} disrupted".($stops !== '' ? " at {$stops}" : '').'.';
                     $add('disruption', $text, "KVB disruption on line {$lines}".($stops !== '' ? ", stops affected: {$stops}" : '').', one of their lines.', false, self::RANK['risk'] * 10000,
-                        ['type' => 'transit_disruption', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/timetable', 'about' => $action->actionKey]);
+                        ['type' => 'transit_disruption', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey]);
                 } elseif ($action->type === 'transit_delay' && is_string($action->payload['line'] ?? null) && (int) ($action->payload['delay_min'] ?? 0) > 0) {
                     $delay = (int) $action->payload['delay_min'];
                     $stop = (string) ($action->payload['stop_id'] ?? '');
                     $add('delay', "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').'.',
                         "Line {$action->payload['line']} running {$delay} min late".($stop !== '' ? " at {$stop}" : '').', one of their lines.', false, self::RANK['risk'] * 10000 + 1,
-                        ['type' => 'transit_delay', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/timetable', 'about' => $action->actionKey]);
+                        ['type' => 'transit_delay', 'severity' => $action->severity, 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => $action->actionKey]);
                 } elseif ($action->type === 'weather_alert' && is_string($action->payload['alert']['summary'] ?? null)) {
                     $add('weather', $action->payload['alert']['summary'].'.', 'Weather today: '.$action->payload['alert']['summary'].'.', false, self::RANK['weather'] * 10000,
-                        ['type' => 'weather_alert', 'severity' => $action->severity, 'link' => '/timetable', 'about' => $action->actionKey]);
+                        ['type' => 'weather_alert', 'severity' => $action->severity, 'link' => '/travel', 'about' => $action->actionKey]);
                 }
             }
         }

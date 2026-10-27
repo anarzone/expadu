@@ -73,7 +73,7 @@ final class TripAnswers
         // Where you are (as the assistant's other lookups have it); else your home Veedel, and the answer says so.
         $location ??= $this->locations->context($user, request(), $user->veedel);
         $here = $location->hasOrigin() ? new GeoPoint((float) $location->lat, (float) $location->lng) : null;
-        $search = ['label' => 'Search in Travel', 'href' => '/timetable'];
+        $search = ['label' => 'Search in Travel', 'href' => '/travel'];
 
         // The start named ("from Neumarkt"), found as the place is; else where you are.
         $start = null;
@@ -221,7 +221,7 @@ final class TripAnswers
      */
     private function planHref(array $place, ?array $start = null): string
     {
-        return '/timetable?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng,
+        return '/travel?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng,
             ...($start !== null ? ['from_name' => $start['name'], 'from_lat' => $start['point']->lat, 'from_lng' => $start['point']->lng] : [])]);
     }
 
@@ -277,7 +277,7 @@ final class TripAnswers
                 default => null,
             };
 
-            return $text === null ? null : $this->reply($text, null, null, [['label' => 'Open Travel', 'href' => '/timetable']]);
+            return $text === null ? null : $this->reply($text, null, null, [['label' => 'Open Travel', 'href' => '/travel']]);
         }
 
         $trip['journey'] = self::named($trip['journey'] ?? null);

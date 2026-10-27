@@ -9,7 +9,7 @@ use App\Models\User;
 
 function placeHandoffUrl(int|string $id): string
 {
-    return '/timetable?'.http_build_query(['view' => 'journey', 'place' => $id]);
+    return '/travel?'.http_build_query(['view' => 'journey', 'place' => $id]);
 }
 
 test('Plan a trip finds an open, public place by its id, and nothing else', function () {

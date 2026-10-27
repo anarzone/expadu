@@ -311,7 +311,7 @@ export default function Timetable() {
             params.set('stop', name);
         }
 
-        router.visit(`/timetable${params.size ? `?${params}` : ''}`, {
+        router.visit(`/travel${params.size ? `?${params}` : ''}`, {
             only: ['station', 'stop'],
             preserveState: true,
             preserveScroll: true,
@@ -400,7 +400,7 @@ export default function Timetable() {
 
         // By the plan's id: its place comes from your day, never the URL.
         router.visit(
-            `/timetable?${new URLSearchParams({ view: 'journey', activity: item.id, compare: '1' })}`,
+            `/travel?${new URLSearchParams({ view: 'journey', activity: item.id, compare: '1' })}`,
             { preserveScroll: false },
         );
     };
@@ -433,7 +433,7 @@ export default function Timetable() {
 
         setView('stop');
         router.replace({
-            url: '/timetable',
+            url: '/travel',
             preserveState: true,
             preserveScroll: true,
         });
@@ -444,7 +444,7 @@ export default function Timetable() {
         setBoardReturn(null);
         setView(next);
         router.replace({
-            url: next === 'day' ? '/timetable?view=day' : '/timetable',
+            url: next === 'day' ? '/travel?view=day' : '/travel',
             preserveState: true,
             preserveScroll: true,
         });
@@ -453,7 +453,7 @@ export default function Timetable() {
     // Plan a trip from My day: by the plans' ids, never their places.
     const planFrom = (params: Record<string, string>) =>
         router.visit(
-            `/timetable?${new URLSearchParams({ view: 'journey', ...params, compare: '1' })}`,
+            `/travel?${new URLSearchParams({ view: 'journey', ...params, compare: '1' })}`,
             { preserveScroll: false },
         );
 
@@ -572,7 +572,7 @@ export default function Timetable() {
                     onFold={() => {
                         setView('stop');
                         router.replace({
-                            url: '/timetable',
+                            url: '/travel',
                             preserveState: true,
                             preserveScroll: true,
                         });
@@ -639,7 +639,7 @@ export default function Timetable() {
 
                             if (target) {
                                 router.visit(
-                                    `/timetable?${new URLSearchParams({ view: 'journey', activity: target, compare: '1' })}`,
+                                    `/travel?${new URLSearchParams({ view: 'journey', activity: target, compare: '1' })}`,
                                 );
                             } else {
                                 setShownWay(null);

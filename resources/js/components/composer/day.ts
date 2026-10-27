@@ -49,7 +49,7 @@ const pages: [RegExp, string][] = [
     [/^\/dashboard(\/|$)/, 'Today'],
     [/^\/events(\/|$)/, 'Events'],
     [/^\/bureaucracy(\/|$)/, 'Paperwork'],
-    [/^\/timetable(\/|$)/, 'Travel'],
+    [/^\/travel(\/|$)/, 'Travel'],
     [/^\/places(\/|$)/, 'Places'],
 ];
 

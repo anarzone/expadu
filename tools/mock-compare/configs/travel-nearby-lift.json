@@ -19,7 +19,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/travel",
         "wait": "#departures .nearby-strip",
         "login": {
             "email": "e2e@expadu.test",
