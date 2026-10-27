@@ -19,6 +19,7 @@ export type EventOccurrence = {
     photo_attribution: string | null;
     photo_source_url: string | null;
     photo_license_url: string | null;
+    photo_of: 'event' | 'venue' | null;
     chips: string[];
     tip: string | null;
     summary: string | null;

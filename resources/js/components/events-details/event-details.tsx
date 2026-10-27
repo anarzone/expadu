@@ -421,7 +421,9 @@ const sourceName = (source: string | null | undefined): string | null =>
         ? null
         : source === 'stadt-koeln.de'
           ? 'City listing'
-          : source;
+          : source === 'datenhub-nrw'
+            ? 'KölnTourismus'
+            : source;
 
 function Head({
     poster,
@@ -617,19 +619,25 @@ function Body({
                     </dl>
                 </details>
             </section>
-            {/* A photo we may show: the venue's own, freely licensed, with its credit. The
-                listing's photos stay out until their owners allow them. */}
+            {/* A photo we may show, freely licensed, with its credit: the listing's own (the
+                tourism board's open data) or its venue's. Other listings' photos stay out
+                until their owners allow them. */}
             {o.photo_url ? (
                 <figure className="evd-venue-photo">
                     <img
                         src={o.photo_url}
-                        alt={o.venue.name ?? 'The venue'}
+                        alt={
+                            o.photo_of === 'event'
+                                ? o.title
+                                : (o.venue.name ?? 'The venue')
+                        }
                         loading="lazy"
                     />
                     <figcaption>
                         <span>
-                            At the venue
-                            {o.venue.name ? ` · ${o.venue.name}` : ''}
+                            {o.photo_of === 'event'
+                                ? 'From the listing'
+                                : `At the venue${o.venue.name ? ` · ${o.venue.name}` : ''}`}
                         </span>
                         {o.photo_attribution ? (
                             o.photo_source_url ? (
