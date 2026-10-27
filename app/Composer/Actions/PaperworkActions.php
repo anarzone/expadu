@@ -55,7 +55,31 @@ final class PaperworkActions implements ComposerAction
     private const WORDS = [
         'national_d_visa' => 'National D visa', 'standard_work_permit' => 'Work residence permit', 'blue_card' => 'EU Blue Card', 'blue_card_pending' => 'EU Blue Card (applied for)',
         'family_reunification' => 'Family reunification permit', 'settlement_permit_9' => 'Settlement permit (§9)', 'settlement_permit_18c' => 'Settlement permit (§18c)',
-        'registered' => 'Yes', 'not_registered' => 'Not yet',
+        'settlement_permit_unknown' => 'Settlement permit (type not known)', 'registered' => 'Yes', 'not_registered' => 'Not yet',
+    ];
+
+    /** An option in a line, where its name alone doesn't say what it is (a settlement permit's section). */
+    private const HINTS = [
+        'settlement_permit_9' => 'Niederlassungserlaubnis under §9 of the Residence Act: the general settlement permit.',
+        'settlement_permit_18c' => 'Niederlassungserlaubnis under §18c: the one for skilled workers and EU Blue Card holders.',
+    ];
+
+    /** What their own words must say for one of a group's options to be proposed: its section. */
+    private const SECTIONS = [
+        'settlement_permit_9' => '/(?:§|section|paragraph|para\.?|absatz)\s*9(?!\s*a)(?!\d)/iu',
+        'settlement_permit_18c' => '/18\s*c(?![a-z])/iu',
+    ];
+
+    /**
+     * An option meaning "one of these, not known which", and the others it stands for (those
+     * sharing its name): asked about instead of kept (owner, 27 Oct 2026: choices, not "unknown").
+     * The card's question, what "Not sure" says, and how it keeps this one.
+     */
+    private const UNSURE = [
+        'settlement_permit_unknown' => ['Which settlement permit do you have?', [
+            'Your residence card, or the letter that came with it, may name the section of the Residence Act it was given under.',
+            'If it names neither of these, or you can’t tell, keep “type not known”: Paperwork works with it, and you can change it here any time.',
+        ], 'Keep “type not known”'],
     ];
 
     private const BOOLEANS = ['health_coverage_confirmed' => ['Confirmed', 'Not confirmed'], 'tax_id_available' => ['You have one', 'Not yet']];
@@ -220,6 +244,62 @@ final class PaperworkActions implements ComposerAction
             'date' => $definition->type === 'date',
             // Both ways of saying a date, so the AI may say either.
             'about' => self::label($key).': '.($from !== null ? 'from '.self::long($view['values'][$key] ?? null, $from).' ' : '').'to '.self::long($value, $to)];
+    }
+
+    /**
+     * Their words fit more than one of an answer's options (a settlement permit, without its
+     * section): the options to ask them about, each with a line on what it is, instead of
+     * proposing one, or proposing "not known". Asked for by the AI (`choices`), when it would
+     * propose a "not known" option that stands for others, or one of them their words (`_said`)
+     * don't name: a Niederlassungserlaubnis isn't §9 until they say so. Null when there's one
+     * answer to propose.
+     *
+     * @param  array<string, mixed>  $input  the tool's input
+     * @return array{key: string, title: string, sub: string, value: ?string, options: list<array{value: string, label: string, hint: ?string}>, unsure: ?array<string, mixed>, allowed: list<string>}|null
+     *
+     * @throws ActionRefused
+     */
+    public function choices(User $user, array $input): ?array
+    {
+        $key = (string) ($input['key'] ?? '');
+        if (! $this->registry->all()->has($key) || ($definition = $this->registry->definition($key))->type !== 'enum') {
+            return null;
+        }
+        $value = $input['value'] ?? null;
+        $stands = fn (string $group): array => array_values(array_filter($definition->options,
+            fn (string $o): bool => $o !== $group && str_starts_with($o, substr($group, 0, -strlen('unknown')))));
+        // One of a group's options their own words don't name stands for the group: asked about.
+        $guessed = is_string($value) && isset(self::SECTIONS[$value]) && is_string($input['_said'] ?? null) && $input['_said'] !== '' && preg_match(self::SECTIONS[$value], $input['_said']) !== 1;
+        if ($guessed) {
+            $value = collect(array_keys(self::UNSURE))->first(fn (string $group): bool => in_array($value, $stands($group), true)) ?? $value;
+        }
+        $unsure = is_string($value) && isset(self::UNSURE[$value]) && in_array($value, $definition->options, true) ? $value : null;
+        $picked = $unsure !== null ? [$unsure] : array_map(fn (mixed $c): string => (string) $c, (array) ($input['choices'] ?? []));
+        // A "not known" one among them is what they're unsure between: its options, and "Not sure" keeps it.
+        foreach (array_keys(self::UNSURE) as $group) {
+            if (in_array($group, $picked, true) && in_array($group, $definition->options, true)) {
+                $picked = [...array_diff($picked, [$group]), ...$stands($group)];
+                $unsure = $group;
+            }
+        }
+        $asked = array_values(array_intersect($definition->options, $picked));
+        if (count($asked) < 2) {
+            return null;
+        }
+        // The "not known" one the options all stand under, if any: "Not sure" keeps it.
+        $unsure ??= collect(array_keys(self::UNSURE))->first(fn (string $group): bool => in_array($group, $definition->options, true)
+            && array_diff($asked, $stands($group)) === []);
+        $view = $this->view($this->person($user));
+        $current = ($view['states'][$key] ?? null) === 'value' ? $view['values'][$key] ?? null : null;
+        [$title, $lines, $keep] = $unsure !== null ? self::UNSURE[$unsure] : ['Which one is yours?', [], null];
+        // Its own question only when every option is one of its kind.
+        $title = $unsure !== null && array_diff($asked, $stands($unsure)) === [] ? $title : 'Which one is yours?';
+
+        return ['key' => $key, 'title' => $title, 'sub' => (string) $definition->question,
+            'value' => in_array($current, $asked, true) ? $current : null,
+            'options' => array_map(fn (string $o): array => ['value' => $o, 'label' => (string) self::value($key, $o), 'hint' => self::HINTS[$o] ?? null], $asked),
+            'unsure' => $unsure !== null ? ['label' => 'Not sure', 'lines' => $lines, 'keep' => ['value' => $unsure, 'label' => $keep]] : null,
+            'allowed' => [...$asked, ...($unsure !== null ? [$unsure] : [])]];
     }
 
     /** @return array<string, mixed> */

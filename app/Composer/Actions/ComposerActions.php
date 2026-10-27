@@ -63,7 +63,7 @@ final class ComposerActions
      * @param  array<string, mixed>  $input  the tool's input
      * @return array{said: string, blocks: list<array<string, mixed>>} what the AI reads, and the cards
      */
-    public function request(User $user, string $action, array $input, CarbonImmutable $now, bool $manual = false, bool $propose = false): array
+    public function request(User $user, string $action, array $input, CarbonImmutable $now, bool $manual = false, bool $propose = false, ?string $answers = null): array
     {
         [$class, $domain] = self::ACTIONS[$action] ?? [null, null];
         if ($class === null) {
@@ -72,9 +72,11 @@ final class ComposerActions
         try {
             // Typed into a row by the person themselves, an answer is theirs as given (a manual answer).
             $prepared = [...app($class)->prepare($user, $action, $input, $now), 'manual' => $manual];
-            $record = ['token' => (string) Str::uuid(), 'action' => $action, 'domain' => $domain, 'prepared' => $prepared, 'undo' => null];
+            // Their tap on a card asking which (choose()) takes that card's place.
+            $record = ['token' => $answers ?? (string) Str::uuid(), 'action' => $action, 'domain' => $domain, 'prepared' => $prepared, 'undo' => null];
             // A suggestion they may add (suggest_for_day) is always a proposal: nothing changes until they tap it.
-            if ($propose || (! $manual && in_array($action, self::ALWAYS_ASKS, true)) || $this->asksFirst($user, $domain)) {
+            // An answer to Composer's own question is never asked about again: that question was the asking.
+            if ($answers === null && ($propose || (! $manual && in_array($action, self::ALWAYS_ASKS, true)) || $this->asksFirst($user, $domain))) {
                 $record = $this->kept($user, [...$record, 'state' => 'proposed', 'expires_at' => $now->addHours(self::HOURS)->toIso8601String()],
                     ['title' => $prepared['propose'], ...$prepared]);
 
@@ -146,13 +148,65 @@ final class ComposerActions
      */
     public function act(User $user, string $action, array $input, CarbonImmutable $now): array
     {
-        $made = $this->request($user, $action, $input, $now, manual: true);
+        $answers = $this->asking($user, $action, $input);
+        $made = $this->request($user, $action, $input, $now, manual: true, answers: $answers);
         if ($made['blocks'] === []) {
             return ['workspace' => $this->workspace->read($user), 'refusal' => Str::after($made['said'], 'Not done: ')];
+        }
+        if ($answers !== null) {
+            // Made in the card's place, where they tapped it.
+            return ['workspace' => $this->workspace->read($user), 'refusal' => null];
         }
         $workspace = $this->workspace->read($user);
 
         return ['workspace' => $this->workspace->answer($user, (string) $workspace['active'], Ask::message('', $made['blocks'], ['written' => 'code']), null), 'refusal' => null];
+    }
+
+    /**
+     * An answer their words didn't settle (PaperworkActions::choices): a card asking which, each
+     * option one tap and a line on what it is, instead of proposing one or "not known" (owner,
+     * 27 Oct 2026). Nothing changes until they tap one; that tap is their own answer, made at once
+     * with Undo, in the card's place (act()). Null when there's one answer to propose.
+     *
+     * @param  array<string, mixed>  $input  the tool's input
+     * @return array{said: string, blocks: list<array<string, mixed>>}|null
+     */
+    public function choose(User $user, string $action, array $input, CarbonImmutable $now): ?array
+    {
+        if ($action !== 'change_paperwork_fact') {
+            return null;
+        }
+        try {
+            $choice = app(PaperworkActions::class)->choices($user, $input);
+        } catch (ActionRefused) {
+            return null;
+        }
+        if ($choice === null) {
+            return null;
+        }
+        $token = (string) Str::uuid();
+        $until = $now->addHours(self::HOURS)->toIso8601String();
+        $block = array_filter(['type' => 'proposal', 'id' => $token, 'area' => 'paperwork', 'action' => $action, 'title' => $choice['title'], 'sub' => $choice['sub'],
+            'fact_key' => $choice['key'], 'edit' => ['kind' => 'choice', 'value' => $choice['value'], 'options' => $choice['options']], 'unsure' => $choice['unsure'],
+            'until' => $until,
+            // Composer's own words, said when the AI said nothing.
+            'text' => "{$choice['title']} Tap the one that’s yours."], fn ($v) => $v !== null);
+        $this->workspace->keepAction($user, ['token' => $token, 'action' => $action, 'domain' => 'paperwork', 'state' => 'asked', 'expires_at' => $until,
+            'asked' => ['key' => $choice['key'], 'values' => $choice['allowed']], 'blocks' => [$block]]);
+
+        return ['said' => 'Not done: their words fit more than one answer, so a card asks them which ('.implode('; ', array_column($choice['options'], 'label'))
+            .'), with a line on each. Nothing changes until they tap one.', 'blocks' => [$block]];
+    }
+
+    /** The card still asking them for this answer (choose()), newest first, when what they tapped is one of its options. */
+    private function asking(User $user, string $action, array $input): ?string
+    {
+        if ($action !== 'change_paperwork_fact') {
+            return null;
+        }
+
+        return collect($this->workspace->asking($user))->search(fn (array $record): bool => ($record['asked']['key'] ?? null) === ($input['key'] ?? null)
+            && in_array((string) ($input['value'] ?? ''), $record['asked']['values'] ?? [], true)) ?: null;
     }
 
     /** Whether they asked to be asked first for this kind of change (Settings › Composer). */

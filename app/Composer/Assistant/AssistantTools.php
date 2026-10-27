@@ -187,6 +187,9 @@ final class AssistantTools
         // With their Paperwork permission for this message (paperwork_answer): their record is read,
         // and changed through Paperwork's own writes.
         private bool $paperwork = false,
+        // Their message, in their words: an answer's legal detail (a settlement permit's section)
+        // is proposed only when they said it (PaperworkActions::choices).
+        private string $said = '',
     ) {}
 
     /** Whether their Paperwork record may be read and changed in this message (their permission for it). */
@@ -1568,7 +1571,8 @@ final class AssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
-                ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission: without it, a card asks them, once. Keys and what each answers: '
+                ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission: without it, a card asks them, once. '
+                    .'When their words fit more than one option, send those options as choices instead of a value (a Niederlassungserlaubnis, settlement permit or permanent residency is settlement_permit_9 or settlement_permit_18c only when they name the section): a card asks them which, with a line on each. Never send an option meaning "not known" when you can ask. Keys and what each answers: '
                     // A key the record has a row for is described by that row ("visa_expires_at: Your visa runs until"),
                     // so "my visa" is the visa's date, not the residence permit's.
                     .$registry->map(fn ($d, string $key): string => "{$key} ({$d->type}".($d->type === 'enum' ? ': '.implode('|', $d->options) : '').'): '
@@ -1576,7 +1580,8 @@ final class AssistantTools
                     'input_schema' => ['type' => 'object', 'properties' => [
                         'key' => ['type' => 'string', 'enum' => $registry->keys()->all()],
                         'value' => ['type' => 'string', 'description' => 'a date as YYYY-MM-DD, yes or no, a whole number, or one of its options'],
-                    ], 'required' => ['key', 'value']]],
+                        'choices' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'instead of value: the options their words fit, when more than one does'],
+                    ], 'required' => ['key']]],
                 ['name' => 'paperwork_step', 'description' => 'Marks a step of one of their Paperwork tasks done, or not done, by the task and step from the paperwork tool.',
                     'input_schema' => ['type' => 'object', 'properties' => [
                         'task' => ['type' => 'string', 'description' => 'the task\'s key, else its title'],
@@ -1641,7 +1646,12 @@ final class AssistantTools
         if ($action === 'plan_trip_for_later') {
             $input['_from'] = $this->location;
         }
-        $made = app(ComposerActions::class)->request($this->user, $action, $input, $this->now);
+        if ($action === 'change_paperwork_fact') {
+            $input['_said'] = $this->said;
+        }
+        // An answer their words don't settle is asked about, never guessed or kept as "not known".
+        $made = app(ComposerActions::class)->choose($this->user, $action, $input, $this->now)
+            ?? app(ComposerActions::class)->request($this->user, $action, $input, $this->now);
         if ($made['blocks'] === []) {
             return $this->line('n'.(++$this->count), $made['said']);
         }

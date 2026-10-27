@@ -88,6 +88,22 @@ class WorkspaceStore
     }
 
     /**
+     * The cards still asking them which answer is theirs (ComposerActions::choose), by token,
+     * newest first: only those an answer shows (one whose answer didn't hold was never seen).
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function asking(User $user): array
+    {
+        $s = $this->state(ComposerWorkspace::query()->where('user_id', $user->id)->first());
+        $shown = collect($s['conversations'] ?? [])->flatMap(fn (array $c): array => $c['messages'] ?? [])
+            ->flatMap(fn (array $m): array => array_column($m['blocks'] ?? [], 'id'))->all();
+
+        return array_reverse(array_filter($s['actions'] ?? [], fn (mixed $record, string $token): bool => is_array($record) && ($record['state'] ?? null) === 'asked'
+            && in_array($token, $shown, true) && CarbonImmutable::parse($record['expires_at'])->isFuture(), ARRAY_FILTER_USE_BOTH), true);
+    }
+
+    /**
      * Keeps an action record, and puts its cards, as they are now, wherever an answer shows them
      * (by their id): a proposal becomes done, done becomes undone, in place.
      *

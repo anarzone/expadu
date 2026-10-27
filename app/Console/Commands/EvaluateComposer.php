@@ -80,7 +80,8 @@ class EvaluateComposer extends Command
     private const ANSWER_EXPECT = ['routed' => true, 'around' => true, 'answer_kind' => true, 'open' => true, 'min_places' => true, 'places_in' => true, 'place_kinds' => true,
         'kind_is' => true, 'open_only' => true, 'distinct_names' => true, 'says' => true, 'no_leave_out' => true, 'leave_out' => true, 'places_has' => true, 'no_step_free' => true,
         'plan_unchanged' => true, 'proposals' => true, 'plan_has' => true, 'plan_lacks' => true, 'plan_stops' => true, 'not_before' => true, 'new_stop_kind' => true, 'places_list' => true,
-        'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true];
+        'all_rows' => true, 'not_says' => true, 'acted' => true, 'changed' => true, 'handoff' => true, 'no_change' => true, 'places_not' => true, 'first_names_place' => true,
+        'choices' => true, 'proposed_to' => true];
 
     /** A request that asks for a plan or an order of stops (the eval's oracle; Composer itself has no such rule). */
     private const ASKS_TO_PLAN = '/\b(plan|then|afterwards?|first|danach|zuerst|und dann)\b/iu';
@@ -272,8 +273,14 @@ class EvaluateComposer extends Command
         // A change asked for: the tool it called, the card it showed (done or proposed), or the place
         // that does what Composer never does; and none when it shouldn't change anything.
         $called = fn (string $tool): bool => collect($assistant->timings)->contains(fn (array $t): bool => str_starts_with($t[0], $tool.' '));
-        // Proposed or made: the proposal or done card (session 2's blocks).
-        $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
+        // Proposed or made: the proposal or done card (session 2's blocks). A card asking which answer is theirs changes nothing.
+        $asking = collect($answer['blocks'] ?? [])->filter(fn (array $b): bool => ($b['type'] ?? null) === 'proposal' && ($b['edit']['kind'] ?? null) === 'choice');
+        $changed = collect($answer['blocks'] ?? [])->whereIn('type', ['proposal', 'done'])->reject(fn (array $b): bool => ($b['edit']['kind'] ?? null) === 'choice')
+            ->map(fn (array $b): array => [...$b, 'state' => $b['type'] === 'done' ? 'done' : 'proposed']);
+        // Asked which, with exactly these options; or proposed as this answer, in the card's words.
+        $routing += isset($expect['choices']) ? ['choices' => $asking->contains(fn (array $b): bool => collect($b['edit']['options'])->pluck('value')->sort()->values()->all()
+            === collect($expect['choices'])->sort()->values()->all())] : [];
+        $routing += isset($expect['proposed_to']) ? ['proposed_to' => $changed->contains(fn (array $b): bool => ($b['to'] ?? null) === $expect['proposed_to'])] : [];
         $routing += isset($expect['acted']) ? ['acted' => $called($expect['acted'])] : [];
         $routing += isset($expect['changed']) ? ['changed' => $changed->contains('state', $expect['changed'])] : [];
         // Every place handed over that's expected (one, or both ways of stopping).
