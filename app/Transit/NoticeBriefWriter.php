@@ -30,12 +30,19 @@ class NoticeBriefWriter
      * The stored brief, or null when the model's brief wasn't grounded in
      * the notice (or it declined). Throws on a failed or malformed call, so
      * the job retries once.
+     *
+     * A notice that is only a title gets no brief: written from a heading
+     * ("Trennung Linie 16 und 17"), a brief filled in what the notice
+     * doesn't say. Its title is translated instead (translate()).
      */
     public function write(CityNews $notice): ?NoticeBrief
     {
         [, $title] = NoticeBrief::split((string) $notice->title);
         $details = trim((string) $notice->summary);
         $vehicle = NoticeBrief::vehicle((string) $notice->title);
+        if ($details === '') {
+            return null;
+        }
 
         $startedAt = hrtime(true);
         try {
@@ -199,7 +206,8 @@ class NoticeBriefWriter
         }
 
         $headline = trim($input['headline']);
-        $body = trim($input['body']);
+        // A title-only notice has nothing to translate as text.
+        $body = $details === '' ? '' : trim($input['body']);
         if (! self::grounded($headline.' '.$body, $title.' '.$details, $vehicle)) {
             $this->record($startedAt, 'rejected:ungrounded', $response, 'transit_translation');
 
