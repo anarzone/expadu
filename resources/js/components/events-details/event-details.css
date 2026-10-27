@@ -45,6 +45,9 @@
 
 /* A phone gives the page the whole screen. */
 @media (max-width: 700px) {
+    .ui-sheet.ev-details.is-side {
+        height: 100dvh;
+    }
     .ui-sheet.ev-details {
         width: 100vw;
         height: 100dvh;
@@ -769,8 +772,17 @@
         left: 20px;
     }
 
+    /* On a phone the way back is its arrow alone, so the category keeps its room. */
+    .ev-details .evd-back {
+        width: 44px;
+        padding: 0;
+        justify-content: center;
+    }
+    .ev-details .evd-back span {
+        display: none;
+    }
     .ev-details:has(.evd-back) .evd-top {
-        left: 146px;
+        left: 72px;
     }
 
     .ev-details .evd-chip {

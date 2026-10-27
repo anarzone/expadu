@@ -294,9 +294,14 @@ export function EventDetails({
             side={!!onBack}
             lead={
                 onBack ? (
-                    <button type="button" className="evd-back" onClick={onBack}>
+                    <button
+                        type="button"
+                        className="evd-back"
+                        aria-label="Back to What’s on"
+                        onClick={onBack}
+                    >
                         <Icon name="back" variant="line" />
-                        What’s on
+                        <span>What’s on</span>
                     </button>
                 ) : undefined
             }
