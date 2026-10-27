@@ -401,6 +401,15 @@ class WorkspaceStore
                 $this->undo($s, $input['change'] ?? null);
 
                 return null;
+            case 'redo':
+                // Put back what an Undo took out ("Put it back"), while the day is still as that Undo left it.
+                $key = collect($s['changes'])->search(fn (array $change): bool => $change['id'] === $input['change']);
+                $this->require($key !== false && $s['changes'][$key]['undone_at'] !== null, 'nothing_to_redo', 'That change can no longer be put back.');
+                $change = $s['changes'][$key];
+                $this->require($this->same($s['plans'][$change['date']] ?? null, $change['before']), 'changed_since', 'This day has changed since, so that can’t be put back on its own.');
+                $this->apply($s, $change['date'], $change['after'], $change['label']);
+
+                return null;
             case 'complete':
             case 'uncomplete':
                 // A check mark on a plan, not a plan change: no change row, no
