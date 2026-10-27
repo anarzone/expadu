@@ -21,7 +21,6 @@ it('rejects a future arrival date and flashes an error the UI can render', funct
         'arrival_planned' => false,
         'arrival_date' => now()->addYears(5)->toDateString(),
         'address_registration_status' => 'not_registrable',
-        'interests' => [],
     ]);
 
     $response->assertSessionHasErrors('arrival_date');
@@ -42,7 +41,6 @@ it('accepts the same submission with a past arrival date', function () {
         'arrival_planned' => false,
         'arrival_date' => now()->subDays(10)->toDateString(),
         'address_registration_status' => 'not_registrable',
-        'interests' => [],
     ]);
 
     $response->assertSessionHasNoErrors();

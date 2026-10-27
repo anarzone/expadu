@@ -62,7 +62,7 @@ test('a saved setup draft resumes after server hydration without replacing misma
     ).toBeVisible();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await expect(
-        page.getByRole('heading', { name: 'What are you into?' }),
+        page.getByRole('heading', { name: 'Your residence details' }),
     ).toBeVisible();
     expect(errors).toEqual([]);
 });
@@ -101,13 +101,10 @@ test('onboarding stays readable and skipping optional answers submits the skippe
     await page.getByRole('button', { name: 'Continue' }).click();
 
     await expect(
-        page.getByRole('heading', { name: 'What are you into?' }),
+        page.getByRole('heading', { name: 'Your residence details' }),
     ).toBeVisible();
     await expectNoEmoji(page);
 
-    await page.getByRole('button', { name: 'Parks & green' }).click();
-    await page.getByRole('button', { name: 'Swimming & lakes' }).click();
-    await page.getByRole('button', { name: 'Sports & courts' }).click();
     await page.getByRole('button', { name: 'B2', exact: true }).click();
     await page
         .getByRole('button', { name: 'Yes, I have one', exact: true })
@@ -141,7 +138,6 @@ test('onboarding stays readable and skipping optional answers submits the skippe
         situation: 'eu_employee',
         arrival_planned: true,
         veedel: 'Altstadt-Nord',
-        interests: [],
         documented_german_level: '',
         has_deutschlandticket: false,
     });

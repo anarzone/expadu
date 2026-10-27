@@ -21,7 +21,6 @@ export type OnboardingData = {
     arrival_date: string;
     // Null means they have not answered whether they are here yet.
     arrival_planned: boolean | null;
-    interests: string[];
     current_residence_title: string;
     residence_title_expires_at: string;
     case_goal: string;
@@ -52,7 +51,7 @@ const EU_QUESTION_CHOICES = [
 
 // Four screens, of which two ask anything required. Step 2 used to carry the
 // branch question AND every residence detail — 8 questions over 2.5 viewports.
-// Residence now shares the final, skippable screen with interests.
+// Residence now sits on the final, skippable screen.
 const TOTAL_STEPS = 4;
 
 /**
@@ -75,7 +74,6 @@ const EMPTY_FORM: OnboardingData = {
     has_deutschlandticket: false,
     arrival_date: '',
     arrival_planned: null,
-    interests: [],
     current_residence_title: '',
     residence_title_expires_at: '',
     case_goal: '',
@@ -226,7 +224,6 @@ export default function Onboarding() {
         track('onboarding_skip_optional');
         const skipped = {
             ...clearResidenceFacts(form.data),
-            interests: [],
             documented_german_level: '',
             has_deutschlandticket: false,
         };
@@ -382,7 +379,6 @@ export default function Onboarding() {
         documented_german_level: 4,
         german_level: 4,
         has_deutschlandticket: 4,
-        interests: 4,
     };
 
     const errorEntries = Object.entries(form.errors).filter(([, message]) =>
