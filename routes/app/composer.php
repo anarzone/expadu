@@ -6,6 +6,7 @@
 */
 
 use App\Http\Controllers\ComposerController;
+use App\Http\Controllers\ComposerPaperworkPermissionController;
 use App\Http\Controllers\ComposerWorkspaceController;
 use App\Http\Controllers\ProcessingNoticeController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,11 @@ Route::get('privacy/processing/{purpose}', ProcessingNoticeController::class)
     ->middleware('throttle:privacy-processing')->name('privacy.processing.show');
 Route::delete('privacy/processing/{purpose}', [ProcessingNoticeController::class, 'withdraw'])
     ->middleware('throttle:privacy-processing')->name('privacy.processing.withdraw');
+// Composer's remembered Allow for their Paperwork record, for Settings › Composer: on with the notice shown, off at once.
+Route::get('composer/paperwork-permission', [ComposerPaperworkPermissionController::class, 'show'])
+    ->middleware('throttle:privacy-processing')->name('composer.paperwork-permission.show');
+Route::put('composer/paperwork-permission', [ComposerPaperworkPermissionController::class, 'update'])
+    ->middleware('throttle:privacy-processing')->name('composer.paperwork-permission.update');
 Route::post('composer/compose', [ComposerController::class, 'compose'])
     ->middleware('throttle:composer-compose')
     ->name('composer.compose');

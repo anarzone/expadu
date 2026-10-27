@@ -294,7 +294,7 @@ final class AssistantTools
             ['name' => 'guidance', 'description' => 'Expadu\'s reviewed guides to German paperwork (registration, residence permits, tax ID, insurance…) matching some words: their titles. Paperwork and legal questions are answered only by these guides, never by you.',
                 'input_schema' => ['type' => 'object', 'properties' => ['query' => ['type' => 'string', 'description' => 'a few words, e.g. Anmeldung, blue card, tax ID']], 'required' => ['query']]],
             $paperwork
-                ? ['name' => 'paperwork', 'description' => 'The person\'s own Paperwork record, shown to them as a card: the answers it keeps (with each key) and their open tasks with each step\'s id. They allowed you to read it for this message.', 'input_schema' => $none]
+                ? ['name' => 'paperwork', 'description' => 'The person\'s own Paperwork record, shown to them as a card: the answers it keeps (with each key) and their open tasks with each step\'s id. They allowed you to read it.', 'input_schema' => $none]
                 : ['name' => 'paperwork', 'description' => 'Shows the person their own Paperwork record as a card: their checklist for the next step and their next date. You don\'t get its contents.', 'input_schema' => $none],
             ['name' => 'my_trip', 'description' => 'Shows the person their trip as a card: the trip under way, else the way to their next appointment today (when to leave, their tram, where to get off). You don\'t get its contents.',
                 'input_schema' => ['type' => 'object', 'properties' => ['ask' => ['type' => 'string', 'enum' => ['leave', 'status', 'stop', 'arrive', 'next'], 'description' => 'what they asked: when to leave, whether it runs on time, where to get off, when they arrive, what\'s next']]]],
@@ -346,7 +346,7 @@ final class AssistantTools
                 'paperwork' => match (true) {
                     $this->paperwork => $this->paperworkRecord(),
                     // The card asking for their permission says what's needed: no pointer to Paperwork above it.
-                    $this->askPaperworkPermission() => $this->line('pp', 'Their Paperwork record can be read only with their permission for this message: a card asks them for it.'),
+                    $this->askPaperworkPermission() => $this->line('pp', 'Their Paperwork record can be read only with their permission: a card asks them for it, once.'),
                     default => $this->own('pw', app(OwnCards::class)->paperwork($this->user, $this->now), 'their Paperwork record'),
                 },
                 'open_in_app' => $this->openInApp($input),
@@ -1470,7 +1470,7 @@ final class AssistantTools
 
     /**
      * The changes Composer can make (ComposerActions), as tools: Paperwork's only with their
-     * permission for this message; permanent ones never, only the place that makes them.
+     * permission; permanent ones never, only the place that makes them.
      *
      * @return list<array<string, mixed>>
      */
@@ -1568,7 +1568,7 @@ final class AssistantTools
                 'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => array_keys(InAppPlaces::PLACES)]], 'required' => ['what']]],
             // Offered with or without their permission: without it, a card asks them for it.
             ...[
-                ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission for this message: without it, a card asks them. Keys and what each answers: '
+                ['name' => 'change_paperwork_fact', 'description' => 'Changes one answer they told you in their Paperwork record. It\'s always proposed: they apply it with a tap, and the card shows what changes in their plan. Needs their permission: without it, a card asks them, once. Keys and what each answers: '
                     // A key the record has a row for is described by that row ("visa_expires_at: Your visa runs until"),
                     // so "my visa" is the visa's date, not the residence permit's.
                     .$registry->map(fn ($d, string $key): string => "{$key} ({$d->type}".($d->type === 'enum' ? ': '.implode('|', $d->options) : '').'): '
@@ -1598,14 +1598,14 @@ final class AssistantTools
 
     /**
      * A change they asked for, made or proposed (ComposerActions), shown as its card; Paperwork's
-     * only with their permission for this message.
+     * only with their permission.
      *
      * @param  array<string, mixed>  $input
      */
     private function act(string $action, array $input): string
     {
         if (ComposerActions::ACTIONS[$action][1] === 'paperwork' && ! $this->paperwork) {
-            return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission for this message.'
+            return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission.'
                 .($this->askPaperworkPermission() ? ' A card asks them for it.' : ''));
         }
         // A listing it looked up or this conversation showed, said by its title ("remind me about the jazz
@@ -1656,8 +1656,9 @@ final class AssistantTools
 
     /**
      * Their permission for Composer to read and change their Paperwork record, asked for on a
-     * card (the page sends it with the message again): only when Paperwork's AI is on and they
-     * have a record in use.
+     * card (the page sends it with the message again, and it's remembered): only when Paperwork's
+     * AI is on, they have a record in use, and they haven't allowed it, or the notice or model
+     * they allowed it under has changed.
      */
     private function askPaperworkPermission(): bool
     {
@@ -1666,10 +1667,10 @@ final class AssistantTools
             return false;
         }
         $this->cards['pp'] = ['type' => 'permission', 'purpose' => ProcessingPurpose::ComposerPaperwork->value,
-            'title' => 'Let Composer read and change your Paperwork record for this message?',
+            'title' => 'Let Composer read and change your Paperwork record?',
             // Composer's own words, said when the AI said nothing.
-            'text' => 'To read or change your Paperwork record, Composer needs your permission for this message.',
-            'sub' => 'Changes to your answers always ask you to apply them; nothing is sent to an authority.',
+            'text' => 'To read or change your Paperwork record, Composer needs your permission once. It remembers it until you turn it off.',
+            'sub' => 'Remembered until you turn it off in Settings › Composer or under the box. Changes to your answers always ask you to apply them; nothing is sent to an authority.',
             // Its own notice, in words (disclosure.notice), from what Composer's request carries.
             'disclosure' => ProcessingPurpose::ComposerPaperwork->disclosure()];
 
@@ -1697,7 +1698,7 @@ final class AssistantTools
             : 'Shown to them as two cards: stopping Composer reading their Paperwork, and stopping Paperwork processing their record. Say in one short line that they can choose either.');
     }
 
-    /** Their Paperwork record, read with their permission for this message, and shown as its card. */
+    /** Their Paperwork record, read with their permission, and shown as its card. */
     private function paperworkRecord(): string
     {
         try {

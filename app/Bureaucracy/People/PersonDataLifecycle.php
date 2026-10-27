@@ -19,6 +19,7 @@ use App\Models\BureaucracyRelationship;
 use App\Models\BureaucracyRequirementUse;
 use App\Models\User;
 use App\Privacy\LegacyProcessingUsage;
+use App\Privacy\ProcessingOptIns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
@@ -162,6 +163,8 @@ final class PersonDataLifecycle
             $subject->update(['profile_attributes' => array_diff_key($subject->profile_attributes ?? [], array_flip($keys))]);
             $subject->attributeChanges()->whereIn('attribute', $keys)->delete();
             $subject->userTasks()->delete();
+            // Composer's remembered Allow for this record ends with it.
+            ProcessingOptIns::endPaperwork($subject->id);
             Alert::query()->where('user_id', $subject->id)
                 ->where(fn ($query) => $query->where('category', 'bureaucracy')->orWhereNotNull('guidance_reference'))->delete();
             // Rows stored by notification classes that no longer exist.

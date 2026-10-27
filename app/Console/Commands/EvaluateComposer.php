@@ -26,6 +26,7 @@ use App\Models\EventBookmark;
 use App\Models\EventReminder;
 use App\Models\FavouriteStop;
 use App\Models\PlannedTrip;
+use App\Models\ProcessingOptIn;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -479,6 +480,8 @@ class EvaluateComposer extends Command
             app(MuteService::class)->unmute($user, $mute['type'], $mute['key']);
         }
         Alert::query()->where('user_id', $user->id)->delete();
+        // A remembered Allow for their Paperwork: each case starts without one.
+        ProcessingOptIn::query()->where('user_id', $user->id)->delete();
         for ($n = 1; $n <= (int) ($request['alerts'] ?? 0); $n++) {
             Alert::record($user->id, "eval:{$n}", ['type' => AlertType::System, 'subtype' => 'transit_delay', 'severity' => 'info',
                 'category' => 'transit', 'lane' => 'action', 'title' => "Synthetic alert {$n}", 'body' => 'For composer:eval only.']);
