@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
@@ -97,6 +97,8 @@ export type HandoffPlace = {
     id: number;
     name: string;
     area: string | null;
+    /** A large park's part, by its Veedel: "Äußerer Grüngürtel (Sülz)". */
+    part?: string | null;
     lat: number;
     lng: number;
 };
@@ -326,9 +328,51 @@ export function PlanPanel({
     const hereRef = useRef<{ lat: number; lng: number } | null>(null);
     // A place handed over by its sheet stays in the address by its id while
     // it's where you go, never by its coordinates.
-    const placeRef = useRef<{ id: string; lat: number; lng: number } | null>(
-        null,
-    );
+    const placeRef = useRef<{
+        id: string;
+        part: string | null;
+        lat: number;
+        lng: number;
+    } | null>(null);
+    // The address Plan a trip keeps (`to`), set once the page's deferred
+    // props are in: Inertia drops a visit's deferred loads when the address
+    // changes while the visit arrives (a sheet's "Show the way" then left
+    // Nearby on "Finding the closest station…"). Its own list shrinks as
+    // each group comes in, so the visit's whole list is read. A reload asked
+    // before it (`from`) sets the old address back when it lands: it's put
+    // right again, until you go elsewhere.
+    const page = usePage();
+    const arriving = Object.values(
+        page.initialDeferredProps ?? page.deferredProps ?? {},
+    ).some((props) => props.some((prop) => page.props[prop] === undefined));
+    const address = useRef<{ from: string; to: string } | null>(null);
+
+    useEffect(() => {
+        const want = address.current;
+
+        if (want === null || arriving) {
+            return;
+        }
+
+        const here = window.location.pathname + window.location.search;
+
+        if (here === want.to) {
+            return;
+        }
+
+        if (here !== want.from) {
+            address.current = null;
+
+            return;
+        }
+
+        // Through Inertia, so its own reloads (the polls) keep this address.
+        router.replace({
+            url: want.to,
+            preserveState: true,
+            preserveScroll: true,
+        });
+    });
 
     /** Ask the router; the options come back ranked on the client. */
     const plan = useCallback(
@@ -450,6 +494,10 @@ export function PlanPanel({
                 // The event says where.
             } else if (byPlace) {
                 shown.set('place', handed!.id);
+
+                if (handed!.part) {
+                    shown.set('part', handed!.part);
+                }
             } else if (toHere) {
                 shown.set('to', 'here');
             } else if (toPlace.key) {
@@ -480,12 +528,10 @@ export function PlanPanel({
             }
 
             shown.set('compare', '1');
-            // Through Inertia, so its own reloads (the polls) keep this address.
-            router.replace({
-                url: `/timetable?${shown}`,
-                preserveState: true,
-                preserveScroll: true,
-            });
+            address.current = {
+                from: window.location.pathname + window.location.search,
+                to: `/timetable?${shown}`,
+            };
 
             asked.current = `${whenMode}|${overrides?.date ?? date}|${overrides?.time ?? time}`;
             askedWhere.current = whereKey(fromPlace, toPlace);
@@ -692,6 +738,7 @@ export function PlanPanel({
                 : null;
             placeRef.current = {
                 id: String(handoffPlace.id),
+                part: handoffPlace.part ?? null,
                 lat: place.lat,
                 lng: place.lng,
             };
