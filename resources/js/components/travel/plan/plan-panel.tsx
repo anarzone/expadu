@@ -14,6 +14,7 @@ import { TimeField } from '@/components/ui/time-field';
 import { showToast } from '@/components/ui/toast';
 import type { TripPlace, TripPlan } from '@/hooks/use-active-trip';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
+import { csrfHeaders } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection, PlannedTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -167,10 +168,7 @@ function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-CSRF-TOKEN':
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? '',
+        ...csrfHeaders(),
     };
 }
 
@@ -1179,10 +1177,7 @@ export function PlanPanel({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') ?? '',
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({ held }),
             });

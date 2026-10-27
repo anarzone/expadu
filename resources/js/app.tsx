@@ -96,6 +96,18 @@ watchFetch();
 router.on('navigate', (event) =>
     setSignedIn(Boolean(userOf(event.detail.page.props))),
 );
+// Signing in or out through an Inertia form renews the session's token; the
+// page's meta keeps the one it was rendered with unless it follows here
+// (lib/csrf.ts reads the XSRF-TOKEN cookie first, the meta when there's none).
+router.on('navigate', (event) => {
+    const token = event.detail.page.props.csrfToken;
+
+    if (typeof token === 'string' && token !== '') {
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.setAttribute('content', token);
+    }
+});
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

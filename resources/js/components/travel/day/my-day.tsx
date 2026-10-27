@@ -5,6 +5,7 @@ import { TravelChip } from '@/components/travel/labels';
 import { lineLook, vehicleOf } from '@/components/travel/line-look';
 import { stopName } from '@/components/travel/stop-name';
 import { TravelIcon } from '@/components/travel/travel-icon';
+import { csrfHeaders } from '@/lib/csrf';
 import { bureaucracy } from '@/routes';
 import type { DayItem, DayProjection, NextTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -132,10 +133,7 @@ function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-CSRF-TOKEN':
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? '',
+        ...csrfHeaders(),
     };
 }
 

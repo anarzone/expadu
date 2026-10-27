@@ -37,6 +37,7 @@ import {
 import { ICON_STROKE } from '@/constants/icons';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { csrfHeaders } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import type { Journey, JourneyLeg } from '@/types/transit';
 
@@ -100,11 +101,6 @@ export type Destination = {
      * route instead of silently switching the meaning of that number. */
     preferredMode?: JourneyMode | null;
 };
-
-const CSRF = () =>
-    document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content') || '';
 
 const MODE_ICON: Record<string, ComponentType<IconProps>> = {
     walk: IconWalk,
@@ -613,7 +609,7 @@ export function TakeMeThereSheet({
                     credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': CSRF(),
+                        ...csrfHeaders(),
                     },
                     body: JSON.stringify({ lat, lng }),
                 }).catch(() => {});
