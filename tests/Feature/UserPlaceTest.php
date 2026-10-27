@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\UserPlace;
+use Illuminate\Support\Facades\DB;
 
 test('user can create a place', function () {
     $user = User::factory()->onboarded()->create();
@@ -143,4 +144,17 @@ test('profile page loads with user places', function () {
         ->component('profile')
         ->has('userPlaces', 2)
     );
+});
+
+test('Work keeps when they usually leave it, as a time', function () {
+    $user = User::factory()->onboarded()->create();
+    $work = UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'work']);
+    $this->actingAs($user);
+
+    $this->put(route('user-places.update', $work), ['leave_at' => '17:30'])->assertRedirect()->assertSessionHasNoErrors();
+    expect(DB::table('user_places')->where('id', $work->id)->value('leave_at'))->toBe('17:30:00');
+
+    $this->put(route('user-places.update', $work), ['leave_at' => 'after work'])->assertSessionHasErrors('leave_at');
+    $this->put(route('user-places.update', $work), ['leave_at' => null])->assertSessionHasNoErrors();
+    expect($work->fresh()->leave_at)->toBeNull();
 });
