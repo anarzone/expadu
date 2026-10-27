@@ -58,11 +58,14 @@ final class TravelActions implements ComposerAction
             return ['title' => $title, 'link' => self::LINK, 'said' => "{$title}.", 'undo' => ['previous' => $prepared['previous']]];
         }
         if ($action === 'way_reminder') {
-            $this->kept($user, $prepared['id'])->update(['remind' => $prepared['remind'], 'reminded_at' => null]);
+            $trip = $this->kept($user, $prepared['id']);
+            // A reminder already sent stays sent on Undo, so it never comes twice.
+            $sent = $trip->reminded_at?->toIso8601String();
+            $trip->update(['remind' => $prepared['remind'], 'reminded_at' => null]);
             $title = "The reminder to leave for {$prepared['title']} is ".($prepared['remind'] ? 'on' : 'off');
 
             return ['title' => $title, 'sub' => $prepared['sub'], 'link' => self::LINK, 'said' => "{$title}.",
-                'undo' => ['id' => $prepared['id'], 'title' => $prepared['title'], 'remind' => ! $prepared['remind']]];
+                'undo' => ['id' => $prepared['id'], 'title' => $prepared['title'], 'remind' => ! $prepared['remind'], 'sent' => $sent]];
         }
         if ($action === 'remove_way') {
             $trip = $this->kept($user, $prepared['id']);
@@ -102,7 +105,7 @@ final class TravelActions implements ComposerAction
             return ['title' => 'Undone. '.self::prefsTitle($undo['previous'], again: true)];
         }
         if ($action === 'way_reminder') {
-            $this->kept($user, $undo['id'])->update(['remind' => $undo['remind'], 'reminded_at' => null]);
+            $this->kept($user, $undo['id'])->update(['remind' => $undo['remind'], 'reminded_at' => $undo['sent'] ?? null]);
 
             return ['title' => "Undone. The reminder to leave for {$undo['title']} is ".($undo['remind'] ? 'on' : 'off').' again.'];
         }
