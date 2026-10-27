@@ -23,7 +23,7 @@ final class SettingsActions implements ComposerAction
     use ProfileValidationRules;
 
     /** The kinds Settings › Notifications shows, as it names them. */
-    public const NOTIFICATIONS = ['transit' => 'Transit disruptions', 'checklist' => 'Bureaucracy deadlines', 'events' => 'Event reminders',
+    public const NOTIFICATIONS = ['transit' => 'Transit disruptions', 'checklist' => 'Paperwork deadlines', 'events' => 'Event reminders',
         'weather' => 'Weather alerts', 'rhine' => 'Rhine flood alerts', 'brief' => 'Morning and evening briefs'];
 
     /** The profile fields Composer may change, as the profile names them. */
@@ -78,7 +78,10 @@ final class SettingsActions implements ComposerAction
             throw new ActionRefused(self::NOTIFICATIONS[$kind].' are '.($on ? 'on' : 'off').' already.');
         }
 
-        return ['kind' => $kind, 'on' => $on, 'propose' => 'Turn '.($on ? 'on ' : 'off ').mb_strtolower(self::NOTIFICATIONS[$kind]).'?'];
+        // Paperwork is the section's own name.
+        $name = $kind === 'checklist' ? self::NOTIFICATIONS[$kind] : mb_strtolower(self::NOTIFICATIONS[$kind]);
+
+        return ['kind' => $kind, 'on' => $on, 'propose' => 'Turn '.($on ? 'on ' : 'off ').$name.'?'];
     }
 
     /** @return array<string, mixed> */
