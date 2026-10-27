@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import {
     lazy,
     Suspense,
@@ -342,6 +342,24 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             () => {},
         );
     };
+
+    // A link in it that leaves for another page (Open in Travel, a place or an
+    // event, Full Composer) closes it with its fade; the conversation stays for
+    // later (owner, 22 Oct 2026). A partial reload (turning personalisation on)
+    // leaves it open.
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        return router.on('start', (event) => {
+            const { only, except } = event.detail.visit;
+
+            if (only.length === 0 && except.length === 0) {
+                hide();
+            }
+        });
+    }, [isOpen]);
 
     // An outside tap closes it; the request stays for next time.
     useEffect(() => {
