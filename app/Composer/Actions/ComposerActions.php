@@ -21,6 +21,10 @@ final class ComposerActions
     public const ACTIONS = [
         'place_feedback' => [PlaceFeedbackAction::class, 'everyday'],
         'set_my_place' => [MyPlaceAction::class, 'everyday'],
+        'set_place_times' => [MyPlacesAction::class, 'everyday'],
+        'add_my_place' => [MyPlacesAction::class, 'everyday'],
+        'remove_my_place' => [MyPlacesAction::class, 'everyday'],
+        'laptop_answer' => [WorkAnswerAction::class, 'everyday'],
         'add_to_day' => [DayActions::class, 'everyday'],
         'remove_from_day' => [DayActions::class, 'everyday'],
         'swap_in_day' => [DayActions::class, 'everyday'],
@@ -43,9 +47,10 @@ final class ComposerActions
 
     /**
      * Always proposed: Paperwork takes an answer read from someone's words only once they
-     * confirm it (FactInputMethod::ConfirmedExtraction), so Apply is that confirmation.
+     * confirm it (FactInputMethod::ConfirmedExtraction), so Apply is that confirmation; and a
+     * place's laptop answer goes into what others see, so it's theirs only once they apply it.
      */
-    public const ALWAYS_ASKS = ['change_paperwork_fact'];
+    public const ALWAYS_ASKS = ['change_paperwork_fact', 'laptop_answer'];
 
     /** How long a change can be undone, and a proposal applied (owner, 23 Oct 2026). */
     public const HOURS = 24;

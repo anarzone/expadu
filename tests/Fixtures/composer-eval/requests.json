@@ -8309,6 +8309,162 @@
    }
   },
   {
+   "id": "actions.work_times",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "my_places": [
+    {
+     "category": "work",
+     "name": "Work",
+     "lat": 50.9384,
+     "lng": 6.9593
+    }
+   ],
+   "text": "I start work at 9 and leave at half five, Monday to Friday",
+   "expect": {
+    "open": true,
+    "acted": "set_place_times",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.gym_times",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "my_places": [
+    {
+     "category": "work",
+     "name": "Work",
+     "lat": 50.9384,
+     "lng": 6.9593
+    },
+    {
+     "category": "custom",
+     "name": "Gym",
+     "lat": 50.9452,
+     "lng": 6.9181,
+     "arrive_by": "19:00"
+    }
+   ],
+   "text": "I go to the gym at 7am on weekends now",
+   "expect": {
+    "open": true,
+    "acted": "set_place_times",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.add_my_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "Save Museum Ludwig as one of my places, call it Museum",
+   "expect": {
+    "open": true,
+    "acted": "add_my_place",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.remove_my_place",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "my_places": [
+    {
+     "category": "work",
+     "name": "Work",
+     "lat": 50.9384,
+     "lng": 6.9593
+    },
+    {
+     "category": "custom",
+     "name": "Gym",
+     "lat": 50.9452,
+     "lng": 6.9181,
+     "arrive_by": "19:00"
+    }
+   ],
+   "text": "Remove the gym from my places, I quit",
+   "expect": {
+    "open": true,
+    "acted": "remove_my_place",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.been_liked",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I went to Café Bohnenfeld in Ehrenfeld yesterday and loved it",
+   "expect": {
+    "open": true,
+    "acted": "place_feedback",
+    "changed": "done",
+    "says": "like|lov|enjoy"
+   }
+  },
+  {
+   "id": "actions.laptop_answer",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "before": [
+    "I've been to Café Bohnenfeld in Ehrenfeld"
+   ],
+   "text": "Café Bohnenfeld is good for working on a laptop, and the wifi was fast",
+   "expect": {
+    "open": true,
+    "acted": "laptop_answer",
+    "changed": "proposed"
+   }
+  },
+  {
    "id": "actions.no_change_for_a_question",
    "persona": "visa_holder",
    "home_veedel": "Ehrenfeld",

@@ -8,6 +8,7 @@ use App\Composer\Actions\ActionRefused;
 use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\DayActions;
 use App\Composer\Actions\InAppPlaces;
+use App\Composer\Actions\MyPlacesAction;
 use App\Composer\Actions\PaperworkActions;
 use App\Composer\Actions\PlaceFeedbackAction;
 use App\Composer\Actions\SettingsActions;
@@ -87,6 +88,7 @@ final class AssistantTools
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
+        'set_place_times' => 'changes_you_ask_for', 'add_my_place' => 'changes_you_ask_for', 'remove_my_place' => 'changes_you_ask_for', 'laptop_answer' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
         'move_in_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
@@ -1483,12 +1485,42 @@ final class AssistantTools
         $registry = app(FactRegistry::class)->all();
 
         return [
-            ['name' => 'place_feedback', 'description' => 'Saves a place for them, marks it as been, more like this or not for me, or takes that back (clear). Done, or proposed when they ask first: the result says which.',
+            ['name' => 'place_feedback', 'description' => 'Saves a place for them, marks it as been (with how it was, when they say: up or down) or not been after all, more like this or not for me, or takes that back (clear). Done, or proposed when they ask first: the result says which.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'place' => ['type' => 'string', 'description' => 'its id from your lookups ("spot:12"), else its name as they said it'],
                     'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
                     'state' => ['type' => 'string', 'enum' => PlaceFeedbackAction::STATES],
+                    'rating' => ['type' => 'string', 'enum' => PlaceFeedbackAction::RATINGS, 'description' => 'for been: whether they liked it, only when they say'],
                 ], 'required' => ['place', 'state']]],
+            ['name' => 'laptop_answer', 'description' => 'Their own answer to a place\'s "Good for laptop work?": laptops welcome, and Wi-Fi, sockets and quiet when they say. Only for a place they\'ve been to or saved. Always proposed: they apply it.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'place' => ['type' => 'string', 'description' => 'its id from your lookups ("spot:12"), else its name as they said it'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with it, optional'],
+                    'laptop' => ['type' => 'string', 'enum' => ['yes', 'no']],
+                    'wifi' => ['type' => 'string', 'enum' => ['yes', 'no']],
+                    'sockets' => ['type' => 'string', 'enum' => ['yes', 'no']],
+                    'quiet' => ['type' => 'string', 'enum' => ['yes', 'no']],
+                ], 'required' => ['place', 'laptop']]],
+            ['name' => 'set_place_times', 'description' => 'Sets when they arrive at Home, Work or one of their own places (arrive_by), when they leave Work (leave_at), and on which days. Travel, My day and their brief plan from these. "none" clears a time. When they say when they go to or leave a place of theirs ("I start at 9", "gym at 7 on weekends"), set it without asking whether to: they can undo it.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'which' => ['type' => 'string', 'description' => 'home, work, or the name of one of their places from my_places'],
+                    'arrive_by' => ['type' => 'string', 'description' => 'HH:MM, or none'],
+                    'leave_at' => ['type' => 'string', 'description' => 'HH:MM, or none'],
+                    'days' => ['description' => 'every_day, weekdays, weekends, or a list of mon…sun', 'anyOf' => [
+                        ['type' => 'string', 'enum' => array_keys(MyPlacesAction::DAYS)],
+                        ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']]],
+                    ]],
+                ], 'required' => ['which']]],
+            ['name' => 'add_my_place', 'description' => 'Saves one of their own places beyond Home and Work ("Gym"), at an address or a place they name. The address stays private: you only learn it\'s saved.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'name' => ['type' => 'string', 'description' => 'what they call it'],
+                    'place' => ['type' => 'string', 'description' => 'the address or place exactly as they said it'],
+                    'area' => ['type' => 'string', 'description' => 'a Veedel they named with a place, optional'],
+                ], 'required' => ['name', 'place']]],
+            ['name' => 'remove_my_place', 'description' => 'Removes one of their own places (not Home or Work) by its name from my_places. Undo puts it back.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'which' => ['type' => 'string', 'description' => 'its name from my_places'],
+                ], 'required' => ['which']]],
             ['name' => 'set_my_place', 'description' => 'Sets their Home or Work to an address or a place they name. The address stays private: you only learn it\'s set.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'which' => ['type' => 'string', 'enum' => ['home', 'work']],
