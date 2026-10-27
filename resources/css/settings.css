@@ -1,66 +1,260 @@
-/* Settings (owner, 22 Oct 2026: "build it", two-factor hidden for now),
-   ported from the mock's settings-next/style.css. Panels and tiles are
-   Paperwork's Your situation: a tile is one button that opens its edit in
-   place. Laptop: Your account on the left, the rest beside it. Phone: the
-   same panels, one under another. */
+/* Settings (owner, 26 Oct 2026: direction A, the UI/UX Designer's
+   canvas). One page: from 1000px a side menu lists every section with where
+   it stands and the section opens beside it, one column; on a phone
+   /settings is that list, grouped, and a section opens on its own under
+   "Settings". A section's facts sit in one container of rows, Paperwork's
+   Your situation: a row opens its edit in place. Two-factor is hidden. */
 .settings-page {
+    --settings-hairline: color-mix(
+        in srgb,
+        var(--color-border) 55%,
+        var(--color-bg-surface)
+    );
+    --settings-hover: color-mix(
+        in srgb,
+        var(--color-bg-quiet) 55%,
+        var(--color-bg-hover)
+    );
     display: grid;
-    gap: 16px;
     align-items: start;
-}
-.settings-side,
-.settings-later {
-    display: grid;
-    gap: 16px;
     min-width: 0;
 }
 @media (min-width: 1000px) {
     .settings-page {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-columns: 320px minmax(0, 1fr);
+        min-height: calc(100dvh - 140px);
     }
 }
-@media (min-width: 560px) {
-    .settings-later {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+/* The menu: the page's h1, then the groups. */
+.settings-menu {
+    display: grid;
+    align-content: start;
+    min-width: 0;
+}
+.settings-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 4px 0;
+    font-size: var(--text-title-lg);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.settings-group-label {
+    margin: 0;
+    padding: 16px 4px 6px;
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.settings-items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.settings-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background-color 120ms ease-out;
+}
+.settings-item-copy {
+    display: grid;
+    flex: 1;
+    gap: 1px;
+    min-width: 0;
+}
+.settings-item-copy strong {
+    font-size: 15px;
+    font-weight: var(--weight-semibold);
+}
+.settings-item-copy span {
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.settings-item .settings-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+}
+.settings-item .settings-chip svg {
+    width: 16px;
+    height: 16px;
+}
+.settings-item-go {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+.settings-item:hover {
+    background: var(--settings-hover);
+}
+.settings-item:active,
+.settings-item[data-current] {
+    background: var(--color-bg-hover);
+}
+.settings-item:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.settings-list-out {
+    justify-self: start;
+    margin-top: 18px;
+}
+.settings-back {
+    display: none;
+}
+/* Only a phone's section view needs this h1: the menu's is there otherwise. */
+.settings-phone-h1 {
+    display: none;
+}
+@media (max-width: 999px) {
+    .settings-page[data-view='section'] .settings-phone-h1 {
+        display: block;
+    }
+}
+.settings-tile .settings-danger-outline {
+    align-self: center;
+}
+
+/* A section: its head, then its rows, fading in a little as it opens. */
+.settings-content {
+    min-width: 0;
+}
+.settings-section {
+    animation: settings-section-in 250ms ease-out both;
+}
+@keyframes settings-section-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+@media (min-width: 1000px) {
+    /* The menu stays in view under the app header (72px), scrolling on its
+       own when it's taller than the window; the hairline is the content's,
+       so it runs the page's length. */
+    .settings-menu {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        max-height: calc(100dvh - 72px);
+        box-sizing: border-box;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 20px 20px 20px 0;
+    }
+    .settings-title {
+        margin: 0 12px 6px;
+        font-size: var(--text-title);
+    }
+    .settings-title .settings-chip {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        background: var(--color-text);
+        color: var(--color-bg-surface);
+    }
+    .settings-title .settings-chip svg {
+        width: 16px;
+        height: 16px;
+    }
+    .settings-group-label {
+        padding: 14px 12px 6px;
+    }
+    .settings-item {
+        min-height: 56px;
+        padding: 6px 12px;
+        border-radius: 12px;
+    }
+    .settings-item-copy strong {
+        font-size: 14.5px;
+    }
+    .settings-menu .settings-list-out {
+        display: none;
+    }
+    .settings-content {
+        display: flex;
+        align-self: stretch;
+        justify-content: center;
+        padding: 28px 0 40px 32px;
+        border-left: 1px solid var(--color-border);
+    }
+    .settings-section {
+        width: 100%;
+        max-width: 760px;
+    }
+}
+
+/* Phone: the list is grouped into cards; a section opens on its own. */
+@media (max-width: 999px) {
+    .settings-title .settings-chip {
+        display: none;
+    }
+    .settings-items {
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: 18px;
+        background: var(--color-bg-surface);
+    }
+    .settings-items li + li .settings-item {
+        border-top: 1px solid var(--settings-hairline);
+    }
+    .settings-item[data-current] {
+        background: transparent;
+    }
+    .settings-page[data-view='list'] .settings-content,
+    .settings-page[data-view='section'] .settings-menu {
+        display: none;
+    }
+    .settings-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 44px;
+        padding: 0 10px 0 2px;
+        color: var(--color-text);
+        font-size: 15px;
+        font-weight: var(--weight-semibold);
+        text-decoration: none;
+    }
+    .settings-back svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
 .settings-panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     min-width: 0;
-    padding: 16px 20px 20px;
-    border-radius: var(--radius-xl);
-    background: var(--color-bg-surface);
     color: var(--color-text);
-}
-.settings-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--color-text-soft);
-    font-size: var(--text-control);
-    font-weight: var(--weight-semibold);
-}
-.settings-eyebrow svg {
-    width: 18px;
-    height: 18px;
-}
-.settings-account h1 {
-    margin: 4px 0 0;
-    font-size: var(--text-title-lg);
-    font-weight: var(--weight-bold);
-    letter-spacing: -0.035em;
-    line-height: 1.2;
-    text-wrap: balance;
 }
 .settings-panel > p,
 .settings-head p {
     margin: 0;
     color: var(--color-text-soft);
-    font-size: var(--text-control);
-    line-height: 1.45;
+    font-size: 14.5px;
+    line-height: 1.5;
+}
+.settings-head p {
+    max-width: 62ch;
+    margin-top: 4px;
 }
 .settings-head {
     display: flex;
@@ -72,31 +266,60 @@
     flex: 1;
 }
 .settings-head h2 {
-    margin: 0 0 4px;
-    font-size: var(--text-title-sm);
-    font-weight: var(--weight-bold);
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
     letter-spacing: -0.02em;
-    line-height: 1.25;
+    line-height: 1.2;
+}
+@media (max-width: 999px) {
+    .settings-head h2 {
+        font-size: 22px;
+    }
+    .settings-head p {
+        font-size: var(--text-control);
+    }
+}
+/* The uppercase label over a part of a section. */
+.settings-sub {
+    margin: 6px 0 -6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 .settings-chip {
     display: grid;
     place-items: center;
     flex: none;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-md);
 }
 .settings-chip svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
+}
+.settings-chip.account {
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+.settings-chip.notify {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.settings-chip.transit {
+    background: var(--color-welcome-bg);
+    color: var(--color-welcome-icon);
 }
 .settings-chip.learn {
     background: var(--color-paper-bg-quiet);
     color: var(--color-nav-violet);
 }
 .settings-chip.composer {
-    background: var(--color-select-bg);
-    color: var(--color-nav-teal);
+    background: var(--color-nav-teal);
+    color: var(--color-bg-surface);
 }
 .settings-chip.place {
     background: var(--color-paper-bg);
@@ -111,29 +334,50 @@
     color: var(--color-conflict-text);
 }
 
-.settings-tiles {
-    display: grid;
-    gap: 8px;
+/* A section's facts: one container, a row each, hairlines between. */
+.settings-tiles,
+.settings-panel > .settings-tile {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
 }
 .settings-tile {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    gap: 10px 14px;
     width: 100%;
     min-height: 64px;
-    padding: 12px;
+    padding: 12px 12px 12px 18px;
+    box-sizing: border-box;
     border: 0;
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-canvas);
+    background: transparent;
     color: var(--color-text);
     font: inherit;
     text-align: left;
 }
+.settings-tiles > * + * {
+    border-top: 1px solid var(--settings-hairline);
+}
+.settings-panel > .settings-tile {
+    flex-direction: row;
+}
 button.settings-tile {
     cursor: pointer;
+    transition: background-color 120ms ease-out;
 }
-button.settings-tile:hover {
-    background: var(--color-bg-quiet);
+button.settings-tile:hover,
+button.settings-tile:active {
+    background: var(--settings-hover);
+}
+@media (max-width: 999px) {
+    .settings-tile {
+        min-height: 60px;
+        padding: 12px 10px 12px 14px;
+    }
 }
 .settings-tile > svg {
     flex: none;
@@ -147,8 +391,18 @@ button.settings-tile:hover {
     color: var(--color-text-soft);
 }
 .settings-tile-copy {
-    flex: 1;
+    flex: 1 1 200px;
     min-width: 0;
+}
+/* Controls beside a row's words (a segmented choice, time fields). */
+.settings-tile-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.settings-time {
+    width: 84px;
 }
 .settings-tile small {
     display: block;
@@ -158,7 +412,7 @@ button.settings-tile:hover {
 }
 .settings-tile strong {
     display: block;
-    font-size: var(--text-body);
+    font-size: 15.5px;
     font-weight: var(--weight-semibold);
     overflow-wrap: anywhere;
 }
@@ -186,15 +440,13 @@ button.settings-tile:hover {
     color: var(--color-text-soft);
 }
 
-/* The open edit: the tile's place, with the focus colour round it. */
+/* The open edit: the row's place, a quieter ground. */
 .settings-edit {
     display: grid;
     gap: 12px;
     margin: 0;
-    padding: 14px 16px 16px;
-    border: 1px solid var(--color-focus);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-field);
+    padding: 16px 18px;
+    background: var(--color-bg-canvas);
     animation: settings-in 160ms ease-out;
 }
 .settings-choices {
@@ -397,21 +649,27 @@ button.settings-tile:hover {
     display: none;
 }
 
-/* Learn what I like: the switch sits in a tile. */
+/* A switch: drawn 52 by 32, touched over 64 by 44 (a clear border). */
 .settings-switch {
     position: relative;
     flex: none;
+    box-sizing: content-box;
     width: 52px;
     height: 32px;
     padding: 0;
-    border: 0;
+    border: 6px solid transparent;
     border-radius: var(--radius-pill);
-    background: var(--color-border-strong);
+    background-color: var(--color-border-strong);
+    background-clip: padding-box;
     cursor: pointer;
     transition: background 160ms ease;
 }
+.settings-switch:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
 .settings-switch[aria-checked='true'] {
-    background: var(--color-select-text);
+    background-color: var(--color-select-text);
 }
 .settings-switch::after {
     content: '';
@@ -428,21 +686,106 @@ button.settings-tile:hover {
 .settings-switch[aria-checked='true']::after {
     transform: translateX(20px);
 }
+/* On under the older wording: a quiet way to take in the new one. */
+.settings-learn-older {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.settings-learn-older .settings-link {
+    min-height: 0;
+    padding-block: 6px;
+    font-size: inherit;
+}
 .settings-learns {
     display: flex;
     flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.settings-learns li {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-.settings-learns span + span {
-    padding: 3px 10px;
+    min-height: 30px;
+    padding: 0 10px;
     border-radius: var(--radius-pill);
-    background: var(--color-paper-bg-quiet);
-    color: var(--color-paper-text);
-    font-size: var(--text-caption);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-small);
     font-weight: var(--weight-semibold);
+}
+.settings-learns svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Notifications: this device's push, a segmented choice, the notice. */
+.settings-push {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.settings-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-round);
+    background: var(--color-border-strong);
+}
+.settings-dot.on {
+    background: var(--color-success);
+}
+.settings-dot.warn {
+    background: var(--color-conflict-text);
+}
+.settings-seg {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-canvas);
+}
+.settings-seg button {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.settings-seg button[aria-pressed='true'] {
+    background: var(--color-bg-surface);
+    box-shadow: 0 1px 3px rgba(33, 29, 21, 0.18);
+}
+.settings-notice {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 12px 18px 14px;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    line-height: 1.5;
+    animation: settings-in 160ms ease-out;
+}
+.settings-notice p {
+    margin: 0;
+}
+.settings-notice a {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.settings-tile-note .settings-link {
+    min-height: 0;
+    font-size: inherit;
 }
 
 /* A choice that deletes something asks in place, in the conflict colours. */
@@ -480,43 +823,6 @@ button.settings-tile:hover {
     line-height: 1.45;
 }
 
-/* Parts that come later: dashed, with a label saying when. */
-.settings-panel.is-later {
-    gap: 10px;
-    height: 100%;
-    box-sizing: border-box;
-    border: 1px dashed var(--color-border-later);
-    background: transparent;
-}
-.is-later .settings-head {
-    align-items: center;
-    gap: 12px;
-}
-.is-later .settings-chip {
-    width: 40px;
-    height: 40px;
-    background: var(--color-bg-quiet);
-    color: var(--color-text-soft);
-}
-.is-later .settings-chip svg {
-    width: 20px;
-    height: 20px;
-}
-.is-later h2 {
-    margin: 0;
-    font-size: var(--text-section);
-}
-.settings-later-label {
-    flex: none;
-    padding: 2px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-bg-surface);
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-semibold);
-}
-
 .settings-edit.is-still {
     animation: none;
 }
@@ -527,10 +833,14 @@ button.settings-tile:hover {
     }
 }
 @media (prefers-reduced-motion: reduce) {
+    .settings-section,
     .settings-edit,
-    .settings-confirm {
+    .settings-confirm,
+    .settings-notice {
         animation: none;
     }
+    .settings-item,
+    button.settings-tile,
     .settings-switch,
     .settings-switch::after {
         transition: none;

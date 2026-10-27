@@ -7,6 +7,7 @@ import {
 } from '@/components/departures/trip-request';
 import type { TripConflict } from '@/components/departures/trip-request';
 import type { Journey } from '@/components/journey/take-me-there-sheet';
+import { csrfHeaders } from '@/lib/csrf';
 
 /** A place the trip runs from/to — the coordinates power live map-matching. */
 export type TripPlace = {
@@ -44,11 +45,6 @@ export type ActiveTrip = {
     city?: string | null;
 };
 
-const CSRF = () =>
-    document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content') || '';
-
 /**
  * Read + control the persisted trip session. Starting/ending POSTs to the API
  * and reloads the shared `activeTrip` prop so the banner (and any open planner)
@@ -77,7 +73,7 @@ export function useActiveTrip() {
                 await persistTrip(
                     url,
                     body,
-                    CSRF(),
+                    csrfHeaders(),
                     () =>
                         new Promise<boolean>((resolve) => {
                             router.reload({

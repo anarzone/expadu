@@ -1,6 +1,7 @@
 // JSON commands for the bureaucracy/v2 API. Every write carries a fresh request id
 // and the version the person last saw; the server refuses stale or replayed writes.
 
+import { csrfHeaders } from '@/lib/csrf';
 import type {
     Answer,
     Extraction,
@@ -19,14 +20,6 @@ export class CommandError extends Error {
     ) {
         super(message);
     }
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 export function requestId(): string {
@@ -103,7 +96,7 @@ export async function send<T = unknown>(
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrf(),
+            ...csrfHeaders(),
         },
         body: JSON.stringify(body),
     });

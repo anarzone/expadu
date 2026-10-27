@@ -2,6 +2,7 @@
 
 use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Composer\Actions\ComposerActions;
+use App\Composer\Actions\PaperworkActions;
 use App\Composer\Answers\EventAnswers;
 use App\Composer\Assistant\Ask;
 use App\Composer\Assistant\AssistantTools;
@@ -133,6 +134,30 @@ test('🔒 an answer their words don’t settle is asked as choices; their tap i
     // Not one of the card's options: an answer typed in, proposed while they ask first.
     $this->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'current_residence_title', 'value' => 'blue_card'])->assertSuccessful();
     expect($title())->toBe($before);
+});
+
+test('every Paperwork record row changes in place: a date, or the answer\'s own choices, saved as their own answer', function () {
+    ReviewedHomePlan::activate($this->user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
+        ['arrival_date' => '2026-09-01', 'visa_expires_at' => '2026-10-01', 'registration_status' => 'not_registered', 'health_coverage_confirmed' => false]);
+
+    $rows = collect(app(PaperworkActions::class)->record($this->user, CarbonImmutable::now())['block']['rows'])->keyBy('key');
+    expect($rows['visa_expires_at']['edit'])->toBe(['kind' => 'date', 'value' => '2026-10-01'])
+        ->and($rows['registration_status']['edit'])->toBe(['kind' => 'choice', 'type' => 'enum', 'value' => 'not_registered', 'options' => ['registered', 'not_registered']])
+        ->and($rows['health_coverage_confirmed']['edit'])->toMatchArray(['kind' => 'choice', 'type' => 'boolean', 'value' => false])
+        ->and($rows->every(fn (array $row): bool => isset($row['edit'])))->toBeTrue();
+
+    // A tap on a choice: proposed while they ask first (the default for Paperwork), made with Undo when they don't.
+    $this->actingAs($this->user)->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'registration_status', 'value' => 'registered'])
+        ->assertSuccessful()->assertJsonPath('conversations.0.messages.0.blocks.0.type', 'proposal');
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_paperwork' => false]]);
+    $this->actingAs($this->user->fresh())->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'health_coverage_confirmed', 'value' => 'true'])
+        ->assertSuccessful()->assertJsonPath('conversations.0.messages.1.blocks.0.type', 'done');
+    $values = app(ConfirmedFactView::class)->forCase($this->user->bureaucracyCase()->firstOrFail(), now()->toDateString())['values'];
+    expect($values['health_coverage_confirmed'])->toBeTrue()->and($values['registration_status'])->toBe('not_registered');
+
+    // A value that isn't one of its choices changes nothing.
+    $this->actingAs($this->user->fresh())->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'registration_status', 'value' => 'maybe'])
+        ->assertStatus(409);
 });
 
 test('a saved place is made at once with Undo, and proposed when they ask first', function () {

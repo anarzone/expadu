@@ -25,19 +25,24 @@ test('authenticated new users enter Today without a questionnaire', function () 
     expect($user->fresh()->onboarded_at)->toBeNull();
 });
 
-test('dashboard defers the day and weather', function () {
+test('Today sends everything in its first response', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('dashboard')
-        ->missing('day')
-        ->missing('weather')
-        ->loadDeferredProps(fn ($reload) => $reload
-            ->has('day.items')
-            ->has('weather')
-        )
-    );
+    // Pages load whole (owner, 26 Oct 2026): nothing deferred, nothing in steps.
+    $page = $this->get(route('dashboard'))->assertOk()->viewData('page');
+
+    expect($page['props'])->toHaveKeys(['day', 'weather', 'forecast', 'station', 'paperwork', 'needsYou', 'discovery', 'comingUp', 'saved', 'continuation'])
+        ->and($page['props']['day'])->toHaveKey('items')
+        ->and($page['deferredProps'] ?? [])->toBe([]);
+});
+
+test('pages are history-encrypted unless a local preview turns it off', function () {
+    $user = User::factory()->onboarded()->create();
+
+    // Private props stay unreadable after logout on a shared device.
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'])->toBeTrue();
+
+    config(['inertia.history.encrypt' => false]);
+    expect($this->actingAs($user)->get(route('dashboard'))->viewData('page')['encryptHistory'] ?? false)->toBeFalse();
 });

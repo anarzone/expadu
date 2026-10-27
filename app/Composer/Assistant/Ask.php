@@ -33,7 +33,7 @@ final class Ask
     private const WITHOUT_AI = [
         'off' => 'Composer’s AI is off right now, so I can’t answer that.',
         'limited' => 'Composer’s AI has reached today’s limit, so I can’t answer that.',
-        'unpermitted' => 'I answer with an AI service, and this message was sent without it, so I can’t answer that.',
+        'unpermitted' => 'I answer with an AI service, and this message came without your go-ahead for it, so I haven’t read it.',
         'failed' => 'The AI service didn’t answer this time, so I can’t answer that.',
         // It answered, but nothing it said held against what it found, and it had nothing to show.
         'unchecked' => 'I didn’t find anything I can vouch for there.',
@@ -76,6 +76,14 @@ final class Ask
 
         // With their Paperwork permission too (composer_paperwork), that permit carries the whole exchange.
         $paperwork = $permit !== null ? $this->paperworkPermit($user, $text, $profile, $page, $paperworkProcessing) : null;
+
+        // Sent without their say-so while the AI is on (a page that sent before its notice was read):
+        // only that, and the same words to send again; never cards that read as if the AI were off.
+        if ($permit === null && ProcessingPurpose::ComposerAssist->available()) {
+            return $this->workspace->answer($user, $conversation, self::message(self::WITHOUT_AI['unpermitted'], [], [
+                'written' => 'code', 'without_ai' => 'unpermitted', 'suggestions' => [['label' => 'Send it again', 'prompt' => $text]],
+            ]), null);
+        }
 
         $answer = $permit === null ? null : $this->assistant->answer($user, $text, $profile, $now, $this->locations->context($user, $request, $user->veedel),
             $permit, $workspace['plans'] ?? [], self::progressKey($user, (string) ($processing['request_id'] ?? '')),

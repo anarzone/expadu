@@ -400,67 +400,106 @@ class GtfsDepartureService
      */
     public function routeContext(string $stopName, string $line, string $destination): array
     {
+        $none = ['direction' => null, 'via' => []];
         if ($line === '' || ! $this->hasGtfsData()) {
-            return ['direction' => null, 'via' => []];
+            return $none;
         }
+        $ways = $this->routeIndex($stopName)[trim($line)] ?? [];
 
-        // Per service day: works change a line's run (16 ends at Ubierring).
-        $cacheKey = 'gtfs_route_ctx_v2_'.self::serviceDay()->format('Ymd').'_'.md5("{$stopName}|{$line}|{$destination}");
+        // The live destination's way: its headsign exactly, else one holding
+        // it or held in it (TRIAS's destinations don't always equal GTFS's).
+        $plain = fn (string $text) => mb_strtolower(trim($text));
+        $wanted = $plain($destination);
+        $way = $ways[$destination] ?? collect($ways)->first(fn (array $way, string $headsign) => $wanted !== ''
+            && (str_contains($plain($headsign), $wanted) || str_contains($wanted, $plain($headsign))));
 
-        return Cache::remember($cacheKey, 21600, function () use ($stopName, $line, $destination) {
+        return $way === null ? $none : [
+            'direction' => $way['direction'],
+            'via' => $way['via'],
+            'end' => self::realEnd($destination, $way['end']),
+        ];
+    }
+
+    /**
+     * Today's runs through a stop, by line and headsign: their direction, the
+     * next two stops and where they most often end. Three queries a stop a
+     * service day, kept as scalars (asked per board row, it was ~16 ms a row
+     * on a cold board).
+     *
+     * @return array<string, array<string, array{direction: ?int, via: list<string>, end: ?string}>>
+     */
+    private function routeIndex(string $stopName): array
+    {
+        $key = 'gtfs_route_index:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.self::serviceDay()->format('Ymd').':'.md5(mb_strtolower($stopName));
+
+        return Cache::remember($key, 21600, function () use ($stopName): array {
             $stopIds = $this->stopsNamed($stopName)->pluck('stop_id');
-
             if ($stopIds->isEmpty()) {
-                return ['direction' => null, 'via' => []];
+                return [];
             }
-
-            // A representative trip of this line through this stop today whose
-            // headsign matches the live destination (exact, else fuzzy — TRIAS
-            // destinations don't always equal GTFS headsigns verbatim).
             $query = DB::table('gtfs_stop_times as st')
                 ->join('gtfs_trips as t', 't.trip_id', '=', 'st.trip_id')
                 ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
-                ->whereIn('st.stop_id', $stopIds)
-                ->where('r.route_short_name', $line)
-                ->where(fn ($q) => $q
-                    ->where('t.trip_headsign', $destination)
-                    ->orWhere('t.trip_headsign', 'ILIKE', "%{$destination}%")
-                    ->orWhereRaw('? ILIKE \'%\' || t.trip_headsign || \'%\'', [$destination]));
+                ->whereIn('st.stop_id', $stopIds);
             $this->runningToday($query, 't');
-            // Where today's runs of it most often end.
-            $lastStop = DB::table('gtfs_stop_times as st')
-                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
-                ->whereIn('st.trip_id', (clone $query)->select('t.trip_id'))
-                ->whereRaw('st.stop_sequence = (select max(x.stop_sequence) from gtfs_stop_times x where x.trip_id = st.trip_id)')
-                ->groupBy('s.stop_name')
-                ->orderByRaw('count(*) desc')
-                ->value('s.stop_name');
-            $trip = $query
-                ->orderByRaw('(t.trip_headsign = ?) DESC', [$destination])
-                ->select('t.trip_id', 't.direction_id', 'st.stop_sequence')
-                ->first();
-
-            if ($trip === null) {
-                return ['direction' => null, 'via' => []];
+            $runs = $query->get(['t.trip_id', 'r.route_short_name as line', 't.trip_headsign as headsign', 't.direction_id', 'st.stop_sequence']);
+            if ($runs->isEmpty()) {
+                return [];
             }
 
-            $via = DB::table('gtfs_stop_times as st')
-                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
-                ->where('st.trip_id', $trip->trip_id)
-                ->where('st.stop_sequence', '>', $trip->stop_sequence)
-                ->orderBy('st.stop_sequence')
-                ->limit(2)
-                ->pluck('s.stop_name')
-                // VRS names carry the city prefix ("Köln Heumarkt") — noise on
-                // a board that is already inside Cologne.
-                ->map(fn ($name) => preg_replace('/^Köln[ -]/u', '', (string) $name))
-                ->all();
+            // Each run's last stop, in one pass per thousand runs.
+            $ends = [];
+            foreach ($runs->pluck('trip_id')->unique()->chunk(1000) as $trips) {
+                DB::table('gtfs_stop_times as st')
+                    ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+                    ->whereIn('st.trip_id', $trips->values()->all())
+                    ->orderBy('st.trip_id')
+                    ->orderByDesc('st.stop_sequence')
+                    ->selectRaw('distinct on (st.trip_id) st.trip_id, s.stop_name')
+                    ->get()
+                    ->each(function (object $row) use (&$ends) {
+                        $ends[$row->trip_id] = (string) $row->stop_name;
+                    });
+            }
 
-            return [
-                'direction' => $trip->direction_id !== null ? (int) $trip->direction_id : null,
-                'via' => $via,
-                'end' => self::realEnd($destination, $lastStop),
-            ];
+            // Per way, a run that stands for it and where its runs most often end.
+            $ways = [];
+            foreach ($runs->groupBy(fn (object $run) => trim((string) $run->line)."\n".$run->headsign) as $way => $group) {
+                [$line, $headsign] = explode("\n", (string) $way, 2);
+                $ways[$line][$headsign] = [
+                    'run' => $group->first(),
+                    'end' => $group->map(fn (object $run) => $ends[$run->trip_id] ?? null)->filter()->countBy()->sortDesc()->keys()->first(),
+                ];
+            }
+
+            // Their next two stops after this one, in one query.
+            $after = DB::table('gtfs_stop_times as st')
+                ->join('gtfs_stops as s', 's.stop_id', '=', 'st.stop_id')
+                ->whereIn('st.trip_id', collect($ways)->flatten(1)->map(fn (array $way) => $way['run']->trip_id)->unique()->values()->all())
+                ->orderBy('st.stop_sequence')
+                ->get(['st.trip_id', 'st.stop_sequence', 's.stop_name'])
+                ->groupBy('trip_id');
+
+            $index = [];
+            foreach ($ways as $line => $headsigns) {
+                foreach ($headsigns as $headsign => $way) {
+                    $run = $way['run'];
+                    $index[$line][$headsign] = [
+                        'direction' => $run->direction_id !== null ? (int) $run->direction_id : null,
+                        'via' => ($after[$run->trip_id] ?? collect())
+                            ->filter(fn (object $stop) => (int) $stop->stop_sequence > (int) $run->stop_sequence)
+                            ->take(2)
+                            // VRS names carry the city prefix ("Köln Heumarkt") — noise on
+                            // a board that is already inside Cologne.
+                            ->map(fn (object $stop) => (string) preg_replace('/^Köln[ -]/u', '', (string) $stop->stop_name))
+                            ->values()
+                            ->all(),
+                        'end' => $way['end'],
+                    ];
+                }
+            }
+
+            return $index;
         });
     }
 
@@ -648,8 +687,14 @@ class GtfsDepartureService
      */
     private function runningOn(Builder $query, string $date, string $dayColumn, string $trips = 'gtfs_trips'): void
     {
-        $removed = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id');
-        $added = DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id');
+        // The day's exceptions, read once a day per timetable (a board asked
+        // them twice per row: 138 reads on four cold boards).
+        $exceptions = Cache::remember('gtfs_day_exceptions:v1:'.Cache::get(self::GENERATION_KEY, 0).':'.$date, 3600, fn () => [
+            'removed' => DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 2)->pluck('service_id')->all(),
+            'added' => DB::table('gtfs_calendar_dates')->where('date', $date)->where('exception_type', 1)->pluck('service_id')->all(),
+        ]);
+        $removed = collect($exceptions['removed']);
+        $added = collect($exceptions['added']);
         $query->where(function ($q) use ($dayColumn, $date, $removed, $added, $trips) {
             $q->where(function ($normal) use ($dayColumn, $date, $removed, $trips) {
                 $normal->whereExists(function ($calendar) use ($dayColumn, $date, $trips) {

@@ -10,8 +10,9 @@ import {
     show,
     update,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
-import { aiPermit } from './ai-notice';
+import { aiNoticeUrl, aiPermit } from './ai-notice';
 import type { AiNotice } from './ai-notice';
+import { readAiNotice } from './ai-notice-read';
 import type { PlanOrigin } from './origin-store';
 import { watchProgress } from './progress';
 import { api, ApiError } from './types';
@@ -248,9 +249,34 @@ export function useComposerEngine(
         }
     }
 
+    /**
+     * The notice a request goes under: the one in view. Without it, it's read now
+     * (once, NOTICE_TIMEOUT): off, the request goes without the AI (and the answer
+     * says it's off); on but not yet seen, it waits for them to send again with the
+     * line in view (sending is the consent); unreadable, it waits for Try again.
+     * Never sent without a permit while the AI could answer it.
+     */
+    async function noticeFor(shown: AiNotice | null): Promise<AiNotice | null> {
+        if (shown) {
+            return shown;
+        }
+
+        const read = await readAiNotice(aiNoticeUrl());
+
+        if (read.state === 'off') {
+            return null;
+        }
+
+        throw new Error(
+            read.state === 'on'
+                ? 'Composer answers with an AI service: the line under the box says which. Send again to go ahead.'
+                : 'Couldn’t reach the AI service. Try again.',
+        );
+    }
+
     /** Try again: the same message, asked again, not sent again. */
     async function again(
-        notice: AiNotice | null = aiNotice,
+        shown: AiNotice | null = aiNotice,
         extra: object = {},
     ) {
         if (busyRef.current) {
@@ -261,6 +287,21 @@ export function useComposerEngine(
         againRef.current = false;
         setError('');
         setRetryMessage(null);
+
+        let notice: AiNotice | null;
+
+        try {
+            notice = await noticeFor(shown);
+        } catch (err) {
+            // Still in the conversation, unanswered: Try again asks it once the notice is in view.
+            againRef.current = true;
+            setError(err instanceof Error ? err.message : 'Try again.');
+            setRetryMessage('again');
+            busyRef.current = false;
+            on.current.onSettled?.();
+
+            return;
+        }
 
         try {
             await answer(notice, extra);
@@ -331,8 +372,8 @@ export function useComposerEngine(
         }
     }
 
-    /** Asks a request; `notice` is the AI notice the person saw when they sent it. */
-    async function send(text: string, notice: AiNotice | null = aiNotice) {
+    /** Asks a request; `shown` is the AI notice in view when they sent it. */
+    async function send(text: string, shown: AiNotice | null = aiNotice) {
         if (!text.trim() || busyRef.current) {
             return;
         }
@@ -350,6 +391,8 @@ export function useComposerEngine(
         let asked = false;
 
         try {
+            // Before the message goes in: without its notice it stays in the box.
+            const notice = await noticeFor(shown);
             await sendCommand({ action: 'message', text });
             asked = true;
             setPendingText('');

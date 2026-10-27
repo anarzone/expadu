@@ -4,14 +4,16 @@ import {
     show,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { Icon } from '@/components/ui/icon';
+import { aiNoticeUrl } from './ai-notice';
 import type { AiNotice } from './ai-notice';
+import { readAiNotice } from './ai-notice-read';
 import type { MenuPick } from './composer-box';
 import { ManagedConversation } from './conversation-menu';
 import { ComposerLoading } from './loading';
 import { ComposerSurface, useComposerSurface } from './surface';
 import type { SurfaceContext } from './surface';
 import { api, ApiError } from './types';
-import type { Conversation, Workspace } from './types';
+import type { Workspace } from './types';
 import { askedConversations, conversationMeta } from './views';
 import type { ComposerView } from './views';
 import '../../../css/composer.css';
@@ -24,6 +26,9 @@ let lastDay: SurfaceContext = {};
 
 /** Loads them ahead, while the page is idle, so even the first opening isn't empty. */
 export function prefetchTray(): void {
+    // The AI notice too, so its line is under the box before the first message.
+    void readAiNotice(aiNoticeUrl());
+
     if (lastSeen) {
         return;
     }
@@ -168,10 +173,6 @@ export default function TrayBody({
     );
 }
 
-/** The person's own messages in a conversation, as History counts them. */
-const askedIn = (conversation: Conversation) =>
-    conversation.messages.filter((message) => message.role === 'user').length;
-
 const focusBox = () =>
     document
         .querySelector<HTMLTextAreaElement>('.composer-tray textarea')
@@ -271,8 +272,7 @@ function Body({
     if (view === 'start') {
         const current = workspace.conversations.find(
             (conversation) =>
-                conversation.id === workspace.active &&
-                askedIn(conversation) > 0,
+                conversation.id === workspace.active && conversation.asked > 0,
         );
         // The three most recent others with messages.
         const recent = askedConversations(workspace.conversations)

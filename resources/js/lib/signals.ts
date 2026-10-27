@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 /*
  * Personalisation signals (#210, R3a): what was shown and looked at, sent to
@@ -49,10 +50,7 @@ function send(signals: Signal[]) {
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+            ...csrfHeaders(),
         },
         body: JSON.stringify({ signals }),
     }).catch(() => {});
@@ -229,4 +227,31 @@ export function useDwell(
             finish();
         };
     }, [surface, itemType, id]);
+}
+
+/**
+ * Today's "Needs you" strip, its own endpoint (POST /api/signals/needs): an
+ * item shown (once a day), tapped, dismissed, kept or undone, by today's id
+ * and its kind, never what it said. Kept only for people who turned
+ * personalisation on under the current wording, never for Paperwork.
+ */
+export function needSignal(
+    action: 'shown' | 'tapped' | 'dismissed' | 'kept' | 'undone',
+    id: string,
+    kind: string,
+) {
+    if (kind === 'paperwork') {
+        return;
+    }
+
+    void fetch('/api/signals/needs', {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...csrfHeaders(),
+        },
+        body: JSON.stringify({ action, id, kind }),
+    }).catch(() => {});
 }

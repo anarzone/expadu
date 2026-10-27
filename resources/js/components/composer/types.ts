@@ -1,4 +1,5 @@
 import type { PlaceEvidence } from '@/components/place-shared/types';
+import { csrfHeaders } from '@/lib/csrf';
 import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
 
 export type Slot = {
@@ -88,7 +89,12 @@ export type Conversation = {
     id: string;
     title: string;
     created_at: string;
+    /** The open conversation's messages; the others come when one is opened (resume). */
     messages: Message[];
+    /** How many times they asked in it. */
+    asked: number;
+    /** When it was last written in: its newest message, else its start. */
+    last_at: string;
 };
 /** One applied change; Undo works newest first per day. */
 export type Change = {
@@ -177,10 +183,7 @@ export async function api<T>(
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute('content') ?? '',
+                ...csrfHeaders(),
             },
             body: body ? JSON.stringify(body) : undefined,
         });

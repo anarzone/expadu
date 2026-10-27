@@ -1,8 +1,10 @@
 import { Link } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { DeadlineStrip } from '@/components/today/paperwork';
 import type { TodayPaperwork } from '@/components/today/paperwork';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
+import { needSignal } from '@/lib/signals';
 import { cn } from '@/lib/utils';
 
 /*
@@ -30,34 +32,73 @@ export type TodayNeeds = { items: NeedItem[]; checked_at: string } | null;
 /** Shown at most; the rest are counted. */
 const SHOWN = 3;
 
-const kindIcon = (kind: string): IconName =>
-    ({
-        disruption: 'alert',
-        leave_now: 'walk',
-        rain_outdoor: 'cloud',
-        paperwork: 'clock',
-    })[kind] ?? 'bell';
+const KIND_ICONS: Record<string, IconName> = {
+    disruption: 'alert',
+    leave_now: 'walk',
+    rain_outdoor: 'cloud',
+    paperwork: 'clock',
+};
+
+const kindIcon = (kind: string): IconName => KIND_ICONS[kind] ?? 'bell';
+
+/** The items already reported shown today, so each counts once a day. */
+const shownKey = () =>
+    `needs-shown:${new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' })}`;
+const shownToday = new Set<string>();
+
+function reportShown(items: NeedItem[]) {
+    let seen: string[] = [];
+
+    try {
+        seen = JSON.parse(localStorage.getItem(shownKey()) ?? '[]') as string[];
+    } catch {
+        // Storage off (a private window): this page load's memory only.
+    }
+
+    const fresh = items.filter(
+        (item) => !seen.includes(item.id) && !shownToday.has(item.id),
+    );
+
+    fresh.forEach((item) => {
+        shownToday.add(item.id);
+        needSignal('shown', item.id, item.kind);
+    });
+
+    try {
+        localStorage.setItem(
+            shownKey(),
+            JSON.stringify([...seen, ...fresh.map((item) => item.id)]),
+        );
+    } catch {
+        // As above.
+    }
+}
 
 export function NeedsStrip({
     needs,
     paperwork,
 }: {
-    /** Undefined while loading, or where the engine isn't there to answer. */
-    needs?: TodayNeeds;
-    /** Paperwork's strip: undefined while it loads, null with nothing due. */
-    paperwork?: NonNullable<TodayPaperwork>['strip'] | null;
+    /** Null where the engine can't say. */
+    needs: TodayNeeds;
+    /** Paperwork's strip: null with nothing due. */
+    paperwork: NonNullable<TodayPaperwork>['strip'] | null;
 }) {
     const items = needs?.items ?? [];
     const others = items.filter((item) => item.kind !== 'paperwork');
+    // What the strip shows counts once a day per item (the engine learns
+    // which kinds they open and which they let pass); a re-read repeats
+    // nothing (reportShown remembers the day's ids).
+    useEffect(() => {
+        const shown = (needs?.items ?? []).slice(0, SHOWN);
+
+        if (shown.some((item) => item.kind !== 'paperwork')) {
+            reportShown(shown);
+        }
+    }, [needs]);
 
     // Paperwork alone (or the engine not answering) keeps today's strip.
     if (others.length === 0 && (paperwork || !needs)) {
-        return <DeadlineStrip strip={paperwork ?? null} />;
-    }
-
-    // A calm day is said only once Paperwork has answered too.
-    if (others.length === 0 && paperwork === undefined) {
-        return null;
+        return <DeadlineStrip strip={paperwork} />;
     }
 
     if (items.length === 0) {
@@ -100,7 +141,13 @@ export function NeedsStrip({
                     return (
                         <li key={item.id}>
                             {item.href ? (
-                                <Link href={item.href} className={className}>
+                                <Link
+                                    href={item.href}
+                                    className={className}
+                                    onClick={() =>
+                                        needSignal('tapped', item.id, item.kind)
+                                    }
+                                >
                                     {body}
                                 </Link>
                             ) : (

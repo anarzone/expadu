@@ -268,6 +268,18 @@ class WorkspaceStore
         return $this->projectState($this->state($row)) + ['revision' => $row?->revision ?? 0];
     }
 
+    /**
+     * The stored workspace, upgraded but not projected: for a reader that needs only what
+     * was said and how many stops each day holds (Today's "Pick up where you left off"),
+     * not each place's availability now.
+     *
+     * @return array<string, mixed>
+     */
+    public function stored(User $user): array
+    {
+        return $this->state(ComposerWorkspace::query()->where('user_id', $user->id)->first());
+    }
+
     /** Today's Save puts the composed day straight into the plans, like any change. */
     public function saveConfirmed(User $user, array $plan): void
     {
@@ -732,10 +744,25 @@ class WorkspaceStore
             'undoable' => $change['undone_at'] === null && $this->same($state['plans'][$change['date']] ?? null, $change['after']),
         ], $state['changes']);
         $catalogue = app(PlanCatalogue::class);
+        // A day that's over is history: it keeps what it said, without asking each place
+        // about a day that's gone (most stored days are past ones).
+        $today = CarbonImmutable::now('Europe/Berlin')->format('Y-m-d');
         foreach ($state['plans'] as $date => $plan) {
-            $state['plans'][$date] = $catalogue->project($plan);
+            $state['plans'][$date] = $date < $today ? $catalogue->settled($plan) : $catalogue->project($plan);
         }
+        // Only the open conversation's messages travel; the others are listed by their title,
+        // how many times they asked and when they last wrote (owner, 26 Oct 2026). Opening
+        // one (resume) brings its messages.
         foreach ($state['conversations'] as $i => $conversation) {
+            $state['conversations'][$i] += [
+                'asked' => count(array_filter($conversation['messages'], fn (array $message): bool => ($message['role'] ?? null) === 'user')),
+                'last_at' => ($conversation['messages'] === [] ? null : end($conversation['messages'])['created_at'] ?? null) ?? $conversation['created_at'],
+            ];
+            if ($conversation['id'] !== $state['active']) {
+                $state['conversations'][$i]['messages'] = [];
+
+                continue;
+            }
             foreach ($conversation['messages'] as $j => $message) {
                 $kind = $message['kind'] ?? null;
                 if ($kind === 'plan') {

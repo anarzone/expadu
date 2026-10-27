@@ -7,7 +7,6 @@ use App\Models\UserSetting;
 use App\Personalisation\PersonalisationWording;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -58,6 +57,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
+            // The session's CSRF token, so the page's meta follows a sign-in or
+            // sign-out that happens without a page load (app.tsx).
+            'csrfToken' => fn () => $request->session()->token(),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // Settings saved before a key existed read it at its default.
             'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? []),
@@ -79,16 +81,12 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * The city's weather and forecast (all Today still reads of the old
-     * right-panel widgets). Deferred (never block first paint) and shared.
+     * right-panel widgets), in every page's first response: both are cache
+     * reads (WeatherService never fetches on a request), so a page needs no
+     * second round trip for them (owner, 26 Oct 2026: pages load whole).
+     * City-wide, the same for everyone.
      *
-     * Once-props: the client keeps them across navigations and tells the server
-     * so, which then skips the widgets request until they lapse. They used to
-     * be re-fetched — a second request re-running the page controller — on
-     * every visit. Five minutes matches the services' own fresh-cache TTL, and
-     * the data is city-wide, so it is the same for every user.
-     *
-     * Signed-in only: a guest page would otherwise hand the client nulls it
-     * keeps for five minutes, leaving the panel empty right after login.
+     * Signed-in only, as the pages that show them are.
      *
      * @return array<string, mixed>
      */
@@ -98,12 +96,9 @@ class HandleInertiaRequests extends Middleware
             return [];
         }
 
-        $until = now()->addMinutes(5);
-        $widget = fn (callable $resolve) => Inertia::defer($resolve, 'widgets')->once(until: $until);
-
         return [
-            'weather' => $widget(fn () => app(WeatherService::class)->getCurrentWeather()),
-            'forecast' => $widget(fn () => app(WeatherService::class)->getForecast()),
+            'weather' => fn () => app(WeatherService::class)->getCurrentWeather(),
+            'forecast' => fn () => app(WeatherService::class)->getForecast(),
         ];
     }
 }

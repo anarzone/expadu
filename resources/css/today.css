@@ -940,9 +940,6 @@ a.plan-link:hover {
     font-size: var(--text-small);
     line-height: 1.4;
 }
-.forecast-strip .forecast-loading {
-    opacity: 0.6;
-}
 /* KVB's notices for the board's lines (Travel's own banner). */
 .board-notices {
     display: grid;
@@ -1049,6 +1046,14 @@ a.plan-link:hover {
 }
 .stop-list li[aria-selected='false'] svg {
     visibility: hidden;
+}
+.stop-list li > span {
+    flex: 1;
+}
+/* A stop they pick often (learned, opt-in), after their favourites. */
+.stop-often {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
 }
 .board-capture {
     margin: 8px 0 2px;
@@ -1683,6 +1688,10 @@ a.plan-link:hover {
     margin-top: 4px;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
+}
+/* Why Today's AI order put an event here for them: one quiet line. */
+.discovery-why {
+    font-style: italic;
 }
 .compact-category {
     margin-left: auto;

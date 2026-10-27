@@ -1107,6 +1107,69 @@
     border-radius: 10px;
     font-size: 13px;
 }
+/* An answer's choices, in place of its value (Paperwork's own options). */
+.composer-page .action-record-choices {
+    flex-wrap: wrap;
+    padding: 6px 0;
+}
+.composer-page .action-choice {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.composer-page .action-choice[aria-pressed='true'] {
+    border-color: var(--color-select-text);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.composer-page .action-choice:active:not(:disabled) {
+    background: var(--color-bg-quiet);
+}
+/* A choice with a plain line under it (a proposal's choices). */
+.composer-page .action-choice:has(small) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 6px 12px;
+    border-radius: 12px;
+    text-align: left;
+}
+.composer-page .action-choice small {
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: 400;
+}
+.composer-page .action-unsure {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+.composer-page .action-record-cancel {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-soft);
+    cursor: pointer;
+}
+.composer-page .action-record-cancel svg {
+    width: 18px;
+    height: 18px;
+}
 .composer-page .action-plan {
     display: flex;
     flex-direction: column;

@@ -40,6 +40,7 @@ import {
 } from '@/components/travel/use-travel-location';
 import type { ActiveTrip } from '@/hooks/use-active-trip';
 import AppLayout from '@/layouts/app-layout';
+import { csrfHeaders } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -67,14 +68,6 @@ type PageProps = {
     handoffPlace?: HandoffPlace | null;
     stepFreeNeed?: boolean;
 };
-
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
 
 /** A trip handed over (Today, Events, Composer) or `?view=journey` opens Plan a trip. */
 const viewOf = (url: string): View => {
@@ -374,7 +367,7 @@ export default function Timetable() {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({ name }),
             });

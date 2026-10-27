@@ -66,7 +66,7 @@ class VrsRealtimeService
         // request finding only the last good copy serves that and refreshes
         // after its response. Only a cache with no copy at all fetches here,
         // and not while another fetch runs.
-        Cache::add(self::WANTED_KEY, true, self::STALE_SECONDS);
+        $this->markWanted();
         $updates = Cache::get(self::FEED_KEY);
         if (! is_array($updates)) {
             $updates = Cache::get(self::STALE_KEY);
@@ -81,6 +81,12 @@ class VrsRealtimeService
         $this->feedReadAt = now()->timestamp;
 
         return $updates;
+    }
+
+    /** Someone is reading live times (a kept board too): keep the feed fresh. */
+    public function markWanted(): void
+    {
+        Cache::add(self::WANTED_KEY, true, self::STALE_SECONDS);
     }
 
     /** Whether the feed has been read in the last ten minutes. */

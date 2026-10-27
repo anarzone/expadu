@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 export type FeedbackState =
     | 'more_like_this'
@@ -37,14 +38,6 @@ function toastFor(
         clear: null,
         unbeen: null,
     }[action as Exclude<FeedbackAction, 'been'>];
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 /**
@@ -113,7 +106,7 @@ export function useFeedback(initial: Record<string, Entry> = {}) {
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrf(),
+                        ...csrfHeaders(),
                     },
                     body: JSON.stringify(
                         beenAction ? (rating ? { rating } : {}) : { action },
