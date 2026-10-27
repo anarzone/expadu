@@ -8,8 +8,7 @@
     gap: 16px;
     align-items: start;
 }
-.settings-side,
-.settings-later {
+.settings-side {
     display: grid;
     gap: 16px;
     min-width: 0;
@@ -17,11 +16,6 @@
 @media (min-width: 1000px) {
     .settings-page {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-}
-@media (min-width: 560px) {
-    .settings-later {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -448,7 +442,14 @@ button.settings-tile:hover {
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
+.settings-learns svg {
+    width: 14px;
+    height: 14px;
+}
 .settings-learns span + span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 3px 10px;
     border-radius: var(--radius-pill);
     background: var(--color-paper-bg-quiet);
