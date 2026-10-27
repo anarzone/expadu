@@ -674,8 +674,7 @@ html {
         transition:
             translate var(--duration-base) ease,
             background-color 220ms ease,
-            box-shadow 180ms ease,
-            transform 220ms ease;
+            box-shadow 180ms ease;
         view-transition-name: composer-tray;
     }
     .shell-composer-round::before {
@@ -708,11 +707,10 @@ html {
         background: #005d70;
     }
     .shell-composer-round:is(:hover, :focus-visible) svg {
-        transform: rotate(90deg) scale(1.08);
+        transform: rotate(90deg);
         color: #c6f5ec;
     }
     .shell-composer-round:active {
-        transform: scale(0.94);
         box-shadow:
             -5px 0 16px #ff591f66,
             5px 0 16px #05bbd573;
@@ -750,7 +748,6 @@ html {
     .shell-composer-round::before {
         transition: none;
     }
-    .shell-composer-round:active,
     .shell-composer-round:is(:hover, :focus-visible) svg {
         transform: none;
     }
@@ -908,9 +905,7 @@ html {
     background-clip: content-box;
     color: var(--color-text-on-action);
     cursor: pointer;
-    transition:
-        background-color 160ms ease,
-        transform 160ms ease;
+    transition: background-color 160ms ease;
 }
 /* The arrow at the line icons' 1.7px, as the mock draws it. */
 .composer-tray-send svg {
@@ -923,9 +918,6 @@ html {
 }
 .composer-tray-send:hover:not(:disabled) {
     background-color: var(--color-action-hover);
-}
-.composer-tray-send:active:not(:disabled) {
-    transform: scale(0.94);
 }
 .composer-tray :is(a, button):focus-visible {
     outline: 2px solid var(--color-focus);
