@@ -124,22 +124,33 @@ class ComposerController extends Controller
             // Saved origins for the From picker — id + label + sublabel; coordinates
             // resolve server-side by id when one is picked. Lazy, so the deferred
             // requests don't re-run the query.
-            'savedPlaces' => fn () => $request->user()->places()
-                ->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
-                ->get(['id', 'name', 'category', 'address'])
-                ->map(fn (UserPlace $place) => [
-                    'id' => $place->id,
-                    'name' => $place->name,
-                    'category' => (string) $place->category,
-                    'address' => $place->address,
-                ])
-                ->all(),
+            'savedPlaces' => fn () => self::savedPlaces($request->user()),
             // Deferred so the page shell paints before the directory loads.
             'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk())),
             'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
         ]);
+    }
+
+    /**
+     * Saved origins for the From picker: id + label + sublabel; coordinates resolve
+     * server-side by id when one is picked.
+     *
+     * @return list<array{id: int, name: string, category: string, address: ?string}>
+     */
+    public static function savedPlaces(User $user): array
+    {
+        return $user->places()
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
+            ->get(['id', 'name', 'category', 'address'])
+            ->map(fn (UserPlace $place) => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'category' => (string) $place->category,
+                'address' => $place->address,
+            ])
+            ->all();
     }
 
     /**

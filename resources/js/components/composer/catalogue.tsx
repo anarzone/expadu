@@ -1,21 +1,46 @@
-import {
-    IconArrowRight,
-    IconBookmark,
-    IconCheck,
-    IconInfoCircle,
-    IconSearch,
-} from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { catalogue } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import { Icon } from '@/components/ui/icon';
+import { showToast } from '@/components/ui/toast';
+import { feedback } from '@/routes/api/places';
 import { ItemPreview } from './item-preview';
 import type { ItemDetails } from './item-preview';
 import { ComposerLoading } from './loading';
-import { api } from './types';
+import { api, today } from './types';
 import type { Slot } from './types';
 
+const dayLabel = (date: string) =>
+    date === today()
+        ? 'today'
+        : new Intl.DateTimeFormat('en-GB', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+          }).format(new Date(`${date}T12:00:00`));
+
+/** "Café · Open 09:00–18:00 · Ehrenfeld", "Event · 18:30–21:00 · Rheinauhafen". */
+function meta(item: Slot): string {
+    return [
+        item.label ?? item.category.replaceAll('_', ' '),
+        item.type === 'event'
+            ? item.end_listed === false
+                ? item.start_time
+                : `${item.start_time}–${item.end_time}`
+            : item.hours,
+        item.veedel,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
+
+/*
+ * What can go in a day (the Full Composer canvas, Add a place or event):
+ * the day's places and events as rows, each named as Around here names it,
+ * with its listed hours (or its time), Save and Add; the kinds as the app
+ * calls them. A swap's alternatives are the same rows, each "Use instead".
+ */
 export function Catalogue({
     date,
-    saved = false,
     compact = false,
     exclude = [],
     replaceSlot,
@@ -25,7 +50,6 @@ export function Catalogue({
     onBrowse,
 }: {
     date: string;
-    saved?: boolean;
     compact?: boolean;
     exclude?: string[];
     replaceSlot?: Slot;
@@ -37,13 +61,14 @@ export function Catalogue({
     const [items, setItems] = useState<Slot[] | null>(null);
     const [error, setError] = useState('');
     const [query, setQuery] = useState('');
-    const [category, setCategory] = useState('all');
-    const [selected, setSelected] = useState<string | null>(null);
+    const [group, setGroup] = useState('all');
+    const [saved, setSaved] = useState<Record<string, boolean>>({});
     const [retry, setRetry] = useState(0);
+
     useEffect(() => {
         const controller = new AbortController();
         api<{ items: Slot[] }>(
-            catalogue.url({ query: { date, saved: saved ? 1 : 0 } }),
+            catalogue.url({ query: { date } }),
             undefined,
             controller.signal,
         )
@@ -55,27 +80,46 @@ export function Catalogue({
             });
 
         return () => controller.abort();
-    }, [date, saved, retry]);
-    const filtered = (items ?? []).filter(
+    }, [date, retry]);
+
+    const shown = (items ?? []).filter(
         (item) =>
-            !exclude.includes(item.id) &&
             item.available !== false &&
             (!replaceSlot ||
                 item.type !== 'event' ||
                 (item.start_time === replaceSlot.start_time &&
-                    item.end_time === replaceSlot.end_time)) &&
-            (category === 'all' || item.category === category) &&
-            `${item.name} ${item.category} ${item.veedel ?? ''}`
+                    item.end_time === replaceSlot.end_time)),
+    );
+    const groups = [...new Set(shown.map((item) => item.group ?? 'Places'))];
+    const filtered = shown.filter(
+        (item) =>
+            (group === 'all' || (item.group ?? 'Places') === group) &&
+            `${item.name} ${item.label ?? item.category} ${item.veedel ?? ''}`
                 .toLocaleLowerCase()
                 .includes(query.toLocaleLowerCase()),
     );
+    const isSaved = (item: Slot) => saved[item.id] ?? !!item.saved;
+
+    // As Around here saves it: at once, put back with a toast when it fails.
+    const save = (item: Slot) => {
+        const next = !isSaved(item);
+        setSaved((all) => ({ ...all, [item.id]: next }));
+        api(feedback.url(Number(item.id.replace(/^spot:/, ''))), {
+            action: next ? 'saved' : 'clear',
+        }).catch(() => {
+            setSaved((all) => ({ ...all, [item.id]: !next }));
+            showToast('That place wasn’t saved. Please try again.', {
+                error: true,
+            });
+        });
+    };
 
     return (
-        <div className={`composer-catalogue ${compact ? 'is-compact' : ''}`}>
+        <div className="composer-catalogue">
             {!compact && (
                 <>
                     <label className="composer-search">
-                        <IconSearch size={18} />
+                        <Icon name="search" variant="line" />
                         <input
                             aria-label="Search places and events"
                             placeholder="Places, events or neighbourhoods"
@@ -83,34 +127,31 @@ export function Catalogue({
                             onChange={(e) => setQuery(e.target.value)}
                         />
                     </label>
-                    <div
-                        className="composer-category-rail"
-                        aria-label="Categories"
-                    >
-                        <button
-                            aria-pressed={category === 'all'}
-                            onClick={() => setCategory('all')}
+                    {groups.length > 1 && (
+                        <div
+                            className="composer-kinds"
+                            role="group"
+                            aria-label="Kinds of place"
                         >
-                            All
-                        </button>
-                        {Array.from(
-                            new Set((items ?? []).map((item) => item.category)),
-                        ).map((value) => (
-                            <button
-                                key={value}
-                                aria-pressed={category === value}
-                                onClick={() => setCategory(value)}
-                            >
-                                {value.replaceAll('_', ' ')}
-                            </button>
-                        ))}
-                    </div>
+                            {['all', ...groups].map((value) => (
+                                <button
+                                    type="button"
+                                    key={value}
+                                    aria-pressed={group === value}
+                                    onClick={() => setGroup(value)}
+                                >
+                                    {value === 'all' ? 'All' : value}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </>
             )}
             {error ? (
                 <div role="alert">
                     <p>{error}</p>
                     <button
+                        type="button"
                         className="composer-text-button"
                         onClick={() => {
                             setError('');
@@ -121,75 +162,74 @@ export function Catalogue({
                     </button>
                 </div>
             ) : !items ? (
-                <ComposerLoading
-                    label={saved ? 'Loading saved places…' : 'Finding options…'}
-                />
+                <ComposerLoading label="Finding options…" />
             ) : (
                 <>
-                    <div
-                        className="composer-options"
-                        role="region"
-                        aria-label="Available alternatives"
-                        tabIndex={0}
-                    >
-                        {filtered.map((item) => (
-                            <div className="composer-option" key={item.id}>
-                                <button
-                                    className="composer-option-choose"
-                                    disabled={busy || selected === item.id}
-                                    onClick={async () => {
-                                        if (await onChoose(item)) {
-                                            setSelected(item.id);
-                                        }
-                                    }}
+                    <ul className="composer-ideas" role="list">
+                        {filtered.map((item) => {
+                            const planned = exclude.includes(item.id);
+
+                            return (
+                                <li
+                                    key={item.id}
+                                    className="composer-idea"
+                                    data-kind={item.kind || 'place'}
                                 >
-                                    <span>
+                                    <ItemPreview
+                                        slot={item}
+                                        onFull={onFull}
+                                        className="composer-idea-copy"
+                                    >
                                         <strong>{item.name}</strong>
-                                        <small>
-                                            {item.type === 'event'
-                                                ? `${item.start_time} · `
-                                                : ''}
-                                            {item.category.replaceAll('_', ' ')}
-                                            {item.veedel
-                                                ? ` · ${item.veedel}`
-                                                : ''}
-                                        </small>
-                                    </span>
-                                    {selected === item.id ? (
-                                        <IconCheck size={19} />
-                                    ) : item.saved ? (
-                                        <IconBookmark size={17} />
-                                    ) : (
-                                        <IconArrowRight size={19} />
+                                        <span>{meta(item)}</span>
+                                    </ItemPreview>
+                                    {item.type === 'spot' && (
+                                        <button
+                                            type="button"
+                                            className="composer-icon-button is-save"
+                                            aria-pressed={isSaved(item)}
+                                            aria-label={`${isSaved(item) ? 'Unsave' : 'Save'} ${item.name}`}
+                                            onClick={() => save(item)}
+                                        >
+                                            <Icon
+                                                name="bookmark"
+                                                variant="line"
+                                            />
+                                        </button>
                                     )}
-                                </button>
-                                <ItemPreview slot={item} onFull={onFull}>
-                                    <span className="sr-only">
-                                        Preview {item.name}
-                                    </span>
-                                    <IconInfoCircle size={18} />
-                                </ItemPreview>
-                            </div>
-                        ))}
-                    </div>
+                                    <button
+                                        type="button"
+                                        className="composer-ghost"
+                                        disabled={busy || planned}
+                                        onClick={() => void onChoose(item)}
+                                    >
+                                        {planned
+                                            ? 'In your plans'
+                                            : replaceSlot
+                                              ? 'Use instead'
+                                              : `Add to ${dayLabel(date)}`}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
                     {filtered.length === 0 && (
-                        <p className="composer-empty">
-                            {saved
-                                ? 'No saved places match. Bookmark a place to find it here.'
-                                : 'No available matches for this day. Try another category or date.'}
+                        <p className="composer-view-note">
+                            No available matches for this day. Try another kind
+                            or date.
                         </p>
                     )}
-                    <small className="composer-catalogue-note">
-                        {filtered.length} options · Availability is checked
-                        again when you add one.
-                    </small>
+                    <p className="composer-view-note">
+                        {`${filtered.length} ${filtered.length === 1 ? 'option' : 'options'} · Availability is checked again when you add one.`}
+                    </p>
                     {compact && onBrowse && (
                         <button
+                            type="button"
                             className="composer-text-button"
                             onClick={onBrowse}
                         >
                             Browse more places
-                            <IconArrowRight size={16} />
+                            <Icon name="arrow" variant="line" />
                         </button>
                     )}
                 </>
