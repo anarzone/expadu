@@ -41,9 +41,9 @@ async function globalSetup(config: FullConfig) {
 
     // Confirm the session actually lands on the app — not the verify-email
     // wall — before we bank it for every test.
-    await page.goto('/dashboard');
+    await page.goto('/today');
 
-    await page.waitForURL('**/dashboard**', { timeout: 15_000 });
+    await page.waitForURL('**/today**', { timeout: 15_000 });
 
     await context.storageState({ path: 'tests/Browser/.auth/session.json' });
     await browser.close();

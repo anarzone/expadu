@@ -140,7 +140,7 @@ final class OwnCards
         $when = $date === $now->toDateString() ? 'today' : ($date === $now->addDay()->toDateString() ? 'tomorrow' : 'on '.$next['start']->format('l j F'));
 
         return self::note("Your next {$what}: {$next['title']}, {$when} at {$next['start']->format('H:i')}".($next['location'] ? " in {$next['location']}" : '').'.',
-            [$date === $now->toDateString() ? ['label' => 'Open Today', 'href' => '/dashboard'] : ['label' => 'My Plans', 'nav' => 'plans']]);
+            [$date === $now->toDateString() ? ['label' => 'Open Today', 'href' => '/today'] : ['label' => 'My Plans', 'nav' => 'plans']]);
     }
 
     /**

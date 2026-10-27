@@ -31,7 +31,7 @@
                 <div>
                     <strong>Account</strong>
                     @auth
-                        <a href="{{ route('dashboard') }}">Open the app</a>
+                        <a href="{{ route('today') }}">Open the app</a>
                     @else
                         <a href="{{ route('login') }}">Log in</a>
                         <a href="#waitlistForm">Start free</a>

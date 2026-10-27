@@ -61,7 +61,7 @@ return [
     | Subdomain Routing
     |--------------------------------------------------------------------------
     |
-    | The app domain serves the authenticated SPA (dashboard, explore, etc.).
+    | The app domain serves the authenticated SPA (Today, Places, etc.).
     | The marketing domain serves the public site (landing, blog, auth).
     | In local dev, both default to null (no subdomain enforcement).
     |

@@ -18,7 +18,7 @@ use Throwable;
  * fresh account or hand-crafting profile attributes for each one.
  *
  * Every account is upserted by email (safe to re-run), pre-verified and
- * pre-onboarded, so it lands straight on the dashboard. Use read-only persona
+ * pre-onboarded, so it lands straight on Today. Use read-only persona
  * preview for testing without replacing an account's answers.
  *
  * SAFETY: this writes real rows, so it refuses to run unless config('app.url')

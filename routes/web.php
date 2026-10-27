@@ -67,9 +67,9 @@ $appRoutes = function () use ($appDomain) {
     // Opt-in loopback-only entry for a designated synthetic review account.
     Route::get('dev/review', LocalReviewController::class)->name('dev.review');
 
-    // App root redirects to dashboard (only in production with subdomain)
+    // App root opens Today (only in production with subdomain)
     if ($appDomain) {
-        Route::get('/', fn () => redirect('/dashboard'));
+        Route::get('/', fn () => redirect('/today'));
     }
 
     // throttle:app-writes caps every mutation in the group per user; GETs are

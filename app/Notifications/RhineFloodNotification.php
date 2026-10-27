@@ -33,7 +33,7 @@ class RhineFloodNotification extends Notification
             ->body($body)
             ->action('View level', 'view_rhine')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/dashboard']);
+            ->data(['url' => '/today']);
     }
 
     /** @return array<string, mixed> */

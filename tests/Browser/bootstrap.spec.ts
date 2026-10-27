@@ -87,7 +87,7 @@ test('core pages attach without hydration errors', async ({ page }) => {
     });
 
     for (const path of [
-        '/dashboard',
+        '/today',
         '/events',
         '/bureaucracy',
         '/timetable',

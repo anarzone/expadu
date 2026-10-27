@@ -9,7 +9,7 @@
         "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
-        "url": "/dashboard",
+        "url": "/today",
         "wait": ".day-panel:not([aria-busy])",
         "cookies": {
             "mock_clock": "2026-09-30T13:10:00%2B02:00"
