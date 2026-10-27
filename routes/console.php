@@ -124,9 +124,11 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOne
 // blocks the next for at most 2 hours, and leaves the live tables untouched.
 Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer()->runInBackground();
 // gtfs.de's DELFI feed, for the cancellations VRS leaves out: its timetable
-// slice when a new one is out, and its realtime (30 MB a read) every two
-// minutes, only while someone has looked at Travel in the last ten.
-Schedule::command('transit:import-delfi')->dailyAt('04:15')->withoutOverlapping(60)->onOneServer()->runInBackground();
+// slice hourly when a new one is out (gtfs.de publishes at any hour and the
+// realtime feed numbers its trips by the newest; an unchanged one costs one
+// HEAD), and its realtime (30 MB a read) every two minutes, only while
+// someone has looked at Travel in the last ten.
+Schedule::command('transit:import-delfi')->hourlyAt(15)->withoutOverlapping(60)->onOneServer()->runInBackground();
 Schedule::command('transit:fetch-delfi')->everyTwoMinutes()->withoutOverlapping(5)->onOneServer()->runInBackground();
 // VRS's live delays, kept fresh so no request waits 3 s to fetch them (only
 // while someone reads them).
