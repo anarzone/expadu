@@ -361,11 +361,13 @@ export function WhatsOn({
             continue;
         }
 
-        const label = !grouped
-            ? ''
-            : stateOf(l) === 'now'
-              ? 'On now'
-              : (l.poster.start ?? 'Time not listed');
+        // The grid is one run of posters (each says its time), so no hour leaves a row half empty.
+        const label =
+            !grouped || view === 'grid'
+                ? ''
+                : stateOf(l) === 'now'
+                  ? 'On now'
+                  : (l.poster.start ?? 'Time not listed');
         const group = groups.find((g) => g.label === label);
 
         if (group) {
@@ -517,12 +519,19 @@ export function WhatsOn({
                         })
                     }
                 >
-                    <span className="wo-tile-stamp">
-                        {date === today
-                            ? ink === 'day'
-                                ? 'Today'
-                                : 'Tonight'
-                            : longDate(date)}
+                    <span
+                        className={cn(
+                            'wo-tile-stamp',
+                            stateOf(l) === 'now' && 'is-now',
+                        )}
+                    >
+                        {stateOf(l) === 'now'
+                            ? 'On now'
+                            : date === today
+                              ? ink === 'day'
+                                  ? 'Today'
+                                  : 'Tonight'
+                              : longDate(date)}
                     </span>
                     <span
                         className="wo-tile-title"
