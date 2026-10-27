@@ -691,8 +691,12 @@ export function ComposerSurface({
                         state:
                             feedback.stateFor(detail.place.id) ??
                             detail.place.feedback_state,
+                        been:
+                            feedback.beenFor(detail.place.id) ??
+                            detail.place.feedback_been,
                         rating:
                             feedback.ratingFor(detail.place.id) ??
+                            detail.place.feedback_been_rating ??
                             detail.place.feedback_rating,
                         onAction: (action, rating) =>
                             feedback.setFeedback(

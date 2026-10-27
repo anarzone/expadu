@@ -114,16 +114,19 @@ export function PlaceFeedbackMenu({
  */
 export function PlaceFeedbackBar({
     state,
+    been: beenThere,
     rating,
     onAction,
     label,
 }: {
     state: FeedbackState | null;
+    /** Been, kept apart from the choice (a saved place you've been to); else read from state. */
+    been?: boolean;
     rating: FeedbackRating | null;
     onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
     label?: string;
 }) {
-    const been = state === 'been';
+    const been = beenThere ?? state === 'been';
     const liked = been && rating === 'up';
     const disliked = been && rating === 'down';
 

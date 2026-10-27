@@ -90,6 +90,9 @@ export type Place = {
         | 'not_interested'
         | null;
     feedback_rating: 'up' | 'down' | null;
+    /** Been there, kept apart from the choice: a saved place can be one you've been to. */
+    feedback_been?: boolean;
+    feedback_been_rating?: 'up' | 'down' | null;
 };
 
 export type VeedelOption = {
