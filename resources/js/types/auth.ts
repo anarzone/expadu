@@ -15,12 +15,3 @@ export type Auth = {
     /** False for an account made with Google: it confirms with an emailed code. */
     has_password: boolean;
 };
-
-export type TwoFactorSetupData = {
-    svg: string;
-    url: string;
-};
-
-export type TwoFactorSecretKey = {
-    secretKey: string;
-};

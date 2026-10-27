@@ -18,11 +18,21 @@ test('transit setting stays unchanged after a failed save and can be retried', a
             json: { saved: true },
         });
     });
-    await toggle.click();
+    // Turning sharing off deletes kept locations, so it asks first.
+    const flip = async () => {
+        await toggle.click();
+
+        if (before === 'true') {
+            await page
+                .getByRole('button', { name: 'Stop and delete', exact: true })
+                .click();
+        }
+    };
+    await flip();
     await expect(page.getByRole('alert')).toContainText('couldn’t save');
     await expect(toggle).toHaveAttribute('aria-checked', before!);
     await expect(toggle).toBeEnabled();
-    await toggle.click();
+    await flip();
     await expect(toggle).toHaveAttribute(
         'aria-checked',
         before === 'true' ? 'false' : 'true',

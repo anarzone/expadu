@@ -6,9 +6,11 @@ import {
     AccountFlash,
     AccountLabel,
 } from '@/components/account/account-parts';
-import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/two-factor/login';
+
+/** The authenticator app's code: Fortify's six digits. */
+const OTP_MAX_LENGTH = 6;
 
 /** The second step of signing in, on the same poster: the authenticator's
     code, or one of the saved recovery codes. */
