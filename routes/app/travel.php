@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlannedTripController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SavedJourneyController;
+use App\Http\Controllers\Api\StationLinesMapController;
 use App\Http\Controllers\Api\StationSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
@@ -43,6 +44,8 @@ Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->nam
 Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');
 // Nearby's stop picker: KVB stations by name.
 Route::get('api/travel/stations', StationSearchController::class)->middleware('throttle:search')->name('api.travel.stations');
+// Nearby's Map: the lines through a station and their next stops.
+Route::get('api/travel/lines-map', StationLinesMapController::class)->name('api.travel.lines-map');
 // Travel's ★ favourite stops, per account.
 Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
 Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');

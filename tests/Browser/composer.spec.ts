@@ -14,7 +14,7 @@ test.describe('Composer (universal prompt)', () => {
         page,
     }) => {
         let parsed = 0;
-        await page.route('**/composer/parse', (route) => {
+        await page.route('**/composer/ask', (route) => {
             parsed++;
 
             return route.continue();
@@ -59,12 +59,10 @@ test.describe('Composer (universal prompt)', () => {
         page,
     }) => {
         let parsed = 0;
-        await page.route('**/composer/parse', (route) => {
+        await page.route('**/composer/ask', (route) => {
             parsed++;
 
-            return route.fulfill({
-                json: { intent: 'find', constraints: null },
-            });
+            return route.continue();
         });
         await page.goto('/composer');
         const input = page.locator('#studio-request');
@@ -84,17 +82,13 @@ test.describe('Composer (universal prompt)', () => {
         );
         await expect(context).toHaveCount(0);
         expect(parsed).toBe(0);
-        const parsedResponse = page.waitForResponse('**/composer/parse');
+        const replies = page.locator('article.chat-entry.chat-assistant');
+        const before = await replies.count();
+        const parsedResponse = page.waitForResponse('**/composer/ask');
         await page.getByRole('button', { name: 'Send request' }).click();
         await parsedResponse;
         await expect.poll(() => parsed).toBe(1);
-        await expect(
-            page
-                .getByText(
-                    'Browse places and events below. Pick a date before adding something to your plan.',
-                )
-                .last(),
-        ).toBeVisible();
+        await expect(replies).toHaveCount(before + 1);
         // The conversation may already hold that reply, so wait until this one is
         // saved: a reply still in flight would change the plan under the next test.
         await expect(page.locator('.composer-working')).toHaveCount(0);
@@ -103,13 +97,37 @@ test.describe('Composer (universal prompt)', () => {
     test('a paperwork request opens reviewed guidance only after explicit Send', async ({
         page,
     }) => {
+        // The assistant's answer, as it gives it for a paperwork question: reviewed
+        // guidance for its words (the server here has no AI to choose it).
         let parsed = 0;
-        await page.route('**/composer/parse', (route) => {
+        await page.route('**/composer/ask', async (route) => {
             parsed++;
+            const response = await route.fetch();
+            const workspace = await response.json();
+            const conversation = workspace.conversations.find(
+                (item: { id: string }) => item.id === workspace.active,
+            );
+            const last = conversation.messages.at(-1);
+            conversation.messages[conversation.messages.length - 1] = {
+                id: last.id,
+                created_at: last.created_at,
+                role: 'assistant',
+                request: 'ask',
+                kind: 'bureaucracy',
+                written: 'ai',
+                read: ['guidance'],
+                lead: '',
+                text: '',
+                query: 'do I need an appointment for Anmeldung?',
+                blocks: [
+                    {
+                        type: 'guidance',
+                        query: 'do I need an appointment for Anmeldung?',
+                    },
+                ],
+            };
 
-            return route.fulfill({
-                json: { intent: 'bureaucracy_q', constraints: null },
-            });
+            return route.fulfill({ response, json: workspace });
         });
         await page.goto(
             '/composer?prompt=' +
@@ -128,7 +146,7 @@ test.describe('Composer (universal prompt)', () => {
         const guidance = page.locator('.composer-guidance');
         const before = await guidance.count();
         // The Send waits behind the page's deferred loads on a one-worker server.
-        const parsedResponse = page.waitForResponse('**/composer/parse');
+        const parsedResponse = page.waitForResponse('**/composer/ask');
         await page.getByRole('button', { name: 'Send request' }).click();
         await parsedResponse;
         await expect.poll(() => parsed).toBe(1);
