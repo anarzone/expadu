@@ -30,14 +30,14 @@ function nearestStopIs(string $name): void
 
 function todayStationFor(User $user): mixed
 {
-    return test()->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page')['props']['station'];
+    return test()->actingAs($user)->get(route('today'))->assertOk()->viewData('page')['props']['station'];
 }
 
 test('with nothing to anchor it, Today sends no station', function () {
     $user = User::factory()->onboarded()->create(['veedel' => null]);
     $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldNotReceive('closestTo', 'named'));
 
-    $page = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page');
+    $page = $this->actingAs($user)->get(route('today'))->assertOk()->viewData('page');
 
     expect($page['props'])->toHaveKey('station')
         ->and($page['props']['station'])->toBeNull();
@@ -85,9 +85,9 @@ test('a board Travel doesn’t keep yet is read off the request, once per stop, 
     $this->mock(NearbyStation::class, fn ($mock) => $mock->shouldReceive('kept')->with('Neumarkt')->andReturn(null)
         ->shouldNotReceive('named', 'closestTo', 'warm'));
 
-    $page = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page');
+    $page = $this->actingAs($user)->get(route('today'))->assertOk()->viewData('page');
     // A second view while the first read is queued adds none.
-    $this->actingAs($user)->get(route('dashboard'))->assertOk();
+    $this->actingAs($user)->get(route('today'))->assertOk();
 
     expect($page['props']['station'])->toBeNull()
         ->and($page['props']['stationWarming'])->toBe('Neumarkt');
@@ -102,7 +102,7 @@ test('the stops they pick most are quick picks only under the current personalis
             app(SignalRecorder::class)->transit($user, SignalItemType::Stop, $stop);
         }
     };
-    $picks = fn () => $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('page')['props']['learnedStops'];
+    $picks = fn () => $this->actingAs($user)->get(route('today'))->assertOk()->viewData('page')['props']['learnedStops'];
 
     $learn();
     expect($picks())->toBe([]);

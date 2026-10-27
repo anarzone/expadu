@@ -17,14 +17,14 @@ test('a slow or dead SSR server falls back to client-side rendering', function (
     config(['inertia.ssr.ensure_bundle_exists' => false]);
     Http::fake(fn () => throw new ConnectionException('Operation timed out after 1500 milliseconds'));
 
-    expect(app(Gateway::class)->dispatch(['component' => 'dashboard', 'props' => []]))->toBeNull();
+    expect(app(Gateway::class)->dispatch(['component' => 'today', 'props' => []]))->toBeNull();
 });
 
 test('a healthy SSR server still renders the page', function () {
     config(['inertia.ssr.ensure_bundle_exists' => false]);
     Http::fake(['*/render' => Http::response(['head' => ['<title>Today</title>'], 'body' => '<div id="app"></div>'])]);
 
-    $response = app(Gateway::class)->dispatch(['component' => 'dashboard', 'props' => []]);
+    $response = app(Gateway::class)->dispatch(['component' => 'today', 'props' => []]);
 
     expect($response->head)->toBe('<title>Today</title>')
         ->and($response->body)->toBe('<div id="app"></div>');

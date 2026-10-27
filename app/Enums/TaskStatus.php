@@ -23,7 +23,7 @@ enum TaskStatus: string
     case Done = 'done';
 
     /**
-     * Human-readable label for the dashboard chip.
+     * Human-readable label for Today's chip.
      */
     public function label(): string
     {

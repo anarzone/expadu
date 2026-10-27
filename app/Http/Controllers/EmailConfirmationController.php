@@ -58,6 +58,6 @@ class EmailConfirmationController extends Controller
 
         return is_string($intended) && ($intended === $origin || str_starts_with($intended, $origin.'/'))
             ? $intended
-            : (string) config('fortify.home', '/dashboard');
+            : (string) config('fortify.home', '/today');
     }
 }

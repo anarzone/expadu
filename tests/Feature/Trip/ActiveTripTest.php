@@ -83,7 +83,7 @@ test('start requires a journey with legs and a destination', function () {
 });
 
 test('the active trip is shared with every page', function () {
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('activeTrip', null));
+    $this->get(route('today'))->assertInertia(fn ($page) => $page->where('activeTrip', null));
 
     $this->postJson('/api/trip/start', tripPayload())->assertOk();
 
@@ -91,7 +91,7 @@ test('the active trip is shared with every page', function () {
     // relation the first GET loaded onto the acting-as instance.
     $this->user->unsetRelation('activeTrip');
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
+    $this->get(route('today'))->assertInertia(fn ($page) => $page
         ->where('activeTrip.destination.name', 'Ebertplatz')
         ->has('activeTrip.journey')
     );
@@ -103,5 +103,5 @@ test('another user does not see this user’s trip', function () {
     $other = User::factory()->onboarded()->create();
     $this->actingAs($other);
 
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page->where('activeTrip', null));
+    $this->get(route('today'))->assertInertia(fn ($page) => $page->where('activeTrip', null));
 });

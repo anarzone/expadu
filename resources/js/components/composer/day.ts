@@ -46,7 +46,7 @@ const ORIGIN_KEY = 'expadu-composer-origin';
 
 /** The page Composer was opened from, by path; anything else goes back to Today. */
 const pages: [RegExp, string][] = [
-    [/^\/dashboard(\/|$)/, 'Today'],
+    [/^\/today(\/|$)/, 'Today'],
     [/^\/events(\/|$)/, 'Events'],
     [/^\/bureaucracy(\/|$)/, 'Paperwork'],
     [/^\/travel(\/|$)/, 'Travel'],
@@ -81,7 +81,7 @@ export function useComposerOrigin(): { url: string; name: string } {
             // Private mode: Today.
         }
 
-        return { url: '/dashboard', name: 'Today' };
+        return { url: '/today', name: 'Today' };
     });
 
     return origin;

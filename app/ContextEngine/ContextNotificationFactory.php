@@ -20,7 +20,7 @@ use Illuminate\Notifications\Notification;
  * formats both surfaces, so the push and the alert never drift apart.
  *
  * Returns null for action types with no notification (alternative_route,
- * disruption_no_alt — dashboard-only companions) or an empty payload.
+ * disruption_no_alt — Today-only companions) or an empty payload.
  */
 class ContextNotificationFactory
 {

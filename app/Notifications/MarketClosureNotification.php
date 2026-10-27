@@ -41,7 +41,7 @@ class MarketClosureNotification extends Notification implements ShouldQueue
             ->body('Most supermarkets and shops will be closed. Plan your shopping for today.')
             ->action('Got it', 'dismiss')
             ->options(['TTL' => 7200])
-            ->data(['url' => '/dashboard']);
+            ->data(['url' => '/today']);
     }
 
     /** @return array<string, mixed> */

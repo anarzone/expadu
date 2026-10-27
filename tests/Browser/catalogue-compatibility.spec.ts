@@ -80,7 +80,7 @@ test('a saved unavailable item keeps its name and time with a review note in Com
     );
     // The header's bookmark opens Saved in the panel, in place; Escape goes
     // back to the conversation, whose workspace is the stubbed one.
-    await page.goto('/dashboard');
+    await page.goto('/today');
     await page
         .getByRole('banner')
         .getByRole('button', { name: 'Saved', exact: true })

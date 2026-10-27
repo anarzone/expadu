@@ -44,7 +44,7 @@ class HomeFeedController extends Controller
             return $read ??= $this->board($request, $locations, $nearby, $kvb, $stop);
         };
 
-        return Inertia::render('dashboard', [
+        return Inertia::render('today', [
             // The person's day: plans, the trips between them and when to
             // leave for the next (DayProjection).
             'day' => fn () => app(DayProjection::class)->for($request->user(), CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
