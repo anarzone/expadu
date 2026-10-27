@@ -665,9 +665,8 @@ export function RecordRows({
                                     onClick={() =>
                                         row.edit
                                             ? onEdit(row.key)
-                                            : calls.ask(
-                                                  `Change my ${row.label.toLowerCase()}`,
-                                              )
+                                            : // A card from before rows edited in place: asked in words, its label as the row says it.
+                                              calls.ask(`Change “${row.label}”`)
                                     }
                                 >
                                     Change
