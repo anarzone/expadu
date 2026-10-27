@@ -36,8 +36,9 @@ function ledger(User $user): Collection
 /** Back-date a user's ledger rows so decay and windows can be checked. */
 function ageSignals(User $user, int $days): void
 {
+    // Days of 24 hours, in UTC: a Berlin calendar day across a clock change is 23 or 25 (25 Oct 2026).
     DB::table('user_signals')->where('subject_key', Pseudonym::for($user))
-        ->update(['created_at' => now()->subDays($days)->toIso8601String()]);
+        ->update(['created_at' => now()->utc()->subDays($days)->toIso8601String()]);
 }
 
 test('personalisation is off by default and nothing is recorded without the opt-in', function () {
