@@ -217,10 +217,12 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-bg-inset: #f1ebdf; /* neutral pills */
     --color-bg-hover: #e9e0cf; /* pressed neutral */
     --color-bg-header: #fffdf8; /* app header */
+    --color-bg-field: #ffffff; /* a field, or a tile opened to edit it */
 
     /* ── Colour · lines ────────────────────────────────────────────────── */
     --color-border: #e6ddcb; /* hairlines and separators (decorative) */
     --color-border-strong: #8a8277; /* form controls: ≥3:1 on every surface */
+    --color-border-later: #d4c7ad; /* a dashed panel for what comes later */
 
     /* ── Colour · text ─────────────────────────────────────────────────── */
     --color-text: #211d15; /* titles, data, links */
