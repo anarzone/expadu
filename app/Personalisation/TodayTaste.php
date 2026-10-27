@@ -27,6 +27,9 @@ final class TodayTaste
     /** A signal this many days old counts half. */
     private const HALF_LIFE_DAYS = 14;
 
+    /** Kept this long at most, so a page reads it from the cache; a new signal forgets it (forget()). */
+    private const KEEP_SECONDS = 600;
+
     /** What a catalogue signal says they liked (a "Not for me" or an impression says nothing here). */
     private const LIKED = ['detail_viewed', 'saved', 'get_there', 'trip_taken', 'plan_kept_unedited', 'shared', 'more_like_this', 'been_liked'];
 
@@ -39,13 +42,28 @@ final class TodayTaste
         if (! PersonalisationWording::covers($user, 2)) {
             return $none;
         }
+
+        return Cache::remember(self::key($user->id), self::KEEP_SECONDS, fn (): array => $this->learned($user) ?? $none);
+    }
+
+    /** They did something new (SignalRecorder), or turned it off: worked out again on the next look. */
+    public static function forget(int $userId): void
+    {
+        Cache::forget(self::key($userId));
+    }
+
+    /**
+     * @return array{personal: true, categories: list<string>, areas: list<string>, stops: list<string>, lines: list<string>, needs: array{opened: list<string>, dismissed: list<string>}}|null
+     */
+    private function learned(User $user): ?array
+    {
         $now = CarbonImmutable::now();
         $rows = DB::table('user_signals')->where('subject_key', Pseudonym::for($user))->where('created_at', '>=', $now->subDays(self::DAYS)->toIso8601String())
             ->where(fn ($q) => $q->whereIn('item_type', ['topic', 'stop', 'line', 'need'])
                 ->orWhere(fn ($q) => $q->whereIn('item_type', ['spot', 'event'])->whereIn('action', self::LIKED)))
             ->get(['action', 'item_type', 'category', 'veedel', 'context', 'created_at']);
         if ($rows->where('action', '!=', 'impression')->count() < self::MIN_SIGNALS) {
-            return $none;
+            return null;
         }
         $weight = fn (object $row): float => 0.5 ** ($now->diffInSeconds(CarbonImmutable::parse($row->created_at)) / 86400 / self::HALF_LIFE_DAYS);
         $rank = function (iterable $pairs): array {
@@ -97,6 +115,11 @@ final class TodayTaste
         $order = Cache::get(self::orderKey($user->id));
 
         return is_array($order) && PersonalisationWording::covers($user, 2) ? $order : null;
+    }
+
+    private static function key(int $userId): string
+    {
+        return "today_taste:{$userId}";
     }
 
     public static function orderKey(int $userId, ?CarbonImmutable $day = null): string

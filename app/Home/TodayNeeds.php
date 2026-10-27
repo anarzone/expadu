@@ -7,6 +7,8 @@ use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Support\NotificationThrottle;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -32,6 +34,12 @@ final class TodayNeeds
     /** What pushes on its own when it's this close (notifications:watch-plans). */
     private const SOON_MINUTES = 120;
 
+    /**
+     * The day's items are worked out at most this often (coordinator, 26 Oct 2026: Today loads
+     * whole, so this has to be quick); any change to the day forgets them sooner (forget()).
+     */
+    private const KEEP_SECONDS = 90;
+
     public function __construct(private DayBriefs $briefs) {}
 
     /**
@@ -55,6 +63,21 @@ final class TodayNeeds
     }
 
     /**
+     * Something in their day changed (a planned way, their plan, a reminder, Home or Work, a live
+     * alert, Paperwork, what they turned off): worked out again on the next look. DayImportance's
+     * forget() calls this, so one signal covers both.
+     */
+    public static function forget(int $userId, CarbonInterface ...$days): void
+    {
+        foreach ($days === [] ? [now(), now()->addDay()] : $days as $day) {
+            Cache::forget(self::key($userId, CarbonImmutable::instance($day)->setTimezone('Europe/Berlin')->toDateString()));
+        }
+    }
+
+    /**
+     * Leaving now, worked out each time (the clock decides it), then the day's eligible items, kept
+     * for KEEP_SECONDS as plain data: the brief's items and order, through push's gate.
+     *
      * @return list<array{id: string, tier: int, kind: string, headline: string, detail: ?string, at: ?string, severity: string, href: ?string}>
      */
     private function items(User $user, CarbonImmutable $now): array
@@ -65,11 +88,14 @@ final class TodayNeeds
             ->map(fn (PlannedTrip $trip): array => ['kind' => 'leave_now', 'type' => 'planned_trip_leave', 'severity' => 'major',
                 'text' => "Leave now for {$trip->title}.", 'why' => 'Your way leaves at '.$trip->depart_at->setTimezone('Europe/Berlin')->format('H:i').'.',
                 'link' => '/timetable?'.http_build_query(['view' => 'journey', 'activity' => (string) $trip->target_id]), 'about' => "trip:{$trip->id}",
-                'at' => $trip->depart_at->setTimezone('Europe/Berlin')->toIso8601String()]);
-        $needs = collect($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING))->filter(fn (array $item): bool => in_array($item['kind'], self::NEEDS, true));
+                'at' => $trip->depart_at->setTimezone('Europe/Berlin')->toIso8601String()])
+            ->filter(fn (array $item): bool => NotificationThrottle::eligible($user, $item['type']));
+        $needs = Cache::remember(self::key($user->id, $now->toDateString()), self::KEEP_SECONDS, fn (): array => collect($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING))
+            ->filter(fn (array $item): bool => in_array($item['kind'], self::NEEDS, true) && $item['type'] !== null && NotificationThrottle::eligible($user, $item['type']))
+            ->map(fn (array $item): array => array_intersect_key($item, array_flip(['kind', 'type', 'severity', 'text', 'why', 'link', 'about', 'at'])))
+            ->values()->all());
 
         return $leaving->concat($needs)
-            ->filter(fn (array $item): bool => $item['type'] !== null && NotificationThrottle::eligible($user, $item['type']))
             ->map(fn (array $item): array => [
                 // Which item it is today, never what it says: the same one keeps its id all day.
                 'id' => substr(hash('sha256', $now->toDateString().'|'.$item['about']), 0, 16),
@@ -81,6 +107,11 @@ final class TodayNeeds
                 'severity' => in_array($item['severity'], ['critical', 'major'], true) ? 'conflict' : 'attention',
                 'href' => $item['link'],
             ])->values()->all();
+    }
+
+    private static function key(int $userId, string $date): string
+    {
+        return "today_needs:{$userId}:{$date}";
     }
 
     /**
