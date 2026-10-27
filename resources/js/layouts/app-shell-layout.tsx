@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { rememberComposerOrigin } from '@/components/composer/frame';
+import { rememberComposerOrigin } from '@/components/composer/day';
 import {
     ComposerTray,
     openComposerTray,

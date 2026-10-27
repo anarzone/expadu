@@ -31,6 +31,12 @@ export type Slot = {
     destination_group_id?: string | null;
     is_appointment?: boolean;
     closes_at?: string | null;
+    /** In the catalogue: what Around here calls it ("Café"), its kind (colour, icon) and group ("Cafés"). */
+    label?: string;
+    kind?: string;
+    group?: string;
+    /** The day's listed hours ("Open 09:00–18:00", "Hours not listed"); events have their time. */
+    hours?: string | null;
 };
 /** A slot's time as said: "13:00–14:00", or the start alone when its end isn't known or listed. */
 export const slotSpan = (slot: Slot) =>
