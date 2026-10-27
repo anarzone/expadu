@@ -7,8 +7,12 @@ use App\Events\Context\ScoredActionInserted;
 use App\Models\User;
 use App\Services\MuteService;
 use App\Support\NotificationThrottle;
+use App\Support\PushDecision;
 use App\Support\RedisLogger;
+use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -19,6 +23,9 @@ use Illuminate\Support\Facades\Redis;
  */
 class ActionBus
 {
+    /** What changes how important a day is when it comes in (DayImportance's risks and Paperwork). */
+    private const DAY_CHANGING = ['transit_disruption', 'transit_delay', 'weather_alert', 'bureaucracy_task'];
+
     /**
      * Insert (or update) a scored action for a user. Throttled push channels
      * are stripped here so downstream delivery does not need to re-check.
@@ -71,10 +78,69 @@ class ActionBus
             'valid_until' => $action->validUntil?->toIso8601String(),
         ]);
 
+        // A live risk or Paperwork alert changes how important their day is (DayImportance).
+        if (in_array($action->type, self::DAY_CHANGING, true)) {
+            DayImportance::forget($user->id);
+        }
+
         // Notify listeners (push dispatcher, future digest emitters, etc.)
         event(new ScoredActionInserted($user, $action));
 
         return $action;
+    }
+
+    /**
+     * A push its caller has claimed and must know the fate of (a leave reminder, a change of
+     * plan, a "Remind me", a get-off, the day's brief): the same gate as every other push
+     * (preference, mute, quiet hours, the budget, once per situation), sent now, so a failure
+     * reaches the caller to give its claim back. Held: the caller tries again later. Its
+     * alert-page card comes from the notification's own database channel, as before.
+     *
+     * @param  CarbonInterface|null  $about  when what it's about happens, for quiet hours
+     */
+    public function deliver(User $user, ScoredAction $action, Notification $notification, ?CarbonInterface $about = null): PushDecision
+    {
+        $muteSubject = app(MuteService::class)->muteSubjectFor($action->type, $action->payload);
+        $decision = match (true) {
+            $muteSubject !== null && app(MuteService::class)->isMuted($user, $muteSubject[0], $muteSubject[1]) => PushDecision::drop('muted'),
+            $this->alreadyPushed($action) => PushDecision::drop('already_pushed'),
+            default => NotificationThrottle::decide($user, $action->type, $action->severity, $about),
+        };
+        $log = ['type' => $action->type, 'action_key' => $action->actionKey, 'severity' => $action->severity, 'decision' => $decision->reason];
+        if (! $decision->send) {
+            RedisLogger::log("scored_action_push_dispatch:{$user->id}", $log + ['mode' => $decision->later ? 'held' : 'dropped']);
+
+            return $decision;
+        }
+
+        // Throws to the caller, which gives its claim back; nothing is counted as sent.
+        $user->notify($notification);
+        NotificationThrottle::recordSent($user);
+        $this->rememberPushed($action);
+        RedisLogger::log("scored_action_push_dispatch:{$user->id}", $log + ['mode' => 'sent', 'notification' => $notification::class]);
+
+        return $decision;
+    }
+
+    /**
+     * Once per situation (an action key): pushed already at this severity or worse. Keeps the
+     * marker alive while the situation lasts.
+     */
+    public function alreadyPushed(ScoredAction $action): bool
+    {
+        $last = Cache::get($this->pushedKey($action));
+        if ($last === null || self::severityRank($action->severity) > (int) $last) {
+            return false;
+        }
+
+        Cache::put($this->pushedKey($action), (int) $last, $this->dedupeUntil($action));
+
+        return true;
+    }
+
+    public function rememberPushed(ScoredAction $action): void
+    {
+        Cache::put($this->pushedKey($action), self::severityRank($action->severity), $this->dedupeUntil($action));
     }
 
     /**
@@ -172,5 +238,30 @@ class ActionBus
     private function key(int $userId): string
     {
         return "pending_actions:{$userId}";
+    }
+
+    private function pushedKey(ScoredAction $action): string
+    {
+        return 'push_sent:'.$action->actionKey;
+    }
+
+    /** Until the action lapses (each re-insert extends it), never less than an hour. */
+    private function dedupeUntil(ScoredAction $action): CarbonInterface
+    {
+        $floor = now()->addHour();
+        $until = $action->validUntil ?? now()->addHours(6);
+
+        return $until->greaterThan($floor) ? $until : $floor;
+    }
+
+    private static function severityRank(string $severity): int
+    {
+        return match ($severity) {
+            'critical' => 4,
+            'major' => 3,
+            'moderate' => 2,
+            'minor' => 1,
+            default => 0,
+        };
     }
 }

@@ -28,6 +28,18 @@ final class ScoredAction implements \JsonSerializable
         public CarbonInterface $createdAt,
     ) {}
 
+    /**
+     * A push a command or job has claimed and hands to ActionBus::deliver (a leave reminder, a
+     * "Remind me", a get-off, the day's brief): push only, scored by its severity.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public static function claimed(string $type, string $actionKey, string $severity, ?CarbonInterface $validUntil, array $payload = []): self
+    {
+        return new self($type, $actionKey, Scorer::SEVERITY_BASE[$severity] ?? Scorer::SEVERITY_BASE['info'], $severity, $validUntil,
+            [self::CHANNEL_PUSH], $payload, CarbonImmutable::now());
+    }
+
     /** @param  array<string, mixed>  $data */
     public static function fromArray(array $data): self
     {
