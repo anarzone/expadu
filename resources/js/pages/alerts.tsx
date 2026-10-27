@@ -18,7 +18,6 @@ import { InGermanChip, KvbNoticeLink } from '@/components/travel/kvb-notice';
 import { ICON_STROKE } from '@/constants/icons';
 import AppLayout from '@/layouts/app-layout';
 import { writeJson } from '@/lib/reliable-write';
-import { edit as editNotifications } from '@/routes/notifications';
 
 type Alert = {
     id: number;
@@ -435,7 +434,7 @@ export default function Alerts() {
                         )}
                         <button
                             onClick={() =>
-                                router.visit(editNotifications.url())
+                                router.visit('/settings/notifications')
                             }
                             aria-label="Notification settings"
                             title="Notification settings"

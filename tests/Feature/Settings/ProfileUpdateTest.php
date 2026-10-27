@@ -12,12 +12,12 @@ test('settings page is displayed', function () {
         ->assertInertia(fn (Assert $page) => $page->component('settings'));
 });
 
-test('the old profile page opens settings', function () {
+test('the old profile page opens Your account', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('profile.edit'))
-        ->assertRedirect(route('settings'));
+        ->assertRedirect('/settings/account');
 });
 
 test('profile information can be updated', function () {

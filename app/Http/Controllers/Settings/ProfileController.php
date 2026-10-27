@@ -15,11 +15,11 @@ use Inertia\Inertia;
 class ProfileController extends Controller
 {
     /**
-     * The profile is a panel of Settings now (/settings).
+     * The profile is Settings' Your account now.
      */
     public function edit(): RedirectResponse
     {
-        return redirect()->route('settings');
+        return redirect()->route('settings.section', 'account');
     }
 
     /**

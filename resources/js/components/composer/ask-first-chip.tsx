@@ -1,5 +1,4 @@
 import { Link, usePage } from '@inertiajs/react';
-import { edit } from '@/routes/composer-settings';
 
 /**
  * Composer's mode in its head (the "Composer does things" canvas): whether it
@@ -26,7 +25,7 @@ export function AskFirstChip() {
     return (
         <Link
             className="composer-mode-chip"
-            href={edit()}
+            href="/settings/composer"
             aria-label={`${label}. Change it in Settings`}
         >
             <span className="composer-mode-long">{label}</span>
