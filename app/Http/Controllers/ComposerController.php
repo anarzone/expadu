@@ -51,7 +51,6 @@ use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\GermanHolidayService;
 use App\Services\UserLocationService;
-use App\Services\VeedelDirectory;
 use App\Services\WeatherService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
@@ -86,48 +85,28 @@ class ComposerController extends Controller
     private ?array $currentWeatherCache = null;
 
     /**
-     * Render the composer page. Carries the same area/From data Places uses, so
-     * the composer can offer the identical district picker and From control: the
-     * Bezirk/Veedel directory, the user's home corner, their saved places (by
-     * id + label only — coordinates resolve server-side), and pins/prompt.
+     * Render the composer page whole, in its first response (owner, 26 Oct 2026: pages
+     * load whole, with no staged loading): the workspace, Your day with its Paperwork
+     * and the day around it, and the saved places for the From picker (id + label
+     * only; coordinates resolve server-side by id when one is picked).
      */
-    public function page(Request $request, ProfileEngine $profiles, VeedelDirectory $veedels): Response
+    public function page(Request $request): Response
     {
-        $homeVeedel = $profiles->build($request->user())->veedel;
-        // Read when a response carries it (the page, or its deferred Bezirk rail),
-        // and once: the deferred requests don't look it up for props they skip.
-        $bezirk = false;
-        $homeBezirk = function () use (&$bezirk, $homeVeedel): ?string {
-            if ($bezirk === false) {
-                $bezirk = $homeVeedel ? DB::table('veedels')->where('name', $homeVeedel)->value('bezirk') : null;
-            }
-
-            return $bezirk;
-        };
+        $user = $request->user();
 
         return Inertia::render('composer', [
-            // Lazy, so the deferred requests don't read the workspace again.
-            'workspace' => fn () => app(WorkspaceStore::class)->read($request->user()),
+            'workspace' => fn () => app(WorkspaceStore::class)->read($user),
             // Your day: the shared day projection (plans, appointments, when to leave for
-            // the next) and what the person's Paperwork record has coming up. Deferred
-            // together, so the frame paints first.
-            'day' => DayProjection::deferred($request),
-            'paperwork' => Inertia::defer(fn () => app(PaperworkGlance::class)->for($request->user()), 'day'),
-            'around' => Inertia::defer(fn () => app(DayAround::class)->for($request->user()), 'day'),
+            // the next) and what the person's Paperwork record has coming up.
+            'day' => fn () => app(DayProjection::class)->for($user, CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
+            'paperwork' => fn () => app(PaperworkGlance::class)->for($user),
+            'around' => fn () => app(DayAround::class)->for($user),
             // What a page handed over by POST (see entry()); present once.
             'entry' => fn () => $this->takeEntry($request),
             'prompt' => $request->query('prompt'),
             'planDate' => $request->query('plan'),
             'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
-            'homeVeedel' => $homeVeedel,
-            'homeBezirk' => $homeBezirk,
-            // Saved origins for the From picker — id + label + sublabel; coordinates
-            // resolve server-side by id when one is picked. Lazy, so the deferred
-            // requests don't re-run the query.
-            'savedPlaces' => fn () => self::savedPlaces($request->user()),
-            // Deferred so the page shell paints before the directory loads.
-            'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk())),
-            'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
+            'savedPlaces' => fn () => self::savedPlaces($user),
         ]);
     }
 

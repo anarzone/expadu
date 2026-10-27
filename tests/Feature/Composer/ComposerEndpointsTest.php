@@ -261,9 +261,7 @@ test('the composer page offers the user saved places as plan origins', function 
         ->has('savedPlaces', 2)
         // Home is ordered before Work, regardless of insertion order.
         ->where('savedPlaces.0.name', 'My Flat')
-        ->where('savedPlaces.1.name', 'Office')
-        // The area picker's home corner is handed over too.
-        ->has('homeBezirk'),
+        ->where('savedPlaces.1.name', 'Office'),
     );
 });
 
