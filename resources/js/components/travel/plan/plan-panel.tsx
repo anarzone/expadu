@@ -41,7 +41,12 @@ import type {
     Schedule,
     SortKey,
 } from './plan-model';
-import { PlanChecks, PlanOptions, optionLabel } from './plan-results';
+import {
+    PlanChecks,
+    PlanLoading,
+    PlanOptions,
+    optionLabel,
+} from './plan-results';
 import { PlanSaved } from './plan-saved';
 
 /**
@@ -2017,19 +2022,7 @@ export function PlanPanel({
                                         </div>
                                     </div>
                                     {status.kind === 'loading' ? (
-                                        <div
-                                            className="result-empty"
-                                            role="status"
-                                        >
-                                            <span className="empty-symbol">
-                                                <TravelIcon name="route" />
-                                            </span>
-                                            <h3>Finding the ways</h3>
-                                            <p>
-                                                Asking the routes and live times
-                                                for {to.place?.name ?? to.text}.
-                                            </p>
-                                        </div>
+                                        <PlanLoading />
                                     ) : status.kind === 'location' ? (
                                         <div className="result-empty">
                                             <span className="empty-symbol">
