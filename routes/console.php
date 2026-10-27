@@ -33,6 +33,8 @@ Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapp
 Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
+// People's laptop-work answers: kept 18 months at most (docs/places/design/laptop-answers.md).
+Schedule::command('places:prune-work-answers')->dailyAt('04:10')->withoutOverlapping(30);
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);
 
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks

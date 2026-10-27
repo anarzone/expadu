@@ -364,7 +364,8 @@ test('reviewed facilities inside a park collapse into the park card with activit
 
     // The in-park pitch and tennis court are NOT separate cards
     expect($data->pluck('name')->all())->toContain('Blücherpark');
-    expect($data->where('name', 'Bolzplatz')->count())->toBe(1); // only the standalone one
+    // Only the standalone one, shown by its English kind rather than "Bolzplatz" (PlaceDisplayName)
+    expect($data->filter(fn (array $place): bool => str_starts_with($place['name'], 'Sports pitch'))->count())->toBe(1);
     expect($data->pluck('name')->all())->not->toContain('Tennisplatz');
 
     // The park card says what you can do inside
@@ -496,7 +497,9 @@ test('named destinations rank above generic facilities', function () {
 
     $names = collect($this->getJson('/api/places')->json('data'))->pluck('name')->all();
 
-    expect($names)->toBe(['Blücherpark', 'Tischtennisplatte']);
+    expect($names)->toHaveCount(2)
+        ->and($names[0])->toBe('Blücherpark')
+        ->and($names[1])->toStartWith('Table tennis table'); // its English kind and where it is
 });
 
 test("a park's context lists the facilities inside it", function () {
@@ -681,7 +684,7 @@ test('near mode lists places within a radius of the user, closest-first', functi
 
     $names = collect($this->getJson('/api/places?near=1')->json('data'))->pluck('name')->all();
 
-    expect($names[0])->toBe('Spielplatz am Weg')
+    expect($names[0])->toBe('Playground, Am Weg') // "Spielplatz am Weg" in English (PlaceDisplayName)
         ->and($names)->toContain('Close park');
     expect($names)->not->toContain('Far park'); // 3 nearby exist → ring stays tight, far stays out
 });

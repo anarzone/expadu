@@ -6,6 +6,8 @@ use App\Enums\SpotCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
 use App\Places\AroundKinds;
+use App\Places\FacilityGroups;
+use App\Places\PlaceAmenities;
 use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -41,7 +43,7 @@ class PlaceResource extends JsonResource
         return [
             'id' => $this->id,
             'recommendation_status' => $this->whenHas('recommendation_available', fn () => $this->recommendation_available ? 'available' : 'unavailable'),
-            'name' => $placeFacts['name']['value'] ?? $this->name,
+            'name' => $placeFacts['display_name'] ?? $placeFacts['name']['value'] ?? $this->name,
             'category' => $coarse,
             'fine_label' => $fine?->label(),
             'emoji' => $fine?->emoji(),
@@ -71,10 +73,17 @@ class PlaceResource extends JsonResource
             'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
+            // A park's own facilities (unnamed pitches, courts, playgrounds inside it), with counts.
+            ...$this->facilities(),
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
+            'feedback_been' => (bool) ($this->feedback_been ?? false),
+            'feedback_been_rating' => $this->feedback_been_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
+            // What it lists, as search filters by it and Composer says it:
+            // "Italian", "Wi-Fi", "outdoor seating", "vegan options".
+            'amenities' => PlaceAmenities::listed($placeFacts['practical']),
             'place_facts' => $this->placeFacts($placeFacts),
             // The place sheet (Around here): its kind's icon, and what its
             // listed hours say at the time asked (OpenNearby::hoursAt).
@@ -256,5 +265,16 @@ class PlaceResource extends JsonResource
         }
 
         return array_slice($facts, 0, 3);
+    }
+
+    /** @return array{facilities: list<array{kind: string, count: int}>, facilities_text: ?string} */
+    private function facilities(): array
+    {
+        $counts = app(FacilityGroups::class)->counts([(int) $this->id])[(int) $this->id] ?? [];
+
+        return [
+            'facilities' => array_map(fn (string $kind, int $count): array => ['kind' => $kind, 'count' => $count], array_keys($counts), array_values($counts)),
+            'facilities_text' => FacilityGroups::summary($counts),
+        ];
     }
 }

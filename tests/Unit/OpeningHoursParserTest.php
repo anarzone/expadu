@@ -59,3 +59,21 @@ test('returns null for variable or free-text hours', function () {
     expect(OpeningHoursParser::parse(''))->toBeNull();
     expect(OpeningHoursParser::parse(null))->toBeNull();
 });
+
+test('closing dates don\'t hide the week they come with, and closedOn reads them', function () {
+    // Kolumba's own tag (owner's Sunday plan, 24 Oct 2026: planned at 10:06 as if its hours weren't known).
+    $kolumba = 'Mo,We-Su 12:00-17:00; Tu off, Jan 01,Aug 15-Sep 14,Dec 24,25,31 off';
+
+    expect(OpeningHoursParser::parse($kolumba))->toMatchArray(['sun' => [['12:00', '17:00']], 'tue' => []])
+        ->and(OpeningHoursParser::closedOn($kolumba, new DateTimeImmutable('2026-10-25')))->toBeFalse()
+        ->and(OpeningHoursParser::closedOn($kolumba, new DateTimeImmutable('2026-08-20')))->toBeTrue()
+        ->and(OpeningHoursParser::closedOn($kolumba, new DateTimeImmutable('2026-12-31')))->toBeTrue()
+        ->and(OpeningHoursParser::closedOn($kolumba, new DateTimeImmutable('2026-12-26')))->toBeFalse()
+        ->and(OpeningHoursParser::closedOn('Mo-Fr 09:00-18:00; Dec 24-26 off', new DateTimeImmutable('2026-12-25')))->toBeTrue();
+});
+
+test('a fallback that is only a comment is dropped; the week stands', function () {
+    $r = OpeningHoursParser::parse('Mo 14:00-21:00; Tu-Th 10:00-21:00; Fr 10:00-18:00;Su, PH off|| "Samstag zweimal im Monat, Details siehe Webseite"');
+
+    expect($r['sun'])->toBe([])->and($r['sat'])->toBe([])->and($r['mon'])->toBe([['14:00', '21:00']]);
+});

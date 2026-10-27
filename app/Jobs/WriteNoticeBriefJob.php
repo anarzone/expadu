@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Writes the English brief for one KVB notice text, on the llm queue with
+ * Writes the English brief (or translation) for one transit notice text, on the llm queue with
  * the other model calls. A notice briefed already, or one whose brief was
  * thrown away today, isn't paid for again.
  */
@@ -50,9 +50,10 @@ class WriteNoticeBriefJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if ($writer->write($notice) === null) {
-            // Ungrounded or declined: the notice's own text shows. Try again
-            // tomorrow, or as soon as KVB changes the text (a new hash).
+        // English first (owner, 21 Oct 2026): the brief, else a checked literal
+        // translation; only when both fail does the notice's own text show.
+        if ($writer->write($notice) === null && $writer->translate($notice) === null) {
+            // Try again tomorrow, or as soon as the text changes (a new hash).
             Cache::put("notice-brief:rejected:{$hash}", true, now()->addDay());
         }
     }
