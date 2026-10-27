@@ -6,6 +6,7 @@ use App\Models\BureaucracyCaseQuestion;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Tests\Support\PaperworkStart;
 
 beforeEach(function () {
     $this->travelTo('2026-09-08 10:00:00');
@@ -15,10 +16,11 @@ beforeEach(function () {
     $store->activate($release->id, null);
 });
 
-dataset('investigated onboarding journeys', [
+dataset('investigated journeys', [
     'working on D visa and applying for a first Blue Card' => [[
-        'onboarding' => [
-            'situation' => 'non_eu_employee',
+        'start' => [
+            'citizenship_group' => 'non_eu',
+            'purpose' => 'employment',
             'entry_mode' => 'd_visa',
             'visa_expires_at' => '2026-10-01',
             'current_residence_title' => 'national_d_visa',
@@ -40,8 +42,8 @@ dataset('investigated onboarding journeys', [
         ],
     ]],
     'joining spouse while the sponsor Blue Card is pending' => [[
-        'onboarding' => [
-            'situation' => 'family_reunification',
+        'start' => [
+            'purpose' => 'family',
             'entry_mode' => 'd_visa',
             'visa_expires_at' => '2026-10-01',
             'current_residence_title' => 'national_d_visa',
@@ -64,13 +66,14 @@ dataset('investigated onboarding journeys', [
         ],
     ]],
     'Blue Card holder with B1 and twelve qualifying months' => [[
-        'onboarding' => [
-            'situation' => 'non_eu_employee',
+        'start' => [
+            'citizenship_group' => 'non_eu',
+            'purpose' => 'employment',
             'entry_mode' => 'has_permit',
             'current_residence_title' => 'blue_card',
             'residence_title_expires_at' => '2027-10-01',
             'case_goal' => 'settlement_permit',
-            'documented_german_level' => 'b1',
+            'german_level' => 'b1',
         ],
         'structured_answers' => [
             'blue_card_qualifying_months' => 12,
@@ -84,14 +87,14 @@ dataset('investigated onboarding journeys', [
         ],
     ]],
     'spouse of an 18c holder after three years' => [[
-        'onboarding' => [
-            'situation' => 'family_reunification',
+        'start' => [
+            'purpose' => 'family',
             'entry_mode' => 'has_permit',
             'current_residence_title' => 'family_reunification',
             'residence_title_expires_at' => '2027-10-01',
             'case_goal' => 'settlement_permit',
             'sponsor_current_title' => 'settlement_permit_18c',
-            'documented_german_level' => 'b1',
+            'german_level' => 'b1',
         ],
         'structured_answers' => [
             'sponsor' => 'non_eu',
@@ -112,14 +115,14 @@ dataset('investigated onboarding journeys', [
         ],
     ]],
     'spouse approaching renewal after almost four years' => [[
-        'onboarding' => [
-            'situation' => 'family_reunification',
+        'start' => [
+            'purpose' => 'family',
             'entry_mode' => 'has_permit',
             'current_residence_title' => 'family_reunification',
             'residence_title_expires_at' => '2026-09-01',
             'case_goal' => 'renew_current_title',
             'sponsor_current_title' => 'settlement_permit_18c',
-            'documented_german_level' => 'b1',
+            'german_level' => 'b1',
         ],
         'structured_answers' => [
             'sponsor' => 'non_eu',
@@ -145,8 +148,9 @@ dataset('investigated onboarding journeys', [
         ],
     ]],
     'unsupported current residence title' => [[
-        'onboarding' => [
-            'situation' => 'non_eu_employee',
+        'start' => [
+            'citizenship_group' => 'non_eu',
+            'purpose' => 'employment',
             'entry_mode' => 'has_permit',
             'current_residence_title' => 'other',
             'residence_title_expires_at' => '2027-10-01',
@@ -164,23 +168,18 @@ dataset('investigated onboarding journeys', [
     ]],
 ]);
 
-test('real onboarding and explicit follow ups produce the canonical reviewed case plan', function (array $journey) {
+test('a started plan and explicit follow ups produce the canonical reviewed case plan', function (array $journey) {
     $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user);
-
-    $this->post(route('onboarding.complete'), [
-        'veedel' => 'Nippes',
-        'arrival_date' => '2026-07-24',
+    PaperworkStart::answer($user, [
         'arrival_planned' => false,
+        'arrival_date' => '2026-07-24',
         'moved_in_at' => '2026-07-24',
-        'address_registration_status' => 'not_registrable',
         'registration_status' => 'not_registered',
-        ...$journey['onboarding'],
-    ])->assertRedirect(route('dashboard'));
+        ...$journey['start'],
+    ]);
 
     $user->refresh();
-    expect($user->bureaucracy_path)->toBeNull()
-        ->and($user->onboarded_at)->not->toBeNull();
+    expect($user->bureaucracy_path)->toBeNull();
     $read = fn () => $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
     $initial = $read();
     expect(BureaucracyCaseQuestion::query()->count())->toBe(0);
@@ -246,9 +245,9 @@ test('real onboarding and explicit follow ups produce the canonical reviewed cas
         expect($facts['values'][$key])->toBe($value)
             ->and($facts['evidence'][$key]['source'])->toBe($key === 'sponsor' ? 'attributed_report' : 'manual');
     }
-    expect($facts['values']['current_residence_title'])->toBe($journey['onboarding']['current_residence_title'])
-        // Onboarding never writes the employment track. It may be asked later, because the
+    expect($facts['values']['current_residence_title'])->toBe($journey['start']['current_residence_title'])
+        // The start never writes the employment track. It may be asked later, because the
         // checked standard-permit and Chancenkarte cards depend on it.
         ->and($facts['values'])->not->toHaveKey('permit_track');
     expect($read())->toBe($plan);
-})->with('investigated onboarding journeys');
+})->with('investigated journeys');
