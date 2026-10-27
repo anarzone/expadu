@@ -193,35 +193,6 @@
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     }
 }
-/* Check departures open makes City help tall: it takes the right half on
-   its own, and Paperwork, the ideas and the links follow each other on the
-   left, so no half of the area is left empty beside it. */
-@media (min-width: 701px) {
-    .next-area:has(.departure-board[open]) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
-    }
-    .next-area:has(.departure-board[open]) > .practical-surface {
-        display: contents;
-    }
-    .next-area:has(.departure-board[open]) > .practical-surface > * {
-        grid-column: 1;
-        padding: 16px;
-    }
-    .next-area:has(.departure-board[open]) > .practical-surface > .city-help {
-        grid-column: 2;
-        grid-row: 1 / span 4;
-        padding: 16px 16px 16px 20px;
-    }
-    .next-area:has(.departure-board[open]) > :not(.practical-surface) {
-        grid-column: 1;
-    }
-    /* Half as wide, the posters go one at a time, the next showing at the
-       edge: a poster keeps the width its title is set for. */
-    .next-area:has(.departure-board[open]) .event-rail {
-        grid-auto-columns: 86%;
-    }
-}
 
 /* ── Your day ───────────────────────────────────────────────────────── */
 .day-panel {
