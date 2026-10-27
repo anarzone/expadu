@@ -1,6 +1,7 @@
 <?php
 
 use App\Bureaucracy\Facts\ConfirmedFactView;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\PaperworkActions;
@@ -271,6 +272,46 @@ test('their own appointment, a done mark and a kept way’s reminder, each with 
     expect(PlannedTrip::query()->whereKey($trip->id)->exists())->toBeFalse();
     $actions->undo($this->user, $removed['blocks'][0]['id'], $now);
     expect(PlannedTrip::query()->where('user_id', $this->user->id)->where('target_id', 'plan-1')->firstOrFail())->title->toBe('Dinner at Haxenhaus')->remind->toBeTrue();
+});
+
+test('🔒 a Paperwork task completed, cancelled or reopened, and an answer that doesn’t apply, each undone as it was', function () {
+    withVisa($this->user);
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_paperwork' => false]]);
+    $actions = app(ComposerActions::class);
+    $now = CarbonImmutable::now();
+    $workflow = fn (): ?string => collect(app(AccountHolderPlan::class)->for($this->user)['processes'] ?? [])->firstWhere('title', 'Synthetic preparation')['state']['workflow'] ?? null;
+
+    // Paperwork completes a task only once its steps are done (its own rule): mark them first.
+    $task = fn (): ?array => collect(app(AccountPlanEntry::class)->for($this->user)['plan']['processes'] ?? [])->firstWhere('title', 'Synthetic preparation');
+    foreach ($task()['steps'] as $step) {
+        $actions->request($this->user, 'paperwork_step', ['task' => 'synthetic', 'step' => $step['step_id']], $now);
+    }
+
+    // Started, then completed; Undo opens it again.
+    $done = $actions->request($this->user, 'paperwork_report', ['task' => 'synthetic', 'event' => 'completed'], $now);
+    expect($done['blocks'][0]['text'])->toBe('Synthetic preparation is marked completed.')->and($workflow())->toBe('completed');
+    $actions->undo($this->user, $done['blocks'][0]['id'], $now);
+    expect($workflow())->toBe('preparing');
+
+    // Cancelled, reopened, and that undone: cancelled again.
+    $actions->request($this->user, 'paperwork_report', ['task' => 'synthetic', 'event' => 'cancelled'], $now);
+    $reopened = $actions->request($this->user, 'paperwork_report', ['task' => 'synthetic', 'event' => 'reopened'], $now);
+    expect($workflow())->toBe('preparing');
+    $actions->undo($this->user, $reopened['blocks'][0]['id'], $now);
+    expect($workflow())->toBe('cancelled')
+        // Where it stands with the office is reported in Paperwork.
+        ->and($actions->request($this->user, 'paperwork_report', ['task' => 'synthetic', 'event' => 'waiting'], $now)['said'])->toContain('paperwork_task_status');
+
+    // An answer without a value: read from their words, so proposed; Undo puts the date back. "Doesn't
+    // apply" only where Paperwork offers it, which the visa date doesn't.
+    $state = fn (): ?string => app(ConfirmedFactView::class)->forCase($this->user->bureaucracyCase()->firstOrFail(), now()->toDateString())['states']['visa_expires_at'] ?? null;
+    expect($actions->request($this->user, 'change_paperwork_fact', ['key' => 'visa_expires_at', 'state' => 'not_applicable'], $now)['said'])->toContain('doesn’t offer');
+    $proposed = $actions->request($this->user, 'change_paperwork_fact', ['key' => 'visa_expires_at', 'state' => 'unknown'], $now);
+    expect($proposed['blocks'][0])->toMatchArray(['type' => 'proposal', 'from' => '1 Oct 2026'])->not->toHaveKey('edit');
+    expect($actions->apply($this->user, $proposed['blocks'][0]['token'], $now)['refusal'])->toBeNull()
+        ->and($state())->toBe('unknown');
+    $actions->undo($this->user, $proposed['blocks'][0]['token'], $now);
+    expect($state())->toBe('value')->and(visaOn($this->user))->toBe('2026-10-01');
 });
 
 test('a saved place is made at once with Undo, and proposed when they ask first', function () {
