@@ -194,3 +194,28 @@ test('the open places follow the AI\'s order too, and none is dropped', function
         ->and($places[1])->not->toHaveKey('why')
         ->and($bakery->id)->toBe($places[1]['id']);
 });
+
+test('a place\'s row is shared for its slot, with each person\'s own distance and saved mark on top', function () {
+    $this->travelTo(discoveryNoon());
+    $bakery = Spot::factory()->create([
+        'name' => 'Shared bakery', 'category' => 'bakery',
+        'lat' => 50.9506, 'lng' => 6.9118, 'source' => 'osm', 'source_id' => 'node/8',
+        'tags' => ['opening_hours' => 'Mo-Sa 06:00-18:30'], 'public_access_allowed' => true,
+    ]);
+    $veedel = User::factory()->create(['veedel' => 'Ehrenfeld']);
+    $home = User::factory()->create(['veedel' => null]);
+    UserPlace::factory()->create(['user_id' => $home->id, 'category' => 'home', 'lat' => 50.9560, 'lng' => 6.9118]);
+    $home->spotFeedback()->create(['spot_id' => $bakery->id, 'state' => 'saved']);
+
+    $first = app(TodayDiscovery::class)->for($veedel, discoveryNoon())['around']['places'][0];
+    $second = app(TodayDiscovery::class)->for($home, discoveryNoon())['around']['places'][0];
+    $slot = discoveryNoon()->getTimestamp();
+    $shared = Cache::get("today-discovery:place-row:{$slot}:{$bakery->id}");
+
+    expect($shared)->toBeArray()
+        ->and($shared)->not->toHaveKeys(['km', 'saved'])
+        ->and($first['km'])->toBeLessThan(0.1)
+        ->and($second['km'])->toBeGreaterThan(0.5)
+        ->and($first['saved'])->toBeFalse()
+        ->and($second['saved'])->toBeTrue();
+});

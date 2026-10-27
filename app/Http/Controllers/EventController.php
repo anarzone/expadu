@@ -55,7 +55,8 @@ class EventController extends Controller
 
         // The day's listings, the catalogue, the saved places and the appointment are
         // read only when the response carries them, not again for Get there's
-        // `only: ['day']` or the deferred weather.
+        // `only: ['day']`. Everything the page shows comes in this first
+        // response (owner, 26 Oct 2026: pages load whole): nothing deferred.
         return Inertia::render('events', [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
@@ -76,32 +77,38 @@ class EventController extends Controller
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
                 ->all()),
-            // The street's sky and the rain warnings; the page draws a plain
-            // sky until it arrives, and says so when there is none.
-            'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
+            // The street's sky and the rain warnings, from the forecast's cache
+            // (WeatherService never waits on a provider); the page says so
+            // when there is none.
+            'weather' => fn () => app(WeatherService::class)->getDayForecast($day->toDateString()),
             // A past day points on to the next day with listings.
             'next_listed' => $day->lessThan($today->startOfDay())
-                ? Inertia::defer(fn () => $this->nextListed($today), 'notes')
+                ? fn () => $this->nextListed($today)
                 : null,
         ]);
     }
 
     /**
      * The first day from today with listings, within 60 days: the coming
-     * week first (nearly always enough), then the rest.
+     * week first (nearly always enough), then the rest. The same for
+     * everyone, so it's read once every five minutes ('' for none).
      */
     private function nextListed(CarbonImmutable $today): ?string
     {
-        foreach ([[0, 6], [7, 59]] as [$from, $to]) {
-            $first = Event::occurringBetween($today->addDays($from)->startOfDay(), $today->addDays($to)->endOfDay())
-                ->min(fn (array $o) => $o['starts_at']->setTimezone('Europe/Berlin')->toDateString());
+        $first = Cache::remember('events:next-listed:'.$today->toDateString(), now()->addMinutes(5), function () use ($today): string {
+            foreach ([[0, 6], [7, 59]] as [$from, $to]) {
+                $first = Event::occurringBetween($today->addDays($from)->startOfDay(), $today->addDays($to)->endOfDay())
+                    ->min(fn (array $o) => $o['starts_at']->setTimezone('Europe/Berlin')->toDateString());
 
-            if (is_string($first)) {
-                return $first;
+                if (is_string($first)) {
+                    return $first;
+                }
             }
-        }
 
-        return null;
+            return '';
+        });
+
+        return $first === '' ? null : $first;
     }
 
     /**

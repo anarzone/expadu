@@ -10,7 +10,6 @@ use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Personalisation\TodayTaste;
-use App\Places\AroundKinds;
 use App\Places\OpenNearby;
 use App\Saved\SavedCollection;
 use App\Services\NearbyPlaces;
@@ -42,6 +41,12 @@ final class TodayDiscovery
 
     /** Within this of the person's Veedel (or Home), an event is near and comes first. */
     private const NEAR_KM = 3.0;
+
+    /** How long a place's row is kept for its 5-minute slot (rowsAt()). */
+    private const PLACE_ROW_SECONDS = 360;
+
+    /** How long a Veedel's centre is kept (home()): public, and it doesn't move. */
+    private const VEEDEL_SECONDS = 86400;
 
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
@@ -212,7 +217,8 @@ final class TodayDiscovery
     private function home(User $user): ?array
     {
         $veedel = trim((string) $user->veedel);
-        $centre = $veedel !== '' ? $this->points->public($veedel) : null;
+        // A Veedel's centre is public and the same for everyone in it.
+        $centre = $veedel !== '' ? Cache::remember('today-discovery:veedel:'.md5(mb_strtolower($veedel)), self::VEEDEL_SECONDS, fn () => $this->points->public($veedel)) : null;
 
         return $centre ?? $this->points->resolve('home', $user);
     }
@@ -247,6 +253,13 @@ final class TodayDiscovery
      * `$at`, nearest first, three at most: Around here's own rows. Each
      * radius in turn (km) until one finds any.
      *
+     * Fast for Today's first response (owner, 26 Oct 2026: pages load whole):
+     * the point picks the nearest places by id in one query and stays in
+     * it; each place's row is shared by everyone for its 5-minute slot,
+     * cached by the place alone (rowsAt()). The distance from the point, the
+     * saved flag and what the person set aside are worked out here, never
+     * stored.
+     *
      * @param  list<float>  $radii
      * @return list<array<string, mixed>>
      */
@@ -255,20 +268,15 @@ final class TodayDiscovery
         $saved = SpotFeedback::effectiveForUser($user->id)
             ->filter(fn (SpotFeedback $row): bool => $row->state === SpotFeedbackState::Saved)
             ->keys()->map(fn (mixed $id): int => (int) $id)->all();
+        $families = collect(self::KINDS)->map(fn (array $kinds) => array_map(fn (SpotCategory $kind) => $kind->value, $kinds));
         $open = collect();
 
         foreach ($radii as $km) {
-            $open = collect(self::KINDS)
-                ->map(fn (array $kinds) => $this->open->listed(
-                    $lat,
-                    $lng,
-                    $at,
-                    array_map(fn (SpotCategory $kind) => $kind->value, $kinds),
-                    radiusKm: $km,
-                    // Further out, more of the nearest may be closed.
-                    limit: (int) round(8 * $km * $km),
-                    for: $user,
-                )->first(fn (array $row) => $row['hours']['state'] === 'open'))
+            // Further out, more of the nearest may be closed.
+            $ids = $this->open->nearestIds($lat, $lng, $families->flatten()->all(), $km, (int) round(32 * $km * $km), $user);
+            $rows = $this->rowsAt($ids, $at);
+            $open = $families
+                ->map(fn (array $kinds) => $rows->first(fn (array $row) => in_array($row['kind'], $kinds, true) && $row['hours']['state'] === 'open'))
                 ->filter();
 
             if ($open->isNotEmpty()) {
@@ -277,16 +285,47 @@ final class TodayDiscovery
         }
 
         return $open
+            ->map(fn (array $row) => [...$row, 'km' => round(NearbyPlaces::km($lat, $lng, (float) $row['lat'], (float) $row['lng']), 3)])
             ->sortBy('km')
             ->take(3)
             ->map(fn (array $row) => [
                 ...$row,
-                'icon' => AroundKinds::icon($row['kind']),
-                'label' => AroundKinds::label($row['kind']),
                 'saved' => in_array($row['id'], $saved, true),
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Places' Around here rows as their listed hours read at `$at`'s
+     * 5-minute slot, in the order given. Public listings only, the same for
+     * everyone: kept by the place and the slot, with no distance (no point)
+     * and nothing of the person.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function rowsAt(array $ids, CarbonImmutable $at): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        $local = $at->setTimezone(DayProjection::TIMEZONE);
+        $slot = $local->setTime($local->hour, intdiv($local->minute, 5) * 5);
+        $key = fn (int $id) => sprintf('today-discovery:place-row:%d:%d', $slot->getTimestamp(), $id);
+        $cached = collect(Cache::many(array_map($key, $ids)));
+        $missing = array_values(array_filter($ids, fn (int $id) => ! is_array($cached->get($key($id)))));
+
+        if ($missing !== []) {
+            $fresh = $this->open->rows($missing, null, null, $slot)
+                ->map(fn (array $row) => collect($row)->except(['saved', 'km'])->all())
+                ->keyBy('id');
+            Cache::putMany($fresh->mapWithKeys(fn (array $row, int $id) => [$key($id) => $row])->all(), self::PLACE_ROW_SECONDS);
+            $cached = $cached->merge($fresh->mapWithKeys(fn (array $row, int $id) => [$key($id) => $row]));
+        }
+
+        return collect($ids)->map(fn (int $id) => $cached->get($key($id)))->filter(fn (mixed $row) => is_array($row))->values();
     }
 
     /**
