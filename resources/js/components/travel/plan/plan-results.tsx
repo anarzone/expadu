@@ -49,7 +49,7 @@ function aroundHereHref(stop: NonNullable<Step['stop']>) {
         params.set('time', there.time);
     }
 
-    return `/explore?${params}`;
+    return `/around-here?${params}`;
 }
 
 /**

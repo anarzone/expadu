@@ -153,7 +153,7 @@ export default function AroundHere({
             setSelected(null);
         }
 
-        router.get(`/explore?${query}`, undefined, {
+        router.get(`/around-here?${query}`, undefined, {
             only: ['kind', 'open', 'places', 'counts'],
             preserveState: true,
             preserveScroll: true,

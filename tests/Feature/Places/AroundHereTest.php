@@ -53,7 +53,7 @@ test('Around here lists one kind near a public point, nearest first, at the list
     aroundSpot('A café', 'cafe', 0.0002);
 
     $this->actingAs(User::factory()->onboarded()->create())
-        ->get('/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz&time=14:30')
+        ->get('/around-here?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz&time=14:30')
         ->assertInertia(fn ($page) => $page->component('around-here')
             ->where('point', ['name' => 'Wiener Platz', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG])
             ->where('kind', 'pharmacy')
@@ -72,11 +72,11 @@ test('a plan names its point by its id; another person’s plan names none', fun
     aroundPlan($other, 'their-appointment');
     aroundPlan($me, 'my-appointment');
 
-    $this->actingAs($me)->get('/explore?kind=bakery&near=plan:my-appointment')
+    $this->actingAs($me)->get('/around-here?kind=bakery&near=plan:my-appointment')
         ->assertInertia(fn ($page) => $page->where('point', ['name' => 'Mülheim', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG])
             ->where('places.0.name', 'Near bakery'));
 
-    $this->actingAs($me)->get('/explore?kind=bakery&near=plan:their-appointment')
+    $this->actingAs($me)->get('/around-here?kind=bakery&near=plan:their-appointment')
         ->assertInertia(fn ($page) => $page->where('point', null)->where('places', []));
 });
 
@@ -85,14 +85,14 @@ test('🔒 the person’s own place goes by its key: near=home resolves here, an
     $me = User::factory()->onboarded()->create();
     UserPlace::factory()->create(['user_id' => $me->id, 'category' => 'home', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG]);
 
-    $this->actingAs($me)->get('/explore?kind=bakery&near=home')
+    $this->actingAs($me)->get('/around-here?kind=bakery&near=home')
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->url('/explore?kind=bakery&near=home')
+        ->assertInertia(fn ($page) => $page->url('/around-here?kind=bakery&near=home')
             ->where('point', ['name' => 'Home', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG])
             ->where('places.0.name', 'Near bakery'));
 
     // Without a home of their own, the key names nothing.
-    $this->actingAs(User::factory()->onboarded()->create())->get('/explore?kind=bakery&near=home')
+    $this->actingAs(User::factory()->onboarded()->create())->get('/around-here?kind=bakery&near=home')
         ->assertInertia(fn ($page) => $page->where('point', null)->where('places', []));
 });
 
@@ -101,7 +101,7 @@ test('"Open at" keeps only the places listed as open then', function () {
     aroundSpot('Opens later', 'pharmacy', 0.0006, 'Mo-Fr 15:00-19:00');
 
     $this->actingAs(User::factory()->onboarded()->create())
-        ->get('/explore?kind=pharmacy&near=50.96103,7.0048&time=14:30&open=1')
+        ->get('/around-here?kind=pharmacy&near=50.96103,7.0048&time=14:30&open=1')
         ->assertInertia(fn ($page) => $page->where('open', true)->count('places', 1)->where('places.0.name', 'Open'));
 });
 
@@ -112,7 +112,7 @@ test('a thin area adds up to three further away; a full one stays within 2 km', 
     }
 
     $this->actingAs(User::factory()->onboarded()->create())
-        ->get('/explore?kind=library&near=50.96103,7.0048')
+        ->get('/around-here?kind=library&near=50.96103,7.0048')
         ->assertInertia(fn ($page) => $page->count('places', 3)
             ->where('places.0.name', 'Close')
             ->where('places.1.name', 'Far 0')
@@ -134,7 +134,7 @@ test('🔒 the point and the time are only read: nothing is written, cached or l
         }
     });
 
-    $response = $this->get('/explore?kind=pharmacy&time=14:30&near='.urlencode($near).'&name=Wiener%20Platz');
+    $response = $this->get('/around-here?kind=pharmacy&time=14:30&near='.urlencode($near).'&name=Wiener%20Platz');
 
     $response->assertOk();
     expect($writes)->toBe([])
