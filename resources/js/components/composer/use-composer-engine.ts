@@ -360,9 +360,14 @@ export function useComposerEngine(
     }
 
     /** Asks a request; `shown` is the AI notice in view when they sent it. */
-    async function send(text: string, shown: AiNotice | null = aiNotice) {
+    /** fresh: into a new conversation, opened only once the message can go (its notice is in). Whether it went in. */
+    async function send(
+        text: string,
+        shown: AiNotice | null = aiNotice,
+        fresh = false,
+    ): Promise<boolean> {
         if (!text.trim() || busyRef.current) {
-            return;
+            return false;
         }
 
         busyRef.current = true;
@@ -380,6 +385,11 @@ export function useComposerEngine(
         try {
             // Before the message goes in: without its notice it stays in the box.
             const notice = await noticeFor(shown);
+
+            if (fresh) {
+                await sendCommand({ action: 'fresh' });
+            }
+
             await sendCommand({ action: 'message', text });
             asked = true;
             setPendingText('');
@@ -418,6 +428,9 @@ export function useComposerEngine(
             busyRef.current = false;
             on.current.onSettled?.();
         }
+
+        // In the conversation: answered, or saying it couldn't be.
+        return asked;
     }
 
     /** Whether the person's newest message was left without a reply, not handled here. */
