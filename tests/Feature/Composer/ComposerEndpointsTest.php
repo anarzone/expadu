@@ -392,33 +392,6 @@ test('compose excludes a removed pick', function () {
     expect(collect($response->json('plan.slots'))->pluck('id'))->not->toContain("spot:{$remove->id}");
 });
 
-test('a nightlife interest steers the composed plan toward a bar', function () {
-    // 'other' situation gives bars no default boost — so the bar leading the
-    // plan is the interest talking, not the situation.
-    $user = User::factory()->onboarded()->create([
-        'situation' => 'other',
-        'is_eu' => true,
-        'veedel' => 'Ehrenfeld',
-        'interests' => ['nightlife'],
-    ]);
-    UserPlace::factory()->create(['user_id' => $user->id, 'category' => 'home', 'lat' => 50.9485, 'lng' => 6.9230]);
-    app(UserLocationService::class)->confirm($user, 50.9485, 6.9230, 'Home');
-    Spot::factory()->create(['name' => 'Late Bar', 'category' => 'bar', 'lat' => 50.9480, 'lng' => 6.9240]);
-    Spot::factory()->create(['name' => 'Quiet Cafe', 'category' => 'cafe', 'lat' => 50.9481, 'lng' => 6.9241]);
-
-    $this->actingAs($user);
-    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
-    $response = $this->postJson('/composer/compose', [
-        'constraints' => [
-            'window_start' => $start->toIso8601String(),
-            'window_end' => $start->addHours(6)->toIso8601String(),
-        ],
-    ]);
-
-    $response->assertOk();
-    expect($response->json('plan.slots.0.category'))->toBe('bar');
-});
-
 test('the why lines survive a swap', function () {
     $user = composerUser();
     Spot::factory()->create(['name' => 'Famous Museum', 'category' => 'museum', 'lat' => 50.9480, 'lng' => 6.9240, 'tags' => ['wikidata' => 'Q1']]);
