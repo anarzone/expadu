@@ -56,15 +56,10 @@ export const PHONE_ORDER: Record<Lead, Block[]> = {
 };
 
 const leadOf = (
-    day: DayProjection | undefined,
+    day: DayProjection,
     firstVisit: boolean,
-    ideas: boolean | undefined,
+    ideas: boolean,
 ): Lead => {
-    // Until the day loads, its place (Your day loading) leads.
-    if (!day) {
-        return firstVisit ? 'essentials' : 'agenda';
-    }
-
     if (day.items.some((item) => !item.completed && item.state !== 'elapsed')) {
         return 'agenda';
     }
@@ -75,21 +70,19 @@ const leadOf = (
 };
 
 /**
- * The lead, steady while the page is read: it's set when the day loads, when
- * the ideas load (whether there are any), and when the person changes their
- * plans (adds, removes or completes one), never because the clock passed a
- * plan's end or something was saved, so the sections don't move under the
- * reader (the mock's arrange() runs on page actions, "never on a clock or
- * save sync"). `ideas` is undefined until they load.
+ * The lead, steady while the page is read: it's set when the page loads,
+ * when whether there are ideas left changes, and when the person changes
+ * their plans (adds, removes or completes one), never because the clock
+ * passed a plan's end or something was saved, so the sections don't move
+ * under the reader (the mock's arrange() runs on page actions, "never on a
+ * clock or save sync").
  */
 export function useSteadyLead(
-    day: DayProjection | undefined,
+    day: DayProjection,
     firstVisit: boolean,
-    ideas?: boolean,
+    ideas: boolean,
 ): Lead {
-    const key = day
-        ? `${day.items.map((item) => `${item.id}:${item.completed}`).join('|')}#${ideas}`
-        : null;
+    const key = `${day.items.map((item) => `${item.id}:${item.completed}`).join('|')}#${ideas}`;
     const [steady, setSteady] = useState(() => ({
         key,
         lead: leadOf(day, firstVisit, ideas),
