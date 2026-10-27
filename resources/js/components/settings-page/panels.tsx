@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import ComposerPaperworkPermissionController from '@/actions/App/Http/Controllers/ComposerPaperworkPermissionController';
 import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
@@ -567,6 +568,100 @@ const ASK_FIRST = [
 
 type AskFirstKey = (typeof ASK_FIRST)[number]['key'];
 
+type PaperworkPermissionState = {
+    enabled: boolean;
+    available: boolean;
+    has_record: boolean;
+};
+
+/**
+ * Composer's remembered Allow for their Paperwork record (coordinator, 27 Oct
+ * 2026): shown only while Paperwork's AI is on and they have a record in use.
+ * Turning it off needs no OK; turning it on is Composer's own card, which
+ * shows the notice it is given under.
+ */
+function PaperworkPermission() {
+    const [state, setState] = useState<PaperworkPermissionState | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [note, setNote] = useState('');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        let live = true;
+        fetch(ComposerPaperworkPermissionController.show.url(), {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((body) => live && body && setState(body))
+            .catch(() => {});
+
+        return () => {
+            live = false;
+        };
+    }, []);
+
+    if (!state?.available || !state.has_record) {
+        return null;
+    }
+
+    async function turnOff() {
+        if (busy) {
+            return;
+        }
+
+        setBusy(true);
+        setError('');
+
+        try {
+            const body = await writeJson<{ message?: string }>(
+                ComposerPaperworkPermissionController.update.url(),
+                'PUT',
+                { enabled: false },
+            );
+            setState((now) => (now ? { ...now, enabled: false } : now));
+            setNote(body.message ?? '');
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? e.message
+                    : 'We couldn’t save that. Please try again.',
+            );
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="settings-tile" data-paperwork-permission>
+            <span className="settings-tile-copy">
+                <strong>Composer can use your Paperwork record</strong>
+                <span className="settings-tile-note" role="status">
+                    {state.enabled
+                        ? 'On: remembered until you turn it off'
+                        : note ||
+                          'Off: Composer asks on a card when it needs your record'}
+                </span>
+                {error ? (
+                    <span className="settings-error" role="alert">
+                        {error}
+                    </span>
+                ) : null}
+            </span>
+            {state.enabled ? (
+                <button
+                    type="button"
+                    className="settings-quiet"
+                    aria-busy={busy || undefined}
+                    onClick={() => void turnOff()}
+                >
+                    Turn off
+                </button>
+            ) : null}
+        </div>
+    );
+}
+
 export function ComposerPanel() {
     const { userSettings } = usePage<{
         userSettings?: Record<string, boolean | string>;
@@ -658,6 +753,7 @@ export function ComposerPanel() {
                         />
                     </div>
                 ))}
+                <PaperworkPermission />
             </div>
             {error ? (
                 <p className="settings-error" role="alert">
