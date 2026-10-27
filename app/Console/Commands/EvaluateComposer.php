@@ -328,7 +328,9 @@ class EvaluateComposer extends Command
     private function said(User $user, array $answer, Assistant $assistant, CarbonImmutable $now, array $earlier, string $text, bool $planned): array
     {
         $dead = $answer === [] || (trim((string) ($answer['text'] ?? '')) === '' && ($answer['blocks'] ?? []) === [] && ! $planned);
-        $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel, ...$assistant->read];
+        // As the live check reads it: also what this conversation showed before ("the way to Café Nova").
+        $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel,
+            'earlier' => implode("\n", [...array_values($earlier['event']), ...array_values($earlier['spot'])]), ...$assistant->read];
         $invented = [];
         // Each sentence it kept, against everything it read (not only what it cited): a sentence may
         // speak of the person from their own facts, and count the listings, places and choices it cites.
