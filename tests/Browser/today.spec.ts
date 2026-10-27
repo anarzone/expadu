@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Session is injected via storageState from global-setup.ts — no login needed.
 
-test.describe('Dashboard (Today)', () => {
+test.describe('Today', () => {
     test('renders without JS errors', async ({ page }) => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
