@@ -17,7 +17,6 @@ use App\Listeners\CreateAlertFromNotification;
 use App\Models\Alert;
 use App\Models\Task;
 use App\Models\User;
-use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
 use Carbon\CarbonImmutable;
@@ -235,7 +234,7 @@ test('a coalesced card re-surfaces as unread only when the situation escalates',
 
 test('the notification path skips ContextEngine classes so the center is not double-written', function () {
     $user = User::factory()->create();
-    $n = new BureaucracyDeadlineNotification('Register your address', 'overdue', -2, '2026-06-20', 5);
+    $n = new TransitDelayNotification('7', 12, 'Neumarkt');
 
     app(CreateAlertFromNotification::class)->handle(new NotificationSent($user, $n, 'database'));
 

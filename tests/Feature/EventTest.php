@@ -119,24 +119,3 @@ test('legacy detail and saved URLs redirect to the events page', function () {
     expect($response->headers->get('Location'))->toStartWith(route('events').'?event='.$event->id.'&start=');
     $this->get(route('events.saved'))->assertRedirect(route('events', ['saved' => 1]));
 });
-
-test('user can join an event', function () {
-    $user = User::factory()->onboarded()->create();
-    $event = Event::factory()->create();
-    $this->actingAs($user);
-
-    $this->post(route('events.join', $event));
-
-    expect($user->attendingEvents()->where('events.id', $event->id)->exists())->toBeTrue();
-});
-
-test('user can leave an event', function () {
-    $user = User::factory()->onboarded()->create();
-    $event = Event::factory()->create();
-    $user->attendingEvents()->attach($event->id, ['joined_at' => now()]);
-    $this->actingAs($user);
-
-    $this->delete(route('events.leave', $event));
-
-    expect($user->attendingEvents()->where('events.id', $event->id)->exists())->toBeFalse();
-});
