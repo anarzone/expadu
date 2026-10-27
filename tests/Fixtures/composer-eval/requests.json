@@ -8767,17 +8767,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -8806,17 +8806,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -8850,17 +8850,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -8895,17 +8895,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -8941,17 +8941,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -8987,17 +8987,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -9033,17 +9033,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }
@@ -9078,17 +9078,17 @@
     "day": "sunday",
     "stops": [
      {
-      "spot": 1008081,
+      "place": "Kolumba Kunstmuseum",
       "start": "12:00",
       "end": "13:00"
      },
      {
-      "spot": 1008155,
+      "place": "Domfontäne",
       "start": "13:10",
       "end": "13:25"
      },
      {
-      "spot": 1009401,
+      "place": "Haxenhaus zum Rheingarten",
       "start": "13:35",
       "end": "14:50"
      }

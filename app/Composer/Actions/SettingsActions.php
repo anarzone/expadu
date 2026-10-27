@@ -23,7 +23,7 @@ final class SettingsActions implements ComposerAction
     use ProfileValidationRules;
 
     /** The kinds Settings › Notifications shows, as it names them. */
-    public const NOTIFICATIONS = ['transit' => 'Transit disruptions', 'checklist' => 'Bureaucracy deadlines', 'events' => 'Event reminders',
+    public const NOTIFICATIONS = ['transit' => 'Transit disruptions', 'checklist' => 'Paperwork deadlines', 'events' => 'Event reminders',
         'weather' => 'Weather alerts', 'rhine' => 'Rhine flood alerts', 'brief' => 'Morning and evening briefs'];
 
     /** The profile fields Composer may change, as the profile names them. */
@@ -78,7 +78,10 @@ final class SettingsActions implements ComposerAction
             throw new ActionRefused(self::NOTIFICATIONS[$kind].' are '.($on ? 'on' : 'off').' already.');
         }
 
-        return ['kind' => $kind, 'on' => $on, 'propose' => 'Turn '.($on ? 'on ' : 'off ').mb_strtolower(self::NOTIFICATIONS[$kind]).'?'];
+        // Paperwork is the section's own name.
+        $name = $kind === 'checklist' ? self::NOTIFICATIONS[$kind] : mb_strtolower(self::NOTIFICATIONS[$kind]);
+
+        return ['kind' => $kind, 'on' => $on, 'propose' => 'Turn '.($on ? 'on ' : 'off ').$name.'?'];
     }
 
     /** @return array<string, mixed> */
@@ -99,7 +102,7 @@ final class SettingsActions implements ComposerAction
     {
         $field = is_string($input['field'] ?? null) && isset(self::PROFILE[$input['field']]) ? $input['field'] : null;
         if ($field === null) {
-            throw new ActionRefused(($input['field'] ?? null) === 'email' ? 'Changing their email needs confirming it, so it’s done in Settings › Profile.'
+            throw new ActionRefused(($input['field'] ?? null) === 'email' ? 'Changing their email needs confirming it, so it’s done in Settings › Your account.'
                 : 'Composer can change their name, city, situation or German level.');
         }
         $value = is_string($input['value'] ?? null) ? trim($input['value']) : null;
@@ -152,7 +155,7 @@ final class SettingsActions implements ComposerAction
         $label = self::PROFILE[$field];
 
         return ['title' => $value === null ? "{$label} is empty" : "{$label}: ".self::shown($field, $value),
-            'link' => ['label' => 'See your profile →', 'href' => $field === 'name' ? '/settings/profile' : '/profile'],
+            'link' => ['label' => 'See your profile →', 'href' => $field === 'name' ? '/settings/account' : '/profile'],
             // What it is now stays out of what the AI is told.
             'said' => "Their {$label} is changed as they said."];
     }
