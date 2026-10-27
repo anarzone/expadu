@@ -230,3 +230,33 @@ export function useDwell(
         };
     }, [surface, itemType, id]);
 }
+
+/**
+ * Today's "Needs you" strip, its own endpoint (POST /api/signals/needs): an
+ * item shown (once a day), tapped, dismissed, kept or undone, by today's id
+ * and its kind, never what it said. Kept only for people who turned
+ * personalisation on under the current wording, never for Paperwork.
+ */
+export function needSignal(
+    action: 'shown' | 'tapped' | 'dismissed' | 'kept' | 'undone',
+    id: string,
+    kind: string,
+) {
+    if (kind === 'paperwork') {
+        return;
+    }
+
+    void fetch('/api/signals/needs', {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN':
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') ?? '',
+        },
+        body: JSON.stringify({ action, id, kind }),
+    }).catch(() => {});
+}

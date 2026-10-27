@@ -254,6 +254,10 @@ export function LearnPanel() {
     const [on, setOn] = useState<boolean>(
         (userSettings?.personalisation as boolean) ?? false,
     );
+    // On under the older wording (places and events only): Today, Travel
+    // and Composer join once they turn it on again under this one
+    // (PersonalisationWording).
+    const older = on && userSettings?.personalisation_current === false;
     const [asking, setAsking] = useState(false);
     const [erased, setErased] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -301,8 +305,10 @@ export function LearnPanel() {
                 <div>
                     <h2 id="learn-title">Personalised suggestions</h2>
                     <p>
-                        Let Expadu learn from the places and events you open,
-                        save or skip.
+                        Let Expadu learn from the places, events, Today alerts,
+                        Travel stops and Composer topics you open, search, save,
+                        skip or dismiss, and let AI (Claude Haiku) put Today in
+                        order from that.
                     </p>
                 </div>
             </div>
@@ -334,6 +340,20 @@ export function LearnPanel() {
                     }}
                 />
             </div>
+            {older && !asking ? (
+                <p className="settings-learn-older">
+                    It learns only from places and events for now.{' '}
+                    <button
+                        type="button"
+                        className="settings-link"
+                        aria-busy={busy || undefined}
+                        onClick={() => void save(true)}
+                    >
+                        Turn on again
+                    </button>{' '}
+                    to include Today, Travel and Composer.
+                </p>
+            ) : null}
             {asking ? (
                 <div
                     className="settings-confirm"

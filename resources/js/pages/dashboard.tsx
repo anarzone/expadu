@@ -43,6 +43,7 @@ export default function Today() {
         station,
         stop,
         favouriteStops,
+        learnedStops,
         paperwork,
         discovery,
         comingUp,
@@ -57,6 +58,7 @@ export default function Today() {
         station?: Station | null;
         stop: string | null;
         favouriteStops?: FavouriteStop[];
+        learnedStops?: string[];
         paperwork?: TodayPaperwork;
         discovery?: TodayDiscovery;
         comingUp?: ComingUpData;
@@ -133,6 +135,7 @@ export default function Today() {
                     station={station}
                     stop={stop}
                     favourites={favouriteStops ?? []}
+                    learned={learnedStops ?? []}
                 />
                 {cityFirst && personal}
             </div>
