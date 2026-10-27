@@ -78,10 +78,16 @@ final class PaperworkActions implements ComposerAction
         $rows = [];
         foreach (self::ROWS as $key) {
             if (($view['states'][$key] ?? null) !== null || isset($view['values'][$key])) {
-                // A date changes in place on the card (a date field); other answers are asked for in words.
-                $date = $this->registry->definition($key)->type === 'date';
+                // Every answer changes in place on the card (owner, 27 Oct 2026): a date field, or the
+                // answer's own choices, as Paperwork's Your situation offers them.
+                $definition = $this->registry->definition($key);
+                $current = ($view['states'][$key] ?? null) === 'value' ? $view['values'][$key] : null;
                 $rows[] = array_filter(['key' => $key, 'label' => self::LABELS[$key][0], 'value' => $this->said($key, $view, $now),
-                    'edit' => $date ? ['kind' => 'date', 'value' => ($view['states'][$key] ?? null) === 'value' ? $view['values'][$key] : null] : null], fn ($v) => $v !== null);
+                    'edit' => match ($definition->type) {
+                        'date' => ['kind' => 'date', 'value' => $current],
+                        'enum', 'boolean' => ['kind' => 'choice', 'type' => $definition->type, 'value' => $current, 'options' => $definition->options],
+                        default => null,
+                    }], fn ($v) => $v !== null);
             }
         }
         $tasks = collect($plan['processes'] ?? [])->filter(fn (array $p): bool => ! ($p['is_closed'] ?? false))->map(fn (array $p): string => "Task \"{$p['title']}\" (task {$p['occurrence_key']}): "
