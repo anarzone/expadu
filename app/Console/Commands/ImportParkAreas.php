@@ -28,7 +28,8 @@ class ImportParkAreas extends Command
     public function handle(): int
     {
         $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $query = "[out:json][timeout:60];(nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox}););out geom;";
+        // Named malls too (24 Oct 2026): the shops inside one stand in it ("TK Maxx in Hürth Park").
+        $query = "[out:json][timeout:60];(nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox});wr[\"shop\"=\"mall\"][\"name\"]({$bbox}););out geom;";
 
         $elements = $this->fetch($query);
         if ($elements === null) {
@@ -55,9 +56,11 @@ class ImportParkAreas extends Command
             // clash can't overwrite the other's polygon.
             $osmId = $osmId * 10 + ($type === 'relation' ? 2 : 1);
             $sourceId = "{$type}/{$element['id']}";
-            $kind = ($element['tags']['leisure'] ?? null) === 'sports_centre'
-                ? 'sports_centre'
-                : 'park';
+            $kind = match (true) {
+                ($element['tags']['shop'] ?? null) === 'mall' => 'mall',
+                ($element['tags']['leisure'] ?? null) === 'sports_centre' => 'sports_centre',
+                default => 'park',
+            };
 
             $wkt = $this->toWkt($element);
             if ($wkt === null) {
@@ -175,7 +178,7 @@ class ImportParkAreas extends Command
     private function assignDestinations(): int
     {
         $fines = collect(SpotCategory::placesFines())
-            ->reject(fn (string $category) => in_array($category, ['park', 'sports_centre'], true))
+            ->reject(fn (string $category) => in_array($category, ['park', 'sports_centre', 'shopping_centre'], true))
             ->map(fn (string $category) => "'{$category}'")
             ->implode(', ');
 
