@@ -31,9 +31,6 @@ class DelfiCancellations
 
     public const CANCELLED_KEY = 'delfi:cancelled:v1';
 
-    /** The static feed last imported: its ETag and Last-Modified. */
-    public const VERSION_KEY = 'delfi:static_version';
-
     /** The credit the board shows when it carries one of these (CC BY-SA 4.0). */
     public const CREDIT = [
         'for' => 'Cancellations',
@@ -85,12 +82,27 @@ class DelfiCancellations
     }
 
     /**
-     * Replace the city's slice from a downloaded static zip. The old slice
-     * stays readable until the new one is in.
+     * The timetable delfi_calls was imported from (in the database beside it,
+     * never only a cache: a lost key stopped every live read for an hour).
      *
+     * @return array{etag: ?string, last_modified: ?string}|null
+     */
+    public function importedVersion(): ?array
+    {
+        $row = DB::table('delfi_imports')->find(1);
+
+        return $row === null ? null : ['etag' => $row->etag, 'last_modified' => $row->last_modified];
+    }
+
+    /**
+     * Replace the city's slice from a downloaded static zip, and note which
+     * published timetable it is (none for a zip of unknown version) in the
+     * same transaction. The old slice stays readable until the new one is in.
+     *
+     * @param  array{etag: ?string, last_modified: ?string}|null  $version
      * @return int the calls kept
      */
-    public function import(string $zip): int
+    public function import(string $zip, ?array $version = null): int
     {
         [$south, $west, $north, $east] = config('services.gtfsde.area');
         $open = function (string $file) use ($zip) {
@@ -156,7 +168,7 @@ class DelfiCancellations
         }
         fclose($file);
 
-        DB::transaction(function () use ($calls, $stops, $trips, $routes) {
+        DB::transaction(function () use ($calls, $stops, $trips, $routes, $version) {
             DB::table('delfi_calls')->delete();
             $chunk = [];
             foreach ($calls() as $row) {
@@ -182,6 +194,10 @@ class DelfiCancellations
             if ($chunk !== []) {
                 DB::table('delfi_calls')->insert($chunk);
             }
+            DB::table('delfi_imports')->upsert(
+                [['id' => 1, 'etag' => $version['etag'] ?? null, 'last_modified' => $version['last_modified'] ?? null, 'imported_at' => now()]],
+                ['id'],
+            );
         });
 
         return DB::table('delfi_calls')->count();
@@ -190,9 +206,22 @@ class DelfiCancellations
     /**
      * One read of the realtime feed: the area's cancelled calls, kept for
      * five minutes. Null when the feed couldn't be read (the last ones expire).
+     *
+     * The feed numbers its trips by gtfs.de's newest timetable, so while the
+     * imported one is older the same ids are other trips (Freiburg's line 17
+     * alert landed on Cologne's line 4): then nothing is read or kept until
+     * transit:import-delfi has caught up.
      */
     public function fetch(): ?int
     {
+        $published = $this->publishedVersion();
+        if ($published !== null && $published !== $this->importedVersion()) {
+            Log::warning('gtfs.de realtime: the imported timetable is older than the published one; skipping until it is imported', ['published' => $published]);
+            Cache::put(self::CANCELLED_KEY, json_encode([]), self::CANCELLED_SECONDS);
+
+            return 0;
+        }
+
         try {
             // gtfs.de can take most of a minute for the 26-30 MB when busy.
             $response = Http::timeout(150)->connectTimeout(10)->get((string) config('services.gtfsde.realtime_url'));
@@ -304,11 +333,17 @@ class DelfiCancellations
         }
     }
 
-    /** gtfs.de's credit, or only what a vehicle is ("Solobus", "Niederflur", "Stadtbahn"). */
+    /**
+     * gtfs.de's credit, or only what a vehicle is or has ("Solobus",
+     * "Niederflur", "Linie S9: WLAN verfügbar").
+     */
     public static function notNews(string $text): bool
     {
+        // A line's own name first ("Linie S9:") says nothing on its own.
+        $text = (string) preg_replace('/^\s*Linie\s+\S+\s*:\s*/iu', '', $text);
+
         return preg_match('/^Echtzeitdaten aufbereitet von/iu', $text) === 1
-            || (mb_strlen($text) <= 80 && preg_match('/^[\s,.\-]*(?:(?:Solobus|Gelenkbus|Niederflur\w*|Rollstuhl\w*|für\s+Rollstuhlfahrer\s+geeignet|Stufenlose?s?\s+Fahrzeug|WLAN|WC|Klimaanlage|Fahrradmitnahme|Stadtbahn|Straßenbahn|Bus|Zug)[\s,.\-]*)+$/iu', $text) === 1);
+            || (mb_strlen($text) <= 80 && preg_match('/^[\s,.\-]*(?:(?:Solobus|Gelenkbus|Niederflur\w*|Rollstuhl\w*|für\s+Rollstuhlfahrer\s+geeignet|Stufenlose?s?\s+Fahrzeug|WLAN|WC|Klimaanlage|Fahrradmitnahme|Stadtbahn|Straßenbahn|Bus|Zug|verfügbar|vorhanden|an\s+Bord)[\s,.\-]*)+$/iu', $text) === 1);
     }
 
     /**
