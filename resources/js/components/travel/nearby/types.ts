@@ -53,7 +53,13 @@ export type Station = {
     name: string;
     kind: 'closest' | 'picked';
     /** How the closest station was found: from a fix of the last few minutes (fresh), or from where you last were. */
-    located?: { fresh: boolean; source: string; at: string | null } | null;
+    located?: {
+        fresh: boolean;
+        source: string;
+        /** What it's near: Home, or a Veedel ('place' and 'area' sources). */
+        label?: string | null;
+        at: string | null;
+    } | null;
     station: number | null;
     lat: number | null;
     lng: number | null;
@@ -121,8 +127,9 @@ export const closestNow = (station: Pick<Station, 'kind' | 'located'>) =>
 
 /**
  * How a closest station was found, in words: "Closest" from a fix of the
- * last few minutes, else near where you last were, and how long ago
- * (nothing fake: owner, 21 Oct 2026).
+ * last few minutes; near Home or a Veedel when found from one of those;
+ * else near where you last were, and how long ago (nothing fake: owner,
+ * 21 Oct 2026).
  */
 export function closestWords(
     station: Pick<Station, 'kind' | 'located'>,
@@ -134,6 +141,12 @@ export function closestWords(
 
     if (closestNow(station)) {
         return 'Closest';
+    }
+
+    const { source, label } = station.located ?? {};
+
+    if ((source === 'place' || source === 'area') && label) {
+        return `Near ${label}`;
     }
 
     const at = station.located?.at ? Date.parse(station.located.at) : NaN;
