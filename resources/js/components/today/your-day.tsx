@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
@@ -19,6 +19,8 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { showToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { timetable } from '@/routes';
+import { store as composerEntry } from '@/routes/composer/entry';
 import type { DayItem, DayLink, DayProjection } from '@/types/day';
 
 /*
@@ -42,10 +44,13 @@ const isDone = (item: DayItem) => item.completed || item.state === 'elapsed';
 export function YourDay({
     day,
     paperwork,
+    offer = true,
 }: {
     day: DayProjection;
     /** Paperwork's processes, for What to bring under an appointment. */
     paperwork?: NonNullable<TodayPaperwork>['processes'];
+    /** An empty day offers Composer's prompts (not while the welcome does). */
+    offer?: boolean;
 }) {
     const [adding, setAdding] = useState(false);
     const [details, setDetails] = useState<DayItem | null>(null);
@@ -230,6 +235,9 @@ export function YourDay({
                         Add a plan
                     </button>
                 </div>
+            )}
+            {offer && active.length === 0 && day.relation === 'today' && (
+                <DayPrompts />
             )}
             <PlanSheet
                 open={adding}
@@ -477,5 +485,46 @@ function PlanLink({
         </Link>
     ) : (
         <div className={`plan-link is-${tone}`}>{body}</div>
+    );
+}
+
+/** The hour in Cologne, which decides what's left of the day to plan. */
+const berlinHour = () =>
+    Number(
+        new Intl.DateTimeFormat('en-GB', {
+            hour: '2-digit',
+            hour12: false,
+            timeZone: 'Europe/Berlin',
+        }).format(new Date()),
+    );
+
+/**
+ * An empty day's way on (the welcome's choices, kept): ask Composer to plan
+ * what's left of it, or find a route. It offers; it doesn't say the time is
+ * free. Prompts go to Composer by POST, out of the URL and logs.
+ */
+function DayPrompts() {
+    const late = berlinHour() >= 21;
+
+    return (
+        <div className="day-prompts">
+            <button
+                type="button"
+                onClick={() =>
+                    router.post(composerEntry.url(), {
+                        prompt: late
+                            ? 'Help me plan tomorrow.'
+                            : 'Help me plan the rest of today.',
+                    })
+                }
+            >
+                <Icon name="spark" />
+                {late ? 'Plan tomorrow' : 'Plan the rest of today'}
+            </button>
+            <Link href={timetable()}>
+                <Icon name="train" />
+                Find a route
+            </Link>
+        </div>
     );
 }

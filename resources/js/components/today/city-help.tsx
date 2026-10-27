@@ -17,6 +17,7 @@ import type {
     ShownDir,
     ShownLine,
 } from '@/components/travel/nearby/nearby-model';
+import { StationNotice } from '@/components/travel/nearby/station-notice';
 import { closestNow, closestWords } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { Icon } from '@/components/ui/icon';
@@ -42,6 +43,12 @@ export type Weather = {
 
 export type Forecast = {
     available: boolean;
+    /** When rain starts later today ('HH:MM'), 'now' when it's raining, else null. */
+    rain_starts?: string | null;
+    /** WeatherService's cycling verdict: "Good until 19:00", "Great — clear skies", "Poor — …". */
+    bike_score?: string | null;
+    /** "Dry next 8 hours", or when the rain comes and goes. */
+    rain_summary?: string | null;
     hourly?: {
         hour: string;
         temperature: number | null;
@@ -60,6 +67,38 @@ export const weatherIcon = (icon?: string | null): IconName =>
 const degrees = (value?: number | null) =>
     value === null || value === undefined ? '–' : `${Math.round(value)}°`;
 
+/**
+ * The forecast in one line for the day ahead: when rain comes and what that
+ * means for cycling, from WeatherService's own verdict. Null when the
+ * forecast says nothing worth a line.
+ */
+export function dayLine(forecast?: Forecast): string | null {
+    if (!forecast?.available) {
+        return null;
+    }
+
+    const bike = forecast.bike_score ?? '';
+    const cycling = bike.startsWith('Poor')
+        ? `not one for cycling (${bike.replace(/^Poor — /, '')})`
+        : bike.startsWith('OK')
+          ? 'windy for cycling'
+          : bike.startsWith('Great')
+            ? 'good for cycling'
+            : null;
+
+    if (forecast.rain_starts === 'now') {
+        return 'Raining now · not one for cycling';
+    }
+
+    if (forecast.rain_starts) {
+        return bike.startsWith('Good until')
+            ? `Rain from ${forecast.rain_starts} · cycling fine until then`
+            : `Rain from ${forecast.rain_starts}`;
+    }
+
+    return [forecast.rain_summary, cycling].filter(Boolean).join(' · ') || null;
+}
+
 /** The next hours worth a look: two hours on, then two more. */
 function laterHours(forecast?: Forecast) {
     const hours = forecast?.available ? (forecast.hourly ?? []) : [];
@@ -76,19 +115,20 @@ export function CityHelp({
     station,
     stop,
     favourites,
-    planned,
 }: {
     weather?: Weather;
     forecast?: Forecast;
     station?: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
-    /** Plans left today: Check departures opens on wider screens. */
-    planned: boolean;
 }) {
     const [sheet, setSheet] = useState(false);
     const later = laterHours(forecast);
     const known = weather?.available && weather.temperature !== undefined;
+    // Still loading (the deferred 'widgets'): quiet. Unavailable only when
+    // the service says so.
+    const loading = weather === undefined;
+    const line = dayLine(forecast);
 
     return (
         <section className="city-help" aria-labelledby="city-help-title">
@@ -113,15 +153,17 @@ export function CityHelp({
                         )}
                         <small>Forecast</small>
                     </>
+                ) : loading ? (
+                    <small className="forecast-loading">Forecast…</small>
                 ) : (
                     <small>Forecast unavailable right now</small>
                 )}
             </button>
+            {known && line && <p className="forecast-line">{line}</p>}
             <DepartureBoard
                 station={station}
                 stop={stop}
                 favourites={favourites}
-                planned={planned}
             />
             <Sheet
                 open={sheet}
@@ -132,8 +174,11 @@ export function CityHelp({
                     <p className="detail-intro">
                         {known
                             ? 'Forecast · Open-Meteo'
-                            : 'The forecast is unavailable right now.'}
+                            : loading
+                              ? 'The forecast is still loading.'
+                              : 'The forecast is unavailable right now.'}
                     </p>
+                    {known && line && <p>{line}</p>}
                     {known && (
                         <dl className="detail-grid">
                             <div>
@@ -201,25 +246,25 @@ function DepartureBoard({
     station,
     stop,
     favourites,
-    planned,
 }: {
     station?: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
-    planned: boolean;
 }) {
     const board = useRef<HTMLDetailsElement>(null);
+    const hasStation = !!station;
 
-    // Open from 701px when there are plans left, as the mock's board is.
+    // Open from 701px once there's a station to show, as the mock's
+    // Everyday board is; a phone keeps it folded under the day.
     useEffect(() => {
         if (
             board.current &&
-            planned &&
+            hasStation &&
             window.matchMedia('(min-width: 701px)').matches
         ) {
             board.current.open = true;
         }
-    }, [planned]);
+    }, [hasStation]);
 
     // The next departures, however far off (the mock's next twelve, three
     // lines at most): a late timetable board still shows its next trams.
@@ -328,6 +373,17 @@ function DepartureBoard({
                             <p className="board-empty">
                                 No departures from {station.name} in the feed.
                             </p>
+                        )}
+                        {/* KVB's notices for this stop's lines, as Travel shows them. */}
+                        {(station.notices ?? []).length > 0 && (
+                            <div className="board-notices">
+                                {station.notices.slice(0, 2).map((notice) => (
+                                    <StationNotice
+                                        key={notice.id}
+                                        notice={notice}
+                                    />
+                                ))}
+                            </div>
                         )}
                         <a
                             className="board-full"
