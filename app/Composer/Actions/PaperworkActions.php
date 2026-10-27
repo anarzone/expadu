@@ -51,11 +51,16 @@ final class PaperworkActions implements ComposerAction
     private const ROWS = ['current_residence_title', 'visa_expires_at', 'residence_title_expires_at', 'residence_card_expires_at', 'arrival_date', 'moved_in_at',
         'registration_status', 'health_coverage_confirmed', 'tax_id_available', 'german_level'];
 
-    /** Values said in words: a title's name, and what a yes or no means for that answer. */
+    /**
+     * Values said in words, as Paperwork's Your situation says them (facts.ts), so a card, a
+     * record row and Paperwork read the same: a title's name, and what a yes or no means for
+     * that answer. An option whose words depend on the answer it's for is under that answer.
+     */
     private const WORDS = [
-        'national_d_visa' => 'National D visa', 'standard_work_permit' => 'Work residence permit', 'blue_card' => 'EU Blue Card', 'blue_card_pending' => 'EU Blue Card (applied for)',
-        'family_reunification' => 'Family reunification permit', 'settlement_permit_9' => 'Settlement permit (§9)', 'settlement_permit_18c' => 'Settlement permit (§18c)',
-        'settlement_permit_unknown' => 'Settlement permit (type not known)', 'registered' => 'Yes', 'not_registered' => 'Not yet',
+        'national_d_visa' => 'National D visa', 'standard_work_permit' => 'Work permit', 'blue_card' => 'EU Blue Card', 'blue_card_pending' => 'Blue Card applied for',
+        'family_reunification' => 'Family reunification', 'settlement_permit_9' => 'Settlement permit · §9', 'settlement_permit_18c' => 'Settlement permit · §18c',
+        'settlement_permit_unknown' => 'Settlement permit · type unknown', 'registered' => 'Yes, registered', 'not_registered' => 'Not yet',
+        'current_residence_title' => ['other' => 'Another title', 'none' => 'No residence title yet'],
     ];
 
     /** An option in a line, where its name alone doesn't say what it is (a settlement permit's section). */
@@ -78,11 +83,11 @@ final class PaperworkActions implements ComposerAction
     private const UNSURE = [
         'settlement_permit_unknown' => ['Which settlement permit do you have?', [
             'Your residence card, or the letter that came with it, may name the section of the Residence Act it was given under.',
-            'If it names neither of these, or you can’t tell, keep “type not known”: Paperwork works with it, and you can change it here any time.',
-        ], 'Keep “type not known”'],
+            'If it names neither of these, or you can’t tell, keep “type unknown”: Paperwork works with it, and you can change it here any time.',
+        ], 'Keep “type unknown”'],
     ];
 
-    private const BOOLEANS = ['health_coverage_confirmed' => ['Confirmed', 'Not confirmed'], 'tax_id_available' => ['You have one', 'Not yet']];
+    private const BOOLEANS = ['health_coverage_confirmed' => ['Confirmed with my insurer', 'Not yet'], 'tax_id_available' => ['I have it', 'Not yet']];
 
     private const NOTE = 'Saved only for you; nothing is sent to an authority.';
 
@@ -496,7 +501,7 @@ final class PaperworkActions implements ComposerAction
             $value === null => null,
             is_bool($value) => (self::BOOLEANS[$key] ?? ['Yes', 'No'])[$value ? 0 : 1],
             is_string($value) && CalendarDate::parse($value) !== null => self::day($value),
-            is_string($value) => self::WORDS[$value] ?? ucfirst(str_replace('_', ' ', $value)),
+            is_string($value) => self::WORDS[$key][$value] ?? (is_string(self::WORDS[$value] ?? null) ? self::WORDS[$value] : ucfirst(str_replace('_', ' ', $value))),
             default => (string) $value,
         };
     }

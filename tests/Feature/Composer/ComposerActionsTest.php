@@ -103,7 +103,7 @@ test('🔒 an answer their words don’t settle is asked as choices; their tap i
         ->and($card)->not->toHaveKey('token')
         ->and(array_column($card['edit']['options'], 'value'))->toBe(['settlement_permit_9', 'settlement_permit_18c'])
         ->and($card['edit']['options'][1]['hint'])->toContain('§18c')
-        ->and($card['unsure']['keep'])->toBe(['value' => 'settlement_permit_unknown', 'label' => 'Keep “type not known”'])
+        ->and($card['unsure']['keep'])->toBe(['value' => 'settlement_permit_unknown', 'label' => 'Keep “type unknown”'])
         ->and($asked['said'])->toStartWith('Not done')
         ->and($title())->toBe($before)
         // One answer to propose, or a choice of one: no card.
