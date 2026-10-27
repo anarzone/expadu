@@ -1,4 +1,3 @@
-import { PersonaSwitcher } from '@/components/qa/persona-switcher';
 import { cn } from '@/lib/utils';
 import type { AppLayoutProps } from '@/types';
 
@@ -10,15 +9,12 @@ import type { AppLayoutProps } from '@/types';
  */
 export default function AppLayout({ children, fullWidth }: AppLayoutProps) {
     return (
-        <>
-            <main
-                id="main"
-                tabIndex={-1}
-                className={cn(!fullWidth && 'page-frame', 'outline-none')}
-            >
-                {children}
-            </main>
-            <PersonaSwitcher />
-        </>
+        <main
+            id="main"
+            tabIndex={-1}
+            className={cn(!fullWidth && 'page-frame', 'outline-none')}
+        >
+            {children}
+        </main>
     );
 }

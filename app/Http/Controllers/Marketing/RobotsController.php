@@ -28,7 +28,6 @@ class RobotsController extends Controller
                 'Disallow: /bureaucracy',
                 'Disallow: /profile',
                 'Disallow: /settings',
-                'Disallow: /onboarding',
                 'Disallow: /api/',
                 '',
                 'Sitemap: '.route('sitemap'),
