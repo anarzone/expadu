@@ -201,7 +201,7 @@ class PlaceFacts
         $canonicalMap = app(PlaceIdentity::class)->canonicalIds($spotIds);
         $canonicalIds = array_values(array_unique(array_values($canonicalMap)));
         $canonicalSpots = Spot::query()->whereIn('id', $canonicalIds)->get()->keyBy('id');
-        $canonicalSpots->loadMissing(['factObservations', 'factCorrections']);
+        $canonicalSpots->loadMissing(['factObservations', 'factCorrections', 'parentSpot:id,name,category,is_active']);
         $revision = $this->revision();
 
         return $spots->mapWithKeys(function (Spot $spot) use ($canonicalMap, $canonicalSpots, $revision): array {
@@ -290,6 +290,8 @@ class PlaceFacts
             'contact' => $contact,
             'description' => $description,
             'negative_facts' => $negativeFacts,
+            'within' => self::within($spot),
+            'inside' => self::inside($spot),
             'practical' => $practical,
             // A playground with goals or a ball wall is a children's play area, not where adults
             // go to play football: its equipment stays in practical, but it answers no activity ask.
@@ -339,6 +341,40 @@ class PlaceFacts
             $free === 'yes' => ['value' => 'yes', 'free' => 'yes', 'basis' => 'no_fee', 'source_url' => $fee['source_url'] ?? null],
             default => ['value' => 'unknown', 'free' => $free, 'basis' => null, 'source_url' => null],
         };
+    }
+
+    /**
+     * The mall, park or sports ground a place stands in (parks:import-areas),
+     * so a shop reads "TK Maxx in Hürth Park": null when it stands in none.
+     *
+     * @return array{id: int, name: string, kind: string}|null
+     */
+    public static function within(Spot $spot): ?array
+    {
+        $parent = $spot->parent_spot_id === null ? null : $spot->parentSpot;
+        if (! $parent instanceof Spot || ! $parent->is_active || trim((string) $parent->name) === '') {
+            return null;
+        }
+
+        return ['id' => (int) $parent->id, 'name' => (string) $parent->name, 'kind' => $parent->category instanceof SpotCategory ? $parent->category->value : (string) $parent->category];
+    }
+
+    /**
+     * What a shopping centre holds, most first: [kind label => count] ("Clothes shop" => 23).
+     * Null for any other kind of place (a park's facilities are FacilityGroups').
+     *
+     * @return array<string, int>|null
+     */
+    public static function inside(Spot $spot): ?array
+    {
+        if (($spot->category instanceof SpotCategory ? $spot->category : SpotCategory::tryFrom((string) $spot->category)) !== SpotCategory::ShoppingCentre) {
+            return null;
+        }
+
+        return Spot::query()->where('parent_spot_id', $spot->id)->where('is_active', true)->whereNull('canonical_spot_id')
+            ->pluck('category')
+            ->map(fn (mixed $category): string => ($category instanceof SpotCategory ? $category : SpotCategory::from((string) $category))->label())
+            ->countBy()->sortDesc()->all();
     }
 
     public function revision(): int
