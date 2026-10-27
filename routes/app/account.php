@@ -1,8 +1,8 @@
 <?php
 
 /*
-| The account and its utility pages (session 1): onboarding, alerts,
-| preferences, places, the situation profile, and the dev references.
+| The account and its utility pages (session 1): alerts, preferences,
+| places, the situation profile, and the dev references.
 | Loaded inside the app's auth + verified + app-writes group in
 | routes/web.php.
 */
@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\TransportModeController;
 use App\Http\Controllers\EmailConfirmationController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationPreferenceController;
-use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ServicesController;
@@ -36,8 +35,6 @@ Route::middleware('throttle:taste-profile')->controller(TasteProfileController::
 });
 Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
 Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
-
-Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
 // Confirm it's you with an emailed code, where password.confirm asks an
 // account that has no password (EXP-174).
