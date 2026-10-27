@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\Assistant\Assistant;
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
@@ -204,6 +205,61 @@ test('"not this" on a suggested event is recorded; a place\'s goes through its f
 
 test('🔒 Composer\'s notice names what an open request\'s answer sends too', function () {
     $this->actingAs(User::factory()->onboarded()->create())->getJson('/privacy/processing/composer_parse')->assertOk()
-        ->assertJsonPath('answer_payload_categories', ['your_text', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather',
+        ->assertJsonPath('answer_payload_categories', ['your_text', 'your_earlier_messages_in_this_conversation', 'home_area', 'reference_time', 'events_listed', 'places_listed', 'weather',
             'your_taste_if_personalised', 'your_plans_if_personalised']);
 });
+
+test('a follow-up is read in its conversation: "nope, something else" leaves out what was suggested', function () {
+    $user = User::factory()->onboarded()->create();
+    $jazz = assistantJazz();
+    $other = assistantJazz();
+    $other->update(['title' => 'Salsa Night']);
+    $jazzId = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    $salsaId = "e{$other->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Jazz im Stadtgarten starts at 20:00.', 'uses' => [$jazzId]]], 'events' => [$jazzId], 'places' => []]]]))
+        ->push(assistantTurn([['search_events', ['day' => 'today']]]))
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Salsa Night starts at 20:00.', 'uses' => [$salsaId]]], 'events' => [$salsaId, $jazzId], 'places' => []]]]))]);
+    $this->actingAs($user);
+
+    assistantAsk($this);
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'message', 'text' => 'nope, I want something else'])->assertOk();
+    $this->postJson(route('composer.parse'), ['text' => 'nope, I want something else', 'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse)])
+        ->assertOk()->assertJsonPath('answer', true);
+    $reply = collect($this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'answer'])->assertOk()->json('conversations.0.messages'))->last();
+
+    // The second exchange: no read first, and the AI is given the conversation; its lookup leaves Jazz out.
+    Http::assertSentCount(4);
+    $recorded = Http::recorded()->map(fn (array $pair): string => $pair[0]->body())->values();
+    expect($recorded[2])->toContain('They asked:')->toContain('Jazz im Stadtgarten')->toContain('turned down')
+        ->and($recorded[3])->toContain('Salsa Night')
+        ->and(str_contains(collect(json_decode($recorded[3], true)['messages'])->last()['content'][0]['content'], 'Jazz im Stadtgarten'))->toBeFalse()
+        ->and($reply)->text->toBe('Salsa Night starts at 20:00.')
+        ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night']);
+});
+
+test('a fact shows once per conversation', function () {
+    $user = User::factory()->onboarded()->create();
+    $this->actingAs($user);
+
+    $first = assistantAsk($this);
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'message', 'text' => 'hi'])->assertOk();
+    $second = collect($this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'answer'])->assertOk()->json('conversations.0.messages'))->last();
+
+    expect(collect($first['facts'])->pluck('label')->all())->toContain('Weather')
+        ->and($second)->not->toHaveKey('facts');
+});
+
+test('a follow-up is one that turns down or adjusts the assistant\'s last suggestions', function (string $text, bool $follows) {
+    $history = Assistant::history([
+        ['role' => 'user', 'text' => "I'm bored"],
+        ['role' => 'assistant', 'kind' => 'around', 'text' => 'Jazz im Stadtgarten starts at 20:00.', 'events' => [['id' => 7, 'title' => 'Jazz im Stadtgarten']], 'places' => []],
+    ]);
+
+    expect(Assistant::followsUp($text, $history))->toBe($follows)
+        ->and($history['suggested']['event'])->toBe([7 => 'Jazz im Stadtgarten']);
+})->with([
+    ['nope, I want something else', true], ['cheaper', true], ['closer to me', true], ['indoors please', true], ['later tonight', true], ['meh', true],
+    ['Help me plan Saturday in Ehrenfeld with my partner and kids', false], ['plan my evening', false],
+]);
