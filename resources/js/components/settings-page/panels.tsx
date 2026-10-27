@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import { csrfHeaders } from '@/lib/csrf';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
 import { logout } from '@/routes';
@@ -727,11 +728,6 @@ type ExportState = {
     url: string | null;
 } | null;
 
-const csrf = () =>
-    document
-        .querySelector('meta[name="csrf-token"]')
-        ?.getAttribute('content') ?? '';
-
 const megabytes = (bytes: number | null) =>
     bytes === null
         ? ''
@@ -822,7 +818,7 @@ export function DataPanel() {
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf(),
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify(
                     hasPassword ? { password: secret } : { code: secret },

@@ -57,6 +57,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
+            // The session's CSRF token, so the page's meta follows a sign-in or
+            // sign-out that happens without a page load (app.tsx).
+            'csrfToken' => fn () => $request->session()->token(),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
             // Settings saved before a key existed read it at its default.
             'userSettings' => fn () => [...UserSetting::defaults(), ...($request->user()?->userSetting?->settings ?? []),

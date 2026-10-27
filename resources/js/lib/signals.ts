@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 /*
  * Personalisation signals (#210, R3a): what was shown and looked at, sent to
@@ -49,10 +50,7 @@ function send(signals: Signal[]) {
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+            ...csrfHeaders(),
         },
         body: JSON.stringify({ signals }),
     }).catch(() => {});
@@ -252,10 +250,7 @@ export function needSignal(
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+            ...csrfHeaders(),
         },
         body: JSON.stringify({ action, id, kind }),
     }).catch(() => {});
