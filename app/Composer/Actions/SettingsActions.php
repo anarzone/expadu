@@ -11,8 +11,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
 
 /**
- * Their settings, as Settings keeps them: a kind of notification on or off (as Settings ›
- * Notifications saves it), their step-free need (SetStepFreeNeed, its one writer), and their
+ * Their settings, as Settings keeps them: a kind of notification on or off, the brief's time and
+ * quiet hours (as Settings › Notifications saves them, by its rules), their step-free need (SetStepFreeNeed, its one writer), and their
  * profile's name, city, situation or German level, checked by the profile's own rules.
  * Email stays out: changing it needs confirming. Push on this
  * device needs a tap in the browser, so that one is opened, never set (open_in_app). What
@@ -28,6 +28,9 @@ final class SettingsActions implements ComposerAction
 
     /** The profile fields Composer may change, as the profile names them. */
     public const PROFILE = ['name' => 'Name', 'city' => 'City', 'situation' => 'Situation', 'german_level' => 'German level'];
+
+    /** The times Settings › Notifications sets, as it names them. */
+    private const TIMES = ['brief_at' => 'Your brief', 'quiet_from' => 'Quiet hours start', 'quiet_to' => 'Quiet hours end'];
 
     private const SITUATIONS = ['non_eu_employee' => 'Non-EU employee', 'eu_employee' => 'EU employee', 'student' => 'Student', 'freelancer' => 'Freelancer',
         'family_reunification' => 'Family reunification', 'digital_nomad' => 'Digital nomad', 'other' => 'Other'];
@@ -47,8 +50,9 @@ final class SettingsActions implements ComposerAction
     public function run(User $user, string $action, array $prepared, CarbonImmutable $now): array
     {
         return match ($action) {
-            'set_notifications' => $this->notify($user, $prepared['kind'], $prepared['on'])
-                + ['undo' => ['kind' => $prepared['kind'], 'on' => ! $prepared['on']]],
+            'set_notifications' => isset($prepared['times'])
+                ? $this->times($user, $prepared['times']) + ['undo' => ['times' => $prepared['previous']]]
+                : $this->notify($user, $prepared['kind'], $prepared['on']) + ['undo' => ['kind' => $prepared['kind'], 'on' => ! $prepared['on']]],
             'set_needs' => $this->stepFree($user, $prepared['on']) + ['undo' => ['on' => ! $prepared['on']]],
             default => $this->profile($user, $prepared['field'], $prepared['value'])
                 + ['undo' => ['field' => $prepared['field'], 'value' => $prepared['previous']]],
@@ -58,7 +62,7 @@ final class SettingsActions implements ComposerAction
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
     {
         $done = match ($action) {
-            'set_notifications' => $this->notify($user, $undo['kind'], $undo['on']),
+            'set_notifications' => isset($undo['times']) ? $this->times($user, $undo['times']) : $this->notify($user, $undo['kind'], $undo['on']),
             'set_needs' => $this->stepFree($user, $undo['on']),
             default => $this->profile($user, $undo['field'], $undo['value']),
         };
@@ -69,6 +73,9 @@ final class SettingsActions implements ComposerAction
     /** @return array<string, mixed> */
     private function prepareNotifications(User $user, array $input): array
     {
+        if (array_intersect_key($input, self::TIMES) !== []) {
+            return $this->prepareTimes($user, $input);
+        }
         $kind = is_string($input['kind'] ?? null) && isset(self::NOTIFICATIONS[$input['kind']]) ? $input['kind'] : null;
         if ($kind === null) {
             throw new ActionRefused('Say which notifications: '.implode(', ', array_keys(self::NOTIFICATIONS)).'.');
@@ -82,6 +89,44 @@ final class SettingsActions implements ComposerAction
         $name = $kind === 'checklist' ? self::NOTIFICATIONS[$kind] : mb_strtolower(self::NOTIFICATIONS[$kind]);
 
         return ['kind' => $kind, 'on' => $on, 'propose' => 'Turn '.($on ? 'on ' : 'off ').$name.'?'];
+    }
+
+    /**
+     * The brief's time ("automatic" is null: 45 minutes before their first plan) and quiet hours,
+     * checked as Settings › Notifications checks them.
+     *
+     * @return array<string, mixed>
+     */
+    private function prepareTimes(User $user, array $input): array
+    {
+        $current = NotificationPreference::stateFor($user);
+        $times = [];
+        foreach (array_keys(self::TIMES) as $key) {
+            if (! array_key_exists($key, $input)) {
+                continue;
+            }
+            $time = $input[$key];
+            if ($key === 'brief_at' && ($time === null || $time === 'automatic')) {
+                $times[$key] = null;
+            } elseif (is_string($time) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time) === 1) {
+                $times[$key] = $time;
+            } else {
+                throw new ActionRefused(self::TIMES[$key].' takes a time as HH:MM'.($key === 'brief_at' ? ', or "automatic".' : '.'));
+            }
+        }
+        $after = [...$current, ...$times];
+        if ($after['quiet_from'] === $after['quiet_to']) {
+            throw new ActionRefused('Quiet hours need to start and end at different times.');
+        }
+        if ($after['brief_at'] !== null && NotificationPreference::inQuietHours($after['brief_at'], $after['quiet_from'], $after['quiet_to'])) {
+            throw new ActionRefused("Their brief would arrive in quiet hours ({$after['quiet_from']}–{$after['quiet_to']}). Ask for a time outside them.");
+        }
+        $times = array_filter($times, fn (?string $time, string $key): bool => $time !== $current[$key], ARRAY_FILTER_USE_BOTH);
+        if ($times === []) {
+            throw new ActionRefused('Their notifications are set that way already.');
+        }
+
+        return ['times' => $times, 'previous' => array_intersect_key($current, $times), 'propose' => self::timesTitle([...$current, ...$times], $times).'?'];
     }
 
     /** @return array<string, mixed> */
@@ -137,6 +182,38 @@ final class SettingsActions implements ComposerAction
         $title = self::NOTIFICATIONS[$kind].' are '.($on ? 'on' : 'off');
 
         return ['title' => $title, 'link' => ['label' => 'See notifications →', 'href' => '/settings/notifications'], 'said' => "{$title}."];
+    }
+
+    /**
+     * @param  array<string, ?string>  $times
+     * @return array{title: string, link: array<string, string>, said: string}
+     */
+    private function times(User $user, array $times): array
+    {
+        $user->notificationPreference()->updateOrCreate(['user_id' => $user->id], $times);
+        $user->unsetRelation('notificationPreference');
+        $title = self::timesTitle(NotificationPreference::stateFor($user), $times);
+
+        return ['title' => $title, 'link' => ['label' => 'See notifications →', 'href' => '/settings/notifications'], 'said' => "{$title}."];
+    }
+
+    /**
+     * "Your brief comes at 07:30", "Quiet hours run 22:00–07:00": what changed, as it is after.
+     *
+     * @param  array<string, ?string>  $state
+     * @param  array<string, ?string>  $changed
+     */
+    private static function timesTitle(array $state, array $changed): string
+    {
+        $parts = [];
+        if (array_key_exists('brief_at', $changed)) {
+            $parts[] = $state['brief_at'] === null ? 'Your brief comes 45 minutes before your first plan' : "Your brief comes at {$state['brief_at']}";
+        }
+        if (array_intersect_key($changed, ['quiet_from' => 1, 'quiet_to' => 1]) !== []) {
+            $parts[] = "Quiet hours run {$state['quiet_from']}–{$state['quiet_to']}";
+        }
+
+        return implode(', and ', $parts);
     }
 
     /** @return array{title: string, link: array<string, string>, said: string} */

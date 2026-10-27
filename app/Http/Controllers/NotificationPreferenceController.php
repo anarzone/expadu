@@ -38,7 +38,7 @@ class NotificationPreferenceController extends Controller
             $brief = array_key_exists('brief_at', $validated) ? $validated['brief_at'] : $current['brief_at'];
             if ($from === $to) {
                 $validator->errors()->add('quiet_from', 'Quiet hours need to start and end at different times.');
-            } elseif ($brief !== null && self::within($brief, $from, $to)) {
+            } elseif ($brief !== null && NotificationPreference::inQuietHours($brief, $from, $to)) {
                 $validator->errors()->add('brief_at', "Your brief would arrive in quiet hours ({$from}–{$to}). Pick a time outside them.");
             }
         })->validate();
@@ -50,11 +50,5 @@ class NotificationPreferenceController extends Controller
         ]);
 
         return response()->json(NotificationPreference::stateFor($user));
-    }
-
-    /** Whether a time (HH:MM) falls in quiet hours, which may run past midnight. */
-    private static function within(string $time, string $from, string $to): bool
-    {
-        return $from < $to ? $time >= $from && $time < $to : $time >= $from || $time < $to;
     }
 }

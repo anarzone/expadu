@@ -62,6 +62,12 @@ class NotificationPreference extends Model
         ];
     }
 
+    /** Whether a time (HH:MM) falls in quiet hours, which may run past midnight. */
+    public static function inQuietHours(string $time, string $from, string $to): bool
+    {
+        return $from < $to ? $time >= $from && $time < $to : $time >= $from || $time < $to;
+    }
+
     /** Default preferences for new users */
     public static function defaults(): array
     {

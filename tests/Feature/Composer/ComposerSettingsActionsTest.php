@@ -2,6 +2,7 @@
 
 use App\Composer\Actions\ComposerActions;
 use App\Enums\GermanLevel;
+use App\Models\NotificationPreference;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 
@@ -59,4 +60,22 @@ test('🔒 a profile field is set by its own rules, its value kept out of what t
         ->and($wrong['blocks'])->toBe([])
         ->and($this->user->fresh()->email)->toBe($email)
         ->and($this->user->fresh()->situation)->toBe($this->user->situation);
+});
+
+test('🔒 the brief’s time and quiet hours are set as Settings sets them, with Undo', function () {
+    $made = $this->actions->request($this->user, 'set_notifications', ['brief_at' => '07:30'], CarbonImmutable::now());
+    expect($made['blocks'][0])->toMatchArray(['type' => 'done', 'text' => 'Your brief comes at 07:30.'])
+        ->and(NotificationPreference::stateFor($this->user)['brief_at'])->toBe('07:30');
+
+    $quiet = $this->actions->request($this->user, 'set_notifications', ['quiet_from' => '23:00', 'quiet_to' => '06:30'], CarbonImmutable::now());
+    expect($quiet['blocks'][0]['text'])->toBe('Quiet hours run 23:00–06:30.');
+    $this->actions->undo($this->user, $quiet['blocks'][0]['id'], CarbonImmutable::now());
+    $this->actions->undo($this->user, $made['blocks'][0]['id'], CarbonImmutable::now());
+    expect(NotificationPreference::stateFor($this->user))->toMatchArray(['brief_at' => null, 'quiet_from' => NotificationPreference::QUIET_FROM, 'quiet_to' => NotificationPreference::QUIET_TO]);
+
+    // Settings' own rules: a brief inside quiet hours, the same start and end, a time that isn't one.
+    expect($this->actions->request($this->user, 'set_notifications', ['brief_at' => '23:30'], CarbonImmutable::now())['said'])->toContain('quiet hours')
+        ->and($this->actions->request($this->user, 'set_notifications', ['quiet_from' => '22:00', 'quiet_to' => '22:00'], CarbonImmutable::now())['said'])->toContain('different times')
+        ->and($this->actions->request($this->user, 'set_notifications', ['brief_at' => 'early'], CarbonImmutable::now())['said'])->toContain('HH:MM')
+        ->and(NotificationPreference::stateFor($this->user)['brief_at'])->toBeNull();
 });
