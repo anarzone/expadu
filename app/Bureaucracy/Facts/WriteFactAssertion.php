@@ -45,6 +45,29 @@ final class WriteFactAssertion
                 throw ValidationException::withMessages(['value' => 'This fact requires a different confirmation method.']);
             }
             $normalized = $this->validator->normalize($definition, $value, $answerState, $effectiveFrom);
+            // A value kept on the account holder's profile: saved there, its one place, never in the record.
+            if (isset(ProfileFacts::KEYS[$key]) && ($owner = ProfileFacts::owner($person)) !== null) {
+                if ($correctsId !== null || $effectiveFrom !== null) {
+                    throw ValidationException::withMessages(['value' => 'This answer is kept on your profile, without dates or corrections.']);
+                }
+                if ($case->fact_version !== $expectedRevision) {
+                    throw new ConflictHttpException('The record changed while you were answering. Refresh before saving.');
+                }
+                $owner->forceFill([ProfileFacts::KEYS[$key] => $answerState === 'value' ? $normalized : null])->saveQuietly();
+                if ($answerState === 'value') {
+                    // A "not sure" or "rather not say" the record kept closes, as any answer it replaces.
+                    $current = $case->facts()->where('key', $key)->where('state', 'confirmed')->lockForUpdate()->get()->reject(FactSourceTrust::isSynthetic(...));
+                    $history = app(PreserveFactHistory::class)->beforeClosing($current, null);
+                    foreach ($current as $previous) {
+                        $previous->update(['state' => 'historical', 'effective_until' => null, 'end_date_unknown' => true, 'provenance' => $history[$previous->id]]);
+                    }
+                    app(AfterFactsChanged::class)->record($person, $case, [$key]);
+
+                    return (new BureaucracyCaseFact(['key' => $key, 'value' => $normalized, 'answer_state' => 'value', 'state' => 'confirmed', 'source' => 'profile']))
+                        ->setRelation('case', $case);
+                }
+                // No value: the profile keeps none, and the record keeps the answer as it does any other.
+            }
             $currentView = $this->view->forCase($case, now()->toDateString());
             if (($currentView['states'][$key] ?? null) === 'conflict') {
                 throw new ConflictHttpException('Review and explicitly confirm the conflicting answers before changing this fact.');

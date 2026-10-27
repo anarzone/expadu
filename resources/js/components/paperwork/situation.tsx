@@ -139,13 +139,15 @@ export function Situation({ request }: { request: SituationRequest }) {
                     state: state === 'value' ? 'value' : (state as AnswerState),
                     value: view.values[key] ?? null,
                 };
+                // Kept on their profile (German level): saved there as it is now, no history to correct.
+                const onProfile = view.evidence[key].source === 'profile';
                 setDraft({
                     key,
-                    operation: null,
+                    operation: onProfile ? 'assert' : null,
                     answer: current,
                     effectiveFrom: '',
                 });
-                setMode('reason');
+                setMode(onProfile ? 'answer' : 'reason');
             } else {
                 setDraft({
                     key,
@@ -248,7 +250,10 @@ export function Situation({ request }: { request: SituationRequest }) {
                     offer.token,
                     answer,
                 );
-            } else if (operation === 'correct') {
+            } else if (
+                operation === 'correct' &&
+                facts.evidence[key].fact_id !== null
+            ) {
                 await commands.correctFact(
                     personId,
                     facts.evidence[key].fact_id,

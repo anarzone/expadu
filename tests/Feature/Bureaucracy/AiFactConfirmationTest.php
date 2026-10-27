@@ -89,11 +89,11 @@ test('failed onboarding writer rolls back sample archival and processing invalid
         'state' => 'candidate', 'source' => 'qa_scenario:sample']);
     BureaucracyFactConflict::query()->create(['case_id' => $this->case->id, 'fact_key' => $sample->key,
         'existing_fact_id' => $sample->id, 'candidate_fact_id' => $sampleCandidate->id]);
-    $this->case->facts()->create(['key' => 'german_level', 'value' => 'a1', 'state' => 'historical', 'source' => 'manual',
+    $this->case->facts()->create(['key' => 'housing_provider_confirmation', 'value' => 'not_available', 'state' => 'historical', 'source' => 'manual',
         'confirmed_at' => now()->subMonth(), 'effective_from' => now()->subMonth()->toDateString(),
         'effective_until' => now()->subDay()->toDateString()]);
     $draft = app(SaveBureaucracyDraft::class)->execute($this->actor, $this->case->person, (string) Str::uuid(), 0, 1, [
-        'german_level' => ['value' => 'b1', 'operation' => 'change', 'effective_from' => now()->subWeek()->toDateString()],
+        'housing_provider_confirmation' => ['value' => 'available', 'operation' => 'change', 'effective_from' => now()->subWeek()->toDateString()],
     ]);
     $tables = ['users', 'bureaucracy_cases', 'bureaucracy_people', 'bureaucracy_case_facts', 'bureaucracy_fact_conflicts',
         'bureaucracy_processing_consents', 'bureaucracy_extraction_candidates', 'bureaucracy_outbox_events', 'bureaucracy_onboarding_drafts'];
@@ -113,7 +113,7 @@ test('unclear people wrong subjects and extra model claims never create fact can
     [['outcome' => 'unclear_subject'], 'unclear_subject'],
     [['outcome' => 'candidate', 'subject' => 'someone_else', 'value' => true], 'invalid'],
     [['outcome' => 'candidate', 'subject' => 'selected_person', 'value' => true, 'legal_advice' => 'untrusted prose'], 'invalid'],
-    [['outcome' => 'candidate', 'subject' => 'selected_person', 'value' => 'yes'], 'invalid'],
+    [['outcome' => 'candidate', 'subject' => 'selected_person', 'value' => 'available'], 'invalid'],
 ]);
 
 test('withdrawn or expired candidates cannot later be confirmed', function (string $change) {
@@ -131,7 +131,7 @@ test('withdrawn or expired candidates cannot later be confirmed', function (stri
 test('edited suggestions use manual provenance and invalid confirmations retain their attempt count', function () {
     $candidate = app(ExtractForQuestion::class)->execute($this->actor, $this->session, $this->offer['id'], $this->offer['token'], 'Planning a move', $this->acceptance);
     expect(DB::table('bureaucracy_extraction_candidates')->sole()->value)->not->toBe('true');
-    expect(fn () => app(ConfirmExtractedFacts::class)->execute($this->actor, $this->session, $candidate['candidate_id'], $candidate['token'], 'yes', (string) Str::uuid()))
+    expect(fn () => app(ConfirmExtractedFacts::class)->execute($this->actor, $this->session, $candidate['candidate_id'], $candidate['token'], 'available', (string) Str::uuid()))
         ->toThrow(ValidationException::class);
     expect(BureaucracyCaseQuestion::query()->findOrFail($this->offer['id'])->malformed_attempts)->toBe(1);
     app(ConfirmExtractedFacts::class)->execute($this->actor, $this->session, $candidate['candidate_id'], $candidate['token'], false, (string) Str::uuid());
@@ -151,7 +151,7 @@ test('all candidate values are promptly cleared on expiry changed facts and revo
     app(ExtractForQuestion::class)->execute($this->actor, $this->session, $this->offer['id'], $this->offer['token'], 'Planning a move', $this->acceptance);
     match ($change) {
         'expiry' => $this->travel(16)->minutes(),
-        'facts' => app(RecordFactChange::class)->execute($this->subject, $this->case->person, 'german_level', 'b1', null, 1),
+        'facts' => app(RecordFactChange::class)->execute($this->subject, $this->case->person, 'housing_provider_confirmation', 'available', null, 1),
         'withdrawal' => app(ProcessingConsentStore::class)->withdraw($this->actor),
         'revocation' => app(ManageDelegation::class)->revoke($this->subject, BureaucracyAccessGrant::query()->where('person_id', $this->case->person_id)->sole()),
     };
