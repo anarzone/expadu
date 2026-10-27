@@ -219,6 +219,10 @@
 .ev-details .evd-back:hover {
     background: #ffffff47;
 }
+/* With the way back, the category and Share sit after it. */
+.ev-details:has(.evd-back) .evd-top {
+    left: 146px;
+}
 .ev-details:is(.pp--day, .pp--paper) .evd-back {
     border-color: var(--evd-line);
     background: var(--evd-tile);
@@ -763,6 +767,10 @@
     .ev-details .evd-top {
         top: 14px;
         left: 20px;
+    }
+
+    .ev-details:has(.evd-back) .evd-top {
+        left: 146px;
     }
 
     .ev-details .evd-chip {

@@ -218,6 +218,9 @@
     width: 18px;
     height: 18px;
 }
+.wo-composer .wo-short {
+    display: none;
+}
 
 @media (max-width: 700px) {
     .whats-on .ui-sheet-head {
@@ -245,6 +248,12 @@
     }
     .wo-title {
         font-size: 15px;
+    }
+    .wo-composer .wo-long {
+        display: none;
+    }
+    .wo-composer .wo-short {
+        display: inline;
     }
 }
 @media (prefers-reduced-motion: reduce) {

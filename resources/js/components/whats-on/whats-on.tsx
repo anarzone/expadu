@@ -501,7 +501,7 @@ export function WhatsOn({
                     list.length === 1
                         ? '1 event'
                         : `${list.length || 'No'} events`
-                } on ${date === today ? 'today' : longDate(date)}`}
+                } ${date === today ? 'today' : `on ${longDate(date)}`}`}
                 footer={
                     <button
                         type="button"
@@ -512,7 +512,11 @@ export function WhatsOn({
                         }}
                     >
                         <Icon name="spark" />
-                        Looking for something else? Ask Composer
+                        <span className="wo-long">
+                            Looking for something else?
+                        </span>
+                        <span className="wo-short">Something else?</span> Ask
+                        Composer
                     </button>
                 }
             >
