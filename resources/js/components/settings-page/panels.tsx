@@ -727,6 +727,8 @@ export function ComposerPanel() {
 /**
  * Transit & tickets: the Deutschlandticket (the profile, as Travel's own
  * switch sets it) and location sharing for departures (/user-settings).
+ * Turning sharing off deletes the locations kept (LocationDataRetention::
+ * purgeUser), so it asks first, once; turning it on is one tap.
  */
 export function TransitPanel() {
     const { auth, userSettings } = usePage<{
@@ -741,6 +743,13 @@ export function TransitPanel() {
     );
     const [busy, setBusy] = useState<'ticket' | 'location' | null>(null);
     const [error, setError] = useState('');
+    const [asking, setAsking] = useState(false);
+    const [erased, setErased] = useState(false);
+
+    const keepSharing = () => {
+        setAsking(false);
+        focusSoon('[data-share-location]');
+    };
 
     async function save(kind: 'ticket' | 'location') {
         if (busy) {
@@ -760,7 +769,10 @@ export function TransitPanel() {
                 await writeJson('/user-settings', 'PUT', {
                     settings: { share_location: !share },
                 });
+                setErased(share);
                 setShare(!share);
+                setAsking(false);
+                focusSoon('[data-share-location]');
             }
 
             router.reload({ only: ['userSettings', 'auth'] });
@@ -785,7 +797,10 @@ export function TransitPanel() {
         {
             id: 'location',
             label: 'Share location for transit',
-            note: 'Improves departure-time accuracy near you',
+            note:
+                erased && !share
+                    ? 'Off. Kept locations are deleted.'
+                    : 'Improves departure-time accuracy near you',
             on: share,
         },
     ] as const;
@@ -824,11 +839,58 @@ export function TransitPanel() {
                             aria-labelledby={`${row.id}-label`}
                             aria-describedby={`${row.id}-note`}
                             aria-busy={busy === row.id || undefined}
-                            onClick={() => void save(row.id)}
+                            data-share-location={
+                                row.id === 'location' || undefined
+                            }
+                            onClick={() => {
+                                if (row.id === 'location' && share) {
+                                    setAsking(true);
+                                    focusSoon('[data-keep-sharing]');
+                                } else {
+                                    void save(row.id);
+                                }
+                            }}
                         />
                     </div>
                 ))}
             </div>
+            {asking ? (
+                <div
+                    className="settings-confirm"
+                    role="group"
+                    aria-labelledby="stop-sharing-title"
+                    onKeyDown={(event) =>
+                        event.key === 'Escape' && keepSharing()
+                    }
+                >
+                    <strong id="stop-sharing-title">
+                        Stop sharing and delete kept locations?
+                    </strong>
+                    <p>
+                        The locations Expadu kept to find stops near you (the
+                        last few from this device and the one you confirmed) are
+                        deleted, and can’t be brought back.
+                    </p>
+                    <div className="settings-actions">
+                        <button
+                            type="button"
+                            className="settings-quiet"
+                            data-keep-sharing
+                            onClick={keepSharing}
+                        >
+                            Keep sharing
+                        </button>
+                        <button
+                            type="button"
+                            className="settings-primary"
+                            aria-busy={busy === 'location' || undefined}
+                            onClick={() => void save('location')}
+                        >
+                            Stop and delete
+                        </button>
+                    </div>
+                </div>
+            ) : null}
             <p className="settings-hint">
                 Travel shows the same Deutschlandticket switch where you plan a
                 trip.
