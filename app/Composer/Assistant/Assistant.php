@@ -612,7 +612,7 @@ final class Assistant
                 'kind' => $tools->parks[$c->id]['matched'] ?? AssistantTools::kindOf($c),
                 // How far, in a straight line, only from where the person is or starts (never sent to the AI).
                 'distance' => ($tools->measured[$c->id] ?? false) && $km !== null ? ($km < 1 ? (int) (round($km * 1000 / 50) * 50).' m' : number_format($km, 1).' km') : null,
-                'area' => $c->veedel, 'href' => route('explore', ['place' => $id], false),
+                'area' => $c->veedel, 'href' => route('around-here', ['place' => $id], false),
                 // Its own public address, and whether it's open from its listed hours only.
                 // Street and number only ("Gertrudenstraße 2-4", not its postcode and city).
                 'street' => ($address = trim(strtok((string) ($c->placeFacts['contact']['address']['value'] ?? ''), ','))) !== '' ? $address : null,
