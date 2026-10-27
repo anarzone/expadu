@@ -4,6 +4,7 @@ namespace App\Transit;
 
 use App\Composer\TravelEstimator;
 use App\Services\GtfsDepartureService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -42,15 +43,27 @@ class StationLinesMap
         return Cache::remember($key, 86_400, fn () => $this->build($name, $lat, $lng));
     }
 
-    private function build(string $name, float $lat, float $lng): ?array
+    /**
+     * The timetable's stops for the board's station: its name, near where the
+     * board says it is (a name alone would find Neumarkt in other towns too).
+     *
+     * @return Collection<int, object{stop_id: string, stop_name: string, stop_lat: string, stop_lng: string}>
+     */
+    public function stationStops(string $name, float $lat, float $lng): Collection
     {
-        $stops = DB::table('gtfs_stops')
+        return DB::table('gtfs_stops')
             ->where('location_type', 0)
             ->where('stop_name', 'ILIKE', '%'.addcslashes($name, '%_\\').'%')
             ->whereBetween('stop_lat', [$lat - 0.005, $lat + 0.005])
             ->whereBetween('stop_lng', [$lng - 0.008, $lng + 0.008])
             ->get(['stop_id', 'stop_name', 'stop_lat', 'stop_lng'])
-            ->filter(fn (object $stop) => 1000 * $this->distance->haversineKm($lat, $lng, (float) $stop->stop_lat, (float) $stop->stop_lng) <= self::NEAR_METRES);
+            ->filter(fn (object $stop) => 1000 * $this->distance->haversineKm($lat, $lng, (float) $stop->stop_lat, (float) $stop->stop_lng) <= self::NEAR_METRES)
+            ->values();
+    }
+
+    private function build(string $name, float $lat, float $lng): ?array
+    {
+        $stops = $this->stationStops($name, $lat, $lng);
 
         if ($stops->isEmpty()) {
             return null;
@@ -171,7 +184,7 @@ class StationLinesMap
     }
 
     /** GTFS route types (basic and extended) as Travel's modes; null for the rest. */
-    private static function mode(int $type): ?string
+    public static function mode(int $type): ?string
     {
         return match (true) {
             $type === 0, $type === 1, $type === 5, $type >= 900 && $type < 1000, $type >= 400 && $type < 500 => 'tram',
