@@ -772,19 +772,6 @@
         left: 20px;
     }
 
-    /* On a phone the way back is its arrow alone, so the category keeps its room. */
-    .ev-details .evd-back {
-        width: 44px;
-        padding: 0;
-        justify-content: center;
-    }
-    .ev-details .evd-back span {
-        display: none;
-    }
-    .ev-details:has(.evd-back) .evd-top {
-        left: 72px;
-    }
-
     .ev-details .evd-chip {
         height: 30px;
     }
@@ -835,5 +822,20 @@
     .evd-fit b {
         display: inline;
         margin: 0 6px 0 0;
+    }
+}
+
+/* On a phone, What's on's way back is its arrow alone, so the category keeps its room. */
+@media (max-width: 700px) {
+    .ev-details .evd-back {
+        width: 44px;
+        padding: 0;
+        justify-content: center;
+    }
+    .ev-details .evd-back span {
+        display: none;
+    }
+    .ev-details:has(.evd-back) .evd-top {
+        left: 72px;
     }
 }
