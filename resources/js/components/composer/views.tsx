@@ -223,19 +223,10 @@ export function PlansView({
                 >
                     <Icon name="next" variant="line" />
                 </button>
+                <SharedDate value={date} today={today} onChange={onDate} />
             </div>
             <div className="composer-plans-date">
                 <h3>{long}</h3>
-                <label className="composer-date-jump">
-                    <Icon name="calendar" variant="line" />
-                    <span className="sr-only">Choose a date</span>
-                    <SharedDate
-                        id="composer-plans-date"
-                        value={date}
-                        today={today}
-                        onChange={onDate}
-                    />
-                </label>
             </div>
             {plan?.slots.length ? (
                 <section className="composer-paper" aria-label={long}>
