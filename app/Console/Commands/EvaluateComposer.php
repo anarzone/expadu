@@ -479,6 +479,10 @@ class EvaluateComposer extends Command
         EventBookmark::query()->where('user_id', $user->id)->delete();
         EventReminder::query()->where('user_id', $user->id)->delete();
         $user->places()->delete();
+        // A case's own places (Work, a Gym), with their points and times.
+        foreach ($request['my_places'] ?? [] as $i => $place) {
+            $user->places()->create([...$place, 'emoji' => '📍', 'sort_order' => $i]);
+        }
         // ...and Travel's stars and planned ways, their alerts, mutes and notification kinds.
         FavouriteStop::query()->where('user_id', $user->id)->delete();
         PlannedTrip::query()->where('user_id', $user->id)->delete();

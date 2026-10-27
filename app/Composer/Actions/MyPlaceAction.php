@@ -31,11 +31,14 @@ final class MyPlaceAction implements ComposerAction
         $current = $user->places()->where('category', $which)->first();
         $previous = $current?->lat === null ? null : ['name' => $current->name, 'address' => $current->address, 'lat' => $current->lat, 'lng' => $current->lng,
             'located_from_address' => $current->located_from_address];
+        // One kept without a point (an older account's, or its times set first) is put back as it was, never removed.
+        $unset = $current !== null && $previous === null ? ['name' => $current->name, 'address' => $current->address, 'lat' => null, 'lng' => null,
+            'located_from_address' => $current->located_from_address] : null;
         if ($previous !== null && mb_strtolower($previous['name']) === mb_strtolower($place['name'])) {
             throw new ActionRefused("{$label} is already {$place['name']}.");
         }
 
-        return ['which' => $which, 'place' => $place, 'previous' => $previous,
+        return ['which' => $which, 'place' => $place, 'previous' => $previous, 'unset' => $unset,
             'propose' => "Set {$label} to {$place['name']}?", 'sub' => self::sub($label, $previous),
             // The address stays out of what the AI is told; the card says it.
             'tell' => "Set {$label} to the place they named?"];
@@ -55,14 +58,17 @@ final class MyPlaceAction implements ComposerAction
                 'options' => [['label' => 'Today', 'prompt' => 'I moved in today'], ['label' => 'Another day…', 'draft' => 'I moved in on ']]] : null,
             // The address stays out of what the AI is told; the card says it.
             'said' => "{$label} is now set to the place they named.",
-            'undo' => ['which' => $prepared['which'], 'previous' => $prepared['previous']]], fn ($v) => $v !== null);
+            'undo' => ['which' => $prepared['which'], 'previous' => $prepared['previous'], 'unset' => $prepared['unset'] ?? null]], fn ($v) => $v !== null);
     }
 
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
     {
         $label = $undo['which'] === 'home' ? 'Home' : 'Work';
         if ($undo['previous'] === null) {
-            UserPlace::query()->where('user_id', $user->id)->where('category', $undo['which'])->delete();
+            // Their times and days on it stay: only the point it didn't have goes.
+            ($undo['unset'] ?? null) !== null
+                ? UserPlace::query()->where('user_id', $user->id)->where('category', $undo['which'])->first()?->update($undo['unset'])
+                : UserPlace::query()->where('user_id', $user->id)->where('category', $undo['which'])->delete();
 
             return ['title' => "Undone. {$label} is empty again."];
         }
@@ -78,7 +84,7 @@ final class MyPlaceAction implements ComposerAction
      *
      * @throws ActionRefused
      */
-    private function locate(string $said, ?string $area): array
+    public function locate(string $said, ?string $area): array
     {
         if (preg_match('/\d/', $said) === 1) {
             $point = $this->addresses->locate($said);
