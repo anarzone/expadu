@@ -8,7 +8,7 @@ use Throwable;
 
 /**
  * Events' "Open in Travel" hands an event to Plan a trip by its id and the
- * occurrence's local start (`/timetable?to=<venue>&context=<id>&date=&arrive=`,
+ * occurrence's local start (`/travel?to=<venue>&context=<id>&date=&arrive=`,
  * as the mock), never by coordinates. The occurrence is found as Events lists it (visible
  * events only, Event::occurringBetween); a hidden, unknown, pointless or
  * finished one gives nothing, and the page opens empty.

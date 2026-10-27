@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const route of ['/dashboard', '/events', '/bureaucracy', '/timetable']) {
+for (const route of ['/dashboard', '/events', '/bureaucracy', '/travel']) {
     test(`the shared header and sections stay available on ${route}`, async ({
         page,
         isMobile,

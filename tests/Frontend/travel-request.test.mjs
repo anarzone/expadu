@@ -25,8 +25,7 @@ const destination = {
 
 test('a refresh retains facility identity, exact arrival and originating activity', () => {
     const url =
-        '/timetable?' +
-        new URLSearchParams(travelDestinationParams(destination));
+        '/travel?' + new URLSearchParams(travelDestinationParams(destination));
     assert.deepEqual(parseTravelDestination(url), destination);
 });
 
@@ -38,14 +37,13 @@ test('invalid and partial coordinates cannot become a journey destination', () =
         'to_lat=50&to_lng=181',
     ]) {
         assert.equal(
-            parseTravelDestination('/timetable?to_name=Park&' + coordinates),
+            parseTravelDestination('/travel?to_name=Park&' + coordinates),
             null,
         );
     }
 
     assert.equal(
-        parseTravelDestination('/timetable?to_name=Equator&to_lat=0&to_lng=0')
-            .lat,
+        parseTravelDestination('/travel?to_name=Equator&to_lat=0&to_lng=0').lat,
         0,
     );
 });
@@ -147,7 +145,7 @@ test('a typed appointment location keeps arrival context without creating coordi
     const { parseTravelDraft } =
         await import('../../resources/js/components/departures/travel-request.ts');
     const url =
-        '/timetable?to_name=B%C3%BCrgeramt&arrive_by=2026-10-09T10%3A17&activity=manual%3A17&plan_date=2026-10-09&back_label=Appointment';
+        '/travel?to_name=B%C3%BCrgeramt&arrive_by=2026-10-09T10%3A17&activity=manual%3A17&plan_date=2026-10-09&back_label=Appointment';
     assert.equal(parseTravelDestination(url), null);
     assert.deepEqual(parseTravelDraft(url), {
         name: 'Bürgeramt',

@@ -18,7 +18,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/travel",
         "wait": "#departures > .trip-line .trip-line-row",
         "init": [
             "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"

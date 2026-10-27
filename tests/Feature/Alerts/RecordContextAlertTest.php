@@ -269,16 +269,16 @@ test('a transit disruption alert deep-links to the live board, not the removed /
 
     app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
 
-    expect(Alert::where('user_id', $user->id)->firstOrFail()->deep_link)->toBe('/timetable');
+    expect(Alert::where('user_id', $user->id)->firstOrFail()->deep_link)->toBe('/travel');
 });
 
-test('transit notifications point their url at the live /timetable route', function () {
+test('transit notifications point their url at the live /travel route', function () {
     $user = User::factory()->create();
     $disruption = new TransitDisruptionNotification(['line' => '7', 'summary' => 'Signal fault']);
     $delay = new TransitDelayNotification('7', 12, 'Neumarkt');
 
-    expect($disruption->toArray($user)['url'])->toBe('/timetable')
-        ->and($delay->toArray($user)['url'])->toBe('/timetable');
+    expect($disruption->toArray($user)['url'])->toBe('/travel')
+        ->and($delay->toArray($user)['url'])->toBe('/travel');
 });
 
 test('the classifier maps subtypes to the v4 taxonomy', function () {

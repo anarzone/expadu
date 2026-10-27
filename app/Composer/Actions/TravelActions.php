@@ -25,7 +25,7 @@ use Illuminate\Validation\ValidationException;
  */
 final class TravelActions implements ComposerAction
 {
-    private const LINK = ['label' => 'See it in Travel →', 'href' => '/timetable'];
+    private const LINK = ['label' => 'See it in Travel →', 'href' => '/travel'];
 
     /** How they travel, as said; null is "fastest realistic". */
     private const MODES = ['transit' => 'by bus and train', 'bike' => 'by bike', 'walk' => 'on foot', 'fastest' => 'the fastest way'];

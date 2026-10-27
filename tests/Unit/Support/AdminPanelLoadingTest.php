@@ -27,7 +27,7 @@ function adminPanelFor(string $uri): array
 
 test('the app’s own pages load without the panel', function (string $uri) {
     expect(adminPanelFor($uri))->toBe([]);
-})->with(['/dashboard', '/', '/timetable?stop=Neumarkt', '/settings', '/administration-guide', '/api/signals']);
+})->with(['/dashboard', '/', '/travel?stop=Neumarkt', '/settings', '/administration-guide', '/api/signals']);
 
 test('the panel, its Livewire endpoints and its files load it', function (string $uri) {
     expect(adminPanelFor($uri))->toContain(AdminPanelProvider::class, LivewireServiceProvider::class, FilamentServiceProvider::class);

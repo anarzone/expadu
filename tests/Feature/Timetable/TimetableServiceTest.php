@@ -31,7 +31,7 @@ test('the Travel page renders and defers Nearby\'s station', function () {
 
     $this->actingAs(User::factory()->onboarded()->create());
 
-    $this->get('/timetable')->assertInertia(fn ($page) => $page
+    $this->get('/travel')->assertInertia(fn ($page) => $page
         ->component('timetable')
         ->missing('station')
         ->loadDeferredProps(fn ($reload) => $reload->has('station'))

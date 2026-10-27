@@ -25,7 +25,7 @@ import { usePhone } from '@/hooks/use-phone';
 import { shareItem, useCanShare } from '@/lib/share';
 import { useDwell } from '@/lib/signals';
 import { cn } from '@/lib/utils';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import { LaptopWork } from './laptop-work';
 import type { WorkFact } from './laptop-work';
 import { PlanVisitFooter, PlanVisitPanel, usePlanVisit } from './plan-visit';
@@ -926,7 +926,7 @@ function PlaceDetail({
                                 </p>
                                 <Link
                                     className="place-way"
-                                    href={timetable.url({
+                                    href={travel.url({
                                         // A large park's part: the way leads to
                                         // that part ("Äußerer Grüngürtel (Sülz)").
                                         query: {

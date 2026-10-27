@@ -40,7 +40,7 @@ class TransitDisruptionNotification extends Notification implements ShouldQueue
             ->body($this->disruption['summary'])
             ->action('View details', 'view_transit')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/timetable']);
+            ->data(['url' => '/travel']);
     }
 
     /**
@@ -54,7 +54,7 @@ class TransitDisruptionNotification extends Notification implements ShouldQueue
             'body' => $this->disruption['summary'],
             'line' => $this->disruption['line'],
             'summary' => $this->disruption['summary'],
-            'url' => '/timetable',
+            'url' => '/travel',
         ];
     }
 }
