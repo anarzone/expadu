@@ -19,6 +19,11 @@ enum ProcessingPurpose: string
      * withdrawing Composer's AI withdraws it too.
      */
     case ComposerPaperwork = 'composer_paperwork';
+    /**
+     * The day's briefs written by the AI (owner, 26 Oct 2026): opt-in in Settings, off by default,
+     * on until they turn it off (ProcessingOptIns); each brief is still its own request.
+     */
+    case NotificationBrief = 'notification_brief_ai';
 
     /** What each kind of data a Composer request sends is, in the notice's words (AssistantTools::CATEGORIES). */
     public const WORDS = [
@@ -43,6 +48,17 @@ enum ProcessingPurpose: string
         'your_plans_if_personalised' => 'your own plans and appointments for today and tomorrow, including those recorded in Paperwork, if you turned on personalisation',
         'your_paperwork_answers_and_tasks' => 'your Paperwork answers (such as your residence title and the dates it keeps) and your open Paperwork tasks, with their steps and dates',
         'paperwork_changes_you_ask_for' => 'the changes to your Paperwork you ask for, and what they change in your plan',
+    ];
+
+    /** What a brief's request carries (BriefWriter::CATEGORIES), in the notice's words. */
+    public const BRIEF_WORDS = [
+        'the_day' => 'which day the brief is for',
+        'your_planned_ways' => 'the ways you planned in Travel: where to, when they leave, and whether one is cancelled, late or has a notice',
+        'events_you_are_going_to' => 'the events you set a reminder for or joined: their title, start time and venue',
+        'your_plan_for_the_day' => 'your plan for the day in Plans: how many stops, their names and times, and whether one is listed closed',
+        'transit_notices' => 'public transport disruptions and delays on your lines and near your plan’s stops',
+        'weather' => 'the weather, and rain or a hazard forecast while you’re at an outdoor stop',
+        'shops_closed' => 'whether shops are closed tomorrow',
     ];
 
     /** What a Composer request never sends, in the notice's words. */
@@ -72,7 +88,7 @@ enum ProcessingPurpose: string
     {
         $prefix = $this->configPrefix();
         $enabled = match ($this) {
-            self::ComposerAssist, self::ComposerPaperwork => config($prefix.'.driver') === 'anthropic',
+            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief => config($prefix.'.driver') === 'anthropic',
             default => config($prefix.'.enabled') === true,
         };
         if (! $enabled) {
@@ -98,12 +114,12 @@ enum ProcessingPurpose: string
     public function disclosure(): array
     {
         return [
-            'purpose' => $this->value, 'scope' => 'single_request', 'available' => $this->available(),
+            'purpose' => $this->value, 'scope' => $this === self::NotificationBrief ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
             'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
             // Paperwork's own responses; Composer says what it keeps under `kept`.
-            ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
+            ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
             'payload_categories' => match ($this) {
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 // Everything Composer's request can carry, from its own map of what each part is
@@ -112,6 +128,8 @@ enum ProcessingPurpose: string
                 self::ComposerPaperwork => AssistantTools::categories(true),
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
+                // What a brief's request can carry, from BriefWriter's own map of its items (NotificationBriefNoticeTest).
+                self::NotificationBrief => array_keys(self::BRIEF_WORDS),
             },
             ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork], true) ? [
                 'model' => config($this->configPrefix().'.model'),
@@ -121,7 +139,21 @@ enum ProcessingPurpose: string
                 'kept' => ['history' => 'until_you_delete_it', 'undo_hours' => ComposerActions::HOURS, 'permission_minutes' => self::requestMinutes()],
                 'notice' => $this->notice(),
             ] : []),
+            ...($this === self::NotificationBrief ? [
+                'model' => config($this->configPrefix().'.model'),
+                'never_sent' => [...array_keys(self::NEVER), 'paperwork'],
+                // The brief in their notifications until they delete it; the AI's reply for the request's minutes;
+                // a record that one was written, without what it said, for the audit days.
+                'kept' => ['brief' => 'until_you_delete_it', 'reply_minutes' => self::requestMinutes(), 'record_days' => self::auditDays()],
+                'notice' => $this->notice(),
+            ] : []),
         ];
+    }
+
+    /** How long a record that something was sent is kept, without what it said (ProcessingConsentStore: delete_after). */
+    public static function auditDays(): int
+    {
+        return min(30, max(2, (int) config('bureaucracy_privacy.audit_days', 30)));
     }
 
     /** How long one request's permission lasts (ProcessingConsentStore: its expiry). */
@@ -138,6 +170,9 @@ enum ProcessingPurpose: string
      */
     public function notice(): array
     {
+        if ($this === self::NotificationBrief) {
+            return $this->briefNotice();
+        }
         $paperwork = $this === self::ComposerPaperwork;
         $minutes = self::requestMinutes();
         $hours = ComposerActions::HOURS;
@@ -157,6 +192,28 @@ enum ProcessingPurpose: string
         ];
     }
 
+    /**
+     * The AI-written briefs' notice, from what a brief's request carries (BRIEF_WORDS): what is
+     * sent, to whom, what never is, what is kept and for how long, and how to turn it off.
+     *
+     * @return list<string>
+     */
+    private function briefNotice(): array
+    {
+        $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
+
+        return [
+            'When this is on, Expadu sends what goes into your day’s brief to '.config($this->configPrefix().'.processor_name')." ({$model}), an AI service, "
+                .'to put it in order and word it, using only those facts: '.implode('; ', self::BRIEF_WORDS).'.',
+            'It never sends '.self::either([...array_values(self::NEVER), 'your Paperwork record or its tasks (your brief says only that Paperwork needs attention)', 'your name or email']).'.',
+            'The AI service doesn’t use it to train its models.',
+            'The brief stays in your notifications until you delete it. The AI service’s reply is removed after '.self::requestMinutes().' minutes; '
+                .'a record that a brief was written, without what it said, is kept for '.self::auditDays().' days.',
+            'It’s off unless you turn it on, and stays on until you turn it off in Settings › Notifications, which stops it at once. '
+                .'With it off, your brief is written from the same facts without AI.',
+        ];
+    }
+
     /** "a, b, or c" */
     private static function either(array $items): string
     {
@@ -173,7 +230,7 @@ enum ProcessingPurpose: string
     {
         return match ($this) {
             self::FactExtraction => 'services.bureaucracy_llm',
-            self::ComposerAssist, self::ComposerPaperwork => 'services.llm',
+            self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
             self::PaperworkAnswer => 'services.paperwork_analyser',
         };
