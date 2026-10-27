@@ -8,13 +8,14 @@ import {
     posterInk,
 } from '@/components/posters/poster-model';
 import type { PosterSource } from '@/components/posters/poster-model';
+import { openComposerView } from '@/components/shell/composer-tray';
 import { weatherIcon } from '@/components/today/city-help';
 import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
-import { composer, events } from '@/routes';
+import { events } from '@/routes';
 
 /*
  * Today's discovery (the mock's .discovery and .around-plan), from
@@ -349,12 +350,14 @@ export function AroundPlan({
                     ? `Today · ${anchor.title}`
                     : `Today · ${[anchor.start, anchor.end].filter(Boolean).join('–')}`}
             </p>
-            {/* A saved place opens Composer's Saved ideas, as in Saved for later. */}
+            {/* A saved place opens Composer's Saved in place, as in Saved for later. */}
             {place && (
                 <div className="around-item">
-                    <Link
+                    <button
+                        type="button"
                         className="around-open"
-                        href={composer({ query: { panel: 'saved' } })}
+                        data-composer-opener
+                        onClick={() => openComposerView('saved')}
                     >
                         <span className="around-symbol">
                             <Icon name="pin" />
@@ -363,14 +366,16 @@ export function AroundPlan({
                             <strong>{place.title}</strong>
                             <small>{`No time set · ${place.area}`}</small>
                         </span>
-                    </Link>
-                    <Link
+                    </button>
+                    <button
+                        type="button"
                         className="icon-button"
-                        href={composer({ query: { panel: 'saved' } })}
                         aria-label={`Plan ${place.title}`}
+                        data-composer-opener
+                        onClick={() => openComposerView('saved')}
                     >
                         <Icon name="plus" />
-                    </Link>
+                    </button>
                 </div>
             )}
             {idea && (

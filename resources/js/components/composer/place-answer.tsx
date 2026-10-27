@@ -1,11 +1,11 @@
-import { Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import PlaceFeedbackController from '@/actions/App/Http/Controllers/Api/PlaceFeedbackController';
 import type { AroundPlace } from '@/components/around-here/place-model';
-import { PlaceRow } from '@/components/around-here/place-row';
 import { api } from '@/components/composer/types';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { showToast } from '@/components/ui/toast';
-import '@/components/around-here/around-here.css';
+import { cardOf, PlaceCard, PlaceCards, PlaceMapLayer } from './place-cards';
+import type { CardCalls, CardPlace } from './place-cards';
 
 /** A place as the answer carries it (App\Composer\Answers\PlaceAnswers). */
 export type AnsweredPlace = {
@@ -43,59 +43,109 @@ const CREDITS: Partial<Record<NonNullable<AnsweredPlace['source']>, string>> = {
     overture: 'Overture Maps Foundation',
 };
 
+/** Not this keeps its Undo this long before it's recorded, as Not now has it. */
+const UNDO = 5000;
+
 /*
- * "Somewhere nearby to play football": each place as Around here draws it
- * (its PlaceRow, the places session's), opening its place sheet here, with
- * Save; without a row, a compact card: its kind and distance, name, street
- * and Veedel, and its listed hours.
- * Each source the places come from is credited once, as each asks.
+ * "Somewhere nearby to play football": the places as small cards (option B,
+ * owner 23 Oct 2026), all of them, in the answer's order. The body opens the
+ * place's sheet here; the preview opens them all on one map, in place; Save
+ * saves at once. Not this (for people who turned learning on) folds a card to
+ * its stub with Undo; once Undo has passed it's recorded as not for me, which
+ * the assistant leaves out from then on, and the stub's Undo clears it again.
+ * Each source the places come from is credited once, as each asks, and the
+ * map previews credit their map.
  */
 export function PlaceAnswer({
     places,
     from = null,
-    onNotThis,
+    notThis = false,
 }: {
     places: AnsweredPlace[];
-    /** Where the answer searched from, so the sheet's distances match the rows'. */
+    /** Where the answer searched from, so the sheet's distances match the cards'. */
     from?: PlaceFrom | null;
-    /** "Not this" on an assistant's suggestion. */
-    onNotThis?: (place: AnsweredPlace) => void;
+    /** Whether Not this is offered (only kept for people who turned learning on). */
+    notThis?: boolean;
 }) {
+    const list = useRef<HTMLDivElement>(null);
     // A card is its place and, for a large park, its part: two parts of one park
     // are two cards, never one key or one selection.
-    const [open, setOpen] = useState<{ key: string; id: number } | null>(null);
     const keyOf = (place: AnsweredPlace) => `${place.id}#${place.part ?? ''}`;
+    const [open, setOpen] = useState<number | null>(null);
+    const [mapAt, setMapAt] = useState<string | null>(null);
+    const [host, setHost] = useState<Element | null>(null);
     const [saved, setSaved] = useState<Record<number, boolean>>({});
-    const isSaved = (row: NonNullable<AnsweredPlace['row']>) =>
-        saved[row.id] ?? row.saved ?? false;
+    const [left, setLeft] = useState<string[]>([]);
+    // Not this waits out its Undo even when the answer is left meanwhile.
+    const timers = useRef(new Map<string, number>());
+    const cards = places.map((place) => {
+        const card = cardOf(keyOf(place), place);
+
+        return { ...card, saved: saved[card.id] ?? card.saved };
+    });
+    const shown = cards.filter((card) => !left.includes(card.key));
+
+    const feedback = (
+        id: number,
+        action: 'saved' | 'clear' | 'not_interested',
+    ) => api(PlaceFeedbackController.url({ spot: id }), { action });
+
     // As Around here saves it: at once, undone with a toast when it fails.
-    const save = (row: NonNullable<AnsweredPlace['row']>) => {
-        const next = !isSaved(row);
-        setSaved((all) => ({ ...all, [row.id]: next }));
-        api(`/api/places/${row.id}/feedback`, {
-            action: next ? 'saved' : 'clear',
-        }).catch(() => {
-            setSaved((all) => ({ ...all, [row.id]: !next }));
+    const save = (card: CardPlace) => {
+        const next = !card.saved;
+        setSaved((all) => ({ ...all, [card.id]: next }));
+        feedback(card.id, next ? 'saved' : 'clear').catch(() => {
+            setSaved((all) => ({ ...all, [card.id]: !next }));
             showToast('That place wasn’t saved. Please try again.', {
                 error: true,
             });
         });
     };
-    const after = (place: AnsweredPlace) => (
-        <>
-            {place.because && <p className="answer-fine">{place.because}</p>}
-            {onNotThis && (
-                <button
-                    type="button"
-                    className="composer-text-button"
-                    aria-label={`Not this: ${place.name}`}
-                    onClick={() => onNotThis(place)}
-                >
-                    Not this
-                </button>
-            )}
-        </>
-    );
+
+    const calls: CardCalls = {
+        open: (card) => setOpen(card.id),
+        showMap: (card) => {
+            const at = list.current?.closest('[data-layer-host]') ?? null;
+
+            if (!at) {
+                setOpen(card.id);
+
+                return;
+            }
+
+            setHost(at);
+            setMapAt(card.key);
+        },
+        save,
+        notThis: notThis
+            ? (card) => {
+                  setLeft((keys) => [...keys, card.key]);
+                  timers.current.set(
+                      card.key,
+                      window.setTimeout(() => {
+                          timers.current.delete(card.key);
+                          void feedback(card.id, 'not_interested').catch(
+                              () => undefined,
+                          );
+                      }, UNDO),
+                  );
+              }
+            : undefined,
+        undo: (card) => {
+            const timer = timers.current.get(card.key);
+
+            if (timer === undefined) {
+                // Already recorded: Undo takes it back.
+                void feedback(card.id, 'clear').catch(() => undefined);
+            } else {
+                window.clearTimeout(timer);
+                timers.current.delete(card.key);
+            }
+
+            setLeft((keys) => keys.filter((key) => key !== card.key));
+        },
+    };
+
     const credits = [
         ...new Set(
             places.flatMap((place) => {
@@ -106,88 +156,41 @@ export function PlaceAnswer({
         ),
     ];
 
-    const rows = places.every((place) => place.row);
-
     return (
-        <>
-            {rows ? (
-                <ul className="around answer-place-rows" role="list">
-                    {places.map((place) => (
-                        <li key={keyOf(place)}>
-                            <PlaceRow
-                                place={{
-                                    ...place.row!,
-                                    saved: isSaved(place.row!),
-                                }}
-                                selected={open?.key === keyOf(place)}
-                                onOpen={() =>
-                                    setOpen({
-                                        key: keyOf(place),
-                                        id: place.id,
-                                    })
-                                }
-                                onHover={() => undefined}
-                                onSave={() => save(place.row!)}
-                            />
-                            {after(place)}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <ul className="nearby-answer" role="list">
-                    {places.map((place) => {
-                        const kind = place.distance
-                            ? `${place.kind} · ${place.distance}`
-                            : place.kind;
-
-                        return (
-                            <li
-                                key={keyOf(place)}
-                                className={
-                                    place.because || onNotThis
-                                        ? 'nearby-answer-item'
-                                        : undefined
-                                }
-                            >
-                                <Link
-                                    className="nearby-answer-card"
-                                    href={place.href}
-                                    aria-label={`${place.name}, ${kind}`}
-                                >
-                                    <span className="nearby-answer-copy">
-                                        <small>{kind}</small>
-                                        <strong>{place.name}</strong>
-                                        {(place.street || place.area) && (
-                                            <small>
-                                                {[place.street, place.area]
-                                                    .filter(Boolean)
-                                                    .join(' · ')}
-                                            </small>
-                                        )}
-                                        {place.hours && (
-                                            <small className="nearby-answer-hours">
-                                                {place.hours}
-                                            </small>
-                                        )}
-                                    </span>
-                                </Link>
-                                {after(place)}
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
-            {credits.length > 0 && (
-                <div className="answer-actions place-answer-actions">
-                    <span>From {credits.join(' and ')}</span>
-                </div>
+        <div ref={list} className="place-answer">
+            <PlaceCards>
+                {places.map((place, i) => (
+                    <PlaceCard
+                        key={cards[i].key}
+                        card={cards[i]}
+                        because={place.because}
+                        calls={calls}
+                        dismissed={left.includes(cards[i].key)}
+                    />
+                ))}
+            </PlaceCards>
+            <p className="place-answer-credit">
+                {credits.length > 0 && `From ${credits.join(' and ')}. `}
+                Maps © OpenStreetMap contributors, OpenFreeMap.
+            </p>
+            {host && mapAt && shown.length > 0 && (
+                <PlaceMapLayer
+                    host={host}
+                    cards={shown}
+                    from={from}
+                    selected={mapAt}
+                    onSelect={setMapAt}
+                    onClose={() => setMapAt(null)}
+                    onOpen={(card) => setOpen(card.id)}
+                    onSave={save}
+                />
             )}
             <PlaceSheet
-                place={open?.id ?? null}
+                place={open}
                 from={from}
                 onClose={() => setOpen(null)}
                 onSaved={(id, on) => setSaved((all) => ({ ...all, [id]: on }))}
             />
-        </>
+        </div>
     );
 }
