@@ -102,6 +102,10 @@
     background: var(--color-paper-bg);
     color: var(--color-paper-text);
 }
+.settings-chip.data {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
 .settings-chip.delete {
     background: var(--color-conflict-bg);
     color: var(--color-conflict-text);
@@ -450,6 +454,11 @@ button.settings-tile:hover {
     border-radius: var(--radius-lg);
     background: var(--color-conflict-bg);
     animation: settings-in 160ms ease-out;
+}
+/* A confirmation that changes nothing (Download your data): neutral. */
+.settings-confirm.is-calm {
+    border-color: var(--color-border);
+    background: var(--color-bg-canvas);
 }
 .settings-confirm > strong {
     font-size: 16px;
