@@ -36,7 +36,6 @@ function completeOnboarding(array $answers = [])
         'veedel' => 'Altstadt-Nord',
         'arrival_planned' => false,
         'arrival_date' => now()->subDays(10)->toDateString(),
-        'interests' => [],
     ], $answers));
 
     return [$user->fresh(), $response];

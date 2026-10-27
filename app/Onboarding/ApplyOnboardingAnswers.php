@@ -41,7 +41,7 @@ final class ApplyOnboardingAnswers
             }
 
             // Discovery preferences remain separate from the encrypted bureaucracy dossier.
-            $profile = Arr::only($validated, ['situation', 'veedel', 'german_level', 'has_deutschlandticket', 'interests']);
+            $profile = Arr::only($validated, ['situation', 'veedel', 'german_level', 'has_deutschlandticket']);
             $profile = array_filter($profile, fn ($value) => $value !== null);
             if (isset($profile['veedel']) && in_array($profile['veedel'], collect(config('veedels', []))->flatten()->all(), true)) {
                 $profile['city'] = config('bureaucracy_onboarding.legacy_neighbourhood_city');
