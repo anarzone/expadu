@@ -21,12 +21,6 @@ class GtfsStopTime extends Model
         ];
     }
 
-    /** @return BelongsTo<GtfsTrip, $this> */
-    public function trip(): BelongsTo
-    {
-        return $this->belongsTo(GtfsTrip::class, 'trip_id', 'trip_id');
-    }
-
     /** @return BelongsTo<GtfsStop, $this> */
     public function stop(): BelongsTo
     {
