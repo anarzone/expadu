@@ -244,7 +244,7 @@ final class Assistant
             $personal ? app(Affinities::class)->for($user) : null,
             $personal ? app(TasteFacts::class)->for($user) : null,
             $personal ? app(AroundNow::class)->day($user, $plans, $now) : [],
-            $progress, $history['suggested'], $plans, $paperwork !== null);
+            $progress, $history['suggested'], $plans, $paperwork !== null, $text);
         try {
             $weather = ($this->weather->getCurrentWeather()['available'] ?? false) === true;
         } catch (Throwable) {

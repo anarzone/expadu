@@ -2,6 +2,7 @@
 
 namespace App\Privacy;
 
+use App\Models\BureaucracyCase;
 use App\Models\ProcessingOptIn;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -9,16 +10,17 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Processing a person turns on in Settings and keeps on until they turn it off (owner, 26 Oct
- * 2026: AI-written day briefs, opt-in, off by default). The yes is bound to the notice and the
- * provider they saw: when either changes it lapses until they say yes again. Each use still gets
- * its own request permission through ProcessingConsentStore, so the gate's checks, the audit
- * row and a withdrawal's reach are the same as for a message they send.
+ * Processing a person turns on and keeps on until they turn it off (owner, 26 Oct 2026: AI-written
+ * day briefs, opt-in, off by default; 27 Oct: Composer remembers their Allow for their Paperwork
+ * record). The yes is bound to the notice and the provider they saw: when either changes it lapses
+ * until they say yes again. Each use still gets its own request permission through
+ * ProcessingConsentStore, so the gate's checks, the audit row and a withdrawal's reach are the
+ * same as for a message they send.
  */
 final class ProcessingOptIns
 {
-    /** Only processing made to run without a request of theirs may be turned on for good. */
-    public const STANDING = [ProcessingPurpose::NotificationBrief, ProcessingPurpose::TodayRank];
+    /** Only these may be turned on for good: processing without a request of theirs, and Composer's use of their record. */
+    public const STANDING = [ProcessingPurpose::NotificationBrief, ProcessingPurpose::TodayRank, ProcessingPurpose::ComposerPaperwork];
 
     public function __construct(private ProcessingConsentStore $consents) {}
 
@@ -60,12 +62,12 @@ final class ProcessingOptIns
     }
 
     /**
-     * One use's own permission under their standing yes, bound to what it sends (`$context`), or
-     * none when it's off or has lapsed.
+     * One use's own permission under their standing yes, bound to what it sends (`$context`) and,
+     * for their Paperwork, to their record (`$case`), or none when it's off or has lapsed.
      *
      * @param  array<string, mixed>  $context
      */
-    public function permit(User $user, ProcessingPurpose $purpose, array $context): ?ProcessingPermit
+    public function permit(User $user, ProcessingPurpose $purpose, array $context, ?BureaucracyCase $case = null): ?ProcessingPermit
     {
         if (! in_array($purpose, self::STANDING, true) || ! $this->active($user, $purpose)) {
             return null;
@@ -73,7 +75,20 @@ final class ProcessingOptIns
         $row = $this->row($user, $purpose);
 
         return $this->consents->grant($user, $purpose, $context, ['consent' => true, 'request_id' => (string) Str::uuid(),
-            'notice_version' => $row->notice_version, 'provider_version' => $row->provider_version]);
+            'notice_version' => $row->notice_version, 'provider_version' => $row->provider_version], $case);
+    }
+
+    /**
+     * Their Paperwork record's processing stopped, or the record was erased: Composer's standing
+     * permission to use it ends with it, as its notice says (the per-request ones are withdrawn
+     * by whoever stopped it).
+     */
+    public static function endPaperwork(?int $userId): void
+    {
+        if ($userId !== null) {
+            ProcessingOptIn::query()->where('user_id', $userId)->where('purpose', ProcessingPurpose::ComposerPaperwork->value)
+                ->whereNull('withdrawn_at')->update(['withdrawn_at' => now()->utc()]);
+        }
     }
 
     private function row(User $user, ProcessingPurpose $purpose): ?ProcessingOptIn

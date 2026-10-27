@@ -128,7 +128,7 @@ enum ProcessingPurpose: string
     public function disclosure(): array
     {
         return [
-            'purpose' => $this->value, 'scope' => in_array($this, [self::NotificationBrief, self::TodayRank], true) ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
+            'purpose' => $this->value, 'scope' => in_array($this, [self::NotificationBrief, self::TodayRank, self::ComposerPaperwork], true) ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
             'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
@@ -205,7 +205,7 @@ enum ProcessingPurpose: string
         $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
 
         return [
-            ($paperwork ? 'For this message, Composer reads and can change your Paperwork record. To answer, it sends to '
+            ($paperwork ? 'Once you allow it, Composer reads and can change your Paperwork record when a message needs it. To answer, it sends to '
                 : 'To answer your message, Composer sends to ').config($this->configPrefix().'.processor_name')." ({$model}), an AI service: "
                 .implode('; ', array_map(fn (string $category): string => self::WORDS[$category], self::categoryOrder($paperwork))).'.',
             'It never sends '.self::either([...array_values(self::NEVER), ...($paperwork ? [] : ['your Paperwork record without its own permission'])]).'. Nothing is sent to an authority.',
@@ -213,7 +213,8 @@ enum ProcessingPurpose: string
             'The AI service doesn’t use it to train its models.',
             "Composer keeps this conversation, its answers and cards, in your History until you delete it; a change it makes can be undone for {$hours} hours."
                 .($paperwork ? ' Deleting your Paperwork record removes Composer’s copies of it; stopping its processing ends this permission.' : ''),
-            $paperwork ? "This permission is for this one message and lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box; withdrawing Composer’s AI withdraws it too."
+            $paperwork ? 'Your Allow is remembered until you turn it off, in the notice under Composer’s box or in Settings › Composer, which stops it at once; withdrawing Composer’s AI turns it off too. '
+                ."Each message’s use of it lasts {$minutes} minutes. If this notice or the AI service’s model changes, Composer asks you again."
                 : "Sending is your permission for that one message, and it lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box.",
         ];
     }
