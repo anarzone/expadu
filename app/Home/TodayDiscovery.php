@@ -9,6 +9,7 @@ use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\TodayTaste;
 use App\Places\AroundKinds;
 use App\Places\OpenNearby;
 use App\Saved\SavedCollection;
@@ -16,6 +17,7 @@ use App\Services\NearbyPlaces;
 use App\Support\EventOccurrencePresenter;
 use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -59,6 +61,7 @@ final class TodayDiscovery
         private OpenNearby $open,
         private SavedCollection $saved,
         private EventStartingPoint $points,
+        private TodayTaste $taste,
     ) {}
 
     /** @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
@@ -81,14 +84,23 @@ final class TodayDiscovery
         $idea = $around['idea']['id'] ?? null;
         $ideaStart = $around['idea']['occurrence_start'] ?? null;
 
-        // Posters for the two eligible events starting soonest, compact
-        // listings for the next three (coordinator, 20 Oct). Posters fill
-        // first, and the event "Also in ‹area›" suggests is in neither.
-        $listed = $events
-            ->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)
-            ->take(5)
-            ->values()
-            ->map(fn (array $event, int $index) => [...$event, 'layout' => $index < 2 ? 'poster' : 'compact']);
+        // Today's order as the AI put it for them (TodayTaste, ranked in the
+        // background), or null for this order. It only reorders what's shown.
+        $order = $this->taste->order($user);
+
+        // Posters for the first two eligible events, compact listings for
+        // the next three (coordinator, 20 Oct). Posters fill first, and the
+        // event "Also in ‹area›" suggests is in neither.
+        $listed = self::ranked(
+            $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(5)->values(),
+            $order['events'] ?? null,
+            $order['why'] ?? [],
+            fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp(),
+        )->map(fn (array $event, int $index) => [...$event, 'layout' => $index < 2 ? 'poster' : 'compact']);
+
+        if ($around !== null) {
+            $around['places'] = self::ranked(collect($around['places']), $order['places'] ?? null, $order['why'] ?? [], fn (array $place) => 'p'.$place['id'])->all();
+        }
 
         $onlyTomorrow = $listed->isNotEmpty() && $listed->every(fn (array $event) => isset($event['day']));
 
@@ -99,6 +111,35 @@ final class TodayDiscovery
             'events' => $listed->all(),
             'around' => $around,
         ];
+    }
+
+    /**
+     * Items in the order the AI gave (its ids, TodayRanker::candidates'
+     * keys): those it names first, in its order, then the rest as they
+     * were. It ranks, never hides: an item it doesn't name keeps its place
+     * after, and an id it names that isn't here is ignored. A pick with a
+     * why carries it (`why`); no other does.
+     *
+     * @param  Collection<int, array<string, mixed>>  $items
+     * @param  list<string>|null  $ids  null: keep this order
+     * @param  array<string, string>  $why
+     * @param  Closure(array<string, mixed>): string  $key
+     * @return Collection<int, array<string, mixed>>
+     */
+    private static function ranked(Collection $items, ?array $ids, array $why, Closure $key): Collection
+    {
+        if ($ids === null) {
+            return $items->values();
+        }
+
+        $rank = array_flip(array_values(array_filter($ids, 'is_string')));
+        $count = count($rank);
+
+        return $items
+            ->map(fn (array $item, int $index) => [$item, $rank[$key($item)] ?? $count + $index])
+            ->sortBy(fn (array $pair) => $pair[1])
+            ->map(fn (array $pair) => isset($why[$key($pair[0])]) ? [...$pair[0], 'why' => $why[$key($pair[0])]] : $pair[0])
+            ->values();
     }
 
     /**
