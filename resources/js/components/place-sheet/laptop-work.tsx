@@ -28,6 +28,10 @@ export type WorkFact = {
     observed_at?: string | null;
     /** The website's own sentence, when the fact comes from it. */
     quote?: string | null;
+    /** The one sentence of the quote that states the rule. */
+    quote_short?: string | null;
+    /** An English line for the other days or conditions, from the quote's own words. */
+    note?: string | null;
 };
 
 const FOLLOW_LABEL: Record<FollowUp, string> = {
@@ -303,10 +307,13 @@ export function LaptopWork({
                     <Verdict
                         kind="rule"
                         title={ruleTitle(applies!.value, days)}
-                    />
-                    {rule.quote ? (
+                    >
+                        {rule.note}
+                    </Verdict>
+                    {/* The rule's own sentence; the whole quote when there's none. */}
+                    {rule.quote_short || rule.quote ? (
                         <blockquote className="laptop-quote" lang="de">
-                            „{rule.quote}“
+                            „{rule.quote_short || rule.quote}“
                         </blockquote>
                     ) : null}
                     <p className="laptop-soft">
