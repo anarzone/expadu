@@ -39,8 +39,12 @@ const setOpen = (next: boolean) => {
     listeners.forEach((notify) => notify());
 };
 
+// While the tray is going away: opening again keeps it instead.
+let stopClosing: (() => void) | null = null;
+
 /** Opens the tray (the header button, ⌘K). */
 export function openComposerTray(): void {
+    stopClosing?.();
     setOpen(true);
 }
 
@@ -148,6 +152,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         null,
     );
     const tray = useRef<HTMLDivElement>(null);
+    const dim = useRef<HTMLDivElement>(null);
+    // One close at a time: a tap outside closes on pointerdown, then its click
+    // lands on the dim; a second fade from full would flash the box back.
+    const closing = useRef(false);
     const field = useRef<HTMLTextAreaElement>(null);
     const launcher = useRef<HTMLButtonElement>(null);
     const menuId = useId();
@@ -161,6 +169,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             return;
         }
 
+        closing.current = false;
         field.current?.focus({ preventScroll: true });
 
         if (!still()) {
@@ -228,6 +237,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
     }, [isOpen, talked]);
 
     const hide = () => {
+        if (closing.current) {
+            return;
+        }
+
         setMenuOpen(false);
         // What was asked is answered in the conversation; reopening asks nothing again.
         setAsked(null);
@@ -239,15 +252,32 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
             return;
         }
 
-        // Box and answer go together (B): fade and rise 8px.
-        box.animate(
+        // Box and answer go together (B): fade and rise 8px, the dim fading with them.
+        closing.current = true;
+        const timing = { duration: 240, easing: 'ease', fill: 'both' } as const;
+        const fade = box.animate(
             [
                 { opacity: 1, transform: 'translateY(0)' },
                 { opacity: 0, transform: 'translateY(-8px)' },
             ],
-            { duration: 240, easing: 'ease', fill: 'both' },
-        ).finished.then(
-            () => setOpen(false),
+            timing,
+        );
+        const dimFade = dim.current?.animate(
+            [{ opacity: 1 }, { opacity: 0 }],
+            timing,
+        );
+        stopClosing = () => {
+            stopClosing = null;
+            closing.current = false;
+            fade.cancel();
+            dimFade?.cancel();
+        };
+        fade.finished.then(
+            () => {
+                stopClosing = null;
+                closing.current = false;
+                setOpen(false);
+            },
             () => {},
         );
     };
@@ -393,8 +423,10 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                 </button>
             )}
             {isOpen && (
-                // The dim takes the click that closes, so nothing under it is pressed.
+                // The dim takes the tap, so nothing under it is pressed. The tap has
+                // already closed it on pointerdown; its click only hands focus back.
                 <div
+                    ref={dim}
                     className="composer-backdrop"
                     style={{ top: dimTop }}
                     aria-hidden="true"
