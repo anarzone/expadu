@@ -3,6 +3,7 @@
 use App\Bureaucracy\Assessment\AssessmentInput;
 use App\Bureaucracy\Catalogue\CatalogueCompiler;
 use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\ReadModel\CoverageUnits;
@@ -327,11 +328,12 @@ it('names the processes a plan cannot answer and spots an empty plan', function 
         ->and(UnansweredPlan::isEmpty(['coverage' => ['state' => 'not_activated', 'processes' => []], 'actions' => []]))->toBeFalse();
 });
 
-it('escalates once when the active catalogue has nothing for someone who finished onboarding', function () {
+it('escalates once when the active catalogue has nothing for someone who answered their questions', function () {
     Exceptions::fake();
     $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
+    app(RecordFactChange::class)->execute($actor, $case->person, 'entry_mode', 'd_visa', null, $case->fact_version);
 
     app(ReassessPerson::class)->execute($case->person_id);
     app(ReassessPerson::class)->execute($case->person_id);
@@ -340,4 +342,16 @@ it('escalates once when the active catalogue has nothing for someone who finishe
         ->toBe(['kind' => 'empty_plan', 'subject' => 'de-nrw-cologne', 'occurrences' => 2])
         ->and(json_encode(BureaucracyEscalation::query()->sole()->getAttributes()))->not->toContain($actor->email);
     Exceptions::assertReportedCount(1);
+});
+
+it('raises no empty-plan escalation for a record with no answers yet', function () {
+    Exceptions::fake();
+    $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
+    $actor = User::factory()->create(['city' => 'Köln']);
+    $case = app(EnsureAccountHolder::class)->dossier($actor);
+
+    app(ReassessPerson::class)->execute($case->person_id);
+
+    expect(BureaucracyEscalation::query()->where('kind', 'empty_plan')->exists())->toBeFalse();
+    Exceptions::assertReportedCount(0);
 });

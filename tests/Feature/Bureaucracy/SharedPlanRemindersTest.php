@@ -69,6 +69,19 @@ test('scheduled reminders include skippable onboarding and use the exact current
         ->and(serialize($notification))->not->toContain('Synthetic private preparation', $this->expiry->value);
 });
 
+test('a Paperwork record is reassessed without onboarding, while its alerts keep the onboarding gate', function () {
+    $this->actor->forceFill(['onboarded_at' => null])->save();
+    $boundary = fn () => BureaucracyOutboxEvent::query()->where('aggregate_id', $this->case->person_id)
+        ->where('dedupe_key', 'like', 'person.boundary:%')->exists();
+    expect($boundary())->toBeFalse();
+
+    $this->artisan('bureaucracy:remind', ['--user' => $this->actor->id])->assertSuccessful();
+
+    expect($boundary())->toBeTrue()
+        ->and(app(ActionBus::class)->topK($this->actor->id))->toBeEmpty()
+        ->and($this->actor->alerts()->count())->toBe(0);
+});
+
 test('queued reminders recheck preferences and changed facts rather than delivering cached claims', function () {
     app(BureaucracyEvaluator::class)->evaluate($this->actor);
     $action = app(ActionBus::class)->topK($this->actor->id)[0];
