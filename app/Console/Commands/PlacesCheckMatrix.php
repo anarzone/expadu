@@ -67,6 +67,10 @@ class PlacesCheckMatrix extends Command
                 if (($case['open_from_listed_hours'] ?? false) && $place !== null && OpeningAnswer::isOpenAt($place, $at) !== true) {
                     $problems[] = "not open by listed hours: {$row['name']}";
                 }
+                // Coordinator, 24 Oct: a "free" ask never offers a place that isn't public (school grounds, private).
+                if (($case['public_only'] ?? false) && $place !== null && ($place->placeFacts['public_use']['value'] ?? null) === 'no') {
+                    $problems[] = 'not public ('.($place->placeFacts['public_use']['basis'] ?? '?')."): {$row['name']}";
+                }
                 if (isset($case['requires']) && $place !== null && ! $this->meets($place->placeFacts['practical'] ?? [], $case['requires'])) {
                     $problems[] = "{$case['requires']} not listed: {$row['name']}";
                 }
