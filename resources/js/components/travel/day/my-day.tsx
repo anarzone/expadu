@@ -6,7 +6,7 @@ import { lineLook, vehicleOf } from '@/components/travel/line-look';
 import { stopName } from '@/components/travel/stop-name';
 import { TravelIcon } from '@/components/travel/travel-icon';
 import { csrfHeaders } from '@/lib/csrf';
-import { bureaucracy } from '@/routes';
+import { paperwork } from '@/routes';
 import type { DayItem, DayProjection, NextTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
 
@@ -490,7 +490,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
                             {item.process_key ? (
                                 <Link
                                     className="day-paper"
-                                    href={bureaucracy({
+                                    href={paperwork({
                                         query: {
                                             view: 'paperwork',
                                             process: item.process_key,

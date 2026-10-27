@@ -30,7 +30,9 @@ use App\Http\Controllers\Paperwork\CoverageWaitlistController;
 use App\Http\Controllers\QA\PersonaController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+// Paperwork lives at /paperwork, its API at /paperwork/v2 (owner, 27 Oct 2026: the old
+// /bureaucracy addresses are gone, not redirected; stored links were rewritten).
+Route::get('paperwork', [BureaucracyController::class, 'index'])->name('paperwork');
 // Outside Cologne: "Tell me when it's covered" joins the city waitlist,
 // confirmed by the website's double opt-in (EXP-80).
 Route::post('paperwork/waitlist', [CoverageWaitlistController::class, 'store'])->middleware('throttle:6,1')->name('paperwork.waitlist');
@@ -39,7 +41,7 @@ Route::post('qa/become/{persona}', [PersonaController::class, 'become'])->name('
 Route::post('qa/reset-tasks', [PersonaController::class, 'resetTasks'])->name('qa.reset-tasks');
 
 // Paperwork v2: the plan, people and sharing, facts and question sessions.
-Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:bureaucracy-v2')->group(function () {
+Route::prefix('paperwork/v2')->name('paperwork.v2.')->middleware('throttle:bureaucracy-v2')->group(function () {
     Route::get('plan', AccountPlanController::class)->name('plan');
     Route::get('preview/{persona}', ScenarioPreviewController::class)->name('preview');
     Route::get('people', [PeopleController::class, 'index'])->name('people.index');

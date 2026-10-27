@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 
 /**
  * Paperwork renders the v2 plan (bureaucracy.plan.1) for the signed-in account and changes it
- * only through the bureaucracy/v2 commands. The E2E user has a Blue Card plan seeded by
+ * only through the paperwork/v2 commands. The E2E user has a Blue Card plan seeded by
  * E2EPaperworkSeeder. These specs are written to pass on a fresh or a re-used account.
  */
 
@@ -11,7 +11,7 @@ import type { Page } from '@playwright/test';
 test.use({ serviceWorkers: 'block' });
 
 async function openPaperwork(page: Page): Promise<void> {
-    await page.goto('/bureaucracy');
+    await page.goto('/paperwork');
     // No page title on screen: the heading is there for screen readers.
     await expect(
         page.getByRole('heading', { level: 1, name: 'Paperwork' }),

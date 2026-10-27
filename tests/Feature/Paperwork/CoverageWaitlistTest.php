@@ -91,7 +91,7 @@ test('🔒 the page reads only the signed-in account\'s own place on the list, a
     $mover = outsideCologne();
     $other = User::factory()->onboarded()->create(['email' => 'other@example.com', 'city' => 'Hamburg']);
     WaitlistSignup::factory()->confirmed()->create(['email' => 'other@example.com', 'city' => 'Hamburg']);
-    $prop = fn (User $user) => $this->actingAs($user)->get(route('bureaucracy'))->assertOk()->inertiaProps('coverageWaitlist');
+    $prop = fn (User $user) => $this->actingAs($user)->get(route('paperwork'))->assertOk()->inertiaProps('coverageWaitlist');
 
     expect($prop($mover))->toBeNull()
         ->and($prop($other))->toBe('confirmed');

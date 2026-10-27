@@ -127,7 +127,7 @@ final class PaperworkActions implements ComposerAction
 
         return ['text' => 'Their Paperwork record, shown to them as a card. Answers: '.($answers ?: 'none yet').".\n".($tasks ?: 'No open tasks.'),
             'block' => ['type' => 'record', 'domain' => 'paperwork', 'title' => 'Your Paperwork record', 'rows' => $rows,
-                'link' => ['label' => 'Open Paperwork →', 'href' => '/bureaucracy']]];
+                'link' => ['label' => 'Open Paperwork →', 'href' => route('paperwork', [], false)]]];
     }
 
     public function prepare(User $user, string $action, array $input, CarbonImmutable $now): array
@@ -181,7 +181,7 @@ final class PaperworkActions implements ComposerAction
         $changes = PaperworkPlanDiff::between($before, $this->plan($user));
 
         // What changed in their plan, as Paperwork's before and after say it (the page words its dates).
-        return [...$made, 'changes' => $changes, 'link' => ['label' => 'Open Paperwork →', 'href' => '/bureaucracy'],
+        return [...$made, 'changes' => $changes, 'link' => ['label' => 'Open Paperwork →', 'href' => route('paperwork', [], false)],
             'said' => $made['title'].'.'.(($moved = self::moved($changes)) !== null ? " {$moved}" : '')];
     }
 

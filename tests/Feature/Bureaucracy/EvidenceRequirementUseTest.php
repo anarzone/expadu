@@ -123,7 +123,7 @@ test('a shared document needs owner permission for the exact process and revocat
     expect(fn () => app(ConfirmRequirementUse::class)->execute($this->actor, $otherProcesses['fixture.one'], $one['id'], $evidence->id, 1, 1, $one['semantic_hash'], (string) Str::uuid()))
         ->toThrow(AuthorizationException::class);
     $shareService = app(ShareEvidence::class);
-    $shareUrl = '/bureaucracy/v2/evidence/'.$evidence->id.'/shares';
+    $shareUrl = '/paperwork/v2/evidence/'.$evidence->id.'/shares';
     $notice = $this->actingAs($this->actor)->getJson($shareUrl)->assertSuccessful()->json('notice_version');
     $shareId = $this->postJson($shareUrl, ['process_id' => $otherProcesses['fixture.one']->id, 'requirement_id' => $one['id'],
         'evidence_version' => 1, 'requirement_hash' => $one['semantic_hash'], 'expires_on' => now()->addMonth()->toDateString(),
@@ -168,7 +168,7 @@ test('evidence and its history are exported and removed with the subject dossier
 });
 
 test('the paperwork API keeps evidence edits and use confirmations explicit and private', function () {
-    $url = '/bureaucracy/v2/people/'.$this->case->person_id;
+    $url = '/paperwork/v2/people/'.$this->case->person_id;
     $evidenceId = (string) Str::uuid();
     $request = ['request_id' => (string) Str::uuid(), 'expected_version' => 0, 'details' => $this->details];
     $this->actingAs($this->actor)->putJson($url.'/evidence/'.$evidenceId, $request)->assertSuccessful()->assertJsonPath('id', $evidenceId);
@@ -177,7 +177,7 @@ test('the paperwork API keeps evidence edits and use confirmations explicit and 
     $one = collect($result->json('requirements'))->firstWhere('id', 'fixture.one.document.identity');
     $confirm = ['request_id' => (string) Str::uuid(), 'expected_version' => 1, 'evidence_id' => $evidenceId,
         'evidence_version' => 1, 'requirement_hash' => $one['semantic_hash'], 'confirmed' => true];
-    $processUrl = '/bureaucracy/v2/processes/'.$this->processes['fixture.one']->id.'/requirements/'.$one['id'];
+    $processUrl = '/paperwork/v2/processes/'.$this->processes['fixture.one']->id.'/requirements/'.$one['id'];
     $this->postJson($processUrl.'/confirm', $confirm)->assertSuccessful();
     $this->deleteJson($processUrl.'/confirmation', ['request_id' => (string) Str::uuid(), 'expected_version' => 2])->assertSuccessful();
     $this->put($url.'/evidence/'.$evidenceId, [...$request, 'details' => ['label' => 'sensitive invalid payload']], ['Accept' => 'text/html'])

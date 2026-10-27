@@ -43,7 +43,7 @@ const facts = () => [
 ];
 const sources = [
     { label: 'Events', href: '/events?date=2026-10-22' },
-    { label: 'Paperwork', href: '/bureaucracy' },
+    { label: 'Paperwork', href: '/paperwork' },
 ];
 const answer = (written: 'ai' | 'code', read?: string[]) => ({
     id: `around-${written}`,

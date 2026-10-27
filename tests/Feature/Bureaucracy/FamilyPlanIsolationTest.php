@@ -38,8 +38,8 @@ test('workspace membership and admin status do not grant adult dossier access', 
     foreach (AccessScope::cases() as $scope) {
         expect(app(PersonAccess::class)->allows($admin, $subject, $scope))->toBeFalse();
     }
-    $this->actingAs($admin)->getJson('/bureaucracy/v2/people/'.$subject->id)->assertNotFound();
-    $this->getJson('/bureaucracy/v2/people')->assertSuccessful()->assertJsonMissing(['id' => $subject->id]);
+    $this->actingAs($admin)->getJson('/paperwork/v2/people/'.$subject->id)->assertNotFound();
+    $this->getJson('/paperwork/v2/people')->assertSuccessful()->assertJsonMissing(['id' => $subject->id]);
 });
 
 test('a token does not authorise an unverified or different recipient', function (bool $unverified) {

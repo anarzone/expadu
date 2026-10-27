@@ -13,14 +13,14 @@ final class InAppPlaces
         'delete_paperwork_record' => [
             'text' => 'Deleting your Paperwork record can’t be undone, so I don’t do it from here. Paperwork asks you to confirm before anything is erased.',
             'place' => ['crumb' => 'Paperwork › Share your plan › Your record', 'actions' => self::RECORD, 'here' => 'Delete your record',
-                'label' => 'Open Your record →', 'href' => '/bureaucracy?record=delete'],
+                'label' => 'Open Your record →', 'href' => '/paperwork?record=delete'],
             'note' => 'Want a copy first? Download it there before you delete.',
         ],
         'stop_paperwork_processing' => [
             'title' => 'Stop Paperwork processing your record',
             'text' => 'Stopping its processing is your right over your data, so it’s your tap, in Paperwork. It keeps your record but doesn’t use it until you resume.',
             'place' => ['crumb' => 'Paperwork › Share your plan › Your record', 'actions' => self::RECORD, 'here' => 'Stop processing',
-                'label' => 'Open Your record →', 'href' => '/bureaucracy?record=stop'],
+                'label' => 'Open Your record →', 'href' => '/paperwork?record=stop'],
             'note' => 'You can resume processing there at any time.',
         ],
         'withdraw_ai_permission' => [

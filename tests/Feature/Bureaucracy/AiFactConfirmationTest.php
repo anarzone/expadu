@@ -170,7 +170,7 @@ test('the subject can withdraw family processing without giving a helper authori
 });
 
 test('private AI endpoints enforce explicit confirmation and selected-session scope', function () {
-    $base = '/bureaucracy/v2/question-sessions/'.$this->session->id;
+    $base = '/paperwork/v2/question-sessions/'.$this->session->id;
     $candidate = $this->actingAs($this->actor)->postJson($base.'/extract/'.$this->offer['id'], [
         'token' => $this->offer['token'], 'message' => 'Planning a move', 'processing' => $this->acceptance,
     ])->assertOk()->assertHeader('Cache-Control', 'no-store, private')->json();

@@ -42,7 +42,7 @@ const filters: ActionFilter[] = [
     'completed',
 ];
 
-/** The query of a URL or path ("/bureaucracy?view=paperwork" or "?view=paperwork"). */
+/** The query of a URL or path ("/paperwork?view=paperwork" or "?view=paperwork"). */
 const queryOf = (url: string) =>
     new URLSearchParams(url.includes('?') ? url.slice(url.indexOf('?')) : '');
 

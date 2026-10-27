@@ -22,12 +22,12 @@ test('a confirmed D visa and Blue Card goal unlock preparation without a duplica
         'entry_mode' => 'd_visa', 'visa_expires_at' => '2026-10-01',
         'current_residence_title' => 'national_d_visa', 'case_goal' => 'blue_card',
     ]);
-    $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $preparation = collect($plan['guidance'])->firstWhere('id', 'case.bc.first_application.prepare');
     expect($preparation['missing_facts'])->toBe([])
         ->and($preparation['assessment'])->toBe('supported_preparation')
         ->and(array_column($plan['actions'], 'source_rule_id'))->toContain('case.bc.first_application.prepare', 'case.bc.first_application.submit');
-    $facts = $this->getJson('/bureaucracy/v2/people/'.$plan['person_id'].'/facts')->assertSuccessful()->json('values');
+    $facts = $this->getJson('/paperwork/v2/people/'.$plan['person_id'].'/facts')->assertSuccessful()->json('values');
     expect($facts)->not->toHaveKey('permit_track')
         ->and($facts['current_residence_title'])->toBe('national_d_visa')
         ->and($facts['case_goal'])->toBe('blue_card');
@@ -111,7 +111,7 @@ test('official verification context is available without choosing a Blue Card ro
         'citizenship_group' => 'non_eu', 'purpose' => 'employment', 'arrival_planned' => false, 'arrival_date' => '2026-07-24',
         'current_residence_title' => 'other', 'case_goal' => 'blue_card',
     ]);
-    $plan = $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $verification = collect($plan['guidance'])->firstWhere('id', 'case.bc.verify_status_source');
     expect($verification)->not->toBeNull()
         ->and($verification['missing_facts'])->toBe([])

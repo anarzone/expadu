@@ -100,7 +100,7 @@ function analyserGood(): array
 
 function analyserAsk(User $user, int $personId, array $body = []): TestResponse
 {
-    return test()->actingAs($user)->postJson('/bureaucracy/v2/people/'.$personId.'/ask', array_filter([
+    return test()->actingAs($user)->postJson('/paperwork/v2/people/'.$personId.'/ask', array_filter([
         'question' => AnalyserQuestion, 'jurisdiction' => 'de-nrw-cologne',
         'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::PaperworkAnswer), ...$body,
     ], fn ($value) => $value !== null));
@@ -340,7 +340,7 @@ test('a permission ends when the case answers change, and is withdrawn with the 
     expect($gate->send($stale, ProcessingPurpose::PaperworkAnswer, $context, $transport))->toBeNull();
 
     $withdrawn = $grant();
-    test()->actingAs($user)->deleteJson('/bureaucracy/v2/people/'.$case->person_id.'/processing')->assertSuccessful();
+    test()->actingAs($user)->deleteJson('/paperwork/v2/people/'.$case->person_id.'/processing')->assertSuccessful();
     expect($gate->send($withdrawn, ProcessingPurpose::PaperworkAnswer, $context, $transport))->toBeNull()->and($sent)->toBe(0)
         ->and(BureaucracyProcessingConsent::query()->where('case_id', $case->id)->where('purpose', 'paperwork_answer')->count())->toBe(2);
 
