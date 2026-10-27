@@ -143,29 +143,6 @@
     font-size: 12px;
     color: var(--composer-muted);
 }
-.composer-service-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 15px;
-    border: 1px solid var(--composer-line);
-    border-radius: 16px;
-    width: 100%;
-    color: var(--composer-blue);
-    text-align: left;
-    background: var(--composer-paper);
-}
-.composer-service-link > span {
-    flex: 1;
-    font-weight: 600;
-}
-.composer-service-link small {
-    display: block;
-    font-weight: 400;
-    color: var(--composer-muted);
-    margin-top: 5px;
-    font-size: 11px;
-}
 .composer-working {
     padding: 10px 0 20px;
 }
@@ -1127,4 +1104,43 @@
     min-height: 0;
     color: inherit;
     font-size: inherit;
+}
+
+/* A stop's departures in an answer: Travel's strips, as Today's Check
+   departures sets them (today.css .board-capture and its neighbours). */
+.composer-page .answer-departures {
+    margin: 12px 0 0;
+}
+.composer-page .answer-board-capture {
+    margin: 0 0 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.composer-page .answer-board-capture span {
+    display: inline-block;
+    margin-left: 5px;
+    font-weight: var(--weight-semibold);
+}
+.composer-page .answer-board-strips {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 4px;
+}
+.composer-page .answer-board-empty {
+    margin: 8px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.composer-page .answer-board-full {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.composer-page .answer-board-full::after {
+    content: '→';
 }

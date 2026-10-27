@@ -17,6 +17,8 @@ export type WayRow = {
     look?: LineLook;
     /** The line's badge (LineBadge), before the title. */
     badge?: ReactNode;
+    /** How the ride is running, after the title ("2 min late", Cancelled). */
+    status?: ReactNode;
 };
 
 export function Way({
@@ -54,6 +56,7 @@ export function Way({
                         <strong>
                             {row.badge}
                             <span>{row.title}</span>
+                            {row.status}
                             {index === current ? <em>You’re here</em> : null}
                         </strong>
                         <small>{row.sub}</small>

@@ -210,16 +210,60 @@ test('server recommendation goes straight in, inline swap, preview and Undo', as
         .locator('.composer-actions-menu')
         .getByRole('button', { name: 'Start fresh' })
         .click();
+    // The assistant shows a plan as the usual change and plan messages; with no
+    // AI here, the ask does what it does: tomorrow afternoon in Ehrenfeld,
+    // composed from the seeded catalogue and applied as a proposal.
+    let slots = -1;
+    await page.route('**/composer/ask', async (route) => {
+        const xsrf = decodeURIComponent(
+            (await page.context().cookies()).find(
+                (cookie) => cookie.name === 'XSRF-TOKEN',
+            )?.value ?? '',
+        );
+        const headers = { Accept: 'application/json', 'X-XSRF-TOKEN': xsrf };
+        const day = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Berlin',
+        }).format(Date.now() + 24 * 60 * 60 * 1000);
+        const offset = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Europe/Berlin',
+            timeZoneName: 'longOffset',
+        })
+            .format(new Date(`${day}T12:00:00Z`))
+            .replace(/^.*GMT/, '');
+        const composed = await page.request.post('/composer/compose', {
+            headers,
+            data: {
+                constraints: {
+                    window_start: `${day}T14:00:00${offset}`,
+                    window_end: `${day}T18:00:00${offset}`,
+                    areas: ['Ehrenfeld'],
+                },
+            },
+        });
+        expect(composed.ok()).toBe(true);
+        const result = await composed.json();
+        slots = result.plan.slots.length;
+        const workspace = await (
+            await page.request.get('/composer/workspace', { headers })
+        ).json();
+        const proposed = await page.request.post('/composer/workspace', {
+            headers,
+            data: {
+                revision: workspace.revision,
+                action: 'proposal',
+                token: result.handoff_token,
+            },
+        });
+
+        return route.fulfill({ response: proposed });
+    });
     const input = page.locator('#studio-request');
     await input.fill('Plan tomorrow afternoon in Ehrenfeld');
-    const composed = page.waitForResponse((response) =>
-        response.url().endsWith('/composer/compose'),
-    );
+    const asked = page.waitForResponse('**/composer/ask');
     await page.getByRole('button', { name: 'Send request' }).click();
-    const response = await composed;
-    expect(response.ok()).toBe(true);
+    expect((await asked).ok()).toBe(true);
     expect(
-        (await response.json()).plan.slots.length,
+        slots,
         'Seed the local E2EComposerCatalogueSeeder fixtures before this suite',
     ).toBeGreaterThan(0);
     const plan = page.locator('#composer-current-plan');
