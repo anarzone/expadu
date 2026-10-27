@@ -14,6 +14,7 @@ use App\Models\Event;
 use App\Models\EventBookmark;
 use App\Models\EventReminder;
 use App\Models\PlaceWorkAnswer;
+use App\Models\PlannedTrip;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -218,6 +219,38 @@ test('a place been to, with how it was; a laptop answer only for a place they kn
     expect(SpotFeedback::query()->where('spot_id', $spot->id)->value('been_at'))->toBeNull();
     $actions->undo($this->user, $unbeen['blocks'][0]['id'], $now);
     expect(SpotFeedback::query()->where('spot_id', $spot->id)->value('been_rating'))->toBe('up');
+});
+
+test('their own appointment, a done mark and a kept way’s reminder, each with an Undo that puts it back', function () {
+    $actions = app(ComposerActions::class);
+    $store = app(WorkspaceStore::class);
+    $now = CarbonImmutable::now();
+    $today = $now->setTimezone('Europe/Berlin')->toDateString();
+
+    $added = $actions->request($this->user, 'add_appointment', ['name' => 'Dentist', 'start' => '15:00', 'location' => 'Venloer Straße 210'], $now);
+    $slot = collect($store->plan($this->user, $today)['slots'])->firstWhere('name', 'Dentist');
+    expect($added['blocks'][0]['text'])->toBe('Added Dentist to My day, 15:00–16:00.')
+        ->and($slot)->toMatchArray(['type' => 'personal', 'location' => 'Venloer Straße 210', 'start_time' => '15:00']);
+
+    $done = $actions->request($this->user, 'mark_done', ['item' => 'dentist'], $now);
+    expect(collect($store->plan($this->user, $today)['slots'])->firstWhere('name', 'Dentist'))->toHaveKey('completed_at');
+    $actions->undo($this->user, $done['blocks'][0]['id'], $now);
+    expect(collect($store->plan($this->user, $today)['slots'])->firstWhere('name', 'Dentist'))->not->toHaveKey('completed_at');
+    $actions->undo($this->user, $added['blocks'][0]['id'], $now);
+    expect(collect($store->plan($this->user, $today)['slots'] ?? [])->firstWhere('name', 'Dentist'))->toBeNull();
+
+    $at = $now->addHours(2);
+    $trip = PlannedTrip::query()->create(['user_id' => $this->user->id, 'date' => $today, 'target_id' => 'plan-1', 'title' => 'Dinner at Haxenhaus',
+        'journey' => ['legs' => []], 'remind' => true, 'depart_at' => $at, 'arrive_at' => $at->addMinutes(30)]);
+    $off = $actions->request($this->user, 'way_reminder', ['plan' => 'dinner', 'on' => false], $now);
+    expect($trip->fresh()->remind)->toBeFalse();
+    $actions->undo($this->user, $off['blocks'][0]['id'], $now);
+    expect($trip->fresh()->remind)->toBeTrue();
+
+    $removed = $actions->request($this->user, 'remove_way', ['plan' => 'next'], $now);
+    expect(PlannedTrip::query()->whereKey($trip->id)->exists())->toBeFalse();
+    $actions->undo($this->user, $removed['blocks'][0]['id'], $now);
+    expect(PlannedTrip::query()->where('user_id', $this->user->id)->where('target_id', 'plan-1')->firstOrFail())->title->toBe('Dinner at Haxenhaus')->remind->toBeTrue();
 });
 
 test('a saved place is made at once with Undo, and proposed when they ask first', function () {

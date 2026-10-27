@@ -488,6 +488,12 @@ class EvaluateComposer extends Command
         // ...and Travel's stars and planned ways, their alerts, mutes and notification kinds.
         FavouriteStop::query()->where('user_id', $user->id)->delete();
         PlannedTrip::query()->where('user_id', $user->id)->delete();
+        // A case's kept ways to its plans, leaving so many minutes from now.
+        foreach ($request['kept_ways'] ?? [] as $i => $way) {
+            $at = CarbonImmutable::now()->addMinutes((int) $way['in_minutes']);
+            PlannedTrip::query()->create(['user_id' => $user->id, 'date' => $at->setTimezone('Europe/Berlin')->toDateString(), 'target_id' => "eval-{$i}",
+                'title' => $way['title'], 'journey' => ['legs' => []], 'remind' => (bool) ($way['remind'] ?? true), 'depart_at' => $at, 'arrive_at' => $at->addMinutes(30)]);
+        }
         $user->notificationPreference()->delete();
         foreach (app(MuteService::class)->activeMutes($user) as $mute) {
             app(MuteService::class)->unmute($user, $mute['type'], $mute['key']);

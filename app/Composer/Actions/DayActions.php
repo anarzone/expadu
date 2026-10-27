@@ -59,6 +59,33 @@ final class DayActions implements ComposerAction
                 return ['date' => $date, 'edit' => ['action' => 'edit', 'date' => $date, 'id' => $slot['id'], 'start' => $start, 'end' => $end],
                     'name' => $slot['name'], 'propose' => "Move {$slot['name']} to {$start}–{$end}?", 'sub' => self::span($slot)];
             })(),
+            // Their own appointment ("dentist at 3"), as Plans' Add your own does: a personal plan at its time.
+            'add_appointment' => (function () use ($input, $date, $where): array {
+                $name = trim((string) ($input['name'] ?? ''));
+                if (mb_strlen($name) < 2 || mb_strlen($name) > 80) {
+                    throw new ActionRefused('Say what it is (“Dentist”).');
+                }
+                $start = self::clock($input['start'] ?? null) ?? throw new ActionRefused('Say when it starts, as HH:MM.');
+                $end = self::clock($input['end'] ?? null) ?? CarbonImmutable::parse("{$date} {$start}", 'Europe/Berlin')->addHour()->format('H:i');
+                if ($end <= $start) {
+                    throw new ActionRefused('It has to end after it starts, on the same day.');
+                }
+                $location = is_string($input['location'] ?? null) && trim($input['location']) !== '' ? mb_substr(trim($input['location']), 0, 120) : null;
+
+                return ['date' => $date, 'edit' => array_filter(['action' => 'appointment', 'date' => $date, 'name' => $name, 'location' => $location, 'start' => $start, 'end' => $end]),
+                    'name' => $name, 'propose' => "Add {$name} to {$where}, {$start}–{$end}?", 'sub' => $location ?? 'Your own plan'];
+            })(),
+            // Done, or not done after all: Plans' check mark.
+            'mark_done' => (function () use ($input, $plan, $date, $where): array {
+                $slot = self::slot($plan, (string) ($input['item'] ?? ''), $where);
+                $done = ($input['done'] ?? true) !== false;
+                if (isset($slot['completed_at']) === $done) {
+                    throw new ActionRefused("{$slot['name']} is ".($done ? '' : 'not ').'marked done already.');
+                }
+
+                return ['date' => $date, 'id' => $slot['id'], 'done' => $done, 'name' => $slot['name'],
+                    'propose' => ($done ? 'Mark ' : 'Unmark ')."{$slot['name']} as done?", 'sub' => self::span($slot)];
+            })(),
             'clear_day' => $plan === null ? throw new ActionRefused('There’s nothing planned '.($where === 'My day' ? 'today' : 'then').'.')
                 : ['date' => $date, 'edit' => ['action' => 'cancel_day', 'date' => $date], 'name' => $where,
                     'propose' => "Clear {$where}?", 'sub' => count($plan['slots']).' '.(count($plan['slots']) === 1 ? 'thing' : 'things').' planned'],
@@ -68,6 +95,13 @@ final class DayActions implements ComposerAction
 
     public function run(User $user, string $action, array $prepared, CarbonImmutable $now): array
     {
+        if ($action === 'mark_done') {
+            $this->mark($user, $prepared['date'], $prepared['id'], $prepared['done']);
+            $title = ($prepared['done'] ? 'Marked ' : 'Unmarked ')."{$prepared['name']} as done";
+
+            return ['title' => $title, 'link' => ['label' => 'Open '.(self::where($prepared['date'], $now) === 'My day' ? 'My day' : 'your plans').' →', 'nav' => 'plans'],
+                'said' => "{$title}.", 'undo' => ['date' => $prepared['date'], 'id' => $prepared['id'], 'done' => $prepared['done'], 'name' => $prepared['name']]];
+        }
         try {
             $made = $this->workspace->change($user, $prepared['edit']);
         } catch (WorkspaceRefusal $refusal) {
@@ -78,6 +112,7 @@ final class DayActions implements ComposerAction
         $where = self::where($prepared['date'], $now);
         $title = match ($action) {
             'add_to_day' => "Added {$prepared['name']} to {$where}".(isset($row['to']) ? ", {$row['to']}" : ''),
+            'add_appointment' => "Added {$prepared['name']} to {$where}, {$prepared['edit']['start']}–{$prepared['edit']['end']}",
             'remove_from_day' => "Took {$prepared['name']} off {$where}",
             'swap_in_day' => "Swapped {$prepared['was']} for {$prepared['name']}".(isset($row['to']) ? ", {$row['to']}" : ''),
             'move_in_day' => "Moved {$prepared['name']} to {$prepared['edit']['start']}–{$prepared['edit']['end']}",
@@ -95,6 +130,11 @@ final class DayActions implements ComposerAction
 
     public function undo(User $user, string $action, array $undo, CarbonImmutable $now): array
     {
+        if ($action === 'mark_done') {
+            $this->mark($user, $undo['date'], $undo['id'], ! $undo['done']);
+
+            return ['title' => "Undone. {$undo['name']} is ".($undo['done'] ? 'not ' : '').'marked done.'];
+        }
         try {
             $this->workspace->change($user, ['action' => 'undo', 'change' => $undo['change']]);
         } catch (WorkspaceRefusal $refusal) {
@@ -103,12 +143,22 @@ final class DayActions implements ComposerAction
         $where = self::where($undo['date'], $now);
 
         return ['title' => match ($action) {
-            'add_to_day' => "Undone. {$undo['name']} is off {$where} again.",
+            'add_to_day', 'add_appointment' => "Undone. {$undo['name']} is off {$where} again.",
             'remove_from_day' => "Undone. {$undo['name']} is back in {$where}.",
             'swap_in_day' => "Undone. {$undo['was']} is back in place of {$undo['name']}.",
             'move_in_day' => "Undone. {$undo['name']} is back at its time.",
             default => "Undone. {$where} is back.",
         }];
+    }
+
+    /** @throws ActionRefused */
+    private function mark(User $user, string $date, string $id, bool $done): void
+    {
+        try {
+            $this->workspace->change($user, ['action' => $done ? 'complete' : 'uncomplete', 'date' => $date, 'id' => $id]);
+        } catch (WorkspaceRefusal $refusal) {
+            throw new ActionRefused($refusal->getMessage());
+        }
     }
 
     /**
