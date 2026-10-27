@@ -55,7 +55,7 @@ test('🔒 a profile field is set by its own rules, its value kept out of what t
     $email = $this->user->email;
     $refused = $this->actions->request($this->user, 'update_profile', ['field' => 'email', 'value' => 'new@example.invalid'], CarbonImmutable::now());
     $wrong = $this->actions->request($this->user, 'update_profile', ['field' => 'situation', 'value' => 'astronaut'], CarbonImmutable::now());
-    expect($refused['blocks'])->toBe([])->and($refused['said'])->toContain('Settings › Profile')
+    expect($refused['blocks'])->toBe([])->and($refused['said'])->toContain('Settings › Your account')
         ->and($wrong['blocks'])->toBe([])
         ->and($this->user->fresh()->email)->toBe($email)
         ->and($this->user->fresh()->situation)->toBe($this->user->situation);
