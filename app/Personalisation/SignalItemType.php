@@ -8,6 +8,15 @@ enum SignalItemType: string
     case Event = 'event';
     case Plan = 'plan';
     case Journey = 'journey';
+    // Under the second wording (PersonalisationWording, 26 Oct 2026): what they looked at that isn't a catalogue item.
+    /** A kind of place or event, and its Veedel, Composer looked up for them (never their words). */
+    case Topic = 'topic';
+    /** A KVB stop they picked in Travel (never one near where they are, Home or an address). */
+    case Stop = 'stop';
+    /** A line they rode or looked up from a stop they picked. */
+    case Line = 'line';
+    /** An item of Today's "Needs you", by its kind (never Paperwork). */
+    case Need = 'need';
 
     /**
      * A Composer / Day item id ("spot:12", "event:34" or "event:34:1760000000")

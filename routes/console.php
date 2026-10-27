@@ -35,6 +35,8 @@ Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverl
 // the morning one and the evening before an important day (DayBriefs).
 Schedule::command('notifications:score-days')->timezone('Europe/Berlin')->dailyAt('05:30')->withoutOverlapping(30)->onOneServer();
 Schedule::command('notifications:send-briefs')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+// Today's AI order for everyone with personalisation on, before the day's first look (RankToday).
+Schedule::command('today:rank')->timezone('Europe/Berlin')->dailyAt('06:00')->withoutOverlapping(30)->onOneServer();
 // What threatens a stop of today's plan starting within two hours (PlanRisks).
 Schedule::command('notifications:watch-plans')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 
