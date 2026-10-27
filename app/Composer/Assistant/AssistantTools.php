@@ -27,6 +27,7 @@ use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
+use App\Personalisation\SignalRecorder;
 use App\Places\DestinationGrouping;
 use App\Places\FacilityGroups;
 use App\Places\OpeningAnswer;
@@ -327,6 +328,8 @@ final class AssistantTools
         };
         $started = hrtime(true);
         try {
+            $this->learn($name, $input);
+
             return match ($name) {
                 'where_am_i' => $this->whereAmI(),
                 'departures' => $this->departures($input),
@@ -636,6 +639,25 @@ final class AssistantTools
 
             return $this->line($id, self::eventText($poster).(isset($this->earlier['event'][$poster['id']]) ? ' (You suggested it earlier.)' : ''));
         })->implode("\n");
+    }
+
+    /**
+     * What it looked up for them, for personalisation with their opt-in (SignalRecorder::topic): the
+     * kinds of place, as the tools take them, and the one Veedel they named; never their words (an
+     * event's topic is theirs), never a place they're near.
+     */
+    private function learn(string $name, array $input): void
+    {
+        if (! in_array($name, ['search_places', 'suggest_for_day', 'plan_day'], true)) {
+            return;
+        }
+        $kinds = array_values(array_intersect(array_filter(is_array($input['kinds'] ?? null) ? $input['kinds'] : [], 'is_string'),
+            array_map(fn (SpotCategory $kind): string => $kind->value, SpotCategory::cases())));
+        $areas = PlanDay::areas(is_array($input['areas'] ?? null) ? $input['areas'] : (is_string($input['area'] ?? null) ? [$input['area']] : []));
+        $area = count($areas) === 1 ? $areas[0] : null;
+        foreach (array_slice($kinds, 0, 3) as $kind) {
+            app(SignalRecorder::class)->topic($this->user, $kind, $area);
+        }
     }
 
     /**
