@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { ICON_STROKE } from '@/constants/icons';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
+import { edit as editComposer } from '@/routes/composer-settings';
 import { edit as editNotifications } from '@/routes/notifications';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -25,6 +26,10 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Transit & tickets',
         href: editTransit(),
+    },
+    {
+        title: 'Composer',
+        href: editComposer(),
     },
     {
         title: 'Security',
