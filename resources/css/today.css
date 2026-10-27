@@ -1101,6 +1101,18 @@ a.plan-link:hover {
         padding: 16px 0 0;
     }
 }
+/* Open departures make City help tall: Paperwork and City help stack, as on
+   a narrower screen, so no half stands empty beside the board. */
+@media (min-width: 1000px) {
+    .practical-surface:has(.departure-board[open]) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        padding: 20px;
+    }
+    .practical-surface:has(.departure-board[open]) > .city-help {
+        padding: 16px 0 0;
+    }
+}
 @media (max-width: 700px) {
     .practical-surface {
         display: block;
