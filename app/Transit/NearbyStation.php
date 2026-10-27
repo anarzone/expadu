@@ -106,6 +106,25 @@ class NearbyStation
     }
 
     /**
+     * Builds a station's boards when none is kept, so its first view is
+     * ready (a favourite, after Travel's response).
+     */
+    public function warm(string $name): void
+    {
+        if (! $this->ready($name)) {
+            $this->named($name);
+        }
+    }
+
+    /** Whether every one of a station's boards is kept (fresh or not), so it reads in ~100 ms. */
+    public function ready(string $name): bool
+    {
+        $points = $this->kvb->stationPoints($name);
+
+        return $points !== [] && collect($this->areas($points))->every(fn (array $a) => $this->timetable->hasBoard((float) $a['lat'], (float) $a['lng']));
+    }
+
+    /**
      * A station by its KVB name (the stop picker, a favourite, `?stop=`).
      * Null when no KVB station has that name.
      *
@@ -120,6 +139,7 @@ class NearbyStation
         $areas = $this->areas($points);
 
         // Each area is its own stop in the feed: read each, keep its own lines.
+        $this->timetable->prefetchBoards(array_map(fn (array $a) => ['lat' => (float) $a['lat'], 'lng' => (float) $a['lng']], $areas));
         $boards = [];
         $rows = [];
         foreach ($areas as $area) {

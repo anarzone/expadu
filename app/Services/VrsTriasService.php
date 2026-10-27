@@ -37,6 +37,12 @@ class VrsTriasService
     private const OUTAGE_SECONDS = 300;
 
     /**
+     * Seconds a board's call may take: answers come in 120–290 ms, and a
+     * slow spell otherwise held a board 3 s a call.
+     */
+    private const BOARD_TIMEOUT = 1.5;
+
+    /**
      * Get real-time departures from a stop using TRIAS StopEventRequest.
      *
      * @return array{stop_name: string, source: string, departures: array}|null
@@ -93,7 +99,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = 'trias_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
+        $cacheKey = self::nearbyDeparturesKey($lat, $lng, $limit);
 
         // Return cached live data if available
         $cached = Cache::get($cacheKey);
@@ -217,6 +223,92 @@ class VrsTriasService
         return mb_strtolower(preg_replace('/[^\pL\pN]+/u', ' ', $withoutCity) ?? $withoutCity);
     }
 
+    private static function nearbyStopKey(float $lat, float $lng): string
+    {
+        return 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
+    }
+
+    private static function nearbyDeparturesKey(float $lat, float $lng, int $limit): string
+    {
+        return 'trias_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
+    }
+
+    /**
+     * A LocationInformationRequest's nearest stop.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    private function parseNearbyStop(string $response): ?array
+    {
+        $parsed = $this->parseXml($response);
+        $refs = $parsed?->xpath('//StopPlaceRef') ?: [];
+        $names = $parsed?->xpath('//StopPlaceName/Text') ?: [];
+
+        return $refs === [] || $names === [] ? null : ['id' => (string) $refs[0], 'name' => (string) $names[0]];
+    }
+
+    /**
+     * Live departures near several points (a station's boarding areas) in
+     * parallel rounds under one deadline, instead of two calls each, one
+     * after another: their stops, then their departures. Results land in the
+     * caches getDeparturesNearby() reads; a point that misses here takes its
+     * usual path.
+     *
+     * @param  list<array{lat: float, lng: float}>  $points
+     */
+    public function prefetchNearby(array $points, int $limit = 10, float $budgetSeconds = self::BOARD_TIMEOUT * 2): void
+    {
+        if (! config('services.vrs.enabled') || Cache::get('trias_down') || $points === []) {
+            return;
+        }
+        $deadline = microtime(true) + $budgetSeconds;
+
+        $wanted = [];
+        foreach ($points as $point) {
+            $key = self::nearbyDeparturesKey($point['lat'], $point['lng'], $limit);
+            if (! Cache::has($key)) {
+                $wanted[$key] = $point;
+            }
+        }
+
+        // Their stops (cached five minutes), the unknown ones in one round.
+        $lookups = [];
+        foreach ($wanted as $key => $point) {
+            if (! Cache::has(self::nearbyStopKey($point['lat'], $point['lng']))) {
+                $lookups[$key] = $this->buildGeoLocationRequest($point['lat'], $point['lng']);
+            }
+        }
+        if ($lookups !== []) {
+            foreach ($this->postMany($lookups, min(self::BOARD_TIMEOUT, $deadline - microtime(true))) as $key => $body) {
+                $stop = $body === null ? null : $this->parseNearbyStop($body);
+                if ($stop !== null) {
+                    Cache::put(self::nearbyStopKey($wanted[$key]['lat'], $wanted[$key]['lng']), $stop, 300);
+                }
+            }
+        }
+
+        // Their departures, in one round.
+        $stops = [];
+        foreach ($wanted as $key => $point) {
+            $stop = Cache::get(self::nearbyStopKey($point['lat'], $point['lng']));
+            if (is_array($stop)) {
+                $stops[$key] = $stop;
+            }
+        }
+        $remaining = $deadline - microtime(true);
+        if ($stops === [] || $remaining < 0.3) {
+            return;
+        }
+        $observedAt = now()->utc()->toIso8601String();
+        $bodies = $this->postMany(array_map(fn (array $stop) => $this->buildStopEventRequest($stop['id'], $limit), $stops), min(self::BOARD_TIMEOUT, $remaining));
+        foreach ($bodies as $key => $body) {
+            $departures = $body === null ? null : $this->parseStopEvents($body, $stops[$key]['id'], $limit, $observedAt);
+            if ($departures !== null) {
+                Cache::put($key, ['stop_name' => $stops[$key]['name'], 'source' => 'trias_rt', ...$departures], 60);
+            }
+        }
+    }
+
     /**
      * Find the nearest stop to coordinates via TRIAS LocationInformationRequest.
      *
@@ -224,36 +316,18 @@ class VrsTriasService
      */
     public function resolveNearbyStop(float $lat, float $lng): ?array
     {
-        $cacheKey = 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
+        $cacheKey = self::nearbyStopKey($lat, $lng);
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        $xml = $this->buildGeoLocationRequest($lat, $lng);
-        $response = $this->post($xml);
-
-        if (! $response) {
+        $response = $this->post($this->buildGeoLocationRequest($lat, $lng), self::BOARD_TIMEOUT);
+        $result = $response === null ? null : $this->parseNearbyStop($response);
+        if ($result === null) {
             return null;
         }
-
-        $parsed = $this->parseXml($response);
-        if (! $parsed) {
-            return null;
-        }
-
-        $refs = $parsed->xpath('//StopPlaceRef');
-        $names = $parsed->xpath('//StopPlaceName/Text');
-
-        if (empty($refs) || empty($names)) {
-            return null;
-        }
-
-        $result = [
-            'id' => (string) $refs[0],
-            'name' => (string) $names[0],
-        ];
 
         Cache::put($cacheKey, $result, 300);
 
@@ -268,7 +342,7 @@ class VrsTriasService
     private function fetchStopEvents(string $globalId, int $limit): ?array
     {
         $xml = $this->buildStopEventRequest($globalId, $limit);
-        $response = $this->post($xml);
+        $response = $this->post($xml, self::BOARD_TIMEOUT);
 
         if (! $response) {
             return null;
@@ -1068,7 +1142,7 @@ class VrsTriasService
         XML;
     }
 
-    private function post(string $xml): ?string
+    private function post(string $xml, float $timeout = 3.0): ?string
     {
         // If TRIAS was down recently, skip entirely — instant fallback
         if (Cache::get('trias_down')) {
@@ -1080,7 +1154,7 @@ class VrsTriasService
         try {
             $url = config('services.vrs.trias_url');
 
-            $options = ['timeout' => 3, 'connect_timeout' => 1];
+            $options = ['timeout' => $timeout, 'connect_timeout' => min(1.0, $timeout)];
             $this->applyVrsSsl($options);
 
             // Single attempt: a departure board refreshes every ~30s anyway, so
@@ -1138,6 +1212,7 @@ class VrsTriasService
         });
 
         $error = null;
+        $failed = 0;
         foreach ($xmlByKey as $key => $xml) {
             $response = $responses[$key] ?? null;
             if ($response instanceof Response && $response->successful()) {
@@ -1146,13 +1221,16 @@ class VrsTriasService
                 continue;
             }
 
+            $failed++;
             $error ??= $response instanceof \Throwable
                 ? $response->getMessage()
                 : 'HTTP '.($response instanceof Response ? $response->status() : 'no response');
         }
 
         if ($error !== null) {
-            $this->markTriasDown(round((microtime(true) - $start) * 1000), $error);
+            // Several calls at once all failing say as much as several in a
+            // row: the board's own calls after this then skip TRIAS too.
+            $this->markTriasDown(round((microtime(true) - $start) * 1000), $error, $failed === count($xmlByKey) ? $failed : 1);
         } else {
             $this->markTriasUp();
         }
@@ -1165,9 +1243,9 @@ class VrsTriasService
      * after one (a blip), for five minutes once three in a row say it's down.
      * Boards meanwhile answer from the timetable with GTFS-RT delays at once.
      */
-    private function markTriasDown(float $durationMs, string $error): void
+    private function markTriasDown(float $durationMs, string $error, int $count = 1): void
     {
-        $failures = (int) Cache::get('trias_failures', 0) + 1;
+        $failures = (int) Cache::get('trias_failures', 0) + $count;
         Cache::put('trias_failures', $failures, now()->addMinutes(30));
         $skip = $failures >= self::OUTAGE_FAILURES ? self::OUTAGE_SECONDS
             : ($failures >= self::BLIP_FAILURES ? self::BLIP_SECONDS : 0);
