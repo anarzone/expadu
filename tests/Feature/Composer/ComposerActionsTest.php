@@ -162,7 +162,7 @@ test('without their Paperwork permission for the message, Paperwork is neither r
     withVisa($this->user);
     $paperwork = fn (bool $permitted): string => collect(AssistantTools::definitions(false, false, $permitted))->firstWhere('name', 'paperwork')['description'];
     expect($paperwork(false))->toContain('You don\'t get its contents')
-        ->and($paperwork(true))->toContain('They allowed you to read it for this message');
+        ->and($paperwork(true))->toContain('They allowed you to read it.');
 
     $tools = new AssistantTools($this->user, CarbonImmutable::now(), new LocationContext(null, null, LocationSource::None),
         app(CandidateRepository::class), app(EventAnswers::class), app(WeatherService::class));
