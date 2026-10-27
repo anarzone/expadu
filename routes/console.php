@@ -57,6 +57,9 @@ Schedule::command('bureaucracy:erase-unguarded-dependents')->hourly()->withoutOv
 // Re-check every card's source quotes against the official pages. A pass keeps a checked card
 // published, a failure withdraws and escalates it; changes ship as a new catalogue release.
 Schedule::command('bureaucracy:verify-sources --deploy')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer()->runInBackground();
+// The marketing pages' hand-written links and phone numbers, checked against the live web;
+// a broken or moved link, or a number its sources no longer show, opens an escalation.
+Schedule::command('marketing:check-links')->timezone('Europe/Berlin')->dailyAt('05:40')->withoutOverlapping()->onOneServer()->runInBackground();
 
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping()->runInBackground();
