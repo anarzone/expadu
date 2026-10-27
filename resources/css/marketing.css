@@ -1452,10 +1452,22 @@ details.more .inner {
 
 /* ── Every page but the landing: a coloured band with the page's title,
  *    then the white page sheet over it ───────────────────────────── */
+/* The band stays put and the white page slides up over it. A band taller
+   than the screen scrolls until its bottom is in view first (marketing.ts
+   sets --band-top). An open menu lifts the band above the page. */
 .mk-band {
-    position: relative;
+    position: sticky;
+    top: var(--band-top, 0px);
+    z-index: 0;
     padding-bottom: 104px;
     background: var(--tone, #ffe363);
+}
+.mk-band:has(.xv-menu[open]) {
+    z-index: 2;
+}
+.mk-page ~ .xv {
+    position: relative;
+    z-index: 1;
 }
 .mk-band[data-tone='yellow'] {
     --tone: #ffe363;
