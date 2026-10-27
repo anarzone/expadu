@@ -1,4 +1,5 @@
 import type { PlaceEvidence } from '@/components/place-shared/types';
+import { csrfHeaders } from '@/lib/csrf';
 import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
 
 export type Slot = {
@@ -182,10 +183,7 @@ export async function api<T>(
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute('content') ?? '',
+                ...csrfHeaders(),
             },
             body: body ? JSON.stringify(body) : undefined,
         });
