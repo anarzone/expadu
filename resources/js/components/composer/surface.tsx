@@ -89,11 +89,6 @@ export function useComposerSurface(
         onFailed,
         onSettled: focusBox,
         onConflict: () => setSwap(null),
-        onSwap: (next) => {
-            setSwap(next);
-            setView('chat');
-        },
-        onPlans: () => setView('plans'),
     });
 
     // Start fresh: a new conversation in place, made only when its first
