@@ -51,12 +51,15 @@ beforeEach(function () {
     $this->actingAs(User::factory()->onboarded()->create());
 });
 
-test('🔒 without the person\'s say-so for the request, nothing is sent and the answer says why', function () {
+test('🔒 without the person\'s say-so for the request, nothing is sent and the answer says only why', function () {
     $answer = collect(consentAsk($this, 'Anmeldung appointment')->assertOk()->json('conversations.0.messages'))->last();
 
     Http::assertNothingSent();
     expect($answer)->without_ai->toBe('unpermitted')->written->toBe('code')
-        ->and($answer['text'])->toStartWith('I answer with an AI service, and this message was sent without it');
+        ->text->toBe('I answer with an AI service, and this message came without your go-ahead for it, so I haven’t read it.')
+        // One line, never the "without the AI" cards (weather, listings) that read as if it were off.
+        ->and($answer['blocks'] ?? [])->toBe([])
+        ->and($answer['suggestions'])->toBe([['label' => 'Send it again', 'prompt' => 'Anmeldung appointment']]);
 });
 
 test('🔒 Composer permission is purpose scoped, and a retry with the same say-so sends nothing again', function () {
