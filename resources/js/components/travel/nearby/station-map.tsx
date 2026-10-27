@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { pushStep } from '@/lib/history-steps';
 import { cn } from '@/lib/utils';
 import { TravelChip } from '../labels';
 import { lineLook } from '../line-look';
@@ -261,7 +262,7 @@ type StationMapProps = {
     onClose: () => void;
     /** The board's lines (no filters), for the departures under the map. */
     board: ShownLine[];
-    /** A line's departures as Nearby draws them. */
+    /** A line's departures as Nearby draws them; a tap opens it in the list. */
     renderLine: (line: ShownLine) => ReactNode;
 };
 
@@ -276,15 +277,38 @@ export function StationMap({
     // A line, or the lines boarding together, picked.
     const [pick, setPick] = useState<string[] | null>(null);
     const frameRef = useRef<HTMLDivElement>(null);
+    // Steps the browser's Back takes back (lib/history-steps): on phones
+    // the map itself, and anywhere a pick.
+    const mapStep = useRef<(() => void) | null>(null);
+    const pickStep = useRef<(() => void) | null>(null);
+    const close = useRef(onClose);
+
+    useEffect(() => {
+        close.current = onClose;
+    }, [onClose]);
+
+    // A pick is a step of its own; taking it back is a step back.
+    const choose = (next: string[] | null) => {
+        if (next && !pickStep.current) {
+            pickStep.current = pushStep(() => {
+                pickStep.current = null;
+                setPick(null);
+            });
+        } else if (!next && pickStep.current) {
+            const off = pickStep.current;
+            pickStep.current = null;
+            off();
+        }
+
+        setPick(next);
+    };
     const drawn = data.lines.map((l) => l.line);
     const chips = [...drawn, ...data.buses];
     const lookOf = (line: string) =>
         board.find((l) => l.line === line)?.look ??
         lineLook(line, data.buses.includes(line) ? 'bus' : 'tram');
     const pickLine = (line: string) =>
-        setPick((now) =>
-            now?.length === 1 && now[0] === line ? null : [line],
-        );
+        choose(pick?.length === 1 && pick[0] === line ? null : [line]);
     // The board's areas, as Nearby groups them.
     const groups = station.areas.filter((a) =>
         a.lines.some((line) => chips.includes(line)),
@@ -326,41 +350,29 @@ export function StationMap({
     }, [open, onClose]);
 
     // Phones: the map is a screen of its own, so the browser's Back closes
-    // it too. Its history entry keeps Inertia's page, and its Back is
-    // caught before Inertia's (which would load the page again).
+    // it too. However it closes, it takes off what's left of its steps and
+    // forgets its pick.
     useEffect(() => {
-        if (!open || window.matchMedia(DESKTOP).matches) {
+        if (!open) {
             return;
         }
 
-        window.history.pushState(
-            { ...window.history.state, travelMap: true },
-            '',
-        );
-        let popped = false;
-        const back = (event: PopStateEvent) => {
-            popped = true;
-            event.stopImmediatePropagation();
-            onClose();
-        };
-        window.addEventListener('popstate', back, { capture: true });
+        if (!window.matchMedia(DESKTOP).matches) {
+            mapStep.current = pushStep(() => {
+                mapStep.current = null;
+                close.current();
+            });
+        }
 
         return () => {
-            window.removeEventListener('popstate', back, { capture: true });
-
-            // Closed here (its own Back, Escape): take its entry off too,
-            // and keep that Back from Inertia as well.
-            if (!popped && window.history.state?.travelMap) {
-                const swallow = (event: PopStateEvent) =>
-                    event.stopImmediatePropagation();
-                window.addEventListener('popstate', swallow, {
-                    capture: true,
-                    once: true,
-                });
-                window.history.back();
-            }
+            // The map's step takes the pick's above it off with it.
+            const off = mapStep.current ?? pickStep.current;
+            mapStep.current = null;
+            pickStep.current = null;
+            off?.();
+            setPick(null);
         };
-    }, [open, onClose]);
+    }, [open]);
 
     const badge = (line: string) => {
         const look = lookOf(line);
@@ -419,7 +431,7 @@ export function StationMap({
                     type="button"
                     className="mapview-chip"
                     aria-pressed={!pick}
-                    onClick={() => setPick(null)}
+                    onClick={() => choose(null)}
                 >
                     All lines
                 </button>
@@ -470,6 +482,14 @@ export function StationMap({
                         className="mapview-stand"
                         aria-labelledby="mapview-stand-title"
                     >
+                        <button
+                            type="button"
+                            className="mapview-stand-back"
+                            onClick={() => choose(null)}
+                        >
+                            <TravelIcon name="back" />
+                            <span>Back to the map</span>
+                        </button>
                         <span className="mapview-stand-head">
                             <strong id="mapview-stand-title">
                                 <span className="nearby-badges">
@@ -493,9 +513,16 @@ export function StationMap({
                             </strong>
                         </span>
                         {picked.length ? (
-                            <div className="nearby-cards">
+                            // As the board draws them: full width, one under
+                            // another.
+                            <div className="mapview-lines">
                                 {picked.map((l) => (
-                                    <div key={l.line}>{renderLine(l)}</div>
+                                    <div
+                                        key={l.line}
+                                        className="nearby-line-slot"
+                                    >
+                                        {renderLine(l)}
+                                    </div>
                                 ))}
                             </div>
                         ) : (
@@ -512,7 +539,7 @@ export function StationMap({
                                 key={a.id}
                                 type="button"
                                 className="mapview-group"
-                                onClick={() => setPick(a.lines)}
+                                onClick={() => choose(a.lines)}
                             >
                                 <span className="nearby-badges">
                                     {a.lines.map(badge)}
