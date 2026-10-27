@@ -1,5 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Suspense,
+    lazy,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
 import { TimeField } from '@/components/ui/time-field';
@@ -19,6 +27,16 @@ import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
 import { PlanHeadline } from './plan-headline';
 import type { BoardMajors } from './plan-headline';
+import type {
+    PlanAnswer,
+    PlanGone,
+    PlanOption,
+    PlanPlace,
+    PlanTarget,
+    Pref,
+    Schedule,
+    SortKey,
+} from './plan-model';
 import {
     PREFS,
     SORTS,
@@ -31,23 +49,21 @@ import {
     rankOptions,
     scheduleSummary,
 } from './plan-model';
-import type {
-    PlanAnswer,
-    PlanGone,
-    PlanOption,
-    PlanPlace,
-    PlanTarget,
-    Pref,
-    Schedule,
-    SortKey,
-} from './plan-model';
-import {
-    PlanChecks,
-    PlanLoading,
-    PlanOptions,
-    optionLabel,
-} from './plan-results';
+import { optionLabel } from './plan-model';
 import { PlanSaved } from './plan-saved';
+
+// The answer's own pieces load off the first paint: while the page is idle,
+// or when an answer is asked for first.
+const loadResults = () => import('./plan-results');
+const PlanChecks = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanChecks })),
+);
+const PlanLoading = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanLoading })),
+);
+const PlanOptions = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanOptions })),
+);
 
 /**
  * Plan a trip (departures-next #journey-view; owner, 14 Oct 2026): beside
@@ -379,6 +395,14 @@ export function PlanPanel({
         });
     });
 
+    // The answer's pieces, fetched while the page is idle.
+    useEffect(() => {
+        const idle =
+            window.requestIdleCallback ??
+            ((run: () => void) => window.setTimeout(run, 1500));
+        idle(() => void loadResults());
+    }, []);
+
     /** Ask the router; the options come back ranked on the client. */
     const plan = useCallback(
         async (overrides?: {
@@ -435,6 +459,8 @@ export function PlanPanel({
                 to_name: toPlace.name,
                 to_lat: String(toPlace.lat),
                 to_lng: String(toPlace.lng),
+                // The ways at once; the boarding stops' live runs after.
+                checks_later: '1',
             });
 
             if (fromPlace) {
@@ -584,6 +610,32 @@ export function PlanPanel({
                 }
 
                 setStatus({ kind: 'done', answer: data });
+
+                if (data.checks) {
+                    const live = await fetch('/api/journey/checks', {
+                        method: 'POST',
+                        headers: jsonHeaders(),
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ checks: data.checks }),
+                        signal: controller.signal,
+                    })
+                        .then((r) => (r.ok ? r.json() : null))
+                        .catch(() => null);
+                    // Missed: these ways just say nothing about live runs.
+                    setStatus((now) =>
+                        now.kind === 'done' && now.answer === data
+                            ? {
+                                  kind: 'done',
+                                  answer: {
+                                      ...data,
+                                      trouble: live?.trouble ?? [],
+                                      gone: live?.gone ?? [],
+                                      checks: null,
+                                  },
+                              }
+                            : now,
+                    );
+                }
             } catch (failure) {
                 if ((failure as Error).name !== 'AbortError') {
                     setStatus({
@@ -2022,7 +2074,9 @@ export function PlanPanel({
                                         </div>
                                     </div>
                                     {status.kind === 'loading' ? (
-                                        <PlanLoading />
+                                        <Suspense fallback={null}>
+                                            <PlanLoading />
+                                        </Suspense>
                                     ) : status.kind === 'location' ? (
                                         <div className="result-empty">
                                             <span className="empty-symbol">
@@ -2068,7 +2122,7 @@ export function PlanPanel({
                                             </div>
                                         </div>
                                     ) : answer && ranked.length ? (
-                                        <>
+                                        <Suspense fallback={null}>
                                             <PlanHeadline
                                                 answer={answer}
                                                 options={shown}
@@ -2177,7 +2231,7 @@ export function PlanPanel({
                                                     </button>
                                                 ) : null}
                                             </div>
-                                        </>
+                                        </Suspense>
                                     ) : (
                                         <div className="result-empty">
                                             <span className="empty-symbol">
