@@ -2,6 +2,7 @@
 
 namespace App\Composer\Actions;
 
+use App\Alerts\AlertClassifier;
 use App\Models\Alert;
 use App\Models\User;
 use App\Services\KvbApiService;
@@ -10,8 +11,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * Alerts, as the app keeps them: a KVB line's disruption and delay pushes muted for today or
- * a week (MuteService, which ActionBus checks before a push), and alerts dismissed from the
- * Alerts page as its Dismiss does. What an alert says stays out of what the AI is told
+ * a week (MuteService, which ActionBus checks before a push), and alerts dismissed or marked
+ * read on the Alerts page as its Dismiss and Mark all read do. What an alert says stays out of what the AI is told
  * (a Paperwork deadline is one): only how many.
  */
 final class AlertActions implements ComposerAction
@@ -19,8 +20,8 @@ final class AlertActions implements ComposerAction
     /** The pushes a line's mute silences, as MuteService::muteSubjectFor keys them. */
     private const LINE_KINDS = ['transit_disruption', 'transit_delay'];
 
-    /** What can be dismissed at once, by the Alerts page's categories (AlertClassifier::category). */
-    private const KINDS = ['transit' => ['transit'], 'city' => ['city'], 'events' => ['events'], 'all' => null];
+    /** What can be dismissed or read at once, by the Alerts page's categories (AlertClassifier::category). */
+    public const KINDS = ['transit' => 'transit', 'paperwork' => 'bureau', 'city' => 'city', 'events' => 'events', 'all' => null];
 
     private const LINK = ['label' => 'See your alerts →', 'href' => '/alerts'];
 
@@ -28,7 +29,7 @@ final class AlertActions implements ComposerAction
 
     public function prepare(User $user, string $action, array $input, CarbonImmutable $now): array
     {
-        return $action === 'mute_alerts' ? $this->prepareMute($user, $input, $now) : $this->prepareDismiss($user, $input);
+        return $action === 'mute_alerts' ? $this->prepareMute($user, $input, $now) : $this->prepareAlerts($user, $action, $input);
     }
 
     public function run(User $user, string $action, array $prepared, CarbonImmutable $now): array
@@ -39,6 +40,16 @@ final class AlertActions implements ComposerAction
 
             return ['title' => $title, 'link' => self::LINK, 'said' => "{$title}.",
                 'undo' => ['line' => $prepared['line'], 'label' => $prepared['label'], 'on' => $prepared['on'], 'previous' => $prepared['previous']]];
+        }
+        if ($action === 'read_alerts') {
+            $read = Alert::query()->where('user_id', $user->id)->whereIn('id', $prepared['ids'])->whereNull('read_at')->pluck('id')->all();
+            if ($read === []) {
+                throw new ActionRefused('Those alerts are read already.');
+            }
+            Alert::query()->whereIn('id', $read)->update(['read_at' => now()]);
+            $title = self::count(count($read)).' marked read';
+
+            return ['title' => $title, 'link' => self::LINK, 'said' => "{$title}.", 'undo' => ['ids' => [], 'unread' => $read]];
         }
         $dismissed = Alert::query()->where('user_id', $user->id)->whereIn('id', $prepared['ids'])->whereNull('dismissed_at')->get(['id', 'read_at']);
         if ($dismissed->isEmpty()) {
@@ -63,7 +74,7 @@ final class AlertActions implements ComposerAction
         Alert::query()->where('user_id', $user->id)->whereIn('id', $undo['ids'])->update(['dismissed_at' => null]);
         Alert::query()->where('user_id', $user->id)->whereIn('id', $undo['unread'])->update(['read_at' => null]);
 
-        return ['title' => 'Undone. '.self::count(count($undo['ids'])).' back.'];
+        return ['title' => $action === 'read_alerts' ? 'Undone. '.self::count(count($undo['unread'])).' unread again.' : 'Undone. '.self::count(count($undo['ids'])).' back.'];
     }
 
     /** @return array<string, mixed> */
@@ -90,17 +101,26 @@ final class AlertActions implements ComposerAction
             'propose' => $on ? "Mute alerts about line {$label} {$until}?" : "Turn alerts about line {$label} back on?"];
     }
 
-    /** @return array<string, mixed> */
-    private function prepareDismiss(User $user, array $input): array
+    /**
+     * Their alerts of one kind, or all, to dismiss or mark read. An older alert without a category
+     * is sorted by its subtype, as the Alerts page sorts it.
+     *
+     * @return array<string, mixed>
+     */
+    private function prepareAlerts(User $user, string $action, array $input): array
     {
         $kind = is_string($input['kind'] ?? null) && array_key_exists($input['kind'], self::KINDS) ? $input['kind'] : 'all';
-        $ids = Alert::query()->where('user_id', $user->id)->whereNull('dismissed_at')
-            ->when(self::KINDS[$kind] !== null, fn ($q) => $q->whereIn('category', self::KINDS[$kind]))->pluck('id')->all();
+        $read = $action === 'read_alerts';
+        $ids = Alert::query()->where('user_id', $user->id)->whereNull('dismissed_at')->when($read, fn ($q) => $q->whereNull('read_at'))
+            ->get(['id', 'category', 'subtype'])
+            ->filter(fn (Alert $alert): bool => self::KINDS[$kind] === null || ($alert->category ?? AlertClassifier::category($alert->subtype)) === self::KINDS[$kind])
+            ->pluck('id')->values()->all();
+        $which = $kind === 'all' ? '' : "{$kind} ";
         if ($ids === []) {
-            throw new ActionRefused($kind === 'all' ? 'They have no alerts to dismiss.' : "They have no {$kind} alerts to dismiss.");
+            throw new ActionRefused($read ? "They have no unread {$which}alerts." : "They have no {$which}alerts to dismiss.");
         }
 
-        return ['ids' => $ids, 'kind' => $kind, 'propose' => 'Dismiss '.mb_strtolower(self::count(count($ids))).'?'];
+        return ['ids' => $ids, 'kind' => $kind, 'propose' => ($read ? 'Mark ' : 'Dismiss ').mb_strtolower(self::count(count($ids))).($read ? ' as read?' : '?')];
     }
 
     /** Mutes a line's pushes for this long, or unmutes them (null). */
