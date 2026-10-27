@@ -10,7 +10,7 @@ use Illuminate\Session\Middleware\StartSession;
 /**
  * Laravel's StartSession, except that a page marked KeepQueryPrivate is
  * remembered as the previous URL without its query: the session store (and
- * any redirect back) gets `/explore`, never `/explore?near=…&time=…`.
+ * any redirect back) gets `/around-here`, never `/around-here?near=…&time=…`.
  */
 class StartSessionKeepingPrivateQueries extends StartSession
 {
