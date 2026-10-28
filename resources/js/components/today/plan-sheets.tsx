@@ -78,14 +78,11 @@ type PlaceHit = {
     lng: number;
 };
 
-/** A picked place as the plan names it: its name, and its street when that says more. */
-const placeLabel = (hit: PlaceHit) =>
-    hit.street && hit.street !== hit.name
-        ? `${hit.name}, ${hit.street}`
-        : hit.name;
+/** A picked place as the plan names it: by its name (an address's is the address). */
+const placeLabel = (hit: PlaceHit) => hit.name;
 
 /**
- * Places for what's typed in Where? (the geocoder, Cologne first), a moment
+ * Places for what's typed in Where? (Cologne's own places, then addresses), a moment
  * after typing stops; none for fewer than two letters or once one is picked.
  */
 function usePlaceHits(query: string): PlaceHit[] {
