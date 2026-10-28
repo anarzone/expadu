@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\DB;
  *
  * An attraction is a listing koeln.de files under exhibitions, or the same listing at the same
  * place on five days or more, six hours or more a day from the morning or midday. A festival or
- * a fair keeps its days, and so does anything wholly in the winter season (1 November to 15
- * January: Christmas markets, light trails).
+ * a fair keeps its days, and so does anything wholly in the winter season (1 November to the
+ * end of February: Christmas markets, light trails, ice rinks).
  */
 final class EventAttractions
 {
@@ -57,11 +57,11 @@ final class EventAttractions
         });
     }
 
-    /** Whether a run lies wholly in one winter season (1 November to 15 January). */
+    /** Whether a run lies wholly in one winter season (1 November to the end of February). */
     private static function winter(CarbonImmutable $first, CarbonImmutable $last): bool
     {
         $from = $first->setDate($first->month >= 11 ? $first->year : $first->year - 1, 11, 1)->startOfDay();
 
-        return $last->lessThanOrEqualTo($from->setDate($from->year + 1, 1, 15)->endOfDay());
+        return $last->lessThanOrEqualTo($from->setDate($from->year + 1, 2, 1)->endOfMonth());
     }
 }

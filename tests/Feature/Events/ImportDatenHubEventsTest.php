@@ -129,7 +129,7 @@ test('attractions stay out: exhibitions, markets, all-year opening hours and who
         datenHubItem(['global_id' => 'e_xmas', 'title' => 'Weihnachtsmarkt am Kölner Dom', 'categories' => ['Weihnachtsmarkt'], 'timeIntervals' => [$daily('2026-11-23T11:00:00+01:00', '2026-11-23T21:00:00+01:00', '2026-12-23T21:00:00+01:00')]]),
         // A festival keeps its days with no time; a winter light trail keeps its season, exhibition or not.
         datenHubItem(['global_id' => 'e_festival', 'title' => 'Kurzfilmfestival Köln', 'categories' => ['Film'], 'timeIntervals' => [$daily('2026-11-23T00:00:00+01:00', '2026-11-24T00:00:00+01:00', '2026-11-29T00:00:00+01:00')]]),
-        datenHubItem(['global_id' => 'e_lights', 'title' => 'China Lights', 'categories' => ['Ausstellung'], 'timeIntervals' => [$daily('2026-12-11T17:30:00+01:00', '2026-12-11T21:00:00+01:00', '2026-12-23T21:00:00+01:00')]]),
+        datenHubItem(['global_id' => 'e_lights', 'title' => 'China Lights', 'categories' => ['Ausstellung'], 'timeIntervals' => [$daily('2026-12-11T17:30:00+01:00', '2026-12-11T21:00:00+01:00', '2027-01-31T21:00:00+01:00')]]),
     ]);
 
     $this->artisan('events:import-datenhub')->expectsOutputToContain('"not_events":2')->assertSuccessful();

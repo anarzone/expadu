@@ -247,7 +247,8 @@ class ImportDatenHubEvents extends Command
     /**
      * A festival or a season's own event, kept however long it's open and with or without a
      * time: a Christmas market or a festival by its category or name, or any listing that repeats
-     * only within the winter season (1 November to 15 January: China Lights, the Krippenweg).
+     * only within the winter season (1 November to the end of February: China Lights, the
+     * Krippenweg, an ice rink).
      *
      * @param  array<string, mixed>  $item
      */
@@ -268,10 +269,10 @@ class ImportDatenHubEvents extends Command
             if ($start === null || $last === null) {
                 return false;
             }
-            // The season it starts in: from 1 November to 15 January.
+            // The season it starts in: from 1 November to the end of February.
             $from = $start->setDate($start->month >= 11 ? $start->year : $start->year - 1, 11, 1)->startOfDay();
 
-            return $last->lessThanOrEqualTo($from->setDate($from->year + 1, 1, 15)->endOfDay());
+            return $last->lessThanOrEqualTo($from->setDate($from->year + 1, 2, 1)->endOfMonth());
         });
     }
 
