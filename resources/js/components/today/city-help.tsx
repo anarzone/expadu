@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleWord } from '@/components/travel/line-look';
 import {
@@ -392,6 +393,7 @@ function DepartureBoard({
                                 ? 'is-yours'
                                 : undefined
                         }
+                        style={{ '--ink': line.look.ink } as CSSProperties}
                         empty="Other way: see Travel"
                         aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
                             .map((dir) => {

@@ -1121,7 +1121,8 @@ a.plan-link:hover {
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
-/* The next plan's ride on its line: tinted in the line's colour, tagged "Your tram · 17:09". */
+/* The next plan's ride on its line: tinted in the line's colour, tagged
+   "Your tram · 17:09" in the line's own colour and text colour. */
 .departure-strips .nearby-strip.is-yours {
     border-radius: var(--radius-md);
     background: var(--tint);
@@ -1132,7 +1133,7 @@ a.plan-link:hover {
     padding: 2px 7px;
     border-radius: var(--radius-sm);
     background: var(--line);
-    color: #fff;
+    color: var(--ink);
     font-size: var(--text-micro);
     font-weight: var(--weight-semibold);
     white-space: nowrap;
