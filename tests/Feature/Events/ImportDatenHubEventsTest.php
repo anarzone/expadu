@@ -119,7 +119,7 @@ test('an invalid payload changes nothing', function () {
     expect(Event::where('source_uid', 'e_1#0')->value('status'))->toBe('active');
 });
 
-test('attractions stay out: exhibitions, markets, all-year opening hours and whole days; a Christmas market stays', function () {
+test('attractions stay out: exhibitions, markets, all-year opening hours and whole days; Christmas, festivals and winter runs stay', function () {
     $daily = fn (string $start, string $end, string $until) => ['weekdays' => [], 'start' => $start, 'end' => $end, 'repeatUntil' => $until, 'tz' => 'Europe/Berlin', 'freq' => 'Daily', 'interval' => 1];
     fakeDatenHub([
         datenHubItem(['global_id' => 'e_exhibition', 'title' => 'Faszination Schmuck', 'categories' => ['Ausstellung'], 'timeIntervals' => [datenHubItem()['timeIntervals'][1]]]),
@@ -127,9 +127,13 @@ test('attractions stay out: exhibitions, markets, all-year opening hours and who
         datenHubItem(['global_id' => 'e_allyear', 'title' => 'Discover Deutz', 'categories' => ['Führung/Besichtigung'], 'timeIntervals' => [$daily('2026-01-01T10:00:00+01:00', '2026-01-01T18:00:00+01:00', '2027-01-03T18:00:00+01:00')]]),
         datenHubItem(['global_id' => 'e_wholeday', 'title' => 'Design Season Cologne', 'categories' => [''], 'timeIntervals' => [['weekdays' => [], 'start' => '2026-10-28T00:00:00+01:00', 'end' => '2026-10-29T00:00:00+01:00', 'tz' => 'Europe/Berlin']]]),
         datenHubItem(['global_id' => 'e_xmas', 'title' => 'Weihnachtsmarkt am Kölner Dom', 'categories' => ['Weihnachtsmarkt'], 'timeIntervals' => [$daily('2026-11-23T11:00:00+01:00', '2026-11-23T21:00:00+01:00', '2026-12-23T21:00:00+01:00')]]),
+        // A festival keeps its days with no time; a winter light trail keeps its season, exhibition or not.
+        datenHubItem(['global_id' => 'e_festival', 'title' => 'Kurzfilmfestival Köln', 'categories' => ['Film'], 'timeIntervals' => [$daily('2026-11-23T00:00:00+01:00', '2026-11-24T00:00:00+01:00', '2026-11-29T00:00:00+01:00')]]),
+        datenHubItem(['global_id' => 'e_lights', 'title' => 'China Lights', 'categories' => ['Ausstellung'], 'timeIntervals' => [$daily('2026-12-11T17:30:00+01:00', '2026-12-11T21:00:00+01:00', '2026-12-23T21:00:00+01:00')]]),
     ]);
 
     $this->artisan('events:import-datenhub')->expectsOutputToContain('"not_events":2')->assertSuccessful();
 
-    expect(Event::where('source', 'datenhub-nrw')->pluck('source_uid')->all())->toBe(['e_xmas#0']);
+    expect(Event::where('source', 'datenhub-nrw')->orderBy('source_uid')->pluck('source_uid')->all())->toBe(['e_festival#0', 'e_lights#0', 'e_xmas#0'])
+        ->and(Event::where('source_uid', 'e_festival#0')->value('ends_at')->format('H:i:s'))->toBe('23:59:59');
 });

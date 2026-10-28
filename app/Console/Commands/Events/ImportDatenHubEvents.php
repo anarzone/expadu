@@ -109,7 +109,7 @@ class ImportDatenHubEvents extends Command
 
             // An attraction, not an event (owner, 28 Oct 2026): a museum's exhibition or a
             // weekly market is a place with opening hours, never "on now" on Today.
-            if ($this->attraction($item)) {
+            if ($this->attraction($item) && ! $this->seasonal($item)) {
                 $metrics['not_events']++;
 
                 continue;
@@ -163,9 +163,13 @@ class ImportDatenHubEvents extends Command
             $end = $this->instant($interval['end'] ?? null);
             $end = $end?->greaterThan($start) ? $end : null;
             // A whole day (midnight to midnight) has no time to plan around: Today keeps the
-            // events that start at a time (owner, 28 Oct 2026).
+            // events that start at a time (owner, 28 Oct 2026). A festival or a season's own
+            // event keeps its days, stored as a day with no time ("Time not listed").
             if ($end !== null && $start->format('H:i') === '00:00' && $end->format('H:i') === '00:00') {
-                continue;
+                if (! $this->seasonal($item)) {
+                    continue;
+                }
+                $end = $end->subSecond();
             }
             $until = $this->instant($interval['repeatUntil'] ?? null);
             $uid = $item['global_id'].'#'.$index;
@@ -241,17 +245,34 @@ class ImportDatenHubEvents extends Command
     }
 
     /**
-     * A season's own event (a Christmas market, a festival), kept however long it's open.
+     * A festival or a season's own event, kept however long it's open and with or without a
+     * time: a Christmas market or a festival by its category or name, or any listing that repeats
+     * only within the winter season (1 November to 15 January: China Lights, the Krippenweg).
      *
      * @param  array<string, mixed>  $item
      */
     private function seasonal(array $item): bool
     {
         $categories = array_filter((array) ($item['categories'] ?? []), 'is_string');
+        if (in_array('Weihnachtsmarkt', $categories, true) || in_array('Festival/Open-Air', $categories, true)
+            || preg_match('/festival|weihnachtsmarkt|christmas market/iu', (string) $item['title'])) {
+            return true;
+        }
 
-        return in_array('Weihnachtsmarkt', $categories, true)
-            || in_array('Festival/Open-Air', $categories, true)
-            || (bool) preg_match('/weihnachtsmarkt|christmas market/iu', (string) $item['title']);
+        // Repeating runs only: a single date is a dated event anyway.
+        $runs = collect($item['timeIntervals'] ?? [])->filter(fn ($interval) => is_array($interval) && isset($interval['freq']))
+            ->map(fn (array $interval) => [$this->instant($interval['start'] ?? null), $this->instant($interval['repeatUntil'] ?? $interval['end'] ?? null)]);
+
+        return $runs->isNotEmpty() && $runs->every(function (array $run): bool {
+            [$start, $last] = $run;
+            if ($start === null || $last === null) {
+                return false;
+            }
+            // The season it starts in: from 1 November to 15 January.
+            $from = $start->setDate($start->month >= 11 ? $start->year : $start->year - 1, 11, 1)->startOfDay();
+
+            return $last->lessThanOrEqualTo($from->setDate($from->year + 1, 1, 15)->endOfDay());
+        });
     }
 
     /**
