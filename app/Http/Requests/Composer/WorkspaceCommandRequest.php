@@ -34,6 +34,9 @@ class WorkspaceCommandRequest extends FormRequest
             'end' => ['required_if:action,appointment', 'date_format:H:i', 'required_with:start'],
             'name' => ['required_if:action,appointment', 'string', 'max:120'],
             'location' => ['sometimes', 'nullable', 'string', 'max:160'],
+            // The place picked from the suggestions, when one was: its map point.
+            'lat' => ['sometimes', 'nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
+            'lng' => ['sometimes', 'nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
         ];
     }
 
