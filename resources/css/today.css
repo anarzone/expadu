@@ -1121,6 +1121,22 @@ a.plan-link:hover {
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
+/* The next plan's ride on its line: tinted in the line's colour, tagged "Your tram · 17:09". */
+.departure-strips .nearby-strip.is-yours {
+    border-radius: var(--radius-md);
+    background: var(--tint);
+}
+.board-yours {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    background: var(--line);
+    color: #fff;
+    font-size: var(--text-micro);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
 .board-foot {
     display: flex;
     align-items: center;

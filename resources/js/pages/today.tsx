@@ -2,7 +2,7 @@ import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { Fragment, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
-import type { Forecast, Weather } from '@/components/today/city-help';
+import type { Forecast, PlanRide, Weather } from '@/components/today/city-help';
 import { ComingUp } from '@/components/today/coming-up';
 import type { ComingUpData } from '@/components/today/coming-up';
 import {
@@ -35,6 +35,31 @@ import { usePhone } from '@/hooks/use-phone';
 import AppLayout from '@/layouts/app-layout';
 import type { DayProjection } from '@/types/day';
 import '../../css/today.css';
+
+/** The next plan's first ride (tram, bus, train), for the departures to mark as yours. */
+function planRide(day: DayProjection): PlanRide | null {
+    const trip = day.next_trip;
+    const leg = trip?.journey?.legs.find(
+        (leg) => leg.mode !== 'walk' && leg.mode !== 'bike' && !!leg.line,
+    );
+
+    // Only a way still to take: the projection drops a missed or past one.
+    if (!trip || !leg?.line || trip.leave_at === null) {
+        return null;
+    }
+
+    const city = trip.city ?? '';
+
+    return {
+        line: leg.line,
+        headsign: leg.headsign,
+        at: leg.depart_at,
+        from:
+            city && leg.from.name.startsWith(city)
+                ? leg.from.name.slice(city.length).replace(/^[\s,]+/, '')
+                : leg.from.name,
+    };
+}
 
 /**
  * Today (the mock's today-next/brief/): one canvas, Your day on the left and
@@ -167,6 +192,7 @@ export default function Today() {
                     station={station}
                     warming={stationWarming}
                     reason={stationReason}
+                    ride={planRide(day)}
                     stop={stop}
                     favourites={favouriteStops}
                     learned={learnedStops}

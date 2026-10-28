@@ -57,6 +57,23 @@ export type Forecast = {
     }[];
 };
 
+/** The next plan's first ride (DayProjection's next trip): the departures mark it as yours. */
+export type PlanRide = {
+    line: string;
+    headsign: string | null;
+    /** When it leaves (ISO). */
+    at: string;
+    /** Its boarding stop, as the departures name it ("Neumarkt"). */
+    from: string;
+};
+
+/** A stop or destination name as both feeds can agree on it: no city, case, or punctuation. */
+const plain = (name: string) =>
+    name
+        .toLowerCase()
+        .replace(/^köln[\s,-]+/u, '')
+        .replace(/[^\p{L}\p{N}]+/gu, '');
+
 export const weatherIcon = (icon?: string | null): IconName =>
     icon === 'clear-day'
         ? 'sun'
@@ -115,6 +132,7 @@ export function CityHelp({
     station,
     warming = null,
     reason = null,
+    ride = null,
     stop,
     favourites,
     learned = [],
@@ -126,6 +144,8 @@ export function CityHelp({
     warming?: string | null;
     /** Why it's this stop ("For Tandem Language Café", "Near Home"); null when picked. */
     reason?: string | null;
+    /** The next plan's first ride, marked on its line when it leaves from this stop. */
+    ride?: PlanRide | null;
     stop: string | null;
     favourites: FavouriteStop[];
     /** The stops they pick most (TodayTaste, opt-in only). */
@@ -168,6 +188,7 @@ export function CityHelp({
                 station={station}
                 warming={warming}
                 reason={reason}
+                ride={ride}
                 stop={stop}
                 favourites={favourites}
                 learned={learned}
@@ -259,6 +280,7 @@ function DepartureBoard({
     station,
     warming,
     reason,
+    ride,
     stop,
     favourites,
     learned,
@@ -266,6 +288,7 @@ function DepartureBoard({
     station: Station | null;
     warming: string | null;
     reason: string | null;
+    ride: PlanRide | null;
     stop: string | null;
     favourites: FavouriteStop[];
     learned: string[];
@@ -288,7 +311,25 @@ function DepartureBoard({
         (notice) => notice.scale !== 'major',
     );
 
-    const end = (dir: ShownDir | undefined) => {
+    // The plan's ride, when it leaves from this stop: its line's way towards
+    // it is marked "Your tram · 17:09" (the canvas, 28 Oct).
+    const mine =
+        ride && station && plain(ride.from) === plain(station.name)
+            ? ride
+            : null;
+    const yours = (line: ShownLine, dir: ShownDir | undefined) =>
+        !!mine &&
+        !!dir &&
+        line.line === mine.line &&
+        (mine.headsign === null ||
+            plain(mine.headsign).includes(plain(dir.dest)) ||
+            plain(dir.dest).includes(plain(mine.headsign)));
+
+    const end = (
+        dir: ShownDir | undefined,
+        line: ShownLine,
+        kind: 'bus' | 'rail' | 'tram',
+    ) => {
         if (!dir) {
             return null;
         }
@@ -302,14 +343,22 @@ function DepartureBoard({
             dest: dir.dest,
             via: dir.via,
             when: (
-                <StripTime
-                    when={
-                        paused || (quiet && when.big === 'now')
-                            ? { big: dir.clock, unit: '' }
-                            : when
-                    }
-                    paused={quiet}
-                />
+                <>
+                    <StripTime
+                        when={
+                            paused || (quiet && when.big === 'now')
+                                ? { big: dir.clock, unit: '' }
+                                : when
+                        }
+                        paused={quiet}
+                    />
+                    {mine && yours(line, dir) && (
+                        <span className="board-yours">
+                            Your {vehicleWord(kind).toLowerCase()} ·{' '}
+                            {clockOf(mine.at)}
+                        </span>
+                    )}
+                </>
             ),
         };
     };
@@ -336,8 +385,13 @@ function DepartureBoard({
                                 kind={kind}
                             />
                         }
-                        first={end(first)}
-                        second={end(second)}
+                        first={end(first, line, kind)}
+                        second={end(second, line, kind)}
+                        className={
+                            line.shown.some((dir) => yours(line, dir))
+                                ? 'is-yours'
+                                : undefined
+                        }
                         empty="Other way: see Travel"
                         aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
                             .map((dir) => {
