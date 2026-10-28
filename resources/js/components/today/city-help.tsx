@@ -375,7 +375,10 @@ function DepartureBoard({
             <div className="board-head">
                 <Icon name="train" />
                 <h3 id="departure-board-title">Departures</h3>
-                {reason && <small>{reason}</small>}
+                {/* Why this stop, unless the stop's own line already says it ("Near Home"). */}
+                {reason && !(station && closestWords(station) === reason) && (
+                    <small>{reason}</small>
+                )}
             </div>
             <div className="board-content">
                 <StopPicker
