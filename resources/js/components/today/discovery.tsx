@@ -337,7 +337,7 @@ function CompactEvent({
 }
 
 /**
- * The room left under the departures (1000px and wider; owner, 28 Oct 2026):
+ * The room left under the departures (1200px and wider; owner, 28 Oct 2026):
  * more of today's events, in Today's own order, as many whole rows as end
  * by the other columns' bottom. Every row stays laid out, so it can be
  * measured; those that don't fit are clipped off, unseen and inert. It
@@ -375,7 +375,7 @@ export function MoreEvents({
                 ),
             );
             const top = box.getBoundingClientRect().top;
-            const fits = window.matchMedia('(min-width: 1000px)').matches
+            const fits = window.matchMedia('(min-width: 1200px)').matches
                 ? Array.from(
                       box.querySelectorAll<HTMLElement>('.compact-event'),
                   ).filter((row) => row.getBoundingClientRect().bottom <= end)

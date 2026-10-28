@@ -187,7 +187,7 @@ export default function Today() {
                 weather={weather}
             />
         ),
-        // The room left under the departures, from 1000px: more of today's
+        // The room left under the departures, from 1200px: more of today's
         // events, as many as fit beside the other columns.
         more: !phone && discovery && (
             <MoreEvents discovery={discovery} beside={beside} />

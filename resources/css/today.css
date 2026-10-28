@@ -193,10 +193,11 @@
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     }
 }
-/* Three columns from 1000px (owner, 28 Oct 2026): Your day, the ideas,
+/* Three columns from 1200px (owner, 28 Oct 2026): Your day, the ideas,
    and the city's help with the departures, which never move. The day keeps
-   its share; the ideas and the city's column split the rest. */
-@media (min-width: 1000px) {
+   its share; the ideas and the city's column split the rest. Narrower,
+   three columns squeeze every title onto a word per line. */
+@media (min-width: 1200px) {
     .daily-canvas {
         grid-template-columns: minmax(340px, 34fr) minmax(0, 66fr);
     }
@@ -223,9 +224,13 @@
     .ideas-area .event-rail {
         grid-auto-columns: 86%;
     }
+    /* The city's column is narrow: its rows keep the title, not the category. */
+    .city-area .compact-category {
+        display: none;
+    }
 }
 /* Two columns from 701px: the city's help heads the right one, over the ideas. */
-@media (min-width: 701px) and (max-width: 999px) {
+@media (min-width: 701px) and (max-width: 1199px) {
     .city-area {
         order: -1;
     }

@@ -68,7 +68,7 @@ export const PHONE_ORDER: Record<Lead, Block[]> = {
     ],
 };
 
-/** The three columns from 1000px (two from 701px: the day, then the city's help over the ideas). */
+/** The three columns from 1200px (two from 701px: the day, then the city's help over the ideas). */
 export const COLUMNS: Record<
     Lead,
     { day: Block[]; ideas: Block[]; city: Block[] }
@@ -84,7 +84,7 @@ export const COLUMNS: Record<
         city: ['city', 'more'],
     },
     discovery: {
-        day: ['agenda', 'paperwork', 'around', 'saved', 'upcoming', 'composer'],
+        day: ['agenda', 'around', 'paperwork', 'saved', 'upcoming', 'composer'],
         ideas: ['discovery', 'support'],
         city: ['city', 'more'],
     },
