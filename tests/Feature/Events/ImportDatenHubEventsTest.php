@@ -118,3 +118,18 @@ test('an invalid payload changes nothing', function () {
 
     expect(Event::where('source_uid', 'e_1#0')->value('status'))->toBe('active');
 });
+
+test('attractions stay out: exhibitions, markets, all-year opening hours and whole days; a Christmas market stays', function () {
+    $daily = fn (string $start, string $end, string $until) => ['weekdays' => [], 'start' => $start, 'end' => $end, 'repeatUntil' => $until, 'tz' => 'Europe/Berlin', 'freq' => 'Daily', 'interval' => 1];
+    fakeDatenHub([
+        datenHubItem(['global_id' => 'e_exhibition', 'title' => 'Faszination Schmuck', 'categories' => ['Ausstellung'], 'timeIntervals' => [datenHubItem()['timeIntervals'][1]]]),
+        datenHubItem(['global_id' => 'e_market', 'title' => 'Wochenmarkt auf dem Neptunplatz', 'categories' => [''], 'timeIntervals' => [datenHubItem()['timeIntervals'][1]]]),
+        datenHubItem(['global_id' => 'e_allyear', 'title' => 'Discover Deutz', 'categories' => ['Führung/Besichtigung'], 'timeIntervals' => [$daily('2026-01-01T10:00:00+01:00', '2026-01-01T18:00:00+01:00', '2027-01-03T18:00:00+01:00')]]),
+        datenHubItem(['global_id' => 'e_wholeday', 'title' => 'Design Season Cologne', 'categories' => [''], 'timeIntervals' => [['weekdays' => [], 'start' => '2026-10-28T00:00:00+01:00', 'end' => '2026-10-29T00:00:00+01:00', 'tz' => 'Europe/Berlin']]]),
+        datenHubItem(['global_id' => 'e_xmas', 'title' => 'Weihnachtsmarkt am Kölner Dom', 'categories' => ['Weihnachtsmarkt'], 'timeIntervals' => [$daily('2026-11-23T11:00:00+01:00', '2026-11-23T21:00:00+01:00', '2026-12-23T21:00:00+01:00')]]),
+    ]);
+
+    $this->artisan('events:import-datenhub')->expectsOutputToContain('"not_events":2')->assertSuccessful();
+
+    expect(Event::where('source', 'datenhub-nrw')->pluck('source_uid')->all())->toBe(['e_xmas#0']);
+});

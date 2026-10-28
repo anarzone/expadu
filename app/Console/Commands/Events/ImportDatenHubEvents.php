@@ -25,7 +25,9 @@ use Throwable;
  * koeln.de"). Open data: the texts are public domain and the photos CC BY-SA, so a listing's
  * photo shows with its credit. One event per time interval the listing gives (a weekly or daily
  * run becomes a series); a listing koeln.de or the city already has is not added twice, it only
- * lends that listing its photo.
+ * lends that listing its photo. Attractions stay out (owner, 28 Oct 2026): exhibitions, weekly
+ * markets, runs open most days for over four weeks, and whole days with no time. Christmas
+ * markets and festivals keep their season.
  */
 class ImportDatenHubEvents extends Command
 {
@@ -35,6 +37,9 @@ class ImportDatenHubEvents extends Command
 
     /** The sources whose listings a DatenHub one may repeat. */
     private const OTHER_SOURCES = ['koeln.de', 'stadt-koeln.de'];
+
+    /** A run open most days for longer than this is an attraction's opening hours. */
+    private const LONGEST_RUN_DAYS = 28;
 
     private const WEEKDAYS = [
         'Monday' => 'MO', 'Tuesday' => 'TU', 'Wednesday' => 'WE', 'Thursday' => 'TH',
@@ -91,13 +96,21 @@ class ImportDatenHubEvents extends Command
         $now = CarbonImmutable::now('Europe/Berlin');
         $horizon = $now->addDays(max(1, min(120, (int) $this->option('days'))))->endOfDay();
         $this->others = $this->otherListings($now);
-        $metrics = ['created' => 0, 'updated' => 0, 'unchanged' => 0, 'listed_elsewhere' => 0, 'skipped' => 0, 'invalid_coordinates' => 0];
+        $metrics = ['created' => 0, 'updated' => 0, 'unchanged' => 0, 'listed_elsewhere' => 0, 'not_events' => 0, 'skipped' => 0, 'invalid_coordinates' => 0];
         $seen = [];
         $this->recordRun(['status' => 'running', 'fetched' => count($payload['items'])]);
 
         foreach ($payload['items'] as $item) {
             if (! is_array($item) || ! filled($item['global_id'] ?? null) || ! filled($item['title'] ?? null)) {
                 $metrics['skipped']++;
+
+                continue;
+            }
+
+            // An attraction, not an event (owner, 28 Oct 2026): a museum's exhibition or a
+            // weekly market is a place with opening hours, never "on now" on Today.
+            if ($this->attraction($item)) {
+                $metrics['not_events']++;
 
                 continue;
             }
@@ -149,10 +162,10 @@ class ImportDatenHubEvents extends Command
             }
             $end = $this->instant($interval['end'] ?? null);
             $end = $end?->greaterThan($start) ? $end : null;
-            // A whole day (midnight to midnight) is stored as the other feeds store a day with no
-            // time: start to end of that day.
+            // A whole day (midnight to midnight) has no time to plan around: Today keeps the
+            // events that start at a time (owner, 28 Oct 2026).
             if ($end !== null && $start->format('H:i') === '00:00' && $end->format('H:i') === '00:00') {
-                $end = $end->subSecond();
+                continue;
             }
             $until = $this->instant($interval['repeatUntil'] ?? null);
             $uid = $item['global_id'].'#'.$index;
@@ -186,6 +199,14 @@ class ImportDatenHubEvents extends Command
             }
 
             $days = array_values(array_filter(array_map(fn ($day) => self::WEEKDAYS[$day] ?? null, (array) ($interval['weekdays'] ?? []))));
+            // Open most days for over four weeks, six hours or more a day: an attraction's
+            // opening hours (an all-year tour, a long show), not an event. A Christmas market or
+            // a festival keeps its season.
+            $mostDays = $freq === 'Daily' || count($days) >= 5;
+            if ($mostDays && $start->diffInDays($until) > self::LONGEST_RUN_DAYS
+                && $end !== null && $start->diffInHours($end) >= 6 && ! $this->seasonal($item)) {
+                continue;
+            }
             $rule = match ($freq) {
                 'Daily' => 'FREQ=DAILY',
                 'Weekly' => 'FREQ=WEEKLY'.($days !== [] ? ';BYDAY='.implode(',', $days) : ''),
@@ -203,6 +224,34 @@ class ImportDatenHubEvents extends Command
         }
 
         return $runs;
+    }
+
+    /**
+     * A museum's exhibition or a weekly market: an attraction with opening hours, not an event.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function attraction(array $item): bool
+    {
+        $categories = array_filter((array) ($item['categories'] ?? []), 'is_string');
+
+        return in_array('Ausstellung', $categories, true)
+            || in_array('Markt', $categories, true)
+            || (bool) preg_match('/wochenmarkt/iu', (string) $item['title']);
+    }
+
+    /**
+     * A season's own event (a Christmas market, a festival), kept however long it's open.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function seasonal(array $item): bool
+    {
+        $categories = array_filter((array) ($item['categories'] ?? []), 'is_string');
+
+        return in_array('Weihnachtsmarkt', $categories, true)
+            || in_array('Festival/Open-Air', $categories, true)
+            || (bool) preg_match('/weihnachtsmarkt|christmas market/iu', (string) $item['title']);
     }
 
     /**
