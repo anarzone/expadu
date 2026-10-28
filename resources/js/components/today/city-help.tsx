@@ -114,6 +114,7 @@ export function CityHelp({
     forecast,
     station,
     warming = null,
+    reason = null,
     stop,
     favourites,
     learned = [],
@@ -123,6 +124,8 @@ export function CityHelp({
     station: Station | null;
     /** The stop whose board is being read (no station yet). */
     warming?: string | null;
+    /** Why it's this stop ("For Tandem Language Café", "Near Home"); null when picked. */
+    reason?: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     /** The stops they pick most (TodayTaste, opt-in only). */
@@ -164,6 +167,7 @@ export function CityHelp({
             <DepartureBoard
                 station={station}
                 warming={warming}
+                reason={reason}
                 stop={stop}
                 favourites={favourites}
                 learned={learned}
@@ -243,47 +247,46 @@ function captureLabel(station: Station): string {
         : sourceLabel({ source: 'scheduled' });
 }
 
+/** On Today the board shows this many lines; Full board shows them all. */
+const TODAY_LINES = 2;
+
+/**
+ * The departures (owner, 28 Oct 2026): always shown, at the top of the city's
+ * column, never folded, and never taller than TODAY_LINES lines, so nothing
+ * on the page moves. Every line and notice is in Full board, a side panel.
+ */
 function DepartureBoard({
     station,
     warming,
+    reason,
     stop,
     favourites,
     learned,
 }: {
     station: Station | null;
     warming: string | null;
+    reason: string | null;
     stop: string | null;
     favourites: FavouriteStop[];
     learned: string[];
 }) {
-    const board = useRef<HTMLDetailsElement>(null);
-    const hasStation = !!station;
-
-    // Open from 701px once there's a station to show, as the mock's
-    // Everyday board is; a phone keeps it folded under the day.
-    useEffect(() => {
-        if (
-            board.current &&
-            hasStation &&
-            window.matchMedia('(min-width: 701px)').matches
-        ) {
-            board.current.open = true;
-        }
-    }, [hasStation]);
-
-    // The next departures, however far off (the mock's next twelve, three
-    // lines at most): a late timetable board still shows its next trams.
-    const lines: ShownLine[] = station
+    const [full, setFull] = useState(false);
+    // The next departures, however far off: a late timetable board still
+    // shows its next trams.
+    const all: ShownLine[] = station
         ? nearbyView(station, { ...filterDefaults(), win: ANY_TIME })
               .areas.flatMap((area) => area.cards)
               .filter((line) => line.shown.length > 0)
               .sort((a, b) => leaves(a.shown[0]) - leaves(b.shown[0]))
-              .slice(0, 3)
         : [];
+    const lines = all.slice(0, TODAY_LINES);
     const paused = !!station && isPaused(station);
     const href = travel({
         query: station ? { stop: station.name } : {},
     });
+    const everyday = (station?.notices ?? []).filter(
+        (notice) => notice.scale !== 'major',
+    );
 
     const end = (dir: ShownDir | undefined) => {
         if (!dir) {
@@ -311,13 +314,69 @@ function DepartureBoard({
         };
     };
 
+    const strips = (shown: ShownLine[]) => (
+        <LineStrips className="departure-strips">
+            {shown.map((line) => {
+                const kind =
+                    line.mode === 'bus'
+                        ? 'bus'
+                        : line.mode === 'rail'
+                          ? 'rail'
+                          : 'tram';
+                const [first, second] = line.shown;
+
+                return (
+                    <LineStrip
+                        key={line.line}
+                        look={line.look}
+                        badge={
+                            <LineBadge
+                                line={line.line}
+                                look={line.look}
+                                kind={kind}
+                            />
+                        }
+                        first={end(first)}
+                        second={end(second)}
+                        empty="Other way: see Travel"
+                        aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
+                            .map((dir) => {
+                                const t = whenOf(dir);
+
+                                return `${dir.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
+                            })
+                            .join(', ')}. Open in Travel`}
+                        onClick={() => router.visit(href)}
+                    />
+                );
+            })}
+        </LineStrips>
+    );
+
+    const capture = station && (
+        <p className="board-capture">
+            {station.name}
+            <span>
+                {[
+                    !closestNow(station) && closestWords(station),
+                    captureLabel(station),
+                ]
+                    .filter(Boolean)
+                    .join(' · ')}
+            </span>
+        </p>
+    );
+
     return (
-        <details ref={board} className="departure-board">
-            <summary id="departure-board-title">
+        <section
+            className="departure-board"
+            aria-labelledby="departure-board-title"
+        >
+            <div className="board-head">
                 <Icon name="train" />
-                <span>Check departures</span>
-                <Icon name="down" />
-            </summary>
+                <h3 id="departure-board-title">Departures</h3>
+                {reason && <small>{reason}</small>}
+            </div>
             <div className="board-content">
                 <StopPicker
                     current={station?.name ?? stop ?? warming}
@@ -326,88 +385,44 @@ function DepartureBoard({
                 />
                 {station ? (
                     <div>
-                        <p className="board-capture">
-                            {station.name}
-                            <span>
-                                {[
-                                    !closestNow(station) &&
-                                        closestWords(station),
-                                    captureLabel(station),
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                            </span>
-                        </p>
+                        {capture}
                         {lines.length > 0 ? (
-                            <LineStrips className="departure-strips">
-                                {lines.map((line) => {
-                                    const kind =
-                                        line.mode === 'bus'
-                                            ? 'bus'
-                                            : line.mode === 'rail'
-                                              ? 'rail'
-                                              : 'tram';
-                                    const [first, second] = line.shown;
-
-                                    return (
-                                        <LineStrip
-                                            key={line.line}
-                                            look={line.look}
-                                            badge={
-                                                <LineBadge
-                                                    line={line.line}
-                                                    look={line.look}
-                                                    kind={kind}
-                                                />
-                                            }
-                                            first={end(first)}
-                                            second={end(second)}
-                                            empty="Other way: see Travel"
-                                            aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
-                                                .map((dir) => {
-                                                    const t = whenOf(dir);
-
-                                                    return `${dir.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
-                                                })
-                                                .join(', ')}. Open in Travel`}
-                                            onClick={() => router.visit(href)}
-                                        />
-                                    );
-                                })}
-                            </LineStrips>
+                            strips(lines)
                         ) : station.time_basis === 'unavailable' ? null : (
                             <p className="board-empty">
                                 No departures from {station.name} in the feed.
                             </p>
                         )}
-                        {/* KVB's notices for this stop's lines in Travel's two tiers: one headline for
-                            a major problem, everyday ones as a line each. */}
+                        {/* KVB's notices in Travel's two tiers: a major problem's headline, and
+                            the first everyday one; Full board has every one. */}
                         {(station.notices ?? []).length > 0 && (
                             <div className="board-notices">
                                 <MajorHeadline station={station} />
-                                {station.notices
-                                    .filter(
-                                        (notice) => notice.scale !== 'major',
-                                    )
-                                    .slice(0, 2)
-                                    .map((notice) => (
-                                        <NoticeLine
-                                            key={notice.id}
-                                            notice={notice}
-                                        />
-                                    ))}
+                                {everyday.slice(0, 1).map((notice) => (
+                                    <NoticeLine
+                                        key={notice.id}
+                                        notice={notice}
+                                    />
+                                ))}
                             </div>
                         )}
-                        <a
-                            className="board-full"
-                            href={href.url}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                router.visit(href);
-                            }}
-                        >
-                            Full timetable
-                        </a>
+                        <div className="board-foot">
+                            {all.length > lines.length && (
+                                <span>
+                                    + {all.length - lines.length} more{' '}
+                                    {all.length - lines.length === 1
+                                        ? 'line'
+                                        : 'lines'}
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                className="board-full"
+                                onClick={() => setFull(true)}
+                            >
+                                Full board
+                            </button>
+                        </div>
                     </div>
                 ) : warming ? null : (
                     <p className="board-empty">
@@ -415,7 +430,37 @@ function DepartureBoard({
                     </p>
                 )}
             </div>
-        </details>
+            {station && (
+                <Sheet
+                    open={full}
+                    onClose={() => setFull(false)}
+                    title={station.name}
+                    side
+                    className="board-sheet"
+                >
+                    {capture}
+                    {all.length > 0 && strips(all)}
+                    {(station.notices ?? []).length > 0 && (
+                        <div className="board-notices">
+                            <MajorHeadline station={station} />
+                            {everyday.map((notice) => (
+                                <NoticeLine key={notice.id} notice={notice} />
+                            ))}
+                        </div>
+                    )}
+                    <a
+                        className="board-travel"
+                        href={href.url}
+                        onClick={(event) => {
+                            event.preventDefault();
+                            router.visit(href);
+                        }}
+                    >
+                        Open in Travel
+                    </a>
+                </Sheet>
+            )}
+        </section>
     );
 }
 
