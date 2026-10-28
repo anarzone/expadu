@@ -134,22 +134,22 @@ export function posterInk(start: string | null | undefined): PosterInk {
 }
 
 /* The mock's four families are Culture (rings), Games (checks), Outdoors
-   (waves) and Language (speech bubbles). The app's seven categories map
-   onto them by what happens there:
-     culture, party              → rings   (stage, music, a night out)
-     sports                      → checks  (games and sport)
-     language_exchange,
-     stammtisch, intl_meetup     → bubbles (people meeting to talk)
-     other                       → dots    (the calm fallback, ~71% of listings)
+   (waves) and Language (speech bubbles). The categories map onto them by
+   what happens there:
+     music, stage, festivals, party → rings   (a stage, a night out)
+     sports, kids                   → checks  (games, sport and play)
+     meet_people                    → bubbles (people meeting to talk)
+     tours, other                   → dots    (the calm fallback)
    Waves belong to outdoor venues and only come from the venue's recorded
    setting, never from the category or the title. */
 const families: Record<string, PosterFamily> = {
-    culture: 'rings',
+    music: 'rings',
+    stage: 'rings',
+    festivals: 'rings',
     party: 'rings',
     sports: 'checks',
-    language_exchange: 'bubbles',
-    stammtisch: 'bubbles',
-    intl_meetup: 'bubbles',
+    kids: 'checks',
+    meet_people: 'bubbles',
 };
 
 export function posterFamily(
@@ -163,15 +163,18 @@ export function posterFamily(
     return (category && families[category]) || 'dots';
 }
 
-/* One icon and one name per category on cards, chips and the sheet.
-   "Other" reads as plain "Event". */
+/* One icon and one name per category on cards, chips and the sheet
+   (EventCategory's labels); an unknown one reads as plain "Event". */
 const categories: Record<string, { label: string; icon: IconName }> = {
-    culture: { label: 'Culture', icon: 'museum' },
+    music: { label: 'Music', icon: 'music' },
+    stage: { label: 'Stage & comedy', icon: 'stage' },
+    tours: { label: 'Tours', icon: 'flag' },
+    festivals: { label: 'Festivals & markets', icon: 'tent' },
+    kids: { label: 'Kids & family', icon: 'balloon' },
     party: { label: 'Party', icon: 'spark' },
     sports: { label: 'Sports', icon: 'ball' },
-    language_exchange: { label: 'Language exchange', icon: 'chat' },
-    stammtisch: { label: 'Stammtisch', icon: 'coffee' },
-    intl_meetup: { label: 'International', icon: 'people' },
+    meet_people: { label: 'Meet people', icon: 'people' },
+    other: { label: 'Other', icon: 'more' },
 };
 
 export function posterCategory(category: string | null | undefined): {

@@ -52,7 +52,7 @@ function classification(array $overrides = []): array
     return array_merge([
         'relevance' => 0.9,
         'confidence' => 0.95,
-        'category' => 'language_exchange',
+        'category' => 'meet_people',
         'language' => 'mixed',
         'chips' => ['English-friendly', 'free'],
         'title_en' => 'Language night',
@@ -93,7 +93,7 @@ test('a confident classification stores every AI field once', function () {
     expect($event->title_en)->toBe('Language night');
     expect($event->description_en)->toBe('A complete English translation of the source description.');
     expect($event->summary_en)->toBe('Our own short words. Two sentences max.');
-    expect($event->category)->toBe('language_exchange');
+    expect($event->category)->toBe('meet_people');
     expect($event->language)->toBe('mixed');
     expect($event->chips)->toBe(['English-friendly', 'free']);
     expect($event->relevance)->toBe(0.9);

@@ -232,7 +232,7 @@ final class WhatsOn
      * The filters from the URL, so a link opens the same view. Lenient: a value it doesn't know is
      * dropped, not an error.
      *
-     * @return array{q: string, category: ?string, area: ?string, free: bool, saved: bool, sort: string, from: ?string}
+     * @return array{q: string, category: ?string, area: ?string, free: bool, saved: bool, no_german: bool, sort: string, from: ?string}
      */
     private function filters(Request $request): array
     {
@@ -247,6 +247,7 @@ final class WhatsOn
             'area' => $text('area', 100),
             'free' => $request->boolean('free'),
             'saved' => $request->boolean('saved'),
+            'no_german' => $request->boolean('no_german'),
             'sort' => in_array($request->query('sort'), ['soonest', 'evening', 'closest'], true) ? $request->query('sort') : 'soonest',
             'from' => $text('from', 120),
         ];

@@ -204,7 +204,7 @@ test('🔒 with the opt-in it may look at their taste: a "because" holds only wh
     $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
     $subject = Pseudonym::for($user);
     DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => $subject, 'dimension' => $row[0], 'key' => $row[1],
-        'context' => 'all', 'score' => $row[2], 'signals_count' => $row[3], 'updated_at' => now()], [['category', 'culture', 12.0, 6], ['veedel', 'Ehrenfeld', 8.0, 5]]));
+        'context' => 'all', 'score' => $row[2], 'signals_count' => $row[3], 'updated_at' => now()], [['category', 'music', 12.0, 6], ['veedel', 'Ehrenfeld', 8.0, 5]]));
     $jazz = assistantJazz();
     $skipped = assistantJazz();
     $skipped->update(['title' => 'Skipped Jazz']);
@@ -213,19 +213,19 @@ test('🔒 with the opt-in it may look at their taste: a "because" holds only wh
     $id = "e{$jazz->id}@".CarbonImmutable::parse('2026-11-05 20:00', 'Europe/Berlin')->getTimestamp();
     Http::fake(['processor.example.test/*' => Http::sequence()
         ->push(assistantTurn([['my_taste', []], ['search_events', ['day' => 'today']]]))
-        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Since you like culture, Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id, 't1']]],
+        ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Since you like music, Jazz im Stadtgarten starts at 20:00.', 'uses' => [$id, 't1']]],
             'show' => [$id], 'because' => [
-                ['id' => $id, 'text' => 'You like culture', 'uses' => ['t1']],
+                ['id' => $id, 'text' => 'You like music', 'uses' => ['t1']],
                 ['id' => $id, 'text' => 'You saved two jazz nights', 'uses' => ['t1']],
             ]]]]))]);
     $this->actingAs($user);
 
     $reply = assistantAsk($this);
 
-    Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'likes a lot culture') && ! str_contains($request->body(), 'Skipped Jazz'));
-    expect($reply)->read->toBe(['taste', 'listings'])->lead->toBe('Since you like culture, Jazz im Stadtgarten starts at 20:00.')
+    Http::assertSent(fn (Request $request): bool => str_contains($request->body(), 'likes a lot music') && ! str_contains($request->body(), 'Skipped Jazz'));
+    expect($reply)->read->toBe(['taste', 'listings'])->lead->toBe('Since you like music, Jazz im Stadtgarten starts at 20:00.')
         ->taste->toBeTrue()->and($reply)->not->toHaveKey('invite')
-        ->and($reply['events'][0]['because'])->toBe('You like culture');
+        ->and($reply['events'][0]['because'])->toBe('You like music');
 });
 
 test('🔒 the page reads how far its own request has got, and nobody else\'s', function () {

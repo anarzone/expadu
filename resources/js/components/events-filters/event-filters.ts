@@ -1,6 +1,6 @@
 /* What's on's filters (the Events page's, from the mock's events-next
-   event-model.js): one day, narrowed by a search, a category, an area, Free
-   and Saved, in an order, measured from a starting point. They live in the
+   event-model.js): one day, narrowed by a search, a category, an area, Free,
+   Saved and No German needed, in an order, measured from a starting point. They live in the
    URL, so a link opens the same view; the day's listings are filtered here,
    as the mock does, and api/events/other-day matches the same way. */
 
@@ -16,6 +16,8 @@ export type EventFilters = {
     area: string | null;
     free: boolean;
     saved: boolean;
+    /** Only listings a guest can follow without German (EventEvidence::noGerman). */
+    no_german: boolean;
     sort: EventSort;
     /** The starting point, only as a district, stop or venue's own name or
         a saved place's key (home, work); never a typed address. */
@@ -28,13 +30,14 @@ export const noFilters: EventFilters = {
     area: null,
     free: false,
     saved: false,
+    no_german: false,
     sort: 'soonest',
     from: null,
 };
 
 /** Anything that narrows the wall (sort and the starting point don't). */
 export const narrowed = (f: EventFilters) =>
-    !!(f.q.trim() || f.category || f.area || f.free || f.saved);
+    !!(f.q.trim() || f.category || f.area || f.free || f.saved || f.no_german);
 
 /** Anything a reset would clear. */
 export const anyFilter = (f: EventFilters) =>
@@ -62,6 +65,10 @@ export function whatsOnUrl(date: string, f: EventFilters): string {
 
     if (f.saved) {
         params.set('saved', '1');
+    }
+
+    if (f.no_german) {
+        params.set('no_german', '1');
     }
 
     if (f.sort !== 'soonest') {
@@ -101,6 +108,10 @@ export function matches(
         return false;
     }
 
+    if (f.no_german && !o.no_german) {
+        return false;
+    }
+
     const hay = [
         o.title,
         o.title_original,
@@ -118,12 +129,14 @@ export function matches(
 /** The categories the listings have, on any day (the mock's catalogue), in
     the app's order, with the chosen one. */
 const ORDER = [
-    'culture',
+    'music',
+    'stage',
+    'tours',
+    'festivals',
+    'kids',
     'party',
     'sports',
-    'language_exchange',
-    'stammtisch',
-    'intl_meetup',
+    'meet_people',
     'other',
 ];
 

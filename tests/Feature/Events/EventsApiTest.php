@@ -54,7 +54,7 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data[1]['title'])->toBe('Language night');
     expect($data[1]['meta'])->toBe('Tonight 19:00–22:00 · Gilden im Zims · Altstadt-Nord');
     expect($data[1]['chips'])->toBe(['English-friendly', 'free']); // free chip derived
-    expect($data[1]['category'])->toBe('language_exchange');
+    expect($data[1]['category'])->toBe('meet_people');
 });
 
 test('today includes events already in progress but excludes events that finished', function () {
@@ -310,10 +310,10 @@ test('category, veedel and free filters compose', function () {
     Event::factory()->create(['title' => 'Not free', 'starts_at' => '2026-06-12 19:00:00', 'recurrence' => null, 'category' => 'language_exchange', 'is_free' => false, 'price_text' => '€10', 'venue_id' => $ehrenfeld->id]);
     Event::factory()->create(['title' => 'Wrong category', 'starts_at' => '2026-06-12 20:00:00', 'recurrence' => null, 'category' => 'party', 'is_free' => true, 'venue_id' => $ehrenfeld->id]);
 
-    $data = $this->getJson('/api/events?window=today&category=language_exchange&veedel=Ehrenfeld&free=1')
+    $data = $this->getJson('/api/events?window=today&category=meet_people&veedel=Ehrenfeld&free=1')
         ->assertOk()->json('data');
 
-    // legacy 'language' rows match the language_exchange filter
+    // legacy 'language' rows match the Meet people filter
     expect($data)->toHaveCount(1);
     expect($data[0]['title'])->toBe('Match A');
 });
