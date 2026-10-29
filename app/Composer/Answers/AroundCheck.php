@@ -128,15 +128,19 @@ final class AroundCheck
         if (preg_match(self::NOT, $lower) !== 1 && ($unlistedClaim = collect($claimed[0])->first(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) !== null) {
             return 'not listed: '.$unlistedClaim;
         }
+        $excused = [];
         foreach (self::CLAIMS as $claim) {
             if (preg_match($claim, $lower, $made) && ! preg_match($claim, $source)) {
-                return 'a claim its results don\'t make: '.$made[0];
+                if (! self::saysUnknown($lower, $made[0])) {
+                    return 'a claim its results don\'t make: '.$made[0];
+                }
+                $excused[] = $made[0];
             }
         }
 
-        // The words of an unlisted fact it names ("Live music isn't listed") are words, not names.
+        // The words of an unlisted fact it names ("Live music isn't listed", "Step-free access isn't listed") are words, not names.
         preg_match_all(self::UNLISTED, $lower, $phrases);
-        $unlisted = array_merge([], ...array_map(fn (string $phrase): array => preg_split('/[\s-]+/u', $phrase), $phrases[0]));
+        $unlisted = [...$excused, ...array_merge([], ...array_map(fn (string $phrase): array => preg_split('/[\s-]+/u', $phrase), [...$phrases[0], ...$excused]))];
         // Every name: a capitalised word the items hold, unless it's the speaker, the
         // app, the city, a day or month, or an ordinary word starting a sentence.
         preg_match_all("/\p{Lu}[\p{L}'-]*/u", $sentence, $names, PREG_OFFSET_CAPTURE);
@@ -153,5 +157,26 @@ final class AroundCheck
         }
 
         return null;
+    }
+
+    /**
+     * The sentence says that very fact isn't listed or can't be confirmed ("Step-free access isn't
+     * listed for either park", "I can't confirm step-free access"): the words right beside it, in
+     * the same clause, so "It's step-free, but its hours aren't listed" still claims it. Before
+     * 30 Oct 2026 every such sentence was dropped, and Composer couldn't tell a wheelchair user
+     * that access is unknown.
+     */
+    private static function saysUnknown(string $lower, string $word): bool
+    {
+        $w = preg_quote($word, '/');
+        // The rest of the clause, never past a "but", "though" or "and" that starts another.
+        $gap = '(?:(?!\b(?:but|though|although|while|whereas|and|yet)\b)[^.,;!?:–—]){0,40}';
+
+        return preg_match('/\b'.$w.'(?: (?:access|entry|entrance|routes?|toilets?|facilities|seating))? (?:is|are|was|were)(?: not|n\'t) (?:listed|known|shown|confirmed|mentioned|given|stated)\b/u', $lower) === 1
+            || preg_match('/\b'.$w.'(?: (?:access|entry|entrance))? (?:is |are )?unknown\b/u', $lower) === 1
+            || preg_match('/\b(?:can\'t|cannot|couldn\'t|can not) (?:confirm|say|tell|check)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\b(?:no|none of (?:them|these|those|the \w+)|neither(?: \w+)?) (?:lists?|mentions?|shows?|says?|states?)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\b(?:doesn\'t|don\'t|didn\'t|does not|do not) (?:list|mention|show|say|state)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\bno (?:information|details|word) (?:on|about)(?: (?:the|its|their))? '.$w.'/u', $lower) === 1;
     }
 }
