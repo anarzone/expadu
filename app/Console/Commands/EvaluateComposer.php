@@ -73,7 +73,8 @@ class EvaluateComposer extends Command
         {--model= : Run on this model instead (a comparison; see AiRequest)}
         {--max-tokens= : Room for each reply, at least}
         {--budget= : Seconds an answer may take instead of Composer\'s own (a comparison of quality without its time limit)}
-        {--cohort= : Suffix for the synthetic users, so runs can go side by side}';
+        {--cohort= : Suffix for the synthetic users, so runs can go side by side}
+        {--system= : A file with other instructions for the assistant to try}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
@@ -131,7 +132,8 @@ class EvaluateComposer extends Command
             config(['services.llm.effort' => (string) $this->option('effort')]);
         }
         UsageMeter::override($this->option('model') ?: null, $this->option('effort') ?: null, $this->option('max-tokens') ? (int) $this->option('max-tokens') : null,
-            $this->option('budget') ? ['budget_seconds' => (float) $this->option('budget'), 'call_timeout' => (int) $this->option('budget')] : []);
+            [...($this->option('budget') ? ['budget_seconds' => (float) $this->option('budget'), 'call_timeout' => (int) $this->option('budget')] : []),
+                ...($this->option('system') ? ['composer_system' => rtrim((string) file_get_contents($this->option('system')), "\n")] : [])]);
         $meter = (new UsageMeter)->start();
 
         $results = [];
@@ -148,7 +150,7 @@ class EvaluateComposer extends Command
         $summary = $this->summarise($results);
         $answered = collect($results)->pluck('ask_ms')->filter()->sort()->values();
         $summary['run'] = ['model' => $this->option('model') ?: (string) config('services.llm.model'), 'effort' => (string) config('services.llm.effort'),
-            'budget_seconds' => (float) ($this->option('budget') ?: 14), 'usage' => $meter->summary(),
+            'budget_seconds' => (float) ($this->option('budget') ?: 14), 'system' => $this->option('system') ?: null, 'usage' => $meter->summary(),
             'ask_ms_p50' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.5)] ?? 0),
             'ask_ms_p95' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.95)] ?? 0),
             // Answers that would have run past Composer's own 14 seconds.

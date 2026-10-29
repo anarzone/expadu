@@ -327,7 +327,8 @@ final class Assistant
                     'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork()), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
-                    'system' => [['type' => 'text', 'text' => self::SYSTEM, 'cache_control' => ['type' => 'ephemeral']],
+                    // composer:eval --system tries other instructions (AiRequest's eval override).
+                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? self::SYSTEM), 'cache_control' => ['type' => 'ephemeral']],
                         ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : []),
                         ...($tools->paperwork() ? [['type' => 'text', 'text' => self::PAPERWORK]] : [])],
                     'messages' => $messages,
