@@ -14,6 +14,36 @@ use Illuminate\Support\Facades\DB;
  */
 final class Sensitive
 {
+    /** What an event can be mainly about that personalisation never learns from; `none` otherwise. */
+    public const KINDS = ['religion', 'politics', 'union', 'health', 'identity'];
+
+    /**
+     * How the event classifier and events:recategorise read an event (one rule for both, in their
+     * instructions, and for events:sensitive-eval): what going to it says about a person, never a
+     * word that only appears in it
+     * (owner, 29 Oct 2026: a party listing hospital staff as guests and an exhibition of Buddhist
+     * art were marked).
+     */
+    public const EVENT_RULE = 'For each listing decide whether going to it would tell others something about the person\'s religion, politics, union membership, health, '
+        .'or sexual orientation or gender identity. Mark the kind when taking part itself means: worship, prayer or a faith group (religion); a party, campaign, rally, '
+        .'demonstration, or political training such as arguing against populist slogans (politics); a trade union meeting or action (union); a support group, a health check '
+        .'or screening, treatment, or a talk about an illness or preventing one (health); an event by or for LGBTQ+ people (identity). Otherwise none. A word in a title or name '
+        .'alone never decides it. A concert, choir evening, organ recital or chant show is music even in a church or with sacred music; an exhibition of religious art is art; '
+        .'comedy or cabaret about politics is comedy; a party, run or concert that raises money for a hospital or a charity is that party, run or concert; a career fair is a '
+        .'career fair.';
+
+    /** @return array{type: string, enum: list<string>, description: string} the tool field for it */
+    public static function eventField(): array
+    {
+        return ['type' => 'string', 'enum' => ['none', ...self::KINDS], 'description' => 'religion, politics, union, health or identity only when going to it tells others about that, as the instructions say; otherwise none.'];
+    }
+
+    /** A model's answer as stored: the kind, or null for none or anything unknown. */
+    public static function eventKind(mixed $answer): ?string
+    {
+        return is_string($answer) && in_array($answer, self::KINDS, true) ? $answer : null;
+    }
+
     /** Health services and places of worship. A drugstore or a vet says nothing about someone's health. */
     public const SPOT_CATEGORIES = [
         SpotCategory::Pharmacy, SpotCategory::Doctor, SpotCategory::Dentist, SpotCategory::Optician, SpotCategory::HearingAids,

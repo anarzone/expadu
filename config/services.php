@@ -128,6 +128,8 @@ return [
     'llm_pricing' => [
         // Prompts up to 100K tokens; longer ones bill at $0.50 / $2.50.
         'claude-haiku-5-5' => ['input_per_mtok' => 0.10, 'output_per_mtok' => 0.50],
+        // Not used by the app (Haiku only); priced so evals comparing models report cost.
+        'claude-sonnet-5-5' => ['input_per_mtok' => 2.00, 'output_per_mtok' => 10.00],
     ],
 
     /*
