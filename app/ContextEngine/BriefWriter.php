@@ -134,6 +134,8 @@ final class BriefWriter
         $body = $send(AiRequest::shape([
             'model' => (string) config('services.llm.model'),
             'max_tokens' => 400,
+            // notifications:brief-eval, 29 Oct 2026: 35/35 at high, 29/35 at the default, same cost and time.
+            'output_config' => ['effort' => 'high'],
             'system' => self::SYSTEM,
             'tools' => [self::TOOL],
             'tool_choice' => ['type' => 'tool', 'name' => 'brief'],
