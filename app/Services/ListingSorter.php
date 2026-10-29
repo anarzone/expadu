@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Ai\AiRequest;
 use App\Ai\ToolChoice;
 use App\Enums\EventCategory;
 use App\Personalisation\Sensitive;
@@ -45,7 +46,7 @@ final class ListingSorter
                 'x-api-key' => config('services.anthropic.key'),
                 'anthropic-version' => '2023-06-01',
             ])
-            ->post('/v1/messages', array_filter([
+            ->post('/v1/messages', AiRequest::shape(array_filter([
                 'model' => $model,
                 // Room for thinking at any effort: an answer cut short loses the whole batch.
                 'max_tokens' => 16000,
@@ -78,7 +79,7 @@ final class ListingSorter
                     .'. Pick the one a person browsing would look under. Use other only when none fits. '
                     .'Sensitive: '.Sensitive::EVENT_RULE.' '.ToolChoice::instruction(self::TOOL),
                 'messages' => [['role' => 'user', 'content' => $items]],
-            ], fn ($value) => $value !== null))
+            ], fn ($value) => $value !== null)))
             ->throw();
 
         $input = collect($response->json('content', []))->firstWhere('type', 'tool_use')['input'] ?? [];

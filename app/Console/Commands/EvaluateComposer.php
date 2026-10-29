@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Ai\LlmCalls;
+use App\Ai\UsageMeter;
 use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\People\EnsureAccountHolder;
@@ -68,7 +69,10 @@ class EvaluateComposer extends Command
         {--limit= : Run at most this many requests}
         {--week= : Monday of the week to run in (default: next Monday)}
         {--label=baseline : Name for the report file}
-        {--effort= : The assistant\'s effort for this run (low, medium, high)}
+        {--effort= : The assistant\'s effort for this run (low, medium, high, xhigh, max)}
+        {--model= : Run on this model instead (a comparison; see AiRequest)}
+        {--max-tokens= : Room for each reply, at least}
+        {--budget= : Seconds an answer may take instead of Composer\'s own (a comparison of quality without its time limit)}
         {--cohort= : Suffix for the synthetic users, so runs can go side by side}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
@@ -126,6 +130,9 @@ class EvaluateComposer extends Command
         if ($this->option('effort')) {
             config(['services.llm.effort' => (string) $this->option('effort')]);
         }
+        UsageMeter::override($this->option('model') ?: null, $this->option('effort') ?: null, $this->option('max-tokens') ? (int) $this->option('max-tokens') : null,
+            $this->option('budget') ? ['budget_seconds' => (float) $this->option('budget'), 'call_timeout' => (int) $this->option('budget')] : []);
+        $meter = (new UsageMeter)->start();
 
         $results = [];
         $bar = $this->output->createProgressBar($requests->count());
@@ -139,7 +146,15 @@ class EvaluateComposer extends Command
         CarbonImmutable::setTestNow();
 
         $summary = $this->summarise($results);
+        $answered = collect($results)->pluck('ask_ms')->filter()->sort()->values();
+        $summary['run'] = ['model' => $this->option('model') ?: (string) config('services.llm.model'), 'effort' => (string) config('services.llm.effort'),
+            'budget_seconds' => (float) ($this->option('budget') ?: 14), 'usage' => $meter->summary(),
+            'ask_ms_p50' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.5)] ?? 0),
+            'ask_ms_p95' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.95)] ?? 0),
+            // Answers that would have run past Composer's own 14 seconds.
+            'over_14s' => $answered->filter(fn (int $ms): bool => $ms > 14000)->count()];
         $this->report($summary, $results);
+        $this->line('Run: '.json_encode($summary['run']));
 
         $path = storage_path('app/composer-eval/'.$this->option('label').'-'.now()->format('Ymd-His').'.json');
         @mkdir(dirname($path), 0775, true);

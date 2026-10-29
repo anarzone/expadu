@@ -2,6 +2,7 @@
 
 namespace App\Personalisation;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Models\TasteProfile;
 use App\Models\User;
@@ -135,7 +136,7 @@ class TasteProfileWriter
                     'x-api-key' => config('services.anthropic.key'),
                     'anthropic-version' => '2023-06-01',
                 ])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => config('services.taste_profile.model'),
                     'max_tokens' => 600,
                     'output_config' => ['effort' => config('services.taste_profile.effort', 'low')],
@@ -167,7 +168,7 @@ class TasteProfileWriter
                         'role' => 'user',
                         'content' => '<facts>'.json_encode(TasteFacts::forModel($facts), JSON_UNESCAPED_UNICODE).'</facts>',
                     ]],
-                ])
+                ]))
                 ->throw();
         } catch (Throwable $exception) {
             $this->record($startedAt, 'error:'.class_basename($exception));

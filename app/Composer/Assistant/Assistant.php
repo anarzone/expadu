@@ -2,6 +2,7 @@
 
 namespace App\Composer\Assistant;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Composer\Answers\AroundCheck;
 use App\Composer\Answers\AroundNow;
@@ -301,7 +302,7 @@ final class Assistant
         $sentBack = false;
         for ($round = 1; $round <= $limit; $round++) {
             $elapsed = (hrtime(true) - $started) / 1e9;
-            $left = self::BUDGET_SECONDS - $elapsed;
+            $left = (float) (config('ai.override.budget_seconds') ?? self::BUDGET_SECONDS) - $elapsed;
             if ($left < 1.5) {
                 return null;
             }
@@ -313,9 +314,9 @@ final class Assistant
             $body = $call(fn () => Http::baseUrl((string) config('services.llm.base_url'))
                 ->withOptions(['allow_redirects' => false])
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
-                ->timeout((int) max(2, min(10, floor($left))))
+                ->timeout((int) max(2, min((int) (config('ai.override.call_timeout') ?? 10), floor($left))))
                 ->connectTimeout(3)
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
@@ -326,7 +327,7 @@ final class Assistant
                         ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : []),
                         ...($tools->paperwork() ? [['type' => 'text', 'text' => self::PAPERWORK]] : [])],
                     'messages' => $messages,
-                ]));
+                ])));
             $this->record($callStarted, $body);
             $this->timings[] = ['call'.$round, (int) round((hrtime(true) - $callStarted) / 1e6)];
             if (! is_array($body) || ($body['stop_reason'] ?? null) !== 'tool_use') {

@@ -2,6 +2,7 @@
 
 namespace App\Personalisation;
 
+use App\Ai\AiRequest;
 use App\Enums\EventCategory;
 use App\Home\TodayDiscovery;
 use App\Models\User;
@@ -127,7 +128,7 @@ final class TodayRanker
         $leans = fn (string $key): string => implode(', ', array_map(fn (array $row): string => $row['level'] === 'avoid' ? "not {$row['name']}" : $row['name'], $facts[$key] ?? []));
         $recentKinds = array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind) ?? $kind, $context['recent']['categories'])));
         $line = fn (array $c): string => "{$c['id']}: \"{$c['name']}\" ({$c['kind']})".($c['area'] ? " in {$c['area']}" : '').($c['start'] ? " at {$c['start']}" : '');
-        $body = $send([
+        $body = $send(AiRequest::shape([
             'model' => (string) config('services.llm.model'),
             'max_tokens' => 600,
             'system' => self::SYSTEM,
@@ -142,7 +143,7 @@ final class TodayRanker
                 $context['candidates']['events'] !== [] ? "Events:\n".implode("\n", array_map($line, $context['candidates']['events'])) : null,
                 $context['candidates']['places'] !== [] ? "Places:\n".implode("\n", array_map($line, $context['candidates']['places'])) : null,
             ]))]],
-        ]);
+        ]));
         $input = collect($body['content'] ?? [])->first(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')['input'] ?? null;
         if (! is_array($input)) {
             return null;

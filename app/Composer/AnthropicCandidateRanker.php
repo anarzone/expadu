@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Composer\Contracts\RanksCandidates;
 use App\Privacy\ExternalProcessingGate;
@@ -66,7 +67,7 @@ class AnthropicCandidateRanker implements RanksCandidates
                     'x-api-key' => config('services.composer_llm.key'),
                     'anthropic-version' => '2023-06-01',
                 ])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => config('services.composer_llm.model'),
                     'max_tokens' => 1800,
                     'thinking' => ['type' => 'disabled'],
@@ -78,7 +79,7 @@ class AnthropicCandidateRanker implements RanksCandidates
                         'role' => 'user',
                         'content' => json_encode($context, JSON_THROW_ON_ERROR),
                     ]],
-                ]));
+                ])));
 
             if ($body === null) {
                 return [];

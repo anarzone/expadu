@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Ai\ToolChoice;
 use App\Enums\EventCategory;
@@ -94,7 +95,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                     'x-api-key' => config('services.anthropic.key'),
                     'anthropic-version' => '2023-06-01',
                 ])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => config('services.anthropic.model'),
                     'max_tokens' => $maxTokens,
                     'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
@@ -119,7 +120,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                             $event->price_text ? '<source_price>'.$this->escapeSourceText($event->price_text).'</source_price>' : null,
                         ])),
                     ]],
-                ])
+                ]))
                 ->throw();
         } catch (\Throwable $exception) {
             $this->recordCall('event_classifier', $startedAt, 'error:'.class_basename($exception));
@@ -173,7 +174,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                             'x-api-key' => config('services.anthropic.key'),
                             'anthropic-version' => '2023-06-01',
                         ])
-                        ->post('/v1/messages', [
+                        ->post('/v1/messages', AiRequest::shape([
                             'model' => config('services.anthropic.model'),
                             'max_tokens' => 4096,
                             'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
@@ -194,7 +195,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                                 'role' => 'user',
                                 'content' => 'Chunk '.($index + 1).":\n<source_description>".$this->escapeSourceText($chunk).'</source_description>',
                             ]],
-                        ])
+                        ]))
                         ->throw();
                 } catch (\Throwable $exception) {
                     $this->recordCall('event_translation', $startedAt, 'error:'.class_basename($exception));

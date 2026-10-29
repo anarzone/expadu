@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Ai\AiRequest;
 use App\Models\Spot;
 use App\Places\PlaceFacts;
 use App\Places\RecordPlaceObservation;
@@ -330,7 +331,7 @@ class ReadPlaceWebsites extends Command
         try {
             $response = Http::baseUrl('https://api.anthropic.com')->timeout(60)
                 ->withHeaders(['x-api-key' => config('services.anthropic.key'), 'anthropic-version' => '2023-06-01'])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => (string) config('services.place_enrichment.model'),
                     'max_tokens' => 1024,
                     'output_config' => ['effort' => 'low'],
@@ -338,7 +339,7 @@ class ReadPlaceWebsites extends Command
                     'tool_choice' => ['type' => 'tool', 'name' => 'record_place_facts'],
                     'tools' => [$tool],
                     'messages' => [['role' => 'user', 'content' => $content]],
-                ]);
+                ]));
         } catch (Throwable $e) {
             $this->warn("  model call failed: {$e->getMessage()}");
 

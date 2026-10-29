@@ -2,6 +2,7 @@
 
 namespace App\Places\Enrichment;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Enums\VibeTag;
 use App\Models\SpotEnrichment;
@@ -159,7 +160,7 @@ TXT;
                     ->timeout(30)
                     ->connectTimeout(3)
                     ->withHeaders(['x-api-key' => config('services.anthropic.key'), 'anthropic-version' => '2023-06-01'])
-                    ->post('/v1/messages', $params[$spotId]),
+                    ->post('/v1/messages', AiRequest::shape($params[$spotId])),
                 array_keys($params),
             ), concurrency: count($params));
             $latency = (int) round((hrtime(true) - $startedAt) / 1_000_000);
