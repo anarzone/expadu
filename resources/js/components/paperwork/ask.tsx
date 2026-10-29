@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { AiBadge } from '@/components/ui/ai-badge';
 import { CommandError, read, requestId, send } from './api';
 import { usePaperwork } from './state';
 
@@ -177,6 +178,12 @@ function AskAnswer({ reply }: { reply: AskReply }) {
 
     return (
         <div className="ask-answer" aria-live="polite">
+            {reply.status === 'answered' ? (
+                <p className="ask-ai">
+                    <AiBadge label="Written by AI" /> from the checked cards
+                    below
+                </p>
+            ) : null}
             {reply.status === 'answered' ? (
                 reply.sentences.map((sentence, i) => (
                     <section className="source-record" key={i}>

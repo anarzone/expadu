@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
+import { AiIntro } from '@/components/ui/ai-intro';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 
@@ -143,6 +144,25 @@ export function ComposerBox({
 
     return (
         <div className="composer-box">
+            {/* Composer's AI is on (its notice line comes with it): say so at first use. */}
+            {notice ? (
+                <AiIntro
+                    storageKey="expadu.composer.ai-intro"
+                    title="Composer is an AI assistant"
+                >
+                    <p>
+                        Its answers are written by Claude Haiku, an AI model by
+                        Anthropic, and say so. It can get things wrong, so check
+                        times and addresses before you go.
+                    </p>
+                    <p>
+                        When you ask it to change something, like your plans or
+                        a saved place, it makes the change for you and you can
+                        undo it. It asks first for Paperwork, or for everything
+                        if you choose that in Settings.
+                    </p>
+                </AiIntro>
+            ) : null}
             <form
                 onSubmit={(event) => {
                     event.preventDefault();
