@@ -34,6 +34,9 @@ final class TodayRanker
 
     private const MAX_WHY = 90;
 
+    /** Whys shown at most, as the prompt asks: the first picks' that hold. */
+    private const MAX_WHYS = 3;
+
     private const SYSTEM = <<<'TEXT'
         You put the events and places Today shows a person in Cologne in the order they'd most likely want, from what they lean to and what they looked at lately. Order every id you're given, each once: first those whose kind and neighbourhood match their leanings or recent looks, then the rest, and last any kind they avoid. For at most 3 picks that match, add a why under 70 characters saying which of their leanings it matches ("You've been looking at cafés in Ehrenfeld"): name only the pick's own kind as given in brackets and its own neighbourhood, never its name, no times, no numbers, no reasons of your own. Leave the why out when the pick's own kind or neighbourhood isn't one of their leanings.
         TEXT;
@@ -174,7 +177,7 @@ final class TodayRanker
                     return null;
                 }
                 // Theirs, but naming a kind or Veedel the pick isn't ("museums" for an exhibition): no why for it.
-                if (self::about($why, $byId[$id], $grounding)) {
+                if (count($order['why']) < self::MAX_WHYS && self::about($why, $byId[$id], $grounding)) {
                     $order['why'][$id] = $why;
                 }
             }
