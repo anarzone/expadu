@@ -60,7 +60,6 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 'items' => ['type' => 'string', 'enum' => self::CHIPS],
                 'description' => 'ONLY chips you are certain about. A missing chip is fine; a wrong one destroys trust.',
             ],
-            'sensitive' => Sensitive::eventField(),
             'title_en' => ['type' => 'string'],
             'summary_en' => [
                 'type' => 'string',
@@ -70,8 +69,10 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 'type' => 'string',
                 'description' => 'Optional. One practical sentence for someone going alone, using only facts the source states (when, where, booking, price; the language only when the source names it). Leave it out when the source gives nothing practical. Never guess who attends, which languages are spoken, how to pay, or how busy it gets, and never hedge ("appears", "probably"): if it is not stated, leave it out. The language a guest needs goes in the language field, not here.',
             ],
+            // After the summary, so it's decided on what going is, not on a word in the source.
+            'sensitive' => Sensitive::eventField(),
         ];
-        $required = ['relevance', 'confidence', 'category', 'language', 'chips', 'sensitive', 'title_en', 'summary_en'];
+        $required = ['relevance', 'confidence', 'category', 'language', 'chips', 'title_en', 'summary_en', 'sensitive'];
         if ($hasDescription && ! $requiresChunkedTranslation) {
             $properties['description_en'] = [
                 'type' => 'string',
@@ -137,7 +138,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
         if (! is_array($input)
             || ! isset($input['relevance'], $input['confidence'], $input['category'], $input['language'], $input['title_en'], $input['summary_en'])
             || ($hasDescription && ! $requiresChunkedTranslation && ! isset($input['description_en']))) {
-            throw new RuntimeException('Malformed classifier output');
+            throw new RuntimeException('Malformed classifier output: '.(is_array($input) ? implode(', ', array_keys($input)) : 'no tool call'));
         }
 
         $descriptionEnglish = null;

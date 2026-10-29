@@ -544,14 +544,14 @@ class EvaluateComposer extends Command
     }
 
     /**
-     * @return array{consent: true, request_id: string, notice_version: mixed, provider_version: string}
+     * @return array{consent: true, request_id: string, notice_version: string, provider_version: string}
      */
     private function acceptance(ProcessingPurpose $purpose): array
     {
         return [
             'consent' => true,
             'request_id' => (string) Str::uuid(),
-            'notice_version' => config('bureaucracy_privacy.notice_version'),
+            'notice_version' => $purpose->noticeVersion(),
             'provider_version' => $purpose->providerVersion(),
         ];
     }

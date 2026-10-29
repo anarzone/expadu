@@ -35,7 +35,10 @@ final class Sensitive
     /** @return array{type: string, enum: list<string>, description: string} the tool field for it */
     public static function eventField(): array
     {
-        return ['type' => 'string', 'enum' => ['none', ...self::KINDS], 'description' => 'religion, politics, union, health or identity only when going to it tells others about that, as the instructions say; otherwise none.'];
+        return ['type' => 'string', 'enum' => ['none', ...self::KINDS], 'description' => 'none unless taking part itself is worship or a faith group (religion); a party, campaign, '
+            .'rally, demonstration or political training (politics); a union meeting (union); a support group, health check, treatment or a talk about an illness (health); or an '
+            .'event by or for LGBTQ+ people (identity). A concert, comedy show, exhibition, market, tasting, quiz, first-aid or computer course, or a benefit for a hospital or '
+            .'charity is none, whatever its text mentions.'];
     }
 
     /** A model's answer as stored: the kind, or null for none or anything unknown. */

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Event;
  */
 final class UsageMeter
 {
-    /** @var list<array{model: string, ms: int, input: int, output: int, cache_read: int, cache_write: int, stop: ?string}> */
+    /** @var list<array{model: string, ms: int, input: int, output: int, cache_read: int, cache_write: int, stop: ?string, error: ?string}> */
     private array $calls = [];
 
     public function start(): self
@@ -32,17 +32,20 @@ final class UsageMeter
                 'cache_read' => (int) ($usage['cache_read_input_tokens'] ?? 0),
                 'cache_write' => (int) ($usage['cache_creation_input_tokens'] ?? 0),
                 'stop' => is_string($body['stop_reason'] ?? null) ? $body['stop_reason'] : ($event->response->successful() ? null : 'http_'.$event->response->status()),
+                'error' => is_string($body['error']['message'] ?? null) ? mb_substr($body['error']['message'], 0, 300) : null,
             ];
         });
 
         return $this;
     }
 
-    /** @return array{calls: int, cost_usd: ?float, ms_p50: int, ms_p95: int, tokens: array{input: int, output: int, cache_read: int, cache_write: int}, stops: array<string, int>} */
+    /** @return array{calls: int, cost_usd: ?float, ms_p50: int, ms_p95: int, tokens: array{input: int, output: int, cache_read: int, cache_write: int}, stops: array<string, int>, errors: list<string>} */
     public function summary(): array
     {
         $calls = collect($this->calls);
-        $cost = $calls->every(fn (array $c) => is_array(config("services.llm_pricing.{$c['model']}"))) ? $calls->sum(function (array $c): float {
+        // A refused request names no model and costs nothing.
+        $billed = $calls->filter(fn (array $c) => $c['model'] !== '');
+        $cost = $billed->every(fn (array $c) => is_array(config("services.llm_pricing.{$c['model']}"))) ? $billed->sum(function (array $c): float {
             $price = config("services.llm_pricing.{$c['model']}");
 
             return ($c['input'] + $c['cache_read'] * 0.1 + $c['cache_write'] * 1.25) / 1_000_000 * (float) $price['input_per_mtok']
@@ -57,6 +60,7 @@ final class UsageMeter
             'ms_p95' => (int) ($ms[(int) floor(max(0, $ms->count() - 1) * 0.95)] ?? 0),
             'tokens' => ['input' => $calls->sum('input'), 'output' => $calls->sum('output'), 'cache_read' => $calls->sum('cache_read'), 'cache_write' => $calls->sum('cache_write')],
             'stops' => $calls->countBy(fn (array $c) => $c['stop'] ?? 'none')->all(),
+            'errors' => $calls->pluck('error')->filter()->unique()->take(5)->values()->all(),
         ];
     }
 
