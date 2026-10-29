@@ -15,10 +15,11 @@ use Throwable;
 /**
  * Sorts listings into What's on's categories (owner, 28 Oct 2026) with Haiku, forty to a request:
  * the rows still on an old category (Culture had no single new home) and, with --all, every
- * upcoming one. New listings are sorted as they're classified (ProcessEventJob); this is for the
- * ones that came before. Only the listing's public words go out: title, venue, its source's own
- * categories and the start of its description. Then the recorded actions on events that still
- * name a retired category take the event's new one (signalsFollow()).
+ * upcoming one, plus past ones someone acted on. New listings are sorted as they're classified
+ * (ProcessEventJob); this is for the ones that came before. Only the listing's public words go
+ * out: title, venue, its source's own categories and the start of its description. Then the
+ * recorded actions on events that still name a retired category take the event's new one
+ * (signalsFollow()).
  */
 class RecategoriseEvents extends Command
 {
@@ -38,9 +39,12 @@ class RecategoriseEvents extends Command
 
         $current = array_map(fn (EventCategory $c) => $c->value, EventCategory::cases());
         $events = Event::query()
-            ->whereIn('status', ['active', 'hidden'])
-            ->where(fn ($query) => $query->where('starts_at', '>=', now()->startOfDay())
-                ->orWhere(fn ($series) => $series->whereNotNull('recurrence')->where(fn ($until) => $until->whereNull('recurrence_until')->orWhere('recurrence_until', '>=', now()))))
+            ->where(fn ($query) => $query
+                ->where(fn ($listed) => $listed->whereIn('status', ['active', 'hidden'])
+                    ->where(fn ($upcoming) => $upcoming->where('starts_at', '>=', now()->startOfDay())
+                        ->orWhere(fn ($series) => $series->whereNotNull('recurrence')->where(fn ($until) => $until->whereNull('recurrence_until')->orWhere('recurrence_until', '>=', now())))))
+                // Past ones someone acted on, so their recorded actions can follow (signalsFollow()).
+                ->orWhereExists(fn ($acted) => $acted->from('user_signals')->where('item_type', 'event')->whereColumn('user_signals.item_id', 'events.id')))
             ->when(! $this->option('all'), fn ($query) => $query->where(fn ($old) => $old->whereNotIn('category', $current)->orWhereNull('category')))
             ->orderBy('id')
             ->limit(max(1, (int) $this->option('limit')))
