@@ -7,7 +7,6 @@ use App\Composer\Assistant\AssistantTools;
 
 enum ProcessingPurpose: string
 {
-    case FactExtraction = 'extract_case_fact';
     case ComposerRank = 'composer_rank';
     /** Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). */
     case ComposerAssist = 'composer_assist';
@@ -157,7 +156,6 @@ enum ProcessingPurpose: string
             // Paperwork's own responses; Composer says what it keeps under `kept`.
             ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
             'payload_categories' => match ($this) {
-                self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 // Everything Composer's request can carry, from its own map of what each part is
                 // (AssistantTools::CATEGORIES): ComposerPaperworkNoticeTest checks a real request against it.
                 self::ComposerAssist => AssistantTools::categories(false),
@@ -299,7 +297,6 @@ enum ProcessingPurpose: string
     private function configPrefix(): string
     {
         return match ($this) {
-            self::FactExtraction => 'services.bureaucracy_llm',
             self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
         };
@@ -313,7 +310,6 @@ enum ProcessingPurpose: string
     public function dailyLimit(): ?int
     {
         $limit = (int) match ($this) {
-            self::FactExtraction => config('services.bureaucracy_llm.daily_limit'),
             default => config('bureaucracy_privacy.daily_limits.'.$this->value),
         };
 

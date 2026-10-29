@@ -72,8 +72,8 @@ test('🔒 Composer permission is purpose scoped, and a retry with the same say-
         ->and(BureaucracyProcessingConsent::query()->sole()->purpose)->toBe('composer_assist');
 });
 
-test('🔒 permission for fact extraction does not also authorise Composer', function () {
-    consentAsk($this, 'Anmeldung appointment', ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction)])
+test('🔒 permission for another purpose does not also authorise Composer', function () {
+    consentAsk($this, 'Anmeldung appointment', ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::NotificationBrief)])
         ->assertUnprocessable();
     Http::assertNothingSent();
 });

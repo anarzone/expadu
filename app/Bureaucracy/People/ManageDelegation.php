@@ -4,7 +4,6 @@ namespace App\Bureaucracy\People;
 
 use App\Bureaucracy\ReadModel\ReassessmentEvents;
 use App\Models\BureaucracyAccessGrant;
-use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyInvitation;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
@@ -75,8 +74,6 @@ final class ManageDelegation
             $caseId = $person->dossier()->value('id');
             BureaucracyProcessingConsent::query()->where('case_id', $caseId)->where('actor_id', $invitation->inviter_user_id)
                 ->update(['withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null]);
-            BureaucracyExtractionCandidate::query()->where('case_id', $caseId)->where('actor_id', $invitation->inviter_user_id)
-                ->update(['state' => 'invalidated', 'value' => null, 'confirmation_token' => null]);
             BureaucracyAccessGrant::query()->create([
                 'person_id' => $person->id, 'grantee_user_id' => $invitation->inviter_user_id,
                 'grantor_user_id' => $user->id, 'invitation_id' => $invitation->id,
@@ -135,8 +132,6 @@ final class ManageDelegation
             BureaucracyProcessingConsent::query()->where('case_id', $person->dossier()->value('id'))
                 ->where('actor_id', $current->grantee_user_id)
                 ->update(['withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null]);
-            BureaucracyExtractionCandidate::query()->where('case_id', $person->dossier()->value('id'))
-                ->where('actor_id', $current->grantee_user_id)->update(['state' => 'invalidated', 'value' => null, 'confirmation_token' => null]);
         });
     }
 

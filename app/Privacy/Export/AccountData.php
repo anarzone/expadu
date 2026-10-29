@@ -94,7 +94,6 @@ final class AccountData
     {
         return [
             'processing' => $this->rows('bureaucracy_processing_consents', 'actor_id', $user->id),
-            'legacy_processing' => $this->rows('bureaucracy_processing_legacy_usage', 'actor_id', $user->id),
             // What they turned on until they turn it off (AI briefs, Today's order, Composer's use of their Paperwork).
             'standing' => $this->rows('processing_opt_ins', 'user_id', $user->id),
         ];

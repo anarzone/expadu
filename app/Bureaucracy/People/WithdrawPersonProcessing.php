@@ -1,17 +1,14 @@
 <?php
 
-namespace App\Bureaucracy\Ai;
+namespace App\Bureaucracy\People;
 
-use App\Bureaucracy\People\AccessScope;
-use App\Bureaucracy\People\PersonAccess;
-use App\Bureaucracy\People\PersonCommandScope;
-use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use App\Privacy\ProcessingOptIns;
 use Illuminate\Auth\Access\AuthorizationException;
 
+/** Every request permission for one person's record withdrawn, as stopping its processing does (RestrictPersonProcessing). */
 final class WithdrawPersonProcessing
 {
     public function __construct(private PersonCommandScope $scope, private PersonAccess $access) {}
@@ -25,7 +22,6 @@ final class WithdrawPersonProcessing
             $permissions = BureaucracyProcessingConsent::query()->where('case_id', $case->id);
             $inFlight = (clone $permissions)->where('state', 'processing')->whereNotNull('dispatched_at')->count();
             $permissions->update(['result' => null, 'withdrawn_at' => now()->utc(), 'state' => 'withdrawn']);
-            BureaucracyExtractionCandidate::query()->where('case_id', $case->id)->update(['value' => null, 'confirmation_token' => null, 'state' => 'invalidated']);
             // Composer's remembered Allow for their own record ends with it.
             ProcessingOptIns::endPaperwork($person->account_user_id);
 

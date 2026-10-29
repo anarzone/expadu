@@ -23,7 +23,6 @@ use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
 use App\Models\User;
-use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -132,8 +131,6 @@ final class PlanReadModel
                 'authority' => $this->access->authorityToken($actor, $person), 'person_version' => $person->record_version,
                 'assessment' => $assessment['input_revision'], 'protocol' => app(QuestionProtocol::class)->version(),
                 'paperwork' => array_diff_key($paperwork, ['evaluated_at' => true]), 'questions' => $question, 'events' => $events, 'timeline' => $timeline, 'scopes' => $scopes,
-                'processing_notice' => config('bureaucracy_privacy.notice_version'),
-                'provider_version' => ProcessingPurpose::FactExtraction->providerVersion(), 'ai_available' => ProcessingPurpose::FactExtraction->available(),
                 'sharing_notice' => config('bureaucracy_family.sharing_notice_version'), 'next_boundary' => $nextTime]);
 
             // A confirmed EU citizen with no residence work open: Paperwork says no residence

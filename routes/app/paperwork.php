@@ -11,7 +11,6 @@ use App\Http\Controllers\Bureaucracy\V2\DependentAuthorityController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceSharingController;
 use App\Http\Controllers\Bureaucracy\V2\FactConflictController;
-use App\Http\Controllers\Bureaucracy\V2\FactExtractionController;
 use App\Http\Controllers\Bureaucracy\V2\FactSchemaController;
 use App\Http\Controllers\Bureaucracy\V2\OnboardingDraftController;
 use App\Http\Controllers\Bureaucracy\V2\PeopleController;
@@ -75,10 +74,6 @@ Route::prefix('paperwork/v2')->name('paperwork.v2.')->middleware('throttle:burea
     Route::post('question-sessions/{session}/answers/{question}', [QuestionSessionController::class, 'answer'])->whereNumber('question')->name('question-sessions.answer');
     Route::post('question-sessions/{session}/defer/{question}', [QuestionSessionController::class, 'defer'])->whereNumber('question')->name('question-sessions.defer');
     Route::post('question-sessions/{session}/resume', [QuestionSessionController::class, 'resume'])->name('question-sessions.resume');
-    Route::post('question-sessions/{session}/extract/{question}', [FactExtractionController::class, 'extract'])->whereNumber('question')->middleware('throttle:bureaucracy-extract')->name('questions.extract');
-    Route::post('question-sessions/{session}/candidates/{candidate}/confirm', [FactExtractionController::class, 'confirm'])->whereUuid('candidate')->name('questions.confirm-extraction');
-    Route::delete('question-sessions/{session}/candidates/{candidate}', [FactExtractionController::class, 'reject'])->whereUuid('candidate')->name('questions.reject-extraction');
-    Route::delete('people/{person}/processing', [FactExtractionController::class, 'withdraw'])->name('people.processing.withdraw');
     // Stop / Resume processing (GDPR Art. 18): the record holder's own switch.
     Route::put('people/{person}/processing-restriction', [PersonRestrictionController::class, 'update'])->middleware('throttle:10,1')->name('people.processing-restriction');
     Route::get('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'show'])->name('onboarding.draft.show');

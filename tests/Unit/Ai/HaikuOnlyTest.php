@@ -11,7 +11,6 @@ const AI_MODEL_KEYS = [
     'taste_profile' => 'TASTE_PROFILE_MODEL',
     'composer_llm' => 'COMPOSER_LLM_MODEL',
     'llm' => 'LLM_MODEL',
-    'bureaucracy_llm' => 'BUREAUCRACY_LLM_MODEL',
 ];
 
 function servicesWithModelEnv(?string $model): array

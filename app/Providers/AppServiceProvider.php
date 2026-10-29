@@ -2,9 +2,6 @@
 
 namespace App\Providers;
 
-use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
-use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
-use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\Questions\QuestionProtocol;
 use App\Composer\AnthropicCandidateRanker;
@@ -26,7 +23,6 @@ use App\Jobs\ValidateMediaAssetJob;
 use App\Models\User;
 use App\Observers\BureaucracyAccountObserver;
 use App\Observers\PersonalisationAccountObserver;
-use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
@@ -60,13 +56,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
-            if (! ProcessingPurpose::FactExtraction->available()) {
-                return $app->make(UnavailableCaseFactExtractor::class);
-            }
-
-            return $app->make(AnthropicCaseFactExtractor::class);
-        });
 
         $this->app->singleton(
             RouteService::class,
@@ -242,7 +231,6 @@ class AppServiceProvider extends ServiceProvider
         // limit's shorter decay would reset the hourly caps on the routes below.
         $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
         RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
-        RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
         RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
         // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.

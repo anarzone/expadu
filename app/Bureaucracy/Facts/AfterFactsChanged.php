@@ -3,7 +3,6 @@
 namespace App\Bureaucracy\Facts;
 
 use App\Models\BureaucracyCase;
-use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
@@ -19,8 +18,6 @@ final class AfterFactsChanged
         BureaucracyProcessingConsent::query()->where('case_id', $case->id)->whereNull('withdrawn_at')->update([
             'withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null,
         ]);
-        BureaucracyExtractionCandidate::query()->where('case_id', $case->id)->where('state', 'pending')
-            ->update(['state' => 'invalidated', 'value' => null, 'confirmation_token' => null]);
         BureaucracyOutboxEvent::query()->create([
             'event_type' => 'facts.changed', 'aggregate_type' => 'case', 'aggregate_id' => $case->id,
             'aggregate_version' => $case->fact_version, 'dedupe_key' => "facts.changed:{$case->id}:{$case->fact_version}",

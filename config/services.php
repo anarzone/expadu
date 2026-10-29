@@ -150,20 +150,6 @@ return [
         'prompt_version' => '2026-10-22.assistant.2',
     ],
 
-    'bureaucracy_llm' => [
-        'enabled' => env('BUREAUCRACY_LLM_ENABLED', false),
-        'base_url' => env('BUREAUCRACY_LLM_BASE_URL', 'https://api.anthropic.com'),
-        'model' => $haiku(env('BUREAUCRACY_LLM_MODEL')),
-        'effort' => env('BUREAUCRACY_LLM_EFFORT', 'low'),
-        'key' => env('BUREAUCRACY_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
-        'processor_name' => env('BUREAUCRACY_LLM_PROCESSOR_NAME', 'Anthropic PBC'),
-        'processor_privacy_url' => env('BUREAUCRACY_LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
-        'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.2'),
-        // Per person per 24 hours; none by default (bureaucracy_privacy.daily_limits).
-        'daily_limit' => env('BUREAUCRACY_LLM_DAILY_LIMIT'),
-    ],
-
     'motis' => [
         // Our self-hosted MOTIS (VRS GTFS+RT + NRW OSM). Primary routing
         // provider on staging/production. Leave it unset locally so the public
