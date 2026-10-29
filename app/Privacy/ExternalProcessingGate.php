@@ -239,14 +239,6 @@ final class ExternalProcessingGate
 
             return $row->question_id === null && $case !== null && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
         }
-        if ($purpose === ProcessingPurpose::PaperworkAnswer) {
-            // The answers sent were read at this fact version, by someone still allowed to ask.
-            $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
-            $actor = User::query()->find($row->actor_id);
-
-            return $row->question_id === null && $case !== null && $case->fact_version === $row->fact_version
-                && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
-        }
         if ($purpose !== ProcessingPurpose::FactExtraction) {
             return $row->case_id === null && $row->question_id === null;
         }

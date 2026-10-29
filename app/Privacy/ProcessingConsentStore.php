@@ -42,7 +42,7 @@ final class ProcessingConsentStore
                 if ($current === null || $question === null || $current->id !== $question->id || $current->answered_at !== null) {
                     throw new AuthorizationException;
                 }
-            } elseif (in_array($purpose, [ProcessingPurpose::PaperworkAnswer, ProcessingPurpose::ComposerPaperwork], true)) {
+            } elseif ($purpose === ProcessingPurpose::ComposerPaperwork) {
                 // Bound to one case, so withdrawing or erasing that person ends it too.
                 if ($case === null || $question !== null || ! app(AnalyserAccess::class)->allows($actor, $case)) {
                     throw new AuthorizationException;

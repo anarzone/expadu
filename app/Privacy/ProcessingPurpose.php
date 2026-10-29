@@ -11,8 +11,6 @@ enum ProcessingPurpose: string
     case ComposerRank = 'composer_rank';
     /** Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). */
     case ComposerAssist = 'composer_assist';
-    /** A question about one person's case, answered only from source-checked cards. Bound to that case. */
-    case PaperworkAnswer = 'paperwork_answer';
     /**
      * Composer's assistant with the person's own Paperwork record, for one message (owner, 23 Oct
      * 2026: "make sure its accurate"): Composer's own call, so its own notice. Bound to their case;
@@ -165,7 +163,6 @@ enum ProcessingPurpose: string
                 self::ComposerAssist => AssistantTools::categories(false),
                 self::ComposerPaperwork => AssistantTools::categories(true),
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
-                self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
                 // What a brief's request can carry, from BriefWriter's own map of its items (NotificationBriefNoticeTest).
                 self::NotificationBrief => array_keys(self::BRIEF_WORDS),
                 // What a request to put Today in order can carry, from TodayRanker's own map (TodayRankTest).
@@ -305,7 +302,6 @@ enum ProcessingPurpose: string
             self::FactExtraction => 'services.bureaucracy_llm',
             self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
-            self::PaperworkAnswer => 'services.paperwork_analyser',
         };
     }
 
@@ -318,7 +314,6 @@ enum ProcessingPurpose: string
     {
         $limit = (int) match ($this) {
             self::FactExtraction => config('services.bureaucracy_llm.daily_limit'),
-            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit'),
             default => config('bureaucracy_privacy.daily_limits.'.$this->value),
         };
 

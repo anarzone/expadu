@@ -110,7 +110,7 @@ final class Assistant
         - If nothing fits, say plainly what you looked at and offer to plan something.
         TXT;
 
-    /** Added when they allowed Composer to read their Paperwork record for this message (paperwork_answer). */
+    /** Added when they allowed Composer to read their Paperwork record for this message (composer_paperwork). */
     private const PAPERWORK = <<<'TXT'
         They allowed you to read their Paperwork record for this message. When they tell you a new answer, call change_paperwork_fact right away, in your first round, for only the answers they said (a date as YYYY-MM-DD): you needn't read the record first, and the proposal card shows them the change. To tick a step or record a report, call paperwork for the task and step ids, then paperwork_step or paperwork_report. To say what their record says, call paperwork. Say only what the record and the change's result say: never what an office requires, decides or allows.
         TXT;

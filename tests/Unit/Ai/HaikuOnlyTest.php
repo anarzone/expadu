@@ -12,7 +12,6 @@ const AI_MODEL_KEYS = [
     'composer_llm' => 'COMPOSER_LLM_MODEL',
     'llm' => 'LLM_MODEL',
     'bureaucracy_llm' => 'BUREAUCRACY_LLM_MODEL',
-    'paperwork_analyser' => 'PAPERWORK_ANALYSER_MODEL',
 ];
 
 function servicesWithModelEnv(?string $model): array

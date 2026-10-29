@@ -6,7 +6,6 @@
 */
 
 use App\Http\Controllers\Bureaucracy\V2\AccountPlanController;
-use App\Http\Controllers\Bureaucracy\V2\CaseQuestionController;
 use App\Http\Controllers\Bureaucracy\V2\DelegationController;
 use App\Http\Controllers\Bureaucracy\V2\DependentAuthorityController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceController;
@@ -70,7 +69,6 @@ Route::prefix('paperwork/v2')->name('paperwork.v2.')->middleware('throttle:burea
     Route::get('people/{person}/question-preview', [QuestionSessionController::class, 'preview'])->name('questions.preview');
     Route::get('people/{person}/plan', PersonPlanController::class)->name('people.plan');
     // Answers a case question only from source-checked cards; the question stays in the body.
-    Route::post('people/{person}/ask', CaseQuestionController::class)->middleware('throttle:bureaucracy-ask')->name('people.ask');
     Route::post('people/{person}/processes', [ProcessController::class, 'start'])->name('processes.start');
     Route::post('people/{person}/question-sessions', [QuestionSessionController::class, 'store'])->name('question-sessions.store');
     Route::post('question-sessions/{session}/next', [QuestionSessionController::class, 'next'])->name('question-sessions.next');
