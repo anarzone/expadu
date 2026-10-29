@@ -227,7 +227,7 @@ final class ExternalProcessingGate
     {
         if (! $purpose->available() || $row->purpose !== $purpose->value || $row->withdrawn_at !== null || $row->expires_at->lessThanOrEqualTo(now())
             || $row->provider_version !== $purpose->providerVersion()
-            || $row->notice_version !== config('bureaucracy_privacy.notice_version')
+            || $row->notice_version !== $purpose->noticeVersion()
             || ! hash_equals($row->input_digest, ProcessingConsentStore::digest($context))) {
             return false;
         }

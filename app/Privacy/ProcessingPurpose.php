@@ -127,9 +127,33 @@ enum ProcessingPurpose: string
 
     public function disclosure(): array
     {
+        $shown = $this->shown();
+
+        return ['purpose' => $shown['purpose'], 'scope' => $shown['scope'], 'available' => $this->available(),
+            'notice_version' => $this->noticeVersion(), 'provider_version' => $this->providerVersion(),
+            ...array_diff_key($shown, ['purpose' => true, 'scope' => true])];
+    }
+
+    /**
+     * The notice a yes is bound to. A standing yes (ProcessingOptIns::STANDING) is bound to its own
+     * notice as it reads, so it lapses only when that notice changes (owner, 29 Oct 2026: a change
+     * to Composer's notice had paused Today's AI order for everyone). Every other request is bound
+     * to the shared processing notice.
+     */
+    public function noticeVersion(): string
+    {
+        if (! in_array($this, ProcessingOptIns::STANDING, true)) {
+            return (string) config('bureaucracy_privacy.notice_version');
+        }
+
+        return $this->value.'.'.substr(hash('sha256', json_encode($this->shown(), JSON_THROW_ON_ERROR)), 0, 16);
+    }
+
+    /** @return array<string, mixed> what the notice tells the person, without its versions */
+    private function shown(): array
+    {
         return [
-            'purpose' => $this->value, 'scope' => in_array($this, [self::NotificationBrief, self::TodayRank, self::ComposerPaperwork], true) ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
-            'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
+            'purpose' => $this->value, 'scope' => in_array($this, ProcessingOptIns::STANDING, true) ? 'until_you_turn_it_off' : 'single_request',
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
             // Paperwork's own responses; Composer says what it keeps under `kept`.

@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import {
     NotificationsPanel,
     notificationsLine,
@@ -84,15 +85,24 @@ const subscribeWide = (notify: () => void) => {
 const isCologne = (city: string) => /^(cologne|köln|koeln)$/i.test(city.trim());
 
 export default function Settings() {
-    const { section, notifications, work, todayRank, auth, userSettings } =
-        usePage<{
-            section: SectionId | null;
-            notifications: NotificationState;
-            work: { leave_at: string | null } | null;
-            todayRank: boolean;
-            auth: Auth;
-            userSettings?: Record<string, boolean | string>;
-        }>().props;
+    const {
+        section,
+        notifications,
+        work,
+        todayRank,
+        todayRankPaused,
+        auth,
+        userSettings,
+    } = usePage<{
+        section: SectionId | null;
+        notifications: NotificationState;
+        work: { leave_at: string | null } | null;
+        todayRank: boolean;
+        /** Waiting for them to agree to a change (TodayRankPause); null otherwise. */
+        todayRankPaused: AiOrderPaused;
+        auth: Auth;
+        userSettings?: Record<string, boolean | string>;
+    }>().props;
     const current: SectionId = section ?? 'account';
     // Your account shows beside the menu at /settings only on a laptop; the
     // phone's /settings is the list alone, with no section showing.
@@ -130,7 +140,9 @@ export default function Settings() {
               ? 'On · places and events only'
               : todayRank
                 ? 'On · AI puts Today in order'
-                : 'On',
+                : todayRankPaused
+                  ? 'On · Today’s AI order paused'
+                  : 'On',
         composer:
             everyday && paperwork
                 ? 'Asks first for everything'

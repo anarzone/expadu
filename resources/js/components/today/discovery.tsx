@@ -8,6 +8,8 @@ import {
     noFilters,
     whatsOnUrl,
 } from '@/components/events-filters/event-filters';
+import { AiOrderPausedLine } from '@/components/personalisation/ai-order-paused';
+import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { PosterArt } from '@/components/posters/poster-art';
 import {
@@ -121,10 +123,13 @@ export function Discovery({
     discovery,
     free,
     weather,
+    aiOrderPaused,
 }: {
     discovery: NonNullable<TodayDiscovery>;
     free: boolean;
     weather?: Weather;
+    /** Their AI order, waiting for them to agree to a change: these are in the usual order. */
+    aiOrderPaused?: AiOrderPaused;
 }) {
     const saves = useSaves();
     const posters = discovery.events.filter((e) => e.layout === 'poster');
@@ -164,6 +169,9 @@ export function Discovery({
                     See more
                 </Link>
             </div>
+            {aiOrderPaused ? (
+                <AiOrderPausedLine paused={aiOrderPaused} />
+            ) : null}
             {posters.length > 0 && (
                 <div
                     className="event-rail"

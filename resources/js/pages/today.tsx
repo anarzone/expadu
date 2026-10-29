@@ -1,6 +1,7 @@
 import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { Fragment, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
+import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
 import type { Forecast, PlanRide, Weather } from '@/components/today/city-help';
 import { ComingUp } from '@/components/today/coming-up';
@@ -80,6 +81,7 @@ export default function Today() {
         learnedStops,
         paperwork,
         discovery,
+        aiOrderPaused,
         comingUp,
         saved,
         continuation,
@@ -101,6 +103,8 @@ export default function Today() {
         learnedStops: string[];
         paperwork: TodayPaperwork;
         discovery: TodayDiscovery;
+        /** Today's AI order, waiting for them to agree to a change (TodayRankPause); null otherwise. */
+        aiOrderPaused: AiOrderPaused;
         comingUp: ComingUpData;
         saved: TodaySavedData;
         continuation: TodayContinuationData;
@@ -211,6 +215,7 @@ export default function Today() {
                 discovery={discovery}
                 free={lead === 'discovery'}
                 weather={weather}
+                aiOrderPaused={aiOrderPaused}
             />
         ),
         // The room left under the departures, from 1200px: more of today's

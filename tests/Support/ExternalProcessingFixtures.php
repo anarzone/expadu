@@ -57,7 +57,7 @@ final class ExternalProcessingFixtures
     {
         return [
             'consent' => true, 'request_id' => $requestId ?? (string) Str::uuid(),
-            'notice_version' => config('bureaucracy_privacy.notice_version'),
+            'notice_version' => $purpose->noticeVersion(),
             'provider_version' => $purpose->providerVersion(),
         ];
     }

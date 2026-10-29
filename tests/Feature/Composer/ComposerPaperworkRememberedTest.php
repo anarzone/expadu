@@ -96,7 +96,8 @@ test('🔒 a new notice or a new model asks once more', function (Closure $chang
     paperworkMessage(allow: true);
     expect(paperworkMessage())->toContain('Your visa runs until');
 })->with([
-    'notice' => [fn () => config()->set('bureaucracy_privacy.notice_version', 'composer-paperwork-remembered.test')],
+    // Its own notice (ProcessingPurpose::noticeVersion): here, how long each message's use lasts.
+    'notice' => [fn () => config()->set('bureaucracy_privacy.request_minutes', 10)],
     'model' => [fn () => config()->set('services.llm.model', 'claude-haiku-5-6')],
 ]);
 

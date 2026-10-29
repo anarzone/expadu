@@ -21,6 +21,7 @@ use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\TodayRankController;
 use App\Http\Controllers\UserPlaceController;
 use App\Http\Controllers\UserSettingController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,9 @@ Route::put('notification-preferences', [NotificationPreferenceController::class,
 // AI-written day briefs: opt-in, its own notice (ProcessingPurpose::NotificationBrief).
 Route::get('notification-preferences/ai-briefs', [AiBriefsController::class, 'show'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.show');
 Route::put('notification-preferences/ai-briefs', [AiBriefsController::class, 'update'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.update');
+// Today put in order by AI, again after its notice changed (TodayRankPause): agree, or not now for a week.
+Route::put('today-rank', [TodayRankController::class, 'update'])->middleware('throttle:privacy-processing')->name('today-rank.update');
+Route::post('today-rank/later', [TodayRankController::class, 'later'])->name('today-rank.later');
 
 // User settings
 Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');

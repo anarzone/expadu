@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react';
 import ComposerPaperworkPermissionController from '@/actions/App/Http/Controllers/ComposerPaperworkPermissionController';
 import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import {
+    AiOrderChange,
+    agreeToAiOrder,
+} from '@/components/personalisation/ai-order-paused';
+import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import type { IconName } from '@/components/ui/icon';
 import { csrfHeaders } from '@/lib/csrf';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
@@ -260,8 +265,10 @@ const LEARNS_FROM: [IconName, string][] = [
 
 /** Personalised suggestions: the opt-in (EXP-182); off erases what was learned. */
 export function LearnPanel() {
-    const { userSettings } = usePage<{
+    const { userSettings, todayRankPaused } = usePage<{
         userSettings?: Record<string, boolean | string>;
+        /** Today's AI order, waiting for them to agree to a change (TodayRankPause). */
+        todayRankPaused?: AiOrderPaused;
     }>().props;
     const [on, setOn] = useState<boolean>(
         (userSettings?.personalisation as boolean) ?? false,
@@ -271,6 +278,8 @@ export function LearnPanel() {
     // (PersonalisationWording).
     const older = on && userSettings?.personalisation_current === false;
     const [asking, setAsking] = useState(false);
+    const [reviewing, setReviewing] = useState(false);
+    const [agreeing, setAgreeing] = useState(false);
     const [erased, setErased] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -307,6 +316,34 @@ export function LearnPanel() {
         setAsking(false);
         focusSoon('[data-learn]');
     };
+
+    // Agreed to the change: Settings reads Today's AI order afresh.
+    const agreed = () => {
+        setReviewing(false);
+        router.reload({ only: ['todayRank', 'todayRankPaused'] });
+    };
+
+    async function agreeNow(paused: NonNullable<AiOrderPaused>) {
+        if (agreeing) {
+            return;
+        }
+
+        setAgreeing(true);
+        setError('');
+
+        try {
+            await agreeToAiOrder(paused);
+            agreed();
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? e.message
+                    : 'That didn’t go through. Try again.',
+            );
+        } finally {
+            setAgreeing(false);
+        }
+    }
 
     return (
         <section className="settings-panel" aria-labelledby="learn-title">
@@ -367,6 +404,44 @@ export function LearnPanel() {
                     </button>{' '}
                     to include Today, Travel and Composer.
                 </p>
+            ) : null}
+            {on && !older && !asking && todayRankPaused ? (
+                <div className="ai-order-note" role="status">
+                    <SettingsIcon name="clock" />
+                    <div>
+                        <strong>Today’s AI order is paused</strong>
+                        <p>
+                            We changed how the AI that puts Today in order
+                            works. Until you agree to the change, Today shows
+                            the order everyone sees. What Expadu learned is
+                            kept.
+                        </p>
+                        <div className="settings-actions">
+                            <button
+                                type="button"
+                                className="settings-primary"
+                                aria-busy={agreeing || undefined}
+                                onClick={() => void agreeNow(todayRankPaused)}
+                            >
+                                Agree to the change
+                            </button>
+                            <button
+                                type="button"
+                                className="settings-quiet"
+                                onClick={() => setReviewing(true)}
+                            >
+                                See what changed
+                            </button>
+                        </div>
+                    </div>
+                    <AiOrderChange
+                        paused={todayRankPaused}
+                        open={reviewing}
+                        onClose={() => setReviewing(false)}
+                        onAgreed={agreed}
+                        notNow={() => setReviewing(false)}
+                    />
+                </div>
             ) : null}
             {asking ? (
                 <div

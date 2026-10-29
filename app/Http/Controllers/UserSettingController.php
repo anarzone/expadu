@@ -52,7 +52,7 @@ class UserSettingController extends Controller
             }
             // On under this wording: its AI order too, under the notice and provider as they are now.
             if (($validated['settings']['personalisation'] ?? null) === true && ProcessingPurpose::TodayRank->available()) {
-                app(ProcessingOptIns::class)->turnOn($user, ProcessingPurpose::TodayRank, config('bureaucracy_privacy.notice_version'), ProcessingPurpose::TodayRank->providerVersion());
+                app(ProcessingOptIns::class)->turnOn($user, ProcessingPurpose::TodayRank, ProcessingPurpose::TodayRank->noticeVersion(), ProcessingPurpose::TodayRank->providerVersion());
             }
 
             $user->userSetting()->updateOrCreate(

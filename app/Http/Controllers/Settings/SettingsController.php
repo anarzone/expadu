@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\ComposerPaperworkPermissionController;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationPreference;
+use App\Personalisation\TodayRankPause;
 use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPurpose;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -48,6 +49,8 @@ class SettingsController extends Controller
             },
             // Today put in order by AI: a standing opt-in of its own (TodayRank).
             'todayRank' => fn () => $optIns->active($user, ProcessingPurpose::TodayRank),
+            // Or waiting for them to agree again after its notice changed (TodayRankPause): what changed.
+            'todayRankPaused' => fn () => app(TodayRankPause::class)->for($user),
             // Composer's remembered Allow for their Paperwork record, so its row comes with the page.
             'composerPaperwork' => fn () => ComposerPaperworkPermissionController::state($user, $optIns),
         ]);

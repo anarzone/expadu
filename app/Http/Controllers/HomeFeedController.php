@@ -17,6 +17,7 @@ use App\Jobs\WarmStation;
 use App\Models\FavouriteStop;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TodayRankPause;
 use App\Personalisation\TodayTaste;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
@@ -75,6 +76,8 @@ class HomeFeedController extends Controller
             // everyday places open near the next plan (TodayDiscovery).
             // Its lists are logged as shown, for people who opted in (ListImpressions).
             'discovery' => fn () => app(TodayDiscovery::class)->for($request->user(), shown: true),
+            // Today's AI order waiting for them to agree again after its notice changed (TodayRankPause), unless put off.
+            'aiOrderPaused' => fn () => app(TodayRankPause::class)->onToday($request->user()),
             // Coming up: the next plans after today (ComingUp), with the day.
             'comingUp' => fn () => app(ComingUp::class)->for($request->user()),
             // Saved for later (the one Saved collection) and the Composer

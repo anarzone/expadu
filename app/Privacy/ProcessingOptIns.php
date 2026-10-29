@@ -30,8 +30,29 @@ final class ProcessingOptIns
         $row = $this->row($user, $purpose);
 
         return $row !== null && $row->withdrawn_at === null && $purpose->available()
-            && $row->notice_version === config('bureaucracy_privacy.notice_version')
+            && $row->notice_version === $purpose->noticeVersion()
             && $row->provider_version === $purpose->providerVersion();
+    }
+
+    /**
+     * On, but its notice or provider changed since their yes, so it waits for them to agree again
+     * (owner, 29 Oct 2026): the notice as it reads now, the lines new since their yes (null when
+     * the yes predates keeping its words), and whether the AI service's model or instructions
+     * changed. Null when it's on, off, or can't be on.
+     *
+     * @return array{notice: list<string>, changes: list<string>|null, model_changed: bool, notice_version: string, provider_version: string}|null
+     */
+    public function paused(User $user, ProcessingPurpose $purpose): ?array
+    {
+        $row = $this->row($user, $purpose);
+        if ($row === null || $row->withdrawn_at !== null || ! in_array($purpose, self::STANDING, true) || ! $purpose->available() || $this->active($user, $purpose)) {
+            return null;
+        }
+        $notice = $purpose->notice();
+
+        return ['notice' => $notice, 'changes' => is_array($row->notice) ? array_values(array_diff($notice, $row->notice)) : null,
+            'model_changed' => $row->provider_version !== $purpose->providerVersion(),
+            'notice_version' => $purpose->noticeVersion(), 'provider_version' => $purpose->providerVersion()];
     }
 
     /**
@@ -42,11 +63,11 @@ final class ProcessingOptIns
     public function turnOn(User $user, ProcessingPurpose $purpose, mixed $noticeVersion, mixed $providerVersion): void
     {
         if (! in_array($purpose, self::STANDING, true) || ! $purpose->available()
-            || $noticeVersion !== config('bureaucracy_privacy.notice_version') || $providerVersion !== $purpose->providerVersion()) {
+            || $noticeVersion !== $purpose->noticeVersion() || $providerVersion !== $purpose->providerVersion()) {
             throw ValidationException::withMessages(['processing' => 'Please review the current notice before turning this on.']);
         }
         ProcessingOptIn::query()->updateOrCreate(['user_id' => $user->id, 'purpose' => $purpose->value], [
-            'notice_version' => $noticeVersion, 'provider_version' => $providerVersion, 'granted_at' => now()->utc(), 'withdrawn_at' => null,
+            'notice_version' => $noticeVersion, 'provider_version' => $providerVersion, 'notice' => $purpose->notice(), 'granted_at' => now()->utc(), 'withdrawn_at' => null,
         ]);
     }
 

@@ -24,7 +24,7 @@ final class ProcessingConsentStore
     {
         if (($acceptance['consent'] ?? null) !== true
             || ! is_string($acceptance['request_id'] ?? null) || ! Str::isUuid($acceptance['request_id'])
-            || ($acceptance['notice_version'] ?? null) !== config('bureaucracy_privacy.notice_version')
+            || ($acceptance['notice_version'] ?? null) !== $purpose->noticeVersion()
             || ($acceptance['provider_version'] ?? null) !== $purpose->providerVersion()) {
             throw ValidationException::withMessages(['processing' => 'Please review the current permission for this request.']);
         }
