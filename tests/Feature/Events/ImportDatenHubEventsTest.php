@@ -97,6 +97,22 @@ test('a listing koeln.de already has is not added twice; that listing gets the p
         ->and($koeln->mediaAttachments()->sole()->mediaAsset->provider)->toBe('koeln-tourismus');
 });
 
+test('a listing koeln.de has under a longer title at the same time is not added twice', function () {
+    Event::factory()->create([
+        'source' => 'koeln.de', 'title' => 'DISNEY IN CONCERT – Die Jubiläumstournee mit dem Hollywood Sound Orchestra', 'status' => 'active',
+        'starts_at' => CarbonImmutable::parse('2026-11-13 18:00', 'Europe/Berlin'),
+    ]);
+    Event::factory()->create([
+        'source' => 'koeln.de', 'title' => 'Disney in Concert – Matinee', 'status' => 'active',
+        'starts_at' => CarbonImmutable::parse('2026-11-13 11:00', 'Europe/Berlin'),
+    ]);
+    fakeDatenHub([datenHubItem(['title' => 'Disney in Concert', 'timeIntervals' => [datenHubItem()['timeIntervals'][1]]])]);
+
+    $this->artisan('events:import-datenhub')->expectsOutputToContain('"listed_elsewhere":1')->assertSuccessful();
+
+    expect(Event::where('source', 'datenhub-nrw')->count())->toBe(0);
+});
+
 test('a photo without an open licence is left out, and a listing the feed drops is hidden', function () {
     $item = datenHubItem();
     $item['media_objects'][1]['license'] = 'All rights reserved';

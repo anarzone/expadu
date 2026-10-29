@@ -50,7 +50,7 @@ class ImportDatenHubEvents extends Command
 
     protected $description = 'Import KölnTourismus events from the DatenHub NRW open-data feed';
 
-    /** @var Collection<string, list<int>> normalised title → other sources' upcoming event ids */
+    /** @var Collection<int, array{id: int, title: string, starts_at: CarbonImmutable, until: ?CarbonImmutable}> other sources' upcoming listings */
     private Collection $others;
 
     public function handle(CologneServiceArea $serviceArea, CaptureMediaCandidate $captureMediaCandidate): int
@@ -399,9 +399,9 @@ class ImportDatenHubEvents extends Command
     }
 
     /**
-     * The other sources' upcoming listings by normalised title, read once per run.
+     * The other sources' upcoming listings, each with its normalised title, read once per run.
      *
-     * @return Collection<string, list<array{id: int, starts_at: CarbonImmutable, until: ?CarbonImmutable}>>
+     * @return Collection<int, array{id: int, title: string, starts_at: CarbonImmutable, until: ?CarbonImmutable}>
      */
     private function otherListings(CarbonImmutable $now): Collection
     {
@@ -409,30 +409,47 @@ class ImportDatenHubEvents extends Command
             ->where(fn ($query) => $query->where('starts_at', '>=', $now->startOfDay())
                 ->orWhere(fn ($series) => $series->whereNotNull('recurrence')->where('recurrence_until', '>=', $now)))
             ->get(['id', 'title', 'starts_at', 'recurrence_until'])
-            ->groupBy(fn (Event $event) => $this->normalised($event->title))
-            ->map(fn (Collection $events) => $events->map(fn (Event $event) => [
+            ->map(fn (Event $event) => [
                 'id' => $event->id,
+                'title' => $this->normalised($event->title),
                 'starts_at' => CarbonImmutable::parse($event->starts_at)->setTimezone('Europe/Berlin'),
                 'until' => $event->recurrence_until ? CarbonImmutable::parse($event->recurrence_until) : null,
-            ])->values()->all());
+            ])->values();
     }
 
     /**
-     * The other sources' events with the same title on this run's days: on its date for a single
-     * date, anywhere within its span for a series.
+     * The other sources' events that are this run, on its days (its date for a single date,
+     * anywhere within its span for a series): the same title, or one title holding the other
+     * ("Disney in Concert" in "DISNEY IN CONCERT – Die Jubiläumstournee …") at a start within
+     * half an hour of this one's.
      *
      * @param  array{starts_at: CarbonImmutable, ends_at: ?CarbonImmutable, recurrence: ?string, until: ?CarbonImmutable}  $run
      * @return list<int>
      */
     private function listedElsewhere(string $title, array $run): array
     {
-        $first = $run['starts_at']->setTimezone('Europe/Berlin')->startOfDay();
+        $start = $run['starts_at']->setTimezone('Europe/Berlin');
+        $first = $start->startOfDay();
         $last = ($run['until'] ?? $run['starts_at'])->setTimezone('Europe/Berlin')->endOfDay();
+        $mine = $this->normalised($title);
+        $minute = fn (CarbonImmutable $at) => $at->hour * 60 + $at->minute;
 
-        return collect($this->others->get($this->normalised($title), []))
+        return $this->others
             ->filter(fn (array $other) => $other['starts_at']->lessThanOrEqualTo($last)
                 && ($other['until'] ?? $other['starts_at'])->greaterThanOrEqualTo($first))
-            ->pluck('id')->all();
+            ->filter(fn (array $other) => $other['title'] === $mine || (
+                $this->holds($other['title'], $mine)
+                && abs($minute($other['starts_at']) - $minute($start)) <= 30
+            ))
+            ->pluck('id')->values()->all();
+    }
+
+    /** Whether one title holds the other, the shorter one ten letters or more (not "Konzert"). */
+    private function holds(string $a, string $b): bool
+    {
+        [$short, $long] = mb_strlen($a) <= mb_strlen($b) ? [$a, $b] : [$b, $a];
+
+        return mb_strlen($short) >= 10 && str_contains($long, $short);
     }
 
     private function normalised(string $title): string
