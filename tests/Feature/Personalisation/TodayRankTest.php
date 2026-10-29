@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TasteFacts;
 use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayTaste;
 use App\Privacy\ProcessingPurpose;
@@ -80,6 +81,20 @@ test('a why that isn’t theirs and Today keeps its own order; one about another
     ($this->reply)([], [['id' => 'p1', 'why' => 'You lean to cafés in Ehrenfeld.']]);
     expect(app(TodayRanker::class)->rankFrom($this->user, $this->candidates, $this->facts, CarbonImmutable::now('Europe/Berlin')))
         ->toMatchArray(['places' => ['p1', 'p2', 'p3'], 'why' => []]);
+});
+
+test('an event named without its start counts while only one start of it is listed', function () {
+    $events = [
+        ['id' => 'e1@1', 'name' => 'Orgelkonzert', 'kind' => 'Concert', 'area' => 'Altstadt-Nord', 'start' => '17:00'],
+        ['id' => 'e1@2', 'name' => 'Orgelkonzert', 'kind' => 'Concert', 'area' => 'Altstadt-Nord', 'start' => '19:00'],
+        ['id' => 'e2@1', 'name' => 'Latte Art Night', 'kind' => 'Café', 'area' => 'Ehrenfeld', 'start' => '18:00'],
+    ];
+    $context = ['day' => '2026-11-11 15:00', 'facts' => TasteFacts::forModel($this->facts), 'recent' => ['categories' => [], 'areas' => []], 'candidates' => ['events' => $events, 'places' => []]];
+    $reply = ['content' => [['type' => 'tool_use', 'name' => 'order', 'input' => ['events' => [['id' => 'e1'], ['id' => 'e2', 'why' => 'You lean to cafés in Ehrenfeld.']], 'places' => []]]]];
+
+    // e2 has one start listed; e1 has two, so a bare e1 names neither.
+    expect(app(TodayRanker::class)->compose($context, fn () => $reply))
+        ->toMatchArray(['events' => ['e2@1', 'e1@1', 'e1@2'], 'why' => ['e2@1' => 'You lean to cafés in Ehrenfeld.']]);
 });
 
 test('nothing goes to the AI without personalisation on under its second wording', function () {

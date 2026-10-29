@@ -2,6 +2,7 @@
 
 namespace App\Personalisation;
 
+use App\Enums\EventCategory;
 use App\Home\TodayDiscovery;
 use App\Models\User;
 use App\Privacy\ExternalProcessingGate;
@@ -74,7 +75,8 @@ final class TodayRanker
         }
         $recent = $this->recent->for($user);
         $context = ['day' => $now->format('Y-m-d H:i'), 'facts' => $facts === [] ? [] : TasteFacts::forModel($facts),
-            'recent' => ['categories' => array_slice($recent['categories'], 0, 5), 'areas' => array_slice($recent['areas'], 0, 3)], 'candidates' => $candidates];
+            // Other is what nothing else fits, never a leaning (TasteFacts::categoryLabel).
+            'recent' => ['categories' => array_slice(array_values(array_diff($recent['categories'], [EventCategory::Other->value])), 0, 5), 'areas' => array_slice($recent['areas'], 0, 3)], 'candidates' => $candidates];
         $permit = $this->optIns->permit($user, ProcessingPurpose::TodayRank, $context);
         if ($permit === null) {
             return null;
@@ -153,6 +155,11 @@ final class TodayRanker
             $picked = [];
             foreach (is_array($input[$list] ?? null) ? $input[$list] : [] as $pick) {
                 $id = is_array($pick) && is_string($pick['id'] ?? null) ? $pick['id'] : null;
+                // An event's id without its "@start" names it while only one start of it is listed.
+                if ($id !== null && ! $byId->has($id)) {
+                    $starts = $byId->keys()->filter(fn (string $key): bool => str_starts_with($key, $id.'@'));
+                    $id = $starts->count() === 1 ? $starts->first() : null;
+                }
                 if ($id === null || ! $byId->has($id) || in_array($id, $picked, true)) {
                     continue;
                 }
