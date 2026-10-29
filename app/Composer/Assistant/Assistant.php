@@ -154,6 +154,9 @@ final class Assistant
     /** @var list<array{text: string, uses: list<string>}> the last answer's sentences that held, with what they cite */
     public array $kept = [];
 
+    /** @var list<array{text: string, why: string}> the last answer's sentences that didn't, and why (composer:eval reads them) */
+    public array $dropped = [];
+
     /** @var array{input: int, output: int, calls: int} the tokens its calls used, since this instance was made */
     public array $usage = ['input' => 0, 'output' => 0, 'calls' => 0];
 
@@ -240,6 +243,7 @@ final class Assistant
         $now = $now->setTimezone('Europe/Berlin');
         $this->timings = [];
         $this->kept = [];
+        $this->dropped = [];
         $personal = $user->personalises();
         $tools = new AssistantTools($user, $now, $location, $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
@@ -351,6 +355,7 @@ final class Assistant
             $hollow = $answer !== null && ! $last && is_array($answer['input'] ?? null)
                 && ($this->built($answer['input'], $tools, $now, $known) === null || ($written->isNotEmpty() && $this->kept === []));
             $this->kept = [];
+            $this->dropped = [];
             $unbacked = $claimed || $pointed || $hollow;
             if ($answer !== null && ! $unbacked) {
                 return is_array($answer['input'] ?? null) ? ['answer' => $answer['input'], 'rounds' => $round] : null;
@@ -404,7 +409,7 @@ final class Assistant
         ]));
         // A sentence citing the person's own facts may speak of them (only they were given those);
         // it may count the listings and places it names, and no more.
-        $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,
+        $why = fn (string $text, array $uses, string $also = ''): ?string => $this->check->why($text,
             $always."\n".$also."\n".implode("\n", array_map(fn (string $id): string => $tools->read[$id], $uses)),
             preg_grep(AssistantTools::PERSONAL_IDS, $uses) !== [],
             // A count may be as many as it names, or as its lookups found ("two more nearby" among 8 pitches).
@@ -412,6 +417,7 @@ final class Assistant
                 + array_sum(array_map(fn (string $id): int => count($tools->cards[$id]['options'] ?? []) + (int) ($tools->cards[$id]['stops'] ?? 0), $uses))
                 // ...and the stops of the plan this conversation made.
                 + (in_array('plan', $uses, true) ? substr_count($tools->read['plan'] ?? '', "\n- ") : 0));
+        $holds = fn (string $text, array $uses, string $also = ''): bool => $why($text, $uses, $also) === null;
         $kept = [];
         $dropped = false;
         $mentioned = [];
@@ -427,6 +433,7 @@ final class Assistant
                 $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g|n|x|o|s|plan)\d+$|^here$|^plan$/', array_keys($tools->read))]));
             }
             if (! $holds($s['text'], $uses) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
+                $this->dropped[] = ['text' => trim($s['text']), 'why' => $why($s['text'], $uses) ?? 'leans on a dropped sentence'];
                 $dropped = true;
 
                 continue;
@@ -503,6 +510,11 @@ final class Assistant
         ]));
         if ($false !== []) {
             $holds = fn (string $text): bool => collect($false)->every(fn (string $pattern): bool => preg_match($pattern, $text) !== 1);
+            foreach ($this->kept as $sentence) {
+                if (! $holds($sentence['text'])) {
+                    $this->dropped[] = ['text' => $sentence['text'], 'why' => preg_match(self::CARD, $sentence['text']) === 1 ? 'points at a card not shown' : 'says it did something it didn\'t'];
+                }
+            }
             $kept = array_values(array_filter($kept, $holds));
             $this->kept = array_values(array_filter($this->kept, fn (array $s): bool => $holds($s['text'])));
             $lead = implode(' ', array_slice($kept, 0, 3));

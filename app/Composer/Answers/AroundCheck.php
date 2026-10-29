@@ -83,26 +83,38 @@ final class AroundCheck
      */
     public function holds(string $sentence, string $source, bool $personal = false, int $named = 0): bool
     {
+        return $this->why($sentence, $source, $personal, $named) === null;
+    }
+
+    /** Why a sentence doesn't hold, in a few words (composer:eval and the logs read it), or null when it does. */
+    public function why(string $sentence, string $source, bool $personal = false, int $named = 0): ?string
+    {
         $sentence = trim(str_replace(['’', '‘'], "'", $sentence));
         $lower = mb_strtolower($sentence);
         $source = mb_strtolower(str_replace(['’', '‘'], "'", $source));
 
         if ($sentence === '' || mb_strlen($sentence) > self::MAX_LENGTH || preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence)
             || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower)))) {
-            return false;
+            return match (true) {
+                $sentence === '' => 'empty',
+                mb_strlen($sentence) > self::MAX_LENGTH => 'too long',
+                preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence) === 1 => 'a link or markup',
+                preg_match(self::HEDGES, $lower, $hedge) === 1 => 'hedged: '.$hedge[0],
+                default => 'about their own day',
+            };
         }
         // A count holds when it's how many things the sentence names, or a number its results give ("3 places nearby").
         preg_match_all(self::COUNTS, $lower, $counts);
         if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? PHP_INT_MAX) > $named
             && (! isset(self::NUMBERS[$count]) || preg_match('/\b'.self::NUMBERS[$count].'\b/u', $source) !== 1))) {
-            return false;
+            return 'a count: '.implode(', ', $counts[0]);
         }
 
         // Every number and time, as written in the items.
         preg_match_all('/\d+(?:[:.,]\d+)*/u', $sentence, $numbers);
         preg_match_all('/\d+(?:[:.,]\d+)*/u', $source, $known);
-        if (array_diff($numbers[0], $known[0]) !== []) {
-            return false;
+        if (($unknown = array_diff($numbers[0], $known[0])) !== []) {
+            return 'a number not in its results: '.implode(', ', $unknown);
         }
 
         // An unlisted fact ("has Wi-Fi", "good for laptops") holds only where a source says it, not where
@@ -113,12 +125,12 @@ final class AroundCheck
         preg_match_all(self::UNLISTED, $said, $listed);
         $listed = array_map($fact, $listed[0]);
         preg_match_all(self::UNLISTED, $lower, $claimed);
-        if (preg_match(self::NOT, $lower) !== 1 && collect($claimed[0])->contains(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) {
-            return false;
+        if (preg_match(self::NOT, $lower) !== 1 && ($unlistedClaim = collect($claimed[0])->first(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) !== null) {
+            return 'not listed: '.$unlistedClaim;
         }
         foreach (self::CLAIMS as $claim) {
-            if (preg_match($claim, $lower) && ! preg_match($claim, $source)) {
-                return false;
+            if (preg_match($claim, $lower, $made) && ! preg_match($claim, $source)) {
+                return 'a claim its results don\'t make: '.$made[0];
             }
         }
 
@@ -137,9 +149,9 @@ final class AroundCheck
                 continue;
             }
 
-            return false;
+            return 'a name not in its results: '.$name;
         }
 
-        return true;
+        return null;
     }
 }

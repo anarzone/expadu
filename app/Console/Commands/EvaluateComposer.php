@@ -225,11 +225,9 @@ class EvaluateComposer extends Command
             'blocks' => $blocks, 'written' => $answer['written'] ?? null, 'without_ai' => $answer['without_ai'] ?? null,
             'looked' => $answer['read'] ?? null, 'events' => array_column($answer['events'] ?? [], 'title'), 'places' => array_column($answer['places'] ?? [], 'name'),
             'next' => array_column($answer['suggestions'] ?? [], 'label')], fn ($v) => $v !== null && $v !== []);
-        // Written but nothing held: what it wrote, to see why.
-        $dropped = array_values(array_filter(array_column($assistant->written['sentences'] ?? [], 'text'),
-            fn (mixed $sentence): bool => is_string($sentence) && ! str_contains((string) ($answer['lead'] ?? ''), trim($sentence))));
-        if ($dropped !== []) {
-            $row['said']['dropped'] = $dropped;
+        // What it wrote that didn't hold, and why.
+        if ($assistant->dropped !== []) {
+            $row['said']['dropped'] = $assistant->dropped;
         }
 
         // Where it should go ("What's on tonight?" → an answer), what it should show, and its plan.
