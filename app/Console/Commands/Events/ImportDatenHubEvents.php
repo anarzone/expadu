@@ -50,7 +50,7 @@ class ImportDatenHubEvents extends Command
 
     protected $description = 'Import KölnTourismus events from the DatenHub NRW open-data feed';
 
-    /** @var Collection<int, array{id: int, title: string, starts_at: CarbonImmutable, until: ?CarbonImmutable}> other sources' upcoming listings */
+    /** @var Collection<int, array{id: int, title: string, words: list<string>, lat: ?float, lng: ?float, starts_at: CarbonImmutable, until: ?CarbonImmutable}> other sources' upcoming listings */
     private Collection $others;
 
     public function handle(CologneServiceArea $serviceArea, CaptureMediaCandidate $captureMediaCandidate): int
@@ -321,7 +321,9 @@ class ImportDatenHubEvents extends Command
 
         // koeln.de or the city lists it already: that listing stays, and gets the photo. A copy
         // an earlier run made (before it was known as the same) is hidden, never deleted.
-        $elsewhere = $this->listedElsewhere((string) $title, $run);
+        $lat = $item['geo']['main']['latitude'] ?? null;
+        $lng = $item['geo']['main']['longitude'] ?? null;
+        $elsewhere = $this->listedElsewhere((string) $title, $run, is_numeric($lat) && is_numeric($lng) ? [(float) $lat, (float) $lng] : null);
         if ($elsewhere !== []) {
             $metrics['listed_elsewhere']++;
             Event::query()->where('source', self::SOURCE)->where('source_uid', $uid)
@@ -404,17 +406,22 @@ class ImportDatenHubEvents extends Command
     /**
      * The other sources' upcoming listings, each with its normalised title, read once per run.
      *
-     * @return Collection<int, array{id: int, title: string, starts_at: CarbonImmutable, until: ?CarbonImmutable}>
+     * @return Collection<int, array{id: int, title: string, words: list<string>, lat: ?float, lng: ?float, starts_at: CarbonImmutable, until: ?CarbonImmutable}>
      */
     private function otherListings(CarbonImmutable $now): Collection
     {
         return Event::query()->visible()->whereIn('source', self::OTHER_SOURCES)
-            ->where(fn ($query) => $query->where('starts_at', '>=', $now->startOfDay())
-                ->orWhere(fn ($series) => $series->whereNotNull('recurrence')->where('recurrence_until', '>=', $now)))
-            ->get(['id', 'title', 'starts_at', 'recurrence_until'])
+            ->leftJoin('venues', 'venues.id', '=', 'events.venue_id')
+            ->where(fn ($query) => $query->where('events.starts_at', '>=', $now->startOfDay())
+                ->orWhere(fn ($series) => $series->whereNotNull('events.recurrence')->where('events.recurrence_until', '>=', $now)))
+            ->selectRaw('events.id, events.title, events.starts_at, events.recurrence_until, COALESCE(ST_Y(events.location::geometry), venues.lat::float8) AS point_lat, COALESCE(ST_X(events.location::geometry), venues.lng::float8) AS point_lng')
+            ->get()
             ->map(fn (Event $event) => [
                 'id' => $event->id,
                 'title' => $this->normalised($event->title),
+                'words' => $this->words($event->title),
+                'lat' => is_numeric($event->point_lat) ? (float) $event->point_lat : null,
+                'lng' => is_numeric($event->point_lng) ? (float) $event->point_lng : null,
                 'starts_at' => CarbonImmutable::parse($event->starts_at)->setTimezone('Europe/Berlin'),
                 'until' => $event->recurrence_until ? CarbonImmutable::parse($event->recurrence_until) : null,
             ])->values();
@@ -424,12 +431,13 @@ class ImportDatenHubEvents extends Command
      * The other sources' events that are this run, on its days (its date for a single date,
      * anywhere within its span for a series): the same title, or one title holding the other
      * ("Disney in Concert" in "DISNEY IN CONCERT – Die Jubiläumstournee …") at a start within
-     * half an hour of this one's.
+     * half an hour of this one's, or the same place within a quarter of an hour sharing a word.
      *
      * @param  array{starts_at: CarbonImmutable, ends_at: ?CarbonImmutable, recurrence: ?string, until: ?CarbonImmutable}  $run
+     * @param  array{0: float, 1: float}|null  $point  where this listing is
      * @return list<int>
      */
-    private function listedElsewhere(string $title, array $run): array
+    private function listedElsewhere(string $title, array $run, ?array $point = null): array
     {
         $start = $run['starts_at']->setTimezone('Europe/Berlin');
         $first = $start->startOfDay();
@@ -443,8 +451,42 @@ class ImportDatenHubEvents extends Command
             ->filter(fn (array $other) => $other['title'] === $mine || (
                 $this->holds($other['title'], $mine)
                 && abs($minute($other['starts_at']) - $minute($start)) <= 30
+            ) || (
+                // The same place at the same time, named differently ("Kölner Haie – Saison
+                // 2026/27" and "Kölner Haie – Iserlohn Roosters"): one word in common will do.
+                $point !== null && $other['lat'] !== null
+                && abs($minute($other['starts_at']) - $minute($start)) <= 15
+                && $this->metres($point, [$other['lat'], $other['lng']]) <= 200
+                && array_intersect($this->words($title), $other['words']) !== []
             ))
             ->pluck('id')->values()->all();
+    }
+
+    /**
+     * A title's words of four letters or more, lower-cased: what two names of one listing share.
+     *
+     * @return list<string>
+     */
+    private function words(string $title): array
+    {
+        return array_values(array_unique(array_filter(
+            preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower(html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8'))) ?: [],
+            fn (string $word) => mb_strlen($word) >= 4,
+        )));
+    }
+
+    /**
+     * Metres between two points (an equirectangular estimate: exact enough across a city).
+     *
+     * @param  array{0: float, 1: float}  $a
+     * @param  array{0: float, 1: float}  $b
+     */
+    private function metres(array $a, array $b): float
+    {
+        $x = deg2rad($b[1] - $a[1]) * cos(deg2rad(($a[0] + $b[0]) / 2));
+        $y = deg2rad($b[0] - $a[0]);
+
+        return sqrt($x * $x + $y * $y) * 6_371_000;
     }
 
     /** Whether one title holds the other, the shorter one ten letters or more (not "Konzert"). */

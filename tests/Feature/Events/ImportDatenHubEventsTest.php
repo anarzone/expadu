@@ -6,6 +6,7 @@ use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\CologneServiceArea;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -114,6 +115,23 @@ test('a listing koeln.de has under a longer title at the same time is not added 
 
     expect(Event::where('source', 'datenhub-nrw')->where('status', 'active')->count())->toBe(0)
         ->and($copy->fresh()->status)->toBe('hidden');
+});
+
+test('the same place at the same time, named differently, is koeln.de\'s listing', function () {
+    $game = Event::factory()->create([
+        'source' => 'koeln.de', 'title' => 'Kölner Haie – Iserlohn Roosters', 'status' => 'active',
+        'starts_at' => CarbonImmutable::parse('2026-11-13 18:00', 'Europe/Berlin'),
+    ]);
+    DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(6.9830, 50.9384), 4326)::geography WHERE id = ?', [$game->id]);
+    fakeDatenHub([datenHubItem([
+        'title' => 'Kölner Haie - Saison 2026/27', 'categories' => ['Sport'],
+        'geo' => ['main' => ['latitude' => 50.9385, 'longitude' => 6.9832]],
+        'timeIntervals' => [datenHubItem()['timeIntervals'][1]],
+    ])]);
+
+    $this->artisan('events:import-datenhub')->expectsOutputToContain('"listed_elsewhere":1')->assertSuccessful();
+
+    expect(Event::where('source', 'datenhub-nrw')->count())->toBe(0);
 });
 
 test('a photo without an open licence is left out, and a listing the feed drops is hidden', function () {
