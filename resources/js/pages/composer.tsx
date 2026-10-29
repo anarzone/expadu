@@ -38,7 +38,6 @@ import {
 } from '@/components/events/event-presentation';
 import type { EventOccurrence } from '@/components/events/types';
 import type { SavedPlace } from '@/components/place-shared/from-types';
-import { AiBadge } from '@/components/ui/ai-badge';
 import { Icon } from '@/components/ui/icon';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { travel } from '@/routes';
@@ -412,7 +411,6 @@ export default function ComposerPage({
                                 <Icon name="spark" variant="line" />
                             </span>
                             <strong>Composer</strong>
-                            <AiBadge />
                             <AskFirstChip />
                             <button
                                 type="button"

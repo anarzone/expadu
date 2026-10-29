@@ -14,7 +14,7 @@ const UNDO = 5000;
  * Why am I seeing this? (owner, 29 Oct 2026, the consent canvas's boards 5
  * and 8): for an event Today's AI put first with a "why", which of the
  * person's leanings it matches as code reads them (TodayDiscovery::reasons),
- * that the AI ordered it and worded the line, and what they can do: less
+ * and what they can do: less
  * like this (its kind lower, nothing hidden) or not for me (off Today),
  * each with Undo.
  */
@@ -83,14 +83,6 @@ export function WhySheet({
                         ))}
                     </ul>
                 ) : null}
-                <p className="why-ai">
-                    <Icon name="spark-small" variant="line" />
-                    <span>
-                        Put first by Claude Haiku, an AI model, from what you
-                        open and save. The line on the card was worded by AI
-                        {event ? `: “${event.why}”` : '.'}
-                    </span>
-                </p>
                 <div className="why-actions">
                     <button
                         type="button"

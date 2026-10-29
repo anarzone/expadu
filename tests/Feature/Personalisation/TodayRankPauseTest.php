@@ -70,7 +70,7 @@ test('🔒 a change to its own notice pauses it, says what changed, and only a y
 
     // Each request reads the account afresh; the test reuses one instance.
     $this->actingAs($this->user->fresh())->get('/settings/privacy')->assertInertia(fn (AssertableInertia $page) => $page->where('todayRankPaused.changes.0', $paused['changes'][0]));
-    $this->get('/today')->assertInertia(fn (AssertableInertia $page) => $page->where('aiOrderPaused.notice_version', $paused['notice_version']));
+    $this->get('/today')->assertInertia(fn (AssertableInertia $page) => $page->where('aiOrderPaused', true));
 
     // The notice before this one isn't agreed to by sending it back.
     $this->putJson('/today-rank', ['notice_version' => ProcessingPurpose::TodayRank->noticeVersion().'x', 'provider_version' => $paused['provider_version']])->assertUnprocessable();

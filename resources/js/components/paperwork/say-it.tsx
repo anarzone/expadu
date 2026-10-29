@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AiBadge } from '@/components/ui/ai-badge';
 import { CommandError, commands, reads } from './api';
 import { Icon } from './icons';
 import { offerFor } from './questions';
@@ -158,7 +157,7 @@ export function SayItInYourWords({
             {suggestion ? (
                 <div className="details-suggestion" role="status">
                     <span>
-                        <AiBadge label="Suggested by AI" />{' '}
+                        Suggested answer{' '}
                         <strong>{label(suggestion.value)}</strong>
                     </span>
                     <button

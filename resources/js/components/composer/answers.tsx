@@ -433,7 +433,7 @@ const listed = (words: string[]) =>
         : (words[0] ?? '');
 
 /**
- * Who wrote it and where to check it: the AI, naming only what it was given
+ * Where it comes from and where to check it: what the answer was given
  * (`looked_at`, in the server's words; older answers have only `read`, and
  * those before #330 read the listings and the weather). Nothing named, no
  * "from". The person's own items are Composer's words, as recorded.
@@ -451,7 +451,8 @@ function FinePrint({ message }: { message: AnswerMessage }) {
     return (
         <p className="answer-fine">
             {message.written === 'ai' &&
-                `Written by AI${from ? ` from ${from}` : ''}; your own items are as recorded. `}
+                from &&
+                `From ${from}; your own items are as recorded. `}
             {!!message.sources?.length && (
                 <>
                     From:{' '}

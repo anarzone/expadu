@@ -21,7 +21,6 @@ import type {
     TrayView,
 } from '@/components/composer/tray-body';
 import type { ComposerView } from '@/components/composer/views';
-import { AiBadge } from '@/components/ui/ai-badge';
 import { Icon } from '@/components/ui/icon';
 import { composer } from '@/routes';
 
@@ -723,7 +722,6 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                                 <Icon name="spark" variant="line" />
                             </span>
                             <strong>Composer</strong>
-                            <AiBadge />
                             <AskFirstChip />
                             <Link
                                 className="composer-tray-full"

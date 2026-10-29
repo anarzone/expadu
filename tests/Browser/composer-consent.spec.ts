@@ -80,7 +80,7 @@ test('🔒 every way of sending a request carries its permit', async ({
     const { asked: parsed, bare, failNext } = await stubAsk(page);
     await page.goto('/composer');
     await expect(
-        page.getByText('to Synthetic processor, an AI service'),
+        page.getByText('to Synthetic processor to answer you'),
     ).toBeVisible();
     const box = page.locator('#studio-request');
     const send = page.getByRole('button', { name: 'Send request' });
@@ -132,7 +132,7 @@ test('🔒 a request handed over in the address carries its permit once sent', a
     const { asked: parsed } = await stubAsk(page);
     await page.goto('/composer?prompt=' + encodeURIComponent('find a café'));
     await expect(
-        page.getByText('to Synthetic processor, an AI service'),
+        page.getByText('to Synthetic processor to answer you'),
     ).toBeVisible();
     await page
         .getByRole('region', { name: 'Selected context' })

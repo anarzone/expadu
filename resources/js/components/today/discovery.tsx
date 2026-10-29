@@ -9,7 +9,6 @@ import {
     whatsOnUrl,
 } from '@/components/events-filters/event-filters';
 import { AiOrderPausedLine } from '@/components/personalisation/ai-order-paused';
-import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
 import { WhySheet } from '@/components/personalisation/why-sheet';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
@@ -185,7 +184,6 @@ function WhyButton({
             aria-label={`Why am I seeing this? ${event.why}`}
             onClick={() => onOpen(event)}
         >
-            <Icon name="spark-small" variant="line" />
             <span>{event.why}</span>
         </button>
     );
@@ -205,8 +203,8 @@ export function Discovery({
     discovery: NonNullable<TodayDiscovery>;
     free: boolean;
     weather?: Weather;
-    /** Their AI order, waiting for them to agree to a change: these are in the usual order. */
-    aiOrderPaused?: AiOrderPaused;
+    /** Their AI order is waiting for them to agree to a change: these are in the usual order. */
+    aiOrderPaused?: boolean;
 }) {
     const saves = useSaves();
     const why = useWhy();
@@ -251,9 +249,7 @@ export function Discovery({
                     See more
                 </Link>
             </div>
-            {aiOrderPaused ? (
-                <AiOrderPausedLine paused={aiOrderPaused} />
-            ) : null}
+            {aiOrderPaused ? <AiOrderPausedLine /> : null}
             {posters.length > 0 && (
                 <div
                     className="event-rail"

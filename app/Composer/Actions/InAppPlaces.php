@@ -53,18 +53,18 @@ final class InAppPlaces
             'place' => ['crumb' => 'Paperwork', 'actions' => ['Get started'], 'here' => 'Get started', 'label' => 'Open Paperwork →', 'href' => '/paperwork'],
         ],
         'withdraw_ai_permission' => [
-            'text' => 'Withdrawing your permission for Composer’s AI is your choice to make, in its notice under the box. Composer then answers without the AI.',
+            'text' => 'Withdrawing your go-ahead is your choice to make, in the line under Composer’s box. Composer then doesn’t send your messages on.',
             // The notice under Composer's box holds Withdraw (ai-notice.tsx): opened by the page, not a link.
-            'place' => ['crumb' => 'Composer › About the AI', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
-                'label' => 'Open the AI notice →', 'nav' => 'ai_notice'],
+            'place' => ['crumb' => 'Composer › What it sends', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
+                'label' => 'Open what it sends →', 'nav' => 'ai_notice'],
             'note' => 'You can give it again with your next message.',
         ],
         'withdraw_paperwork_permission' => [
             'title' => 'Stop Composer reading it',
             'text' => 'Composer reads your Paperwork record only once you’ve allowed it, and remembers that until you turn it off. Turning it off is your choice to make, in the notice under the box or in Settings › Composer; it stops any request still on its way.',
-            'place' => ['crumb' => 'Composer › About the AI › Your Paperwork', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
-                'label' => 'Open the AI notice →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
-            'note' => 'Withdrawing Composer’s AI withdraws this too.',
+            'place' => ['crumb' => 'Composer › What it sends › Your Paperwork', 'actions' => ['What it sends', 'Withdraw'], 'here' => 'Withdraw',
+                'label' => 'Open what it sends →', 'nav' => 'ai_notice', 'purpose' => 'composer_paperwork'],
+            'note' => 'Withdrawing Composer’s go-ahead withdraws this too.',
         ],
         'push_notifications' => [
             'title' => 'Push notifications on this device',

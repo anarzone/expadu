@@ -33,8 +33,6 @@ import {
     usePaperwork,
 } from '@/components/paperwork/state';
 import type { Person, PlanEntry } from '@/components/paperwork/types';
-import { AiBadge } from '@/components/ui/ai-badge';
-import { AiIntro } from '@/components/ui/ai-intro';
 import AppLayout from '@/layouts/app-layout';
 import { composer, paperwork } from '@/routes';
 import { waitlist as joinWaitlist } from '@/routes/paperwork';
@@ -279,25 +277,6 @@ function Workspace({
                 ) : null}
             </div>
             <InlineEditor />
-            {plan.ai?.available ? (
-                <AiIntro
-                    storageKey="expadu.paperwork.ai-intro"
-                    title="The Paperwork helper uses AI"
-                >
-                    <p>
-                        When you ask a question or say an answer in your own
-                        words, Claude Haiku, an AI model by Anthropic, writes
-                        the reply. Answers come only from the checked cards they
-                        name; a suggested answer goes into your record only when
-                        you confirm it.
-                    </p>
-                    <p>
-                        It isn’t legal advice and doesn’t replace the
-                        Ausländerbehörde. Your record isn’t used to learn what
-                        you like.
-                    </p>
-                </AiIntro>
-            ) : null}
             <div className="bureaucracy-view">
                 {plan.coverage.state === 'outside_coverage' ? (
                     <OutsideCoverage waitlist={coverageWaitlist} />
@@ -331,7 +310,7 @@ function Workspace({
                         })
                     }
                 >
-                    Ask a question <AiBadge />
+                    Ask a question
                 </button>
             </div>
             <SheetDialog />

@@ -22,10 +22,9 @@
 .ai-order-line span {
     min-width: 0;
 }
-.ai-order-line button {
+.ai-order-line :is(a, button) {
     flex: none;
     min-height: 36px;
-    margin-left: auto;
     padding: 0 10px;
     border: 0;
     border-radius: var(--radius-pill);
@@ -37,7 +36,12 @@
     text-underline-offset: 3px;
     cursor: pointer;
 }
-.ai-order-line button:hover {
+.ai-order-line a {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+}
+.ai-order-line :is(a, button):hover {
     background: var(--color-attention);
 }
 

@@ -40,7 +40,7 @@ async function openTray(page: Page, isMobile: boolean) {
     ).click();
     const tray = page.getByRole('dialog', { name: 'Ask Composer' });
     await expect(
-        tray.getByText('to Synthetic processor, an AI service'),
+        tray.getByText('to Synthetic processor to answer you'),
     ).toBeVisible();
 
     return tray;

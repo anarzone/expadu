@@ -31,10 +31,10 @@ final class Ask
 {
     /** Why a message was answered without the AI, in the words the answer starts with. */
     private const WITHOUT_AI = [
-        'off' => 'Composer’s AI is off right now, so I can’t answer that.',
-        'limited' => 'Composer’s AI has reached today’s limit, so I can’t answer that.',
-        'unpermitted' => 'I answer with an AI service, and this message came without your go-ahead for it, so I haven’t read it.',
-        'failed' => 'The AI service didn’t answer this time, so I can’t answer that.',
+        'off' => 'I can’t answer messages right now, so I can’t answer that.',
+        'limited' => 'I’ve reached today’s limit, so I can’t answer that.',
+        'unpermitted' => 'This message came without your go-ahead to send it on, so I haven’t read it.',
+        'failed' => 'I couldn’t get an answer this time, so I can’t answer that.',
         // It answered, but nothing it said held against what it found, and it had nothing to show.
         'unchecked' => 'I didn’t find anything I can vouch for there.',
     ];

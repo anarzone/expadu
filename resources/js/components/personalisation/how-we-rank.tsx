@@ -23,7 +23,7 @@ const TODAY: [string, string][] = [
     ],
     [
         'What you lean towards, if you turned it on',
-        'Claude Haiku, an AI model, puts them in order from what you open and save. It never hides one. Off: everyone sees the same order.',
+        'Put in order from what you open, save and turn down. It never hides one. Off: everyone sees the same order.',
     ],
     ['What you turned down', 'An event you said isn’t for you stays off.'],
 ];

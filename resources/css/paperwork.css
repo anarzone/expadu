@@ -4911,14 +4911,3 @@
         transform: translateX(0);
     }
 }
-
-/* An Ask answer, marked as the AI's (the consent canvas's board 4). */
-.ask-ai {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    margin: 0 0 8px;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}

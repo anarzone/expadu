@@ -72,7 +72,7 @@ test('🔒 without the AI, Composer says so and shows what’s around you now, w
     $reply = whatsUpAsk($this, 'tell me a joke');
 
     expect($reply)->kind->toBe('around')->request->toBe('ask')->written->toBe('code')->without_ai->toBe('off')
-        ->text->toBe('Composer’s AI is off right now, so I can’t answer that. Here’s what’s still on in Cologne tonight.')
+        ->text->toBe('I can’t answer messages right now, so I can’t answer that. Here’s what’s still on in Cologne tonight.')
         ->and(collect($reply['blocks'])->pluck('type')->all())->toBe(['facts', 'events'])
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
         ->and(collect($reply['facts'])->map(fn (array $fact): string => "{$fact['label']}: {$fact['value']}")->all())

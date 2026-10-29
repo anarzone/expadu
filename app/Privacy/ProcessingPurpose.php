@@ -226,19 +226,21 @@ enum ProcessingPurpose: string
         $paperwork = $this === self::ComposerPaperwork;
         $minutes = self::requestMinutes();
         $hours = ComposerActions::HOURS;
-        $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
+        $processor = config($this->configPrefix().'.processor_name');
 
+        // Shown in Composer itself, so it names who receives it, not the model (owner, 29 Oct 2026:
+        // the AI is told about in Settings only).
         return [
             ($paperwork ? 'Once you allow it, Composer reads and can change your Paperwork record when a message needs it. To answer, it sends to '
-                : 'To answer your message, Composer sends to ').config($this->configPrefix().'.processor_name')." ({$model}), an AI service: "
+                : 'To answer your message, Composer sends to ').$processor.': '
                 .implode('; ', array_map(fn (string $category): string => self::WORDS[$category], self::categoryOrder($paperwork))).'.',
             'It never sends '.self::either([...array_values(self::NEVER), ...($paperwork ? [] : ['your Paperwork record without its own permission'])]).'. Nothing is sent to an authority.',
             ...($paperwork ? ['A change to your Paperwork answers always waits for your Apply.'] : []),
-            'The AI service doesn’t use it to train its models.',
+            "{$processor} doesn’t use it for training.",
             "Composer keeps this conversation, its answers and cards, in your History until you delete it; a change it makes can be undone for {$hours} hours."
                 .($paperwork ? ' Deleting your Paperwork record removes Composer’s copies of it; stopping its processing ends this permission.' : ''),
-            $paperwork ? 'Your Allow is remembered until you turn it off, in the notice under Composer’s box or in Settings › Composer, which stops it at once; withdrawing Composer’s AI turns it off too. '
-                ."Each message’s use of it lasts {$minutes} minutes. If this notice or the AI service’s model changes, Composer asks you again."
+            $paperwork ? 'Your Allow is remembered until you turn it off, in the notice under Composer’s box or in Settings › Composer, which stops it at once; withdrawing Composer’s go-ahead turns it off too. '
+                ."Each message’s use of it lasts {$minutes} minutes. If this notice or how Composer answers changes, Composer asks you again."
                 : "Sending is your permission for that one message, and it lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box.",
         ];
     }

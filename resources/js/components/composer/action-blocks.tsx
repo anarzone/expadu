@@ -2,7 +2,6 @@ import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { choices } from '@/components/paperwork/facts';
-import { AiBadge } from '@/components/ui/ai-badge';
 import { Icon } from '@/components/ui/icon';
 
 /*
@@ -286,9 +285,7 @@ export function DoneLine({
                     ✓
                 </span>
                 <span className="action-done-copy">
-                    <strong>
-                        {block.text} <AiBadge label="Done by AI" />
-                    </strong>
+                    <strong>{block.text}</strong>
                     {block.sub && <span>{block.sub}</span>}
                 </span>
                 {undo && (
@@ -833,7 +830,7 @@ export function Permission({
                         ))
                     ) : (
                         <p>
-                            {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
+                            {`Read by ${disclosure.processor_name} for this message only`}
                         </p>
                     )}
                     {disclosure.processor_privacy_url && (

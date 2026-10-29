@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
@@ -185,15 +186,11 @@ export function AiOrderChange({
 
 /**
  * Today's line over its ideas: they're in the usual order until the person
- * reviews the change. Not now puts it off Today for a week (Settings still
- * says so).
+ * agrees to the change, which Settings › Privacy explains (owner, 29 Oct
+ * 2026: the AI is told about in Settings only). Not now puts it off Today
+ * for a week; Settings still says so.
  */
-export function AiOrderPausedLine({
-    paused,
-}: {
-    paused: NonNullable<AiOrderPaused>;
-}) {
-    const [open, setOpen] = useState(false);
+export function AiOrderPausedLine() {
     const [done, setDone] = useState(false);
 
     if (done) {
@@ -201,25 +198,19 @@ export function AiOrderPausedLine({
     }
 
     return (
-        <>
-            <p className="ai-order-line" role="status">
-                <Icon name="clock" variant="line" />
-                <span>In the usual order until you agree to a change.</span>
-                <button type="button" onClick={() => setOpen(true)}>
-                    Review
-                </button>
-            </p>
-            <AiOrderChange
-                paused={paused}
-                open={open}
-                onClose={() => setOpen(false)}
-                onAgreed={() => setDone(true)}
-                notNow={() => {
-                    setOpen(false);
+        <p className="ai-order-line" role="status">
+            <Icon name="clock" variant="line" />
+            <span>In the usual order until you agree to a change.</span>
+            <Link href="/settings/privacy">Review</Link>
+            <button
+                type="button"
+                onClick={() => {
                     setDone(true);
                     void writeJson('/today-rank/later', 'POST', {});
                 }}
-            />
-        </>
+            >
+                Not now
+            </button>
+        </p>
     );
 }
