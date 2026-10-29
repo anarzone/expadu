@@ -73,7 +73,8 @@ class HomeFeedController extends Controller
             'needsYou' => fn () => app(TodayNeeds::class)->for($request->user()),
             // Discovery: tonight's events that fit around the plans, and the
             // everyday places open near the next plan (TodayDiscovery).
-            'discovery' => fn () => app(TodayDiscovery::class)->for($request->user()),
+            // Its lists are logged as shown, for people who opted in (ListImpressions).
+            'discovery' => fn () => app(TodayDiscovery::class)->for($request->user(), shown: true),
             // Coming up: the next plans after today (ComingUp), with the day.
             'comingUp' => fn () => app(ComingUp::class)->for($request->user()),
             // Saved for later (the one Saved collection) and the Composer

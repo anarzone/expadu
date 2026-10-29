@@ -9,6 +9,8 @@ use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\ListImpressions;
+use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayTaste;
 use App\Places\OpenNearby;
 use App\Saved\SavedCollection;
@@ -51,6 +53,9 @@ final class TodayDiscovery
     /** Today's listings at most: two posters, three compact, six for the room under the departures. */
     private const LISTED = 11;
 
+    /** The rule order's version, logged with each list shown (ListImpressions): change it when events() or the places' order changes. */
+    public const RULES = 'rules-1';
+
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
 
@@ -70,10 +75,14 @@ final class TodayDiscovery
         private SavedCollection $saved,
         private EventStartingPoint $points,
         private TodayTaste $taste,
+        private ListImpressions $impressions,
     ) {}
 
-    /** @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
-    public function for(User $user, ?CarbonImmutable $now = null): array
+    /**
+     * @param  bool  $shown  the person is about to see it (Today's own render, not the ranker's read): its lists are logged
+     * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null}
+     */
+    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
         $active = collect($this->days->itemsOn($user, $now->format('Y-m-d')))
@@ -101,19 +110,26 @@ final class TodayDiscovery
         // room under the departures (`more`, owner 28 Oct 2026: the page
         // fills around the board, which never moves). Posters fill first,
         // and the event "Also in ‹area›" suggests is in none.
-        $listed = self::ranked(
-            $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values(),
-            $order['events'] ?? null,
-            $order['why'] ?? [],
-            fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp(),
-        )->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
-            $index < 2 => 'poster',
-            $index < 5 => 'compact',
-            default => 'more',
-        }]);
-
+        $eventKey = fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp();
+        $placeKey = fn (array $place) => 'p'.$place['id'];
+        $candidates = $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values();
+        $listed = self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey)
+            ->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
+                $index < 2 => 'poster',
+                $index < 5 => 'compact',
+                default => 'more',
+            }]);
+        $places = collect($around['places'] ?? []);
         if ($around !== null) {
-            $around['places'] = self::ranked(collect($around['places']), $order['places'] ?? null, $order['why'] ?? [], fn (array $place) => 'p'.$place['id'])->all();
+            $around['places'] = self::ranked($places, $order['places'] ?? null, $order['why'] ?? [], $placeKey)->all();
+        }
+
+        if ($shown) {
+            [$policy, $version] = $order === null ? ['rule', self::RULES] : ['haiku', (string) ($order['version'] ?? TodayRanker::VERSION)];
+            $this->impressions->record($user, 'today_events', $now, $policy, $version, $candidates->map($eventKey)->all(),
+                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout']])->all());
+            $this->impressions->record($user, 'today_places', $now, $policy, $version, $places->map($placeKey)->all(),
+                collect($around['places'] ?? [])->map(fn (array $place) => ['key' => $placeKey($place)])->all());
         }
 
         $onlyTomorrow = $listed->isNotEmpty() && $listed->every(fn (array $event) => isset($event['day']));

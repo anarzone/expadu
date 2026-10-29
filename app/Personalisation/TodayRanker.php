@@ -28,6 +28,9 @@ final class TodayRanker
     /** What each part of its request is, as its notice names it (ProcessingPurpose::TODAY_WORDS). */
     public const CATEGORIES = ['the_day', 'your_taste', 'recent_interests', 'todays_candidates'];
 
+    /** Logged with each list it ordered (ListImpressions): change it when the prompt, tool or candidates change. */
+    public const VERSION = 'haiku-1';
+
     private const MAX_WHY = 90;
 
     private const SYSTEM = <<<'TEXT'
@@ -82,7 +85,7 @@ final class TodayRanker
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
                 ->timeout((int) config('services.llm.timeout', 8))->connectTimeout(3)
                 ->post('/v1/messages', $request)));
-        Cache::put(TodayTaste::orderKey($user->id, $now), $order === null ? null : [...$order, 'at' => $now->toIso8601String()], $now->endOfDay());
+        Cache::put(TodayTaste::orderKey($user->id, $now), $order === null ? null : [...$order, 'at' => $now->toIso8601String(), 'version' => self::VERSION], $now->endOfDay());
 
         return $order;
     }
