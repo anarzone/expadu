@@ -61,7 +61,7 @@ test('nothing is learned without the opt-in, or under its first wording', functi
 });
 
 test('turning it on keeps the current wording, set by the server alone; off drops it', function () {
-    $this->actingAs($this->user)->putJson('/user-settings', ['settings' => ['personalisation' => true, PersonalisationWording::SETTING => 9]])->assertOk();
+    $this->actingAs($this->user)->putJson('/user-settings', ['settings' => ['personalisation' => true, PersonalisationWording::SETTING => 9], 'sixteen_or_older' => true])->assertOk();
     expect($this->user->fresh()->setting(PersonalisationWording::SETTING))->toBe(PersonalisationWording::CURRENT);
 
     // Another setting saved later can't move it.

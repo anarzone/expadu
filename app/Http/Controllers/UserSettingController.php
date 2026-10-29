@@ -34,6 +34,10 @@ class UserSettingController extends Controller
             'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
+        // Personalisation is for people 16 or older (Settings › Privacy asks): their word with each yes.
+        if (($validated['settings']['personalisation'] ?? null) === true) {
+            $request->validate(['sixteen_or_older' => ['accepted']], ['sixteen_or_older.accepted' => 'Tick that you’re 16 or older to turn it on.']);
+        }
 
         $user = $request->user();
         $merged = $retention->withUserLock($user->id, function () use ($user, $validated, $retention): array {

@@ -13,7 +13,7 @@ import {
     ComposerPanel,
     DataPanel,
     DeletePanel,
-    LearnPanel,
+    PrivacyPanel,
     TransitPanel,
 } from '@/components/settings-page/panels';
 import type { EditKey } from '@/components/settings-page/panels';
@@ -38,7 +38,7 @@ import '../../css/settings.css';
 type SectionId =
     | 'account'
     | 'city'
-    | 'suggestions'
+    | 'privacy'
     | 'composer'
     | 'notifications'
     | 'transit'
@@ -49,7 +49,7 @@ const GROUPS: { label: string; ids: SectionId[] }[] = [
     { label: 'You', ids: ['account', 'city'] },
     {
         label: 'Expadu for you',
-        ids: ['suggestions', 'composer', 'notifications', 'transit'],
+        ids: ['privacy', 'composer', 'notifications', 'transit'],
     },
     { label: 'Your data', ids: ['data', 'delete'] },
 ];
@@ -60,11 +60,7 @@ const SECTIONS: Record<
 > = {
     account: { label: 'Your account', icon: 'user', tone: 'account' },
     city: { label: 'City', icon: 'pin-narrow', tone: 'place' },
-    suggestions: {
-        label: 'Personalised suggestions',
-        icon: 'spark-small',
-        tone: 'learn',
-    },
+    privacy: { label: 'Privacy', icon: 'eye', tone: 'learn' },
     composer: { label: 'Composer', icon: 'spark-small', tone: 'composer' },
     notifications: { label: 'Notifications', icon: 'bell', tone: 'notify' },
     transit: { label: 'Transit & tickets', icon: 'train', tone: 'transit' },
@@ -134,15 +130,17 @@ export default function Settings() {
     const values: Record<SectionId, string> = {
         account: `${user.name} · ${google ? 'Google' : 'email and password'}`,
         city: city === '' ? 'Not set yet' : isCologne(city) ? 'Cologne' : city,
-        suggestions: !userSettings?.personalisation
-            ? 'Off'
+        privacy: !userSettings?.personalisation
+            ? 'Suggestions off'
             : userSettings.personalisation_current === false
-              ? 'On · places and events only'
+              ? Number(userSettings.personalisation_wording ?? 1) < 2
+                  ? 'Suggestions on · places and events only'
+                  : 'Suggestions on · confirm to keep it'
               : todayRank
-                ? 'On · AI puts Today in order'
+                ? 'Suggestions on · AI puts Today in order'
                 : todayRankPaused
-                  ? 'On · Today’s AI order paused'
-                  : 'On',
+                  ? 'Suggestions on · Today’s AI order paused'
+                  : 'Suggestions on',
         composer:
             everyday && paperwork
                 ? 'Asks first for everything'
@@ -162,7 +160,7 @@ export default function Settings() {
     const panels: Record<SectionId, ReactNode> = {
         account: <AccountPanel edit={edit} onEdit={setEdit} />,
         city: <CityPanel edit={edit} onEdit={setEdit} />,
-        suggestions: <LearnPanel />,
+        privacy: <PrivacyPanel />,
         composer: <ComposerPanel />,
         notifications: (
             <NotificationsPanel state={notifications} work={work} push={push} />

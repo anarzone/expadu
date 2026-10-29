@@ -134,7 +134,7 @@ function todayOrder(User $user, array $order): void
         'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
         'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
     ]);
-    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
     $user->load('userSetting');
     Cache::put(TodayTaste::orderKey($user->id), [...$order, 'at' => discoveryNoon()->toIso8601String()], 3600);
 }

@@ -176,7 +176,7 @@ test('the feedback action is validated', function () {
 
 test('more-like-this feeds IntentWeights for that category and veedel, with the opt-in', function () {
     $user = feedbackUser();
-    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
     $user = $user->fresh();
     $spot = Spot::factory()->create(['category' => 'museum', 'veedel' => 'Ehrenfeld', 'lat' => 50.95, 'lng' => 6.92]);
 

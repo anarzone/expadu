@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\ComposerPaperworkPermissionController;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationPreference;
+use App\Personalisation\Learned;
 use App\Personalisation\TodayRankPause;
 use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPurpose;
@@ -25,7 +26,7 @@ use Inertia\Response;
 class SettingsController extends Controller
 {
     /** Every section, in the menu's order. */
-    public const SECTIONS = ['account', 'city', 'suggestions', 'composer', 'notifications', 'transit', 'data', 'delete'];
+    public const SECTIONS = ['account', 'city', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete'];
 
     /** Sections whose endpoints need a verified email ('verified'), so they do too. */
     private const VERIFIED = ['data', 'delete'];
@@ -51,6 +52,8 @@ class SettingsController extends Controller
             'todayRank' => fn () => $optIns->active($user, ProcessingPurpose::TodayRank),
             // Or waiting for them to agree again after its notice changed (TodayRankPause): what changed.
             'todayRankPaused' => fn () => app(TodayRankPause::class)->for($user),
+            // Privacy: what personalisation learned, as its page says it (Learned); null when it's off.
+            'learned' => fn () => app(Learned::class)->for($user),
             // Composer's remembered Allow for their Paperwork record, so its row comes with the page.
             'composerPaperwork' => fn () => ComposerPaperworkPermissionController::state($user, $optIns),
         ]);

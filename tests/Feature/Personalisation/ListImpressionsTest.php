@@ -32,7 +32,7 @@ function listsShown(User $user): array
 
 function listsOn(User $user): User
 {
-    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
 
     return $user->fresh();
 }

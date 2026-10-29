@@ -60,7 +60,7 @@ test('the opt-in is set through user settings and turning it off erases the ledg
     $user = User::factory()->onboarded()->create();
     $spot = Spot::factory()->create();
 
-    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])
+    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])
         ->assertOk()->assertJsonPath('settings.personalisation', true);
     // Each real request loads the account afresh; the test reuses one instance.
     $this->actingAs($user->fresh())->postJson("/api/places/{$spot->id}/feedback", ['action' => 'not_interested'])->assertOk();

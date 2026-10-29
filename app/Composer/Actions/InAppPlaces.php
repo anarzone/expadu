@@ -95,8 +95,8 @@ final class InAppPlaces
         'start_personalisation' => [
             'title' => 'Turn on personalised suggestions',
             'text' => 'Learning what you like is your choice to make, so it’s turned on with your own tap in Settings.',
-            'place' => ['crumb' => 'Settings › Personalised suggestions', 'actions' => ['Learn what I like'], 'here' => 'Learn what I like',
-                'label' => 'Open Settings →', 'href' => '/settings/suggestions'],
+            'place' => ['crumb' => 'Settings › Privacy', 'actions' => ['Personalised suggestions'], 'here' => 'Personalised suggestions',
+                'label' => 'Open Settings →', 'href' => '/settings/privacy'],
         ],
         'start_location_sharing' => [
             'title' => 'Share your location for transit',
@@ -107,8 +107,8 @@ final class InAppPlaces
         'stop_personalisation' => [
             'title' => 'Turn off personalised suggestions',
             'text' => 'Turning personalisation off deletes what Expadu learnt about what you like, so it’s your tap, in Settings.',
-            'place' => ['crumb' => 'Settings › Personalised suggestions', 'actions' => ['Account', 'Personalised suggestions'], 'here' => 'Learn what I like',
-                'label' => 'Open Settings →', 'href' => '/settings/suggestions'],
+            'place' => ['crumb' => 'Settings › Privacy', 'actions' => ['Privacy', 'Personalised suggestions'], 'here' => 'Personalised suggestions',
+                'label' => 'Open Settings →', 'href' => '/settings/privacy'],
             'note' => 'You can turn it on again at any time; it starts learning afresh.',
         ],
         'stop_location_sharing' => [

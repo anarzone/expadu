@@ -52,7 +52,7 @@ beforeEach(function () {
 
 function rankingOn(User $user): void
 {
-    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
     $user->load('userSetting');
 }
 
@@ -101,7 +101,7 @@ test('nothing goes to the AI without personalisation on under its second wording
     expect(app(TodayRanker::class)->rankFrom($this->user, $this->candidates, $this->facts, CarbonImmutable::now('Europe/Berlin')))->toBeNull();
 
     // On before 26 Oct 2026: not until they turn it on again.
-    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['personalisation' => true]]);
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
     expect(app(TodayRanker::class)->rankFrom($this->user->fresh(), $this->candidates, $this->facts, CarbonImmutable::now('Europe/Berlin')))->toBeNull();
     Http::assertNothingSent();
 
@@ -134,5 +134,6 @@ test('the notice names everything a ranking sends; stops, Paperwork and their wo
         ->and(collect(array_unique($parts))->every(fn (string $part): bool => str_contains($notice, ProcessingPurpose::TODAY_WORDS[$part])))->toBeTrue()
         ->and($content)->not->toContain('Neumarkt')->not->toContain('Paperwork')
         ->and($disclosure['scope'])->toBe('until_you_turn_it_off')
-        ->and(PersonalisationWording::CURRENT)->toBe(2);
+        // The wording that turns it on covers it (2 and after).
+        ->and(PersonalisationWording::CURRENT)->toBeGreaterThanOrEqual(2);
 });

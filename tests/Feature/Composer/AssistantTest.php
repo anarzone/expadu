@@ -201,7 +201,7 @@ test('🔒 without the opt-in it gets no taste or plans to look at, and the answ
 
 test('🔒 with the opt-in it may look at their taste: a "because" holds only what their taste says, and "not for me" stays out', function () {
     $user = User::factory()->onboarded()->create();
-    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
     $subject = Pseudonym::for($user);
     DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => $subject, 'dimension' => $row[0], 'key' => $row[1],
         'context' => 'all', 'score' => $row[2], 'signals_count' => $row[3], 'updated_at' => now()], [['category', 'music', 12.0, 6], ['veedel', 'Ehrenfeld', 8.0, 5]]));
@@ -240,7 +240,7 @@ test('🔒 the page reads how far its own request has got, and nobody else\'s', 
 
 test('"not this" on a suggested event is recorded; a place\'s goes through its feedback', function () {
     $user = User::factory()->onboarded()->create();
-    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true]]);
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
     $jazz = assistantJazz();
     $spot = Spot::factory()->create();
 

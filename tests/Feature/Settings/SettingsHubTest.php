@@ -19,7 +19,7 @@ test('settings and each of its sections are one page, the section named', functi
             ->has('notifications.quiet_from')
             ->where('work', null)
             ->where('todayRank', false));
-})->with([null, 'account', 'city', 'suggestions', 'composer', 'notifications', 'transit', 'data', 'delete']);
+})->with([null, 'account', 'city', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete']);
 
 test('an unknown section is not found', function () {
     $this->actingAs(User::factory()->create())->get('/settings/appearance')->assertNotFound();
@@ -36,7 +36,7 @@ test('the old addresses lead to their sections', function (string $from, string 
 })->with([
     'the profile' => ['/settings/profile', '/settings/account'],
     'security' => ['/settings/security', '/settings/account'],
-    'privacy' => ['/settings/privacy', '/settings/transit'],
+    'personalised suggestions' => ['/settings/suggestions', '/settings/privacy'],
 ]);
 
 test('the way home reads Work’s leaving time', function () {
