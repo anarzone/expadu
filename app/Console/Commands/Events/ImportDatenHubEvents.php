@@ -319,10 +319,13 @@ class ImportDatenHubEvents extends Command
         $title = $this->cleanText($item['title']);
         $photo = $this->photo($item);
 
-        // koeln.de or the city lists it already: that listing stays, and gets the photo.
+        // koeln.de or the city lists it already: that listing stays, and gets the photo. A copy
+        // an earlier run made (before it was known as the same) is hidden, never deleted.
         $elsewhere = $this->listedElsewhere((string) $title, $run);
         if ($elsewhere !== []) {
             $metrics['listed_elsewhere']++;
+            Event::query()->where('source', self::SOURCE)->where('source_uid', $uid)
+                ->where('status', '!=', 'hidden')->update(['status' => 'hidden']);
             if ($photo !== null) {
                 Event::query()->whereKey($elsewhere)->get()
                     ->each(fn (Event $other) => $this->capturePhoto($other, $photo, $captureMediaCandidate, primary: false));

@@ -106,11 +106,14 @@ test('a listing koeln.de has under a longer title at the same time is not added 
         'source' => 'koeln.de', 'title' => 'Disney in Concert – Matinee', 'status' => 'active',
         'starts_at' => CarbonImmutable::parse('2026-11-13 11:00', 'Europe/Berlin'),
     ]);
+    // A copy an earlier run made, before it was known as the same listing.
+    $copy = Event::factory()->create(['source' => 'datenhub-nrw', 'source_uid' => 'e_101058716#0', 'title' => 'Disney in Concert', 'status' => 'active']);
     fakeDatenHub([datenHubItem(['title' => 'Disney in Concert', 'timeIntervals' => [datenHubItem()['timeIntervals'][1]]])]);
 
     $this->artisan('events:import-datenhub')->expectsOutputToContain('"listed_elsewhere":1')->assertSuccessful();
 
-    expect(Event::where('source', 'datenhub-nrw')->count())->toBe(0);
+    expect(Event::where('source', 'datenhub-nrw')->where('status', 'active')->count())->toBe(0)
+        ->and($copy->fresh()->status)->toBe('hidden');
 });
 
 test('a photo without an open licence is left out, and a listing the feed drops is hidden', function () {
