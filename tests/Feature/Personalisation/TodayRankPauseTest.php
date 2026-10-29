@@ -4,9 +4,11 @@ use App\Jobs\RankToday;
 use App\Models\User;
 use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayRankPause;
+use App\Personalisation\TodayTaste;
 use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
@@ -48,6 +50,9 @@ test('🔒 a change to Composer’s notice leaves Today’s AI order on', functi
 
 test('🔒 a change to its own notice pauses it, says what changed, and only a yes to that notice brings it back', function () {
     $before = ProcessingPurpose::TodayRank->notice();
+    // Today's order, made this morning under their yes.
+    Cache::put(TodayTaste::orderKey($this->user->id), ['events' => ['e2@1', 'e1@1'], 'places' => [], 'why' => [], 'at' => now()->toIso8601String()], now()->endOfDay());
+    expect(app(TodayTaste::class)->order($this->user->fresh()))->not->toBeNull();
     config()->set('bureaucracy_privacy.audit_days', 20);
 
     $paused = waiting();
@@ -56,6 +61,8 @@ test('🔒 a change to its own notice pauses it, says what changed, and only a y
         ->and($paused['changes'])->toHaveCount(1)
         ->and($paused['changes'][0])->toContain('20 days')
         ->and($paused['changes'])->not->toContain($before[0])
+        // Today is in the usual order while it waits, even with this morning's order kept.
+        ->and(app(TodayTaste::class)->order($this->user->fresh()))->toBeNull()
         // Nothing goes to the AI while it waits.
         ->and(app(TodayRanker::class)->rankFrom($this->user->fresh(), ['events' => [['id' => 'e1@1', 'name' => 'A', 'kind' => 'Music', 'area' => null, 'start' => '19:00'],
             ['id' => 'e2@1', 'name' => 'B', 'kind' => 'Music', 'area' => null, 'start' => '20:00']], 'places' => []], [], CarbonImmutable::now('Europe/Berlin')))->toBeNull();

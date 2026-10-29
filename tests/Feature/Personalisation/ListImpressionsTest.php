@@ -64,6 +64,11 @@ test('a list shown keeps the rule order and its layouts; the same list again cou
 });
 
 test('the AI\'s order is logged as its own list, beside the rule order it changed', function () {
+    // An AI service to have agreed to (TodayRank), so the order counts.
+    config()->set('services.llm', [
+        'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
+        'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
+    ]);
     $user = listsOn($this->user);
     $reversed = array_reverse($this->keys);
     Cache::put(TodayTaste::orderKey($user->id), ['events' => $reversed, 'places' => [], 'why' => [], 'version' => 'haiku-1'], now()->endOfDay());

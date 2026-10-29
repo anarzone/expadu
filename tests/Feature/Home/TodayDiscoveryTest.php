@@ -127,9 +127,13 @@ test('with nothing open within 1 km of the Veedel, it looks at 2 km before givin
         ->and($around['places'][0]['km'])->toBeGreaterThan(1.0)->toBeLessThan(2.0);
 });
 
-/** Personalisation on under its current wording, and the AI's order for today as TodayRank keeps it. */
+/** Personalisation on under its current wording with the AI's ordering agreed to, and its order for today as TodayRank keeps it. */
 function todayOrder(User $user, array $order): void
 {
+    config()->set('services.llm', [
+        'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
+        'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
+    ]);
     test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
     $user->load('userSetting');
     Cache::put(TodayTaste::orderKey($user->id), [...$order, 'at' => discoveryNoon()->toIso8601String()], 3600);
