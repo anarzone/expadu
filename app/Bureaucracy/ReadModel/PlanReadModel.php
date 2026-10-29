@@ -150,9 +150,7 @@ final class PlanReadModel
                 'questions' => $question, 'actions' => $next, 'processes' => $processes, 'history' => $history,
                 'history_count' => count($history) + count(array_filter($processes, fn ($process) => $process['is_closed'])),
                 'topics' => $this->topics($assessment['processes'], $processes, $history), 'guidance' => $guidance,
-                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes, 'notes' => $notes,
-                'ai' => ['available' => in_array(AccessScope::RequestAi->value, $scopes, true) && in_array(AccessScope::EditFacts->value, $scopes, true)
-                    && ProcessingPurpose::FactExtraction->available(), 'consent_scope' => 'single_request', 'confirmation_required' => true]];
+                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes, 'notes' => $notes];
             $attention = app(PlanAttention::class)->for($plan, includeUndated: true);
 
             return [...$plan, 'attention' => $attention, 'coming_up' => app(PlanAttention::class)->comingUp($attention)];
