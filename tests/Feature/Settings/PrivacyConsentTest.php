@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\RankToday;
 use App\Models\User;
 use App\Personalisation\PersonalisationWording;
+use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
@@ -17,7 +19,12 @@ test('🔒 turning personalisation on needs their word that they’re 16 or olde
     expect($user->fresh()->personalises())->toBeFalse();
 
     $this->travelTo(now()->setTime(9, 30));
+    Queue::fake();
+    config()->set('services.llm', ['driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
+        'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1']);
     $settings = $this->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk()->json('settings');
+    // Today is put in order now, not at the next morning's run.
+    Queue::assertPushed(RankToday::class, fn (RankToday $job) => $job->userId === $user->id);
 
     expect($user->fresh()->personalises())->toBeTrue()
         ->and($settings[PersonalisationWording::SETTING])->toBe(PersonalisationWording::CURRENT)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RankToday;
 use App\Models\UserSetting;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\SignalRecorder;
@@ -66,6 +67,11 @@ class UserSettingController extends Controller
 
             return $merged;
         });
+
+        // Saved on: Today put in order now rather than at the next morning's run.
+        if (($validated['settings']['personalisation'] ?? null) === true && ProcessingPurpose::TodayRank->available()) {
+            dispatch(new RankToday($request->user()->id));
+        }
 
         return response()->json(['settings' => $merged]);
     }
