@@ -6,6 +6,7 @@ use App\Enums\EventCategory;
 use App\Models\Event;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -16,7 +17,8 @@ use Throwable;
  * the rows still on an old category (Culture had no single new home) and, with --all, every
  * upcoming one. New listings are sorted as they're classified (ProcessEventJob); this is for the
  * ones that came before. Only the listing's public words go out: title, venue, its source's own
- * categories and the start of its description.
+ * categories and the start of its description. Then the recorded actions on events that still
+ * name a retired category take the event's new one (signalsFollow()).
  */
 class RecategoriseEvents extends Command
 {
@@ -60,9 +62,28 @@ class RecategoriseEvents extends Command
             }
         }
 
-        $this->line((string) json_encode(['listings' => $events->count(), 'sorted' => $sorted, 'failed' => $failed]));
+        $this->line((string) json_encode(['listings' => $events->count(), 'sorted' => $sorted, 'failed' => $failed, 'signals' => $this->signalsFollow($current)]));
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * A signal keeps the category its event had when the person acted (user_signals), and a
+     * retired one has no label, so their taste can't use it (TasteFacts). Those, and the ones
+     * with none, take their event's category once it has a current one.
+     *
+     * @param  list<string>  $current
+     */
+    private function signalsFollow(array $current): int
+    {
+        $in = implode(', ', array_fill(0, count($current), '?'));
+
+        return DB::update(
+            "update user_signals s set category = e.category from events e
+             where s.item_type = 'event' and s.item_id = e.id and e.category in ({$in})
+               and (s.category is null or s.category not in ({$in}))",
+            [...$current, ...$current],
+        );
     }
 
     /**
