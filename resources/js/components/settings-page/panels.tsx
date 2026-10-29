@@ -8,6 +8,7 @@ import {
     agreeToAiOrder,
 } from '@/components/personalisation/ai-order-paused';
 import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
+import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { csrfHeaders } from '@/lib/csrf';
@@ -623,7 +624,8 @@ export function PrivacyPanel() {
                 Kept for 90 days, then deleted. Turning this off deletes
                 everything learned at once. Your yes is saved with the date and
                 this wording (version 3).{' '}
-                <a href="/datenschutz">Privacy notice</a>
+                <a href="/datenschutz">Privacy notice</a> ·{' '}
+                <HowWeRankLink className="privacy-link" />
             </p>
             <Sheet
                 open={asking}

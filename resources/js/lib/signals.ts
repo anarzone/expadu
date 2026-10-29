@@ -31,7 +31,7 @@ export type Signal = Item &
     (
         | { action: 'impression'; position: number }
         | { action: 'detail_viewed'; dwell_seconds: number }
-        | { action: 'not_now' | 'shared' | 'not_for_me' }
+        | { action: 'not_now' | 'shared' | 'not_for_me' | 'less_like_this' }
     );
 
 /** The endpoint takes 1–50 at a time and 12 batches a minute. */

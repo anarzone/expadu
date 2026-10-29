@@ -9,7 +9,10 @@ use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\Affinities;
 use App\Personalisation\ListImpressions;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\TasteFacts;
 use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayTaste;
 use App\Places\OpenNearby;
@@ -76,6 +79,8 @@ final class TodayDiscovery
         private EventStartingPoint $points,
         private TodayTaste $taste,
         private ListImpressions $impressions,
+        private Affinities $affinities,
+        private TasteFacts $facts,
     ) {}
 
     /**
@@ -91,7 +96,11 @@ final class TodayDiscovery
             ->values();
 
         $home = $this->home($user);
-        $events = $this->events($now, $active, $home);
+        // What they turned down ("Not for me") stays off Today while it's hidden.
+        $hidden = $user->personalises() ? $this->affinities->for($user) : null;
+        $events = $this->events($now, $active, $home)
+            ->reject(fn (array $event) => $hidden?->isHidden(SignalItemType::Event->value, (int) $event['id']) ?? false)
+            ->values();
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
         $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])))
             // No plan stop with a place to go by: open now near their Veedel or Home.
@@ -113,12 +122,15 @@ final class TodayDiscovery
         $eventKey = fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp();
         $placeKey = fn (array $place) => 'p'.$place['id'];
         $candidates = $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values();
+        // Each AI pick with a why also says which of their leanings it matches, as code reads
+        // them (reasons()): "Why am I seeing this?" shows those, the why only words one.
+        $reasons = $order === null ? null : $this->reasons($user);
         $listed = self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey)
             ->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
                 $index < 2 => 'poster',
                 $index < 5 => 'compact',
                 default => 'more',
-            }]);
+            }, ...(isset($event['why']) && $reasons !== null ? ['reasons' => $reasons($event)] : [])]);
         $places = collect($around['places'] ?? []);
         if ($around !== null) {
             $around['places'] = self::ranked($places, $order['places'] ?? null, $order['why'] ?? [], $placeKey)->all();
@@ -170,6 +182,40 @@ final class TodayDiscovery
             ->sortBy(fn (array $pair) => $pair[1])
             ->map(fn (array $pair) => isset($why[$key($pair[0])]) ? [...$pair[0], 'why' => $why[$key($pair[0])]] : $pair[0])
             ->values();
+    }
+
+    /**
+     * Which of the person's leanings an event matches, in words, from what personalisation learned
+     * (TasteFacts) and what they looked at lately (TodayTaste): its kind, then its neighbourhood.
+     *
+     * @return Closure(array<string, mixed>): list<string>
+     */
+    private function reasons(User $user): Closure
+    {
+        $facts = $this->facts->for($user) ?? [];
+        $recent = $this->taste->for($user);
+        $leaning = fn (string $key): array => collect($facts[$key] ?? [])->whereIn('level', ['strong', 'some'])->pluck('name')->all();
+        $kinds = $leaning('categories');
+        $areas = $leaning('veedels');
+        $lately = array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind), $recent['categories'])));
+
+        return function (array $event) use ($kinds, $areas, $lately, $recent): array {
+            $kind = TasteFacts::categoryLabel((string) ($event['category'] ?? ''));
+            $area = $event['venue']['veedel'] ?? null;
+
+            return array_values(array_filter([
+                match (true) {
+                    $kind !== null && in_array($kind, $kinds, true) => "You lean to {$kind}, from what you open, save and go to.",
+                    $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} lately.",
+                    default => null,
+                },
+                match (true) {
+                    is_string($area) && in_array($area, $areas, true) => "You lean to what’s on in {$area}.",
+                    is_string($area) && in_array($area, $recent['areas'], true) => "You looked at {$area} lately.",
+                    default => null,
+                },
+            ]));
+        };
     }
 
     /**

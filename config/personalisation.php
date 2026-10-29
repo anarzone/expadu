@@ -50,6 +50,7 @@ return [
         // Place feedback the app already has beyond the spec's table, at the
         // weight of the spec signal each is closest to.
         'more_like_this' => ['weight' => 3.0, 'taste' => true],   // like a save
+        'less_like_this' => ['weight' => -2.0, 'taste' => true],  // its kind lower; nothing hidden
         'been_liked' => ['weight' => 5.0, 'taste' => true],       // like a trip taken
         'been_disliked' => ['weight' => -4.0, 'taste' => true, 'place' => true, 'hide_days' => 90], // like "not for me"
     ],

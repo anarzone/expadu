@@ -904,9 +904,18 @@ button.settings-tile:active {
 .privacy-fine.is-wide {
     flex: 1 1 100%;
 }
-.privacy-fine a {
+.privacy-fine a,
+.privacy-link {
     color: var(--color-text);
     font-weight: var(--weight-semibold);
+}
+.privacy-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 .privacy-never {
     display: grid;
