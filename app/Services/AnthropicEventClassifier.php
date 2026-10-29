@@ -57,6 +57,10 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 'items' => ['type' => 'string', 'enum' => self::CHIPS],
                 'description' => 'ONLY chips you are certain about. A missing chip is fine; a wrong one destroys trust.',
             ],
+            'sensitive' => [
+                'type' => 'boolean',
+                'description' => 'true when the event is mainly about religion or worship, a political party or campaign, a trade union, health or a medical condition, or sexual orientation and gender identity (a service, a party meeting, a union assembly, a support group, Pride). False for a concert or tour that only takes place in a church or hall.',
+            ],
             'title_en' => ['type' => 'string'],
             'summary_en' => [
                 'type' => 'string',
@@ -67,7 +71,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 'description' => 'Optional. One practical sentence for someone going alone, using only facts the source states (when, where, booking, price; the language only when the source names it). Leave it out when the source gives nothing practical. Never guess who attends, which languages are spoken, how to pay, or how busy it gets, and never hedge ("appears", "probably"): if it is not stated, leave it out. The language a guest needs goes in the language field, not here.',
             ],
         ];
-        $required = ['relevance', 'confidence', 'category', 'language', 'chips', 'title_en', 'summary_en'];
+        $required = ['relevance', 'confidence', 'category', 'language', 'chips', 'sensitive', 'title_en', 'summary_en'];
         if ($hasDescription && ! $requiresChunkedTranslation) {
             $properties['description_en'] = [
                 'type' => 'string',
@@ -149,6 +153,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
             'category' => (string) $input['category'],
             'language' => (string) $input['language'],
             'chips' => array_values(array_intersect((array) ($input['chips'] ?? []), self::CHIPS)),
+            'sensitive' => ($input['sensitive'] ?? false) === true,
             'title_en' => (string) $input['title_en'],
             'description_en' => $descriptionEnglish,
             'summary_en' => (string) $input['summary_en'],

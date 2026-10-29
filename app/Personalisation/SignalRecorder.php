@@ -180,6 +180,9 @@ final class SignalRecorder
      */
     public function topic(User $user, string $kind, ?string $area): void
     {
+        if (Sensitive::kind($kind)) {
+            return; // never a health service or a place of worship
+        }
         $this->interest($user, SignalAction::Searched, SignalSurface::Composer, SignalItemType::Topic, self::key("{$kind}|{$area}"), ['category' => $kind, 'veedel' => $area]);
     }
 

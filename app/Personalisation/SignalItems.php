@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * What the aggregates key on, read from the catalogue when a signal is
  * recorded: the item's category, Veedel and price band. A place alias is
- * recorded as its canonical place. Unknown ids are left out.
+ * recorded as its canonical place. Unknown ids are left out, and so are
+ * health services, places of worship, LGBTQ+ venues and sensitive events
+ * (Sensitive): personalisation never learns from them.
  */
 final class SignalItems
 {
@@ -22,9 +24,13 @@ final class SignalItems
         $items = [];
 
         if ($spotIds !== []) {
+            [$own, $ownBindings] = Sensitive::spotCondition('s');
+            [$canonical, $canonicalBindings] = Sensitive::spotCondition('c');
             $spots = DB::table('spots as s')
                 ->leftJoin('spots as c', 'c.id', '=', 's.canonical_spot_id')
                 ->whereIn('s.id', array_values(array_unique($spotIds)))
+                ->whereRaw("not {$own}", $ownBindings)
+                ->whereRaw("(c.id is null or not {$canonical})", $canonicalBindings)
                 ->selectRaw('s.id, coalesce(c.id, s.id) as canonical_id, coalesce(c.category, s.category) as category, coalesce(c.veedel, s.veedel) as veedel, coalesce(c.price_range, s.price_range) as price_range')
                 ->get();
             foreach ($spots as $spot) {
@@ -47,6 +53,7 @@ final class SignalItems
             $events = DB::table('events')
                 ->leftJoin('venues', 'venues.id', '=', 'events.venue_id')
                 ->whereIn('events.id', array_values(array_unique($eventIds)))
+                ->where('events.sensitive', false)
                 ->get(['events.id', 'events.category', 'events.is_free', 'events.price', 'venues.veedel']);
             foreach ($events as $event) {
                 $price = $event->price === null ? null : (float) $event->price;

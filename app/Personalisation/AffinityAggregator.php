@@ -19,6 +19,8 @@ final class AffinityAggregator
     public function rebuild(?CarbonInterface $now = null): array
     {
         $now = ($now ?? now())->toImmutable();
+        // Anything recorded about what it never learns from goes first (Sensitive).
+        Sensitive::drop();
         [$signals, $bindings] = $this->signals($now);
         $contexts = $this->contexts();
 
