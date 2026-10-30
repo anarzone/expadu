@@ -3,6 +3,8 @@
 namespace App\Composer\Eval;
 
 use App\Enums\SpotCategory;
+use App\Models\Spot;
+use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -156,7 +158,9 @@ final class PlanChecks
             if ($row->is_active === false) {
                 $problems[] = ['gate' => 'fact_mismatch', 'why' => 'place is inactive'];
             }
-            if (trim((string) $row->name) !== trim((string) ($slot['name'] ?? ''))) {
+            // The name the app shows is the place's display name ("Picnic spot in Kwattapark" for a "Picknickplatz").
+            $shown = fn (): ?string => app(PlaceFacts::class)->resolve(Spot::query()->findOrFail((int) $parts[1]))['display_name'] ?? null;
+            if (trim((string) $row->name) !== trim((string) ($slot['name'] ?? '')) && trim((string) $shown()) !== trim((string) ($slot['name'] ?? ''))) {
                 $problems[] = ['gate' => 'fact_mismatch', 'why' => "name \"{$slot['name']}\" ≠ \"{$row->name}\""];
             }
             if ((string) $row->category !== (string) ($slot['category'] ?? '')) {
