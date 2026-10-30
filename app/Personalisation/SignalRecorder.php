@@ -223,6 +223,7 @@ final class SignalRecorder
         DB::table('user_affinities')->where('subject_key', $subject)->delete();
         DB::table('user_place_negatives')->where('subject_key', $subject)->delete();
         DB::table('taste_profiles')->where('subject_key', $subject)->delete();
+        TodayTaste::forget($user instanceof User ? $user->id : $user);
     }
 
     /**
@@ -235,7 +236,8 @@ final class SignalRecorder
         }
 
         $subject = Pseudonym::for($user);
-        $this->afterCommit(function () use ($subject, $signals): void {
+        $userId = $user->id;
+        $this->afterCommit(function () use ($subject, $userId, $signals): void {
             $ids = ['spot' => [], 'event' => []];
             foreach ($signals as $signal) {
                 if (isset($ids[$signal['type']->value])) {
@@ -266,6 +268,7 @@ final class SignalRecorder
             }
 
             DB::table('user_signals')->insert($rows);
+            TodayTaste::forget($userId);
             foreach ($rows as $row) {
                 $days = SignalAction::from($row['action'])->hideDays();
                 if ($days !== null) {
@@ -295,7 +298,8 @@ final class SignalRecorder
                 'context' => json_encode([...$this->context->at(null, null), ...($what['context'] ?? [])], JSON_THROW_ON_ERROR),
                 'created_at' => now()->toIso8601String(),
             ]);
-            // What they look at changes how Today is ordered (TodayRank).
+            // What they look at changes what Today knows of them and how it's ordered (TodayRank).
+            TodayTaste::forget($userId);
             RankToday::soon($userId);
         });
     }

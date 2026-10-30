@@ -6,6 +6,7 @@ use App\Home\TodayNeeds;
 use App\Models\PlannedTrip;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\ReviewedHomePlan;
@@ -80,4 +81,32 @@ test('Today has it in the day’s deferred group', function () {
     $this->actingAs($this->user)->get(route('dashboard'))->assertOk()->assertInertia(fn ($page) => $page
         ->missing('needsYou')
         ->loadDeferredProps('day', fn ($reload) => $reload->where('needsYou.items.0.kind', 'trip_change')->has('needsYou.checked_at')));
+});
+
+test('it’s worked out once and served from the cache until something in the day changes; leaving now follows the clock', function () {
+    $late = needsTrip($this->user, '23:30', 'cancelled', 'Late shift');
+    $kinds = fn () => array_column(app(TodayNeeds::class)->for($this->user->fresh())['items'], 'kind');
+    expect($kinds())->toBe(['trip_change']);
+
+    // A change that tells nothing (straight to the table): the kept answer stands.
+    DB::table('planned_trips')->where('id', $late->id)->update(['alerted_kind' => null]);
+    expect($kinds())->toBe(['trip_change']);
+
+    // A change to the day (a planned way saved) works it out again.
+    needsTrip($this->user, '23:55', title: 'Not yet');
+    expect($kinds())->toBe([]);
+
+    // Leaving now isn't kept: a way leaving in 20 minutes says so 6 minutes on.
+    needsTrip($this->user, '22:50', title: 'Night bus home');
+    expect($kinds())->toBe([]);
+    $this->travelTo(needsAt('22:36'));
+    expect($kinds())->toBe(['leave_now']);
+});
+
+test('turning a kind off is seen at once', function () {
+    needsTrip($this->user, '23:30', 'cancelled', 'Late shift');
+    expect(app(TodayNeeds::class)->for($this->user)['items'])->toHaveCount(1);
+
+    $this->user->notificationPreference()->create(['preferences' => ['transit' => false]]);
+    expect(app(TodayNeeds::class)->for($this->user->fresh())['items'])->toBe([]);
 });
