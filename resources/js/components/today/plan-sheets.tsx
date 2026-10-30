@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
 import { routeTo } from '@/components/today/route-to';
@@ -12,6 +12,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { normalizeTime, TimeField } from '@/components/ui/time-field';
 import { showToast } from '@/components/ui/toast';
 import { travel } from '@/routes';
+import { geocode } from '@/routes/api';
 import type { DayItem, DayProjection } from '@/types/day';
 
 /*
@@ -69,6 +70,55 @@ export function ItemStatus({ item }: { item: DayItem }) {
     return <Pill>In your plan</Pill>;
 }
 
+type PlaceHit = {
+    name: string;
+    street: string | null;
+    city: string | null;
+    lat: number;
+    lng: number;
+};
+
+/** A picked place as the plan names it: by its name (an address's is the address). */
+const placeLabel = (hit: PlaceHit) => hit.name;
+
+/**
+ * Places for what's typed in Where? (Cologne's own places, then addresses), a moment
+ * after typing stops; none for fewer than two letters or once one is picked.
+ */
+function usePlaceHits(query: string): PlaceHit[] {
+    const [found, setFound] = useState<{ q: string; hits: PlaceHit[] }>({
+        q: '',
+        hits: [],
+    });
+    const q = query.trim();
+
+    useEffect(() => {
+        if (q.length < 2) {
+            return;
+        }
+
+        const ask = new AbortController();
+        const soon = window.setTimeout(() => {
+            fetch(geocode.url({ query: { q } }), {
+                headers: { Accept: 'application/json' },
+                signal: ask.signal,
+            })
+                .then((response) => (response.ok ? response.json() : []))
+                .then((hits: PlaceHit[]) =>
+                    setFound({ q, hits: hits.slice(0, 5) }),
+                )
+                .catch(() => undefined);
+        }, 250);
+
+        return () => {
+            window.clearTimeout(soon);
+            ask.abort();
+        };
+    }, [q]);
+
+    return q.length >= 2 && found.q === q ? found.hits : [];
+}
+
 /**
  * Add a plan, or Edit plan with the plan's own words and times in it. An
  * edit sends only what changed.
@@ -97,6 +147,12 @@ export function PlanSheet({
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
     const placeEditable = !item || personal(item);
+    // The place picked from the suggestions: its map point goes with it, so
+    // the plan gets a trip and a time to leave.
+    const [point, setPoint] = useState<{ lat: number; lng: number } | null>(
+        null,
+    );
+    const hits = usePlaceHits(point ? '' : place);
 
     const save = async (title: string, start: string, end: string) => {
         if (!item) {
@@ -107,10 +163,12 @@ export function PlanSheet({
                 start,
                 end,
                 ...(place.trim() ? { location: place.trim() } : {}),
+                ...(place.trim() && point ? point : {}),
             });
             showToast(`${title} is in your plan`);
             setName('');
             setPlace('');
+            setPoint(null);
             setTimes(nextSlot(day));
 
             return;
@@ -122,8 +180,9 @@ export function PlanSheet({
             ...(start !== item.start_time || end !== item.end_time
                 ? { start, end }
                 : {}),
-            ...(placeEditable && where !== (item.location?.label ?? null)
-                ? { location: where }
+            ...(placeEditable &&
+            (where !== (item.location?.label ?? null) || point)
+                ? { location: where, ...(where && point ? point : {}) }
                 : {}),
         };
 
@@ -199,17 +258,55 @@ export function PlanSheet({
                     />
                 </label>
                 {placeEditable && (
-                    <label className="form-field">
-                        Where? <small>Optional</small>
-                        <input
-                            type="text"
-                            value={place}
-                            maxLength={160}
-                            autoComplete="off"
-                            placeholder="Place or neighbourhood"
-                            onChange={(event) => setPlace(event.target.value)}
-                        />
-                    </label>
+                    <div className="place-field">
+                        <label className="form-field">
+                            Where? <small>Optional</small>
+                            <input
+                                type="text"
+                                value={place}
+                                maxLength={160}
+                                autoComplete="off"
+                                placeholder="Place or neighbourhood"
+                                aria-controls="plan-place-hits"
+                                onChange={(event) => {
+                                    setPlace(event.target.value);
+                                    setPoint(null);
+                                }}
+                            />
+                        </label>
+                        {hits.length > 0 && (
+                            <ul
+                                className="stop-list place-hits"
+                                id="plan-place-hits"
+                                aria-label="Places"
+                            >
+                                {hits.map((hit) => (
+                                    <li key={`${hit.lat},${hit.lng}`}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPlace(placeLabel(hit));
+                                                setPoint({
+                                                    lat: hit.lat,
+                                                    lng: hit.lng,
+                                                });
+                                            }}
+                                        >
+                                            <Icon name="pin" />
+                                            <span>
+                                                <strong>{hit.name}</strong>
+                                                <small>
+                                                    {[hit.street, hit.city]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
+                                                </small>
+                                            </span>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 )}
                 <div className="selection-times">
                     <label className="form-field">

@@ -1096,6 +1096,33 @@ a.plan-link:hover {
 .stop-list li > span {
     flex: 1;
 }
+/* Where? in Add a plan: the places the geocoder finds, to pick one. */
+.place-field {
+    position: relative;
+}
+.place-hits button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+    cursor: pointer;
+}
+.place-hits button > span {
+    display: grid;
+    min-width: 0;
+}
+.place-hits small {
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.place-hits li {
+    padding: 0 8px;
+}
 /* A stop they pick often (learned, opt-in), after their favourites. */
 .stop-often {
     color: var(--color-text-soft);

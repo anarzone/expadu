@@ -7,10 +7,13 @@ use App\Models\User;
 use App\Personalisation\SignalAction;
 use App\Personalisation\SignalRecorder;
 use App\Places\PlaceIdentity;
+use App\Services\CologneServiceArea;
+use App\Services\GeocodingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Server-owned plan commands. Every change goes straight into the plan with
@@ -32,7 +35,12 @@ class WorkspaceStore
     /** A change Composer makes for an answer says itself in that answer (its `changed` card), not in replies of its own. */
     private bool $quiet = false;
 
-    public function __construct(private CandidateRepository $catalogue, private WorkspaceUpgrade $upgrade) {}
+    public function __construct(
+        private CandidateRepository $catalogue,
+        private WorkspaceUpgrade $upgrade,
+        private GeocodingService $geocoding,
+        private CologneServiceArea $serviceArea,
+    ) {}
 
     /**
      * A change to a day Composer makes for one of its answers (ComposerActions): the same
@@ -496,6 +504,7 @@ class WorkspaceStore
                     $this->require($slots[$index]['type'] === 'personal', 'not_editable', 'Only a personal plan’s place can be edited.');
                     $slots[$index]['location'] = $input['location'];
                     unset($slots[$index]['lat'], $slots[$index]['lng'], $slots[$index]['travel_min_from_previous']);
+                    $slots[$index] = [...$slots[$index], ...$this->placePoint($input['location'], $input['lat'] ?? null, $input['lng'] ?? null)];
                 }
                 break;
             case 'remove':
@@ -504,7 +513,7 @@ class WorkspaceStore
                 array_splice($slots, $index, 1);
                 break;
             case 'appointment':
-                $slots[] = $this->setTime(['id' => 'personal:'.Str::uuid(), 'type' => 'personal', 'name' => $input['name'], 'location' => $input['location'] ?? null, 'category' => 'appointment', 'swappable' => false, 'subtitle' => 'Personal plan'], $date, $input['start'], $input['end']);
+                $slots[] = $this->setTime(['id' => 'personal:'.Str::uuid(), 'type' => 'personal', 'name' => $input['name'], 'location' => $input['location'] ?? null, 'category' => 'appointment', 'swappable' => false, 'subtitle' => 'Personal plan', ...$this->placePoint($input['location'] ?? null, $input['lat'] ?? null, $input['lng'] ?? null)], $date, $input['start'], $input['end']);
                 $label = "Added {$input['name']}";
                 break;
             case 'add':
@@ -938,5 +947,35 @@ class WorkspaceStore
         if (! $condition) {
             throw new WorkspaceRefusal($reason, $message);
         }
+    }
+
+    /**
+     * A personal plan's map point, so it gets a trip and a time to leave: the place picked from
+     * the suggestions, else the geocoder's first match for the words typed. Only a point inside
+     * Cologne counts; otherwise the place stays words only, never a guess elsewhere.
+     *
+     * @return array{lat?: float, lng?: float}
+     */
+    private function placePoint(?string $location, mixed $lat, mixed $lng): array
+    {
+        $inside = function (float $lat, float $lng): bool {
+            try {
+                return $this->serviceArea->contains($lat, $lng);
+            } catch (Throwable) {
+                return false;
+            }
+        };
+        if (is_numeric($lat) && is_numeric($lng) && $inside((float) $lat, (float) $lng)) {
+            return ['lat' => (float) $lat, 'lng' => (float) $lng];
+        }
+        $words = trim((string) $location);
+        if ($words === '') {
+            return [];
+        }
+        $match = $this->geocoding->search($words)[0] ?? null;
+
+        return $match !== null && $inside((float) $match['lat'], (float) $match['lng'])
+            ? ['lat' => (float) $match['lat'], 'lng' => (float) $match['lng']]
+            : [];
     }
 }
