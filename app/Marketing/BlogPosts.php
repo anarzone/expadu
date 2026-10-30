@@ -15,11 +15,16 @@ use Illuminate\Support\Str;
  *
  * Filename convention: YYYY-MM-DD-slug.md → slug, with the date as the
  * published date. Front matter supports scalar `key: value` lines only.
+ *
+ * "At a glance": up to four `glance_1` … `glance_4` lines, each
+ * `icon | headline | detail`, shown in a card beside the guide. Every fact
+ * restates the guide's own (sourced) text; the icon is one of the names the
+ * guide page knows (clock, calendar, pin, euro, document, phone, check, user).
  */
 class BlogPosts
 {
     /**
-     * @return array<int, array{slug: string, title: string, description: string, published_at: Carbon, updated_at: Carbon, body_html: string}>
+     * @return array<int, array{slug: string, title: string, description: string, published_at: Carbon, updated_at: Carbon, glance: array<int, array{icon: string, title: string, detail: string}>, body_html: string}>
      */
     public function all(): array
     {
@@ -45,7 +50,7 @@ class BlogPosts
     }
 
     /**
-     * @return array{slug: string, title: string, description: string, published_at: Carbon, updated_at: Carbon, body_html: string}|null
+     * @return array{slug: string, title: string, description: string, published_at: Carbon, updated_at: Carbon, glance: array<int, array{icon: string, title: string, detail: string}>, body_html: string}|null
      */
     public function find(string $slug): ?array
     {
@@ -53,7 +58,7 @@ class BlogPosts
     }
 
     /**
-     * @return array{slug: string, title: string, description: string, published_at: string, updated_at: string, body_html: string}|null
+     * @return array{slug: string, title: string, description: string, published_at: string, updated_at: string, glance: array<int, array{icon: string, title: string, detail: string}>, body_html: string}|null
      */
     private function parse(string $path): ?array
     {
@@ -89,10 +94,28 @@ class BlogPosts
             // all() hydrates them into Carbon after cache retrieval.
             'published_at' => $nameParts[1],
             'updated_at' => $meta['updated'] ?? $nameParts[1],
+            'glance' => $this->glance($meta),
             'body_html' => Str::markdown($body, [
                 'html_input' => 'strip',
                 'allow_unsafe_links' => false,
             ]),
         ];
+    }
+
+    /**
+     * @param  array<string, string>  $meta
+     * @return array<int, array{icon: string, title: string, detail: string}>
+     */
+    private function glance(array $meta): array
+    {
+        $facts = [];
+        foreach ([1, 2, 3, 4] as $n) {
+            $parts = array_map('trim', explode('|', $meta["glance_{$n}"] ?? '', 3));
+            if (count($parts) === 3 && $parts[1] !== '') {
+                $facts[] = ['icon' => $parts[0], 'title' => $parts[1], 'detail' => $parts[2]];
+            }
+        }
+
+        return $facts;
     }
 }
