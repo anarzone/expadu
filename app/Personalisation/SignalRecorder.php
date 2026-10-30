@@ -34,7 +34,11 @@ final class SignalRecorder
      * A place's standing feedback changed (or was cleared): the previous
      * feedback is withdrawn, live hide included, and the new one recorded.
      */
-    public function placeFeedback(User $user, Spot $spot, ?SpotFeedbackState $state, ?string $rating = null): void
+    /**
+     * @param  list<SignalAction>|null  $replaces  which earlier signals this replaces: Been
+     *                                             replaces Been, a state replaces a state
+     */
+    public function placeFeedback(User $user, Spot $spot, ?SpotFeedbackState $state, ?string $rating = null, ?array $replaces = null): void
     {
         if (! $user->personalises()) {
             return;
@@ -42,7 +46,12 @@ final class SignalRecorder
 
         $id = (int) ($spot->canonical_spot_id ?? $spot->id);
         $subject = Pseudonym::for($user);
-        $this->afterCommit(fn () => $this->withdraw($subject, SignalItemType::Spot, $id, SignalAction::placeFeedback()));
+        $replaces ??= match (true) {
+            $state === SpotFeedbackState::Been => SignalAction::placeBeen(),
+            $state !== null => SignalAction::placeState(),
+            default => SignalAction::placeFeedback(),
+        };
+        $this->afterCommit(fn () => $this->withdraw($subject, SignalItemType::Spot, $id, $replaces));
 
         $action = match ($state) {
             SpotFeedbackState::Saved => SignalAction::Saved,

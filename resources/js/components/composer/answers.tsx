@@ -27,7 +27,7 @@ import type { Message } from './types';
  * (prototype/dev/design/composer-studio/conversation-view.js `entry()`): a short verdict
  * first, then the detail, the block a kind brings (your checklist, a listing's facts) and,
  * on the latest reply only, what to do next. The words and the data are the server's
- * (App\Composer\Answers\Answers); nothing here decides an answer.
+ * (App\Composer\Assistant); nothing here decides an answer.
  */
 
 export type Suggestion = {

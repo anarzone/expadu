@@ -2,11 +2,14 @@
 
 namespace App\Composer\Answers;
 
+use App\Composer\Assistant\PlanDay;
 use App\Enums\SpotCategory;
 use App\Models\Spot;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Place;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -21,6 +24,9 @@ final class Destinations
 {
     /** Places offered when the name alone doesn't say which. */
     private const CHOICES = 3;
+
+    /** Words around a place's name that don't tell places apart: the city, and stop and car-park words. */
+    private const AROUND = ['koln', 'cologne', 'park', 'ride', 'p', 'r', 'parkplatz', 'parkhaus', 'bf', 'bahnhof', 'haltestelle', 'station'];
 
     /** Cologne's centre (lat, lng), for keeping Travel's search to the city. */
     private const COLOGNE = [50.9375, 6.9603];
@@ -58,17 +64,28 @@ final class Destinations
             ->limit(300)->get(['id', 'name', 'category', 'veedel', 'lat', 'lng', 'source'])
             ->map(fn (Spot $spot): array => ['name' => $spot->name, 'area' => $spot->veedel,
                 'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id, 'source' => $spot->source]);
-        $same = fn (array $place): bool => self::tight($place['name']) === self::tight($key);
+        $same = fn (array $place): bool => self::core($place['name']) === self::core($key);
 
         // The name itself in Expadu's places, else in Travel's search (in Cologne); only then
         // names holding it ("Zoo" in "Zoo Restaurant"), Expadu's first.
         $found = $spots->filter($same);
+        // Its other names ("Cologne Cathedral" is the Kölner Dom): a place's listed aliases.
+        if ($found->isEmpty()) {
+            $found = $this->byAlias($key);
+        }
         if ($found->isEmpty()) {
             $searched = collect($this->searched($named, $near))
                 ->filter(fn (array $place): bool => abs($place['point']->lat - self::COLOGNE[0]) < 0.2 && abs($place['point']->lng - self::COLOGNE[1]) < 0.3);
             $found = $searched->filter($same);
             $found = $found->isNotEmpty() ? $found : $spots->filter(fn (array $place): bool => preg_match('/\b'.preg_quote($key, '/').'\b/u', self::key($place['name'])) === 1);
             $found = $found->isNotEmpty() ? $found : $searched->filter(fn (array $place): bool => str_contains(self::tight($place['name']), self::tight($key)));
+        }
+        // "The Dom": of several holding the word, the one it names at its end ("Kölner Dom"), when only one does;
+        // "Gaffel am Dom" is by it, not it.
+        $ending = $found->filter(fn (array $place): bool => str_ends_with(' '.self::key($place['name']), ' '.$key)
+            && preg_match('/\b(am|an|im|in|zum|zur|beim|vom|bei|vor|auf|unter|hinterm|neben)\s+'.preg_quote($key, '/').'$/u', self::key($place['name'])) !== 1);
+        if ($found->count() > 1 && $ending->count() === 1) {
+            $found = $ending;
         }
         if ($veedels !== [] && ($inArea = $found->filter(fn (array $place): bool => in_array($place['area'], $veedels, true)))->isNotEmpty()) {
             $found = $inArea;
@@ -77,11 +94,17 @@ final class Destinations
             : ($place['point']->lat - $near->lat) ** 2 + (($place['point']->lng - $near->lng) * 0.63) ** 2)->values();
 
         // Rows of one name within a short walk are one place (an import can hold a café three
-        // times); places further apart are different, and the person says which.
+        // times; "Köln Weiden West" and "Park&Ride Weiden West" sit side by side), and the stop
+        // stands for them, since this is where someone travels to; places further apart are
+        // different, and the person says which.
         $distinct = [];
         foreach ($found as $place) {
-            foreach ($distinct as $kept) {
+            foreach ($distinct as $i => $kept) {
                 if (self::samePlace($kept, $place)) {
+                    if ($place['kind'] === 'Stop' && $kept['kind'] !== 'Stop') {
+                        $distinct[$i] = $place;
+                    }
+
                     continue 2;
                 }
             }
@@ -91,15 +114,23 @@ final class Destinations
         return array_slice($distinct, 0, self::CHOICES);
     }
 
-    /** One place twice: the same name, or one name holding the other, within about 150 m. */
+    /** One place twice: the same core name, or one holding the other, within about 300 m. */
     private static function samePlace(array $one, array $two): bool
     {
-        $a = self::tight($one['name']);
-        $b = self::tight($two['name']);
+        $a = self::core($one['name']);
+        $b = self::core($two['name']);
         $metres = 111_320 * sqrt(($one['point']->lat - $two['point']->lat) ** 2
             + (($one['point']->lng - $two['point']->lng) * cos(deg2rad($one['point']->lat))) ** 2);
 
-        return ($a === $b || str_starts_with($a, $b) || str_starts_with($b, $a)) && $metres <= 150;
+        return $a !== '' && $b !== '' && ($a === $b || str_starts_with($a, $b) || str_starts_with($b, $a)) && $metres <= 300;
+    }
+
+    /** A name's core, spaces aside: no city, and none of the stop or car-park words around it ("Köln Weiden West", "P+R Weiden West": "weidenwest"). */
+    private static function core(string $name): string
+    {
+        $words = array_filter(explode(' ', self::key($name)), fn (string $word): bool => ! in_array($word, self::AROUND, true));
+
+        return implode('', $words) ?: self::tight($name);
     }
 
     /** A name as compared: lower case, plain letters, no "the". */
@@ -139,12 +170,30 @@ final class Destinations
         if ($area === null || trim($area) === '') {
             return [];
         }
-        $area = mb_strtolower(trim($area));
+        $area = PlanDay::plain($area);
         if (preg_match(self::CENTRE_WORDS, $area)) {
             return self::CENTRE;
         }
 
         return collect(config('veedels', []))->flatten()->filter(fn (mixed $veedel): bool => is_string($veedel)
             && (self::key($veedel) === self::key($area) || str_starts_with(self::key($veedel), self::key($area).' ')))->values()->all();
+    }
+
+    /**
+     * Places whose listed aliases hold this name (Wikidata's names in other languages, the city's).
+     *
+     * @return Collection<int, array{name: string, area: ?string, kind: ?string, point: GeoPoint, spot: ?int, source: ?string}>
+     */
+    private function byAlias(string $key): Collection
+    {
+        $ids = DB::table('place_fact_observations')->whereRaw("lower(payload->>'aliases') like ?", ['%'.$key.'%'])->limit(40)->get(['spot_id', 'payload'])
+            ->filter(fn (object $row): bool => collect(json_decode((string) $row->payload, true)['aliases'] ?? [])
+                ->contains(fn (mixed $alias): bool => is_string($alias) && self::core($alias) === self::core($key)))
+            ->pluck('spot_id')->unique()->values()->all();
+
+        return $ids === [] ? collect() : Spot::query()->canonical()->where('is_active', true)->whereIn('id', $ids)->whereNotNull('lat')->whereNotNull('lng')
+            ->get(['id', 'name', 'category', 'veedel', 'lat', 'lng', 'source'])
+            ->map(fn (Spot $spot): array => ['name' => $spot->name, 'area' => $spot->veedel,
+                'kind' => $spot->category instanceof SpotCategory ? $spot->category->label() : null, 'point' => new GeoPoint($spot->lat, $spot->lng), 'spot' => $spot->id, 'source' => $spot->source]);
     }
 }

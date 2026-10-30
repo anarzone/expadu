@@ -9,6 +9,8 @@ use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use Closure;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -163,7 +165,9 @@ final class ExternalProcessingGate
                     return is_array($decoded) ? $decoded : null;
                 }
             } catch (Throwable $error) {
-                Log::warning('External processing request failed.', ['purpose' => $purpose->value, 'error_type' => $error::class]);
+                Log::warning('External processing request failed.', ['purpose' => $purpose->value, 'error_type' => $error::class,
+                    // The transport's error number (cURL's: 28 a timeout, 7 no connection, 56 a dropped receive), never what was sent.
+                    'curl_errno' => self::curlErrno($error)]);
             }
 
             return null;
@@ -227,6 +231,14 @@ final class ExternalProcessingGate
             || ! hash_equals($row->input_digest, ProcessingConsentStore::digest($context))) {
             return false;
         }
+        if ($purpose === ProcessingPurpose::ComposerPaperwork) {
+            // Their own record, still in use, read by someone still allowed to: Composer's changes to it
+            // (a report) may move its version within the exchange.
+            $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
+            $actor = User::query()->find($row->actor_id);
+
+            return $row->question_id === null && $case !== null && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
+        }
         if ($purpose === ProcessingPurpose::PaperworkAnswer) {
             // The answers sent were read at this fact version, by someone still allowed to ask.
             $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
@@ -246,5 +258,19 @@ final class ExternalProcessingGate
         $question = $actor !== null && $row->question_id !== null ? app(FactExtractionAccess::class)->question($actor, $case, $row->question_id, $context) : null;
 
         return $question !== null && $question->id === $row->question_id && $question->answered_at === null;
+    }
+
+    /** The cURL error number behind a failed request, when the transport says one. */
+    private static function curlErrno(Throwable $error): ?int
+    {
+        for ($e = $error; $e !== null; $e = $e->getPrevious()) {
+            if ($e instanceof RequestException || $e instanceof ConnectException) {
+                $errno = $e->getHandlerContext()['errno'] ?? null;
+
+                return is_int($errno) ? $errno : null;
+            }
+        }
+
+        return null;
     }
 }

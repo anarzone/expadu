@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import ProcessingNoticeController from '@/actions/App/Http/Controllers/ProcessingNoticeController';
 
 /**
- * Composer reads a request with an AI service only with the person's say-so (owner,
+ * Composer answers a message with an AI service only with the person's say-so (owner,
  * 21 Oct 2026: sending is the consent, with the line under the box always in view).
  * The processor, its privacy notice and the versions a permit names come from the
- * server (GET privacy/processing/composer_parse); nothing about the provider is
+ * server (GET privacy/processing/composer_assist); nothing about the provider is
  * written here. When the service is off, or the notice can't be read, nothing is
  * shown and no permit is sent: the request is read without AI.
  */
@@ -34,7 +34,7 @@ export function useAiNotice(wanted = true): AiNotice | null {
         read.current = true;
         let live = true;
 
-        fetch(ProcessingNoticeController.url('composer_parse'), {
+        fetch(ProcessingNoticeController.url('composer_assist'), {
             credentials: 'same-origin',
             headers: { Accept: 'application/json' },
         })
@@ -68,7 +68,7 @@ export function useAiNotice(wanted = true): AiNotice | null {
     return notice;
 }
 
-/** The permit a parse sends: one request's say-so, for the notice the person saw. */
+/** The permit a message sends: one request's say-so, for the notice the person saw. */
 export function aiPermit(notice: AiNotice | null): object {
     return notice
         ? {
@@ -82,11 +82,11 @@ export function aiPermit(notice: AiNotice | null): object {
         : {};
 }
 
-/** The line under the box, in its helper text: who reads what you type, and their notice. */
+/** The line under the box, in its helper text: who reads what you send, and their notice. */
 export function AiNoticeLine({ notice }: { notice: AiNotice }) {
     return (
         <p className="composer-ai-notice">
-            {`Composer sends what you type to ${notice.processor_name}, an AI service, to read and answer your request`}
+            {`Composer sends what you type, with your nearest stop and neighbourhood, to ${notice.processor_name}, an AI service, to answer you`}
             {notice.processor_privacy_url ? (
                 <>
                     {' · '}

@@ -107,15 +107,19 @@ export function TripFact({
     value,
     sub,
     tone,
+    before,
 }: {
     label: ReactNode;
     value: ReactNode;
     sub: ReactNode;
     tone?: Exclude<TripTone, 'calm'>;
+    /** Over the value: the run it replaces, struck through ("13:14 Cancelled"). */
+    before?: ReactNode;
 }) {
     return (
         <div className={cn('trip-fact', tone && `is-${tone}`)}>
             <span className="trip-fact-label">{label}</span>
+            {before}
             <strong>{value}</strong>
             <small>{sub}</small>
         </div>
