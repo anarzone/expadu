@@ -8,6 +8,7 @@ use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
+use App\Privacy\ProcessingOptIns;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
 use App\Profile\Profile;
@@ -45,6 +46,7 @@ final class Ask
         private ProfileEngine $profiles,
         private UserLocationService $locations,
         private ProcessingConsentStore $consents,
+        private ProcessingOptIns $optIns,
     ) {}
 
     /**
@@ -53,7 +55,7 @@ final class Ask
      * @param  array<string, mixed>|null  $processing  their say-so for this request (the AI notice under the box)
      * @param  string|null  $page  the page Composer was opened on
      * @param  Request  $request  where they start from (UserLocationService::context): the page's From, or their browser's position
-     * @param  array<string, mixed>|null  $paperworkProcessing  their permission for Composer to read and change their Paperwork record in this message
+     * @param  array<string, mixed>|null  $paperworkProcessing  their Allow for Composer to read and change their Paperwork record, sent once (then remembered)
      * @return array<string, mixed> the workspace, with the answer in it
      */
     public function answer(User $user, ?array $processing, ?string $page, Request $request, ?array $paperworkProcessing = null): array
@@ -73,7 +75,7 @@ final class Ask
             : null;
 
         // With their Paperwork permission too (composer_paperwork), that permit carries the whole exchange.
-        $paperwork = $permit !== null && $paperworkProcessing !== null ? $this->paperworkPermit($user, $text, $profile, $page, $paperworkProcessing) : null;
+        $paperwork = $permit !== null ? $this->paperworkPermit($user, $text, $profile, $page, $paperworkProcessing) : null;
 
         // Sent without their say-so while the AI is on (a page that sent before its notice was read):
         // only that, and the same words to send again; never cards that read as if the AI were off.
@@ -182,11 +184,14 @@ final class Ask
     /**
      * Their permission for Composer to read and change their Paperwork record in this message
      * (composer_paperwork, its own notice), bound to their own record, so erasing or stopping
-     * it ends it too. Without a record in use there's nothing to permit.
+     * it ends it too. Their Allow is remembered (owner, 27 Oct 2026: "It should remember it"):
+     * sent with this message, it's kept as a standing yes for the notice and model they saw;
+     * without it, a standing yes still in force gives this message its own permit. Without a
+     * record in use there's nothing to permit.
      *
-     * @param  array<string, mixed>  $acceptance
+     * @param  array<string, mixed>|null  $acceptance  their Allow, when this message carries it
      */
-    private function paperworkPermit(User $user, string $text, Profile $profile, ?string $page, array $acceptance): ?ProcessingPermit
+    private function paperworkPermit(User $user, string $text, Profile $profile, ?string $page, ?array $acceptance): ?ProcessingPermit
     {
         if (! ProcessingPurpose::ComposerPaperwork->available()) {
             return null;
@@ -196,8 +201,15 @@ final class Ask
         if ($case === null) {
             return null;
         }
+        $context = Assistant::processingContext($text, $profile, $page);
         try {
-            return $this->consents->grant($user, ProcessingPurpose::ComposerPaperwork, Assistant::processingContext($text, $profile, $page), $acceptance, $case);
+            if ($acceptance === null) {
+                return $this->optIns->permit($user, ProcessingPurpose::ComposerPaperwork, $context, $case);
+            }
+            $permit = $this->consents->grant($user, ProcessingPurpose::ComposerPaperwork, $context, $acceptance, $case);
+            $this->optIns->turnOn($user, ProcessingPurpose::ComposerPaperwork, $acceptance['notice_version'], $acceptance['provider_version']);
+
+            return $permit;
         } catch (AuthorizationException) {
             return null;
         }

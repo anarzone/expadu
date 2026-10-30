@@ -8222,6 +8222,93 @@
    }
   },
   {
+   "id": "actions.permanent_residency_choices",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "I have permanent residency already",
+   "expect": {
+    "open": true,
+    "acted": "change_paperwork_fact",
+    "choices": [
+     "settlement_permit_9",
+     "settlement_permit_18c"
+    ],
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.niederlassungserlaubnis_choices",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "I got my Niederlassungserlaubnis",
+   "expect": {
+    "open": true,
+    "acted": "change_paperwork_fact",
+    "choices": [
+     "settlement_permit_9",
+     "settlement_permit_18c"
+    ],
+    "no_change": true
+   }
+  },
+  {
+   "id": "actions.blue_card_now",
+   "persona": "visa_holder",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "paperwork_permission": true,
+   "paperwork": {
+    "arrival_date": "2026-09-01",
+    "current_residence_title": "national_d_visa",
+    "entry_mode": "d_visa",
+    "visa_expires_at": "2026-12-01"
+   },
+   "text": "I'm on a Blue Card now",
+   "expect": {
+    "open": true,
+    "acted": "change_paperwork_fact",
+    "changed": "proposed",
+    "proposed_to": "EU Blue Card"
+   }
+  },
+  {
    "id": "actions.no_change_for_a_question",
    "persona": "visa_holder",
    "home_veedel": "Ehrenfeld",

@@ -9,6 +9,7 @@ use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyProcessingConsent;
+use App\Models\ProcessingOptIn;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -102,6 +103,13 @@ final class ProcessingConsentStore
                     ? [$purpose->value, ProcessingPurpose::ComposerPaperwork->value] : [$purpose->value]));
             $inFlight = (clone $permissions)->where('state', 'processing')->whereNotNull('dispatched_at')->count();
             $permissions->update(['withdrawn_at' => now()->utc(), 'result' => null, 'state' => 'withdrawn']);
+            // A standing yes for it ends too (ProcessingOptIns), and Composer's AI takes its Paperwork one with it.
+            $standing = array_filter([$purpose, ...($purpose === ProcessingPurpose::ComposerAssist ? [ProcessingPurpose::ComposerPaperwork] : [])],
+                fn (?ProcessingPurpose $p): bool => in_array($p, ProcessingOptIns::STANDING, true));
+            if ($standing !== []) {
+                ProcessingOptIn::query()->where('user_id', $actor->id)->whereIn('purpose', array_map(fn (ProcessingPurpose $p): string => $p->value, $standing))
+                    ->whereNull('withdrawn_at')->update(['withdrawn_at' => now()->utc()]);
+            }
             BureaucracyExtractionCandidate::query()->whereIn('consent_id', (clone $permissions)->select('id'))
                 ->update(['value' => null, 'confirmation_token' => null, 'state' => 'invalidated']);
             if ($purpose === null || $purpose === ProcessingPurpose::FactExtraction) {
