@@ -17,9 +17,6 @@ class TrackEventController extends Controller
      */
     public const CLIENT_EVENT_TYPES = [
         'page_viewed',
-        'onboarding_step',
-        'onboarding_skip_optional',
-        'onboarding_complete',
         'location_ping',
     ];
 
