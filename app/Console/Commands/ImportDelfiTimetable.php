@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Transit\DelfiCancellations;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class ImportDelfiTimetable extends Command
@@ -19,7 +18,7 @@ class ImportDelfiTimetable extends Command
     {
         $file = $this->option('file');
         $published = $file ? null : $delfi->publishedVersion();
-        if (! $file && ! $this->option('force') && $published !== null && $published === Cache::get(DelfiCancellations::VERSION_KEY)) {
+        if (! $file && ! $this->option('force') && $published !== null && $published === $delfi->importedVersion()) {
             $this->info('gtfs.de has not published a new timetable since the last import; nothing to do.');
 
             return self::SUCCESS;
@@ -39,16 +38,13 @@ class ImportDelfiTimetable extends Command
         }
 
         try {
-            $kept = $delfi->import($file ?: $download);
+            $kept = $delfi->import($file ?: $download, $published);
         } finally {
             if (! $file) {
                 @unlink($download);
             }
         }
 
-        if ($published !== null) {
-            Cache::forever(DelfiCancellations::VERSION_KEY, $published);
-        }
         $this->info("Kept {$kept} calls in the area.");
 
         return self::SUCCESS;
