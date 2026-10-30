@@ -1,6 +1,7 @@
 <?php
 
 use App\Bureaucracy\Facts\ConfirmedFactView;
+use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\PaperworkActions;
 use App\Composer\Answers\EventAnswers;
@@ -48,6 +49,25 @@ function withVisa(User $user): void
     ReviewedHomePlan::activate($user, ['fixture.entry' => ['title' => 'Synthetic preparation']],
         ['arrival_date' => '2026-09-01', 'visa_expires_at' => '2026-10-01']);
 }
+
+test('🔒 a step on a task they never started is marked done: starting it doesn’t leave a stale review token', function () {
+    withVisa($this->user);
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['composer_ask_first_paperwork' => false]]);
+    $task = fn (): ?array => collect(app(AccountPlanEntry::class)->for($this->user)['plan']['processes'] ?? [])->firstWhere('title', 'Synthetic preparation');
+    $step = $task()['steps'][0];
+    expect($task()['id'] ?? null)->toBeNull();
+
+    $actions = app(ComposerActions::class);
+    $status = fn (): ?string => collect($task()['steps'])->firstWhere('step_id', $step['step_id'])['status'] ?? null;
+    $made = $actions->request($this->user, 'paperwork_step', ['task' => 'synthetic', 'step' => $step['step_id']], CarbonImmutable::now());
+    expect($made['blocks'][0]['type'])->toBe('done')->and($status())->toBe('completed');
+
+    // Paperwork calls a done step 'completed': marked again it's already done, and it can be marked not done.
+    expect($actions->request($this->user, 'paperwork_step', ['task' => 'synthetic', 'step' => $step['step_id']], CarbonImmutable::now())['said'])
+        ->toContain('already done');
+    $actions->request($this->user, 'paperwork_step', ['task' => 'synthetic', 'step' => $step['step_id'], 'done' => false], CarbonImmutable::now());
+    expect($status())->toBe('todo');
+});
 
 test('a Paperwork answer is proposed, applied as a confirmed extraction, and undone through Paperwork’s correction', function () {
     withVisa($this->user);

@@ -14,7 +14,7 @@ beforeEach(function () {
 /** Mechanical UI invariants, not a second applicability or deadline calculation. */
 function assertPlanContract(array $plan): void
 {
-    $contract = json_decode(file_get_contents(base_path('tests/Fixtures/paperwork/v2-plan-contract.json')), true, flags: JSON_THROW_ON_ERROR);
+    $contract = json_decode(file_get_contents(base_path('tests/Fixtures/bureaucracy/v2-plan-contract.json')), true, flags: JSON_THROW_ON_ERROR);
     expect($plan['schema_version'])->toBe($contract['schema_version']);
     foreach ($contract['required_types'] as $key => $type) {
         expect($plan)->toHaveKey($key);

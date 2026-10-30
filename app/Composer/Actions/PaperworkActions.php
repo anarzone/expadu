@@ -120,7 +120,7 @@ final class PaperworkActions implements ComposerAction
             }
         }
         $tasks = collect($plan['processes'] ?? [])->filter(fn (array $p): bool => ! ($p['is_closed'] ?? false))->map(fn (array $p): string => "Task \"{$p['title']}\" (task {$p['occurrence_key']}): "
-            .collect($p['steps'] ?? [])->map(fn (array $s): string => "step {$s['step_id']} \"{$s['title']}\", ".($s['status'] === 'done' ? 'done' : 'not done')
+            .collect($p['steps'] ?? [])->map(fn (array $s): string => "step {$s['step_id']} \"{$s['title']}\", ".($s['status'] === 'completed' ? 'done' : 'not done')
                 .collect($s['dates'] ?? [])->filter(fn (array $d): bool => is_string($d['date'] ?? null))->map(fn (array $d): string => ', aim for '.self::day($d['date']))->first())->implode('; '))
             ->implode("\n");
         $answers = collect($rows)->map(fn (array $r): string => "{$r['label']}: {$r['value']} (key {$r['key']})")->implode('; ');
@@ -160,16 +160,16 @@ final class PaperworkActions implements ComposerAction
                             'previous' => $prepared['previous'], 'state' => $prepared['state'], 'from' => $prepared['from']]];
                 })(),
                 'paperwork_step' => (function () use ($user, $person, $prepared): array {
-                    [$process, $version] = $this->tracked($user, $person, $prepared);
+                    [$process, $version, $token] = $this->tracked($user, $person, $prepared);
                     app(RecordProcessEvent::class)->execute($user, $process, $prepared['done'] ? 'step_completed' : 'step_reopened', ['step_id' => $prepared['step']],
-                        $version, (string) Str::uuid(), $prepared['review_token']);
+                        $version, (string) Str::uuid(), $token);
 
                     return ['title' => "Marked “{$prepared['name']}” as ".($prepared['done'] ? 'done' : 'not done'), 'sub' => "{$prepared['task']}. ".self::NOTE,
                         'undo' => ['kind' => 'step', 'process' => $process->id, 'step' => $prepared['step'], 'done' => $prepared['done'], 'name' => $prepared['name']]];
                 })(),
                 default => (function () use ($user, $person, $prepared): array {
-                    [$process, $version] = $this->tracked($user, $person, $prepared);
-                    $event = app(RecordProcessEvent::class)->execute($user, $process, $prepared['event'], $prepared['payload'], $version, (string) Str::uuid(), $prepared['review_token']);
+                    [$process, $version, $token] = $this->tracked($user, $person, $prepared);
+                    $event = app(RecordProcessEvent::class)->execute($user, $process, $prepared['event'], $prepared['payload'], $version, (string) Str::uuid(), $token);
 
                     return ['title' => $prepared['done'], 'sub' => "{$prepared['task']}. ".self::NOTE,
                         'undo' => ['kind' => $prepared['event'], 'process' => $process->id, 'event' => $event->id, 'appointment' => $prepared['payload']['appointment_id'] ?? null, 'task' => $prepared['task']]];
@@ -324,7 +324,7 @@ final class PaperworkActions implements ComposerAction
             throw new ActionRefused($steps === [] ? "That step isn’t in {$process['title']}." : "More than one step in {$process['title']} fits. Ask which.");
         }
         $done = ($input['done'] ?? true) !== false;
-        if (($steps[0]['status'] === 'done') === $done) {
+        if (($steps[0]['status'] === 'completed') === $done) {
             throw new ActionRefused("“{$steps[0]['title']}” is ".($done ? 'already done.' : 'not marked done.'));
         }
 
@@ -432,19 +432,24 @@ final class PaperworkActions implements ComposerAction
     }
 
     /**
-     * The task as a tracked process, started when it isn't yet (opening it records no progress).
+     * The task as a tracked process, started when it isn't yet (opening it records no progress),
+     * with the review token to write with: starting it changes the token, so a just-started process
+     * takes its fresh one, never the plan's from before.
      *
-     * @return array{0: BureaucracyProcess, 1: int}
+     * @return array{0: BureaucracyProcess, 1: int, 2: ?string}
      */
     private function tracked(User $user, BureaucracyPerson $person, array $prepared): array
     {
         $id = $prepared['process'] ?? null;
-        if ($id === null) {
-            $id = app(StartProcess::class)->execute($user, $person, $prepared['jurisdiction'], $prepared['occurrence'], $prepared['review_token'], (string) Str::uuid())['process_id'];
-        }
-        $process = BureaucracyProcess::query()->findOrFail($id);
+        if ($id !== null) {
+            $process = BureaucracyProcess::query()->findOrFail($id);
 
-        return [$process, (int) $process->version];
+            return [$process, (int) $process->version, $prepared['review_token']];
+        }
+        $id = app(StartProcess::class)->execute($user, $person, $prepared['jurisdiction'], $prepared['occurrence'], $prepared['review_token'], (string) Str::uuid())['process_id'];
+        [$process, $version, $token] = $this->current($user, $id);
+
+        return [$process, $version, $token ?? $prepared['review_token']];
     }
 
     /**
