@@ -1,6 +1,7 @@
 // Renders the per-page Open Graph cards into public/marketing/og/.
 // Run from the repo root: node prototype/og-cards/render.mjs
 // Re-run (and commit the PNGs) whenever a page title below changes.
+// Name files to render only those: node prototype/og-cards/render.mjs og/guides.png
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -71,7 +72,33 @@ export const cards = [
         title: 'Your first 90 days in Cologne, *in order*',
         tags: ['real deadlines', 'in order', 'official sources'],
     },
+    {
+        file: 'og/guide-auslaenderbehoerde-cologne-english-guide.png',
+        eyebrow: 'Guide',
+        title: 'Ausländerbehörde Cologne: *which office, and how to book*',
+        size: 70,
+        tags: ['district offices', 'appointments', 'official sources'],
+    },
+    {
+        file: 'og/guide-kundenzentren-cologne-english-guide.png',
+        eyebrow: 'Guide',
+        title: 'Kundenzentren in Cologne: *every office, walk-in days*',
+        size: 70,
+        tags: ['nine offices', 'walk-in days', 'official sources'],
+    },
+    {
+        file: 'og/guide-wohnungsgeberbescheinigung-cologne-english.png',
+        eyebrow: 'Guide',
+        title: 'The landlord form for your *Cologne Anmeldung*',
+        tags: [
+            'Wohnungsgeberbescheinigung',
+            'who signs it',
+            'official sources',
+        ],
+    },
 ];
+
+const only = process.argv.slice(2);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
@@ -80,7 +107,9 @@ const page = await browser.newPage({
 });
 await page.goto(pathToFileURL(resolve(here, 'card.html')).href);
 
-for (const card of cards) {
+for (const card of cards.filter(
+    (c) => only.length === 0 || only.includes(c.file),
+)) {
     await page.evaluate((c) => {
         const escape = (s) =>
             s.replace(
