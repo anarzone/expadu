@@ -40,6 +40,32 @@ class TimetableService
     }
 
     /**
+     * Before a station's boards are read: the points with no board kept at
+     * all ask TRIAS together, in parallel, instead of one after another (a
+     * kept board, even an old one, serves and refreshes after the response).
+     *
+     * @param  list<array{lat: float, lng: float}>  $points
+     */
+    public function prefetchBoards(array $points): void
+    {
+        $cold = array_values(array_filter($points, fn (array $p) => ! $this->hasBoard((float) $p['lat'], (float) $p['lng'])));
+        if (count($cold) > 1) {
+            $this->gtfs->prefetchNearby($cold, self::DEPARTURES);
+        }
+    }
+
+    /** Whether a board is kept for the point, fresh or not. */
+    public function hasBoard(float $lat, float $lng): bool
+    {
+        return Cache::has(self::boardKey($lat, $lng));
+    }
+
+    private static function boardKey(float $lat, float $lng): string
+    {
+        return sprintf('board_geo:v3:%.4f_%.4f', $lat, $lng);
+    }
+
+    /**
      * Re-anchor a cached board to "now": subtract the cache age from every
      * departure minute and drop what already left; expose observation and countdown timestamps.
      *
@@ -103,7 +129,7 @@ class TimetableService
     {
         try {
             return Cache::flexible(
-                sprintf('board_geo:v3:%.4f_%.4f', $lat, $lng),
+                self::boardKey($lat, $lng),
                 [20, 300],
                 fn () => $this->gtfs->getDeparturesNearby($lat, $lng, self::DEPARTURES) + ['countdown_at' => now()->timestamp],
             );
@@ -195,6 +221,9 @@ class TimetableService
                 } catch (\Throwable) {
                     $context = ['direction' => null, 'via' => []];
                 }
+
+                // Where today's runs really end, when the live headsign isn't it.
+                $d['destination'] = $context['end'] ?? $d['destination'];
 
                 return $d + ['direction' => $context['direction'], 'via' => $context['via']];
             })

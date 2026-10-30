@@ -3,10 +3,14 @@
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\QA\ResetPersonaState;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\User;
 use App\Models\UserTask;
+use Filament\Actions\Testing\TestAction;
+use Filament\Facades\Filament;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 test('obsolete persona mutations cannot reset a real account or its dossier', function (string $url) {
     $user = User::factory()->onboarded()->create(['is_admin' => true]);
@@ -73,3 +77,38 @@ test('a genuinely legacy profile can still explicitly reset without touching ano
         ->and($user->userTasks()->count())->toBe($keepTasks ? 1 : 0)
         ->and($case->fresh()->getRawOriginal())->toBe($before);
 })->with([false, true]);
+
+test('the admin reset refuses an account with a Paperwork record, as the command does', function (string $record) {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $user = User::factory()->onboarded()->create();
+    $person = $record === 'dossier'
+        ? app(EnsureAccountHolder::class)->dossier($user)->person
+        : app(EnsureAccountHolder::class)->person($user);
+    UserTask::factory()->completed()->create(['user_id' => $user->id]);
+    $before = $user->fresh()->getRawOriginal();
+    $this->actingAs($admin, 'admin');
+    Filament::setCurrentPanel('admin');
+
+    Livewire::test(ListUsers::class)
+        ->callAction(TestAction::make('resetJourney')->table($user))
+        ->assertNotified("{$user->email} has a Paperwork record. Nothing was reset.");
+
+    expect($user->fresh()->getRawOriginal())->toBe($before)
+        ->and($user->userTasks()->count())->toBe(1)
+        ->and($person->fresh())->not->toBeNull();
+})->with(['dossier', 'person']);
+
+test('the admin reset still resets a genuinely legacy profile', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $user = User::factory()->onboarded()->create();
+    UserTask::factory()->completed()->create(['user_id' => $user->id]);
+    $this->actingAs($admin, 'admin');
+    Filament::setCurrentPanel('admin');
+
+    Livewire::test(ListUsers::class)
+        ->callAction(TestAction::make('resetJourney')->table($user))
+        ->assertNotified("{$user->email} reset");
+
+    expect($user->fresh()->onboarded_at)->toBeNull()
+        ->and($user->userTasks()->count())->toBe(0);
+});

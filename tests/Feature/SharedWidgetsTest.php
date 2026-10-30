@@ -29,35 +29,28 @@ function inertiaVisit(array $extra = []): array
 it('renders app pages with the shared right-panel widgets, no error', function () {
     $user = widgetUser();
 
-    // share() (which now defers the city-widget props) runs on every Inertia
-    // request — these must not 500.
+    // share() (with the city-widget props) runs on every Inertia request:
+    // these must not 500.
     $this->actingAs($user)->get('/composer')->assertOk();
-    $this->actingAs($user)->get('/dashboard')->assertOk();
+    $this->actingAs($user)->get('/today')->assertOk();
 });
 
-it('defers the widgets once, then skips them while the client still holds them', function () {
+it('sends the widgets in the first response, never deferred', function () {
     $user = widgetUser();
 
-    $first = $this->actingAs($user)->withHeaders(inertiaVisit())->get('/composer')->assertOk();
+    $page = $this->actingAs($user)->withHeaders(inertiaVisit())->get('/composer')->assertOk();
 
-    expect($first->json('deferredProps.widgets'))->toEqualCanonicalizing(WIDGET_PROPS)
-        ->and(array_keys($first->json('onceProps')))->toEqualCanonicalizing(WIDGET_PROPS);
-
-    // The next navigation: the client reports what it already has, so no
-    // second request goes out to re-fetch them.
-    $next = $this->actingAs($user)
-        ->withHeaders(inertiaVisit(['X-Inertia-Except-Once-Props' => implode(',', WIDGET_PROPS)]))
-        ->get('/composer')
-        ->assertOk();
-
-    expect($next->json('deferredProps.widgets'))->toBeNull();
+    // Cache reads, so a page needs no second round trip for them (pages load whole).
+    expect($page->json('props'))->toHaveKeys(WIDGET_PROPS)
+        ->and($page->json('deferredProps.widgets'))->toBeNull()
+        ->and($page->json('onceProps'))->toBeNull();
 });
 
-it('shares no widgets with guests, so nulls are not kept past login', function () {
+it('shares no widgets with guests', function () {
     $page = $this->withHeaders(inertiaVisit())->get('/login')->assertOk();
 
-    expect($page->json('deferredProps.widgets'))->toBeNull()
-        ->and($page->json('onceProps'))->toBeNull();
+    expect($page->json('props'))->not->toHaveKeys(WIDGET_PROPS)
+        ->and($page->json('deferredProps.widgets'))->toBeNull();
 });
 
 it('a partial reload builds only the props it returns', function () {
@@ -67,12 +60,12 @@ it('a partial reload builds only the props it returns', function () {
     // A partial reload of the shared widgets alone never works out the day.
     $this->actingAs($user)
         ->withHeaders(inertiaVisit([
-            'X-Inertia-Partial-Component' => 'dashboard',
+            'X-Inertia-Partial-Component' => 'today',
             'X-Inertia-Partial-Data' => 'weather',
         ]))
-        ->get('/dashboard')
+        ->get('/today')
         ->assertOk()
-        ->assertJsonPath('component', 'dashboard');
+        ->assertJsonPath('component', 'today');
 
     // Departures' 30 s board poll (usePoll, only: ['boards']).
     DB::enableQueryLog();
@@ -81,7 +74,7 @@ it('a partial reload builds only the props it returns', function () {
             'X-Inertia-Partial-Component' => 'timetable',
             'X-Inertia-Partial-Data' => 'boards',
         ]))
-        ->get('/timetable')
+        ->get('/travel')
         ->assertOk();
 
     $recents = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $sql) => str_contains($sql, 'journey_recents'));

@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 test('a new user can save resume review and explicitly confirm onboarding through HTTP', function () {
     $actor = User::factory()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/onboarding';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/onboarding';
     $id = (string) Str::uuid();
     $this->actingAs($actor)->getJson($url.'/draft')->assertSuccessful()->assertJsonPath('draft', null);
     $this->putJson($url.'/draft', ['draft_id' => $id, 'expected_version' => 0, 'step' => 2,
@@ -29,7 +29,7 @@ test('a new user can save resume review and explicitly confirm onboarding throug
 test('draft validation never flashes private incomplete text on HTML requests', function () {
     $actor = User::factory()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/onboarding';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/onboarding';
     $this->actingAs($actor)->put($url.'/draft', ['draft_id' => (string) Str::uuid(), 'expected_version' => 0,
         'step' => 2, 'answers' => ['unregistered_secret' => ['value' => 'private-draft-text']]], ['Accept' => 'text/html'])
         ->assertUnprocessable()->assertSessionMissing('_old_input');
@@ -56,7 +56,7 @@ test('an outdated form has an explicit discard path that never clears confirmed 
     app(RecordFactChange::class)->execute($actor, $case->person, 'citizenship_group', 'eu', null, 1);
     $draft = app(SaveBureaucracyDraft::class)->execute($actor, $case->person, (string) Str::uuid(), 0, 2, ['arrival_date' => ['value' => '08/0']]);
     $draft->update(['schema_version' => 'old-schema']);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/onboarding/draft';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/onboarding/draft';
     $this->actingAs($actor)->getJson($url)->assertSuccessful()->assertJsonPath('draft.needs_review', true);
     $this->deleteJson($url, ['draft_id' => $draft->id, 'expected_version' => 1])->assertNoContent();
     $this->getJson($url)->assertSuccessful()->assertJsonPath('draft', null);

@@ -72,10 +72,10 @@ class AlertController extends Controller
             // written, else in KVB's own words (German); its page is one tap
             // away either way. The brief's impact line is never shown.
             'title' => $withdrawn ? 'Saved guidance needs review' : ($notice === null ? $alert->title : ($notice['brief']?->headline ?: $notice['title'])),
-            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.'
+            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Paperwork for the current plan.'
                 : ($notice === null ? (string) $alert->body : ($notice['brief'] !== null ? ($notice['brief']->body ?: (string) $alert->body) : ($notice['details'] ?? ''))),
             'notice' => $withdrawn || $notice === null ? null : ['lang' => $notice['brief'] !== null ? 'en' : 'de', 'url' => $notice['url']],
-            'deep_link' => $withdrawn ? '/bureaucracy' : $alert->deep_link,
+            'deep_link' => $withdrawn ? route('paperwork', [], false) : $alert->deep_link,
             'guidance_status' => $withdrawn ? 'review_required' : null,
             'read' => $alert->read_at !== null,
             // The card's timestamp is its last activity, so a refreshed weather

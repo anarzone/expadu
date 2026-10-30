@@ -8,7 +8,7 @@ test('an admin can preview a persona without changing their account', function (
     $this->actingAs($admin);
 
     $before = $admin->fresh()->getRawOriginal();
-    $this->getJson('/bureaucracy/v2/preview/neu-student?jurisdiction=de-nrw-cologne')
+    $this->getJson('/paperwork/v2/preview/neu-student?jurisdiction=de-nrw-cologne')
         ->assertSuccessful()->assertJsonPath('read_only', true)->assertJsonPath('facts.values.purpose', 'study');
     expect($admin->fresh()->getRawOriginal())->toBe($before);
 });
@@ -17,7 +17,7 @@ test('a planning preview leaves actual arrival unknown', function () {
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $preview = $this->getJson('/bureaucracy/v2/preview/planning?jurisdiction=de-nrw-cologne')
+    $preview = $this->getJson('/paperwork/v2/preview/planning?jurisdiction=de-nrw-cologne')
         ->assertSuccessful()->assertJsonPath('facts.values.arrival_planned', true)->json();
     expect($preview['facts']['values'])->not->toHaveKey('arrival_date');
 });
@@ -26,9 +26,9 @@ test('switching case previews does not leave saved scenario answers behind', fun
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $this->getJson('/bureaucracy/v2/preview/case-family-renewal-four-years?jurisdiction=de-nrw-cologne')
+    $this->getJson('/paperwork/v2/preview/case-family-renewal-four-years?jurisdiction=de-nrw-cologne')
         ->assertSuccessful()->assertJsonPath('facts.values.current_residence_title', 'family_reunification');
-    $student = $this->getJson('/bureaucracy/v2/preview/neu-student?jurisdiction=de-nrw-cologne')->assertSuccessful()->json();
+    $student = $this->getJson('/paperwork/v2/preview/neu-student?jurisdiction=de-nrw-cologne')->assertSuccessful()->json();
     expect($student['facts']['values'])->not->toHaveKey('family_residence_permit_held_since')
         ->and($admin->bureaucracyCase()->count())->toBe(0);
 });

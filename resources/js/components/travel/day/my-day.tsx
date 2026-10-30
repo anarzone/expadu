@@ -5,7 +5,8 @@ import { TravelChip } from '@/components/travel/labels';
 import { lineLook, vehicleOf } from '@/components/travel/line-look';
 import { stopName } from '@/components/travel/stop-name';
 import { TravelIcon } from '@/components/travel/travel-icon';
-import { bureaucracy } from '@/routes';
+import { csrfHeaders } from '@/lib/csrf';
+import { paperwork } from '@/routes';
 import type { DayItem, DayProjection, NextTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
 
@@ -132,10 +133,7 @@ function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-CSRF-TOKEN':
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? '',
+        ...csrfHeaders(),
     };
 }
 
@@ -492,7 +490,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
                             {item.process_key ? (
                                 <Link
                                     className="day-paper"
-                                    href={bureaucracy({
+                                    href={paperwork({
                                         query: {
                                             view: 'paperwork',
                                             process: item.process_key,
@@ -645,7 +643,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
                                             as="button"
                                             type="button"
                                             className="quiet-button"
-                                            href="/profile#places"
+                                            href={`/travel?${new URLSearchParams({ view: 'journey', set: 'home' })}`}
                                         >
                                             <TravelIcon name="home" />
                                             Add home

@@ -209,3 +209,59 @@ it('skips skipped stops when calculating max delay', function () {
     $result = $service->getDelayForTrip('trip-skip');
     expect($result['delay'])->toBe(120); // skipped stop's delay excluded
 });
+
+it('never waits for another worker\'s fetch, not even once per request', function () {
+    Http::fake();
+    // Another worker's fetch, or a stale lock, holds it throughout.
+    $held = Cache::lock('vrs_gtfsrt:fetch', 60);
+    expect($held->get())->toBeTrue();
+
+    $service = app(VrsRealtimeService::class);
+    $started = microtime(true);
+    foreach (range(1, 6) as $row) {
+        expect($service->getDelayForTripAtStop("trip-{$row}", 'stop-1'))->toBeNull();
+    }
+
+    expect(microtime(true) - $started)->toBeLessThan(2.0);
+    Http::assertNothingSent();
+    $held->release();
+});
+
+it('takes the fetch lock on the real clock, not a faked one', function () {
+    $stolen = null;
+    Http::fake(['*gtfs-rt-test.vrs.de*' => function () use (&$stolen) {
+        // Mid-fetch, as if this worker hung: 20 real seconds on, its
+        // 15-second lock has run out, though the faked clock is days ahead.
+        $this->travelBack();
+        $this->travel(20)->seconds();
+        $stolen = Cache::lock('vrs_gtfsrt:fetch', 15)->get();
+
+        return Http::response('', 200);
+    }]);
+    $this->travelTo(now()->addDays(5));
+
+    app(VrsRealtimeService::class)->getTripUpdates();
+
+    expect($stolen)->toBeTrue();
+});
+
+it('serves the last good feed while it refreshes, never fetching on the request', function () {
+    Http::fake(['*gtfs-rt-test.vrs.de*' => Http::response('', 500)]);
+    Cache::put('vrs_gtfsrt_trip_updates_v2:stale', ['old-trip' => ['trip_id' => 'old-trip', 'cancelled' => false, 'stops' => []]], 600);
+
+    $started = microtime(true);
+    expect(app(VrsRealtimeService::class)->getTripUpdates())->toHaveKey('old-trip');
+
+    expect(microtime(true) - $started)->toBeLessThan(0.5);
+});
+
+it('keeps the feed fresh from the warmer, only while someone reads live times', function () {
+    Http::fake(['*gtfs-rt-test.vrs.de*' => Http::response('', 200)]);
+
+    $this->artisan('transit:fetch-gtfsrt')->expectsOutputToContain('not fetching')->assertSuccessful();
+    Http::assertNothingSent();
+
+    app(VrsRealtimeService::class)->getTripUpdates();
+    $this->artisan('transit:fetch-gtfsrt')->assertFailed();
+    Http::assertSentCount(2);
+});

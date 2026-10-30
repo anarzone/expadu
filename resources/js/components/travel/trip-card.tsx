@@ -3,6 +3,7 @@ import type { CSSProperties, MouseEventHandler, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { LineBadge } from './line-badge';
 import type { LineLook } from './line-look';
+import { Slide } from './slide';
 import '../../../css/travel.css';
 
 /**
@@ -107,15 +108,19 @@ export function TripFact({
     value,
     sub,
     tone,
+    before,
 }: {
     label: ReactNode;
     value: ReactNode;
     sub: ReactNode;
     tone?: Exclude<TripTone, 'calm'>;
+    /** Over the value: the run it replaces, struck through ("13:14 Cancelled"). */
+    before?: ReactNode;
 }) {
     return (
         <div className={cn('trip-fact', tone && `is-${tone}`)}>
             <span className="trip-fact-label">{label}</span>
+            {before}
             <strong>{value}</strong>
             <small>{sub}</small>
         </div>
@@ -276,13 +281,9 @@ export function TripCard({
                 ) : null}
             </div>
             {more !== undefined ? (
-                <div
-                    className="trip-line-way"
-                    id={`${id}-way`}
-                    hidden={!moreOpen}
-                >
-                    {moreOpen ? more : null}
-                </div>
+                <Slide open={moreOpen} id={`${id}-way`}>
+                    <div className="trip-line-way">{more}</div>
+                </Slide>
             ) : null}
         </section>
     );

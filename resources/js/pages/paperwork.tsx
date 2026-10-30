@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
-import { useRef, useState } from 'react';
-import { AskBody } from '@/components/paperwork/ask';
+import { useEffect, useRef, useState } from 'react';
 import { TaskDetail, TaskTitleStatus } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
@@ -21,7 +20,12 @@ import {
     Sharing,
     StoppedRecord,
 } from '@/components/paperwork/sharing';
-import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
+import type { RecordRing } from '@/components/paperwork/sharing';
+import {
+    StartRecord,
+    StarterWelcome,
+    useFreshStart,
+} from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
     searchable,
@@ -29,7 +33,7 @@ import {
 } from '@/components/paperwork/state';
 import type { Person, PlanEntry } from '@/components/paperwork/types';
 import AppLayout from '@/layouts/app-layout';
-import { composer } from '@/routes';
+import { composer, paperwork } from '@/routes';
 import { waitlist as joinWaitlist } from '@/routes/paperwork';
 import '../../css/paperwork.css';
 
@@ -40,6 +44,8 @@ interface Props {
     jurisdiction: string;
     people: Person[];
     coverageWaitlist: CoverageWaitlist;
+    /** The cities Paperwork covers, for "Get started". */
+    coveredCities?: string[];
 }
 
 /** One search over tasks, dates, documents and Good to know; Escape or Clear empties it. */
@@ -105,8 +111,10 @@ function PersonPicker({ people }: { people: Person[] }) {
                                     ? undefined
                                     : router.visit(
                                           p.is_self
-                                              ? '/bureaucracy'
-                                              : `/bureaucracy?person=${p.id}`,
+                                              ? paperwork.url()
+                                              : paperwork.url({
+                                                    query: { person: p.id },
+                                                }),
                                       )
                             }
                         >
@@ -152,12 +160,47 @@ function Workspace({
     people: Person[];
     coverageWaitlist: CoverageWaitlist;
 }) {
-    const { plan, location, go, processByKey, openSheet, openSituation } =
-        usePaperwork();
+    const {
+        plan,
+        location,
+        go,
+        processByKey,
+        openSheet,
+        openSituation,
+        openEditor,
+    } = usePaperwork();
+    const self = people.find((p) => p.id === plan.person_id)?.is_self ?? false;
+
+    // Handed over from Composer (/paperwork?record=delete): your record's
+    // actions open with the one asked for ringed. Only on your own plan; the
+    // address forgets it once it's open.
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        const ring = url.searchParams.get('record');
+
+        if (!ring || !['download', 'stop', 'delete'].includes(ring)) {
+            return;
+        }
+
+        url.searchParams.delete('record');
+        window.history.replaceState(window.history.state, '', url);
+
+        if (self) {
+            openEditor({
+                title: 'Share your plan',
+                body: (
+                    <Sharing
+                        personId={plan.person_id}
+                        ring={ring as RecordRing}
+                    />
+                ),
+            });
+        }
+        // Read once, as the page opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     // No answers yet on your own plan: the starter path's welcome leads (PW7).
-    const fresh = useFreshStart(
-        people.find((p) => p.id === plan.person_id)?.is_self ?? false,
-    );
+    const fresh = useFreshStart(self);
     const situationAllowed = plan.scopes.includes('view_facts');
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
@@ -257,17 +300,6 @@ function Workspace({
                 <button type="button" onClick={coverage}>
                     Where this comes from
                 </button>
-                <button
-                    type="button"
-                    onClick={() =>
-                        openSheet({
-                            title: 'Ask about your paperwork',
-                            body: <AskBody />,
-                        })
-                    }
-                >
-                    Ask a question
-                </button>
             </div>
             <SheetDialog />
         </>
@@ -330,26 +362,14 @@ function OutsideCoverage({ waitlist }: { waitlist: CoverageWaitlist }) {
     );
 }
 
-function Unavailable({ state }: { state: PlanEntry['state'] }) {
+function Unavailable() {
     return (
         <section className="access-blank">
-            <h2>
-                {state === 'setup_required'
-                    ? 'Tell us a little about your move first.'
-                    : 'Your paperwork record isn’t available right now.'}
-            </h2>
+            <h2>Your paperwork record isn’t available right now.</h2>
             <p>
-                {state === 'setup_required'
-                    ? 'A few answers about your situation let us show the tasks that apply to you.'
-                    : 'Your record is paused or being removed. Contact us if you didn’t expect this.'}
+                Your record is paused or being removed. Contact us if you didn’t
+                expect this.
             </p>
-            {state === 'setup_required' ? (
-                <div className="actions">
-                    <Link className="button primary" href="/onboarding">
-                        Get started
-                    </Link>
-                </div>
-            ) : null}
         </section>
     );
 }
@@ -359,6 +379,7 @@ export default function Paperwork({
     jurisdiction,
     people,
     coverageWaitlist,
+    coveredCities = [],
 }: Props) {
     const self = people.find((p) => p.is_self);
     const [notice, setNotice] = useState<string | null>(null);
@@ -389,8 +410,10 @@ export default function Paperwork({
                             <StoppedRecord personId={self.id} />
                         ) : entry.state === 'erased' ? (
                             <ErasedRecord />
+                        ) : entry.state === 'setup_required' ? (
+                            <StartRecord cities={coveredCities} />
                         ) : (
-                            <Unavailable state={entry.state} />
+                            <Unavailable />
                         )}
                         <RecordNoticeToast notice={notice} clear={setNotice} />
                     </div>

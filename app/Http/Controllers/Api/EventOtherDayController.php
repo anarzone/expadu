@@ -6,6 +6,7 @@ use App\Enums\EventCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventBookmark;
+use App\Support\EventEvidence;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,7 @@ class EventOtherDayController extends Controller
             'area' => ['nullable', 'string', 'max:100'],
             'free' => ['nullable', 'boolean'],
             'saved' => ['nullable', 'boolean'],
+            'no_german' => ['nullable', 'boolean'],
         ]);
 
         $day = CarbonImmutable::parse($input['date'], 'Europe/Berlin');
@@ -56,6 +58,14 @@ class EventOtherDayController extends Controller
                 }
 
                 if (($input['free'] ?? false) && ! in_array('free', $presenter->chips($event), true)) {
+                    return false;
+                }
+
+                if (($input['no_german'] ?? false) && EventEvidence::noGerman(
+                    $event->source === 'manual' ? $event->language : EventEvidence::language($event->language, EventEvidence::source($event)),
+                    $event->language,
+                    $category,
+                ) === null) {
                     return false;
                 }
 

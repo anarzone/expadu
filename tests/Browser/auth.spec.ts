@@ -25,10 +25,10 @@ test.describe('Authentication', () => {
         ).toBeVisible({ timeout: 5_000 });
     });
 
-    test('unauthenticated visit to dashboard redirects to login', async ({
+    test('unauthenticated visit to Today redirects to login', async ({
         page,
     }) => {
-        await page.goto('/dashboard');
+        await page.goto('/today');
         await expect(page).toHaveURL(/login/);
     });
 });

@@ -3,6 +3,8 @@
    records). A fact the listing doesn't record is null and isn't shown;
    nothing is guessed. */
 
+import type { RowLaptop } from '@/components/place-sheet/laptop-text';
+
 export type PlaceIconName =
     | 'pharmacy'
     | 'cafe'
@@ -14,7 +16,8 @@ export type PlaceIconName =
     | 'library'
     | 'restaurant'
     | 'fastfood'
-    | 'culture';
+    | 'culture'
+    | 'sports';
 
 export type ListedHours =
     | { state: 'open'; until: string }
@@ -31,7 +34,8 @@ export type AroundPlace = {
     veedel: string | null;
     lat: number;
     lng: number;
-    km: number;
+    /** From the point searched around; null when that isn't known. */
+    km: number | null;
     /** A park or a wood is measured to its middle. */
     area: boolean;
     hours: ListedHours;
@@ -40,12 +44,38 @@ export type AroundPlace = {
     cuisine: string | null;
     diets: { vegetarian?: string; vegan?: string };
     internet_access: string | null;
+    /** A sports centre's sports as listed ("fencing;tai_chi"); null when not. */
+    sport?: string | null;
+    /** The street from its listed address, when listed. */
+    street: string | null;
+    /** A rights-cleared photo with its credit; null for most places (no placeholder). */
+    photo: {
+        url: string;
+        credit: string | null;
+        source_url: string | null;
+        licence_url: string | null;
+    } | null;
+    /** For a park answered for its facilities: the kinds that fitted the ask ("Football pitch"). */
+    matched?: string[];
+    /** What a park has, the matched kind first: "Football pitch · 2 tennis courts · Playground". */
+    facilities?: string | null;
+    /** A park too big to walk round answers per Veedel: the part this row is. */
+    part?: string | null;
+    /** Why Today's AI order put it here for them (TodayTaste), when it gave one. */
+    why?: string;
+    /** "Good for laptop work?": people's verdict and the café's own rule, if any. */
+    laptop?: RowLaptop;
     saved: boolean;
 };
 
+/** A row's own key: one park can list once per part, under its one id. */
+export const rowKey = (place: AroundPlace) => `${place.id}-${place.part ?? ''}`;
+
 export type AroundKind = { id: string; label: string };
 
-/** Places to eat, whose rows say outdoor seating and diets. */
+export type { RowLaptop };
+
+/** Places to eat, whose rows say their diets. */
 const EATING = ['cafe', 'restaurant', 'fastfood', 'bakery'];
 
 /** "Open until 18:30", "Opens at 15:00", "Closed for the day", "Hours not
@@ -68,28 +98,19 @@ export function hoursText(hours: ListedHours): string {
 
 /** "50 m", "about 600 m" for the middle of an area, "1.4 km", "12 km". */
 export function distanceText(place: Pick<AroundPlace, 'km' | 'area'>): string {
+    if (place.km === null) {
+        return '';
+    }
+
+    // Rounded before it's said in m or km: 999.6 m is "1.0 km", 9.97 km "10 km".
+    const metres = Math.round(place.km * 20) * 50;
+    const tenths = Math.round(place.km * 10) / 10;
     const text =
-        place.km < 1
-            ? `${Math.max(50, Math.round(place.km * 20) * 50)} m`
-            : `${place.km < 10 ? place.km.toFixed(1) : Math.round(place.km)} km`;
+        metres < 1000
+            ? `${Math.max(50, metres)} m`
+            : `${tenths < 10 ? tenths.toFixed(1) : Math.round(place.km)} km`;
 
     return place.area ? `about ${text}` : text;
-}
-
-const WHEELCHAIR: Record<string, string> = {
-    yes: 'Step-free access',
-    limited: 'Partly step-free',
-    no: 'Not step-free',
-};
-
-export const wheelchairText = (value: string | null) =>
-    value ? (WHEELCHAIR[value] ?? value) : '';
-
-/** Outdoor seating only when recorded as there ("yes", "garden"…). */
-export function outdoorSeating(place: AroundPlace): boolean {
-    const value = place.outdoor_seating?.toLowerCase();
-
-    return EATING.includes(place.icon) && !!value && value !== 'no';
 }
 
 const DIET_WORD = { vegetarian: 'vegetarian', vegan: 'vegan' } as const;
@@ -135,9 +156,16 @@ export function dietChip(place: AroundPlace): string {
     return options[0] ?? '';
 }
 
-/** A library's Wi-Fi or public computers, when recorded. */
-export function libraryNet(place: AroundPlace): string {
-    if (place.icon !== 'library') {
+/** Places people go to sit and work, whose rows say Wi-Fi when listed. */
+const NET = ['cafe', 'coworking', 'library'];
+
+/**
+ * A café's, a coworking space's or a library's Wi-Fi (a library's public
+ * computers too), when listed: the values search counts as Wi-Fi
+ * (PlaceAmenities::has), never a guess.
+ */
+export function placeNet(place: AroundPlace): string {
+    if (!NET.includes(place.kind) && !NET.includes(place.icon)) {
         return '';
     }
 
@@ -146,9 +174,10 @@ export function libraryNet(place: AroundPlace): string {
             {
                 wlan: 'Wi-Fi',
                 yes: 'Wi-Fi',
-                terminal: 'Public computers',
+                wifi: 'Wi-Fi',
+                terminal: place.icon === 'library' ? 'Public computers' : '',
             } as Record<string, string>
-        )[place.internet_access ?? ''] ?? ''
+        )[(place.internet_access ?? '').toLowerCase()] ?? ''
     );
 }
 
@@ -169,6 +198,22 @@ const CUISINE: Record<string, string> = {
     steak_house: 'Steak',
 };
 
+/** A sports centre's sports in words: "Fencing, tai chi, qi gong" ('' when none). */
+export function sportNames(
+    raw: string | null | undefined,
+    /** The kind the line already names ("Climbing"): a sport that repeats it is left out. */
+    kind?: string | null,
+): string {
+    const same = (kind ?? '').trim().toLowerCase();
+
+    return (raw ?? '')
+        .split(';')
+        .map((value) => value.trim().replace(/_/g, ' '))
+        .filter((value) => value && value.toLowerCase() !== same)
+        .join(', ')
+        .replace(/^./, (c) => c.toUpperCase());
+}
+
 /** A listing's cuisine values in words: "Ice cream · Coffee" ('' when none). */
 export function cuisineNames(raw: string | null): string {
     return (raw ?? '')
@@ -183,48 +228,6 @@ export function cuisineNames(raw: string | null): string {
         .filter((name, i, all) => all.indexOf(name) === i)
         .slice(0, 3)
         .join(' · ');
-}
-
-/** What a listing records about diets, "Vegetarian options · No vegan
-    options" (the sheet lists the noes too). */
-export function dietText(diets: {
-    vegetarian?: string | null;
-    vegan?: string | null;
-}): string {
-    return (['vegetarian', 'vegan'] as const)
-        .map((word) => {
-            const value = diets[word];
-            const name = word.replace(/^./, (c) => c.toUpperCase());
-
-            return (
-                (
-                    {
-                        yes: `${name} options`,
-                        only: `${name} only`,
-                        limited: `Some ${word} options`,
-                        no: `No ${word} options`,
-                    } as Record<string, string>
-                )[value ?? ''] ?? null
-            );
-        })
-        .filter(Boolean)
-        .join(' · ');
-}
-
-/** "Italian · Pizza" for a restaurant or fast food; "Cuisine not listed". */
-export function cuisineText(place: AroundPlace): {
-    text: string;
-    known: boolean;
-} | null {
-    if (!['restaurant', 'fastfood'].includes(place.icon)) {
-        return null;
-    }
-
-    const names = cuisineNames(place.cuisine);
-
-    return names
-        ? { text: names, known: true }
-        : { text: 'Cuisine not listed', known: false };
 }
 
 /** What the count calls these places: "3 pharmacies within 2 km". */

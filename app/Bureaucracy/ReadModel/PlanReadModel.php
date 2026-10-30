@@ -23,7 +23,7 @@ use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
 use App\Models\User;
-use App\Privacy\ProcessingPurpose;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -33,7 +33,7 @@ final class PlanReadModel
     public function __construct(private PrepareAssessmentInput $inputs, private PersonAccess $access,
         private DiscoverProcesses $discover, private ProjectProcess $workflows, private ProjectPaperwork $paperwork,
         private QuestionPreview $questions, private ReviewedGuidance $guidance, private AssessmentRevision $revisions,
-        private NextAssessmentBoundary $boundaries) {}
+        private NextAssessmentBoundary $boundaries, private PlanCache $cache) {}
 
     /** Single authorised scalar projection. Reads never create offers, facts or process records. */
     public function for(User $actor, BureaucracyPerson $person, string $jurisdiction): array
@@ -46,6 +46,14 @@ final class PlanReadModel
                 : new ConflictHttpException(PersonAccess::STOPPED);
         }
 
+        // Kept for exactly what it reads (PlanCache): any write reads afresh.
+        $today = CarbonImmutable::now(config('bureaucracy_catalogue.jurisdictions.'.$jurisdiction.'.timezone', 'UTC'));
+
+        return $this->cache->remember($actor, $person, $jurisdiction, $today, fn (): array => $this->build($actor, $person, $jurisdiction));
+    }
+
+    private function build(User $actor, BureaucracyPerson $person, string $jurisdiction): array
+    {
         return DB::transaction(function () use ($actor, $person, $jurisdiction): array {
             $input = $this->inputs->for($actor, $person, $jurisdiction);
             $person = $person->fresh();
@@ -123,8 +131,6 @@ final class PlanReadModel
                 'authority' => $this->access->authorityToken($actor, $person), 'person_version' => $person->record_version,
                 'assessment' => $assessment['input_revision'], 'protocol' => app(QuestionProtocol::class)->version(),
                 'paperwork' => array_diff_key($paperwork, ['evaluated_at' => true]), 'questions' => $question, 'events' => $events, 'timeline' => $timeline, 'scopes' => $scopes,
-                'processing_notice' => config('bureaucracy_privacy.notice_version'),
-                'provider_version' => ProcessingPurpose::FactExtraction->providerVersion(), 'ai_available' => ProcessingPurpose::FactExtraction->available(),
                 'sharing_notice' => config('bureaucracy_family.sharing_notice_version'), 'next_boundary' => $nextTime]);
 
             // A confirmed EU citizen with no residence work open: Paperwork says no residence
@@ -141,9 +147,7 @@ final class PlanReadModel
                 'questions' => $question, 'actions' => $next, 'processes' => $processes, 'history' => $history,
                 'history_count' => count($history) + count(array_filter($processes, fn ($process) => $process['is_closed'])),
                 'topics' => $this->topics($assessment['processes'], $processes, $history), 'guidance' => $guidance,
-                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes, 'notes' => $notes,
-                'ai' => ['available' => in_array(AccessScope::RequestAi->value, $scopes, true) && in_array(AccessScope::EditFacts->value, $scopes, true)
-                    && ProcessingPurpose::FactExtraction->available(), 'consent_scope' => 'single_request', 'confirmation_required' => true]];
+                'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes, 'notes' => $notes];
             $attention = app(PlanAttention::class)->for($plan, includeUndated: true);
 
             return [...$plan, 'attention' => $attention, 'coming_up' => app(PlanAttention::class)->comingUp($attention)];

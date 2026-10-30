@@ -1,4 +1,4 @@
-import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import {
     useCallback,
     useEffect,
@@ -10,6 +10,7 @@ import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { MyDay } from '@/components/travel/day/my-day';
 import type { DayWeather } from '@/components/travel/day/my-day';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
+import { majorsOf } from '@/components/travel/nearby/notices';
 import { closestNow } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { NextTripCard } from '@/components/travel/next-trip-card';
@@ -39,6 +40,7 @@ import {
 } from '@/components/travel/use-travel-location';
 import type { ActiveTrip } from '@/hooks/use-active-trip';
 import AppLayout from '@/layouts/app-layout';
+import { csrfHeaders } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -66,14 +68,6 @@ type PageProps = {
     handoffPlace?: HandoffPlace | null;
     stepFreeNeed?: boolean;
 };
-
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
 
 /** A trip handed over (Today, Events, Composer) or `?view=journey` opens Plan a trip. */
 const viewOf = (url: string): View => {
@@ -257,6 +251,16 @@ export default function Timetable() {
     }
 
     const shown = station ?? lastStation.current;
+    // What the board heads with: on a laptop, beside the planner, Plan a
+    // trip doesn't repeat it (one headline a screen).
+    const boardHeads = shown ? majorsOf(shown) : null;
+    const boardMajors =
+        desktop && boardHeads
+            ? {
+                  notices: boardHeads.notices.map((n) => n.id),
+                  lines: boardHeads.trouble.map((t) => t.line),
+              }
+            : null;
     const lastDay = useRef<DayProjection | null | undefined>(day);
 
     if (day !== undefined) {
@@ -266,7 +270,13 @@ export default function Timetable() {
     const today = day ?? lastDay.current;
 
     const location = useTravelLocation({
-        onAnchored: () => {
+        onAnchored: (moved) => {
+            // Within 100 m of where the page was worked out from: the
+            // station and the day it already shows are the ones from here.
+            if (!moved) {
+                return;
+            }
+
             // A picked stop stays picked; otherwise Nearby re-roots here.
             if (!new URLSearchParams(window.location.search).has('stop')) {
                 router.reload({ only: ['station', 'day'] });
@@ -301,7 +311,7 @@ export default function Timetable() {
             params.set('stop', name);
         }
 
-        router.visit(`/timetable${params.size ? `?${params}` : ''}`, {
+        router.visit(`/travel${params.size ? `?${params}` : ''}`, {
             only: ['station', 'stop'],
             preserveState: true,
             preserveScroll: true,
@@ -357,7 +367,7 @@ export default function Timetable() {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({ name }),
             });
@@ -390,7 +400,7 @@ export default function Timetable() {
 
         // By the plan's id: its place comes from your day, never the URL.
         router.visit(
-            `/timetable?${new URLSearchParams({ view: 'journey', activity: item.id, compare: '1' })}`,
+            `/travel?${new URLSearchParams({ view: 'journey', activity: item.id, compare: '1' })}`,
             { preserveScroll: false },
         );
     };
@@ -423,7 +433,7 @@ export default function Timetable() {
 
         setView('stop');
         router.replace({
-            url: '/timetable',
+            url: '/travel',
             preserveState: true,
             preserveScroll: true,
         });
@@ -434,7 +444,7 @@ export default function Timetable() {
         setBoardReturn(null);
         setView(next);
         router.replace({
-            url: next === 'day' ? '/timetable?view=day' : '/timetable',
+            url: next === 'day' ? '/travel?view=day' : '/travel',
             preserveState: true,
             preserveScroll: true,
         });
@@ -443,7 +453,7 @@ export default function Timetable() {
     // Plan a trip from My day: by the plans' ids, never their places.
     const planFrom = (params: Record<string, string>) =>
         router.visit(
-            `/timetable?${new URLSearchParams({ view: 'journey', ...params, compare: '1' })}`,
+            `/travel?${new URLSearchParams({ view: 'journey', ...params, compare: '1' })}`,
             { preserveScroll: false },
         );
 
@@ -552,6 +562,7 @@ export default function Timetable() {
                     nearName={shown && closestNow(shown) ? shown.name : null}
                     clock={todayLabel}
                     desktop={desktop}
+                    boardMajors={boardMajors}
                     hidden={
                         view === 'route' ||
                         view === 'day' ||
@@ -561,7 +572,7 @@ export default function Timetable() {
                     onFold={() => {
                         setView('stop');
                         router.replace({
-                            url: '/timetable',
+                            url: '/travel',
                             preserveState: true,
                             preserveScroll: true,
                         });
@@ -575,6 +586,7 @@ export default function Timetable() {
                     onLocate={location.locate}
                     locating={location.locating}
                     locateError={location.error}
+                    onAllowLocation={() => void location.allow()}
                 />
 
                 {tripOpen ? (
@@ -627,7 +639,7 @@ export default function Timetable() {
 
                             if (target) {
                                 router.visit(
-                                    `/timetable?${new URLSearchParams({ view: 'journey', activity: target, compare: '1' })}`,
+                                    `/travel?${new URLSearchParams({ view: 'journey', activity: target, compare: '1' })}`,
                                 );
                             } else {
                                 setShownWay(null);
@@ -664,45 +676,57 @@ export default function Timetable() {
                             ) : null}
                         </>
                     ) : null}
-                    <Deferred
-                        data="station"
-                        fallback={
-                            <Waiting label="Finding the closest station…" />
-                        }
-                    >
-                        {shown ? (
-                            <NearbyView
-                                station={shown}
-                                favourites={favouriteStops}
-                                onPickStop={pickStop}
-                                onToggleFavourite={toggleFavourite}
-                                favouriteBusy={favouriteBusy}
-                                stepFreeNeed={page.props.stepFreeNeed ?? false}
-                            />
-                        ) : (
-                            <div className="nearby-empty">
-                                <strong>Where are you?</strong>
-                                <span>
-                                    Nearby shows the station closest to you.
-                                    Share your location, or pick a stop.
-                                </span>
-                                <button
-                                    type="button"
-                                    className="quiet-button"
-                                    onClick={location.locate}
-                                    disabled={location.locating}
-                                >
-                                    <TravelIcon name="locate" />
-                                    {location.locating
-                                        ? 'Locating…'
-                                        : 'Use my location'}
-                                </button>
-                            </div>
-                        )}
-                    </Deferred>
+                    {/* Straight from the prop, not <Deferred>: that drops back to its
+                        fallback whenever the station is re-read (the 30 s poll, a
+                        new fix), so Nearby was rebuilt instead of its times
+                        changing in place. */}
+                    {shown === undefined ? (
+                        <Waiting label="Finding the closest station…" />
+                    ) : shown ? (
+                        <NearbyView
+                            station={shown}
+                            favourites={favouriteStops}
+                            onPickStop={pickStop}
+                            onToggleFavourite={toggleFavourite}
+                            favouriteBusy={favouriteBusy}
+                            stepFreeNeed={page.props.stepFreeNeed ?? false}
+                        />
+                    ) : (
+                        <div className="nearby-empty">
+                            <strong>Where are you?</strong>
+                            <span>
+                                Nearby shows the station closest to you. Share
+                                your location, or pick a stop.
+                            </span>
+                            <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={location.locate}
+                                disabled={location.locating}
+                            >
+                                <TravelIcon name="locate" />
+                                {location.locating
+                                    ? 'Locating…'
+                                    : 'Use my location'}
+                            </button>
+                        </div>
+                    )}
                     {location.error ? (
                         <p className="nearby-stepnote" role="status">
                             {locateErrorText[location.error]}
+                            {location.error === 'off' ? (
+                                <>
+                                    {' '}
+                                    <button
+                                        type="button"
+                                        className="text-action"
+                                        disabled={location.locating}
+                                        onClick={() => void location.allow()}
+                                    >
+                                        Share my location
+                                    </button>
+                                </>
+                            ) : null}
                         </p>
                     ) : null}
                     {notice ? (

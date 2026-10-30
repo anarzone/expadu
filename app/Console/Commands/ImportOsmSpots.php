@@ -102,6 +102,13 @@ class ImportOsmSpots extends Command
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
             'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+            // Gyms, climbing and bouldering halls, dance studios and schools (owner, 23 Oct).
+            // Named only; never capped.
+            'fitness' => "[out:json][timeout:90];(nwr[\"leisure\"=\"fitness_centre\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"~\"climbing|fitness|dance\"][\"name\"]({$bbox});nwr[\"sport\"=\"climbing\"][\"name\"]({$bbox});nwr[\"leisure\"=\"dance\"][\"name\"]({$bbox});nwr[\"amenity\"=\"dancing_school\"][\"name\"]({$bbox}););out center;",
+            // Core shops (owner, 24 Oct: "I am looking for a TkMaxx only" found nothing): clothes,
+            // shoes, department stores and malls, electronics and phones, books, home and furniture,
+            // DIY, sports, second-hand. Never capped; one without a name or brand is skipped below.
+            'shops' => '[out:json][timeout:120];nwr["shop"~"'.self::CORE_SHOPS.'"]('.$bbox.');out center;',
             // Everyday errands for Today's "Near ‹plan›" and Around here's
             // pharmacy and grocery kinds. City-wide with no `out` limit: a
             // capped query silently drops whole districts.
@@ -243,7 +250,8 @@ class ImportOsmSpots extends Command
             // Determine category from tags (query category as the hint)
             $category = $this->resolveCategory($tags, $element['_category'] ?? 'cafe');
 
-            $name = $tags['name'] ?? $this->fallbackName($category, $tags);
+            // A shop with only a brand tag goes by it ("TK Maxx", "Saturn").
+            $name = $tags['name'] ?? (($element['_category'] ?? null) === 'shops' ? ($tags['brand'] ?? null) : null) ?? $this->fallbackName($category, $tags);
 
             // Skip elements without a usable name
             if (! $name) {
@@ -294,7 +302,8 @@ class ImportOsmSpots extends Command
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
                 'cuisine' => isset($tags['cuisine']) ? mb_substr(trim((string) $tags['cuisine']), 0, 255) : null,
-                'source_group' => in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
+                // An ice-cream café stays in the café refresh, so a later run can retire it.
+                'source_group' => $category !== 'ice_cream' && in_array($category, SpotCategory::finesForCoarse('food_drink'), true) ? $category : $element['_category'],
                 'last_seen_at' => now(),
                 'is_active' => true,
                 'is_recommendable' => $this->isRecommendationDestination($category, $name),
@@ -635,6 +644,27 @@ class ImportOsmSpots extends Command
      *
      * @param  array<string, string>  $tags
      */
+    /**
+     * Many Eiscafés are tagged amenity=cafe. Someone asking for coffee or a
+     * place to work should not get a gelato counter: ice cream as the main
+     * cuisine, or an ice-cream name with no cuisine given, unless it lists
+     * itself as a coffee shop too.
+     *
+     * @param  array<string, mixed>  $tags
+     */
+    public static function isIceCreamCafe(array $tags): bool
+    {
+        $cuisines = array_values(array_filter(array_map('trim', explode(';', mb_strtolower((string) ($tags['cuisine'] ?? ''))))));
+        if (in_array('coffee_shop', $cuisines, true)) {
+            return false;
+        }
+        if ($cuisines !== []) {
+            return $cuisines[0] === 'ice_cream';
+        }
+
+        return preg_match('/\b(eis\s?caf[eé]|eiscaf[eé]|eisdiele|gelat(o|eria)|ice\s?cream)\b/iu', (string) ($tags['name'] ?? '')) === 1;
+    }
+
     protected function resolveCategory(array $tags, string $hint): string
     {
         if ($hint === 'green') {
@@ -647,6 +677,30 @@ class ImportOsmSpots extends Command
 
         $amenity = $tags['amenity'] ?? '';
         $office = $tags['office'] ?? '';
+
+        if ($hint === 'shops') {
+            return match ($tags['shop'] ?? '') {
+                'mall' => 'shopping_centre',
+                'mobile_phone' => 'phone_shop',
+                'computer' => 'computer_shop',
+                'books' => 'bookshop',
+                'houseware', 'interior_decoration' => 'homeware',
+                'doityourself', 'hardware' => 'hardware',
+                'sports', 'outdoor' => 'sports_shop',
+                'second_hand', 'charity' => 'second_hand',
+                default => (string) $tags['shop'], // clothes, shoes, department_store, electronics, furniture
+            };
+        }
+
+        if ($hint === 'fitness') {
+            $sport = mb_strtolower((string) ($tags['sport'] ?? ''));
+
+            return match (true) {
+                str_contains($sport, 'climbing') => 'climbing',
+                ($tags['leisure'] ?? null) === 'dance' || $amenity === 'dancing_school' || str_contains($sport, 'dance') => 'dance_studio',
+                default => 'fitness_centre',
+            };
+        }
 
         if ($amenity === 'coworking_space' || $office === 'coworking') {
             return 'coworking';
@@ -663,6 +717,9 @@ class ImportOsmSpots extends Command
         }
 
         if (in_array($hint, SpotCategory::finesForCoarse('food_drink'), true)) {
+            if ($amenity === 'cafe' && self::isIceCreamCafe($tags)) {
+                return 'ice_cream';
+            }
             if (in_array($amenity, ['cafe', 'restaurant', 'fast_food', 'bar'], true)) {
                 return $amenity;
             }
@@ -730,6 +787,7 @@ class ImportOsmSpots extends Command
         foreach ($elements as $element) {
             $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
         }
+        $unique = $this->withoutNodeWayDoubles($unique);
 
         // A forest and the reserve covering it often share a name. Offer the
         // larger object first; the import keeps the first one inside the city.
@@ -739,6 +797,54 @@ class ImportOsmSpots extends Command
         return [...array_values(array_diff_key($unique, $green)), ...array_values($green)];
 
     }
+
+    /**
+     * One place mapped twice in OSM, as a point and as a building or room ("Kolumba",
+     * "TK Maxx" in a mall mapped indoors): the same name and kind within DOUBLE_METRES
+     * keeps the richer of the two. Courts, tables and playgrounds often really are two.
+     *
+     * @param  array<string, array<string, mixed>>  $elements  keyed type/id
+     * @return array<string, array<string, mixed>>
+     */
+    protected function withoutNodeWayDoubles(array $elements): array
+    {
+        $key = function (array $element): ?string {
+            $name = mb_strtolower(trim((string) ($element['tags']['name'] ?? '')));
+            $category = $this->resolveCategory($element['tags'] ?? [], $element['_category'] ?? 'cafe');
+
+            return $name === '' || in_array($category, self::MAY_REPEAT, true) ? null : $category.'|'.$name;
+        };
+        $ways = [];
+        foreach ($elements as $id => $element) {
+            if (($element['type'] ?? 'node') !== 'node' && ($k = $key($element)) !== null) {
+                $ways[$k][] = $id;
+            }
+        }
+        foreach ($elements as $id => $element) {
+            if (($element['type'] ?? 'node') !== 'node' || ($k = $key($element)) === null || ! isset($ways[$k])) {
+                continue;
+            }
+            [$lat, $lng] = $this->elementPoint($element);
+            foreach ($ways[$k] as $wayId) {
+                if (! isset($elements[$wayId], $elements[$id])) {
+                    continue;
+                }
+                [$wLat, $wLng] = $this->elementPoint($elements[$wayId]);
+                if ($lat && $wLat && hypot(($lat - $wLat) * 111_320, ($lng - $wLng) * 111_320 * cos(deg2rad($lat))) <= self::DOUBLE_METRES) {
+                    // The richer record stays (a shop's point usually carries its hours and website).
+                    unset($elements[count($element['tags'] ?? []) >= count($elements[$wayId]['tags'] ?? []) ? $wayId : $id]);
+                }
+            }
+        }
+
+        return $elements;
+    }
+
+    /** How close a point and a building or room of the same name must be to be one place. */
+    public const DOUBLE_METRES = 40;
+
+    /** Kinds that often stand twice with the same name: two table tennis tables, two pitches. */
+    public const MAY_REPEAT = ['pitch', 'tennis', 'basketball', 'table_tennis', 'boules', 'skatepark', 'playground', 'dog_park', 'picnic', 'bbq'];
 
     /** @param array<string, mixed> $payload */
     protected function dataAgeHours(array $payload): ?float
@@ -811,6 +917,9 @@ class ImportOsmSpots extends Command
 
     /** Overpass mirrors replicate minutely; a day of lag means the mirror is stuck. */
     public const MAX_SOURCE_AGE_HOURS = 24;
+
+    /** The OSM shop values the core shops group imports (owner's "core shops", 24 Oct 2026). */
+    public const CORE_SHOPS = '^(clothes|shoes|department_store|mall|electronics|mobile_phone|computer|books|furniture|houseware|interior_decoration|doityourself|hardware|sports|outdoor|second_hand|charity)$';
 
     public const USER_AGENT = 'Expadu/1.0 (places import; +https://expadu.com)';
 

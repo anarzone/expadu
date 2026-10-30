@@ -84,7 +84,8 @@ final class ConfirmedFactView
             }
         }
 
-        return $view;
+        // The account holder's German level is their profile's, never a second copy here.
+        return ProfileFacts::apply($view, $case, $this->registry);
     }
 
     /** Internal review input. The caller must authorise fact-reading access first. */

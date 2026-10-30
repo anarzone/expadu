@@ -19,7 +19,7 @@ function blindFixture($test, array $scopes, bool $due = true): array
 {
     $task = Task::factory()->approvedFixture()->create([
         'key' => 'fixture.blind', 'type' => 'task', 'deadline_type' => 'none', 'depends_on' => [],
-        'applies_if' => [['citizenship_group' => 'non_eu', 'german_level' => 'b1']],
+        'applies_if' => [['citizenship_group' => 'non_eu', 'livelihood_secured' => 'yes']],
         'documents_required' => [], 'how_to_steps' => [], 'links' => [],
     ])->fresh();
     $store = app(CatalogueReleaseStore::class);
@@ -33,10 +33,10 @@ function blindFixture($test, array $scopes, bool $due = true): array
 
     $helper = User::factory()->onboarded()->create();
     $self = app(EnsureAccountHolder::class)->person($helper);
-    $token = $test->actingAs($helper)->postJson('/bureaucracy/v2/invitations', [
+    $token = $test->actingAs($helper)->postJson('/paperwork/v2/invitations', [
         'workspace_id' => $self->workspace_id, 'email' => $subject->email, 'scopes' => $scopes,
     ])->assertCreated()->json('token');
-    $test->actingAs($subject)->postJson('/bureaucracy/v2/invitations/accept', [
+    $test->actingAs($subject)->postJson('/paperwork/v2/invitations/accept', [
         'token' => $token, 'scopes' => $scopes, 'accept' => true,
         'notice_version' => config('bureaucracy_family.sharing_notice_version'),
     ])->assertSuccessful();
@@ -52,10 +52,10 @@ function blindFixture($test, array $scopes, bool $due = true): array
 /** The helper's offer for that answer, as the page asks for it. */
 function blindOffer($test, User $helper, BureaucracyCase $case): array
 {
-    $session = $test->actingAs($helper)->postJson('/bureaucracy/v2/people/'.$case->person_id.'/question-sessions', [
+    $session = $test->actingAs($helper)->postJson('/paperwork/v2/people/'.$case->person_id.'/question-sessions', [
         'jurisdiction' => 'de-nrw-cologne', 'request_id' => (string) Str::uuid(),
     ])->assertSuccessful()->json('session_id');
-    $offer = $test->postJson('/bureaucracy/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
+    $offer = $test->postJson('/paperwork/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
         ->assertSuccessful()->json('question');
     expect($offer['fact_key'])->toBe('citizenship_group');
 
@@ -65,7 +65,7 @@ function blindOffer($test, User $helper, BureaucracyCase $case): array
 test('🔒 an edit-only helper gets the same reply whether their value matches the hidden one or not', function () {
     [$helper, $case] = blindFixture($this, ['view_plan', 'edit_facts']);
     [$session, $offer] = blindOffer($this, $helper, $case);
-    $assert = fn (string $value) => $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/answers/'.$offer['id'], [
+    $assert = fn (string $value) => $this->postJson('/paperwork/v2/question-sessions/'.$session.'/answers/'.$offer['id'], [
         'token' => $offer['token'], 'value' => $value, 'answer_state' => 'value', 'operation' => 'assert',
     ])->assertUnprocessable()->json();
 
@@ -82,7 +82,7 @@ test('🔒 an edit-only change records either way, so the receipt and revision n
     [$helper, $case] = blindFixture($this, ['view_plan', 'edit_facts'], due: false);
     $before = $case->fresh()->fact_version;
 
-    $receipt = $this->actingAs($helper)->putJson('/bureaucracy/v2/people/'.$case->person_id.'/facts/citizenship_group', [
+    $receipt = $this->actingAs($helper)->putJson('/paperwork/v2/people/'.$case->person_id.'/facts/citizenship_group', [
         'value' => $value, 'answer_state' => 'value', 'expected_revision' => $before,
     ])->assertSuccessful()->json();
 
@@ -95,7 +95,7 @@ test('someone who can see the answers still confirms a matching one without bein
     [$helper, $case] = blindFixture($this, ['view_plan', 'view_facts', 'edit_facts']);
     [$session, $offer] = blindOffer($this, $helper, $case);
 
-    $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/answers/'.$offer['id'], [
+    $this->postJson('/paperwork/v2/question-sessions/'.$session.'/answers/'.$offer['id'], [
         'token' => $offer['token'], 'value' => 'non_eu', 'answer_state' => 'value', 'operation' => 'assert',
     ])->assertSuccessful()->assertJsonPath('status', 'recorded');
 });

@@ -11,7 +11,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
@@ -19,26 +19,58 @@ tasks:
       - {kind: primary, label: '§4a AufenthG — Zugang zur Erwerbstätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4a.html'}
       - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
     claims:
-      - id: ninety-days
-        states: within 90 days of arrival
+      - id: deadline
+        covers: deadline
         source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
         quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
-      - id: filing-deadline
-        covers: deadline
+      - id: ninety-days
+        states: within 90 days of arrival
         source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
         quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
       - id: visa-free-countries
         states: citizen of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA
         source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
         quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland
+      - id: visa-free-apply-in-germany
+        states: If you entered visa-free as a citizen of one of the countries listed above, you can apply for the permit in Germany
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel kann im Bundesgebiet eingeholt werden.
       - id: apply-before-expiry
         states: apply before the visa expires so that it continues to count until the decision
         source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
         quote: gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
       - id: work-shown-on-title
-        states: every residence title shows whether employment is allowed
+        states: Every residence title shows whether employment is allowed
         source: '§4a AufenthG — Zugang zur Erwerbstätigkeit'
         quote: Jeder Aufenthaltstitel muss erkennen lassen, ob die Ausübung einer Erwerbstätigkeit erlaubt ist
+      - id: district-office
+        states: you apply to the Bezirksausländeramt for the Stadtteil you live in
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Sie beantragen die Aufenthaltserlaubnis in dem Bezirksausländeramt, das für den Stadtteil zuständig ist, in dem Sie wohnen.
+      - id: special-service-science
+        states: If you work in science, research or development
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Beschäftigte aus den Bereichen Wissenschaft, Forschung und Entwicklung
+      - id: special-service-highly-qualified
+        states: are highly qualified within the meaning of the law the Cologne page cites
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Hochqualifizierte im Sinne des
+      - id: special-service-only
+        states: send questions about your permit only to Cologne's Service für ausländische Akademiker*innen und Selbständige
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Bei Fragen zu Ihrer Aufenthaltserlaubnis oder Beschäftigungserlaubnis wenden Sie sich bitte ausschließlich an diese
+      - id: digital-application
+        states: submit the application digitally
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Ihren Antrag auf eine Aufenthaltserlaubnis zur Erwerbstätigkeit können sie digital stellen.
+      - id: in-person-required
+        states: a personal appointment is still required
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Eine persönliche Vorsprache ist erforderlich.
+      - id: concrete-job-offer
+        states: The application is tied to a concrete job offer
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Die Beantragung einer Aufenthaltserlaubnis zur Arbeitsaufnahme ist an ein konkretes Arbeitsplatzangebot gebunden.
       - id: ba-internal
         states: the Ausländeramt obtains that approval internally
         source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
@@ -47,36 +79,72 @@ tasks:
         states: a visitor or business visa is not enough
         source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
         quote: Ein Besuchs- oder Geschäftsvisum reicht nicht aus für die Erteilung einer Aufenthaltserlaubnis zum Zweck der Erwerbstätigkeit.
+      - id: no-bundid
+        states: If you have no BundID, you can continue without logging in
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Wenn Sie keine BundID besitzen, können Sie Ihre Antragsstellung ohne Anmeldung fortfahren.
+      - id: visa-or-permit
+        states: Valid visa for taking up work, or your current residence permit
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Gültiges Visum zur Arbeitsaufnahme oder Ihre bisherige Aufenthaltserlaubnis
+      - id: position-planned
+        states: Describes the job planned for you
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: über die für Sie vorgesehene Stelle.
+      - id: insurance-card
+        states: If you have an insurance card, showing it is enough
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Sofern Sie eine Versicherungskarte besitzen, reicht es, wenn Sie diese Karte vorlegen.
+      - id: insurance-proof
+        states: Otherwise ask your health insurer for proof
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Besitzen Sie keine Versicherungskarte, lassen Sie sich bitte von Ihrer Krankenversicherung einen Nachweis ausstellen.
+      - id: two-photos
+        states: Two current passport photos
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Zwei aktuelle Passfotos
     description: |
       To stay and work in Germany you need a residence permit for employment. In
-      Cologne you apply to the Bezirksausländeramt for the Stadtteil you live in, and
-      you can submit the application digitally. The application is tied to a
-      concrete job offer. Where the Federal Employment Agency (BA) has to approve the
-      job, the Ausländeramt obtains that approval internally. Your filing window: if
-      you entered on a national D visa, apply before the visa expires so that it
-      continues to count until the decision. If you entered visa-free as a
+      Cologne you apply to the Bezirksausländeramt for the Stadtteil you live in.
+      You can submit the application digitally, but a personal appointment is still required.
+      The application is tied to a concrete job offer. Where the Federal Employment
+      Agency (BA) has to approve the job, the Ausländeramt obtains that approval internally.
+      Your filing window: if you entered on a national D visa,
+      apply before the visa expires so that it continues to count until the decision.
+      If you entered visa-free as a
       citizen of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA,
       you must apply within 90 days of arrival.
     phase: first_30_days
     urgency: critical
+    # A D visa's own expiry; after visa-free entry, 90 days (Task::deadlineDate).
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
       entry_mode: [d_visa, visa_free]
     documents_required:
-      - label: Cologne's online application for a residence permit for employment
-        note: Upload scans of the documents listed on the appointment task.
+      - label: Application for a residence permit for employment
+        note: You can submit the application digitally. If you have no BundID, you can continue without logging in.
+      - label: Valid visa for taking up work, or your current residence permit
+        note: Check the purpose of your visa — a visitor or business visa is not enough.
+      - label: Valid national passport
+      - label: Rental contract
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
-        note: The form describes the position planned for you. Ask your employer for it early.
+        note: Describes the job planned for you. Ask your employer for it early.
         tone: warn
+      - label: Proof of health insurance
+        note: If you have an insurance card, showing it is enough. Otherwise ask your health insurer for proof.
+      - label: Two current passport photos
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
     how_to_steps:
       - title: File the online application now
-        body: Cologne accepts the application for a residence permit for employment digitally. If the BA has to approve the job, that happens between the authorities without a separate application from you.
+        body: Cologne accepts the application for a residence permit for employment digitally, but a personal appointment is still required. If the BA has to approve the job, that happens between the authorities without a separate application from you.
+        link: https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - title: Science, research or highly qualified? Use the special service
+        body: If you work in science, research or development, or are highly qualified within the meaning of the law the Cologne page cites, send questions about your permit only to Cologne's Service für ausländische Akademiker*innen und Selbständige (Cologne's service point for foreign academics and self-employed people). The Cologne page linked here names this service point.
         link: https://www.stadt-koeln.de/service/produkte/01083/index.html
       - title: Check your visa's purpose
-        body: Your visa must have been issued for taking up work — a visitor or business visa is not enough.
+        body: If you entered on a visa, it must have been issued for taking up work — a visitor or business visa is not enough. If you entered visa-free as a citizen of one of the countries listed above, you can apply for the permit in Germany.
       - title: Check before you start working
         body: Every residence title shows whether employment is allowed. Check your visa or permit with your employer before your first working day.
 
@@ -86,11 +154,12 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§45 AufenthV — Gebühren für die Aufenthaltserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthv/__45.html'}
       - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
       - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
     claims:
       - id: issue-fee
@@ -105,23 +174,64 @@ tasks:
         states: You have to appear in person
         source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
         quote: Eine persönliche Vorsprache ist erforderlich.
+      - id: special-office-science
+        states: If you work in science, research or development
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Beschäftigte aus den Bereichen Wissenschaft, Forschung und Entwicklung
+      - id: special-office-only
+        states: go only to Cologne's Service für ausländische Akademiker*innen und Selbständige
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Bei Fragen zu Ihrer Aufenthaltserlaubnis oder Beschäftigungserlaubnis wenden Sie sich bitte ausschließlich an diese
+      - id: visa-free-nationals
+        states: Citizens of Australia, Israel, Japan, Canada, the Republic of Korea, New Zealand, the United Kingdom and the United States can enter visa-free even for a longer stay
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten
+      - id: permit-in-germany
+        states: get the residence permit in Germany
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel kann im Bundesgebiet eingeholt werden.
+      - id: visa-free-90-days
+        states: your application must be submitted within 90 days of entry
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: visa-apply-before-expiry
+        states: With a visa, apply before it expires
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels
       - id: two-photos
         states: Two current passport photos
         source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
         quote: Zwei aktuelle Passfotos
+      - id: visa-continues
+        states: your visa counts as continuing until the decision
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
+      - id: stay-permitted
+        states: your stay counts as permitted until the decision
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: gilt sein Aufenthalt bis zur Entscheidung der Ausländerbehörde als erlaubt.
       - id: fiktionsbescheinigung
         states: you receive a certificate confirming the effect of your application (Fiktionsbescheinigung)
         source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
         quote: Dem Ausländer ist eine Bescheinigung über die Wirkung seiner Antragstellung (Fiktionsbescheinigung) auszustellen.
     description: |
       You have to appear in person at the Bezirksausländeramt responsible for your
-      Stadtteil. Bring the originals of the documents on Cologne's checklist below —
+      Stadtteil. If you work in science, research or development, go only to Cologne's Service für ausländische Akademiker*innen und Selbständige
+      (service for foreign academics and self-employed people) instead.
+      Bring the originals of the documents on Cologne's checklist below —
       use the waiting time to assemble them. If the Federal Employment Agency
       approves the job, the residence permit can be issued with the matching employment
       permission.
     phase: first_30_days
     urgency: critical
-    deadline_type: none
+    # Deadline for submitting the application, not for this appointment:
+    # a D visa's own expiry; after visa-free entry, 90 days (Task::deadlineDate).
+    deadline_type: permit_window
+    deadline_days: 90
     applies_if:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
@@ -140,13 +250,16 @@ tasks:
       - label: Two current passport photos
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.gesetze-im-internet.de/aufenthv/__41.html
     how_to_steps:
+      - title: Mind the application deadline
+        body: Citizens of Australia, Israel, Japan, Canada, the Republic of Korea, New Zealand, the United Kingdom and the United States can enter visa-free even for a longer stay and get the residence permit in Germany. If you are one of them and entered visa-free, your application must be submitted within 90 days of entry. With a visa, apply before it expires. The deadline is for submitting your application, not for this appointment.
       - title: Gather every document while you wait
         body: Check your folder against the list below and bring the originals of everything you uploaded.
       - title: Know the fees
         body: The employment permission itself is free; under the federal fee rules, issuing the residence permit costs €100.
       - title: Keep proof of your pending application
-        body: If your application keeps your previous permission in force, you receive a certificate confirming the effect of your application (Fiktionsbescheinigung).
+        body: If you applied before your visa expired, your visa counts as continuing until the decision. After visa-free entry and a timely application, your stay counts as permitted until the decision. Either way, you receive a certificate confirming the effect of your application (Fiktionsbescheinigung).
 
   - title: 'After 3 years: permanent residence instead of another renewal (§18c)'
     key: nee.ne_check

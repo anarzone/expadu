@@ -15,7 +15,7 @@
         "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
-        "url": "/bureaucracy?view=paperwork",
+        "url": "/paperwork?view=paperwork",
         "wait": ".paperwork-groups",
         "cookies": {
             "mock_clock": "2026-09-30T13:10:00%2B02:00"

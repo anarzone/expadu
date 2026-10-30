@@ -27,11 +27,11 @@ test('a point board colours the lines and keeps their minutes', function () {
 });
 
 test('the Travel page renders and defers Nearby\'s station', function () {
-    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn(null));
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('ready')->andReturn(false)->getMock()->shouldReceive('closest')->andReturn(null));
 
     $this->actingAs(User::factory()->onboarded()->create());
 
-    $this->get('/timetable')->assertInertia(fn ($page) => $page
+    $this->get('/travel')->assertInertia(fn ($page) => $page
         ->component('timetable')
         ->missing('station')
         ->loadDeferredProps(fn ($reload) => $reload->has('station'))

@@ -10,6 +10,7 @@ import type {
     PlanAnswer,
     PlanOption,
 } from '@/components/travel/plan/plan-model';
+import { csrfHeaders } from '@/lib/csrf';
 
 export type WayMode = 'transit' | 'walk' | 'bike';
 
@@ -45,10 +46,7 @@ function headers() {
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-CSRF-TOKEN':
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? '',
+        ...csrfHeaders(),
     };
 }
 

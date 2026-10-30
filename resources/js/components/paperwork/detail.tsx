@@ -662,7 +662,7 @@ export function TaskDetail() {
                             0 ? (
                                 <Link
                                     className="button secondary"
-                                    href="/dashboard"
+                                    href="/today"
                                 >
                                     <Icon name="calendar" />
                                     On Today

@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleWord } from '@/components/travel/line-look';
 import {
@@ -17,13 +18,15 @@ import type {
     ShownDir,
     ShownLine,
 } from '@/components/travel/nearby/nearby-model';
+import { MajorHeadline, NoticeLine } from '@/components/travel/nearby/notices';
+import { closestNow, closestWords } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { sourceLabel } from '@/components/ui/state-notice';
 import { CURRENT_CITY } from '@/lib/cities';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 
 /*
  * City help (the mock's .city-help): the forecast for the next hours and
@@ -41,6 +44,12 @@ export type Weather = {
 
 export type Forecast = {
     available: boolean;
+    /** When rain starts later today ('HH:MM'), 'now' when it's raining, else null. */
+    rain_starts?: string | null;
+    /** WeatherService's cycling verdict: "Good until 19:00", "Great — clear skies", "Poor — …". */
+    bike_score?: string | null;
+    /** "Dry next 8 hours", or when the rain comes and goes. */
+    rain_summary?: string | null;
     hourly?: {
         hour: string;
         temperature: number | null;
@@ -48,6 +57,23 @@ export type Forecast = {
         condition: string | null;
     }[];
 };
+
+/** The next plan's first ride (DayProjection's next trip): the departures mark it as yours. */
+export type PlanRide = {
+    line: string;
+    headsign: string | null;
+    /** When it leaves (ISO). */
+    at: string;
+    /** Its boarding stop, as the departures name it ("Neumarkt"). */
+    from: string;
+};
+
+/** A stop or destination name as both feeds can agree on it: no city, case, or punctuation. */
+const plain = (name: string) =>
+    name
+        .toLowerCase()
+        .replace(/^köln[\s,-]+/u, '')
+        .replace(/[^\p{L}\p{N}]+/gu, '');
 
 export const weatherIcon = (icon?: string | null): IconName =>
     icon === 'clear-day'
@@ -58,6 +84,38 @@ export const weatherIcon = (icon?: string | null): IconName =>
 
 const degrees = (value?: number | null) =>
     value === null || value === undefined ? '–' : `${Math.round(value)}°`;
+
+/**
+ * The forecast in one line for the day ahead: when rain comes and what that
+ * means for cycling, from WeatherService's own verdict. Null when the
+ * forecast says nothing worth a line.
+ */
+export function dayLine(forecast?: Forecast): string | null {
+    if (!forecast?.available) {
+        return null;
+    }
+
+    const bike = forecast.bike_score ?? '';
+    const cycling = bike.startsWith('Poor')
+        ? `not one for cycling (${bike.replace(/^Poor — /, '')})`
+        : bike.startsWith('OK')
+          ? 'windy for cycling'
+          : bike.startsWith('Great')
+            ? 'good for cycling'
+            : null;
+
+    if (forecast.rain_starts === 'now') {
+        return 'Raining now · not one for cycling';
+    }
+
+    if (forecast.rain_starts) {
+        return bike.startsWith('Good until')
+            ? `Rain from ${forecast.rain_starts} · cycling fine until then`
+            : `Rain from ${forecast.rain_starts}`;
+    }
+
+    return [forecast.rain_summary, cycling].filter(Boolean).join(' · ') || null;
+}
 
 /** The next hours worth a look: two hours on, then two more. */
 function laterHours(forecast?: Forecast) {
@@ -73,21 +131,31 @@ export function CityHelp({
     weather,
     forecast,
     station,
+    warming = null,
+    reason = null,
+    ride = null,
     stop,
     favourites,
-    planned,
+    learned = [],
 }: {
     weather?: Weather;
     forecast?: Forecast;
-    station?: Station | null;
+    station: Station | null;
+    /** The stop whose board is being read (no station yet). */
+    warming?: string | null;
+    /** Why it's this stop ("For Tandem Language Café", "Near Home"); null when picked. */
+    reason?: string | null;
+    /** The next plan's first ride, marked on its line when it leaves from this stop. */
+    ride?: PlanRide | null;
     stop: string | null;
     favourites: FavouriteStop[];
-    /** Plans left today: Check departures opens on wider screens. */
-    planned: boolean;
+    /** The stops they pick most (TodayTaste, opt-in only). */
+    learned?: string[];
 }) {
     const [sheet, setSheet] = useState(false);
     const later = laterHours(forecast);
     const known = weather?.available && weather.temperature !== undefined;
+    const line = dayLine(forecast);
 
     return (
         <section className="city-help" aria-labelledby="city-help-title">
@@ -116,11 +184,15 @@ export function CityHelp({
                     <small>Forecast unavailable right now</small>
                 )}
             </button>
+            {known && line && <p className="forecast-line">{line}</p>}
             <DepartureBoard
                 station={station}
+                warming={warming}
+                reason={reason}
+                ride={ride}
                 stop={stop}
                 favourites={favourites}
-                planned={planned}
+                learned={learned}
             />
             <Sheet
                 open={sheet}
@@ -133,6 +205,7 @@ export function CityHelp({
                             ? 'Forecast · Open-Meteo'
                             : 'The forecast is unavailable right now.'}
                     </p>
+                    {known && line && <p>{line}</p>}
                     {known && (
                         <dl className="detail-grid">
                             <div>
@@ -196,45 +269,68 @@ function captureLabel(station: Station): string {
         : sourceLabel({ source: 'scheduled' });
 }
 
+/** On Today the board shows this many lines; Full board shows them all. */
+const TODAY_LINES = 2;
+
+/**
+ * The departures (owner, 28 Oct 2026): always shown, at the top of the city's
+ * column, never folded, and never taller than TODAY_LINES lines, so nothing
+ * on the page moves. Every line and notice is in Full board, a side panel.
+ */
 function DepartureBoard({
     station,
+    warming,
+    reason,
+    ride,
     stop,
     favourites,
-    planned,
+    learned,
 }: {
-    station?: Station | null;
+    station: Station | null;
+    warming: string | null;
+    reason: string | null;
+    ride: PlanRide | null;
     stop: string | null;
     favourites: FavouriteStop[];
-    planned: boolean;
+    learned: string[];
 }) {
-    const board = useRef<HTMLDetailsElement>(null);
-
-    // Open from 701px when there are plans left, as the mock's board is.
-    useEffect(() => {
-        if (
-            board.current &&
-            planned &&
-            window.matchMedia('(min-width: 701px)').matches
-        ) {
-            board.current.open = true;
-        }
-    }, [planned]);
-
-    // The next departures, however far off (the mock's next twelve, three
-    // lines at most): a late timetable board still shows its next trams.
-    const lines: ShownLine[] = station
+    const [full, setFull] = useState(false);
+    // The next departures, however far off: a late timetable board still
+    // shows its next trams.
+    const all: ShownLine[] = station
         ? nearbyView(station, { ...filterDefaults(), win: ANY_TIME })
               .areas.flatMap((area) => area.cards)
               .filter((line) => line.shown.length > 0)
               .sort((a, b) => leaves(a.shown[0]) - leaves(b.shown[0]))
-              .slice(0, 3)
         : [];
+    const lines = all.slice(0, TODAY_LINES);
     const paused = !!station && isPaused(station);
-    const href = timetable({
+    const href = travel({
         query: station ? { stop: station.name } : {},
     });
+    const everyday = (station?.notices ?? []).filter(
+        (notice) => notice.scale !== 'major',
+    );
 
-    const end = (dir: ShownDir | undefined) => {
+    // The plan's ride, when it leaves from this stop: its line's way towards
+    // it is marked "Your tram · 17:09" (the canvas, 28 Oct).
+    const mine =
+        ride && station && plain(ride.from) === plain(station.name)
+            ? ride
+            : null;
+    const yours = (line: ShownLine, dir: ShownDir | undefined) =>
+        !!mine &&
+        !!dir &&
+        line.line === mine.line &&
+        (mine.headsign === null ||
+            plain(mine.headsign).includes(plain(dir.dest)) ||
+            plain(dir.dest).includes(plain(mine.headsign)));
+
+    const end = (
+        dir: ShownDir | undefined,
+        line: ShownLine,
+        kind: 'bus' | 'rail' | 'tram',
+    ) => {
         if (!dir) {
             return null;
         }
@@ -248,117 +344,205 @@ function DepartureBoard({
             dest: dir.dest,
             via: dir.via,
             when: (
-                <StripTime
-                    when={
-                        paused || (quiet && when.big === 'now')
-                            ? { big: dir.clock, unit: '' }
-                            : when
-                    }
-                    paused={quiet}
-                />
+                <>
+                    <StripTime
+                        when={
+                            paused || (quiet && when.big === 'now')
+                                ? { big: dir.clock, unit: '' }
+                                : when
+                        }
+                        paused={quiet}
+                    />
+                    {mine && yours(line, dir) && (
+                        <span className="board-yours">
+                            Your {vehicleWord(kind).toLowerCase()} ·{' '}
+                            {clockOf(mine.at)}
+                        </span>
+                    )}
+                </>
             ),
         };
     };
 
+    const strips = (shown: ShownLine[]) => (
+        <LineStrips className="departure-strips">
+            {shown.map((line) => {
+                const kind =
+                    line.mode === 'bus'
+                        ? 'bus'
+                        : line.mode === 'rail'
+                          ? 'rail'
+                          : 'tram';
+                const [first, second] = line.shown;
+
+                return (
+                    <LineStrip
+                        key={line.line}
+                        look={line.look}
+                        badge={
+                            <LineBadge
+                                line={line.line}
+                                look={line.look}
+                                kind={kind}
+                            />
+                        }
+                        first={end(first, line, kind)}
+                        second={end(second, line, kind)}
+                        className={
+                            line.shown.some((dir) => yours(line, dir))
+                                ? 'is-yours'
+                                : undefined
+                        }
+                        style={{ '--ink': line.look.ink } as CSSProperties}
+                        empty="Other way: see Travel"
+                        aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
+                            .map((dir) => {
+                                const t = whenOf(dir);
+
+                                return `${dir.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
+                            })
+                            .join(', ')}. Open in Travel`}
+                        onClick={() => router.visit(href)}
+                    />
+                );
+            })}
+        </LineStrips>
+    );
+
+    const capture = station && (
+        <p className="board-capture">
+            {station.name}
+            <span>
+                {[
+                    !closestNow(station) && closestWords(station),
+                    captureLabel(station),
+                ]
+                    .filter(Boolean)
+                    .join(' · ')}
+            </span>
+        </p>
+    );
+
     return (
-        <details ref={board} className="departure-board">
-            <summary id="departure-board-title">
+        <section
+            className="departure-board"
+            aria-labelledby="departure-board-title"
+        >
+            <div className="board-head">
                 <Icon name="train" />
-                <span>Check departures</span>
-                <Icon name="down" />
-            </summary>
+                <h3 id="departure-board-title">Departures</h3>
+                {/* Why this stop, unless the stop's own line already says it ("Near Home"). */}
+                {reason && !(station && closestWords(station) === reason) && (
+                    <small>{reason}</small>
+                )}
+            </div>
             <div className="board-content">
                 <StopPicker
-                    current={station?.name ?? stop}
+                    current={station?.name ?? stop ?? warming}
                     favourites={favourites}
+                    learned={learned}
                 />
                 {station ? (
                     <div>
-                        <p className="board-capture">
-                            {station.name}
-                            <span>{captureLabel(station)}</span>
-                        </p>
+                        {capture}
                         {lines.length > 0 ? (
-                            <LineStrips className="departure-strips">
-                                {lines.map((line) => {
-                                    const kind =
-                                        line.mode === 'bus'
-                                            ? 'bus'
-                                            : line.mode === 'rail'
-                                              ? 'rail'
-                                              : 'tram';
-                                    const [first, second] = line.shown;
-
-                                    return (
-                                        <LineStrip
-                                            key={line.line}
-                                            look={line.look}
-                                            badge={
-                                                <LineBadge
-                                                    line={line.line}
-                                                    look={line.look}
-                                                    kind={kind}
-                                                />
-                                            }
-                                            first={end(first)}
-                                            second={end(second)}
-                                            empty="Other way: see Travel"
-                                            aria-label={`${vehicleWord(kind)} ${line.line}: ${line.shown
-                                                .map((dir) => {
-                                                    const t = whenOf(dir);
-
-                                                    return `${dir.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
-                                                })
-                                                .join(', ')}. Open in Travel`}
-                                            onClick={() => router.visit(href)}
-                                        />
-                                    );
-                                })}
-                            </LineStrips>
+                            strips(lines)
                         ) : station.time_basis === 'unavailable' ? null : (
                             <p className="board-empty">
                                 No departures from {station.name} in the feed.
                             </p>
                         )}
-                        <a
-                            className="board-full"
-                            href={href.url}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                router.visit(href);
-                            }}
-                        >
-                            Full timetable
-                        </a>
+                        {/* KVB's notices in Travel's two tiers: a major problem's headline, and
+                            the first everyday one; Full board has every one. */}
+                        {(station.notices ?? []).length > 0 && (
+                            <div className="board-notices">
+                                <MajorHeadline station={station} />
+                                {everyday.slice(0, 1).map((notice) => (
+                                    <NoticeLine
+                                        key={notice.id}
+                                        notice={notice}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        <div className="board-foot">
+                            {all.length > lines.length && (
+                                <span>
+                                    + {all.length - lines.length} more{' '}
+                                    {all.length - lines.length === 1
+                                        ? 'line'
+                                        : 'lines'}
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                className="board-full"
+                                onClick={() => setFull(true)}
+                            >
+                                Full board
+                            </button>
+                        </div>
                     </div>
-                ) : (
+                ) : warming ? null : (
                     <p className="board-empty">
-                        {station === undefined
-                            ? 'Loading departures…'
-                            : 'Choose a stop to see its departures.'}
+                        Choose a stop to see its departures.
                     </p>
                 )}
             </div>
-        </details>
+            {station && (
+                <Sheet
+                    open={full}
+                    onClose={() => setFull(false)}
+                    title={station.name}
+                    side
+                    className="board-sheet"
+                >
+                    {capture}
+                    {all.length > 0 && strips(all)}
+                    {(station.notices ?? []).length > 0 && (
+                        <div className="board-notices">
+                            <MajorHeadline station={station} />
+                            {everyday.map((notice) => (
+                                <NoticeLine key={notice.id} notice={notice} />
+                            ))}
+                        </div>
+                    )}
+                    <a
+                        className="board-travel"
+                        href={href.url}
+                        onClick={(event) => {
+                            event.preventDefault();
+                            router.visit(href);
+                        }}
+                    >
+                        Open in Travel
+                    </a>
+                </Sheet>
+            )}
+        </section>
     );
 }
 
-/** The mock's stop picker: the current stop and your favourites. */
+/** The mock's stop picker: the current stop, your favourites, then the stops you pick most. */
 function StopPicker({
     current,
     favourites,
+    learned,
 }: {
     current: string | null;
     favourites: FavouriteStop[];
+    /** The stops they pick most (opt-in): after the favourites, once each. */
+    learned: string[];
 }) {
     const [open, setOpen] = useState(false);
     const picker = useRef<HTMLDivElement>(null);
-    const stops = [
-        ...(current ? [current] : []),
-        ...favourites
-            .map((stop) => stop.name)
-            .filter((name) => name !== current),
-    ];
+    const saved = favourites
+        .map((stop) => stop.name)
+        .filter((name) => name !== current);
+    const often = learned.filter(
+        (name) => name !== current && !saved.includes(name),
+    );
+    const stops = [...(current ? [current] : []), ...saved, ...often];
 
     useEffect(() => {
         if (!open) {
@@ -390,7 +574,7 @@ function StopPicker({
 
         if (name !== current) {
             router.reload({
-                only: ['station', 'stop'],
+                only: ['station', 'stationWarming', 'stop'],
                 data: { stop: name },
             });
         }
@@ -434,6 +618,9 @@ function StopPicker({
                         }}
                     >
                         <span>{name}</span>
+                        {often.includes(name) && (
+                            <small className="stop-often">Often</small>
+                        )}
                         <Icon name="check" variant="line" />
                     </li>
                 ))}

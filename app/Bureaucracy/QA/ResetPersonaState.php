@@ -16,7 +16,7 @@ final class ResetPersonaState
         throw new HttpResponseException(response()->json([
             'code' => 'qa_mutation_retired',
             'message' => 'Persona testing is read-only. Open a persona preview; your account and family plans have not been changed.',
-            'preview_route' => 'bureaucracy.v2.preview',
+            'preview_route' => 'paperwork.v2.preview',
         ], 410)->header('Cache-Control', 'private, no-store'));
     }
 }

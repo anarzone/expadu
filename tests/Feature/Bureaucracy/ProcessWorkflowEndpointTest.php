@@ -21,13 +21,13 @@ beforeEach(function () {
         'process_id' => 'fixture.workflow', 'topic' => 'residence', 'kind' => 'action', 'coverage' => 'partial',
     ]]));
     $store->activate($release->id, null);
-    $this->planUrl = '/bureaucracy/v2/people/'.$this->person->id.'/plan?jurisdiction=de-nrw-cologne';
+    $this->planUrl = '/paperwork/v2/people/'.$this->person->id.'/plan?jurisdiction=de-nrw-cologne';
     $this->actingAs($this->actor);
     $proposal = $this->getJson($this->planUrl)->assertSuccessful()->json('processes.0');
-    $this->started = $this->postJson('/bureaucracy/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
+    $this->started = $this->postJson('/paperwork/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
         'occurrence_key' => $proposal['occurrence_key'], 'review_token' => $proposal['review_token'], 'request_id' => (string) Str::uuid()])
         ->assertSuccessful()->json();
-    $this->url = '/bureaucracy/v2/processes/'.$this->started['process_id'];
+    $this->url = '/paperwork/v2/processes/'.$this->started['process_id'];
     $this->report = function (string $event, array $payload = [], ?string $token = null) {
         $process = $this->getJson($this->url)->assertSuccessful()->json();
 
@@ -92,7 +92,7 @@ test('starting to track can be undone before any progress and started again from
     $this->getJson($this->url)->assertNotFound();
     $this->postJson($this->url.'/events', ['request_id' => (string) Str::uuid(), 'expected_version' => 2,
         'review_token' => $plan->json('processes.0.review_token'), 'event' => 'preparation_started', 'payload' => []])->assertConflict();
-    $restart = $this->postJson('/bureaucracy/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
+    $restart = $this->postJson('/paperwork/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
         'occurrence_key' => $plan->json('processes.0.occurrence_key'), 'review_token' => $plan->json('processes.0.review_token'),
         'request_id' => (string) Str::uuid()])->assertSuccessful();
     expect($restart->json('process_id'))->toBe($this->started['process_id'])->and($restart->json('version'))->toBe(3);

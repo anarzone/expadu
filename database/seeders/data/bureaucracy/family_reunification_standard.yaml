@@ -9,15 +9,16 @@ tasks:
     key: fam.submit_application
     depends_on: []
     description: |
-      As the spouse of a non-EU national you need your own residence permit. Cologne
-      lists the usual conditions: your partner holds a residence title and lives in
-      Germany, you have basic German (A1), your shared main residence is in Germany,
-      both of you are at least 18, and your livelihood is fully secured without benefits
-      such as Bürgergeld. If your partner holds an EU Blue Card, the language requirement
-      does not apply. If you entered visa-free under §41 AufenthV (for example as a citizen of
-      Australia, Canada, Japan, the UK or the USA), apply within 90 days of entry. If you
-      entered visa-free on any other basis, ask the Ausländerbehörde whether you can apply
-      from inside Germany.
+      As the spouse of a non-EU national you need your own residence permit.
+      Cologne lists the usual conditions: your partner holds a residence title and lives in Germany, you have basic German (A1), your shared main residence is in Germany, both of you are at least 18, and your livelihood is fully secured without benefits such as Bürgergeld.
+      The language requirement does not apply in several cases listed in §30 AufenthG, for example:
+      It does not apply if your partner holds an EU Blue Card or an ICT Card.
+      It does not apply if your partner holds a skilled-worker permit under §18a or §18b AufenthG. Check your partner's residence permit, or ask the Ausländerbehörde which section it was issued under.
+      It does not apply if your partner may enter visa-free even for long stays because of their nationality, for example as a US or Canadian citizen.
+      It does not apply if the authorities find you clearly need little integration support.
+      Ask the Ausländerbehörde whether an exemption applies to you.
+      If you entered visa-free under §41 AufenthV (for example as a citizen of Australia, Canada, Japan, the UK or the USA), apply within 90 days of entry.
+      If you entered visa-free on any other basis, ask the Ausländerbehörde whether you can apply from inside Germany.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -26,10 +27,21 @@ tasks:
       entry_mode: visa_free
     documents_required:
       - label: Cologne's online application for a family-reunification residence permit
-        note: Upload scans of the documents listed on the appointment task.
-      - label: A1 German certificate for the joining spouse
-        note: Cologne accepts certificates from the Goethe-Institut, TestDaF-Institut or telc, for example the "Deutsch-Test für Zuwanderer".
+        note: If you have no BundID, you can continue without logging in. Cologne may ask for further documents in individual cases.
+      - label: A recognised, valid national passport
+      - label: A digital biometric passport photo
+      - label: Marriage certificate (first application only)
+        note: Foreign certificates need a certified translation and, depending on the country, an apostille or legalisation.
         tone: warn
+      - label: Rental contract with proof of the current rent
+        note: For example a recent bank statement. If you own your home, upload the purchase contract stating its size in square metres.
+      - label: A1 German certificate for the joining spouse
+        note: Cologne accepts certificates from the Goethe-Institut, TestDaF-Institut or telc, for example the "Deutsch-Test für Zuwanderer". Not needed if one of the language exemptions in the description applies.
+        tone: warn
+      - label: Proof that your livelihood is fully secured
+        note: 'Needed for every working family member. Employees provide payslips for the last three months. Self-employed or freelance: your latest income tax assessment and a current profit and loss statement from your tax adviser, plus, where applicable, your trade registration and proof of pension or life insurance.'
+      - label: Proof of full health insurance
+        note: Only if you do not have statutory (public) health insurance.
     links:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     how_to_steps:
@@ -39,10 +51,12 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: primary, label: '§18a AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18a.html'}
+      - {kind: primary, label: '§18b AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18b.html'}
       - {kind: primary, label: '§41 AufenthV', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
     claims:
@@ -75,21 +89,113 @@ tasks:
         source: '§30 AufenthG'
         quote: beide Ehegatten das 18. Lebensjahr vollendet haben
       - id: livelihood
-        states: your livelihood is fully secured without benefits
+        states: your livelihood is fully secured
         source: 'Stadt Köln · family reunification'
         quote: Sie müssen Ihren Lebensunterhalt vollständig sichern.
+      - id: no-benefits
+        states: without benefits such as Bürgergeld
+        source: 'Stadt Köln · family reunification'
+        quote: Das heißt, Sie dürfen keine Sozialleistungen wie Bürgergeld beziehen.
+      - id: a1-exemptions
+        states: The language requirement does not apply in several cases listed in §30 AufenthG
+        source: '§30 AufenthG'
+        quote: Satz 1 Nummer 2 ist für die Erteilung der Aufenthaltserlaubnis unbeachtlich, wenn
       - id: blue-card-a1
-        states: If your partner holds an EU Blue Card, the language requirement
+        states: if your partner holds an EU Blue Card or an ICT Card
         source: '§30 AufenthG'
         quote: der Ausländer im Besitz einer Blauen Karte EU, einer ICT-Karte oder einer Mobiler-ICT-Karte
-      - id: visa-free-countries
-        states: visa-free under §41 AufenthV (for example as a citizen of
+      - id: skilled-worker-a1
+        states: if your partner holds a skilled-worker permit
+        source: '§30 AufenthG'
+        quote: oder eines Aufenthaltstitels nach den §§ 18a, 18b, 18c Absatz 3
+      - id: skilled-worker-18a
+        states: skilled-worker permit under §18a
+        source: '§18a AufenthG'
+        quote: Einer Fachkraft mit Berufsausbildung wird eine Aufenthaltserlaubnis zur Ausübung jeder qualifizierten Beschäftigung erteilt.
+      - id: skilled-worker-18b
+        states: §18b AufenthG
+        source: '§18b AufenthG'
+        quote: Einer Fachkraft mit akademischer Ausbildung wird eine Aufenthaltserlaubnis zur Ausübung jeder qualifizierten Beschäftigung erteilt.
+      - id: nationality-a1
+        states: if your partner may enter visa-free even for long stays because of their nationality
+        source: '§30 AufenthG'
+        quote: der Ausländer wegen seiner Staatsangehörigkeit auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten darf
+      - id: nationality-examples
+        states: for example as a US or Canadian citizen
         source: '§41 AufenthV'
-        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland im Sinne des § 1 Absatz 2 Nummer 6 des Freizügigkeitsgesetzes/EU und der Vereinigten Staaten von Amerika können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten.
+      - id: low-integration-need
+        states: if the authorities find you clearly need little integration support
+        source: '§30 AufenthG'
+        quote: bei dem Ehegatten ein erkennbar geringer Integrationsbedarf im Sinne einer nach § 43 Absatz 4 erlassenen Rechtsverordnung besteht
+      - id: visa-free-countries
+        states: visa-free under §41 AufenthV (for example as a citizen of Australia, Canada, Japan, the UK or the USA)
+        source: '§41 AufenthV'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland im Sinne des § 1 Absatz 2 Nummer 6 des Freizügigkeitsgesetzes/EU und der Vereinigten Staaten von Amerika können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten.
       - id: visa-free-window
         states: apply within 90 days of entry
         source: '§41 AufenthV'
         quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: doc-application
+        states: Cologne's online application for a family-reunification residence permit
+        source: 'Stadt Köln · family reunification'
+        quote: Antrag auf eine Aufenthaltserlaubnis zum Familiennachzug.
+      - id: doc-bundid
+        states: If you have no BundID, you can continue without logging in.
+        source: 'Stadt Köln · family reunification'
+        quote: Wenn Sie keine BundID besitzen, können Sie Ihre Antragstellung ohne Anmeldung fortfahren.
+      - id: doc-further
+        states: Cologne may ask for further documents in individual cases.
+        source: 'Stadt Köln · family reunification'
+        quote: Es kann sein, dass wir in Einzelfällen weitere Unterlagen bei Ihnen anfragen.
+      - id: doc-passport
+        states: A recognised, valid national passport
+        source: 'Stadt Köln · family reunification'
+        quote: Anerkannter und gültiger Nationalpass
+      - id: doc-photo
+        states: A digital biometric passport photo
+        source: 'Stadt Köln · family reunification'
+        quote: Digitales biometrisches Passfoto
+      - id: doc-marriage
+        states: Marriage certificate (first application only)
+        source: 'Stadt Köln · family reunification'
+        quote: Heiratsurkunde (nur für den Erstantrag)
+      - id: doc-translation
+        states: Foreign certificates need a certified translation
+        source: 'Stadt Köln · family reunification'
+        quote: Bitte legen Sie von allen ausländischen Urkunden eine beglaubigte Übersetzung vor.
+      - id: doc-apostille
+        states: depending on the country, an apostille or legalisation
+        source: 'Stadt Köln · family reunification'
+        quote: Je nach Herkunftsland benötigen Sie zu der Urkunde auch eine Apostille oder Legalisation.
+      - id: doc-rent
+        states: Rental contract with proof of the current rent
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen Ihren Mietvetrag zusammen mit einem Nachweis über die aktuelle Miethöhe, zum Beispiel einem aktuellen Kontoauszug, vorlegen.
+      - id: doc-ownership
+        states: the purchase contract stating its size in square metres
+        source: 'Stadt Köln · family reunification'
+        quote: benötigen wir den Kaufvertrag mit Angabe der Wohnungsgröße in Quadratmetern
+      - id: doc-livelihood
+        states: Needed for every working family member.
+        source: 'Stadt Köln · family reunification'
+        quote: über die vollständige Lebensunterhaltssicherung aller berufstätigen Familienmitglieder vorlegen.
+      - id: doc-payslips
+        states: Employees provide payslips for the last three months.
+        source: 'Stadt Köln · family reunification'
+        quote: benötigen wir die Gehaltsabrechnung der letzten drei Monate.
+      - id: doc-self-employed
+        states: your latest income tax assessment and a current profit and loss statement from your tax adviser, plus, where applicable, your trade registration and proof of pension or life insurance
+        source: 'Stadt Köln · family reunification'
+        quote: Wenn Sie selbstständig oder freiberuflich tätig sind, benötigen wir den letzten Einkommenssteuerbescheid, aktuelle Gewinn- und Verlustrechnung des*der Steuerberaters*Steuerberaterin, gegebenenfalls Gewerbeanmeldung, Rentenversicherungs- beziehungsweise Lebensversicherungsnachweis.
+      - id: doc-health-insurance
+        states: Only if you do not have statutory (public) health insurance.
+        source: 'Stadt Köln · family reunification'
+        quote: Nachweis über Ihren vollständigen Krankversicherungsschutz, falls Sie nicht gesetzlich krankenversichert sind
+      - id: appointment-invitation
+        states: sends an appointment invitation once it can issue the permit
+        source: 'Stadt Köln · family reunification'
+        quote: Sie erhalten eine Termineinladung zur Vorsprache, wenn wir Ihnen die Aufenthaltserlaubnis zur Familienzusammenführung ausstellen können.
       - id: visa-free-deadline
         covers: deadline
         source: '§41 AufenthV'
@@ -266,11 +372,19 @@ tasks:
   - title: Prepare the joining spouse's first residence application
     key: case.family.first_permit.prepare
     description: |
-      Prepare and file the joining spouse's own residence application before the
-      national D visa expires. Use the Cologne family-reunification checklist for the
-      passport, visa, marriage evidence, housing and livelihood evidence, and other
-      requested documents. A sponsor whose Blue Card is still pending needs a separate
-      authority check; do not assume that holder-specific exceptions already apply.
+      Prepare and file the joining spouse's own residence application before the national D visa expires.
+      Use the Cologne family-reunification checklist:
+      - the application form
+      - a valid national passport
+      - a copy of the entry visa if required
+      - a digital biometric passport photo
+      - the marriage certificate
+      - a suitable A1 German certificate, for example Deutsch-Test für Zuwanderer; ask the office which certificates it accepts
+      - the rental contract with proof of the current rent
+      - proof from all working family members that the family's living costs are fully covered, for example payslips for the last three months
+      - proof of the joining spouse's full health insurance if they are not publicly insured
+      - certified translations of all foreign certificates, with an apostille or legalisation depending on the country
+      The office may ask for other documents in individual cases. Do not leave out the German certificate because of an exception the office has not confirmed. A sponsor whose Blue Card is still pending needs a separate authority check; do not assume that holder-specific exceptions already apply.
     phase: arrival
     urgency: critical
     deadline_type: fact_date
@@ -287,7 +401,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-20.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
@@ -302,24 +416,60 @@ tasks:
         states: file the joining spouse's own residence application before the national D visa expires
         source: '§81 AufenthG'
         quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
-      - id: passport-visa
-        states: the passport, visa
+      - id: application-form
+        states: the application form
         source: 'Stadt Köln · family reunification'
-        quote: Anerkannter und gültiger Nationalpass Falls erforderlich die Kopie des Einreisevisums
+        quote: Antrag auf eine Aufenthaltserlaubnis zum Familiennachzug.
+      - id: passport
+        states: a valid national passport
+        source: 'Stadt Köln · family reunification'
+        quote: Anerkannter und gültiger Nationalpass
+      - id: visa-copy
+        states: a copy of the entry visa if required
+        source: 'Stadt Köln · family reunification'
+        quote: Falls erforderlich die Kopie des
+      - id: photo
+        states: a digital biometric passport photo
+        source: 'Stadt Köln · family reunification'
+        quote: Digitales biometrisches Passfoto
       - id: marriage
-        states: marriage evidence
+        states: the marriage certificate
         source: 'Stadt Köln · family reunification'
         quote: Heiratsurkunde (nur für den Erstantrag)
+      - id: german-a1
+        states: a suitable A1 German certificate
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen einfache deutsche Sprachkenntnisse Stufe A1 durch ein geeignetes Sprachstandszeugnis der Stufe A1
+      - id: german-test-example
+        states: for example Deutsch-Test für Zuwanderer
+        source: 'Stadt Köln · family reunification'
+        quote: Deutsch-Test für Zuwanderer
       - id: housing
-        states: housing
+        states: the rental contract with proof of the current rent
         source: 'Stadt Köln · family reunification'
         quote: Sie müssen Ihren Mietvetrag zusammen mit einem Nachweis über die aktuelle Miethöhe, zum Beispiel einem aktuellen Kontoauszug, vorlegen.
       - id: livelihood
-        states: livelihood evidence
+        states: proof from all working family members that the family's living costs are fully covered
         source: 'Stadt Köln · family reunification'
-        quote: Sie müssen einen Nachweis über die vollständige Lebensunterhaltssicherung aller berufstätigen Familienmitglieder vorlegen.
+        quote: die vollständige Lebensunterhaltssicherung aller berufstätigen Familienmitglieder vorlegen
+      - id: payslips
+        states: payslips for the last three months
+        source: 'Stadt Köln · family reunification'
+        quote: Gehaltsabrechnung der letzten drei Monate
+      - id: health-insurance
+        states: proof of the joining spouse's full health insurance if they are not publicly insured
+        source: 'Stadt Köln · family reunification'
+        quote: Nachweis über Ihren vollständigen Krankversicherungsschutz, falls Sie nicht gesetzlich krankenversichert sind
+      - id: translations
+        states: certified translations of all foreign certificates
+        source: 'Stadt Köln · family reunification'
+        quote: Bitte legen Sie von allen ausländischen Urkunden eine beglaubigte Übersetzung vor.
+      - id: apostille
+        states: with an apostille or legalisation depending on the country
+        source: 'Stadt Köln · family reunification'
+        quote: Je nach Herkunftsland benötigen Sie zu der Urkunde auch eine Apostille oder Legalisation.
       - id: other-documents
-        states: other requested documents
+        states: The office may ask for other documents in individual cases
         source: 'Stadt Köln · family reunification'
         quote: Es kann sein, dass wir in Einzelfällen weitere Unterlagen bei Ihnen anfragen.
 
@@ -330,11 +480,12 @@ tasks:
       The sponsor's Blue Card application is still pending. Cologne's holder-specific
       family guidance should not be treated as an issuance promise before the sponsor's
       status is confirmed. Provide the household livelihood information, file the
-      spouse's application on time, and ask the authority which requirements apply to
-      the pending sponsor status.
+      spouse's application before the visa expires, and ask the authority which
+      requirements apply to the pending sponsor status.
     phase: waiting
     urgency: critical
-    deadline_type: none
+    deadline_type: fact_date
+    deadline_fact_key: visa_expires_at
     applies_if:
       current_residence_title: national_d_visa
       case_goal: family_reunification_permit
@@ -346,16 +497,17 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-20.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+      - {kind: primary, label: '§81 AufenthG — Applying for a residence title', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
     claims:
       - id: spouse-application
-        states: file the spouse's application on time
-        source: '§30 AufenthG'
-        quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
+        states: file the spouse's application before the visa expires
+        source: '§81 AufenthG — Applying for a residence title'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels
       - id: livelihood
         states: Provide the household livelihood information
         source: 'Stadt Köln · family reunification'
@@ -526,33 +678,67 @@ tasks:
     type: info
     conflicts_with: [case.family.renew.continuing_household]
     description: |
-      If the marital household has ended, §31—not the continuing-household renewal
-      rule—may apply. The authority must verify whether the marital household lawfully
-      existed in Germany for the required period, whether the sponsor died, or whether
-      a statutory hardship exception applies. Do not infer this from the age of the
-      current permit alone; obtain case-specific advice before relying on §31.
+      If the marital household (living together as a married couple) has ended, §31—not the continuing-household renewal rule—may apply.
+      - It extends your residence permit for one year as an independent right of residence, no longer tied to family reunification.
+      - Apply for the extension before your current permit expires: if you apply in time, your current permit counts as continuing until the immigration office decides (§81).
+      - One condition is that the marital household lawfully existed in Germany for at least three years, or that your spouse died while the marital household existed in Germany.
+      - If your spouse holds an EU Blue Card, it is enough that the marital household lasted lawfully at least two years in Germany after at least one year in another EU member state.
+      - The three years are not required where this is needed to avoid particular hardship, unless extending your spouse's own permit is excluded.
+      - This extension is not available if your spouse's own permit cannot be extended or turned into permanent residence because a legal rule on its purpose, or a condition attached to it, rules this out.
+      How long your current permit has run does not tell you whether you qualify; get advice on your case before relying on this rule.
     phase: options
     urgency: high
-    deadline_type: none
+    deadline_type: fact_date
+    deadline_fact_key: residence_title_expires_at
     applies_if:
       current_residence_title: family_reunification
       case_goal: {in: [renew_current_title, understand_options]}
       marital_household_continues: false
     links:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__31.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-20.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§31 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__31.html'}
+      - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
     claims:
       - id: independent-right
-        states: If the marital household has ended, §31
+        states: the marital household (living together as a married couple) has ended, §31
         source: '§31 AufenthG'
-        quote: Die Aufenthaltserlaubnis des Ehegatten wird im Falle der Aufhebung der ehelichen Lebensgemeinschaft als eigenständiges, vom Zweck des Familiennachzugs unabhängiges Aufenthaltsrecht für ein Jahr verlängert, wenn
-      - id: advice
-        states: before relying on §31
+        quote: Die Aufenthaltserlaubnis des Ehegatten wird im Falle der Aufhebung der ehelichen Lebensgemeinschaft als eigenständiges, vom Zweck des Familiennachzugs unabhängiges Aufenthaltsrecht für ein Jahr verlängert
+      - id: one-year-extension
+        states: extends your residence permit for one year as an independent right of residence, no longer tied to family reunification
         source: '§31 AufenthG'
-        quote: Eigenständiges Aufenthaltsrecht der Ehegatten
+        quote: Die Aufenthaltserlaubnis des Ehegatten wird im Falle der Aufhebung der ehelichen Lebensgemeinschaft als eigenständiges, vom Zweck des Familiennachzugs unabhängiges Aufenthaltsrecht für ein Jahr verlängert
+      - id: apply-in-time
+        states: 'Apply for the extension before your current permit expires: if you apply in time, your current permit counts as continuing until the immigration office decides (§81)'
+        source: '§81 AufenthG'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: three-years
+        states: the marital household lawfully existed in Germany for at least three years
+        source: '§31 AufenthG'
+        quote: die eheliche Lebensgemeinschaft seit mindestens drei Jahren rechtmäßig im Bundesgebiet bestanden hat
+      - id: spouse-died
+        states: your spouse died while the marital household existed in Germany
+        source: '§31 AufenthG'
+        quote: der Ausländer gestorben ist, während die eheliche Lebensgemeinschaft im Bundesgebiet bestand
+      - id: blue-card-period
+        states: If your spouse holds an EU Blue Card, it is enough that the marital household lasted lawfully at least two years in Germany after at least one year in another EU member state
+        source: '§31 AufenthG'
+        quote: Ist der Ausländer im Besitz einer Blauen Karte EU, gilt Absatz 1 für den Ehegatten des Ausländers mit der Maßgabe, dass der in Absatz 1 Satz 1 Nummer 1 genannte Zeitraum auch als erfüllt gilt, wenn die eheliche Lebensgemeinschaft seit mindestens zwei Jahren rechtmäßig im Bundesgebiet und zuvor bereits mindestens ein Jahr in einem anderen Mitgliedstaat der Europäischen Union bestanden hat.
+      - id: hardship-three-years
+        states: The three years
+        source: '§31 AufenthG'
+        quote: die eheliche Lebensgemeinschaft seit mindestens drei Jahren rechtmäßig im Bundesgebiet bestanden hat
+      - id: hardship
+        states: 'are not required where this is needed to avoid particular hardship, unless extending your spouse''s own permit is excluded'
+        source: '§31 AufenthG'
+        quote: soweit es zur Vermeidung einer besonderen Härte erforderlich ist, dem Ehegatten den weiteren Aufenthalt zu ermöglichen, es sei denn, für den Ausländer ist die Verlängerung der Aufenthaltserlaubnis ausgeschlossen
+      - id: exclusion
+        states: 'This extension is not available if your spouse''s own permit cannot be extended or turned into permanent residence because a legal rule on its purpose, or a condition attached to it, rules this out'
+        source: '§31 AufenthG'
+        quote: Satz 1 ist nicht anzuwenden, wenn die Aufenthaltserlaubnis des Ausländers nicht verlängert oder dem Ausländer keine Niederlassungserlaubnis oder Erlaubnis zum Daueraufenthalt – EU erteilt werden darf, weil dies durch eine Rechtsnorm wegen des Zwecks des Aufenthalts oder durch eine Nebenbestimmung zur Aufenthaltserlaubnis

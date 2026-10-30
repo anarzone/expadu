@@ -36,8 +36,9 @@ function ledger(User $user): Collection
 /** Back-date a user's ledger rows so decay and windows can be checked. */
 function ageSignals(User $user, int $days): void
 {
+    // Days of 24 hours, in UTC: a Berlin calendar day across a clock change is 23 or 25 (25 Oct 2026).
     DB::table('user_signals')->where('subject_key', Pseudonym::for($user))
-        ->update(['created_at' => now()->subDays($days)->toIso8601String()]);
+        ->update(['created_at' => now()->utc()->subDays($days)->toIso8601String()]);
 }
 
 test('personalisation is off by default and nothing is recorded without the opt-in', function () {
@@ -59,7 +60,7 @@ test('the opt-in is set through user settings and turning it off erases the ledg
     $user = User::factory()->onboarded()->create();
     $spot = Spot::factory()->create();
 
-    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])
+    $this->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])
         ->assertOk()->assertJsonPath('settings.personalisation', true);
     // Each real request loads the account afresh; the test reuses one instance.
     $this->actingAs($user->fresh())->postJson("/api/places/{$spot->id}/feedback", ['action' => 'not_interested'])->assertOk();
@@ -246,7 +247,7 @@ test('saving an event and starting a trip to a planned place are recorded', func
 
     $rows = ledger($user)->keyBy('action');
     expect($rows['saved']->item_type)->toBe('event')
-        ->and($rows['saved']->category)->toBe('culture')
+        ->and($rows['saved']->category)->toBe('music')
         ->and($rows['saved']->price_band)->toBe('free')
         ->and((int) $rows['trip_taken']->item_id)->toBe($spot->id);
 });

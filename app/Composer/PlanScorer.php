@@ -23,7 +23,7 @@ class PlanScorer
         'companion' => 18.0,       // fits who you're going with (kids etc.)
         'appeal' => 18.0,          // activities lead; cafés/bars don't dominate
         'landmark' => 12.0,        // notable places make the day's "main" pick
-        'affinity' => 22.0,        // the user's situation + picked interests
+        'affinity' => 22.0,        // the user's situation
         'daypart' => 15.0,         // the hour shapes the pick: lunch → food, evening → bar, daylight → park
         'rotation' => 8.0,         // deterministic day-to-day variety among near-equals
         'llm_rank' => 45.0,        // material taste judgment without erasing proximity/quality
@@ -73,7 +73,8 @@ class PlanScorer
         $score += self::WEIGHTS['variety'] * max(0.0, 1.0 - 0.5 * $sameCategory);
 
         // Weather fit
-        $weatherFit = $candidate->outdoor && $context->rainExpected ? 0.0 : 1.0;
+        // ...and a beer garden in the cool (owner, 24 Oct 2026: none on a 13° late-October afternoon), unless asked for.
+        $weatherFit = ($candidate->outdoor && $context->rainExpected) || ($context->coolExpected && in_array('biergarten', $candidate->tags, true)) ? 0.0 : 1.0;
         $score += self::WEIGHTS['weather'] * $weatherFit;
 
         // Closes soon: a venue closing within 2h of the cursor gets a boost,
@@ -106,7 +107,7 @@ class PlanScorer
         // Notable places (OSM wikidata/wikipedia) make the day's hero pick.
         $score += self::WEIGHTS['landmark'] * ($candidate->isLandmark ? 1.0 : 0.0);
 
-        // Situation + picked interests — the same signal the home feed leads on.
+        // Situation — the same signal the home feed leads on.
         $score += self::WEIGHTS['affinity'] * CategoryAffinity::score($candidate->category, $context->affinity);
 
         // Mood words ("somewhere quiet") count only through a place's verified vibe tags.

@@ -134,7 +134,7 @@ test('a co-guardian cannot strip another guardians reviewed access through grant
     coGuardian($authority->person, $other, $this->reviewer);
     $grant = BureaucracyAccessGrant::query()->where('guardian_authority_id', $authority->id)->sole();
 
-    $this->actingAs($other)->deleteJson('/bureaucracy/v2/grants/'.$grant->id)->assertUnprocessable();
+    $this->actingAs($other)->deleteJson('/paperwork/v2/grants/'.$grant->id)->assertUnprocessable();
     expect(fn () => app(ManageDelegation::class)->revoke($guardian, $grant))->toThrow(ValidationException::class);
 
     expect($grant->fresh()->revoked_at)->toBeNull()

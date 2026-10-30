@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 import { formatDate, kindLabels, onDay } from '@/components/paperwork/format';
 import { Icon } from '@/components/ui/icon';
-import { bureaucracy } from '@/routes';
+import { paperwork } from '@/routes';
 
 /*
  * Today's Paperwork (the mock's .deadline-strip and .paperwork-panel), from
@@ -55,7 +55,7 @@ const documentNames: Record<string, string> = {
 
 /** Paperwork's own page for a process and its step. */
 const processHref = (link: ProcessLink) =>
-    bureaucracy({
+    paperwork({
         query: link.process
             ? {
                   view: 'detail',
@@ -157,7 +157,10 @@ export function PaperworkPanel({
                 )}
             </Link>
             <div className="paperwork-followups">
-                <Link className="situation-link" href="/profile">
+                <Link
+                    className="situation-link"
+                    href={paperwork({ query: { guide: 'details' } })}
+                >
                     Your situation
                     <span>Review details</span>
                 </Link>
@@ -181,7 +184,7 @@ export function WhatToBring({
     return (
         <Link
             className="agenda-paperwork"
-            href={bureaucracy({
+            href={paperwork({
                 query: { view: 'paperwork', process: process.occurrence_key },
             })}
             aria-label={`What to bring for ${process.title ?? 'this appointment'}: ${label}`}
@@ -203,7 +206,7 @@ export function SettlingIn() {
             className="paperwork-panel paperwork-optional"
             aria-label="Optional settling-in help"
         >
-            <Link href={bureaucracy()}>
+            <Link href={paperwork()}>
                 <Icon name="document" />
                 <span>
                     <strong>Settling in?</strong>

@@ -23,7 +23,12 @@ use App\Models\BureaucracyCatalogueRelease;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\User;
 use App\Models\UserTask;
+use Illuminate\Cache\Events\CacheHit;
+use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 function catalogueFixture(string $key = 'fixture.prepare'): Task
 {
@@ -134,7 +139,7 @@ test('all local records are inventoried without promoting legacy prose', functio
     $tasks = Task::query()->whereNotNull('key')->orderBy('key')->get();
     $artifact = app(CatalogueCompiler::class)->compile($tasks->all());
     expect($artifact['inventory'])->toHaveCount(95)
-        ->and(collect($artifact['inventory'])->where('review_status', 'legacy'))->toHaveCount(47)
+        ->and(collect($artifact['inventory'])->where('review_status', 'legacy'))->toHaveCount(41)
         ->and(collect($artifact['definitions'])->flatMap(fn ($definition) => $definition['variants'])->every(fn ($variant) => $variant['review']['review_status'] === 'approved'))->toBeTrue();
 });
 
@@ -206,3 +211,95 @@ test('stable IDs reject trailing newlines', function (string $target) {
     }
     expect(fn () => app(CatalogueCompiler::class)->compile([$task], $map))->toThrow(DomainException::class);
 })->with(['task', 'process', 'instruction', 'document']);
+
+/** The current() checks remembered or written in $run, by key prefix. */
+function catalogueCheckCache(Closure $run): array
+{
+    $seen = ['hits' => 0, 'writes' => 0];
+    $hit = function (CacheHit $event) use (&$seen): void {
+        $seen['hits'] += (int) str_starts_with($event->key, 'bureaucracy.catalogue_check.');
+    };
+    $written = function (KeyWritten $event) use (&$seen): void {
+        $seen['writes'] += (int) str_starts_with($event->key, 'bureaucracy.catalogue_check.');
+    };
+    Event::listen(CacheHit::class, $hit);
+    Event::listen(KeyWritten::class, $written);
+    try {
+        $run();
+    } finally {
+        Event::forget(CacheHit::class);
+        Event::forget(KeyWritten::class);
+    }
+
+    return $seen;
+}
+
+function activeCatalogueFixture(): array
+{
+    $task = catalogueFixture();
+    $store = app(CatalogueReleaseStore::class);
+    $release = $store->stage(app(CatalogueCompiler::class)->compile([$task], catalogueMapping()));
+    $store->activate($release->id, null);
+
+    return [$task, $store, $release];
+}
+
+test('🔒 the catalogue check is remembered only for unchanged inputs', function () {
+    [$task, $store] = activeCatalogueFixture();
+    $first = null;
+    expect(catalogueCheckCache(function () use ($store, &$first): void {
+        $first = $store->current();
+    }))->toBe(['hits' => 0, 'writes' => 1]);
+    expect(catalogueCheckCache(fn () => expect($store->current())->toBe($first)))->toBe(['hits' => 1, 'writes' => 0]);
+
+    // A card's row changed behind the model's back (no updated_at): checked again, and withdrawn.
+    DB::table('tasks')->where('id', $task->id)->update(['description' => 'Tampered synthetic text.']);
+    $after = null;
+    expect(catalogueCheckCache(function () use ($store, &$after): void {
+        $after = $store->current();
+    }))->toBe(['hits' => 0, 'writes' => 1]);
+    expect($after['definitions'][0]['variants'])->toBe([])->and($after['withdrawn'])->toBe([$task->key]);
+});
+
+test('🔒 a release tampered after a remembered pass still fails closed, and the failure is never remembered', function () {
+    [, $store, $release] = activeCatalogueFixture();
+    $store->current();
+    $artifact = $release->artifact;
+    $artifact['definitions'][0]['variants'][0]['instructions'] = [];
+    DB::table('bureaucracy_catalogue_releases')->where('id', $release->id)->update(['artifact' => json_encode($artifact)]);
+
+    expect(catalogueCheckCache(fn () => expect(fn () => $store->current())->toThrow(DomainException::class)))->toBe(['hits' => 0, 'writes' => 0]);
+    expect(fn () => $store->current())->toThrow(DomainException::class);
+});
+
+test('🔒 a new day or a source host taken off the allow-list checks everything again', function () {
+    [$task, $store] = activeCatalogueFixture();
+    $store->current();
+
+    // Its review window closes overnight.
+    $this->travelTo($task->review_due_at->addDay()->setTime(9, 0));
+    expect(catalogueCheckCache(fn () => expect($store->current()['withdrawn'])->toBe([$task->key])))->toMatchArray(['writes' => 1]);
+    $this->travelBack();
+
+    // The approved source hosts are now empty: the card no longer passes its source policy.
+    $store->current();
+    config(['bureaucracy_sources.primary_hosts' => [], 'bureaucracy_sources.implementation_hosts' => []]);
+    expect(catalogueCheckCache(fn () => expect($store->current()['withdrawn'])->toBe([$task->key])))->toMatchArray(['hits' => 0, 'writes' => 1]);
+});
+
+test('🔒 a remembered result the app did not sign is ignored and everything is checked again', function () {
+    [$task, $store] = activeCatalogueFixture();
+    DB::table('tasks')->where('id', $task->id)->update(['description' => 'Tampered synthetic text.']);
+    $key = null;
+    Event::listen(KeyWritten::class, function (KeyWritten $event) use (&$key): void {
+        $key = str_starts_with($event->key, 'bureaucracy.catalogue_check.') ? $event->key : $key;
+    });
+    expect($store->current()['withdrawn'])->toBe([$task->key]);
+    Event::forget(KeyWritten::class);
+
+    // "Nothing withdrawn" written under that very key, unsigned or wrongly signed.
+    foreach (['[]', str_repeat('0', 64).'|[]'] as $forged) {
+        Cache::put($key, $forged);
+        expect($store->current()['withdrawn'])->toBe([$task->key]);
+    }
+});

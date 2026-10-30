@@ -1,6 +1,6 @@
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
-import { vehicleOf } from '../line-look';
+import { vehicleOf, vehicleWord } from '../line-look';
 import { noticeWords } from '../nearby/types';
 import type { NoticeBrief } from '../nearby/types';
 import { stopName } from '../stop-name';
@@ -62,22 +62,114 @@ export type PlanAnswer = {
     journeys: Journey[];
     from: { name: string; lat: number; lng: number };
     to: { name: string; lat: number; lng: number };
-    disruptions: {
-        title: string;
-        severity: string;
-        lines: string[];
-        brief?: NoticeBrief | null;
-        /** KVB's own text (German), for when there's no brief. */
-        details?: string | null;
-        /** KVB's page for the notice; null when it isn't KVB's. */
-        url?: string | null;
-    }[];
+    disruptions: PlanNotice[];
+    /** Lines the ways ride that are in trouble at their stop, by their own live runs. */
+    trouble?: PlanTrouble[];
+    /** Runs the feeds say are cancelled, before a way's first ride. */
+    gone?: PlanGone[];
+    /** While the boarding stops' live runs are still asked (`trouble`, `gone`): their id. */
+    checks?: string | null;
     conditions?: {
         weather: { available: boolean; hours: WeatherHour[] };
         lifts: { known: boolean; by_journey: (LiftOut[] | null)[] };
     };
     city?: string | null;
+    /** Rheinlandtarif advice for the first way by transit (FareAdvisor). */
+    ticket?: {
+        covered_by_deutschlandticket: boolean;
+        price_eur: number | null;
+        estimated: boolean;
+        label: string;
+    } | null;
 };
+
+/** A notice on the ways' lines (or a major one on the From or To stop's). */
+export type PlanNotice = {
+    id?: string;
+    title: string;
+    severity: string;
+    /** A major line problem (the one headline) or an everyday one (NoticeScale). */
+    scale?: 'major' | 'minor';
+    /** On a line the ways ride, or only on one serving From or To. */
+    on?: 'ways' | 'ends';
+    lines: string[];
+    source?: string | null;
+    since?: string | null;
+    brief?: NoticeBrief | null;
+    /** KVB's own text (German), for when there's no brief. */
+    details?: string | null;
+    /** KVB's page for the notice; null when it isn't KVB's. */
+    url?: string | null;
+};
+
+/** A line in trouble one way, by its own live runs (NearbyStation::trouble). */
+export type PlanTrouble = {
+    line: string;
+    mode: 'tram' | 'bus' | 'rail';
+    dest: string;
+    kind: 'cancelled' | 'late';
+    count: number;
+    of: number;
+    runs: { time: string; delay: number; cancelled: boolean }[];
+    /** The stop the ways board it at. */
+    stop: string;
+};
+
+/** A cancelled run that would have come before a way's first ride. */
+export type PlanGone = {
+    id: string;
+    line: string;
+    mode: 'tram' | 'bus' | 'rail';
+    dest: string;
+    time: string;
+    at: string;
+    stop: string;
+};
+
+/** The lines a way rides. */
+export const linesOf = (journey: Journey): string[] =>
+    journey.legs.flatMap((leg) => (leg.line ? [leg.line] : []));
+
+/** "20–30" or "25": how late a line's runs are. */
+export function lateBy(trouble: PlanTrouble): string {
+    const delays = trouble.runs
+        .filter((run) => !run.cancelled)
+        .map((run) => run.delay);
+    const low = Math.min(...delays);
+    const high = Math.max(...delays);
+
+    return low === high ? String(low) : `${low}–${high}`;
+}
+
+/** A line's trouble in a few words: "Line 12: 20–30 min late". */
+export function troubleShort(trouble: PlanTrouble): string {
+    return trouble.kind === 'late'
+        ? `Line ${trouble.line}: ${lateBy(trouble)} min late`
+        : `Line ${trouble.line}: ${trouble.count} runs cancelled`;
+}
+
+/**
+ * The one major problem Plan a trip heads with: a major notice (on the
+ * ways' lines first), else a line in trouble by its live runs.
+ */
+export function majorOf(
+    answer: PlanAnswer,
+):
+    | { kind: 'notice'; notice: PlanNotice }
+    | { kind: 'trouble'; trouble: PlanTrouble }
+    | null {
+    const majors = answer.disruptions.filter((n) => n.scale === 'major');
+    const notice =
+        majors.find((n) => n.on !== 'ends') ?? majors[0] ?? undefined;
+
+    if (notice) {
+        return { kind: 'notice', notice };
+    }
+
+    const trouble = answer.trouble?.[0];
+
+    return trouble ? { kind: 'trouble', trouble } : null;
+}
 
 /** One option as Plan a trip lists it: the journey and what it knows about it. */
 export type PlanOption = {
@@ -307,6 +399,20 @@ export function reasonsFor(
         }
     }
 
+    // A line it rides running late run after run (a delay is a reason, not a card).
+    for (const trouble of answer?.trouble ?? []) {
+        if (
+            trouble.kind === 'late' &&
+            linesOf(journey).includes(trouble.line)
+        ) {
+            reasons.push({
+                text: troubleShort(trouble),
+                kind: 'warn',
+                icon: 'clock',
+            });
+        }
+    }
+
     for (const lift of option.lifts ?? []) {
         reasons.push({
             text: `Lift out of order at ${stopName(lift.stop, answer?.city)}`,
@@ -341,6 +447,10 @@ export type Check = {
     tone: 'calm' | 'unsure' | 'attention' | 'conflict';
     /** The KVB notices check: each notice's words, with its page. */
     notices?: { words: string; lang: 'en' | 'de'; url: string | null }[];
+    /** The ticket check: whether you said you hold a Deutschlandticket. */
+    ticket?: { held: boolean };
+    /** Still being checked: its chip softly lit. */
+    pending?: boolean;
 };
 
 const conditionWord: Record<string, string> = {
@@ -390,36 +500,74 @@ export function checksFor(
                 },
     );
 
+    // The live runs: a line in trouble names itself (conflict); a cancelled
+    // run is everyday (attention). Nothing to say otherwise.
+    const trouble = answer.trouble ?? [];
+    const gone = answer.gone ?? [];
+
+    if (answer.checks) {
+        checks.push({
+            short: 'Live runs',
+            title: 'Live times',
+            text: 'Checking the live runs at the stops these ways board…',
+            icon: 'clock',
+            tone: 'calm',
+            pending: true,
+        });
+    } else if (trouble.length) {
+        checks.push({
+            short: troubleShort(trouble[0]),
+            title: 'Live times',
+            text: trouble
+                .map(
+                    (t) =>
+                        `${troubleShort(t)} towards ${t.dest} at ${stopName(t.stop, answer.city)}`,
+                )
+                .join(' · '),
+            icon: 'alert',
+            tone: 'conflict',
+        });
+    } else if (gone.length) {
+        checks.push({
+            short: `${gone.length} run${gone.length > 1 ? 's' : ''} cancelled`,
+            title: 'Live times',
+            text: gone
+                .map((g) => `Line ${g.line} towards ${g.dest} at ${g.time}`)
+                .join(' · ')
+                .concat(gone.length > 1 ? ' are cancelled' : ' is cancelled'),
+            icon: 'cancel',
+            tone: 'attention',
+        });
+    }
+
+    // Notices by tier: a major one in the conflict colours, an everyday one
+    // as attention (the delays canvas, 22 Oct 2026).
     const notices = answer.disruptions;
+    const majors = notices.filter((n) => n.scale === 'major').length;
+    const said = notices.map((n) => {
+        const { headline, text, lang } = noticeWords(n);
+
+        return {
+            words: text ? `${headline.replace(/\.$/, '')}. ${text}` : headline,
+            lang,
+            url: n.url ?? null,
+        };
+    });
     checks.push(
         notices.length
             ? {
-                  short: `${notices.length} notice${notices.length > 1 ? 's' : ''}`,
-                  title: 'KVB notices',
-                  text: notices
-                      .map((n) => {
-                          const { headline, text } = noticeWords(n);
-
-                          return text ? `${headline}. ${text}` : headline;
-                      })
-                      .join(' · '),
-                  icon: 'alert',
-                  tone: 'attention',
-                  notices: notices.map((n) => {
-                      const { headline, text, lang } = noticeWords(n);
-
-                      return {
-                          words: text
-                              ? `${headline.replace(/\.$/, '')}. ${text}`
-                              : headline,
-                          lang,
-                          url: n.url ?? null,
-                      };
-                  }),
+                  short: majors
+                      ? `${majors} major notice${majors > 1 ? 's' : ''}`
+                      : `${notices.length} notice${notices.length > 1 ? 's' : ''}`,
+                  title: 'Notices',
+                  text: said.map((n) => n.words).join(' · '),
+                  icon: majors ? 'alert' : 'info',
+                  tone: majors ? 'conflict' : 'attention',
+                  notices: said,
               }
             : {
                   short: 'No notices',
-                  title: 'KVB notices',
+                  title: 'Notices',
                   text: 'None for these lines',
                   icon: 'check',
                   tone: 'calm',
@@ -526,6 +674,35 @@ export function checksFor(
                     tone: 'calm',
                 },
     );
+
+    // The fare, asked in place: with a Deutschlandticket a ride costs nothing more.
+    const ticket = answer.ticket;
+
+    if (ticket) {
+        const price =
+            ticket.price_eur === null
+                ? null
+                : `${ticket.estimated ? '≈ ' : ''}€${ticket.price_eur.toFixed(2)}`;
+        checks.push(
+            ticket.covered_by_deutschlandticket
+                ? {
+                      short: 'Deutschlandticket',
+                      title: 'Ticket',
+                      text: 'Covered by your Deutschlandticket',
+                      icon: 'ticket',
+                      tone: 'calm',
+                      ticket: { held: true },
+                  }
+                : {
+                      short: price ?? ticket.label,
+                      title: 'Ticket',
+                      text: `${ticket.label}${price ? ` · ${price}` : ''}${ticket.estimated ? ', estimated from the distance' : ''}`,
+                      icon: 'ticket',
+                      tone: 'calm',
+                      ticket: { held: false },
+                  },
+        );
+    }
 
     return checks;
 }
@@ -664,4 +841,27 @@ export function berlinInstant(date: string, time: string): string {
     const instant = new Date(guess.getTime() - drift);
 
     return instant.toISOString();
+}
+
+/** "Tram 16", "Bus 133": a ride as its vehicle and line. */
+export const word = (leg: JourneyLeg) =>
+    `${vehicleWord(vehicleOf(leg.mode))} ${leg.line ?? ''}`.trim();
+
+/** "Tram 16, then 5" or "Bus 133, no change": how an option reads aloud. */
+export function optionLabel(option: PlanOption): string {
+    const legs = rides(option.journey);
+
+    if (!legs.length) {
+        return option.journey.mode === 'bike' ? 'By bike' : 'On foot';
+    }
+
+    return `${word(legs[0])}${
+        legs.length > 1
+            ? `, then ${legs
+                  .slice(1)
+                  .map((leg) => leg.line ?? '')
+                  .filter(Boolean)
+                  .join(', ')}`
+            : ', no change'
+    }`;
 }

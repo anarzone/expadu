@@ -211,15 +211,15 @@ function notificationUrl(data: Record<string, unknown>): string {
 
     try {
         const url = new URL(
-            typeof candidate === 'string' ? candidate : '/dashboard',
+            typeof candidate === 'string' ? candidate : '/today',
             self.location.origin,
         );
 
         return url.origin === self.location.origin
             ? url.href
-            : new URL('/dashboard', self.location.origin).href;
+            : new URL('/today', self.location.origin).href;
     } catch {
-        return new URL('/dashboard', self.location.origin).href;
+        return new URL('/today', self.location.origin).href;
     }
 }
 

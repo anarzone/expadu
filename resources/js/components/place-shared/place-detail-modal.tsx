@@ -10,6 +10,7 @@ import type {
 
 type Feedback = {
     state: FeedbackState | null;
+    been?: boolean;
     rating: FeedbackRating | null;
     onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
 };

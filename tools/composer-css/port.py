@@ -6,7 +6,10 @@ the mock's body classes become the root's own classes plus that same scope class
 (body.studio / .studio -> .composer-page.composer-page, body.has-x -> .composer-page.composer-page.has-x),
 so the mock's relative weights hold. #main and the other ids stay ids.
 
-usage: python3 tools/composer-css/port.py . && npx prettier --write resources/css/composer-page.css
+The mock styles features the app doesn't draw; tools/css-prune drops those rules after the port.
+
+usage: python3 tools/composer-css/port.py . && node tools/css-prune/prune.mjs resources/css/composer-page.css \
+    && npx prettier --write resources/css/composer-page.css
 """
 import re
 import sys

@@ -3,8 +3,10 @@
 return [
 
     // Private page props must become unreadable after logout on shared devices.
+    // On everywhere deployed. It needs a secure context (https or localhost), so
+    // the local preview turns it off to be reached over plain http from a phone.
     'history' => [
-        'encrypt' => true,
+        'encrypt' => (bool) env('INERTIA_ENCRYPT_HISTORY', true),
     ],
 
     /*
@@ -21,8 +23,10 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
-        'url' => 'http://127.0.0.1:13714',
+        // A second local server (another worktree) turns it off or points at its own
+        // SSR, so it never renders with another checkout's code.
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
         // Seconds. A page that misses this renders client-side instead of
         // holding a PHP-FPM worker (Laravel's HTTP default is 30 s).
         'timeout' => (float) env('INERTIA_SSR_TIMEOUT', 1.5),

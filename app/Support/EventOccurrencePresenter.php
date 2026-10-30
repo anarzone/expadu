@@ -53,6 +53,8 @@ class EventOccurrencePresenter
             'title_translated' => $titleEnglish !== null,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
             'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
+            // Why a guest needs no German, or null (What's on's "No German needed").
+            'no_german' => EventEvidence::noGerman($manual ? $event->language : EventEvidence::language($event->language, $source), $event->language, $category),
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -61,6 +63,8 @@ class EventOccurrencePresenter
             'photo_attribution' => $media?->attribution,
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
+            // The listing's own photo, or (from the cascade) its venue's.
+            'photo_of' => $media === null ? null : ($event->mediaAttachments->contains('media_asset_id', $media->id) ? 'event' : 'venue'),
             'chips' => $this->chips($event),
             // Hand-written (manual) tips are ours; the model's are checked again here.
             'tip' => $manual ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $source),

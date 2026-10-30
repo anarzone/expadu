@@ -1,5 +1,7 @@
+import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
+import { csrfHeaders } from '@/lib/csrf';
 
 /**
  * Where Travel starts from: the device's position, confirmed to the server
@@ -13,14 +15,6 @@ import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
 const FOLLOW_METRES = 150;
 const FOLLOW_FLOOR_MS = 20_000;
 const AUTO_THROTTLE_MS = 5 * 60_000;
-
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
 
 function usable(position: GeolocationPosition, maxAccuracy = 200): boolean {
     const { latitude, longitude, accuracy } = position.coords;
@@ -65,7 +59,12 @@ export type LocateError =
     | 'unsaved'
     | 'timeout';
 
-export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
+export function useTravelLocation({
+    onAnchored,
+}: {
+    /** `moved`: more than 100 m from where the page was worked out from. */
+    onAnchored: (moved: boolean) => void;
+}) {
     const enabled = useLocationSharingEnabled();
     const [locating, setLocating] = useState(false);
     const [error, setError] = useState<LocateError | null>(null);
@@ -80,6 +79,8 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
 
     const confirm = useCallback(
         async (lat: number, lng: number): Promise<boolean> => {
+            let moved = true;
+
             try {
                 const response = await fetch('/api/location/confirm', {
                     method: 'POST',
@@ -87,7 +88,7 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrfToken(),
+                        ...csrfHeaders(),
                     },
                     body: JSON.stringify({ lat, lng }),
                 });
@@ -95,27 +96,25 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
                 if (!response.ok) {
                     return false;
                 }
+
+                moved =
+                    ((await response.json()) as { moved?: boolean }).moved !==
+                    false;
             } catch {
                 return false;
             }
 
             anchor.current = { lat, lng };
             lastAt.current = Date.now();
-            anchored.current();
+            anchored.current(moved);
 
             return true;
         },
         [],
     );
 
-    /** "Use my location": asks the browser, anchors, and starts following. */
-    const locate = useCallback(() => {
-        if (!enabled) {
-            setError('off');
-
-            return;
-        }
-
+    /** Asks the browser, anchors, and starts following. */
+    const fix = useCallback(() => {
         if (!navigator.geolocation) {
             setError('unsupported');
 
@@ -153,7 +152,52 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
             },
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
         );
-    }, [enabled, confirm]);
+    }, [confirm]);
+
+    /** "Use my location": with location sharing on. */
+    const locate = useCallback(() => {
+        if (!enabled) {
+            setError('off');
+
+            return;
+        }
+
+        fix();
+    }, [enabled, fix]);
+
+    /**
+     * Location sharing was off: asked here, where your location is wanted,
+     * rather than in Settings. On, then located.
+     */
+    const allow = useCallback(async () => {
+        setLocating(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/user-settings', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    ...csrfHeaders(),
+                },
+                body: JSON.stringify({ settings: { share_location: true } }),
+            });
+
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+        } catch {
+            setLocating(false);
+            setError('unsaved');
+
+            return;
+        }
+
+        router.reload({ only: ['userSettings'] });
+        fix();
+    }, [fix]);
 
     // On open, with permission already granted: one precise fix, at most
     // every five minutes across visits, silent on failure.
@@ -243,9 +287,12 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
                         lng: position.coords.longitude,
                     };
 
+                    // A move, not the fix wobbling: past 150 m and past the
+                    // fix's own accuracy (Wi-Fi positions jump about by that).
                     if (
                         anchor.current &&
-                        metres(anchor.current, here) < FOLLOW_METRES
+                        metres(anchor.current, here) <
+                            Math.max(FOLLOW_METRES, position.coords.accuracy)
                     ) {
                         return;
                     }
@@ -289,12 +336,13 @@ export function useTravelLocation({ onAnchored }: { onAnchored: () => void }) {
         error,
         following,
         locate,
+        allow,
         stopFollowing: () => setFollowing(false),
     };
 }
 
 export const locateErrorText: Record<LocateError, string> = {
-    off: 'Location sharing is off. Pick a stop instead, or turn it on in Settings.',
+    off: 'Location sharing is off. Share your location to see the station closest to you, or pick a stop.',
     unsupported:
         'Location isn’t available on this device. Pick a stop instead.',
     blocked:

@@ -20,7 +20,7 @@ class BureaucracyController extends Controller
     /**
      * Paperwork: the v2 plan for the signed-in account holder, or for someone who shared
      * theirs (?person=). Everything on the page comes from the plan read model; changes go
-     * through the bureaucracy/v2 JSON commands.
+     * through the paperwork/v2 JSON commands.
      *
      * The plan and the people are read only when the response carries them: a partial
      * reload (the page's own `only: ['entry']`, the shared widgets) doesn't assess the
@@ -58,6 +58,8 @@ class BureaucracyController extends Controller
             // Outside Cologne: whether the person asked to be told, and confirmed by mail.
             // Read only there, and only for the signed-in account's own address.
             'coverageWaitlist' => fn () => $jurisdiction === 'outside_coverage' ? app(CoverageWaitlist::class)->state($actor) : null,
+            // "Get started" asks where you live: the cities Paperwork covers, from the catalogue.
+            'coveredCities' => fn () => array_values(array_map(fn (array $j): string => $j['city'], config('bureaucracy_catalogue.jurisdictions'))),
         ]);
     }
 

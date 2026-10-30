@@ -17,7 +17,8 @@ use Illuminate\Support\Str;
 function workspacePlan(): array
 {
     $day = now('Europe/Berlin')->addDay()->format('Y-m-d');
-    $offset = CarbonImmutable::parse($day, 'Europe/Berlin')->format('P');
+    // Each time with its own offset: on the day the clocks go back, 09:00 and 13:00 differ.
+    $at = fn (string $time): string => CarbonImmutable::parse("{$day} {$time}", 'Europe/Berlin')->toIso8601String();
     Spot::factory()->create(['id' => 1, 'name' => 'Park', 'category' => 'park', 'lat' => 50.94, 'lng' => 6.95, 'tags' => ['opening_hours' => 'Mo-Su 00:00-24:00']]);
     config(['events.geocoding.expected_polygon_count' => 1]);
     DB::table('veedels')->insert(['name' => 'Workspace Fixture Boundary', 'bezirk' => 'Test', 'created_at' => now(), 'updated_at' => now()]);
@@ -25,9 +26,9 @@ function workspacePlan(): array
     Event::factory()->create(['id' => 2, 'title' => 'Concert', 'starts_at' => CarbonImmutable::parse($day.' 16:00', 'Europe/Berlin'), 'ends_at' => CarbonImmutable::parse($day.' 17:00', 'Europe/Berlin')]);
     DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(6.9603, 50.9375), 4326)::geography WHERE id = 2');
 
-    return ['date' => $day, 'constraints' => ['window_start' => "{$day}T09:00:00{$offset}", 'window_end' => "{$day}T20:00:00{$offset}"], 'slots' => [
-        ['id' => 'spot:1', 'type' => 'spot', 'name' => 'Park', 'start_at' => "{$day}T13:00:00{$offset}", 'end_at' => "{$day}T14:00:00{$offset}", 'start_time' => '13:00', 'end_time' => '14:00', 'swappable' => true],
-        ['id' => 'event:2', 'type' => 'event', 'name' => 'Concert', 'start_at' => "{$day}T16:00:00{$offset}", 'end_at' => "{$day}T17:00:00{$offset}", 'start_time' => '16:00', 'end_time' => '17:00', 'swappable' => true],
+    return ['date' => $day, 'constraints' => ['window_start' => $at('09:00'), 'window_end' => $at('20:00')], 'slots' => [
+        ['id' => 'spot:1', 'type' => 'spot', 'name' => 'Park', 'start_at' => $at('13:00'), 'end_at' => $at('14:00'), 'start_time' => '13:00', 'end_time' => '14:00', 'swappable' => true],
+        ['id' => 'event:2', 'type' => 'event', 'name' => 'Concert', 'start_at' => $at('16:00'), 'end_at' => $at('17:00'), 'start_time' => '16:00', 'end_time' => '17:00', 'swappable' => true],
     ]];
 }
 
@@ -79,6 +80,38 @@ test('a proposal goes straight into the plans with its change rows and Undo', fu
     // Undo needs no confirmation and removes the new day again.
     $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'undo', 'change' => $change['change_id']])->assertOk()
         ->assertJsonCount(0, 'plans')->assertJsonPath('changes.0.undoable', false);
+});
+
+test('Put it back restores an undone day as a change of its own, only while the day is as the Undo left it', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $date = array_key_first($state['plans']);
+    $plan = $state['plans'][$date];
+    $planned = $state['changes'][0]['id'];
+
+    // Nothing undone yet: nothing to put back.
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'nothing_to_redo');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'redo'])->assertUnprocessable()->assertJsonValidationErrors('change');
+
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'undo', 'change' => $planned])->assertOk()->assertJsonCount(0, 'plans');
+    $state = $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'redo', 'change' => $planned])->assertOk()->json();
+
+    expect($state['plans'][$date]['slots'])->toEqual($plan['slots'])
+        ->and($state['changes'])->toHaveCount(2)
+        ->and(collect($state['changes'])->firstWhere('id', $planned)['undone_at'])->not->toBeNull()
+        ->and(collect($state['changes'])->firstWhere('id', '!=', $planned)['undoable'])->toBeTrue();
+
+    // Once put back, the same Undo can't be put back again.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since');
+
+    // A day changed after the Undo isn't overwritten by putting the old one back.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '10:00', 'end' => '11:00'])->assertOk();
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'redo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since')
+        ->assertJsonPath("workspace.plans.{$date}.slots.0.name", 'Dentist');
 });
 
 test('a moved item is said as it is now, old to new', function () {

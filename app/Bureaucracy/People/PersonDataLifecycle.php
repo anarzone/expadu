@@ -18,15 +18,13 @@ use App\Models\BureaucracyQuestionSession;
 use App\Models\BureaucracyRelationship;
 use App\Models\BureaucracyRequirementUse;
 use App\Models\User;
-use App\Notifications\BureaucracyDeadlineNotification;
-use App\Notifications\PermanentResidencyEligibleNotification;
-use App\Privacy\LegacyProcessingUsage;
+use App\Privacy\ProcessingOptIns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 final class PersonDataLifecycle
 {
-    public function __construct(private PersonAccess $access, private LegacyProcessingUsage $legacyUsage, private FactRegistry $registry, private ReassessmentEvents $refresh) {}
+    public function __construct(private PersonAccess $access, private FactRegistry $registry, private ReassessmentEvents $refresh) {}
 
     public function export(User $actor, BureaucracyPerson $person): array
     {
@@ -139,10 +137,6 @@ final class PersonDataLifecycle
         $case = BureaucracyCase::query()->where('person_id', $current->id)->lockForUpdate()->first();
         $this->refresh->beforeErasure($current);
         if ($case !== null) {
-            if ($case->user_id !== null) {
-                $subject = User::query()->findOrFail($case->user_id);
-                $this->legacyUsage->preserve($subject, [$case->id]);
-            }
             BureaucracyProcessingConsent::query()->where('case_id', $case->id)->update([
                 'withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null,
             ]);
@@ -164,11 +158,14 @@ final class PersonDataLifecycle
             $subject->update(['profile_attributes' => array_diff_key($subject->profile_attributes ?? [], array_flip($keys))]);
             $subject->attributeChanges()->whereIn('attribute', $keys)->delete();
             $subject->userTasks()->delete();
+            // Composer's remembered Allow for this record ends with it.
+            ProcessingOptIns::endPaperwork($subject->id);
             Alert::query()->where('user_id', $subject->id)
                 ->where(fn ($query) => $query->where('category', 'bureaucracy')->orWhereNotNull('guidance_reference'))->delete();
+            // Rows stored by notification classes that no longer exist.
             $subject->notifications()->whereIn('type', [
-                BureaucracyDeadlineNotification::class,
-                PermanentResidencyEligibleNotification::class,
+                'App\\Notifications\\BureaucracyDeadlineNotification',
+                'App\\Notifications\\PermanentResidencyEligibleNotification',
             ])->delete();
         }
         $current->update(['display_label' => null, 'record_status' => 'erased', 'record_version' => $current->record_version + 1, 'erased_at' => now()->utc()]);

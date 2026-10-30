@@ -40,7 +40,7 @@ final class PrepareAssessmentInput
                     'catalogue_hash' => $process->catalogue_hash, 'version' => $process->version,
                     'step_definitions' => $process->step_definitions, 'state' => $process->state])->all();
 
-            return new AssessmentInput($facts, $related, $processes, $catalogue, $jurisdiction, $at, $facts['values']['case_goal'] ?? null);
+            return new AssessmentInput($facts, $related, $processes, $catalogue, $jurisdiction, $at, $facts['values']['case_goal'] ?? null, $catalogue['revision'] ?? null);
         });
     }
 }

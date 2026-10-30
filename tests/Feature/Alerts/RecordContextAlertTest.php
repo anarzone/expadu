@@ -17,7 +17,6 @@ use App\Listeners\CreateAlertFromNotification;
 use App\Models\Alert;
 use App\Models\Task;
 use App\Models\User;
-use App\Notifications\BureaucracyDeadlineNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
 use Carbon\CarbonImmutable;
@@ -104,7 +103,7 @@ test('it records a canonical sealed reminder even when push was never granted', 
         ->and($alert->category)->toBe('bureau')
         ->and($alert->lane)->toBe('action')
         ->and($alert->severity)->toBe('danger')
-        ->and($alert->deep_link)->toBe('/bureaucracy')
+        ->and($alert->deep_link)->toBe('/paperwork')
         ->and($alert->guidance_reference)->toEqual($reference)
         ->and($references->resolve($alert->guidance_reference, $user->id)['event_revision'])->toBe($attention[0]['event_revision'])
         ->and($alert->title)->toBe('Your paperwork needs attention')
@@ -235,7 +234,7 @@ test('a coalesced card re-surfaces as unread only when the situation escalates',
 
 test('the notification path skips ContextEngine classes so the center is not double-written', function () {
     $user = User::factory()->create();
-    $n = new BureaucracyDeadlineNotification('Register your address', 'overdue', -2, '2026-06-20', 5);
+    $n = new TransitDelayNotification('7', 12, 'Neumarkt');
 
     app(CreateAlertFromNotification::class)->handle(new NotificationSent($user, $n, 'database'));
 
@@ -249,7 +248,7 @@ test('the notification path still records + tags a direct (non-context) notifica
         /** @return array<string, string> */
         public function toArray(mixed $notifiable): array
         {
-            return ['title' => 'Tomorrow: Jazz Night', 'body' => 'Starts at 19:00.', 'url' => '/events'];
+            return ['title' => 'Tomorrow: Jazz Night', 'body' => 'Starts at 19:00.', 'url' => '/today?whats_on=1'];
         }
     };
 
@@ -270,16 +269,16 @@ test('a transit disruption alert deep-links to the live board, not the removed /
 
     app(RecordContextAlert::class)->handle(new ScoredActionInserted($user, $action));
 
-    expect(Alert::where('user_id', $user->id)->firstOrFail()->deep_link)->toBe('/timetable');
+    expect(Alert::where('user_id', $user->id)->firstOrFail()->deep_link)->toBe('/travel');
 });
 
-test('transit notifications point their url at the live /timetable route', function () {
+test('transit notifications point their url at the live /travel route', function () {
     $user = User::factory()->create();
     $disruption = new TransitDisruptionNotification(['line' => '7', 'summary' => 'Signal fault']);
     $delay = new TransitDelayNotification('7', 12, 'Neumarkt');
 
-    expect($disruption->toArray($user)['url'])->toBe('/timetable')
-        ->and($delay->toArray($user)['url'])->toBe('/timetable');
+    expect($disruption->toArray($user)['url'])->toBe('/travel')
+        ->and($delay->toArray($user)['url'])->toBe('/travel');
 });
 
 test('the classifier maps subtypes to the v4 taxonomy', function () {

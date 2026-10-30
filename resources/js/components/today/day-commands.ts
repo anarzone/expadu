@@ -28,6 +28,9 @@ type Command =
           start: string;
           end: string;
           location?: string;
+          /** The picked place's map point (Where? suggestions). */
+          lat?: number;
+          lng?: number;
       }
     | {
           action: 'edit';
@@ -37,11 +40,19 @@ type Command =
           start?: string;
           end?: string;
           location?: string | null;
+          /** The picked place's map point (Where? suggestions). */
+          lat?: number;
+          lng?: number;
       }
     | { action: 'complete' | 'uncomplete'; id: string; date: string }
     | { action: 'undo'; change: string };
 
-const reread = () => router.reload({ only: ['day'], preserveUrl: true });
+// The day, and the departures with it: their stop follows the next plan's trip.
+const reread = () =>
+    router.reload({
+        only: ['day', 'station', 'stationWarming', 'stationReason'],
+        preserveUrl: true,
+    });
 
 /*
  * The newest revision this tab has written. An Undo tapped before the day

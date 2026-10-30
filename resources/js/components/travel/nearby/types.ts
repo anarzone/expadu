@@ -12,6 +12,8 @@ export type StationRun = {
     delay: number;
     cancelled: boolean;
     time_basis: TimeBasis;
+    /** The notice that explains it (an id in the station's `notices`), when one matches. */
+    notice?: string | null;
 };
 
 export type StationDir = {
@@ -25,6 +27,8 @@ export type StationDir = {
     later_recorded: boolean;
     cancelled: boolean;
     disrupted: boolean;
+    /** Its usual minutes between runs here now, by the timetable; null when it doesn't say. */
+    headway?: number | null;
 };
 
 export type StationLine = {
@@ -49,7 +53,13 @@ export type Station = {
     name: string;
     kind: 'closest' | 'picked';
     /** How the closest station was found: from a fix of the last few minutes (fresh), or from where you last were. */
-    located?: { fresh: boolean; source: string; at: string | null } | null;
+    located?: {
+        fresh: boolean;
+        source: string;
+        /** What it's near: Home, or a Veedel ('place' and 'area' sources). */
+        label?: string | null;
+        at: string | null;
+    } | null;
     station: number | null;
     lat: number | null;
     lng: number | null;
@@ -69,6 +79,10 @@ export type Station = {
         id: string;
         title: string;
         severity: string;
+        /** A major line problem (a headline) or an everyday one (small, in place). */
+        scale?: 'major' | 'minor';
+        /** Why (NoticeScale): suspended, cut_short, replacement, split, strike, graded, many_lines, diverted, stops_skipped, stop_moved, delays; not_started (announced ahead). */
+        reasons?: string[];
         lines: string[];
         source: string | null;
         since: string | null;
@@ -78,8 +92,26 @@ export type Station = {
         /** KVB's page for the notice; null when it isn't KVB's. */
         url?: string | null;
     }[];
+    /** A line in trouble here by its own runs, one way: mostly cancelled in the next hour, or 15+ min late (NearbyStation::trouble). */
+    trouble?: {
+        line: string;
+        mode: 'tram' | 'bus' | 'rail';
+        dest: string;
+        kind: 'cancelled' | 'late';
+        count: number;
+        of: number;
+        runs: { time: string; delay: number; cancelled: boolean }[];
+    }[];
     /** A `?stop=` name KVB doesn't know: the closest station shows instead. */
     unknown_stop?: string | null;
+    /** Who gave the board something it carries, as their licence asks. */
+    credits?: {
+        for: string;
+        name: string;
+        url: string;
+        licence: string;
+        licence_url: string;
+    }[];
 };
 
 export type FavouriteStop = {
@@ -95,8 +127,9 @@ export const closestNow = (station: Pick<Station, 'kind' | 'located'>) =>
 
 /**
  * How a closest station was found, in words: "Closest" from a fix of the
- * last few minutes, else near where you last were, and how long ago
- * (nothing fake: owner, 21 Oct 2026).
+ * last few minutes; near Home or a Veedel when found from one of those;
+ * else near where you last were, and how long ago (nothing fake: owner,
+ * 21 Oct 2026).
  */
 export function closestWords(
     station: Pick<Station, 'kind' | 'located'>,
@@ -108,6 +141,12 @@ export function closestWords(
 
     if (closestNow(station)) {
         return 'Closest';
+    }
+
+    const { source, label } = station.located ?? {};
+
+    if ((source === 'place' || source === 'area') && label) {
+        return `Near ${label}`;
     }
 
     const at = station.located?.at ? Date.parse(station.located.at) : NaN;
@@ -130,6 +169,8 @@ export type NoticeBrief = {
     headline: string;
     text: string | null;
     impact?: string | null;
+    /** A brief, or (when no brief passed its checks) a literal translation. */
+    kind?: 'brief' | 'translation';
 };
 
 /**

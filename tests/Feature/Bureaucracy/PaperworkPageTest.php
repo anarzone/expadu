@@ -13,7 +13,7 @@ it('renders Paperwork from the v2 plan of the signed-in account', function () {
     app(RecordFactChange::class)->execute($user, $case->person, 'arrival_planned', false, null, 1);
     app(RecordFactChange::class)->execute($user, $case->person->fresh(), 'registration_status', 'not_registered', null, 2);
 
-    $this->actingAs($user)->get('/bureaucracy')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+    $this->actingAs($user)->get('/paperwork')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
         ->component('paperwork')
         ->where('entry.state', 'ready')
         ->where('jurisdiction', 'de-nrw-cologne')
@@ -25,6 +25,6 @@ it('renders Paperwork from the v2 plan of the signed-in account', function () {
 it('asks a person without a record to set up first', function () {
     $user = User::factory()->onboarded()->create();
 
-    $this->actingAs($user)->get('/bureaucracy')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+    $this->actingAs($user)->get('/paperwork')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
         ->component('paperwork')->where('entry.state', 'setup_required')->where('entry.plan', null));
 });

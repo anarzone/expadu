@@ -22,7 +22,7 @@
         ]
     },
     "app": {
-        "url": "/explore?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
+        "url": "/around-here?kind=pharmacy&near=50.96103,7.0048&name=Wiener%20Platz,%20M%C3%BClheim&time=14:30",
         "wait": ".nearby-place",
         "login": {
             "email": "e2e@expadu.test",

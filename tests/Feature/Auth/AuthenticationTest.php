@@ -19,7 +19,7 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('today', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {
@@ -66,7 +66,7 @@ test('an authenticated user is bounced off the login screen with a flash', funct
 
     $this->actingAs($user)
         ->get(route('login'))
-        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertRedirect(route('today', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -75,7 +75,7 @@ test('an authenticated, new user is returned from register to Today with a flash
 
     $this->actingAs($user)
         ->get(route('register'))
-        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertRedirect(route('today', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -131,3 +131,38 @@ test('a throttled sign-in says so on the poster, the same for any email', functi
     expect(session('error'))->toStartWith('Too many requests');
     $this->assertGuest();
 })->with(['an account' => true, 'no account' => false]);
+
+test('signing in again comes back to the page the session ended on', function () {
+    $user = User::factory()->create();
+
+    $this->get(route('login', ['return' => '/around-here?near=50.9,6.9&name=Neumarkt']))->assertOk();
+    $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect('/around-here?near=50.9,6.9&name=Neumarkt');
+});
+
+test('a return to another site is ignored', function (string $return) {
+    $user = User::factory()->create();
+
+    $this->get(route('login', ['return' => $return]))->assertOk();
+    $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+
+    $response->assertRedirect(route('today', absolute: false));
+})->with([
+    'another host' => ['https://evil.example/around-here'],
+    'protocol-relative' => ['//evil.example/around-here'],
+    'backslash' => ['/\\evil.example'],
+    'not a path' => ['around-here'],
+]);
+
+test('signing in again while still signed in goes straight back to the page', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('login', ['return' => '/around-here?name=Neumarkt']))
+        ->assertRedirect('/around-here?name=Neumarkt');
+    $this->actingAs($user)
+        ->get(route('login', ['return' => '//evil.example']))
+        ->assertRedirect(route('today'));
+});

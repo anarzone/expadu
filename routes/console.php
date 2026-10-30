@@ -31,8 +31,18 @@ Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping
 Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapping(2);
 // Its "We keep watching it": a Change of plan when the planned way changes.
 Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
+// How important each person's day is (DayImportance), fresh each morning; and the day's briefs,
+// the morning one and the evening before an important day (DayBriefs).
+Schedule::command('notifications:score-days')->timezone('Europe/Berlin')->dailyAt('05:30')->withoutOverlapping(30)->onOneServer();
+Schedule::command('notifications:send-briefs')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+// Today's AI order for everyone with personalisation on, before the day's first look (RankToday).
+Schedule::command('today:rank')->timezone('Europe/Berlin')->dailyAt('06:00')->withoutOverlapping(30)->onOneServer();
+// What threatens a stop of today's plan starting within two hours (PlanRisks).
+Schedule::command('notifications:watch-plans')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
+// People's laptop-work answers: kept 18 months at most (docs/places/design/laptop-answers.md).
+Schedule::command('places:prune-work-answers')->dailyAt('04:10')->withoutOverlapping(30);
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);
 
 // Bureaucracy task deadline reminders — daily morning push for urgent/overdue tasks
@@ -55,10 +65,14 @@ Schedule::command('bureaucracy:erase-unguarded-dependents')->hourly()->withoutOv
 // Re-check every card's source quotes against the official pages. A pass keeps a checked card
 // published, a failure withdraws and escalates it; changes ship as a new catalogue release.
 Schedule::command('bureaucracy:verify-sources --deploy')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer()->runInBackground();
+// The marketing pages' hand-written links and phone numbers, checked against the live web;
+// a broken or moved link, or a number its sources no longer show, opens an escalation.
+Schedule::command('marketing:check-links')->timezone('Europe/Berlin')->dailyAt('05:40')->withoutOverlapping()->onOneServer()->runInBackground();
 
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:import-official --days=40')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('events:import-datenhub --days=60')->everySixHours()->withoutOverlapping()->onOneServer()->runInBackground();
 Schedule::command('events:enrich')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:curate')->hourly()->withoutOverlapping()->runInBackground();
 Schedule::command('events:expire')->dailyAt('03:30')->withoutOverlapping()->runInBackground();
@@ -118,6 +132,16 @@ Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOne
 // trips: check daily, import only when a new feed is out. A run a deploy kills
 // blocks the next for at most 2 hours, and leaves the live tables untouched.
 Schedule::command('gtfs:refresh')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer()->runInBackground();
+// gtfs.de's DELFI feed, for the cancellations VRS leaves out: its timetable
+// slice hourly when a new one is out (gtfs.de publishes at any hour and the
+// realtime feed numbers its trips by the newest; an unchanged one costs one
+// HEAD), and its realtime (30 MB a read) every two minutes, only while
+// someone has looked at Travel in the last ten.
+Schedule::command('transit:import-delfi')->hourlyAt(15)->withoutOverlapping(60)->onOneServer()->runInBackground();
+Schedule::command('transit:fetch-delfi')->everyTwoMinutes()->withoutOverlapping(5)->onOneServer()->runInBackground();
+// VRS's live delays, kept fresh so no request waits 3 s to fetch them (only
+// while someone reads them).
+Schedule::command('transit:fetch-gtfsrt')->everyTwentySeconds()->withoutOverlapping(1)->onOneServer()->runInBackground();
 // Realtime trips that the timetable doesn't know, or a published feed left unimported → Sentry.
 Schedule::command('gtfs:health')->dailyAt('09:00')->withoutOverlapping(30)->onOneServer();
 
@@ -137,3 +161,6 @@ Schedule::command('places:enrich-collect')->everyTenMinutes()->withoutOverlappin
 
 // Model-ready place features, rebuilt from the effective facts each night.
 Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping()->onOneServer();
+
+// "Download your data" files are kept 24 hours, then deleted with their rows.
+Schedule::command('account-exports:prune')->hourly()->withoutOverlapping()->onOneServer();

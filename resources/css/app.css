@@ -217,10 +217,12 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-bg-inset: #f1ebdf; /* neutral pills */
     --color-bg-hover: #e9e0cf; /* pressed neutral */
     --color-bg-header: #fffdf8; /* app header */
+    --color-bg-field: #ffffff; /* a field, or a tile opened to edit it */
 
     /* ── Colour · lines ────────────────────────────────────────────────── */
     --color-border: #e6ddcb; /* hairlines and separators (decorative) */
     --color-border-strong: #8a8277; /* form controls: ≥3:1 on every surface */
+    --color-border-later: #d4c7ad; /* a dashed panel for what comes later */
 
     /* ── Colour · text ─────────────────────────────────────────────────── */
     --color-text: #211d15; /* titles, data, links */
@@ -515,19 +517,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-border: var(--color-border);
     --color-input: var(--input);
     --color-ring: var(--ring);
-    --color-sidebar: var(--sidebar);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
     --color-primary-soft: var(--primary-soft);
     --color-primary-hover: var(--primary-h);
     --color-accent-soft: var(--accent-soft);
     --color-accent-hover: var(--accent-hover);
-    --color-surface-2: var(--surface-2);
     --color-text-2: var(--text-2);
     --color-text-3: var(--text-3);
     --color-cyan: var(--cyan);
@@ -536,8 +529,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-cyan-bd: var(--cyan-bd);
     --color-orange: var(--orange);
     --color-orange-soft: var(--orange-soft);
-    --color-amber: var(--amber);
-    --color-amber-soft: var(--amber-soft);
     --color-navy: var(--navy);
     --color-navy-soft: var(--navy-soft);
     --color-success: var(--success);
@@ -578,23 +569,12 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --border: var(--color-border);
     --input: var(--color-border-strong);
     --ring: var(--color-focus);
-    --sidebar: var(--color-bg-canvas);
-    --sidebar-foreground: var(--color-text);
-    --sidebar-primary: var(--color-action);
-    --sidebar-primary-foreground: var(--color-text-on-action);
-    --sidebar-accent: var(--color-select-bg);
-    --sidebar-accent-foreground: var(--color-text);
-    --sidebar-border: var(--color-border);
-    --sidebar-ring: var(--color-focus);
-    --surface-2: var(--color-bg-quiet);
     --cyan: var(--color-select-text);
     --cyan-h: var(--color-select-text);
     --cyan-soft: var(--color-select-bg);
     --cyan-bd: var(--color-select-bg-hover);
     --orange: var(--color-action);
     --orange-soft: var(--color-action-tint);
-    --amber: var(--color-attention-text);
-    --amber-soft: var(--color-attention-bg);
     --warn: var(--color-attention-text);
     --warn-soft: var(--color-attention-bg);
     --danger: var(--color-conflict-text);
@@ -607,50 +587,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --text-2: var(--color-text-soft);
     --text-3: var(--color-text-muted);
     --shadow: var(--shadow-raised);
-}
-
-/* ─── Category tints (Places / Events / Today cards) ─── */
-/* Each sets --cat-tint (image wash) + --cat-mark (icon ink); referenced inline. */
-.cat-park {
-    --cat-tint: #cfe6c9;
-    --cat-mark: #2f7d3a;
-}
-.cat-culture,
-.cat-language {
-    --cat-tint: #ccd9f5;
-    --cat-mark: #3358ad;
-}
-.cat-pitch,
-.cat-court,
-.cat-sport,
-.cat-sports {
-    --cat-tint: #ffe1c2;
-    --cat-mark: #d2710f;
-}
-.cat-swimming,
-.cat-music,
-.cat-meetup {
-    --cat-tint: #cdeef5;
-    --cat-mark: #0a8aa6;
-}
-.cat-playground,
-.cat-stammtisch,
-.cat-cafe {
-    --cat-tint: #ffeec0;
-    --cat-mark: #c9920a;
-}
-.cat-dog_park,
-.cat-event,
-.cat-party {
-    --cat-tint: #ffded2;
-    --cat-mark: #d2461f;
-}
-
-@layer utilities {
-    /* Standard section padding: 24px vertical, 10px horizontal on mobile, 24px on desktop */
-    .section-pad {
-        @apply px-2.5 py-6 md:px-6;
-    }
 }
 
 @layer base {
@@ -674,19 +610,4 @@ input[type='time']::-webkit-calendar-picker-indicator {
             font-size: var(--text-body);
         }
     }
-}
-
-/* Card entrance animation — prototype fadeUp */
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-.animate-fade-up {
-    animation: fadeUp 0.3s ease both;
 }

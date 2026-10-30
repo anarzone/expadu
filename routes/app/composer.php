@@ -6,6 +6,7 @@
 */
 
 use App\Http\Controllers\ComposerController;
+use App\Http\Controllers\ComposerPaperworkPermissionController;
 use App\Http\Controllers\ComposerWorkspaceController;
 use App\Http\Controllers\ProcessingNoticeController;
 use Illuminate\Support\Facades\Route;
@@ -13,21 +14,41 @@ use Illuminate\Support\Facades\Route;
 Route::get('composer', [ComposerController::class, 'page'])->name('composer');
 // A page's request handed to Composer by POST, so its words stay out of URLs.
 Route::post('composer/entry', [ComposerController::class, 'entry'])
-    ->middleware('throttle:composer-parse')
+    ->middleware('throttle:composer-ask')
     ->name('composer.entry.store');
 Route::get('composer/workspace', [ComposerWorkspaceController::class, 'show'])->name('composer.workspace.show');
+// Your day, the Paperwork glance, tonight and saved starting points, for the panel on any page.
+Route::get('composer/day', [ComposerWorkspaceController::class, 'day'])->name('composer.day');
 Route::post('composer/workspace', [ComposerWorkspaceController::class, 'update'])->name('composer.workspace.update');
+// One of the person's own conversations, renamed or deleted for good (the page asks first).
+Route::patch('composer/conversations/{conversation}', [ComposerWorkspaceController::class, 'renameConversation'])
+    ->where('conversation', '[A-Za-z0-9-]{1,64}')->name('composer.conversations.rename');
+Route::delete('composer/conversations/{conversation}', [ComposerWorkspaceController::class, 'deleteConversation'])
+    ->where('conversation', '[A-Za-z0-9-]{1,64}')->name('composer.conversations.destroy');
 Route::get('composer/event', [ComposerWorkspaceController::class, 'event'])->name('composer.event');
 Route::get('composer/guidance', [ComposerWorkspaceController::class, 'guidance'])->name('composer.guidance');
 Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue'])->name('composer.catalogue');
-Route::post('composer/parse', [ComposerController::class, 'parse'])
-    ->middleware('throttle:composer-parse')
-    ->name('composer.parse');
+// One message, answered by Composer's assistant (its last message in the conversation).
+Route::post('composer/ask', [ComposerController::class, 'ask'])
+    ->middleware('throttle:composer-ask')
+    ->name('composer.ask');
+// A change Composer proposed, applied; one it made, undone (24 hours); a change made on a card (ComposerActions).
+Route::post('composer/apply', [ComposerController::class, 'applyAction'])->middleware('throttle:composer-ask')->name('composer.apply');
+Route::post('composer/undo', [ComposerController::class, 'undoAction'])->middleware('throttle:composer-ask')->name('composer.undo');
+Route::post('composer/act', [ComposerController::class, 'act'])->middleware('throttle:composer-ask')->name('composer.act');
+// How far the assistant has got with a request (its permit's request id), polled while it works.
+Route::get('composer/progress/{requestId}', [ComposerController::class, 'progress'])
+    ->whereUuid('requestId')->middleware('throttle:composer-progress')->name('composer.progress');
 // What each external processing purpose sends and to whom; withdrawing ends it.
 Route::get('privacy/processing/{purpose}', ProcessingNoticeController::class)
     ->middleware('throttle:privacy-processing')->name('privacy.processing.show');
 Route::delete('privacy/processing/{purpose}', [ProcessingNoticeController::class, 'withdraw'])
     ->middleware('throttle:privacy-processing')->name('privacy.processing.withdraw');
+// Composer's remembered Allow for their Paperwork record, for Settings › Composer: on with the notice shown, off at once.
+Route::get('composer/paperwork-permission', [ComposerPaperworkPermissionController::class, 'show'])
+    ->middleware('throttle:privacy-processing')->name('composer.paperwork-permission.show');
+Route::put('composer/paperwork-permission', [ComposerPaperworkPermissionController::class, 'update'])
+    ->middleware('throttle:privacy-processing')->name('composer.paperwork-permission.update');
 Route::post('composer/compose', [ComposerController::class, 'compose'])
     ->middleware('throttle:composer-compose')
     ->name('composer.compose');

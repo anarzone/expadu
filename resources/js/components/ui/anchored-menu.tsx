@@ -190,15 +190,33 @@ export function AnchoredMenu({
                     : anchor.top - h - 4;
             const left =
                 align === 'end' ? edge.right - w : Math.max(8, edge.left);
+            const x = Math.max(8, Math.min(left, window.innerWidth - w - 8));
             box.style.top = `${top}px`;
-            box.style.left = `${Math.max(8, Math.min(left, window.innerWidth - w - 8))}px`;
+            box.style.left = `${x}px`;
+            // Inside a dialog that's still sliding in (a transform makes it the
+            // fixed panel's frame), it lands off by the dialog's own offset:
+            // take that back off, so it sits under its button either way.
+            const placed = box.getBoundingClientRect();
+            if (Math.round(placed.left) !== Math.round(x) || Math.round(placed.top) !== Math.round(top)) {
+                box.style.left = `${x - (placed.left - x)}px`;
+                box.style.top = `${top - (placed.top - top)}px`;
+            }
         };
 
         position();
         window.addEventListener('resize', position);
         window.addEventListener('scroll', position, true);
+        // Placed again once the dialog it's in has finished sliding in.
+        let live = true;
+        const sliding = panel.current?.closest('dialog')?.getAnimations() ?? [];
+        if (sliding.length > 0) {
+            void Promise.all(sliding.map((a) => a.finished))
+                .then(() => live && position())
+                .catch(() => undefined);
+        }
 
         return () => {
+            live = false;
             window.removeEventListener('resize', position);
             window.removeEventListener('scroll', position, true);
         };

@@ -2,6 +2,8 @@ import { router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
+import { paperwork } from '@/routes';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -42,7 +44,7 @@ const scopeLabels: Record<string, string> = {
     manage_evidence: 'Your documents',
 };
 
-const base = '/bureaucracy/v2';
+const base = '/paperwork/v2';
 
 /**
  * Share your plan (the mock's bureaucracy-next "sharing" editor): who sees
@@ -51,7 +53,16 @@ const base = '/bureaucracy/v2';
  * EXP-79 and the design (how an invitation travels, its email field and the
  * accept screen), so it isn't here yet.
  */
-export function Sharing({ personId }: { personId: number }) {
+/** A record action Composer handed over to (its hand-off), ringed when the panel opens. */
+export type RecordRing = 'download' | 'stop' | 'delete';
+
+export function Sharing({
+    personId,
+    ring = null,
+}: {
+    personId: number;
+    ring?: RecordRing | null;
+}) {
     const { toast, openSheet, closeSheet } = usePaperwork();
     const [grants, setGrants] = useState<Grant[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -137,6 +148,7 @@ export function Sharing({ personId }: { personId: number }) {
                     personId={personId}
                     stopped={false}
                     ui={{ openSheet, closeSheet, toast }}
+                    ring={ring}
                 />
             </section>
         </>
@@ -200,11 +212,23 @@ function RecordActions({
     personId,
     stopped,
     ui,
+    ring = null,
 }: {
     personId: number;
     stopped: boolean;
     ui: RecordUi;
+    /** The action Composer handed over to: ringed and in view, never pressed for them. */
+    ring?: RecordRing | null;
 }) {
+    const ringed = useRef<HTMLButtonElement | null>(null);
+    useEffect(() => {
+        ringed.current?.scrollIntoView({ block: 'center' });
+        ringed.current?.focus({ preventScroll: true });
+    }, []);
+    const mark = (action: RecordRing) =>
+        ring === action
+            ? { ref: ringed, className: 'button secondary is-ringed' }
+            : { className: 'button secondary' };
     const [downloading, setDownloading] = useState(false);
     const [switching, setSwitching] = useState(false);
     const [now, setNow] = useState(stopped);
@@ -257,7 +281,7 @@ function RecordActions({
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf(),
+                ...csrfHeaders(),
             },
         }).catch(() => null);
         setDownloading(false);
@@ -301,7 +325,7 @@ function RecordActions({
             <div className="actions">
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('download')}
                     disabled={downloading}
                     onClick={() => void download()}
                 >
@@ -309,7 +333,7 @@ function RecordActions({
                 </button>
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('stop')}
                     data-record-processing
                     aria-busy={switching || undefined}
                     onClick={() => void setProcessing(!now)}
@@ -318,7 +342,7 @@ function RecordActions({
                 </button>
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('delete')}
                     onClick={() =>
                         ui.openSheet({
                             title: 'Delete your record?',
@@ -328,7 +352,7 @@ function RecordActions({
                                     onKeep={ui.closeSheet}
                                     onErased={() => {
                                         ui.closeSheet();
-                                        router.visit('/bureaucracy', {
+                                        router.visit(paperwork.url(), {
                                             replace: true,
                                             // Keeps the page, and the notice it carries.
                                             preserveState: true,
@@ -548,14 +572,6 @@ function berlinDay(iso: string): string {
     return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Europe/Berlin',
     }).format(new Date(iso));
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 /** The file name the server gives (Content-Disposition), or a plain one. */

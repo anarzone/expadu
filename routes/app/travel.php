@@ -6,16 +6,21 @@
 */
 
 use App\Http\Controllers\Api\DayController;
+use App\Http\Controllers\Api\DeutschlandticketController;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\GeocodeSearchController;
+use App\Http\Controllers\Api\JourneyChecksController;
 use App\Http\Controllers\Api\JourneyPlanController;
 use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\JourneySuggestSearchController;
+use App\Http\Controllers\Api\LineRouteController;
+use App\Http\Controllers\Api\LineStopController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\PlannedTripController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SavedJourneyController;
+use App\Http\Controllers\Api\StationLinesMapController;
 use App\Http\Controllers\Api\StationSearchController;
 use App\Http\Controllers\Api\StopSearchController;
 use App\Http\Controllers\Api\TakeMeThereController;
@@ -34,6 +39,8 @@ Route::get('api/stops', StopSearchController::class)->middleware('throttle:searc
 Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
 Route::get('api/journey', TakeMeThereController::class)->middleware('throttle:journey')->name('api.journey');
 Route::post('api/journey/plan', JourneyPlanController::class)->middleware('throttle:journey')->name('api.journey.plan');
+Route::post('api/journey/checks', JourneyChecksController::class)->middleware('throttle:search')->name('api.journey.checks');
+Route::put('api/travel/deutschlandticket', DeutschlandticketController::class)->name('api.travel.deutschlandticket');
 Route::get('api/journey/suggest', JourneySuggestController::class)->middleware('throttle:search')->name('api.journey.suggest');
 Route::post('api/journey/suggest/search', JourneySuggestSearchController::class)->middleware('throttle:search')->name('api.journey.suggest.search');
 Route::get('api/saved-journeys', [SavedJourneyController::class, 'index'])->name('api.saved-journeys.index');
@@ -41,6 +48,12 @@ Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->nam
 Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');
 // Nearby's stop picker: KVB stations by name.
 Route::get('api/travel/stations', StationSearchController::class)->middleware('throttle:search')->name('api.travel.stations');
+// Nearby's Map: the lines through a station and their next stops.
+Route::get('api/travel/lines-map', StationLinesMapController::class)->name('api.travel.lines-map');
+// The map's picked line: its whole route, and each stop's runs as it comes
+// into view (one board read per stop, so the search budget).
+Route::get('api/travel/line-route', LineRouteController::class)->name('api.travel.line-route');
+Route::get('api/travel/line-stop', LineStopController::class)->middleware('throttle:search')->name('api.travel.line-stop');
 // Travel's ★ favourite stops, per account.
 Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
 Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');
@@ -57,4 +70,4 @@ Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.
 Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
 
 // Live departures (KVB-style board)
-Route::get('timetable', TimetableController::class)->name('timetable');
+Route::get('travel', TimetableController::class)->name('travel');

@@ -96,6 +96,7 @@ export function PlaceRichDetail({
     backLabel?: string;
     feedback?: {
         state: FeedbackState | null;
+        been?: boolean;
         rating: FeedbackRating | null;
         onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
     };
@@ -348,6 +349,7 @@ export function PlaceRichDetail({
             {feedback && (
                 <PlaceFeedbackBar
                     state={feedback.state}
+                    been={feedback.been}
                     rating={feedback.rating}
                     onAction={feedback.onAction}
                     label={place.name}
@@ -405,11 +407,7 @@ export function PlaceRichDetail({
                         Happening here
                     </h2>
                     <a
-                        href={
-                            events.venueId
-                                ? `/events?venue=${events.venueId}&window=week`
-                                : '/events?window=week'
-                        }
+                        href={`/today?${new URLSearchParams({ whats_on: '1', q: place.name })}`}
                         className="mt-3 flex min-h-12 items-center justify-between gap-3 rounded-[12px] border border-border bg-card px-4 py-3 text-[13px] font-semibold transition-colors hover:border-primary hover:text-primary"
                     >
                         <span className="inline-flex items-center gap-2">

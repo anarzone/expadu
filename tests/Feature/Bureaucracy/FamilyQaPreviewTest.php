@@ -31,7 +31,7 @@ beforeEach(function () {
 
 function qaPreviewUrl(string $persona): string
 {
-    return '/bureaucracy/v2/preview/'.rawurlencode($persona).'?jurisdiction=de-nrw-cologne';
+    return '/paperwork/v2/preview/'.rawurlencode($persona).'?jurisdiction=de-nrw-cologne';
 }
 
 test('canonical persona preview is read only across A B A and leaves family records unchanged', function () {
@@ -69,7 +69,7 @@ test('preview reports no active catalogue and outside coverage without publishin
     DB::table('bureaucracy_catalogue_pointers')->where('name', 'active')->update(['release_id' => null]);
     $this->getJson(qaPreviewUrl('planning'))->assertOk()->assertJsonPath('coverage.state', 'not_activated')
         ->assertJsonPath('assessment.processes', []);
-    $this->getJson('/bureaucracy/v2/preview/planning?jurisdiction=outside_coverage')->assertOk()
+    $this->getJson('/paperwork/v2/preview/planning?jurisdiction=outside_coverage')->assertOk()
         ->assertJsonPath('coverage.state', 'outside_coverage');
     expect(DB::table('bureaucracy_catalogue_pointers')->where('name', 'active')->value('release_id'))->toBeNull();
 });
@@ -110,7 +110,7 @@ test('sample and actual confirmed answers produce the same reviewed rule decisio
 });
 
 test('outside coverage with an active catalogue cannot leak local rule decisions or dependencies', function () {
-    $data = $this->getJson('/bureaucracy/v2/preview/case-family-renewal-four-years?jurisdiction=outside_coverage')->assertOk()->json();
+    $data = $this->getJson('/paperwork/v2/preview/case-family-renewal-four-years?jurisdiction=outside_coverage')->assertOk()->json();
     expect($data['catalogue_hash'])->not->toBeNull()->and($data['coverage']['state'])->toBe('outside_coverage')
         ->and($data['assessment']['jurisdiction'])->toBe('outside_coverage')
         ->and(array_merge(...array_column($data['assessment']['processes'], 'variants')))->toBe([])

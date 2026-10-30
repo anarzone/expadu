@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Bureaucracy\Facts\ProfileFacts;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
 use App\Enums\TransportMode;
+use App\Places\PlaceWorkAnswers;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -20,12 +22,21 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'needs_step_free', 'bureaucracy_path', 'profile_attributes', 'interests', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
+#[Fillable(['name', 'email', 'password', 'city', 'situation', 'arrival_date', 'german_level', 'speaks', 'veedel', 'is_eu', 'has_deutschlandticket', 'transport_mode', 'needs_step_free', 'bureaucracy_path', 'profile_attributes', 'onboarded_at', 'avatar_path', 'is_admin', 'social_id', 'social_provider'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'needs_step_free'])]
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, Notifiable, TwoFactorAuthenticatable;
+
+    protected static function booted(): void
+    {
+        // Their "Good for laptop work?" answers go with the account, and the places'
+        // anonymous totals are recomputed without them (the FK cascade alone wouldn't).
+        static::deleting(fn (User $user) => app(PlaceWorkAnswers::class)->forget($user));
+        // A Paperwork answer kept on the profile (German level) changed: Paperwork's after-change steps.
+        static::updated(fn (User $user) => ProfileFacts::profileChanged($user, array_keys($user->getChanges())));
+    }
 
     public function canAccessPanel(Panel $panel): bool
     {
@@ -51,7 +62,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'transport_mode' => TransportMode::class,
             'needs_step_free' => 'boolean',
             'profile_attributes' => 'array',
-            'interests' => 'array',
         ];
     }
 

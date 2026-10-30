@@ -3,9 +3,10 @@
 namespace App\ContextEngine;
 
 use App\Bureaucracy\GuidancePublication;
+use App\Models\Event;
 use App\Notifications\BureaucracyPlanNotification;
+use App\Notifications\EventReminderNotification;
 use App\Notifications\MarketClosureNotification;
-use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Notifications\RhineFloodNotification;
 use App\Notifications\TransitDelayNotification;
 use App\Notifications\TransitDisruptionNotification;
@@ -19,7 +20,7 @@ use Illuminate\Notifications\Notification;
  * formats both surfaces, so the push and the alert never drift apart.
  *
  * Returns null for action types with no notification (alternative_route,
- * disruption_no_alt — dashboard-only companions) or an empty payload.
+ * disruption_no_alt — Today-only companions) or an empty payload.
  */
 class ContextNotificationFactory
 {
@@ -36,20 +37,11 @@ class ContextNotificationFactory
             'rhine_level' => $this->buildRhine($action),
             'market_closure' => $this->buildMarketClosure($action),
             'bureaucracy_task' => $this->buildBureaucracyTask($action),
+            'event_tomorrow' => ($event = Event::query()->find($action->payload['event_id'] ?? null)) instanceof Event ? new EventReminderNotification($event) : null,
             // Old queued/cached estimates have no approved rule evidence.
             'permanent_residency_eligible' => null,
             default => null,
         };
-    }
-
-    private function buildPermanentResidency(ScoredAction $action): PermanentResidencyEligibleNotification
-    {
-        return new PermanentResidencyEligibleNotification(
-            monthsHeld: (int) ($action->payload['months_held'] ?? 0),
-            thresholdMonths: (int) ($action->payload['threshold_months'] ?? 0),
-            trackNote: (string) ($action->payload['track_note'] ?? ''),
-            pushReservation: $this->pushReservation($action),
-        );
     }
 
     private function buildBureaucracyTask(ScoredAction $action): BureaucracyPlanNotification
@@ -125,19 +117,5 @@ class ContextNotificationFactory
         }
 
         return new MarketClosureNotification($reason, null);
-    }
-
-    /**
-     * The PushLedger reservation an evaluator put on the action, if any.
-     *
-     * @return array{key: string, nonce: string, sent_days: int}|null
-     */
-    private function pushReservation(ScoredAction $action): ?array
-    {
-        $reservation = $action->payload['push_reservation'] ?? null;
-
-        return is_array($reservation) && isset($reservation['key'], $reservation['nonce'], $reservation['sent_days'])
-            ? $reservation
-            : null;
     }
 }

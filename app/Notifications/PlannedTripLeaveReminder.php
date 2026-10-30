@@ -33,7 +33,7 @@ class PlannedTripLeaveReminder extends Notification
             ->title("Time to leave for {$this->trip->title}")
             ->icon('/favicon.svg')
             ->body($this->line())
-            ->data(['url' => '/timetable'])
+            ->data(['url' => '/travel'])
             ->options(['TTL' => 600]);
     }
 
@@ -46,7 +46,7 @@ class PlannedTripLeaveReminder extends Notification
             'type' => 'planned_trip_leave',
             'title' => "Time to leave for {$this->trip->title}",
             'body' => $this->line(),
-            'url' => '/timetable',
+            'url' => '/travel',
         ];
     }
 

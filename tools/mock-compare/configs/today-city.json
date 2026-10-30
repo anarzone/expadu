@@ -8,7 +8,7 @@
         "wait": ".city-help"
     },
     "app": {
-        "url": "/dashboard",
+        "url": "/today",
         "wait": ".city-help",
         "cookies": {
             "mock_clock": "2026-09-30T13:10:00%2B02:00"

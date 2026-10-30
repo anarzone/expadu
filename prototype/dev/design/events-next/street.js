@@ -651,7 +651,14 @@
         // A phone's hour rings scroll sideways up to the weather, stopping
         // 12px short of it.
         function sky() {
-            if (layoutName !== 'phone') return host.style.removeProperty('--rings-r');
+            if (layoutName !== 'phone') {
+                // A desktop's rings stop 12px short of the weather too.
+                const chip = host.querySelector('.st-weather')?.getBoundingClientRect();
+                const row = host.querySelector('.st-rings')?.getBoundingClientRect();
+                if (chip?.width && row) host.style.setProperty('--rings-room', `${Math.max(120, Math.round(chip.left - row.left - INSET.desktop))}px`);
+                more();
+                return host.style.removeProperty('--rings-r');
+            }
             const chip = host.querySelector('.st-weather')?.getBoundingClientRect();
             if (chip?.width)
                 host.style.setProperty('--rings-r', `${Math.round(host.getBoundingClientRect().right - chip.left + INSET.phone)}px`);

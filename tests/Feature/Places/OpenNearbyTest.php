@@ -72,7 +72,7 @@ test('listed() keeps every place, with what its hours say then', function () {
         ->and($rows['Hours unknown']['hours'])->toBe(['state' => 'unknown']);
 });
 
-test('given a person, places they marked not interested or been are left out', function () {
+test('given a person, Today leaves out not interested and been; Around here only not interested', function () {
     $me = User::factory()->create();
     $kept = openNearbySpot('More like this', 'Mo-Su 06:00-18:30', 0.0001);
     $saved = openNearbySpot('Saved', 'Mo-Su 06:00-18:30', 0.0002);
@@ -90,7 +90,7 @@ test('given a person, places they marked not interested or been are left out', f
     $listed = $open->listed(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), ['bakery'], for: $me)->pluck('name')->all();
 
     expect($around)->toBe(['More like this', 'Saved'])
-        ->and($listed)->toBe(['More like this', 'Saved'])
+        ->and($listed)->toBe(['More like this', 'Saved', 'Been'])
         ->and($open->listed(OPEN_NEARBY_LAT, OPEN_NEARBY_LNG, openNearbyAt(), ['bakery'])->pluck('name')->all())->toHaveCount(4);
 });
 

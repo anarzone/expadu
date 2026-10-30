@@ -56,6 +56,11 @@ class RecordSignalsRequest extends FormRequest
                 if (! isset($known[$signal['item_type']][(int) $signal['item_id']])) {
                     $validator->errors()->add("signals.{$index}.item_id", 'This item does not exist.');
                 }
+                // A place's "not for me" is its feedback (POST api/places/{spot}/feedback), one way only;
+                // "less like this" is offered on Today's events only.
+                if (in_array($signal['action'], [SignalAction::NotForMe->value, SignalAction::LessLikeThis->value], true) && $signal['item_type'] !== 'event') {
+                    $validator->errors()->add("signals.{$index}.action", 'Places take this through their feedback.');
+                }
             }
         }];
     }

@@ -38,7 +38,7 @@ class TransitDelayNotification extends Notification implements ShouldQueue
             ->body("Delay at {$this->stopName}. Consider alternative routes.")
             ->action('Check live status', 'view_transit')
             ->options(['TTL' => 1800])
-            ->data(['url' => '/timetable']);
+            ->data(['url' => '/travel']);
     }
 
     /** @return array<string, mixed> */
@@ -48,7 +48,7 @@ class TransitDelayNotification extends Notification implements ShouldQueue
             'type' => 'transit_delay',
             'title' => "{$this->line} running {$this->delayMinutes} minutes late",
             'body' => "Delay at {$this->stopName}. Consider alternative routes.",
-            'url' => '/timetable',
+            'url' => '/travel',
         ];
     }
 }

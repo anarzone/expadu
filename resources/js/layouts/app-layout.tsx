@@ -1,4 +1,3 @@
-import { PersonaSwitcher } from '@/components/qa/persona-switcher';
 import { cn } from '@/lib/utils';
 import type { AppLayoutProps } from '@/types';
 
@@ -8,21 +7,14 @@ import type { AppLayoutProps } from '@/types';
  * (connected/page-frame.css). A page awaiting its rebuild passes `fullWidth`
  * and keeps its own column.
  */
-export default function AppLayout({
-    children,
-    fullWidth,
-    hideQaSwitcher,
-}: AppLayoutProps) {
+export default function AppLayout({ children, fullWidth }: AppLayoutProps) {
     return (
-        <>
-            <main
-                id="main"
-                tabIndex={-1}
-                className={cn(!fullWidth && 'page-frame', 'outline-none')}
-            >
-                {children}
-            </main>
-            {!hideQaSwitcher && <PersonaSwitcher />}
-        </>
+        <main
+            id="main"
+            tabIndex={-1}
+            className={cn(!fullWidth && 'page-frame', 'outline-none')}
+        >
+            {children}
+        </main>
     );
 }

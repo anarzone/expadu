@@ -114,6 +114,7 @@ enum SpotCategory: string
     case Campsite = 'campsite';
     case FitnessCentre = 'fitness_centre';
     case DanceStudio = 'dance_studio';
+    case Climbing = 'climbing';
     case Theatre = 'theatre';
     case Cinema = 'cinema';
     case ArtsCentre = 'arts_centre';
@@ -243,7 +244,8 @@ enum SpotCategory: string
             self::Motel => '🛏️',
             self::Campsite => '🛏️',
             self::FitnessCentre => '🏋️',
-            self::DanceStudio => '🏋️',
+            self::DanceStudio => '💃',
+            self::Climbing => '🧗',
             self::Theatre => '🎭',
             self::Cinema => '🎭',
             self::ArtsCentre => '🎭',
@@ -360,6 +362,7 @@ enum SpotCategory: string
             self::Campsite => 'Campsite',
             self::FitnessCentre => 'Gym',
             self::DanceStudio => 'Dance studio',
+            self::Climbing => 'Climbing',
             self::Theatre => 'Theatre',
             self::Cinema => 'Cinema',
             self::ArtsCentre => 'Arts centre',
@@ -391,7 +394,7 @@ enum SpotCategory: string
             self::Pharmacy, self::Drugstore, self::Doctor, self::Dentist, self::Optician, self::HearingAids, self::MedicalSupply, self::Clinic, self::Hospital, self::Veterinary => 'health',
             self::CommunityCentre, self::PlaceOfWorship, self::LanguageSchool, self::MusicSchool => 'community',
             self::Hotel, self::Hostel, self::GuestHouse, self::Motel, self::Campsite => 'stay',
-            self::FitnessCentre, self::DanceStudio => 'fitness',
+            self::FitnessCentre, self::DanceStudio, self::Climbing => 'fitness',
             self::Theatre, self::Cinema, self::ArtsCentre, self::EscapeRoom => 'culture',
             self::IceCream, self::Market => 'food_drink',
             default => 'other',
@@ -454,6 +457,9 @@ enum SpotCategory: string
         return array_map(fn (self $category) => $category->value, [
             self::Pharmacy, self::Drugstore, self::Supermarket, self::Convenience,
             self::Greengrocer, self::Kiosk, self::Butcher,
+            // Core shops (24 Oct 2026): found when asked for ("TK Maxx", "an electronics shop"), never an afternoon's idea.
+            self::Clothes, self::Shoes, self::DepartmentStore, self::ShoppingCentre, self::Electronics, self::PhoneShop,
+            self::ComputerShop, self::Bookshop, self::Furniture, self::Homeware, self::Hardware, self::SportsShop, self::SecondHand,
         ]);
     }
 

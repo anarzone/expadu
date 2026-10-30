@@ -1,14 +1,13 @@
-// JSON commands for the bureaucracy/v2 API. Every write carries a fresh request id
+// JSON commands for the paperwork/v2 API. Every write carries a fresh request id
 // and the version the person last saw; the server refuses stale or replayed writes.
 
+import { csrfHeaders } from '@/lib/csrf';
 import type {
     Answer,
-    Extraction,
     FactConflict,
     FactDefinition,
     FactHistory,
     FactView,
-    ProcessingDisclosure,
     QuestionOffer,
 } from './types';
 
@@ -19,14 +18,6 @@ export class CommandError extends Error {
     ) {
         super(message);
     }
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 export function requestId(): string {
@@ -103,7 +94,7 @@ export async function send<T = unknown>(
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrf(),
+            ...csrfHeaders(),
         },
         body: JSON.stringify(body),
     });
@@ -119,7 +110,7 @@ export async function send<T = unknown>(
     return data as T;
 }
 
-const base = '/bureaucracy/v2';
+const base = '/paperwork/v2';
 
 export const reads = {
     facts: (personId: number) =>
@@ -131,12 +122,18 @@ export const reads = {
         read<{ revision: number; conflicts: FactConflict[] }>(
             `${base}/people/${personId}/fact-conflicts`,
         ),
-    /** Who "Say it in your own words" sends to; read fresh before every send. */
-    extractionDisclosure: () =>
-        read<ProcessingDisclosure>('/privacy/processing/extract_case_fact'),
 };
 
 export const commands = {
+    /** Where you live: it decides which office's tasks apply. */
+    setCity: (city: string) =>
+        send<{ city: string; jurisdiction: string }>(
+            'PUT',
+            `${base}/people/self/city`,
+            { city },
+        ),
+    /** Your own record (idempotent): Paperwork's "Get started". */
+    createSelf: () => send('POST', `${base}/people/self`, {}),
     startProcess: (
         personId: number,
         jurisdiction: string,
@@ -308,46 +305,5 @@ export const commands = {
                 request_id: requestId(),
                 expected_version: version,
             },
-        ),
-    /** "Say it in your own words": the tap is the consent for this one request. */
-    extractAnswer: (
-        sessionId: number,
-        questionId: number,
-        token: string,
-        message: string,
-        disclosure: ProcessingDisclosure,
-    ) =>
-        send<Extraction>(
-            'POST',
-            `${base}/question-sessions/${sessionId}/extract/${questionId}`,
-            {
-                token,
-                message,
-                processing: {
-                    consent: true,
-                    request_id: requestId(),
-                    notice_version: disclosure.notice_version,
-                    provider_version: disclosure.provider_version,
-                },
-            },
-        ),
-    /** Saves a suggested answer the person reviewed and confirmed. */
-    confirmSuggestion: (
-        sessionId: number,
-        candidateId: string,
-        token: string,
-        value: unknown,
-    ) =>
-        send(
-            'POST',
-            `${base}/question-sessions/${sessionId}/candidates/${candidateId}/confirm`,
-            { token, value, request_id: requestId(), confirmed: true },
-        ),
-    /** "Not right": the suggestion is dropped. */
-    rejectSuggestion: (sessionId: number, candidateId: string, token: string) =>
-        send(
-            'DELETE',
-            `${base}/question-sessions/${sessionId}/candidates/${candidateId}`,
-            { token },
         ),
 };

@@ -37,6 +37,24 @@
 .ui-sheet::backdrop {
     background: #0005;
 }
+/* A side panel (What's on): down the window's right edge, over the page,
+   which stays where it was behind the scrim. A phone gets the bottom sheet,
+   as tall as the screen allows. */
+@media (min-width: 701px) {
+    .ui-sheet.is-side {
+        inset: 12px 12px 12px auto;
+        width: min(560px, calc(100vw - 24px));
+        height: auto;
+        max-height: none;
+        margin: 0;
+        border-radius: 24px;
+    }
+}
+@media (max-width: 700px) {
+    .ui-sheet.is-side {
+        height: calc(100dvh - 40px);
+    }
+}
 .ui-sheet-head {
     position: relative;
     display: flex;
@@ -341,7 +359,8 @@
         inset 0 0 0 1px var(--color-conflict-border),
         0 6px 26px #3e352b22;
 }
-.ui-toast button {
+.ui-toast button,
+.ui-toast a {
     min-height: 44px;
     margin: -12px -6px;
     padding: 1px 6px;
@@ -353,7 +372,13 @@
     text-underline-offset: 3px;
     cursor: pointer;
 }
-.ui-toast button:focus-visible {
+/* "Sign in again": a link, a full page load through sign-in. */
+.ui-toast a {
+    display: inline-flex;
+    align-items: center;
+}
+.ui-toast button:focus-visible,
+.ui-toast a:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
 }
@@ -657,6 +682,13 @@
 }
 .ui-time-input[aria-invalid='true'] {
     border-color: var(--color-conflict-text);
+}
+/* In a settings row: one time beside its label, the same touch height. */
+.ui-time-input.is-compact {
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: var(--text-body);
+    text-align: center;
 }
 .ui-time-options {
     position: fixed;

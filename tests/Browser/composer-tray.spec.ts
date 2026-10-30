@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// 🔒 Direction B (owner, 22 Oct 2026): the tray's Send asks Composer in place, on
-// the first press, under the AI line the tray shows (that request's own permit),
-// and the answer drops under the box. Closing keeps the conversation; reopening
-// asks nothing again; Full Composer carries on with it.
+// 🔒 The tray's panel (owner, 22 Oct 2026): Send asks Composer in place, on the
+// first press, under the AI line the tray shows (that request's own permit), and
+// the conversation grows above the box. Closing keeps it; "Back to your
+// conversation" reopens it and asks nothing again; Full Composer carries on.
 const NOTICE = {
-    purpose: 'composer_parse',
+    purpose: 'composer_assist',
     scope: 'single_request',
     available: true,
     processor_name: 'Synthetic processor',
@@ -15,20 +15,21 @@ const NOTICE = {
     provider_version: 'b'.repeat(64),
 };
 
-type Parsed = { text: string; processing?: Record<string, unknown> };
+type Asked = { processing?: Record<string, unknown> };
 
-async function stubReader(page: Page): Promise<Parsed[]> {
-    const parsed: Parsed[] = [];
-    await page.route('**/privacy/processing/composer_parse', (route) =>
+/** The AI line as the server would give it; each ask's body kept, the ask answered by the server. */
+async function stubAsk(page: Page): Promise<Asked[]> {
+    const asked: Asked[] = [];
+    await page.route('**/privacy/processing/composer_assist', (route) =>
         route.fulfill({ json: NOTICE }),
     );
-    await page.route('**/composer/parse', (route) => {
-        parsed.push(route.request().postDataJSON() as Parsed);
+    await page.route('**/composer/ask', (route) => {
+        asked.push(route.request().postDataJSON() as Asked);
 
-        return route.fulfill({ json: { intent: 'find', constraints: null } });
+        return route.continue();
     });
 
-    return parsed;
+    return asked;
 }
 
 async function openTray(page: Page, isMobile: boolean) {
@@ -39,15 +40,13 @@ async function openTray(page: Page, isMobile: boolean) {
     ).click();
     const tray = page.getByRole('dialog', { name: 'Ask Composer' });
     await expect(
-        tray.getByText(
-            'Composer sends what you type to Synthetic processor, an AI service',
-        ),
+        tray.getByText('to Synthetic processor to answer you'),
     ).toBeVisible();
 
     return tray;
 }
 
-function expectPermit(body: Parsed) {
+function expectPermit(body: Asked) {
     expect(body.processing).toMatchObject({
         consent: true,
         notice_version: NOTICE.notice_version,
@@ -55,50 +54,41 @@ function expectPermit(body: Parsed) {
     });
 }
 
-test('🔒 one press of the tray’s Send answers under the box, with its permit', async ({
+test('🔒 one press of the tray’s Send answers above the box, with its permit', async ({
     page,
     isMobile,
 }) => {
-    const parsed = await stubReader(page);
-    await page.goto('/dashboard');
+    const parsed = await stubAsk(page);
+    await page.goto('/today');
     const tray = await openTray(page, isMobile);
     const box = tray.getByRole('textbox', { name: 'Your request to Composer' });
-    const answer = tray.getByRole('region', { name: 'Composer’s answer' });
+    const answer = tray.getByRole('region', { name: 'Composer', exact: true });
     const text = `Find a quiet park ${Date.now()}`;
 
     await box.fill(text);
-    const asked = page.waitForResponse('**/composer/parse');
+    const asked = page.waitForResponse('**/composer/ask');
     await tray.getByRole('button', { name: 'Send request' }).click();
     await asked;
     await expect(answer.getByText(text, { exact: true })).toBeVisible();
-    await expect(
-        answer
-            .locator('.chat-entry')
-            .getByText('Browse places and events below', { exact: false }),
-    ).toBeVisible();
-    // Said aloud for a screen reader: the answer's first sentence.
-    await expect(answer.locator('[aria-live="polite"]')).toHaveText(
-        /^Browse places and events below/,
-    );
     await expect(page.locator('.composer-working')).toHaveCount(0);
+    // Composer's reply under the request, its first sentence said aloud.
+    await expect(answer.locator('.chat-entry.chat-assistant')).not.toHaveCount(
+        0,
+    );
+    await expect(answer.locator('[aria-live="polite"]')).not.toHaveText('');
     expect(parsed).toHaveLength(1);
-    expect(parsed[0].text).toBe(text);
     expectPermit(parsed[0]);
     // In place: still on Today, the box empty for the next one.
-    expect(new URL(page.url()).pathname).toBe('/dashboard');
+    expect(new URL(page.url()).pathname).toBe('/today');
     await expect(box).toHaveValue('');
 
-    // A second request: the first folds away.
+    // A second request: a follow-up in the same conversation, the first above it.
     const next = `Somewhere for coffee ${Date.now()}`;
     await box.fill(next);
     await box.press('Enter');
     await expect(answer.getByText(next, { exact: true })).toBeVisible();
     await expect(page.locator('.composer-working')).toHaveCount(0);
-    await expect(answer.getByText(text, { exact: true })).toHaveCount(0);
-    const earlier = answer.getByRole('button', { name: /earlier message/ });
-    await expect(earlier).toBeVisible();
-    await earlier.click();
-    await expect(answer.getByText(text, { exact: true })).toBeVisible();
+    await expect(answer.getByText(text, { exact: true })).toHaveCount(1);
     expect(parsed).toHaveLength(2);
     expectPermit(parsed[1]);
 
@@ -110,16 +100,24 @@ test('🔒 one press of the tray’s Send answers under the box, with its permit
         .click();
     await expect(
         page
-            .getByRole('region', { name: 'Composer’s answer' })
+            .getByRole('region', { name: 'Composer', exact: true })
             .getByText(next, { exact: true }),
     ).toBeVisible();
     expect(parsed).toHaveLength(2);
 
-    // Full Composer carries on with the same conversation.
-    await page
-        .getByRole('region', { name: 'Composer’s answer' })
-        .getByRole('link', { name: 'Open full Composer' })
-        .click();
+    // Full Composer carries on with the same conversation; a phone has none
+    // (the panel is it, owner 23 Oct 2026).
+    const full = page
+        .getByRole('region', { name: 'Composer', exact: true })
+        .getByRole('link', { name: 'Open full Composer' });
+
+    if (isMobile) {
+        await expect(full).toBeHidden();
+
+        return;
+    }
+
+    await full.click();
     await page.waitForURL(/\/composer$/);
     await expect(page.getByText(next, { exact: true }).last()).toBeVisible();
 });

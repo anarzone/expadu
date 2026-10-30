@@ -8,7 +8,7 @@ use App\Models\User;
 
 test('the fact schema lists reviewed registry wording and answer shapes without values or legacy mappings', function () {
     $actor = User::factory()->onboarded()->create();
-    $response = $this->actingAs($actor)->getJson('/bureaucracy/v2/facts/schema')->assertOk()
+    $response = $this->actingAs($actor)->getJson('/paperwork/v2/facts/schema')->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJsonPath('schema_version', 'bureaucracy.fact-schema.1')
         ->assertJsonPath('registry_version', app(FactRegistry::class)->version());
@@ -18,23 +18,23 @@ test('the fact schema lists reviewed registry wording and answer shapes without 
         ->and($visa)->toMatchArray(['type' => 'date', 'date_semantics' => 'expiry', 'question' => app(FactRegistry::class)->definition('visa_expires_at')->question])
         ->and($title['options'])->toContain('national_d_visa')->and($title)->not->toHaveKeys(['legacy_values', 'permissible_sources', 'value']);
     auth()->logout();
-    $this->getJson('/bureaucracy/v2/facts/schema')->assertUnauthorized();
+    $this->getJson('/paperwork/v2/facts/schema')->assertUnauthorized();
 });
 
 test('the facts endpoint reports when each current answer was last checked', function () {
     $this->freezeTime();
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/facts';
-    $this->actingAs($actor)->putJson($url.'/german_level', ['value' => 'b1', 'expected_revision' => 1])->assertSuccessful();
-    $this->getJson($url)->assertOk()->assertJsonPath('evidence.german_level.checked_at', now()->utc()->toIso8601String());
+    $url = '/paperwork/v2/people/'.$case->person_id.'/facts';
+    $this->actingAs($actor)->putJson($url.'/livelihood_secured', ['value' => 'yes', 'expected_revision' => 1])->assertSuccessful();
+    $this->getJson($url)->assertOk()->assertJsonPath('evidence.livelihood_secured.checked_at', now()->utc()->toIso8601String());
 });
 
 test('answer history shows assertions, corrections and changes with before and after values, newest first', function () {
     $this->freezeTime();
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/facts';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/facts';
     $this->actingAs($actor)->putJson($url.'/current_residence_title', ['value' => 'blue_card', 'effective_from' => '2024-01-01', 'expected_revision' => 1])->assertSuccessful();
     $first = $this->getJson($url)->json('evidence.current_residence_title.fact_id');
     $this->postJson($url.'/'.$first.'/corrections', ['value' => 'standard_work_permit', 'expected_revision' => 2])->assertSuccessful();
@@ -59,5 +59,5 @@ test('answer history needs fact-reading access to the person', function () {
     $two = app(EnsureAccountHolder::class)->dossier($subject);
     $invite = app(ManageDelegation::class)->invite($helper, $one->person->workspace, $subject->email, ['view_plan']);
     app(ManageDelegation::class)->accept($subject, $invite['token'], ['view_plan']);
-    $this->actingAs($helper)->getJson('/bureaucracy/v2/people/'.$two->person_id.'/facts/german_level/history')->assertForbidden();
+    $this->actingAs($helper)->getJson('/paperwork/v2/people/'.$two->person_id.'/facts/livelihood_secured/history')->assertForbidden();
 });

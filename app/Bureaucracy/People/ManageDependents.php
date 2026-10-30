@@ -5,7 +5,6 @@ namespace App\Bureaucracy\People;
 use App\Bureaucracy\ReadModel\ReassessmentEvents;
 use App\Models\BureaucracyAccessGrant;
 use App\Models\BureaucracyCase;
-use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyGuardianAuthority;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
@@ -94,8 +93,6 @@ final class ManageDependents
             $this->refresh->accessChanged($person);
             BureaucracyProcessingConsent::query()->where('case_id', $person->dossier()->value('id'))
                 ->update(['withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null]);
-            BureaucracyExtractionCandidate::query()->where('case_id', $person->dossier()->value('id'))
-                ->update(['state' => 'invalidated', 'value' => null, 'confirmation_token' => null]);
             // Nobody could manage or erase the dossier once its last guardian is gone.
             $this->lifecycle->eraseUnguardedDependent($person->id, keepRecentPending: true);
         });

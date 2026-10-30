@@ -510,7 +510,7 @@ test('the step-free need is off unless the person turns it on', function () {
     expect($user->fresh()->needs_step_free)->toBeFalse();
     $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
         ->assertJsonPath('next_trip.step_free_need', false);
-    $this->actingAs($user)->get('/timetable')
+    $this->actingAs($user)->get('/travel')
         ->assertInertia(fn ($page) => $page->where('stepFreeNeed', false));
 });
 
@@ -524,17 +524,17 @@ test('one person\'s step-free need never shows for another', function () {
 
     $this->actingAs($needs)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
         ->assertJsonPath('next_trip.step_free_need', true);
-    $this->actingAs($needs)->get('/timetable')
+    $this->actingAs($needs)->get('/travel')
         ->assertInertia(fn ($page) => $page->where('stepFreeNeed', true));
 
     $this->actingAs($other)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
         ->assertJsonPath('next_trip.step_free_need', false);
-    $this->actingAs($other)->get('/timetable')
+    $this->actingAs($other)->get('/travel')
         ->assertInertia(fn ($page) => $page->where('stepFreeNeed', false));
 
     // Never in a user's serialisation, so no page or API that lists people
     // (their own shared auth.user included) carries it.
     expect($needs->fresh()->toArray())->not->toHaveKey('needs_step_free');
-    $this->actingAs($needs)->get('/timetable')
+    $this->actingAs($needs)->get('/travel')
         ->assertInertia(fn ($page) => $page->missing('auth.user.needs_step_free'));
 });

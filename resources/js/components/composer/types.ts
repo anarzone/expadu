@@ -1,4 +1,6 @@
 import type { PlaceEvidence } from '@/components/place-shared/types';
+import { csrfHeaders } from '@/lib/csrf';
+import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
 
 export type Slot = {
     id: string;
@@ -17,7 +19,13 @@ export type Slot = {
     /** False for an event with no listed end: end_time is only the plan's length. */
     end_listed?: boolean;
     swappable: boolean;
-    travel_min_from_previous?: number;
+    travel_min_from_previous?: number | null;
+    /** False when the way in isn't estimated (a place with no map point). */
+    travel_known?: boolean;
+    /** The latest to leave the stop before, when there's travel into this one. */
+    leave_by?: string | null;
+    /** The planner's length of the visit ("~1h"), when known. */
+    duration_label?: string | null;
     summary?: string | null;
     saved?: boolean;
     available?: boolean;
@@ -31,6 +39,12 @@ export type Slot = {
     destination_group_id?: string | null;
     is_appointment?: boolean;
     closes_at?: string | null;
+    /** In the catalogue: what Around here calls it ("Café"), its kind (colour, icon) and group ("Cafés"). */
+    label?: string;
+    kind?: string;
+    group?: string;
+    /** The day's listed hours ("Open 09:00–18:00", "Hours not listed"); events have their time. */
+    hours?: string | null;
 };
 /** A slot's time as said: "13:00–14:00", or the start alone when its end isn't known or listed. */
 export const slotSpan = (slot: Slot) =>
@@ -56,8 +70,6 @@ export type ChangeRow = {
 };
 export type Message = {
     id: string;
-    /** Read without the AI, and why (the parse's `reader`); said under the reply. */
-    reader?: 'limited' | 'off' | 'failed' | 'unpermitted';
     role: 'user' | 'assistant';
     text: string;
     created_at: string;
@@ -77,7 +89,12 @@ export type Conversation = {
     id: string;
     title: string;
     created_at: string;
+    /** The open conversation's messages; the others come when one is opened (resume). */
     messages: Message[];
+    /** How many times they asked in it. */
+    asked: number;
+    /** When it was last written in: its newest message, else its start. */
+    last_at: string;
 };
 /** One applied change; Undo works newest first per day. */
 export type Change = {
@@ -136,6 +153,8 @@ export async function api<T>(
     url: string,
     body?: object,
     signal?: AbortSignal,
+    /** How long to wait; the assistant's answer gets longer than a command. */
+    timeoutMs = 30_000,
 ): Promise<T> {
     const controller = new AbortController();
     const cancel = () => controller.abort(signal?.reason);
@@ -144,7 +163,7 @@ export async function api<T>(
             controller.abort(
                 new DOMException('Request timed out', 'TimeoutError'),
             ),
-        30_000,
+        timeoutMs,
     );
     signal?.addEventListener('abort', cancel, { once: true });
 
@@ -164,10 +183,7 @@ export async function api<T>(
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute('content') ?? '',
+                ...csrfHeaders(),
             },
             body: body ? JSON.stringify(body) : undefined,
         });
@@ -180,8 +196,8 @@ export async function api<T>(
                     ? body
                         ? unconfirmedWrite
                         : 'Could not load this information. Please try again.'
-                    : response.status === 401 || response.status === 419
-                      ? 'Your session expired. Refresh the page to continue.'
+                    : isSignedOutStatus(response.status)
+                      ? SIGNED_OUT
                       : data.errors
                         ? String(Object.values(data.errors).flat()[0])
                         : (data.message ??

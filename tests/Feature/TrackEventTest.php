@@ -12,7 +12,7 @@ test('tracking endpoint records a user event', function () {
 
     $response = $this->postJson('/api/track', [
         'event_type' => 'page_viewed',
-        'payload' => ['page' => '/dashboard'],
+        'payload' => ['page' => '/today'],
     ]);
 
     $response->assertNoContent();
@@ -23,7 +23,7 @@ test('tracking endpoint records a user event', function () {
     ]);
 
     $event = UserEvent::where('user_id', $user->id)->first();
-    expect($event->payload)->toBe(['page' => '/dashboard']);
+    expect($event->payload)->toBe(['page' => '/today']);
 });
 
 test('tracking endpoint works without payload', function () {
@@ -31,14 +31,14 @@ test('tracking endpoint works without payload', function () {
     $this->actingAs($user);
 
     $response = $this->postJson('/api/track', [
-        'event_type' => 'onboarding_complete',
+        'event_type' => 'page_viewed',
     ]);
 
     $response->assertNoContent();
 
     $this->assertDatabaseHas('user_events', [
         'user_id' => $user->id,
-        'event_type' => 'onboarding_complete',
+        'event_type' => 'page_viewed',
     ]);
 });
 

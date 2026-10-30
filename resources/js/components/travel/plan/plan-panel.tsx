@@ -1,21 +1,43 @@
-import { Link, router } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import {
+    Suspense,
+    lazy,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
 import { TimeField } from '@/components/ui/time-field';
 import { showToast } from '@/components/ui/toast';
 import type { TripPlace, TripPlan } from '@/hooks/use-active-trip';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
+import { csrfHeaders } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection, PlannedTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
 import type { FavouriteStop } from '../nearby/types';
+import { Slide } from '../slide';
 import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
 import type { TripFor } from '../trip/trip-model';
 import type { LocateError } from '../use-travel-location';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
+import { PlanHeadline } from './plan-headline';
+import type { BoardMajors } from './plan-headline';
+import type {
+    PlanAnswer,
+    PlanGone,
+    PlanOption,
+    PlanPlace,
+    PlanTarget,
+    Pref,
+    Schedule,
+    SortKey,
+} from './plan-model';
 import {
     PREFS,
     SORTS,
@@ -28,17 +50,21 @@ import {
     rankOptions,
     scheduleSummary,
 } from './plan-model';
-import type {
-    PlanAnswer,
-    PlanOption,
-    PlanPlace,
-    PlanTarget,
-    Pref,
-    Schedule,
-    SortKey,
-} from './plan-model';
-import { PlanChecks, PlanOptions, optionLabel } from './plan-results';
+import { optionLabel } from './plan-model';
 import { PlanSaved } from './plan-saved';
+
+// The answer's own pieces load off the first paint: while the page is idle,
+// or when an answer is asked for first.
+const loadResults = () => import('./plan-results');
+const PlanChecks = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanChecks })),
+);
+const PlanLoading = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanLoading })),
+);
+const PlanOptions = lazy(() =>
+    loadResults().then((module) => ({ default: module.PlanOptions })),
+);
 
 /**
  * Plan a trip (departures-next #journey-view; owner, 14 Oct 2026): beside
@@ -49,6 +75,8 @@ import { PlanSaved } from './plan-saved';
  * checked. A hand-off (?to_name=&to_lat=&to_lng=, ?to= by name, &from…,
  * &arrive_by= or &depart_at=/&at=, &activity=) opens on its options.
  */
+
+const placeLabels = { home: 'Home', work: 'Work' } as const;
 
 export type SavedPlace = {
     id: number;
@@ -91,6 +119,8 @@ export type HandoffPlace = {
     id: number;
     name: string;
     area: string | null;
+    /** A large park's part, by its Veedel: "Äußerer Grüngürtel (Sülz)". */
+    part?: string | null;
     lat: number;
     lng: number;
 };
@@ -128,14 +158,17 @@ const targetOf = (item: DayItem): PlanTarget | null =>
           }
         : null;
 
+/** Where a plan goes from and to, by place: an empty From is where you are. */
+const whereKey = (
+    from: { lat: number; lng: number } | null | undefined,
+    to: { lat: number; lng: number },
+) => `${from ? `${from.lat},${from.lng}` : 'here'}>${to.lat},${to.lng}`;
+
 function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-CSRF-TOKEN':
-            document
-                .querySelector('meta[name="csrf-token"]')
-                ?.getAttribute('content') ?? '',
+        ...csrfHeaders(),
     };
 }
 
@@ -170,6 +203,8 @@ type PlanPanelProps = {
     nearName: string | null;
     clock: string;
     desktop: boolean;
+    /** On a laptop, the majors the board beside the planner already heads with. */
+    boardMajors?: BoardMajors | null;
     hidden: boolean;
     onStage: (stage: PlanStage) => void;
     /** Fold the planner away (phones): back to Nearby. */
@@ -184,11 +219,13 @@ type PlanPanelProps = {
     locating: boolean;
     /** Why the last "Use my location" didn't work. */
     locateError?: LocateError | null;
+    /** Location sharing was off: turn it on here, then locate. */
+    onAllowLocation?: () => void;
 };
 
 /** Why From couldn't be where you are, and what to do instead. */
 const fromLocateText: Record<LocateError, string> = {
-    off: 'Location sharing is off. Type where you’re starting, or turn it on in Settings.',
+    off: 'Location sharing is off. Share your location to start from where you are, or type where you’re starting.',
     unsupported:
         'Location isn’t available on this device. Type where you’re starting.',
     blocked:
@@ -214,6 +251,7 @@ export function PlanPanel({
     nearName,
     clock,
     desktop,
+    boardMajors = null,
     hidden,
     onStage,
     onFold,
@@ -223,6 +261,7 @@ export function PlanPanel({
     onLocate,
     locating,
     locateError = null,
+    onAllowLocation,
 }: PlanPanelProps) {
     const today = berlinToday();
     const [from, setFrom] = useState<FieldValue>(EMPTY);
@@ -242,9 +281,9 @@ export function PlanPanel({
     const [relocated, setRelocated] = useState(false);
     const relocating = useRef(false);
     const [status, setStatus] = useState<Status>({ kind: 'idle' });
+    // The option open in place: one at a time, none at first (owner,
+    // 22 Oct 2026, "Trip options" canvas).
     const [selected, setSelected] = useState<string | null>(null);
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
-    const [touched, setTouched] = useState(false);
     const [more, setMore] = useState(false);
     const [big, setBig] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -257,6 +296,9 @@ export function PlanPanel({
     const [remindNote, setRemindNote] = useState<string | null>(null);
     const push = usePushSubscription();
     const toField = useRef<HTMLInputElement>(null);
+    // Home or Work without an address: the To line becomes its address line
+    // (the mock's "Add home"), and what you pick there is saved as it.
+    const [setting, setSetting] = useState<'home' | 'work' | null>(null);
     const request = useRef<AbortController | null>(null);
     const target = picked?.target ?? null;
 
@@ -305,9 +347,59 @@ export function PlanPanel({
     const hereRef = useRef<{ lat: number; lng: number } | null>(null);
     // A place handed over by its sheet stays in the address by its id while
     // it's where you go, never by its coordinates.
-    const placeRef = useRef<{ id: string; lat: number; lng: number } | null>(
-        null,
-    );
+    const placeRef = useRef<{
+        id: string;
+        part: string | null;
+        lat: number;
+        lng: number;
+    } | null>(null);
+    // The address Plan a trip keeps (`to`), set once the page's deferred
+    // props are in: Inertia drops a visit's deferred loads when the address
+    // changes while the visit arrives (a sheet's "Show the way" then left
+    // Nearby on "Finding the closest station…"). Its own list shrinks as
+    // each group comes in, so the visit's whole list is read. A reload asked
+    // before it (`from`) sets the old address back when it lands: it's put
+    // right again, until you go elsewhere.
+    const page = usePage();
+    const arriving = Object.values(
+        page.initialDeferredProps ?? page.deferredProps ?? {},
+    ).some((props) => props.some((prop) => page.props[prop] === undefined));
+    const address = useRef<{ from: string; to: string } | null>(null);
+
+    useEffect(() => {
+        const want = address.current;
+
+        if (want === null || arriving) {
+            return;
+        }
+
+        const here = window.location.pathname + window.location.search;
+
+        if (here === want.to) {
+            return;
+        }
+
+        if (here !== want.from) {
+            address.current = null;
+
+            return;
+        }
+
+        // Through Inertia, so its own reloads (the polls) keep this address.
+        router.replace({
+            url: want.to,
+            preserveState: true,
+            preserveScroll: true,
+        });
+    });
+
+    // The answer's pieces, fetched while the page is idle.
+    useEffect(() => {
+        const idle =
+            window.requestIdleCallback ??
+            ((run: () => void) => window.setTimeout(run, 1500));
+        idle(() => void loadResults());
+    }, []);
 
     /** Ask the router; the options come back ranked on the client. */
     const plan = useCallback(
@@ -365,6 +457,8 @@ export function PlanPanel({
                 to_name: toPlace.name,
                 to_lat: String(toPlace.lat),
                 to_lng: String(toPlace.lng),
+                // The ways at once; the boarding stops' live runs after.
+                checks_later: '1',
             });
 
             if (fromPlace) {
@@ -429,6 +523,10 @@ export function PlanPanel({
                 // The event says where.
             } else if (byPlace) {
                 shown.set('place', handed!.id);
+
+                if (handed!.part) {
+                    shown.set('part', handed!.part);
+                }
             } else if (toHere) {
                 shown.set('to', 'here');
             } else if (toPlace.key) {
@@ -459,14 +557,13 @@ export function PlanPanel({
             }
 
             shown.set('compare', '1');
-            // Through Inertia, so its own reloads (the polls) keep this address.
-            router.replace({
-                url: `/timetable?${shown}`,
-                preserveState: true,
-                preserveScroll: true,
-            });
+            address.current = {
+                from: window.location.pathname + window.location.search,
+                to: `/travel?${shown}`,
+            };
 
             asked.current = `${whenMode}|${overrides?.date ?? date}|${overrides?.time ?? time}`;
+            askedWhere.current = whereKey(fromPlace, toPlace);
             request.current?.abort();
             const controller = new AbortController();
             request.current = controller;
@@ -474,7 +571,7 @@ export function PlanPanel({
             setEditing(false);
             setStatus({ kind: 'loading' });
             setMore(false);
-            setTouched(false);
+            setSelected(null);
 
             try {
                 // In the body: where you go and start never sit in a URL.
@@ -511,6 +608,32 @@ export function PlanPanel({
                 }
 
                 setStatus({ kind: 'done', answer: data });
+
+                if (data.checks) {
+                    const live = await fetch('/api/journey/checks', {
+                        method: 'POST',
+                        headers: jsonHeaders(),
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ checks: data.checks }),
+                        signal: controller.signal,
+                    })
+                        .then((r) => (r.ok ? r.json() : null))
+                        .catch(() => null);
+                    // Missed: these ways just say nothing about live runs.
+                    setStatus((now) =>
+                        now.kind === 'done' && now.answer === data
+                            ? {
+                                  kind: 'done',
+                                  answer: {
+                                      ...data,
+                                      trouble: live?.trouble ?? [],
+                                      gone: live?.gone ?? [],
+                                      checks: null,
+                                  },
+                              }
+                            : now,
+                    );
+                }
             } catch (failure) {
                 if ((failure as Error).name !== 'AbortError') {
                     setStatus({
@@ -537,6 +660,16 @@ export function PlanPanel({
         const activity = q.get('activity');
         const toKey = q.get('to');
         const name = (q.get('to_name') ?? toKey)?.trim().slice(0, 120);
+        const set = q.get('set');
+
+        // My day's (or anyone's) "Add home": straight to Home's address line.
+        if (set === 'home' || set === 'work') {
+            opened.current = true;
+            setSetting(set);
+            window.setTimeout(() => toField.current?.focus(), 0);
+
+            return;
+        }
 
         // Events' "Open in Travel": there by its start, or (back=1) from it
         // after it ends, to Home when you have one. An event the server
@@ -660,6 +793,7 @@ export function PlanPanel({
                 : null;
             placeRef.current = {
                 id: String(handoffPlace.id),
+                part: handoffPlace.part ?? null,
                 lat: place.lat,
                 lng: place.lng,
             };
@@ -857,6 +991,31 @@ export function PlanPanel({
 
     // While the options show, a new day or time asks again, once it settles.
     const asked = useRef<string | null>(null);
+    // ...and picking or changing either place (a suggestion, Your location,
+    // Home or Work) asks again at once; typing alone waits until
+    // a place is picked (owner, 22 Oct 2026).
+    const askedWhere = useRef<string | null>(null);
+    const where =
+        to.place && (from.place || !from.text.trim())
+            ? whereKey(from.place, to.place)
+            : null;
+
+    useEffect(() => {
+        if (
+            !results ||
+            where === null ||
+            askedWhere.current === null ||
+            askedWhere.current === where ||
+            // Your location plans again itself, once the fix is in.
+            relocating.current ||
+            locating
+        ) {
+            return;
+        }
+
+        void plan();
+    }, [results, where, locating, plan]);
+
     const when = `${schedule}|${date}|${time}`;
 
     useEffect(() => {
@@ -899,11 +1058,16 @@ export function PlanPanel({
     // From becomes where the device is now: the fix goes to the server as
     // "I'm here", so an empty From plans from it. A shown answer is planned
     // again from there once the fix is in.
-    const useMyLocation = () => {
+    const startFromHere = (allow = false) => {
         setFrom(EMPTY);
         setRelocated(true);
         relocating.current = true;
-        onLocate();
+
+        if (allow && onAllowLocation) {
+            onAllowLocation();
+        } else {
+            onLocate();
+        }
     };
 
     useEffect(() => {
@@ -925,14 +1089,32 @@ export function PlanPanel({
         [options, sort, prefs, deadline],
     );
     const shown = more ? ranked : ranked.slice(0, 3);
-    const chosen =
-        shown.find((option) => option.id === selected) ?? shown[0] ?? null;
-    const open = new Set(expanded);
+    // A cancelled run stays where it was: before the first way that rides
+    // its line after it (the next one moved up).
+    const goneBefore = new Map<string, PlanGone[]>();
 
-    // Desktop shows the chosen way's details until you fold them.
-    if (desktop && !touched && chosen) {
-        open.add(chosen.id);
+    for (const run of answer?.gone ?? []) {
+        const next = shown.find((option) => {
+            const ride = option.journey.legs.find((leg) => leg.line);
+
+            return (
+                ride?.line === run.line &&
+                Date.parse(ride.scheduled_depart_at ?? ride.depart_at) >
+                    Date.parse(run.at)
+            );
+        });
+
+        if (next) {
+            goneBefore.set(next.id, [...(goneBefore.get(next.id) ?? []), run]);
+        }
     }
+
+    const openOption = shown.some((option) => option.id === selected)
+        ? selected
+        : null;
+    // The open option, else the best: what the checks and a hand-off read.
+    const chosen =
+        shown.find((option) => option.id === openOption) ?? shown[0] ?? null;
 
     const go = (place: PlanPlace, next?: Picked | null) => {
         setTo({ text: place.name, place });
@@ -982,6 +1164,82 @@ export function PlanPanel({
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
+    // The Deutschlandticket, said where the fare is: kept with your account,
+    // then the ways are planned again so the fare matches.
+    const [ticketBusy, setTicketBusy] = useState(false);
+    const sayTicket = async (held: boolean) => {
+        setTicketBusy(true);
+
+        try {
+            const response = await fetch('/api/travel/deutschlandticket', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    ...csrfHeaders(),
+                },
+                body: JSON.stringify({ held }),
+            });
+
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+
+            await plan();
+        } catch {
+            showToast('That couldn’t be saved. Try again.', { error: true });
+        } finally {
+            setTicketBusy(false);
+        }
+    };
+
+    // What was picked (or typed and found) in the address line becomes your
+    // Home or Work, kept with your account.
+    const keepPlace = async (
+        kind: 'home' | 'work',
+        picked: PlanPlace | null,
+    ) => {
+        const typed = to.text.trim();
+        const place =
+            picked ?? (typed ? await findPlace(typed, 'destination') : null);
+
+        if (!place) {
+            setError(
+                typed
+                    ? 'No place matches that. Pick one from the list.'
+                    : `Type your ${kind} address, then pick it from the list.`,
+            );
+
+            return;
+        }
+
+        router.put(
+            `/user-places/${kind}`,
+            {
+                name: place.name,
+                address: place.detail ?? null,
+                lat: place.lat,
+                lng: place.lng,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['savedPlaces'],
+                onSuccess: () => {
+                    setSetting(null);
+                    setTo(EMPTY);
+                    setError(null);
+                    showToast(`${placeLabels[kind]} saved`);
+                },
+                onError: () =>
+                    setError(
+                        `Your ${kind} address couldn’t be saved. Try again.`,
+                    ),
+            },
+        );
+    };
+
     const barTitle = saved
         ? 'Saved'
         : results
@@ -1062,7 +1320,7 @@ export function PlanPanel({
                 kind: target?.kind ?? null,
             },
             inPlan: isPlanned(option),
-            addToPlan: target ? addToPlan : null,
+            addToPlan: target ? () => addToPlan(option) : null,
         });
     };
 
@@ -1077,12 +1335,12 @@ export function PlanPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status.kind, chosen]);
 
-    const addToPlan = async (): Promise<boolean> => {
-        if (!chosen || !target || saving) {
+    const addToPlan = async (option: PlanOption): Promise<boolean> => {
+        if (!target || saving) {
             return false;
         }
 
-        if (isPlanned(chosen) && plannedNow) {
+        if (isPlanned(option) && plannedNow) {
             setSaved(plannedNow);
 
             return true;
@@ -1098,7 +1356,7 @@ export function PlanPanel({
                 body: JSON.stringify({
                     date: berlinNow(new Date(target.start_at)).date,
                     target_id: target.id,
-                    journey: chosen.journey,
+                    journey: option.journey,
                     // On by default where notifications are already allowed,
                     // as the mock shows it; otherwise the switch asks.
                     remind: push.isSubscribed,
@@ -1352,7 +1610,12 @@ export function PlanPanel({
                         hidden={compact}
                         onSubmit={(event) => {
                             event.preventDefault();
-                            void plan();
+
+                            if (setting) {
+                                void keepPlace(setting, to.place);
+                            } else {
+                                void plan();
+                            }
                         }}
                     >
                         <h2 className="planner-heading">
@@ -1365,7 +1628,21 @@ export function PlanPanel({
                             onTo={(value) => {
                                 setTo(value);
                                 setPicked(null);
+
+                                if (setting && value.place) {
+                                    void keepPlace(setting, value.place);
+                                }
                             }}
+                            toLabel={
+                                setting
+                                    ? `${placeLabels[setting]} address`
+                                    : undefined
+                            }
+                            toPlaceholder={
+                                setting
+                                    ? 'Street and number, or a place'
+                                    : undefined
+                            }
                             fromNote={nearName ? `near ${nearName}` : null}
                             picked={
                                 picked
@@ -1384,13 +1661,15 @@ export function PlanPanel({
                                     0,
                                 );
                             }}
-                            onSwap={() => {
-                                setFrom(to);
-                                setTo(from);
-                                setPicked(null);
-                            }}
                             toRef={toField}
-                            onUseLocation={useMyLocation}
+                            onUseLocation={() => startFromHere()}
+                            onAllowLocation={
+                                relocated &&
+                                locateError === 'off' &&
+                                onAllowLocation
+                                    ? () => startFromHere(true)
+                                    : undefined
+                            }
                             locating={locating}
                             locateNote={
                                 relocated && locateError
@@ -1420,96 +1699,103 @@ export function PlanPanel({
                                 <TravelIcon name="down" />
                             </span>
                         </button>
-                        <div
-                            className={cn(
-                                'plan-controls',
-                                choicesOpen && 'is-open',
-                            )}
+                        {/* On a laptop, once there are ways, When and what matters fold
+                            under their summary; they open and close with Slide. */}
+                        <Slide
+                            open={
+                                !(desktop && stage === 'picked') || choicesOpen
+                            }
                             id="plan-choices"
                         >
-                            <span className="plan-label" id="when-label">
-                                When
-                            </span>
-                            <div
-                                className="segmented plan-when"
-                                role="group"
-                                aria-labelledby="when-label"
-                            >
-                                {(
-                                    [
-                                        ['now', 'Leave now'],
-                                        ['depart', 'Leave at'],
-                                        ['arrive', 'Arrive by'],
-                                    ] as const
-                                ).map(([mode, label]) => (
-                                    <button
-                                        key={mode}
-                                        type="button"
-                                        aria-pressed={schedule === mode}
-                                        onClick={() => setSchedule(mode)}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                            <p
-                                className="plan-when-time"
-                                id="plan-when-time"
-                                hidden={schedule === 'now'}
-                            >
-                                <span id="plan-when-caption">
-                                    {schedule === 'arrive'
-                                        ? 'Be there by'
-                                        : 'Leave at'}
+                            <div className="plan-controls">
+                                <span className="plan-label" id="when-label">
+                                    When
                                 </span>
-                                {scheduleMenu}
-                                {whenNote ? (
-                                    <span
-                                        id="plan-when-note"
-                                        className="plan-when-note"
-                                    >
-                                        {whenNote}
+                                <div
+                                    className="segmented plan-when"
+                                    role="group"
+                                    aria-labelledby="when-label"
+                                >
+                                    {(
+                                        [
+                                            ['now', 'Leave now'],
+                                            ['depart', 'Leave at'],
+                                            ['arrive', 'Arrive by'],
+                                        ] as const
+                                    ).map(([mode, label]) => (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            aria-pressed={schedule === mode}
+                                            onClick={() => setSchedule(mode)}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p
+                                    className="plan-when-time"
+                                    id="plan-when-time"
+                                    hidden={schedule === 'now'}
+                                >
+                                    <span id="plan-when-caption">
+                                        {schedule === 'arrive'
+                                            ? 'Be there by'
+                                            : 'Leave at'}
                                     </span>
-                                ) : null}
-                            </p>
-                            <span className="plan-label" id="prefs-label">
-                                What matters to you
-                            </span>
-                            <div
-                                className="plan-prefs"
-                                role="group"
-                                aria-labelledby="prefs-label"
-                            >
-                                {PREFS.map((pref) => (
-                                    <button
-                                        key={pref.id}
-                                        type="button"
-                                        aria-pressed={prefs.includes(pref.id)}
-                                        onClick={() =>
-                                            setPrefs((list) =>
-                                                list.includes(pref.id)
-                                                    ? list.filter(
-                                                          (id) =>
-                                                              id !== pref.id,
-                                                      )
-                                                    : [...list, pref.id],
-                                            )
-                                        }
-                                    >
-                                        <span>{pref.label}</span>
-                                    </button>
-                                ))}
+                                    {scheduleMenu}
+                                    {whenNote ? (
+                                        <span
+                                            id="plan-when-note"
+                                            className="plan-when-note"
+                                        >
+                                            {whenNote}
+                                        </span>
+                                    ) : null}
+                                </p>
+                                <span className="plan-label" id="prefs-label">
+                                    What matters to you
+                                </span>
+                                <div
+                                    className="plan-prefs"
+                                    role="group"
+                                    aria-labelledby="prefs-label"
+                                >
+                                    {PREFS.map((pref) => (
+                                        <button
+                                            key={pref.id}
+                                            type="button"
+                                            aria-pressed={prefs.includes(
+                                                pref.id,
+                                            )}
+                                            onClick={() =>
+                                                setPrefs((list) =>
+                                                    list.includes(pref.id)
+                                                        ? list.filter(
+                                                              (id) =>
+                                                                  id !==
+                                                                  pref.id,
+                                                          )
+                                                        : [...list, pref.id],
+                                                )
+                                            }
+                                        >
+                                            <span>{pref.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <p
+                                    className="plan-note"
+                                    id="stepfree-note"
+                                    hidden={!prefs.includes('stepfree')}
+                                >
+                                    Step-free uses KVB’s lift status; other
+                                    operators’ lifts and the way down to a
+                                    platform aren’t known, so it can’t be
+                                    promised.
+                                </p>
                             </div>
-                            <p
-                                className="plan-note"
-                                id="stepfree-note"
-                                hidden={!prefs.includes('stepfree')}
-                            >
-                                Step-free uses KVB’s lift status; other
-                                operators’ lifts and the way down to a platform
-                                aren’t known, so it can’t be promised.
-                            </p>
-                        </div>
+                        </Slide>
                         <p
                             id="form-error"
                             className="form-error"
@@ -1618,11 +1904,19 @@ export function PlanPanel({
                                         </span>
                                     </button>
                                 ) : (
-                                    <Link
+                                    <button
                                         key={kind}
-                                        href="/profile"
+                                        type="button"
                                         className="is-empty"
-                                        as="button"
+                                        aria-pressed={setting === kind}
+                                        onClick={() => {
+                                            setPicked(null);
+                                            setTo(EMPTY);
+                                            setSetting(
+                                                setting === kind ? null : kind,
+                                            );
+                                            toField.current?.focus();
+                                        }}
                                     >
                                         <TravelIcon
                                             name={
@@ -1633,9 +1927,13 @@ export function PlanPanel({
                                         />
                                         <span>
                                             <strong>{label}</strong>
-                                            <small>Add an address</small>
+                                            <small>
+                                                {setting === kind
+                                                    ? 'Type it in the line above'
+                                                    : 'Add an address'}
+                                            </small>
                                         </span>
-                                    </Link>
+                                    </button>
                                 ),
                             )}
                         </div>
@@ -1771,19 +2069,9 @@ export function PlanPanel({
                                         </div>
                                     </div>
                                     {status.kind === 'loading' ? (
-                                        <div
-                                            className="result-empty"
-                                            role="status"
-                                        >
-                                            <span className="empty-symbol">
-                                                <TravelIcon name="route" />
-                                            </span>
-                                            <h3>Finding the ways</h3>
-                                            <p>
-                                                Asking the routes and live times
-                                                for {to.place?.name ?? to.text}.
-                                            </p>
-                                        </div>
+                                        <Suspense fallback={null}>
+                                            <PlanLoading />
+                                        </Suspense>
                                     ) : status.kind === 'location' ? (
                                         <div className="result-empty">
                                             <span className="empty-symbol">
@@ -1829,8 +2117,19 @@ export function PlanPanel({
                                             </div>
                                         </div>
                                     ) : answer && ranked.length ? (
-                                        <>
+                                        <Suspense fallback={null}>
+                                            <PlanHeadline
+                                                answer={answer}
+                                                options={shown}
+                                                board={
+                                                    desktop ? boardMajors : null
+                                                }
+                                            />
                                             <PlanChecks
+                                                onTicket={(held) =>
+                                                    void sayTicket(held)
+                                                }
+                                                ticketBusy={ticketBusy}
                                                 checks={checksFor(
                                                     answer,
                                                     chosen,
@@ -1854,28 +2153,59 @@ export function PlanPanel({
                                                         to.place?.name ??
                                                         to.text
                                                     }
-                                                    selected={
-                                                        chosen?.id ?? null
-                                                    }
                                                     planned={isPlanned}
+                                                    gone={goneBefore}
                                                     onBoardStop={onBoardStop}
-                                                    onSelect={setSelected}
-                                                    expanded={open}
-                                                    onToggle={(id) => {
-                                                        setTouched(true);
-                                                        setExpanded(() => {
-                                                            const next =
-                                                                new Set(open);
-
-                                                            if (next.has(id)) {
-                                                                next.delete(id);
-                                                            } else {
-                                                                next.add(id);
-                                                            }
-
-                                                            return next;
-                                                        });
-                                                    }}
+                                                    expanded={
+                                                        new Set(
+                                                            openOption
+                                                                ? [openOption]
+                                                                : [],
+                                                        )
+                                                    }
+                                                    onToggle={(id) =>
+                                                        setSelected((now) =>
+                                                            now === id
+                                                                ? null
+                                                                : id,
+                                                        )
+                                                    }
+                                                    actions={(option) => (
+                                                        <div className="plan-option-actions">
+                                                            <button
+                                                                type="button"
+                                                                className="primary plan-go"
+                                                                onClick={() =>
+                                                                    showTheWay(
+                                                                        option,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <TravelIcon name="route" />
+                                                                Show the way
+                                                            </button>
+                                                            {target ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="quiet-button plan-save"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                    onClick={() =>
+                                                                        void addToPlan(
+                                                                            option,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {isPlanned(
+                                                                        option,
+                                                                    )
+                                                                        ? 'In your plan · see it'
+                                                                        : 'Add to plan'}
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
                                                 />
                                                 {ranked.length > 3 ? (
                                                     <button
@@ -1895,42 +2225,8 @@ export function PlanPanel({
                                                         <TravelIcon name="down" />
                                                     </button>
                                                 ) : null}
-                                                {chosen ? (
-                                                    <div className="plan-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="primary plan-go"
-                                                            onClick={() =>
-                                                                showTheWay(
-                                                                    chosen,
-                                                                )
-                                                            }
-                                                        >
-                                                            <TravelIcon name="route" />
-                                                            Show the way
-                                                        </button>
-                                                        {target ? (
-                                                            <button
-                                                                type="button"
-                                                                className="quiet-button plan-save"
-                                                                disabled={
-                                                                    saving
-                                                                }
-                                                                onClick={() =>
-                                                                    void addToPlan()
-                                                                }
-                                                            >
-                                                                {isPlanned(
-                                                                    chosen,
-                                                                )
-                                                                    ? 'In your plan · see it'
-                                                                    : 'Add to plan'}
-                                                            </button>
-                                                        ) : null}
-                                                    </div>
-                                                ) : null}
                                             </div>
-                                        </>
+                                        </Suspense>
                                     ) : (
                                         <div className="result-empty">
                                             <span className="empty-symbol">

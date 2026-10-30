@@ -3,6 +3,7 @@
 use App\Bureaucracy\Assessment\AssessmentInput;
 use App\Bureaucracy\Catalogue\CatalogueCompiler;
 use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\ReadModel\CoverageUnits;
@@ -110,6 +111,23 @@ it('requires the stored deadline itself to be quoted', function () {
     expect(app(ClaimCheck::class)->offlineErrors($card))
         ->toBe(['the 30-day deadline needs a `covers: deadline` claim whose quote states that period']);
 });
+
+it('backs a deadline in months with its shortest span, never a later day', function (int $days, array $errors) {
+    $card = checkedCard([
+        'description' => 'Register within a six-month period under §17 BMG after moving in.',
+        'deadline_days' => $days,
+        'claims' => [
+            ['id' => 'period', 'states' => 'six-month period under §17 BMG', 'source' => '§17 BMG', 'quote' => 'innerhalb von sechs Monaten nach dem Einzug'],
+            ['id' => 'deadline', 'covers' => 'deadline', 'source' => '§17 BMG', 'quote' => 'innerhalb von sechs Monaten nach dem Einzug'],
+        ],
+    ]);
+
+    expect(app(ClaimCheck::class)->offlineErrors($card))->toBe($errors);
+})->with([
+    'the shortest six months' => [181, []],
+    'a day later than some six months' => [182, ['the 182-day deadline needs a `covers: deadline` claim whose quote states that period']],
+    'thirty days a month' => [180, ['the 180-day deadline needs a `covers: deadline` claim whose quote states that period']],
+]);
 
 it('rejects malformed claims before anything is fetched', function (array $claims, string $error) {
     expect(app(ClaimCheck::class)->offlineErrors(checkedCard(['claims' => $claims])))->toContain($error);
@@ -327,11 +345,12 @@ it('names the processes a plan cannot answer and spots an empty plan', function 
         ->and(UnansweredPlan::isEmpty(['coverage' => ['state' => 'not_activated', 'processes' => []], 'actions' => []]))->toBeFalse();
 });
 
-it('escalates once when the active catalogue has nothing for someone who finished onboarding', function () {
+it('escalates once when the active catalogue has nothing for someone who answered their questions', function () {
     Exceptions::fake();
     $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
+    app(RecordFactChange::class)->execute($actor, $case->person, 'entry_mode', 'd_visa', null, $case->fact_version);
 
     app(ReassessPerson::class)->execute($case->person_id);
     app(ReassessPerson::class)->execute($case->person_id);
@@ -340,4 +359,16 @@ it('escalates once when the active catalogue has nothing for someone who finishe
         ->toBe(['kind' => 'empty_plan', 'subject' => 'de-nrw-cologne', 'occurrences' => 2])
         ->and(json_encode(BureaucracyEscalation::query()->sole()->getAttributes()))->not->toContain($actor->email);
     Exceptions::assertReportedCount(1);
+});
+
+it('raises no empty-plan escalation for a record with no answers yet', function () {
+    Exceptions::fake();
+    $this->artisan('bureaucracy:compile-catalogue --deploy')->assertSuccessful();
+    $actor = User::factory()->create(['city' => 'Köln']);
+    $case = app(EnsureAccountHolder::class)->dossier($actor);
+
+    app(ReassessPerson::class)->execute($case->person_id);
+
+    expect(BureaucracyEscalation::query()->where('kind', 'empty_plan')->exists())->toBeFalse();
+    Exceptions::assertReportedCount(0);
 });

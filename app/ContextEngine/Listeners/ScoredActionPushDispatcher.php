@@ -3,14 +3,13 @@
 namespace App\ContextEngine\Listeners;
 
 use App\Bureaucracy\Reminders\PlanReminderDelivery;
+use App\ContextEngine\ActionBus;
 use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
 use App\Notifications\BureaucracyPlanNotification;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
-use Carbon\CarbonInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -24,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * kill switch if push delivery misbehaves.
  *
  * Action types without a Notification class (alternative_route,
- * disruption_no_alt) are skipped silently — they're dashboard-only.
+ * disruption_no_alt) are skipped silently — they're Today-only.
  *
  * One push per situation: an action key that already pushed pushes again only
  * when its severity rose, the way Alert::record re-surfaces a card only on
@@ -33,7 +32,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ScoredActionPushDispatcher
 {
-    public function __construct(private ContextNotificationFactory $notifications) {}
+    public function __construct(private ContextNotificationFactory $notifications, private ActionBus $bus) {}
 
     public function handle(ScoredActionInserted $event): void
     {
@@ -50,7 +49,7 @@ class ScoredActionPushDispatcher
                 app(PlanReminderDelivery::class)->release($action->payload);
             }
 
-            return; // dashboard-only action type
+            return; // Today-only action type
         }
 
         $context = [
@@ -61,11 +60,10 @@ class ScoredActionPushDispatcher
             'score' => $action->score,
         ];
 
-        // Pushes reserved in the PushLedger (the residency milestone) or in
-        // PlanReminderDelivery (paperwork reminders) are deduped there, so they
-        // skip this check.
-        $dedupe = ! isset($action->payload['push_reservation']) && $action->type !== 'bureaucracy_task';
-        if ($dedupe && $this->alreadyPushed($action)) {
+        // Paperwork reminders are deduped by PlanReminderDelivery, so they skip
+        // this check.
+        $dedupe = $action->type !== 'bureaucracy_task';
+        if ($dedupe && $this->bus->alreadyPushed($action)) {
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + ['mode' => 'deduped']);
 
             return;
@@ -91,7 +89,7 @@ class ScoredActionPushDispatcher
                 NotificationThrottle::recordSent($user);
             }
             if ($dedupe) {
-                $this->rememberPushed($action);
+                $this->bus->rememberPushed($action);
             }
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + [
                 'mode' => 'sent',
@@ -112,48 +110,5 @@ class ScoredActionPushDispatcher
                 'error' => substr($e->getMessage(), 0, 200),
             ]);
         }
-    }
-
-    /** Already pushed at this severity or worse; keeps the marker alive while the situation lasts. */
-    private function alreadyPushed(ScoredAction $action): bool
-    {
-        $last = Cache::get($this->pushedKey($action));
-        if ($last === null || self::severityRank($action->severity) > (int) $last) {
-            return false;
-        }
-
-        Cache::put($this->pushedKey($action), (int) $last, $this->dedupeUntil($action));
-
-        return true;
-    }
-
-    private function rememberPushed(ScoredAction $action): void
-    {
-        Cache::put($this->pushedKey($action), self::severityRank($action->severity), $this->dedupeUntil($action));
-    }
-
-    private function pushedKey(ScoredAction $action): string
-    {
-        return 'push_sent:'.$action->actionKey;
-    }
-
-    /** Until the action lapses (each re-insert extends it), never less than an hour. */
-    private function dedupeUntil(ScoredAction $action): CarbonInterface
-    {
-        $floor = now()->addHour();
-        $until = $action->validUntil ?? now()->addHours(6);
-
-        return $until->greaterThan($floor) ? $until : $floor;
-    }
-
-    private static function severityRank(string $severity): int
-    {
-        return match ($severity) {
-            'critical' => 4,
-            'major' => 3,
-            'moderate' => 2,
-            'minor' => 1,
-            default => 0,
-        };
     }
 }

@@ -2,23 +2,16 @@
 
 namespace App\Providers;
 
-use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
-use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
-use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\Questions\QuestionProtocol;
 use App\Composer\AnthropicCandidateRanker;
-use App\Composer\AnthropicPromptParser;
-use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
-use App\Composer\HeuristicPromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
 use App\ContextEngine\Listeners\RecordContextAlert;
-use App\ContextEngine\Listeners\RecordReservedPushSent;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
@@ -30,7 +23,6 @@ use App\Jobs\ValidateMediaAssetJob;
 use App\Models\User;
 use App\Observers\BureaucracyAccountObserver;
 use App\Observers\PersonalisationAccountObserver;
-use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
@@ -64,13 +56,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
-            if (! ProcessingPurpose::FactExtraction->available()) {
-                return $app->make(UnavailableCaseFactExtractor::class);
-            }
-
-            return $app->make(AnthropicCaseFactExtractor::class);
-        });
 
         $this->app->singleton(
             RouteService::class,
@@ -85,19 +70,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Inertia SSR with a short timeout instead of Laravel's 30 s default.
         $this->app->singleton(Gateway::class, SsrGateway::class);
-
-        // The composer parser: heuristic by default, Claude once the anthropic
-        // driver and a key are configured. Claude always wraps the heuristic
-        // as its degradation path.
-        $this->app->bind(ParsesPrompt::class, function ($app) {
-            $heuristic = $app->make(HeuristicPromptParser::class);
-
-            if (ProcessingPurpose::ComposerParse->available()) {
-                return new AnthropicPromptParser($heuristic);
-            }
-
-            return $heuristic;
-        });
 
         $this->app->bind(RanksCandidates::class, AnthropicCandidateRanker::class);
 
@@ -150,7 +122,6 @@ class AppServiceProvider extends ServiceProvider
         User::observe(PersonalisationAccountObserver::class);
 
         // CreateAlertFromNotification is registered by listener discovery.
-        Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
@@ -247,13 +218,12 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
         ]);
 
-        // User-generated public content (reviews) — the classic spam target,
-        // stacked under app-writes with a much tighter budget.
-        RateLimiter::for('ugc', fn (Request $request): Limit => Limit::perMinute(10)
-            ->by('ugc:'.$userOrIp($request)));
+        RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('composer-ask:'.$request->user()?->getAuthIdentifier()));
 
-        RateLimiter::for('composer-parse', fn (Request $request): Limit => Limit::perMinute(10)
-            ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
+        // The page polls about once a second while the assistant works (3–6 s).
+        RateLimiter::for('composer-progress', fn (Request $request): Limit => Limit::perMinute(120)
+            ->by('composer-progress:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
         // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
@@ -261,8 +231,6 @@ class AppServiceProvider extends ServiceProvider
         // limit's shorter decay would reset the hourly caps on the routes below.
         $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
         RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
-        RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
-        RateLimiter::for('bureaucracy-ask', fn (Request $request): Limit => Limit::perMinute(10)->by($bureaucracyKey('ask', $request)));
         RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
         // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.

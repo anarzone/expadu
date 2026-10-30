@@ -41,7 +41,7 @@ beforeEach(function () {
     ]);
     $release = app(CatalogueReleaseStore::class)->stage($artifact);
     app(CatalogueReleaseStore::class)->activate($release->id, null);
-    $this->base = '/bureaucracy/v2/people/'.$this->case->person_id;
+    $this->base = '/paperwork/v2/people/'.$this->case->person_id;
     $this->actingAs($this->actor);
 });
 
@@ -50,7 +50,7 @@ test('multiple sponsors open relationship review and removing the incorrect link
     [$two, $twoCase, $twoLink] = relatedConflictSponsor($this->actor, $this->case);
     $session = $this->postJson($this->base.'/question-sessions', ['request_id' => (string) Str::uuid(), 'jurisdiction' => 'de-nrw-cologne'])
         ->assertCreated()->json('session_id');
-    $next = '/bureaucracy/v2/question-sessions/'.$session.'/next';
+    $next = '/paperwork/v2/question-sessions/'.$session.'/next';
     $this->postJson($next, ['request_id' => (string) Str::uuid()])->assertOk()
         ->assertJsonPath('question.kind', 'review_relationship')
         ->assertJsonPath('question.action.type', 'review_relationships')

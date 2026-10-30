@@ -22,6 +22,7 @@ export const lineIcons = {
     home: '<path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
     back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
+    next: '<path d="m9 6 6 6-6 6"/>',
     down: '<path d="m7 10 5 5 5-5"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
     walk: '<circle cx="13" cy="4" r="2"/><path d="m10 9 3-2 3 5 4 1M10 9l-3 4H4m9-5-2 8-4 6m4-6 5 1 2 5"/>',
@@ -63,6 +64,12 @@ export const lineIcons = {
     museum: '<path d="m2 8 10-6 10 6H2Zm2 12h16M6 11v6m6-6v6m6-6v6M2 22h20"/>',
     pencil: '<path d="m3 16 12-12 5 5L8 21H3v-5Zm9-9 5 5"/>',
     film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4m-4 8h4m10-8h4m-4 8h4"/>',
+    music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    stage: '<path d="M4 4h16v7a8 8 0 0 1-16 0V4Z"/><path d="M9 9h.01M15 9h.01M9 13.5c1.6 1.4 4.4 1.4 6 0"/>',
+    flag: '<path d="M5 21V4m0 0h11l-2 4 2 4H5"/>',
+    tent: '<path d="M3 20 12 4l9 16H3Z"/><path d="M12 4v16m-3.5 0L12 14l3.5 6"/>',
+    balloon: '<path d="M12 3a5 5 0 0 1 5 5c0 4-5 8-5 8s-5-4-5-8a5 5 0 0 1 5-5Z"/><path d="M12 16c0 2 1 3 0 5"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     health: '<path d="M3 5h18v16H3zM8 5V2h8v3M12 9v8M8 13h8"/>',
     smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14c1 4 7 4 8 0M8 8v1m8-1v1"/>',
     bank: '<path d="M3 7 12 2l9 5H3Zm2 3v8m7-8v8m7-8v8M2 22h20M3 19h18"/>',
@@ -71,6 +78,17 @@ export const lineIcons = {
     trash: '<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
     sliders: '<path d="M4 6h16M4 18h16M8 3v6m8 6v6"/>',
     bell: '<path d="M4 17h16l-2-4V8a6 6 0 0 0-12 0v5l-2 4Zm5 4h6"/>',
+    // Settings (design canvas "Settings and account", 22 Oct 2026).
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-4 4 3 3"/>',
+    lock: '<rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    'sign-out': '<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h11"/>',
+    // Settings' panel chips draw a smaller spark and a narrower pin.
+    'spark-small':
+        '<path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/>',
+    'pin-narrow':
+        '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
     ticket: '<path d="M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5Z"/><path d="M15 5v3m0 3v2m0 3v3"/>',
     'calendar-add':
         '<path d="M8 2v4m8-4v4M3 10h18M12 21H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6M18 16v6m-3-3h6"/>',

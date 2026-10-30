@@ -7,7 +7,7 @@ use App\Proto\TransitRealtime\FeedMessage;
 use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -20,8 +20,17 @@ class VrsRealtimeService
 {
     private const FEED_KEY = 'vrs_gtfsrt_trip_updates_v2';
 
-    /** Seconds a fetched feed is kept, here and in the cache. */
+    /** The last good feed, served while a fresh one is fetched. */
+    private const STALE_KEY = 'vrs_gtfsrt_trip_updates_v2:stale';
+
+    /** Seconds a fetched feed is fresh, here and in the cache. */
     private const FEED_SECONDS = 30;
+
+    /** Seconds the last good feed may stand in for a fresh one. */
+    private const STALE_SECONDS = 600;
+
+    /** Set while the feed is being read, so the warmer runs only then. */
+    private const WANTED_KEY = 'vrs_gtfsrt:wanted';
 
     /** @var array<string, array<string, mixed>>|null the feed, as last read */
     private ?array $feed = null;
@@ -47,21 +56,24 @@ class VrsRealtimeService
 
         // It's consulted per departure row, so it's kept here once read (the
         // cache's memo kept a miss, and every row then took the fetch lock and
-        // unserialized the whole feed again). When it has expired, one worker
-        // refetches; the others wait for its copy.
+        // unserialized the whole feed again).
         if ($this->feed !== null && now()->timestamp - $this->feedReadAt < self::FEED_SECONDS) {
             return $this->feed;
         }
 
+        // Fetching and parsing takes 2.6–3.8 s and ~135 MB, so a request never
+        // waits for it: transit:fetch-gtfsrt keeps it fresh every 20 s, and a
+        // request finding only the last good copy serves that and refreshes
+        // after its response. Only a cache with no copy at all fetches here,
+        // and not while another fetch runs.
+        $this->markWanted();
         $updates = Cache::get(self::FEED_KEY);
         if (! is_array($updates)) {
-            try {
-                $updates = Cache::lock('vrs_gtfsrt:fetch', 15)->block(
-                    10,
-                    fn () => Cache::remember(self::FEED_KEY, self::FEED_SECONDS, fn () => $this->fetchAndParse()),
-                );
-            } catch (LockTimeoutException) {
-                return [];
+            $updates = Cache::get(self::STALE_KEY);
+            if (is_array($updates)) {
+                dispatch(fn () => app(self::class)->refresh())->afterResponse();
+            } else {
+                $updates = $this->refresh() ?? [];
             }
         }
 
@@ -69,6 +81,70 @@ class VrsRealtimeService
         $this->feedReadAt = now()->timestamp;
 
         return $updates;
+    }
+
+    /** Someone is reading live times (a kept board too): keep the feed fresh. */
+    public function markWanted(): void
+    {
+        Cache::add(self::WANTED_KEY, true, self::STALE_SECONDS);
+    }
+
+    /** Whether the feed has been read in the last ten minutes. */
+    public function wanted(): bool
+    {
+        return (bool) Cache::get(self::WANTED_KEY);
+    }
+
+    /**
+     * Fetches the feed and keeps it, fresh and as the last good copy; null
+     * when another fetch is running. An empty feed (VRS down) is kept fresh
+     * only, so the last good copy still stands in.
+     *
+     * @return array<string, array<string, mixed>>|null
+     */
+    public function refresh(): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return [];
+        }
+
+        $lock = Cache::lock('vrs_gtfsrt:fetch', 15);
+        if (! self::onRealClock(fn () => $lock->get())) {
+            return null;
+        }
+        try {
+            $updates = $this->fetchAndParse();
+            Cache::put(self::FEED_KEY, $updates, self::FEED_SECONDS);
+            if ($updates !== []) {
+                Cache::put(self::STALE_KEY, $updates, self::STALE_SECONDS);
+            }
+
+            return $updates;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Runs with the real clock: a lock taken under a faked one (the mock
+     * clock, composer:eval's day) expired days ahead and held every fetch.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private static function onRealClock(callable $callback): mixed
+    {
+        $faked = [Carbon::getTestNow(), CarbonImmutable::getTestNow()];
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        try {
+            return $callback();
+        } finally {
+            Carbon::setTestNow($faked[0]);
+            CarbonImmutable::setTestNow($faked[1]);
+        }
     }
 
     /**

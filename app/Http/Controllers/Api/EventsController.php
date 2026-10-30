@@ -238,12 +238,8 @@ class EventsController extends Controller
     private function categoryValues(string $category): array
     {
         return match ($category) {
-            'language_exchange' => ['language_exchange', 'language'],
-            'intl_meetup' => ['intl_meetup', 'social'],
-            'culture' => ['culture', 'music'],
-            'sports' => ['sports'],
-            'party' => ['party'],
-            'stammtisch' => ['stammtisch'],
+            'meet_people' => ['meet_people', 'language_exchange', 'language', 'stammtisch', 'intl_meetup', 'social'],
+            'other' => ['other', 'culture'],
             default => [$category],
         };
     }

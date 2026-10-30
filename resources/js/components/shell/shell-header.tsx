@@ -6,12 +6,13 @@ import { AccountMenu } from '@/components/shell/account-menu';
 import { CityPicker } from '@/components/shell/city-picker';
 import {
     openComposerTray,
+    openComposerView,
     useComposerWaiting,
 } from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { sectionAgain } from '@/hooks/use-shell-scroll';
-import { bureaucracy, composer, dashboard, events, timetable } from '@/routes';
+import { composer, paperwork, today, travel } from '@/routes';
 
 const sections: {
     key: string;
@@ -19,15 +20,14 @@ const sections: {
     icon: IconName;
     url: string;
 }[] = [
-    { key: 'today', label: 'Today', icon: 'home', url: dashboard.url() },
-    { key: 'events', label: 'Events', icon: 'calendar', url: events.url() },
+    { key: 'today', label: 'Today', icon: 'home', url: today.url() },
     {
         key: 'paperwork',
         label: 'Paperwork',
         icon: 'document',
-        url: bureaucracy.url(),
+        url: paperwork.url(),
     },
-    { key: 'travel', label: 'Travel', icon: 'train', url: timetable.url() },
+    { key: 'travel', label: 'Travel', icon: 'train', url: travel.url() },
 ];
 
 const within = (path: string, url: string) =>
@@ -73,7 +73,7 @@ export function ShellHeader() {
         <div className="shell">
             <header className="shell-header">
                 <Link
-                    href={dashboard()}
+                    href={today()}
                     className="shell-brand"
                     aria-label="Expadu home"
                 >
@@ -126,14 +126,16 @@ export function ShellHeader() {
                         <kbd>{shortcut}</kbd>
                     </button>
                     <CityPicker />
-                    <Link
-                        href={composer({ query: { panel: 'saved' } })}
+                    <button
+                        type="button"
                         className="shell-icon-button shell-saved"
                         aria-label="Saved"
                         title="Saved"
+                        data-composer-opener
+                        onClick={() => openComposerView('saved')}
                     >
                         <Icon name="bookmark" />
-                    </Link>
+                    </button>
                     <AccountMenu />
                 </div>
             </header>

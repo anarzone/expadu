@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\EventCategory;
 use App\Models\Event;
 
 /**
@@ -51,6 +52,23 @@ final class EventEvidence
         };
 
         return $backed ? $language : null;
+    }
+
+    /**
+     * Why a guest needs no German, in a few words, or null (What's on's "No German needed", owner
+     * 28 Oct 2026): the listing says it's in English (or English and German), or no words are
+     * needed at all, which the classifier may say only of music, a party or sport, never of a
+     * talk or a play. $language is the backed one (language()), $classified the classifier's own.
+     */
+    public static function noGerman(?string $language, ?string $classified, EventCategory $category): ?string
+    {
+        return match (true) {
+            $language === 'en' => 'In English',
+            $language === 'mixed' => 'English and German',
+            $language === 'none_needed',
+            $classified === 'none_needed' && in_array($category, [EventCategory::Music, EventCategory::Party, EventCategory::Sports], true) => 'No words needed',
+            default => null,
+        };
     }
 
     /** The text when every figure it states is in the source; null otherwise. */

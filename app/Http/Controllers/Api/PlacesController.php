@@ -84,8 +84,7 @@ class PlacesController extends Controller
         // The user's standing feedback, so the detail modal (opened from the
         // home rails or Places) reflects it.
         $row = SpotFeedback::effectiveForUser($request->user()->id, $spot->id)->get($spot->id);
-        $spot->feedback_state = $row?->state?->value;
-        $spot->feedback_rating = $row?->rating;
+        $spot->forceFill(SpotFeedback::forPlace($row));
         $travelOption = $origin->hasOrigin()
             ? ($this->travel->placeOptions(
                 $request->user()->transport_mode,
@@ -282,9 +281,7 @@ class PlacesController extends Controller
         $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints, $feedback) {
             $spot->transit_hint = $stopHints[$spot->id] ?? null;
             $spot->activities = $activities[$spot->id] ?? [];
-            $row = $feedback->get($spot->id);
-            $spot->feedback_state = $row?->state?->value;
-            $spot->feedback_rating = $row?->rating;
+            $spot->forceFill(SpotFeedback::forPlace($feedback->get($spot->id)));
 
             return $spot;
         });

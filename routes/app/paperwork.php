@@ -6,13 +6,11 @@
 */
 
 use App\Http\Controllers\Bureaucracy\V2\AccountPlanController;
-use App\Http\Controllers\Bureaucracy\V2\CaseQuestionController;
 use App\Http\Controllers\Bureaucracy\V2\DelegationController;
 use App\Http\Controllers\Bureaucracy\V2\DependentAuthorityController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceSharingController;
 use App\Http\Controllers\Bureaucracy\V2\FactConflictController;
-use App\Http\Controllers\Bureaucracy\V2\FactExtractionController;
 use App\Http\Controllers\Bureaucracy\V2\FactSchemaController;
 use App\Http\Controllers\Bureaucracy\V2\OnboardingDraftController;
 use App\Http\Controllers\Bureaucracy\V2\PeopleController;
@@ -30,7 +28,9 @@ use App\Http\Controllers\Paperwork\CoverageWaitlistController;
 use App\Http\Controllers\QA\PersonaController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+// Paperwork lives at /paperwork, its API at /paperwork/v2 (owner, 27 Oct 2026: the old
+// /bureaucracy addresses are gone, not redirected; stored links were rewritten).
+Route::get('paperwork', [BureaucracyController::class, 'index'])->name('paperwork');
 // Outside Cologne: "Tell me when it's covered" joins the city waitlist,
 // confirmed by the website's double opt-in (EXP-80).
 Route::post('paperwork/waitlist', [CoverageWaitlistController::class, 'store'])->middleware('throttle:6,1')->name('paperwork.waitlist');
@@ -39,7 +39,7 @@ Route::post('qa/become/{persona}', [PersonaController::class, 'become'])->name('
 Route::post('qa/reset-tasks', [PersonaController::class, 'resetTasks'])->name('qa.reset-tasks');
 
 // Paperwork v2: the plan, people and sharing, facts and question sessions.
-Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:bureaucracy-v2')->group(function () {
+Route::prefix('paperwork/v2')->name('paperwork.v2.')->middleware('throttle:bureaucracy-v2')->group(function () {
     Route::get('plan', AccountPlanController::class)->name('plan');
     Route::get('preview/{persona}', ScenarioPreviewController::class)->name('preview');
     Route::get('people', [PeopleController::class, 'index'])->name('people.index');
@@ -55,6 +55,7 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::post('processes/{process}/review', [ProcessController::class, 'review'])->whereNumber('process')->name('processes.review');
     Route::post('processes/{process}/events/{event}/corrections', [ProcessController::class, 'correct'])->whereNumber(['process', 'event'])->name('processes.correct');
     Route::post('people/self', [PeopleController::class, 'store'])->name('people.self');
+    Route::put('people/self/city', [PeopleController::class, 'city'])->name('people.self.city');
     Route::get('people/{person}', [PeopleController::class, 'show'])->name('people.show');
     Route::get('people/{person}/sharing', [DelegationController::class, 'index'])->name('people.sharing');
     Route::get('people/{person}/facts', [PersonFactController::class, 'index'])->name('facts.index');
@@ -67,17 +68,12 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::get('people/{person}/question-preview', [QuestionSessionController::class, 'preview'])->name('questions.preview');
     Route::get('people/{person}/plan', PersonPlanController::class)->name('people.plan');
     // Answers a case question only from source-checked cards; the question stays in the body.
-    Route::post('people/{person}/ask', CaseQuestionController::class)->middleware('throttle:bureaucracy-ask')->name('people.ask');
     Route::post('people/{person}/processes', [ProcessController::class, 'start'])->name('processes.start');
     Route::post('people/{person}/question-sessions', [QuestionSessionController::class, 'store'])->name('question-sessions.store');
     Route::post('question-sessions/{session}/next', [QuestionSessionController::class, 'next'])->name('question-sessions.next');
     Route::post('question-sessions/{session}/answers/{question}', [QuestionSessionController::class, 'answer'])->whereNumber('question')->name('question-sessions.answer');
     Route::post('question-sessions/{session}/defer/{question}', [QuestionSessionController::class, 'defer'])->whereNumber('question')->name('question-sessions.defer');
     Route::post('question-sessions/{session}/resume', [QuestionSessionController::class, 'resume'])->name('question-sessions.resume');
-    Route::post('question-sessions/{session}/extract/{question}', [FactExtractionController::class, 'extract'])->whereNumber('question')->middleware('throttle:bureaucracy-extract')->name('questions.extract');
-    Route::post('question-sessions/{session}/candidates/{candidate}/confirm', [FactExtractionController::class, 'confirm'])->whereUuid('candidate')->name('questions.confirm-extraction');
-    Route::delete('question-sessions/{session}/candidates/{candidate}', [FactExtractionController::class, 'reject'])->whereUuid('candidate')->name('questions.reject-extraction');
-    Route::delete('people/{person}/processing', [FactExtractionController::class, 'withdraw'])->name('people.processing.withdraw');
     // Stop / Resume processing (GDPR Art. 18): the record holder's own switch.
     Route::put('people/{person}/processing-restriction', [PersonRestrictionController::class, 'update'])->middleware('throttle:10,1')->name('people.processing-restriction');
     Route::get('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'show'])->name('onboarding.draft.show');

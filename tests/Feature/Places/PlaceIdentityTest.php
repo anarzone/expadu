@@ -5,7 +5,6 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
 use App\Composer\TodayPlanStore;
-use App\Http\Controllers\ReviewController;
 use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\MediaAsset;
@@ -19,9 +18,7 @@ use App\Places\PlaceIdentity;
 use App\Places\PlaceIdentityAudit;
 use App\Places\ReconcilePlace;
 use App\Services\UserLocationService;
-use App\Services\VeedelDirectory;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
@@ -133,10 +130,14 @@ test('latest family feedback wins and new canonical feedback supersedes older al
     SpotFeedback::factory()->create(['user_id' => $user->id, 'spot_id' => $alias->id, 'state' => 'saved', 'updated_at' => now()->subDay()]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->getJson('/api/places')->assertOk()->assertJsonPath('data.0.feedback_state', 'saved');
-    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'been'])->assertOk();
-    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'been');
+    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'more_like_this'])->assertOk();
+    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'more_like_this');
+    // Been there by another record of the place joins the same row; the choice stays.
+    $this->putJson("/api/places/{$canonical->id}/been")->assertOk();
+    $this->getJson("/api/places/{$alias->id}")->assertOk()
+        ->assertJsonPath('data.feedback_state', 'more_like_this')->assertJsonPath('data.feedback_been', true);
 
-    expect(SpotFeedback::query()->count())->toBe(2);
+    expect(SpotFeedback::query()->count())->toBe(1);
 });
 
 test('family reviews preserve history and count the newest review once per user in ratings', function () {
@@ -147,11 +148,7 @@ test('family reviews preserve history and count the newest review once per user 
     Review::factory()->create(['spot_id' => $alias->id, 'rating' => 3]);
     reconcileIdentity($alias, $canonical);
 
-    expect($canonical->fresh()->rating)->toBe(4.0);
-    $this->actingAs($user)->getJson("/explore/{$alias->id}/reviews")->assertOk()->assertJsonPath('total', 2);
-    $this->postJson("/explore/{$alias->id}/reviews", ['rating' => 3, 'body' => 'Updated review'])->assertCreated();
-
-    expect($canonical->fresh()->rating)->toBe(3.0)
+    expect($canonical->fresh()->rating)->toBe(4.0)
         ->and(Review::query()->count())->toBe(3);
 });
 
@@ -221,17 +218,6 @@ test('reconciliation keeps a place to one entry in what is open nearby', functio
     expect($ids())->toContain($alias->id);
     reconcileIdentity($alias, $canonical);
     expect($ids())->toBe([$canonical->id]);
-});
-
-test('neighbourhood directories count canonical destinations only', function () {
-    [$alias, $canonical] = identityPair();
-    DB::table('veedels')->insert(['name' => 'Test area', 'bezirk' => 'Test district']);
-    $alias->update(['veedel' => 'Test area']);
-    $canonical->update(['veedel' => 'Test area']);
-    reconcileIdentity($alias, $canonical);
-    expect(app(VeedelDirectory::class)->bezirkRail(null)[0]['count'])->toBe(1);
-    $canonical->update(['is_recommendable' => false]);
-    expect(app(VeedelDirectory::class)->veedelsByBezirk())->toBe([]);
 });
 
 test('catalogue replacement and pruning refuse to destroy retained identity references', function () {
@@ -318,18 +304,14 @@ test('events and destination context remain accessible through the old place URL
     expect($child->fresh()->parent_spot_id)->toBe($canonical->id);
 });
 
-test('repeating an existing canonical choice supersedes newer alias feedback and reviews', function () {
+test('repeating an existing canonical choice supersedes newer alias feedback', function () {
     [$alias, $canonical] = identityPair();
     $user = User::factory()->onboarded()->create();
     SpotFeedback::factory()->create(['spot_id' => $canonical->id, 'user_id' => $user->id, 'state' => 'saved', 'rating' => null, 'updated_at' => now()->subDays(2)]);
     SpotFeedback::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'state' => 'not_interested', 'updated_at' => now()->subDay()]);
-    Review::factory()->create(['spot_id' => $canonical->id, 'user_id' => $user->id, 'rating' => 3, 'body' => 'Same review', 'updated_at' => now()->subDays(2)]);
-    Review::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'rating' => 1, 'updated_at' => now()->subDay()]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->postJson("/api/places/{$alias->id}/feedback", ['action' => 'saved'])->assertOk();
     $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'saved');
-    $this->postJson("/explore/{$alias->id}/reviews", ['rating' => 3, 'body' => 'Same review'])->assertCreated();
-    expect($canonical->fresh()->rating)->toBe(3.0);
 });
 
 test('an unavailable canonical place cannot silently remove a saved slot or shift the swap target', function () {
@@ -347,19 +329,6 @@ test('an unavailable canonical place cannot silently remove a saved slot or shif
     $this->actingAs($user)->postJson('/composer/swap', ['slot' => 0])->assertConflict();
     expect(storedComposerPlan($user))->toBe($plan);
     $this->postJson('/composer/compose', ['constraints' => $constraints->toArray(), 'pins' => ["spot:{$alias->id}"]])->assertUnprocessable();
-});
-
-test('a request bound before reconciliation writes its review to the current canonical identity', function () {
-    [$alias, $canonical] = identityPair();
-    $boundBeforeReconciliation = Spot::query()->findOrFail($alias->id);
-    $user = User::factory()->onboarded()->create();
-    reconcileIdentity($alias, $canonical);
-    $request = Request::create('/review', 'POST', ['rating' => 4, 'body' => 'Current choice']);
-    $request->setUserResolver(fn () => $user);
-    app(ReviewController::class)->store($request, $boundBeforeReconciliation);
-
-    expect(Review::query()->sole()->spot_id)->toBe($canonical->id)
-        ->and($canonical->fresh()->rating)->toBe(4.0);
 });
 
 test('swapping a later slot preserves an old identity outside the nearest candidate pool', function () {

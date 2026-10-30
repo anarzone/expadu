@@ -11,6 +11,8 @@ export type EventOccurrence = {
     /** False for a listing that gives a date but no time. */
     time_listed?: boolean;
     language?: string | null;
+    /** Why a guest needs no German ("In English", "No words needed"), or null. */
+    no_german?: string | null;
     category: string;
     category_label: string;
     emoji: string;
@@ -19,6 +21,7 @@ export type EventOccurrence = {
     photo_attribution: string | null;
     photo_source_url: string | null;
     photo_license_url: string | null;
+    photo_of: 'event' | 'venue' | null;
     chips: string[];
     tip: string | null;
     summary: string | null;

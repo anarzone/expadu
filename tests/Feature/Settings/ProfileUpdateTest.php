@@ -1,15 +1,23 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
-test('profile page is displayed', function () {
+test('settings page is displayed', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->get(route('profile.edit'));
+    $this->actingAs($user)
+        ->get(route('settings'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('settings'));
+});
 
-    $response->assertOk();
+test('the old profile page opens Your account', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('profile.edit'))
+        ->assertRedirect('/settings/account');
 });
 
 test('profile information can be updated', function () {
@@ -84,36 +92,6 @@ test('correct password must be provided to delete account', function () {
         ->assertRedirect(route('profile.edit'));
 
     expect($user->fresh())->not->toBeNull();
-});
-
-test('interests can be updated from the profile page', function () {
-    $user = User::factory()->create(['interests' => ['parks']]);
-
-    $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => $user->name,
-            'email' => $user->email,
-            'interests' => ['parks', 'cafes', 'museums'],
-        ])
-        ->assertSessionHasNoErrors()
-        ->assertRedirect();
-
-    expect($user->refresh()->interests)->toBe(['parks', 'cafes', 'museums']);
-});
-
-test('an unknown interest key is rejected', function () {
-    $user = User::factory()->create();
-
-    $this
-        ->actingAs($user)
-        ->from(route('profile.edit'))
-        ->patch(route('profile.update'), [
-            'name' => $user->name,
-            'email' => $user->email,
-            'interests' => ['parks', 'not_a_real_interest'],
-        ])
-        ->assertSessionHasErrors('interests.1');
 });
 
 test('the deutschlandticket flag can be toggled from the profile', function () {

@@ -241,7 +241,7 @@ it('remembers a missing timetable for a minute, not the hour a loaded one keeps'
     expect($service->getStaticDepartures('Busy Square', 11)['departures'][0]['line'])->toBe('16');
 });
 
-it('skips TRIAS for half a minute after one failure and five once three in a row say it is down', function () {
+it('asks TRIAS again after one failure, skips it half a minute after two in a row and five after three', function () {
     config(['services.vrs.enabled' => true, 'services.vrs.trias_url' => 'https://trias.test/v1/trias']);
     $up = false;
     $requests = 0;
@@ -255,26 +255,26 @@ it('skips TRIAS for half a minute after one failure and five once three in a row
         return $requests;
     };
 
+    // One request hanging or failing skips nothing: the next one still asks.
     $trias->getDepartures('Neumarkt');
     expect($asked())->toBe(1);
     $trias->getDepartures('Neumarkt');
-    expect($asked())->toBe(1);
+    expect($asked())->toBe(2);
 
-    // A blip: back after 30 s, and two more failures make an outage.
-    $this->travel(31)->seconds();
+    // Two in a row: a blip, skipped for half a minute.
     $trias->getDepartures('Neumarkt');
+    expect($asked())->toBe(2);
+
+    // A third in a row is an outage: five minutes.
     $this->travel(31)->seconds();
     $trias->getDepartures('Neumarkt');
     expect($asked())->toBe(3);
-
-    $this->travel(31)->seconds();
-    $trias->getDepartures('Neumarkt');
     $this->travel(4)->minutes();
     $trias->getDepartures('Neumarkt');
     expect($asked())->toBe(3);
 
     // After five minutes it's asked again; an answer starts the count over.
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $up = true;
     $trias->getDepartures('Neumarkt');
     expect($asked())->toBe(4)

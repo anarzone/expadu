@@ -17,7 +17,7 @@ class PersonDataController extends Controller
     public function export(Request $request, BureaucracyPerson $person): JsonResponse
     {
         return response()->json($this->lifecycle->export($request->user(), $person))
-            ->header('Cache-Control', 'private, no-store')->header('Content-Disposition', 'attachment; filename="bureaucracy-export.json"');
+            ->header('Cache-Control', 'private, no-store')->header('Content-Disposition', 'attachment; filename="paperwork-export.json"');
     }
 
     public function destroy(ErasePersonRequest $request, BureaucracyPerson $person): Response

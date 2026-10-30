@@ -108,6 +108,9 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             // Below the confidence floor the category stays the source's, like the chips.
             'category' => $needsReview ? $event->category : (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value,
             'relevance' => $result['relevance'],
+            // Read whatever the confidence: personalisation never learns from it when it may be (Sensitive).
+            'sensitive' => ($result['sensitive_kind'] ?? null) !== null,
+            'sensitive_kind' => $result['sensitive_kind'] ?? null,
             'needs_review' => $needsReview,
             'classification_input_hash' => $inputHash,
         ]);

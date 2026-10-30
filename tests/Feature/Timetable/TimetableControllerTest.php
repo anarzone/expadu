@@ -29,7 +29,7 @@ test('the departures page renders with saved places as journey destinations', fu
 
     $this->actingAs($user);
 
-    $this->get(route('timetable'))
+    $this->get(route('travel'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('timetable')
@@ -64,7 +64,7 @@ test('saved places without coordinates are excluded from journey destinations', 
 
     $this->actingAs($user);
 
-    $this->get(route('timetable'))
+    $this->get(route('travel'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('timetable')
@@ -74,7 +74,7 @@ test('saved places without coordinates are excluded from journey destinations', 
 });
 
 test('the departures page requires authentication', function () {
-    $this->get(route('timetable'))->assertRedirect(route('login'));
+    $this->get(route('travel'))->assertRedirect(route('login'));
 });
 
 test('Nearby never uses a saved home or city centre when no location is known', function () {
@@ -92,7 +92,7 @@ test('Nearby never uses a saved home or city centre when no location is known', 
     });
 
     $this->actingAs($user)
-        ->get(route('timetable'))
+        ->get(route('travel'))
         ->assertInertia(fn ($page) => $page
             ->component('timetable')
             ->loadDeferredProps(fn ($reload) => $reload->where('station', null))
@@ -100,7 +100,7 @@ test('Nearby never uses a saved home or city centre when no location is known', 
 });
 
 test('the debug trail names the station and why, never where the person was', function () {
-    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('ready')->andReturn(false)->getMock()->shouldReceive('closest')->andReturn([
         'name' => 'Neumarkt', 'kind' => 'closest', 'source' => 'trias_rt', 'walk_min' => 3,
         'lines' => [['line' => '1', 'mode' => 'tram', 'area' => 'neumarkt-1-7-9', 'dirs' => []]],
     ]));
@@ -110,7 +110,7 @@ test('the debug trail names the station and why, never where the person was', fu
     // A confirmed location makes the resolved source deterministic (no geocode).
     Redis::setex("confirmed_location:{$user->id}", 7200, json_encode(['lat' => 50.9364, 'lng' => 6.9470, 'name' => 'Neumarkt']));
 
-    $this->actingAs($user)->get(route('timetable'))->assertInertia(fn ($page) => $page
+    $this->actingAs($user)->get(route('travel'))->assertInertia(fn ($page) => $page
         ->component('timetable')
         ->loadDeferredProps(fn ($reload) => $reload->where('station.name', 'Neumarkt'))
     );
@@ -123,7 +123,7 @@ test('the debug trail names the station and why, never where the person was', fu
 });
 
 test('the closest station is "closest" only from a fix of the last few minutes; from an older one it says where you last were', function () {
-    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn([
+    $this->partialMock(NearbyStation::class, fn ($m) => $m->shouldReceive('ready')->andReturn(false)->getMock()->shouldReceive('closest')->andReturn([
         'name' => 'Merkenich Mitte', 'kind' => 'closest', 'source' => 'gtfs_static', 'walk_min' => 4, 'lines' => [],
     ]));
     $this->travelTo(now()->startOfMinute());
@@ -133,14 +133,14 @@ test('the closest station is "closest" only from a fix of the last few minutes; 
     ]));
 
     $confirmedAt(3);
-    $this->actingAs($user)->get(route('timetable'))->assertInertia(fn ($page) => $page
+    $this->actingAs($user)->get(route('travel'))->assertInertia(fn ($page) => $page
         ->loadDeferredProps(fn ($reload) => $reload
             ->where('station.located.fresh', true)
             ->where('station.located.source', 'confirmed')
             ->where('station.walk_min', 4)));
 
     $confirmedAt(120);
-    $this->actingAs($user)->get(route('timetable'))->assertInertia(fn ($page) => $page
+    $this->actingAs($user)->get(route('travel'))->assertInertia(fn ($page) => $page
         ->loadDeferredProps(fn ($reload) => $reload
             ->where('station.name', 'Merkenich Mitte')
             ->where('station.located.fresh', false)

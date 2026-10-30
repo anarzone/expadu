@@ -20,7 +20,6 @@
         "paperwork": "array",
         "scopes": "array",
         "notes": "array",
-        "ai": "array",
         "history_count": "integer",
         "attention": "array",
         "coming_up": "array"

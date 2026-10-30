@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\RecurrenceExpander;
+use App\Support\EventAttractions;
 use Carbon\CarbonImmutable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
-#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
+#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'sensitive', 'sensitive_kind', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
@@ -84,6 +85,9 @@ class Event extends Model
             ->visible()
             ->withPoint()
             ->when($ids !== null, fn (Builder $query) => $query->whereIn('id', $ids))
+            // Attractions (an exhibition, opening hours listed day by day) are no occurrence of
+            // anything; a listing asked for by id is still found.
+            ->when($ids === null, fn (Builder $query) => $query->whereNotIn('events.id', app(EventAttractions::class)->ids()))
             ->with([
                 'mediaAttachments.mediaAsset',
                 'venue.mediaAttachments.mediaAsset',

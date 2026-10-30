@@ -9,13 +9,20 @@ use App\Bureaucracy\RuleSourcePolicy;
 use App\Models\BureaucracyCatalogueRelease;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\Task;
+use Carbon\CarbonImmutable;
 use DomainException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use ReflectionClass;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Throwable;
 
 final class CatalogueReleaseStore
 {
+    /** The code current()'s checks run; a change to any of it checks everything again. */
+    private const CheckedBy = [self::class, CatalogueCompiler::class, CatalogueHash::class, GuidancePublication::class, RuleSourcePolicy::class, Task::class, VerifiedActionDirectory::class];
+
     public function __construct(private CatalogueCompiler $compiler, private GuidancePublication $publication, private RuleSourcePolicy $policy, private FactRegistry $facts, private VerifiedActionDirectory $actions) {}
 
     public function stage(array $artifact): BureaucracyCatalogueRelease
@@ -119,7 +126,13 @@ final class CatalogueReleaseStore
         });
     }
 
-    /** Internal read model input; inventory is not user-facing advice. Never caches approval. */
+    /**
+     * Internal read model input; inventory is not user-facing advice. Never reuses an approval
+     * whose inputs changed: the integrity and per-card checks are remembered only under a key
+     * made of everything they read (the stored release bytes, every authoritative task row,
+     * today, the source and catalogue config and the checks' own code), so any change runs
+     * them all again, and a failed integrity check is never remembered.
+     */
     public function current(): ?array
     {
         $pointer = DB::table('bureaucracy_catalogue_pointers')->where('name', 'active')->first();
@@ -127,22 +140,30 @@ final class CatalogueReleaseStore
             return null;
         }
         $release = BureaucracyCatalogueRelease::query()->findOrFail($pointer->release_id);
-        $this->validateIntegrity($release);
         $artifact = $release->artifact;
         $current = Task::query()->authoritative()->get()->keyBy('key');
-        $withdrawn = [];
-        foreach ($artifact['definitions'] as &$definition) {
-            $definition['variants'] = array_values(array_filter($definition['variants'], function ($variant) use ($current, &$withdrawn): bool {
-                $task = $current->get($variant['task_key']);
-                $allowed = $task !== null && $this->policy->persistedErrors($task) === []
-                    && hash_equals($variant['source_hash'], $this->publication->contentHash($task))
-                    && hash_equals($variant['review_hash'], CatalogueHash::of($this->compiler->reviewOf($task)));
-                if (! $allowed) {
-                    $withdrawn[] = $variant['task_key'];
+        $key = $this->checkKey($release, $current);
+        $withdrawn = $this->rememberedWithdrawals($key);
+        if ($withdrawn === null) {
+            $this->validateIntegrity($release);
+            $withdrawn = [];
+            foreach ($artifact['definitions'] as $definition) {
+                foreach ($definition['variants'] as $variant) {
+                    $task = $current->get($variant['task_key']);
+                    $allowed = $task !== null && $this->policy->persistedErrors($task) === []
+                        && hash_equals($variant['source_hash'], $this->publication->contentHash($task))
+                        && hash_equals($variant['review_hash'], CatalogueHash::of($this->compiler->reviewOf($task)));
+                    if (! $allowed) {
+                        $withdrawn[] = $variant['task_key'];
+                    }
                 }
-
-                return $allowed;
-            }));
+            }
+            $withdrawn = array_values(array_unique($withdrawn));
+            $this->rememberWithdrawals($key, $withdrawn);
+        }
+        foreach ($artifact['definitions'] as &$definition) {
+            // By task: a card with any failing variant is withheld whole (fails closed).
+            $definition['variants'] = array_values(array_filter($definition['variants'], fn ($variant): bool => ! in_array($variant['task_key'], $withdrawn, true)));
             foreach ($definition['variants'] as &$variant) {
                 $variant['actions'] = array_values(array_filter($variant['actions'], function ($action) use (&$variant): bool {
                     try {
@@ -167,7 +188,61 @@ final class CatalogueReleaseStore
         }
         unset($definition);
 
-        return [...$artifact, 'release_id' => $release->id, 'release_hash' => $release->content_hash, 'pointer_version' => $pointer->version, 'withdrawn' => $withdrawn];
+        // What this result is made from, for a revision that needn't hash the whole catalogue:
+        // the check key already covers the release bytes, its cards, today, the config
+        // (action hosts and jurisdictions too) and the code that filters it.
+        $revision = hash('sha256', $key."\n".json_encode([$pointer->version, $withdrawn], JSON_THROW_ON_ERROR));
+
+        return [...$artifact, 'release_id' => $release->id, 'release_hash' => $release->content_hash, 'pointer_version' => $pointer->version, 'withdrawn' => $withdrawn, 'revision' => $revision];
+    }
+
+    /** Everything the checks read; any change to it is a new key. */
+    private function checkKey(BureaucracyCatalogueRelease $release, Collection $tasks): string
+    {
+        $rows = $tasks->sortKeys()->map(fn (Task $task): array => $task->getAttributes())->all();
+        $code = array_map(fn (string $class): string => hash_file('sha256', (new ReflectionClass($class))->getFileName()), self::CheckedBy);
+
+        return 'bureaucracy.catalogue_check.'.hash('sha256', json_encode([
+            'release' => [$release->id, $release->content_hash, $release->schema_version, hash('sha256', (string) $release->getRawOriginal('artifact'))],
+            'tasks' => hash('sha256', json_encode($rows, JSON_THROW_ON_ERROR)),
+            'today' => CarbonImmutable::today(config('app.timezone'))->toDateString(),
+            'config' => [config('app.timezone'), config('bureaucracy_sources'), config('bureaucracy_catalogue'), $this->facts->version()],
+            'code' => $code,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    /** @return list<string>|null the withdrawn task keys from a check of exactly these inputs */
+    private function rememberedWithdrawals(string $key): ?array
+    {
+        try {
+            $stored = Cache::get($key);
+        } catch (Throwable) {
+            return null;
+        }
+        // Signed with the app key: an entry the app didn't write (say, straight into Redis) is a miss.
+        [$signature, $json] = is_string($stored) && str_contains($stored, '|') ? explode('|', $stored, 2) : ['', ''];
+        if (! hash_equals($this->sign($key, $json), $signature)) {
+            return null;
+        }
+        $withdrawn = json_decode($json, true);
+
+        return is_array($withdrawn) && array_is_list($withdrawn) && array_filter($withdrawn, 'is_string') === $withdrawn ? $withdrawn : null;
+    }
+
+    /** Stored only after the integrity check passed; a scalar, as cached objects break. */
+    private function rememberWithdrawals(string $key, array $withdrawn): void
+    {
+        try {
+            $json = json_encode($withdrawn, JSON_THROW_ON_ERROR);
+            Cache::put($key, $this->sign($key, $json).'|'.$json, now()->addDay());
+        } catch (Throwable) {
+            // Unremembered, the next read checks everything again.
+        }
+    }
+
+    private function sign(string $key, string $json): string
+    {
+        return hash_hmac('sha256', $key."\n".$json, (string) config('app.key'));
     }
 
     private function validateIntegrity(BureaucracyCatalogueRelease $release): void

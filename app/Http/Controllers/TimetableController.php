@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
 use App\Http\Controllers\Api\FavouriteStopController;
+use App\Models\FavouriteStop;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
 use App\Services\GtfsDepartureService;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
@@ -33,28 +36,50 @@ class TimetableController extends Controller
         $stop = trim((string) $request->query('stop', ''));
         $stop = $stop === '' ? null : mb_substr($stop, 0, 120);
 
-        return Inertia::render('timetable', [
-            // Nearby: the picked station, else the closest one. An unknown
-            // name keeps the closest and says so.
-            'station' => Inertia::defer(function () use ($nearby, $location, $stop, $userId) {
-                $picked = $stop === null ? null : $nearby->named($stop);
-                if ($picked !== null) {
-                    return $picked;
-                }
-                // Never a saved home or the city centre: no location, no station.
-                $closest = $nearby->closestTo($location);
-                if ($closest !== null) {
-                    // Debug trail for "wrong station" reports: the station, its
-                    // lines and why it was chosen, without where the person was.
-                    GtfsDepartureService::logDepartureDebug($userId, 'timetable', [
-                        'stop_name' => $closest['name'],
-                        'source' => $closest['source'],
-                        'departures' => array_map(fn (array $line) => ['line' => $line['line']], $closest['lines']),
-                    ], locationSource: $location->source->value);
-                }
+        // Their favourite stations' boards, built after the response, so a tap
+        // on one finds it ready (only on a visit, not a poll).
+        if (! $request->hasHeader('X-Inertia-Partial-Data')) {
+            $favourites = FavouriteStop::query()->where('user_id', $userId)->pluck('name')->all();
+            if ($favourites !== []) {
+                dispatch(function () use ($favourites) {
+                    foreach ($favourites as $name) {
+                        app(NearbyStation::class)->warm($name);
+                    }
+                })->afterResponse();
+            }
+        }
 
-                return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
-            }, 'station'),
+        // Nearby: the picked station, else the closest one. An unknown name
+        // keeps the closest and says so.
+        $station = function () use ($request, $nearby, $location, $stop, $userId) {
+            $picked = $stop === null ? null : $nearby->named($stop);
+            if ($picked !== null) {
+                // A station they picked, for personalisation with their opt-in; never the closest one.
+                app(SignalRecorder::class)->transit($request->user(), SignalItemType::Stop, $stop);
+
+                return $picked;
+            }
+            // Never a saved home or the city centre: no location, no station.
+            $closest = $nearby->closestTo($location);
+            if ($closest !== null) {
+                // Debug trail for "wrong station" reports: the station, its
+                // lines and why it was chosen, without where the person was.
+                GtfsDepartureService::logDepartureDebug($userId, 'timetable', [
+                    'stop_name' => $closest['name'],
+                    'source' => $closest['source'],
+                    'departures' => array_map(fn (array $line) => ['line' => $line['line']], $closest['lines']),
+                ], locationSource: $location->source->value);
+            }
+
+            return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
+        };
+        // With its boards kept, the station comes in the page itself (~100 ms),
+        // so its rows show with the first paint; a cold one follows deferred.
+        $shown = $stop ?? ($location->hasOrigin() ? $kvb->nearestStop((float) $location->lat, (float) $location->lng)['name'] ?? null : null);
+        $ready = $shown !== null && $nearby->ready((string) $shown);
+
+        return Inertia::render('timetable', [
+            'station' => $ready ? $station : Inertia::defer($station, 'station'),
             'stop' => $stop,
             // Events' "Open in Travel": the occurrence by its id and local start
             // (`context`, `date`, `arrive`), resolved here so its place never
@@ -64,17 +89,19 @@ class TimetableController extends Controller
                 : null,
             // A place's "Get there": the place by its id, resolved here too.
             'handoffPlace' => fn () => $request->filled('place')
-                ? app(PlaceHandoff::class)->for($request->query('place'))
+                ? app(PlaceHandoff::class)->for($request->query('place'), $request->query('part'))
                 : null,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             // The person's own step-free need: Plan a trip and Nearby start
             // with Step-free on. Hidden from the user's serialisation, so it's
             // only ever read here, for them.
             'stepFreeNeed' => fn () => (bool) $request->user()->needs_step_free,
-            // Your next thing and My day: the shared server-side day projection.
-            'day' => DayProjection::deferred($request),
-            // My day's forecast for the rest of today, by the hour.
-            'dayWeather' => Inertia::defer(fn () => self::dayWeather(app(WeatherService::class)), 'day'),
+            // Your next thing and My day: the shared server-side day projection,
+            // in the page itself (~10 ms; 40–60 ms with a plan's way to work
+            // out): the page loads whole (owner, 26 Oct 2026).
+            'day' => fn () => app(DayProjection::class)->for($request->user(), CarbonImmutable::now(DayProjection::TIMEZONE)->format('Y-m-d'), $request),
+            // My day's forecast for the rest of today, by the hour (cached).
+            'dayWeather' => fn () => self::dayWeather(app(WeatherService::class)),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 /** Runs a request through the middleware and returns the clock it saw. */
 function clockSeenWith(?string $cookie): CarbonImmutable
 {
-    $request = Request::create('/dashboard', 'GET', cookies: $cookie === null ? [] : [MockClock::COOKIE => $cookie]);
+    $request = Request::create('/today', 'GET', cookies: $cookie === null ? [] : [MockClock::COOKIE => $cookie]);
     $seen = null;
 
     (new LocalMockClock)->handle($request, function () use (&$seen) {

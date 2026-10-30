@@ -2,20 +2,26 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TravelEstimator;
 use App\Http\Controllers\Controller;
 use App\Models\Gtfs\GtfsStop;
 use App\Models\JourneyRecent;
+use App\Models\User;
+use App\Personalisation\PersonalisationWording;
+use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
-use App\Services\DisruptionService;
+use App\Services\KvbApiService;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
 use App\Transit\TripConditions;
+use App\Transit\TripDisruptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * "Take me there" — the only journey-planning surface in v2. Every entity
@@ -58,12 +64,15 @@ class TakeMeThereController extends Controller
     /** The tight option is a second full plan; only start it with this much budget left. */
     private const TIGHT_MIN_SECONDS = 4.0;
 
+    /** The boarding stops' boards (live trouble, cancelled runs): only with this much budget left. */
+    private const BOARDS_MIN_SECONDS = 1.5;
+
     public function __invoke(
         Request $request,
         RouteService $routes,
         FareAdvisor $fareAdvisor,
-        DisruptionService $disruptions,
         TripConditions $conditions,
+        TripDisruptions $tripDisruptions,
     ): JsonResponse {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -79,6 +88,9 @@ class TakeMeThereController extends Controller
             // "Show more options": also route via the city's interchanges to
             // surface alternative line combinations the Pareto set drops.
             'more' => ['nullable', 'boolean'],
+            // Plan a trip: the ways now, the boarding stops' live runs in a
+            // second request (JourneyChecksController).
+            'checks_later' => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
@@ -174,36 +186,31 @@ class TakeMeThereController extends Controller
             // cached). One that can't run in time leaves its municipality
             // unknown, and the fare is then estimated by distance and flagged.
             $lookups = $routes->withTimeBudget($this->secondsLeft($deadline));
+            // The municipality only: ~100 m points, so a moving origin's
+            // look-up stays cached.
             $ticket = $fareAdvisor->advise(
                 $transitJourney,
-                $lookups->reverseGeocode($from)?->municipality,
-                $lookups->reverseGeocode($to)?->municipality,
+                $lookups->reverseGeocode(new GeoPoint(round($from->lat, 3), round($from->lng, 3)))?->municipality,
+                $lookups->reverseGeocode(new GeoPoint(round($to->lat, 3), round($to->lng, 3)))?->municipality,
                 (bool) ($user->has_deutschlandticket ?? false),
             )->toArray();
         }
 
-        $journeyLines = collect($result->journeys)
-            ->flatMap(fn ($journey) => $journey->lines())
-            ->unique()
-            ->values();
+        // Delays and disruptions for these ways, in two tiers: the notices on
+        // their lines (and majors on the From or To stop's), live trouble and
+        // cancelled runs at the stops they board. The boards are read only
+        // while there's time left; asked for later, they come with the
+        // second request and the ways answer at once.
+        $later = (bool) ($validated['checks_later'] ?? false);
+        $trip = $tripDisruptions->for(
+            array_values($result->journeys),
+            $from,
+            $to,
+            boards: ! $later && $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS,
+        );
+        $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), array_values($result->journeys)), $from, $to) : null;
 
-        $relevantDisruptions = collect($disruptions->getLineDisruptions())
-            ->filter(fn ($d) => collect($d['affected_lines'] ?? [])
-                ->map(fn ($l) => (string) $l)
-                ->intersect($journeyLines)
-                ->isNotEmpty())
-            ->map(fn ($d) => [
-                'title' => $d['title'] ?? '',
-                'severity' => $d['severity'] ?? 'minor',
-                'lines' => $d['affected_lines'] ?? [],
-                // KVB's notice in plain English, when one is written; else its
-                // own words (German), and its page either way.
-                'brief' => $d['brief'] ?? null,
-                'details' => ($d['description'] ?? '') !== '' ? $d['description'] : null,
-                'url' => $d['url'] ?? null,
-            ])
-            ->values()
-            ->all();
+        $this->learn($user, $validated, $from, $to, $journeys);
 
         return response()->json([
             'source' => $result->source,
@@ -212,7 +219,11 @@ class TakeMeThereController extends Controller
             'from' => ['name' => $fromName, 'lat' => $from->lat, 'lng' => $from->lng],
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
             'ticket' => $ticket,
-            'disruptions' => $relevantDisruptions,
+            'disruptions' => $trip['notices'],
+            'trouble' => $trip['trouble'],
+            'gone' => $trip['gone'],
+            // The id the boarding stops' live runs are asked by; null when they're in.
+            'checks' => $checks,
             // Plan a trip's "We checked": the weather on the way, lifts out.
             'conditions' => $conditions->for($journeys),
             // Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
@@ -230,20 +241,27 @@ class TakeMeThereController extends Controller
      */
     private function nearestStop(GeoPoint $from): ?array
     {
-        $stop = GtfsStop::query()
-            ->where('location_type', 0)
-            ->whereNotNull('stop_lat')
-            ->whereNotNull('stop_lng')
-            ->selectRaw(
-                'stop_name, stop_lat, stop_lng, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist',
-                [$from->lat, $from->lng],
-            )
-            ->orderBy('dist')
-            ->first();
+        // Kept a day per ~10 m point, as scalars: the scan read every stop
+        // (456 ms on a cold database) for each plan.
+        $stop = Cache::remember(sprintf('plan_nearest_stop:%.4f,%.4f', $from->lat, $from->lng), 86_400, function () use ($from): ?array {
+            $row = GtfsStop::query()
+                ->where('location_type', 0)
+                ->whereNotNull('stop_lat')
+                ->whereNotNull('stop_lng')
+                ->selectRaw(
+                    'stop_name, stop_lat, stop_lng, (ABS(stop_lat - ?) + ABS(stop_lng - ?)) as dist',
+                    [$from->lat, $from->lng],
+                )
+                ->orderBy('dist')
+                ->first();
+
+            return $row === null ? null : ['stop_name' => (string) $row->stop_name, 'stop_lat' => (float) $row->stop_lat, 'stop_lng' => (float) $row->stop_lng];
+        });
 
         if ($stop === null) {
             return null;
         }
+        $stop = (object) $stop;
 
         return [
             'point' => new GeoPoint((float) $stop->stop_lat, (float) $stop->stop_lng),
@@ -339,5 +357,42 @@ class TakeMeThereController extends Controller
             + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
         return $r * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    /**
+     * What they looked up in Travel, for personalisation with their opt-in (SignalRecorder::transit):
+     * a KVB station they picked as where they go or start, and the lines of the way from one they
+     * picked; never where they are, a saved place (Home, Work) or an address.
+     *
+     * @param  array<string, mixed>  $validated
+     * @param  list<array<string, mixed>>  $journeys
+     */
+    private function learn(User $user, array $validated, GeoPoint $from, GeoPoint $to, array $journeys): void
+    {
+        if (! PersonalisationWording::covers($user, 2)) {
+            return;
+        }
+        $own = $user->places()->pluck('name')->map(fn (mixed $name): string => mb_strtolower(trim((string) $name)))->all();
+        $station = function (mixed $name, GeoPoint $at) use ($own): ?string {
+            $name = is_string($name) ? trim($name) : '';
+            if ($name === '' || in_array(mb_strtolower($name), $own, true)) {
+                return null;
+            }
+
+            return collect(app(KvbApiService::class)->stationPoints($name))
+                ->contains(fn (array $stop): bool => (new TravelEstimator)->haversineKm($at->lat, $at->lng, (float) $stop['lat'], (float) $stop['lng']) <= 0.3) ? $name : null;
+        };
+        $signals = app(SignalRecorder::class);
+        $where = $station($validated['to_name'] ?? null, $to);
+        if ($where !== null) {
+            $signals->transit($user, SignalItemType::Stop, $where);
+        }
+        $start = isset($validated['from_lat'], $validated['from_name']) ? $station($validated['from_name'], $from) : null;
+        if ($start !== null) {
+            $signals->transit($user, SignalItemType::Stop, $start);
+            foreach (collect($journeys[0]['legs'] ?? [])->pluck('line')->filter(fn (mixed $line): bool => is_string($line) && $line !== '')->unique()->take(3) as $line) {
+                $signals->transit($user, SignalItemType::Line, $line);
+            }
+        }
     }
 }

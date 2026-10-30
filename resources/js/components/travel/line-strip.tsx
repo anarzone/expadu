@@ -107,9 +107,8 @@ type LineStripProps = {
     second: StripEnd | null;
     /** What an end with no departures says. */
     empty?: string;
-    selected?: boolean;
-    /** Under the strip, full width (a CardStrip). */
-    extra?: ReactNode;
+    /** A chevron on the right: the strip opens its line's row (LineRow). */
+    chevron?: boolean;
     className?: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>;
 
@@ -119,8 +118,7 @@ export function LineStrip({
     first,
     second,
     empty = 'Other way: not recorded',
-    selected = false,
-    extra,
+    chevron = false,
     className,
     style,
     ...button
@@ -129,7 +127,7 @@ export function LineStrip({
         <button
             type="button"
             {...button}
-            className={cn('nearby-strip', selected && 'is-selected', className)}
+            className={cn('nearby-strip', chevron && 'has-chev', className)}
             style={
                 {
                     '--line': look.colour,
@@ -145,7 +143,13 @@ export function LineStrip({
                 <b />
             </span>
             <End end={first} side="right" empty={empty} />
-            {extra}
+            {chevron ? (
+                <span className="strip-chev" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </span>
+            ) : null}
         </button>
     );
 }

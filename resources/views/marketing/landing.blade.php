@@ -119,7 +119,7 @@
             <p class="xv-hero__lead"><strong>Expadu is the daily companion for expats, starting with Cologne.</strong> It knows your day: when to leave for the appointment, what to bring and something good for afterwards. In plain English, with paperwork linked to its official sources.</p>
             <div class="xv-hero__ctas">
                 @auth
-                    <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="{{ route('dashboard') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
+                    <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="{{ route('today') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @else
                     <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="#waitlistForm">Start free<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @endauth
@@ -526,7 +526,7 @@
             <p class="xv-lead" data-reveal="up" style="transition-delay: 900ms">Tell Expadu your situation once. Your day, your paperwork and your evenings stay joined up from there.</p>
             <div class="xv-join__ctas" data-reveal="up" style="transition-delay: 1100ms">
                 @auth
-                    <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="{{ route('dashboard') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
+                    <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="{{ route('today') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @else
                     <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="#waitlistForm">Start free in Cologne<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @endauth

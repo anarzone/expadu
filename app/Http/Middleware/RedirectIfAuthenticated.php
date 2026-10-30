@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ReturnPath;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +25,14 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                $home = route('dashboard');
+                // "Sign in again" from a page that only had a stale token
+                // (still signed in, by the remember cookie): back to it.
+                $return = ReturnPath::from($request->query('return'));
+                if ($return !== null) {
+                    return redirect($return)->with('status', "You're still signed in.");
+                }
+
+                $home = route('today');
 
                 return redirect($home)->with('status', "You're already signed in.");
             }

@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 import { TravelIcon } from '../travel-icon';
 import type { TravelIconName } from '../travel-icon';
 import type { PlanPlace } from './plan-model';
 
 /**
  * From and To (departures-next #journey-form .journey-fields): two lines in
- * one box with the swap between them, and the places that match what you
+ * one box, and the places that match what you
  * type under them (api/journey/suggest: your saved places first, then stops,
  * streets and places; before you type, your recent ones). A place picked
  * from the list keeps its coordinates; typed text alone isn't a place yet.
@@ -42,10 +43,7 @@ function suggest(
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
-            'X-CSRF-TOKEN':
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '',
+            ...csrfHeaders(),
         },
         body: JSON.stringify({ ...(q ? { q: q.slice(0, 100) } : {}), role }),
         signal,
@@ -90,7 +88,6 @@ type PlanFieldsProps = {
     /** The plan the destination belongs to (Today's places): shown in place of the field. */
     picked: { title: string; detail: string | null } | null;
     onClearPicked: () => void;
-    onSwap: () => void;
     /** Rest: one line ("Where to?") until you start. */
     onStart?: () => void;
     toRef?: React.Ref<HTMLInputElement>;
@@ -99,6 +96,11 @@ type PlanFieldsProps = {
     locating?: boolean;
     /** Why that didn't work, in words. */
     locateNote?: string | null;
+    /** Sharing was off: share it here. */
+    onAllowLocation?: () => void;
+    /** The To line as Home's or Work's address line ("Home address"). */
+    toLabel?: string;
+    toPlaceholder?: string;
 };
 
 export function PlanFields({
@@ -109,12 +111,14 @@ export function PlanFields({
     fromNote,
     picked,
     onClearPicked,
-    onSwap,
     onStart,
     toRef,
     onUseLocation,
     locating = false,
     locateNote = null,
+    onAllowLocation,
+    toLabel = 'To',
+    toPlaceholder = 'Where to?',
 }: PlanFieldsProps) {
     const listId = useId();
     const [open, setOpen] = useState<'from' | 'to' | null>(null);
@@ -266,16 +270,6 @@ export function PlanFields({
                     onBlur={() => setFromFocused(false)}
                 />
             </div>
-            <button
-                className="swap icon-button"
-                type="button"
-                aria-label="Swap origin and destination"
-                onClick={onSwap}
-            >
-                <span data-icon="swap">
-                    <TravelIcon name="swap" />
-                </span>
-            </button>
             <div
                 className={
                     picked ? 'field to-field is-picked' : 'field to-field'
@@ -288,11 +282,11 @@ export function PlanFields({
                 >
                     <TravelIcon name="pin" />
                 </span>
-                <label htmlFor="to">To</label>
+                <label htmlFor="to">{toLabel}</label>
                 <input
                     id="to"
                     ref={toRef}
-                    placeholder="Where to?"
+                    placeholder={toPlaceholder}
                     value={to.text}
                     onChange={(event) =>
                         onTo({ text: event.target.value, place: null })
@@ -404,6 +398,19 @@ export function PlanFields({
             {locateNote ? (
                 <p className="from-locate-note" role="status">
                     {locateNote}
+                    {onAllowLocation ? (
+                        <>
+                            {' '}
+                            <button
+                                type="button"
+                                className="text-action"
+                                disabled={locating}
+                                onClick={onAllowLocation}
+                            >
+                                Share my location
+                            </button>
+                        </>
+                    ) : null}
                 </p>
             ) : null}
         </div>

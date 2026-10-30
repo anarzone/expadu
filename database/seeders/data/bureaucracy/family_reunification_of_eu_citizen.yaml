@@ -9,64 +9,91 @@ tasks:
     key: fameu.aufenthaltskarte
     depends_on: []
     description: |
-      As the non-EU family member of an EU citizen who has freedom of movement, you
-      follow EU free-movement law rather than the regular residence rules. If you meet
-      the conditions, Cologne issues you an Aufenthaltskarte, which should be valid for
-      five years. Contact the Bezirksausländeramt for the district you live in: an
-      in-person appointment is required within the first three months after entry.
-      Cologne lists a fee of €22.80 for under-24s and €37 for over-24s. Bring documents
-      like the ones below; the office tells you if it needs anything else.
+      Contact the Bezirksausländeramt (district foreigners' office) for the district you live in:
+      an in-person appointment is required within the first three months after entry.
+      If you meet the conditions, Cologne issues you an Aufenthaltskarte, which should be valid for
+      five years. Cologne lists a fee of €22.80 for under-24s and €37 for over-24s.
+      Who qualifies: as the non-EU family member of an EU citizen who has freedom of movement,
+      you can come to Germany together with them. This applies to spouses, registered partners and
+      children under 21. Older children, grandchildren, parents and grandparents can also come
+      if the EU citizen is financially supporting them. If the EU citizen is studying, a special
+      rule applies; check Cologne's page.
     phase: first_30_days
     urgency: critical
-    deadline_type: none
+    deadline_type: days_since_arrival
+    deadline_days: 89
     applies_if:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
-    documents_required:
-      - label: National passport
-      - label: Marriage or birth certificate proving the family link
-      - label: Proof that the EU citizen has freedom of movement in Germany
-      - label: Biometric photo
+    documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union
       - https://www.gesetze-im-internet.de/freiz_gg_eu_2004/__5.html
     how_to_steps:
+      - title: 'Before you travel: check if you need a visa'
+        body: Depending on your nationality, you may need a family-reunification visa to enter Germany.
       - title: Request an appointment with your Bezirksausländeramt
-        body: Cologne's page links an online form to request the appointment. Say you are applying for an Aufenthaltskarte as the family member of an EU citizen.
+        body: You can request the appointment online through Cologne's page. Say you are applying for an Aufenthaltskarte as the family member of an EU citizen. Ask which documents to bring.
         link: https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union
-      - title: Entering Germany
-        body: Depending on your nationality, you may need a family-reunification visa to enter.
       - title: Keep the confirmation you receive
         body: Once you have given the required information, you receive a certificate confirming it straight away. The card itself is issued within six months.
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§5 FreizügG/EU', url: 'https://www.gesetze-im-internet.de/freiz_gg_eu_2004/__5.html'}
       - {kind: implementation, label: 'Stadt Köln · EU free movement, family members', url: 'https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union'}
     claims:
-      - id: card-issued
-        states: If you meet the conditions, Cologne issues you an Aufenthaltskarte
-        source: 'Stadt Köln · EU free movement, family members'
-        quote: Erfüllen Sie die Voraussetzungen für das Freizügigkeitsrecht, stellen wir Ihnen eine Aufenthaltskarte aus.
-      - id: five-years
-        states: should be valid for five years
-        source: '§5 FreizügG/EU'
-        quote: eine Aufenthaltskarte für Familienangehörige von Unionsbürgern ausgestellt, die fünf Jahre gültig sein soll.
       - id: district-office
-        states: Contact the Bezirksausländeramt for the district you live in
+        states: Contact the Bezirksausländeramt (district foreigners' office) for the district you live in
         source: 'Stadt Köln · EU free movement, family members'
         quote: Zuständig ist das Bezirksausländeramt, in dessen Bezirk Sie wohnen.
       - id: three-months
         states: an in-person appointment is required within the first three months after entry
         source: 'Stadt Köln · EU free movement, family members'
         quote: Eine Vorsprache ist zwingend innerhalb der ersten drei Monate nach Einreise notwendig.
-      - id: fee
-        states: €22.80 for under-24s and €37 for over-24s
+      - id: deadline
+        covers: deadline
         source: 'Stadt Köln · EU free movement, family members'
-        quote: 'unter 24-Jährige: 22,80 Euro über 24-Jährige: 37 Euro'
+        quote: Eine Vorsprache ist zwingend innerhalb der ersten drei Monate nach Einreise notwendig.
+      - id: card-issued
+        states: If you meet the conditions, Cologne issues you an Aufenthaltskarte
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: stellen wir Ihnen eine Aufenthaltskarte aus.
+      - id: five-years
+        states: should be valid for five years
+        source: '§5 FreizügG/EU'
+        quote: eine Aufenthaltskarte für Familienangehörige von Unionsbürgern ausgestellt, die fünf Jahre gültig sein soll.
+      - id: fee-under-24
+        states: €22.80 for under-24s
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: 'unter 24-Jährige: 22,80 Euro'
+      - id: fee-over-24
+        states: €37 for over-24s
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: 'über 24-Jährige: 37 Euro'
+      - id: come-together
+        states: you can come to Germany together with them
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Als drittstaatsangehöriges Familienmitglied können Sie zusammen mit einer freizügigkeitsberechtigten Person einreisen.
+      - id: core-family
+        states: This applies to spouses, registered partners and children under 21
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Das gilt für Eheleute, eingetragene Lebenspartner*innen und für Kinder bis zum 21. Lebensjahr.
+      - id: dependent-relatives
+        states: Older children, grandchildren, parents and grandparents can also come if the EU citizen is financially supporting them
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Ältere Kinder, Enkel, Eltern und Großeltern können ebenfalls nach Deutschland einreisen, wenn Ihnen die freizügigkeitsberechtigte Person Unterhalt gewährt.
+      - id: student-case
+        states: If the EU citizen is studying, a special rule applies
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Eine Besonderheit besteht, wenn die freizügigkeitsberechtigte Person studiert.
+      - id: online-appointment
+        states: You can request the appointment online
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Einen Termin zur Vorsprache können Sie online beantragen.
       - id: visa
         states: you may need a family-reunification visa to enter
         source: 'Stadt Köln · EU free movement, family members'
