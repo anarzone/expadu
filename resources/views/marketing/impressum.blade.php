@@ -29,10 +29,8 @@
     <h2>Verantwortlich für den Inhalt / Responsible for content</h2>
     <p>Anar Haqverdiyev (Anschrift wie oben / address as above)</p>
 
-    <h2>EU-Streitschlichtung / EU dispute resolution</h2>
+    <h2>Verbraucherstreitbeilegung / Consumer dispute resolution</h2>
     <p>
-        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
-        <a href="https://ec.europa.eu/consumers/odr/" rel="noopener" target="_blank">https://ec.europa.eu/consumers/odr/</a>.
         Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
         Verbraucherschlichtungsstelle teilzunehmen.
     </p>
