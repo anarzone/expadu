@@ -1632,6 +1632,7 @@ final class AssistantTools
                         'key' => ['type' => 'string', 'enum' => $registry->keys()->all()],
                         'value' => ['type' => 'string', 'description' => 'a date as YYYY-MM-DD, yes or no, a whole number, or one of its options'],
                         'choices' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'instead of value: the options their words fit, when more than one does'],
+                        'state' => ['type' => 'string', 'enum' => ['unknown', 'declined', 'not_applicable'], 'description' => 'instead of value: they\'re not sure, would rather not say, or it doesn\'t apply to them'],
                     ], 'required' => ['key']]],
                 ['name' => 'paperwork_step', 'description' => 'Marks a step of one of their Paperwork tasks done, or not done, by the task and step from the paperwork tool.',
                     'input_schema' => ['type' => 'object', 'properties' => [
@@ -1639,15 +1640,15 @@ final class AssistantTools
                         'step' => ['type' => 'string', 'description' => 'the step\'s id, else its title'],
                         'done' => ['type' => 'boolean'],
                     ], 'required' => ['task', 'step']]],
-                ['name' => 'paperwork_report', 'description' => 'Records on one of their Paperwork tasks that they submitted it (the day), or an appointment they have (the day and time).',
+                ['name' => 'paperwork_report', 'description' => 'Records on one of their Paperwork tasks that they submitted it (the day), an appointment they have (the day and time), that it\'s completed or cancelled (the day, when they say), or reopens one they completed or cancelled. Waiting for the office and the rest are reported in Paperwork (open_in_app "paperwork_task_status").',
                     'input_schema' => ['type' => 'object', 'properties' => [
                         'task' => ['type' => 'string', 'description' => 'the task\'s key, else its title'],
-                        'event' => ['type' => 'string', 'enum' => ['submitted', 'appointment']],
-                        'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD'],
+                        'event' => ['type' => 'string', 'enum' => ['submitted', 'appointment', 'completed', 'cancelled', 'reopened']],
+                        'date' => ['type' => 'string', 'description' => 'YYYY-MM-DD; for submitted and appointment, and for completed or cancelled when they say'],
                         'time' => ['type' => 'string', 'description' => 'HH:MM, for an appointment'],
                         'minutes' => ['type' => 'integer', 'description' => 'how long the appointment is, when they say'],
                         'channel' => ['type' => 'string', 'enum' => ['online', 'post', 'email', 'in_person'], 'description' => 'how they submitted it, when they say'],
-                    ], 'required' => ['task', 'event', 'date']]],
+                    ], 'required' => ['task', 'event']]],
             ],
         ];
     }

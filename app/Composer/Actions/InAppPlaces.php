@@ -23,6 +23,35 @@ final class InAppPlaces
                 'label' => 'Open Your record →', 'href' => '/paperwork?record=stop'],
             'note' => 'You can resume processing there at any time.',
         ],
+        'download_paperwork_record' => [
+            'title' => 'Download your Paperwork record',
+            'text' => 'A copy of your Paperwork record is downloaded in Paperwork, from your record’s own actions.',
+            'place' => ['crumb' => 'Paperwork › Share your plan › Your record', 'actions' => self::RECORD, 'here' => 'Download a copy',
+                'label' => 'Open Your record →', 'href' => '/paperwork?record=download'],
+        ],
+        'paperwork_task_status' => [
+            'title' => 'Report where a task stands',
+            'text' => 'Waiting for the office, the office needing something from you, something holding you up, or not tracking a task are reported on the task in Paperwork, where each report can be corrected.',
+            'place' => ['crumb' => 'Paperwork › your task', 'actions' => ['Waiting for the office', 'The office needs something from me', 'Something is holding me up'],
+                'here' => 'Waiting for the office', 'label' => 'Open Paperwork →', 'href' => '/paperwork'],
+            'note' => 'Done, cancelled or reopened I can record here.',
+        ],
+        'paperwork_conflict' => [
+            'title' => 'Settle two answers',
+            'text' => 'Paperwork has two different answers to the same question. You see both in Paperwork and keep the right one.',
+            'place' => ['crumb' => 'Paperwork › Your situation', 'actions' => ['Your situation'], 'here' => 'Your situation',
+                'label' => 'Open Paperwork →', 'href' => '/paperwork'],
+        ],
+        'paperwork_documents' => [
+            'title' => 'Your documents',
+            'text' => 'Whether you have a document, when it expires, archiving it and using it for a step are kept in Paperwork’s Documents, which only you see.',
+            'place' => ['crumb' => 'Paperwork › Documents', 'actions' => ['Documents'], 'here' => 'Documents', 'label' => 'Open Paperwork →', 'href' => '/paperwork'],
+        ],
+        'paperwork_get_started' => [
+            'title' => 'Start Paperwork',
+            'text' => 'Paperwork sets up your record from your situation and your city, in Paperwork itself.',
+            'place' => ['crumb' => 'Paperwork', 'actions' => ['Get started'], 'here' => 'Get started', 'label' => 'Open Paperwork →', 'href' => '/paperwork'],
+        ],
         'withdraw_ai_permission' => [
             'text' => 'Withdrawing your permission for Composer’s AI is your choice to make, in its notice under the box. Composer then answers without the AI.',
             // The notice under Composer's box holds Withdraw (ai-notice.tsx): opened by the page, not a link.

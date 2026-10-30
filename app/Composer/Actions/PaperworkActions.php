@@ -21,6 +21,7 @@ use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
@@ -91,6 +92,9 @@ final class PaperworkActions implements ComposerAction
 
     private const NOTE = 'Saved only for you; nothing is sent to an authority.';
 
+    /** An answer without a value, as Paperwork's Your situation says it (facts.ts). */
+    private const STATES = ['unknown' => 'I’m not sure', 'declined' => 'Prefer not to say', 'not_applicable' => 'Doesn’t apply to me'];
+
     public function __construct(private FactRegistry $registry, private ConfirmedFactView $facts, private AccountPlanEntry $plans) {}
 
     /**
@@ -124,8 +128,12 @@ final class PaperworkActions implements ComposerAction
                 .collect($s['dates'] ?? [])->filter(fn (array $d): bool => is_string($d['date'] ?? null))->map(fn (array $d): string => ', aim for '.self::day($d['date']))->first())->implode('; '))
             ->implode("\n");
         $answers = collect($rows)->map(fn (array $r): string => "{$r['label']}: {$r['value']} (key {$r['key']})")->implode('; ');
+        // The answers without a row on the card (what they want next, a sponsor's title…): read back to the AI, not shown.
+        $others = $this->registry->all()->keys()->diff(self::ROWS)
+            ->filter(fn (string $key): bool => ($view['states'][$key] ?? null) !== null || isset($view['values'][$key]))
+            ->map(fn (string $key): string => "{$key} (".$this->registry->definition($key)->question.'): '.$this->said($key, $view, $now))->implode('; ');
 
-        return ['text' => 'Their Paperwork record, shown to them as a card. Answers: '.($answers ?: 'none yet').".\n".($tasks ?: 'No open tasks.'),
+        return ['text' => 'Their Paperwork record, shown to them as a card. Answers: '.($answers ?: 'none yet').".\n".($others !== '' ? "Other answers: {$others}.\n" : '').($tasks ?: 'No open tasks.'),
             'block' => ['type' => 'record', 'domain' => 'paperwork', 'title' => 'Your Paperwork record', 'rows' => $rows,
                 'link' => ['label' => 'Open Paperwork →', 'href' => route('paperwork', [], false)]]];
     }
@@ -137,7 +145,7 @@ final class PaperworkActions implements ComposerAction
         return match ($action) {
             'change_paperwork_fact' => $this->prepareFact($user, $person, $input, $now),
             'paperwork_step' => $this->prepareStep($user, $input),
-            'paperwork_report' => $this->prepareReport($user, $input, $now),
+            'paperwork_report' => ($input['event'] ?? null) === 'reopened' ? $this->prepareReopen($user, $input) : $this->prepareReport($user, $input, $now),
             default => throw new ActionRefused('Composer can’t change that in Paperwork.'),
         };
     }
@@ -151,10 +159,12 @@ final class PaperworkActions implements ComposerAction
                 'change_paperwork_fact' => (function () use ($user, $person, $prepared): array {
                     // Typed into its row by them: their own answer. Read from their words by the AI and
                     // applied by their tap: a confirmed extraction.
-                    $fact = app(RecordFactChange::class)->execute($user, $person, $prepared['key'], $prepared['value'], null, $prepared['revision'], 'value',
+                    $fact = app(RecordFactChange::class)->execute($user, $person, $prepared['key'], $prepared['value'], null, $prepared['revision'], $prepared['set'] ?? 'value',
                         ($prepared['manual'] ?? false) ? FactInputMethod::Structured : FactInputMethod::ConfirmedExtraction);
 
-                    return ['title' => sprintf(self::LABELS[$prepared['key']][2] ?? (self::label($prepared['key']).': %s'), $prepared['to']),
+                    // "Your visa now runs until 12 Feb 2027"; an answer without a value as its row says it.
+                    return ['title' => ($prepared['set'] ?? 'value') === 'value' ? sprintf(self::LABELS[$prepared['key']][2] ?? (self::label($prepared['key']).': %s'), $prepared['to'])
+                        : self::label($prepared['key']).': '.$prepared['to'],
                         'sub' => ($prepared['from'] !== null ? "It was {$prepared['from']}. " : '').self::NOTE,
                         'undo' => ['kind' => 'fact', 'fact' => $fact->id, 'revision' => (int) $fact->case->fact_version, 'key' => $prepared['key'],
                             'previous' => $prepared['previous'], 'state' => $prepared['state'], 'from' => $prepared['from']]];
@@ -169,10 +179,16 @@ final class PaperworkActions implements ComposerAction
                 })(),
                 default => (function () use ($user, $person, $prepared): array {
                     [$process, $version, $token] = $this->tracked($user, $person, $prepared);
+                    if ($prepared['start_first'] ?? false) {
+                        app(RecordProcessEvent::class)->execute($user, $process, 'preparation_started', [], $version, (string) Str::uuid(), $token);
+                        [$process, $version, $fresh] = $this->current($user, $process->id);
+                        $token = $fresh ?? $token;
+                    }
                     $event = app(RecordProcessEvent::class)->execute($user, $process, $prepared['event'], $prepared['payload'], $version, (string) Str::uuid(), $token);
 
                     return ['title' => $prepared['done'], 'sub' => "{$prepared['task']}. ".self::NOTE,
-                        'undo' => ['kind' => $prepared['event'], 'process' => $process->id, 'event' => $event->id, 'appointment' => $prepared['payload']['appointment_id'] ?? null, 'task' => $prepared['task']]];
+                        'undo' => ['kind' => $prepared['event'], 'process' => $process->id, 'event' => $event->id, 'appointment' => $prepared['payload']['appointment_id'] ?? null,
+                            'task' => $prepared['task'], 'was' => $prepared['was'] ?? null]];
                 })(),
             };
         } catch (Throwable $error) {
@@ -205,6 +221,20 @@ final class PaperworkActions implements ComposerAction
 
                     return "Undone. “{$undo['name']}” is ".($undo['done'] ? 'open again' : 'marked done again');
                 })(),
+                // Closed: open again (Paperwork undoes work by reopening it, never by rewriting what was reported).
+                'completion_reported', 'cancellation_reported' => (function () use ($user, $undo): string {
+                    [$process, $version] = $this->current($user, $undo['process']);
+                    app(RecordProcessEvent::class)->execute($user, $process, 'process_reopened', [], $version, (string) Str::uuid());
+
+                    return "Undone. {$undo['task']} is open again";
+                })(),
+                'process_reopened' => (function () use ($user, $undo): string {
+                    [$process, $version] = $this->current($user, $undo['process']);
+                    $closed = ($undo['was'] ?? 'completed') === 'cancelled';
+                    app(RecordProcessEvent::class)->execute($user, $process, $closed ? 'cancellation_reported' : 'completion_reported', [], $version, (string) Str::uuid());
+
+                    return "Undone. {$undo['task']} is marked ".($closed ? 'cancelled' : 'completed').' again';
+                })(),
                 'submission_recorded' => (function () use ($user, $undo): string {
                     [$process, $version] = $this->current($user, $undo['process']);
                     app(RecordProcessEvent::class)->execute($user, $process, 'submission_retracted', ['event_id' => $undo['event']], $version, (string) Str::uuid());
@@ -233,26 +263,32 @@ final class PaperworkActions implements ComposerAction
     private function prepareFact(User $user, BureaucracyPerson $person, array $input, CarbonImmutable $now): array
     {
         $key = (string) ($input['key'] ?? '');
+        // Not sure, rather not say, or doesn't apply, as Paperwork's Your situation offers them: no value.
+        $set = in_array($input['state'] ?? null, array_keys(self::STATES), true) ? $input['state'] : 'value';
         try {
             $definition = $this->registry->definition($key);
-            $value = $definition->normalize(self::typed($definition, $input['value'] ?? null));
+            $value = $set === 'value' ? $definition->normalize(self::typed($definition, $input['value'] ?? null)) : null;
         } catch (DomainException) {
             throw new ActionRefused($this->registry->all()->has($key) ? 'That isn’t an answer Paperwork takes for it.' : 'Paperwork doesn’t keep that answer.');
+        }
+        // Only the questions Paperwork offers "Doesn’t apply to me" on take it.
+        if ($set === 'not_applicable' && ! $definition->allowsNotApplicable) {
+            throw new ActionRefused('Paperwork doesn’t offer “Doesn’t apply to me” for this. It can be “Not sure”, “Rather not say”, or an answer.');
         }
         $view = $this->view($person);
         $state = $view['states'][$key] ?? 'unknown';
         if ($state === 'conflict') {
-            throw new ActionRefused('Paperwork has two different answers for this. Settle them in Paperwork first.');
+            throw new ActionRefused('Paperwork has two different answers for this, settled in Paperwork: open_in_app "paperwork_conflict".');
         }
-        if ($state === 'value' && ($view['values'][$key] ?? null) === $value) {
+        if ($set === 'value' ? $state === 'value' && ($view['values'][$key] ?? null) === $value : $state === $set) {
             throw new ActionRefused('Paperwork already says so.');
         }
-        $from = $state === 'value' ? self::value($key, $view['values'][$key] ?? null) : null;
-        $to = self::value($key, $value);
+        $from = $state === 'value' ? self::value($key, $view['values'][$key] ?? null) : (self::STATES[$state] ?? null);
+        $to = $set === 'value' ? self::value($key, $value) : self::STATES[$set];
 
-        return ['key' => $key, 'value' => $value, 'previous' => $view['values'][$key] ?? null, 'state' => $state, 'revision' => (int) $view['revision'],
+        return ['key' => $key, 'value' => $value, 'set' => $set, 'previous' => $view['values'][$key] ?? null, 'state' => $state, 'revision' => (int) $view['revision'],
             'from' => $from, 'to' => $to, 'propose' => 'Change '.(self::LABELS[$key][1] ?? 'this answer').'?', 'sub' => $this->dated($user, $key),
-            'date' => $definition->type === 'date',
+            'date' => $definition->type === 'date' && $set === 'value',
             // Both ways of saying a date, so the AI may say either.
             'about' => self::label($key).': '.($from !== null ? 'from '.self::long($view['values'][$key] ?? null, $from).' ' : '').'to '.self::long($value, $to)];
     }
@@ -335,6 +371,12 @@ final class PaperworkActions implements ComposerAction
     /** @return array<string, mixed> */
     private function prepareReport(User $user, array $input, CarbonImmutable $now): array
     {
+        // Where it stands with the office, or not tracking it: reported on the task in Paperwork, where
+        // each report can be corrected (open_in_app paperwork_task_status), whichever task it is.
+        if (! in_array($input['event'] ?? null, ['submitted', 'appointment', 'completed', 'cancelled'], true)) {
+            throw new ActionRefused('Composer records that they submitted something, an appointment, or that a task is completed, cancelled or reopened. '
+                .'Waiting for the office, the office needing something, being held up or not tracking a task are reported in Paperwork: open_in_app "paperwork_task_status".');
+        }
         $process = $this->task($user, (string) ($input['task'] ?? ''));
         $date = is_string($input['date'] ?? null) ? $input['date'] : null;
         if (($input['event'] ?? null) === 'submitted') {
@@ -360,7 +402,40 @@ final class PaperworkActions implements ComposerAction
                 'propose' => "Record your {$process['title']} appointment on ".self::day($date)." at {$time}?", 'sub' => self::NOTE,
                 'done' => "Recorded your {$process['title']} appointment, ".self::day($date)." at {$time}"];
         }
-        throw new ActionRefused('Composer can record that they submitted something, or an appointment; other reports are made in Paperwork.');
+        if (in_array($input['event'] ?? null, ['completed', 'cancelled'], true)) {
+            $done = $input['event'] === 'completed';
+            if ($date !== null && CalendarDate::historical($date) === null) {
+                throw new ActionRefused('Say the day it happened, on or before today, or leave it out.');
+            }
+
+            return [...$this->process($process), 'event' => $done ? 'completion_reported' : 'cancellation_reported', 'payload' => array_filter(['occurred_on' => $date]),
+                // Never started in Paperwork: it's started first, as reporting it there does.
+                'start_first' => in_array($process['state']['workflow'] ?? 'not_started', ['not_started', 'blocked'], true),
+                'propose' => "Mark {$process['title']} as ".($done ? 'completed' : 'cancelled').'?', 'sub' => self::NOTE,
+                'done' => "{$process['title']} is marked ".($done ? 'completed' : 'cancelled')];
+        }
+
+        throw new LogicException('Every report Composer records is handled above.');
+    }
+
+    /**
+     * A task they completed or cancelled, opened again (Paperwork's "Reopen this task"); Undo
+     * closes it again as it was.
+     *
+     * @return array<string, mixed>
+     */
+    private function prepareReopen(User $user, array $input): array
+    {
+        $said = mb_strtolower(trim((string) ($input['task'] ?? '')));
+        $found = array_values(array_filter($this->plan($user)['processes'] ?? [], fn (array $p): bool => ($p['is_closed'] ?? false)
+            && ($p['occurrence_key'] === ($input['task'] ?? null) || ($said !== '' && str_contains(mb_strtolower((string) $p['title']), $said)))));
+        if (count($found) !== 1) {
+            throw new ActionRefused($found === [] ? 'No completed or cancelled Paperwork task fits that.' : 'More than one closed Paperwork task fits. Ask which.');
+        }
+        $was = ($found[0]['state']['workflow'] ?? 'completed') === 'cancelled' ? 'cancelled' : 'completed';
+
+        return [...$this->process($found[0]), 'event' => 'process_reopened', 'payload' => [], 'was' => $was,
+            'propose' => "Reopen {$found[0]['title']}?", 'sub' => self::NOTE, 'done' => "{$found[0]['title']} is open again"];
     }
 
     /**
@@ -372,7 +447,7 @@ final class PaperworkActions implements ComposerAction
     {
         $person = BureaucracyPerson::query()->where('account_user_id', $user->id)->first();
         if ($person === null || $person->record_status !== 'active' || $person->processing_stopped_at !== null || $person->dossier()->doesntExist()) {
-            throw new ActionRefused('There’s no Paperwork record in use to change. Paperwork sets one up from your situation.');
+            throw new ActionRefused('There’s no Paperwork record in use to change. Paperwork sets one up from your situation: open_in_app "paperwork_get_started".');
         }
 
         return $person;
