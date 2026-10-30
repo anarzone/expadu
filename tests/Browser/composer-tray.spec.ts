@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// 🔒 Direction B (owner, 22 Oct 2026): the tray's Send asks Composer in place, on
-// the first press, under the AI line the tray shows (that request's own permit),
-// and the answer drops under the box. Closing keeps the conversation; reopening
-// asks nothing again; Full Composer carries on with it.
+// 🔒 The tray's panel (owner, 22 Oct 2026): Send asks Composer in place, on the
+// first press, under the AI line the tray shows (that request's own permit), and
+// the conversation grows above the box. Closing keeps it; "Back to your
+// conversation" reopens it and asks nothing again; Full Composer carries on.
 const NOTICE = {
     purpose: 'composer_parse',
     scope: 'single_request',
@@ -55,7 +55,7 @@ function expectPermit(body: Parsed) {
     });
 }
 
-test('🔒 one press of the tray’s Send answers under the box, with its permit', async ({
+test('🔒 one press of the tray’s Send answers above the box, with its permit', async ({
     page,
     isMobile,
 }) => {
@@ -63,7 +63,7 @@ test('🔒 one press of the tray’s Send answers under the box, with its permit
     await page.goto('/dashboard');
     const tray = await openTray(page, isMobile);
     const box = tray.getByRole('textbox', { name: 'Your request to Composer' });
-    const answer = tray.getByRole('region', { name: 'Composer’s answer' });
+    const answer = tray.getByRole('region', { name: 'Composer', exact: true });
     const text = `Find a quiet park ${Date.now()}`;
 
     await box.fill(text);
@@ -88,17 +88,13 @@ test('🔒 one press of the tray’s Send answers under the box, with its permit
     expect(new URL(page.url()).pathname).toBe('/dashboard');
     await expect(box).toHaveValue('');
 
-    // A second request: the first folds away.
+    // A second request: a follow-up in the same conversation, the first above it.
     const next = `Somewhere for coffee ${Date.now()}`;
     await box.fill(next);
     await box.press('Enter');
     await expect(answer.getByText(next, { exact: true })).toBeVisible();
     await expect(page.locator('.composer-working')).toHaveCount(0);
-    await expect(answer.getByText(text, { exact: true })).toHaveCount(0);
-    const earlier = answer.getByRole('button', { name: /earlier message/ });
-    await expect(earlier).toBeVisible();
-    await earlier.click();
-    await expect(answer.getByText(text, { exact: true })).toBeVisible();
+    await expect(answer.getByText(text, { exact: true })).toHaveCount(1);
     expect(parsed).toHaveLength(2);
     expectPermit(parsed[1]);
 
@@ -110,14 +106,14 @@ test('🔒 one press of the tray’s Send answers under the box, with its permit
         .click();
     await expect(
         page
-            .getByRole('region', { name: 'Composer’s answer' })
+            .getByRole('region', { name: 'Composer', exact: true })
             .getByText(next, { exact: true }),
     ).toBeVisible();
     expect(parsed).toHaveLength(2);
 
     // Full Composer carries on with the same conversation.
     await page
-        .getByRole('region', { name: 'Composer’s answer' })
+        .getByRole('region', { name: 'Composer', exact: true })
         .getByRole('link', { name: 'Open full Composer' })
         .click();
     await page.waitForURL(/\/composer$/);
