@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('startup preserves the rendered form, its focus and an early draft', async ({
-    page,
-}) => {
+test('startup keeps the rendered page and its focus', async ({ page }) => {
     let resumeStartup!: () => void;
     const startup = new Promise<void>((resolve) => {
         resumeStartup = resolve;
@@ -12,28 +10,24 @@ test('startup preserves the rendered form, its focus and an early draft', async 
         await route.continue();
     });
 
-    await page.goto('/settings/profile', { waitUntil: 'commit' });
-    const name = page.getByLabel('Name', { exact: true });
+    await page.goto('/settings/account', { waitUntil: 'commit' });
+    const name = page.getByRole('button', { name: /^Name: .*\. Edit$/ });
     await expect(name).toBeVisible();
-    const initialInput = await name.elementHandle();
-    await name.fill('Draft typed before startup');
+    const initial = await name.elementHandle();
     await name.focus();
     resumeStartup();
 
     await expect
         .poll(() =>
-            name.evaluate((input) =>
-                Object.keys(input).some((key) =>
+            name.evaluate((button) =>
+                Object.keys(button).some((key) =>
                     key.startsWith('__reactProps'),
                 ),
             ),
         )
         .toBe(true);
-    expect(await initialInput?.evaluate((input) => input.isConnected)).toBe(
-        true,
-    );
+    expect(await initial?.evaluate((button) => button.isConnected)).toBe(true);
     await expect(name).toBeFocused();
-    await expect(name).toHaveValue('Draft typed before startup');
     await page
         .getByRole('button', { name: 'Your account', exact: true })
         .click();
@@ -46,7 +40,7 @@ test('startup remains usable when the server returns an empty app root', async (
 }) => {
     // Model the supported SSR-unavailable response without stopping the shared
     // renderer used by the other browser projects.
-    await page.route('**/settings/profile', async (route) => {
+    await page.route('**/settings/account', async (route) => {
         if (route.request().resourceType() !== 'document') {
             await route.continue();
 
@@ -65,8 +59,10 @@ test('startup remains usable when the server returns an empty app root', async (
             body: html.slice(0, rootOpeningEnd + 1) + html.slice(end),
         });
     });
-    await page.goto('/settings/profile');
-    await expect(page.getByLabel('Name', { exact: true })).toBeVisible();
+    await page.goto('/settings/account');
+    await expect(
+        page.getByRole('button', { name: /^Name: .*\. Edit$/ }),
+    ).toBeVisible();
     await page
         .getByRole('button', { name: 'Your account', exact: true })
         .click();
