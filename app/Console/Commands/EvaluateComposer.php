@@ -554,16 +554,20 @@ class EvaluateComposer extends Command
     }
 
     /**
-     * A plan the case starts from, put in as Composer puts in a plan it made in a conversation.
+     * A plan the case starts from, put in as Composer puts in a plan it made in a conversation. Its
+     * stops are named, since spot ids change with each catalogue import: the active canonical place
+     * of that name, the oldest if there are two.
      *
-     * @param  array{day: string, stops: list<array{spot: int, start: string, end: string}>}  $seed
+     * @param  array{day: string, stops: list<array{place: string, start: string, end: string}>}  $seed
      */
     private function seedPlan(User $user, array $seed, CarbonImmutable $now): void
     {
         $day = PlanDay::dayOf($seed['day'] ?? null, $now) ?? throw new \RuntimeException('Unknown seed day.');
-        $candidates = collect(app(CandidateRepository::class)->byIds(array_map(fn (array $stop): string => "spot:{$stop['spot']}", $seed['stops']), $day))->keyBy('id');
-        $slots = array_map(fn (array $stop): array => (new PlanSlot($candidates["spot:{$stop['spot']}"] ?? throw new \RuntimeException("Seed spot {$stop['spot']} is unavailable."),
-            $day->setTimeFromTimeString($stop['start']), $day->setTimeFromTimeString($stop['end']), 0))->toArray(), $seed['stops']);
+        $ids = array_map(fn (array $stop): string => 'spot:'.(Spot::query()->canonical()->where('is_active', true)->where('name', $stop['place'])->orderBy('id')->value('id')
+            ?? throw new \RuntimeException("Seed place {$stop['place']} isn't in the catalogue.")), $seed['stops']);
+        $candidates = collect(app(CandidateRepository::class)->byIds($ids, $day))->keyBy('id');
+        $slots = array_map(fn (array $stop, string $id): array => (new PlanSlot($candidates[$id] ?? throw new \RuntimeException("Seed place {$stop['place']} is unavailable."),
+            $day->setTimeFromTimeString($stop['start']), $day->setTimeFromTimeString($stop['end']), 0))->toArray(), $seed['stops'], $ids);
         $token = 'eval-'.Str::random(12);
         app(PrivatePlanCache::class)->putHandoff($user, $token, ['date' => $day->toDateString(),
             'constraints' => (new Constraints(windowStart: $day->setTime(10, 0), windowEnd: $day->setTime(20, 0)))->toArray(), 'slots' => $slots]);

@@ -47,14 +47,14 @@ final class InAppPlaces
         'change_email' => [
             'title' => 'Change your email',
             'text' => 'A new email needs confirming before it’s yours, so it’s changed in Settings, which sends you a link.',
-            'place' => ['crumb' => 'Settings › Profile › Account', 'actions' => ['Name', 'Email address'], 'here' => 'Email address',
-                'label' => 'Open Settings →', 'href' => '/settings/profile'],
+            'place' => ['crumb' => 'Settings › Your account', 'actions' => ['Name', 'Email address'], 'here' => 'Email address',
+                'label' => 'Open Settings →', 'href' => '/settings/account'],
         ],
         'stop_personalisation' => [
             'title' => 'Turn off personalised suggestions',
             'text' => 'Turning personalisation off deletes what Expadu learnt about what you like, so it’s your tap, in Settings.',
-            'place' => ['crumb' => 'Settings › Profile › Personalised suggestions', 'actions' => ['Account', 'Personalised suggestions'], 'here' => 'Learn what I like',
-                'label' => 'Open Settings →', 'href' => '/settings/profile'],
+            'place' => ['crumb' => 'Settings › Personalised suggestions', 'actions' => ['Account', 'Personalised suggestions'], 'here' => 'Learn what I like',
+                'label' => 'Open Settings →', 'href' => '/settings/suggestions'],
             'note' => 'You can turn it on again at any time; it starts learning afresh.',
         ],
         'stop_location_sharing' => [
@@ -66,8 +66,8 @@ final class InAppPlaces
         ],
         'delete_account' => [
             'text' => 'Deleting your account can’t be undone, so I don’t do it from here. Settings asks you to confirm with your password.',
-            'place' => ['crumb' => 'Settings › Profile › Delete account', 'actions' => ['Profile', 'Delete account'], 'here' => 'Delete account',
-                'label' => 'Open Settings →', 'href' => '/settings/profile'],
+            'place' => ['crumb' => 'Settings › Delete account', 'actions' => ['Profile', 'Delete account'], 'here' => 'Delete account',
+                'label' => 'Open Settings →', 'href' => '/settings/delete'],
             'note' => 'Your Paperwork record has its own copy to download first.',
         ],
     ];
