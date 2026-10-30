@@ -638,25 +638,13 @@ type PaperworkPermissionState = {
  * shows the notice it is given under.
  */
 function PaperworkPermission() {
-    const [state, setState] = useState<PaperworkPermissionState | null>(null);
+    const { composerPaperwork } = usePage<{
+        composerPaperwork?: PaperworkPermissionState;
+    }>().props;
+    const [state, setState] = useState(composerPaperwork ?? null);
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState('');
     const [error, setError] = useState('');
-
-    useEffect(() => {
-        let live = true;
-        fetch(ComposerPaperworkPermissionController.show.url(), {
-            credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
-        })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((body) => live && body && setState(body))
-            .catch(() => {});
-
-        return () => {
-            live = false;
-        };
-    }, []);
 
     if (!state?.available || !state.has_record) {
         return null;

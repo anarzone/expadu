@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Http\Controllers\ComposerPaperworkPermissionController;
 use App\Http\Controllers\Controller;
 use App\Models\NotificationPreference;
 use App\Privacy\ProcessingOptIns;
@@ -47,6 +48,8 @@ class SettingsController extends Controller
             },
             // Today put in order by AI: a standing opt-in of its own (TodayRank).
             'todayRank' => fn () => $optIns->active($user, ProcessingPurpose::TodayRank),
+            // Composer's remembered Allow for their Paperwork record, so its row comes with the page.
+            'composerPaperwork' => fn () => ComposerPaperworkPermissionController::state($user, $optIns),
         ]);
     }
 }
