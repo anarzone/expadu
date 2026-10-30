@@ -59,7 +59,7 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     isMobile,
 }) => {
     const parsed = await stubAsk(page);
-    await page.goto('/dashboard');
+    await page.goto('/today');
     const tray = await openTray(page, isMobile);
     const box = tray.getByRole('textbox', { name: 'Your request to Composer' });
     const answer = tray.getByRole('region', { name: 'Composer', exact: true });
@@ -79,7 +79,7 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     expect(parsed).toHaveLength(1);
     expectPermit(parsed[0]);
     // In place: still on Today, the box empty for the next one.
-    expect(new URL(page.url()).pathname).toBe('/dashboard');
+    expect(new URL(page.url()).pathname).toBe('/today');
     await expect(box).toHaveValue('');
 
     // A second request: a follow-up in the same conversation, the first above it.

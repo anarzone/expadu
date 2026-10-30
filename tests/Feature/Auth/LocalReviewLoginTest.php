@@ -14,7 +14,7 @@ test('local review opens the configured test account without credentials', funct
     $reviewer = User::factory()->create(['email' => 'friendly-review@expadu.test', 'is_admin' => false]);
     $other = User::factory()->create();
 
-    $this->get('/dev/review?user_id='.$other->id)->assertRedirect('/dashboard');
+    $this->get('/dev/review?user_id='.$other->id)->assertRedirect('/today');
 
     $this->assertAuthenticatedAs($reviewer);
     $this->get('/composer/workspace')->assertOk();
@@ -24,7 +24,7 @@ test('local review does not replace an existing signed in user', function () {
     User::factory()->create(['email' => 'friendly-review@expadu.test']);
     $existing = User::factory()->create();
 
-    $this->actingAs($existing)->get('/dev/review')->assertRedirect('/dashboard');
+    $this->actingAs($existing)->get('/dev/review')->assertRedirect('/today');
 
     $this->assertAuthenticatedAs($existing);
 });
@@ -80,7 +80,7 @@ test('local review without the configured account fails closed', function () {
 });
 
 test('enabling review entry does not make protected pages public', function () {
-    $this->get('/dashboard')->assertRedirect(route('login'));
+    $this->get('/today')->assertRedirect(route('login'));
     $this->getJson('/composer/workspace')->assertUnauthorized();
     $this->assertGuest();
 });

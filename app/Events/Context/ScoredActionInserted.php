@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
  * pending_actions ZSET. Listeners can react to drive side-effects:
  * - ScoredActionPushDispatcher → fires the matching Notification class
  *   (so push delivery flows through the same pipeline that drives the
- *   dashboard, instead of the dual-write the source commands had).
+ *   Today, instead of the dual-write the source commands had).
  * - Future: digest emailer, Slack channel, anything consuming the bus.
  */
 class ScoredActionInserted

@@ -21,7 +21,7 @@ test('callback creates new user from social login', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
 
     $this->assertDatabaseHas('users', [
         'name' => 'Max Mustermann',
@@ -44,7 +44,7 @@ test('callback links social to existing email user', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
 
     expect($user->fresh())
         ->social_provider->toBe('google')
@@ -67,7 +67,7 @@ test('callback logs in returning social user', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
     $this->assertAuthenticatedAs($user);
 
     // No duplicate user created

@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => env('FORTIFY_HOME', '/dashboard'),
+    'home' => env('FORTIFY_HOME', '/today'),
 
     /*
     |--------------------------------------------------------------------------

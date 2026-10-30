@@ -32,7 +32,7 @@ class RedirectIfAuthenticated
                     return redirect($return)->with('status', "You're still signed in.");
                 }
 
-                $home = route('dashboard');
+                $home = route('today');
 
                 return redirect($home)->with('status', "You're already signed in.");
             }

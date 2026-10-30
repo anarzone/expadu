@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Redis;
  *   so a mute on Line 12 disruptions doesn't suppress Line 5 disruptions.
  *
  * Evaluators check isMuted() before inserting a push-eligible action.
- * The action can still land on the dashboard (silent suppression of push)
+ * The action can still land on Today (silent suppression of push)
  * or be dropped entirely depending on where the check is made — see
  * ActionBus::insert() for the integration.
  */

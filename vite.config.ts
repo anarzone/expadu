@@ -55,7 +55,7 @@ export default defineConfig({
                 orientation: 'portrait',
                 scope: '/',
                 // Launch straight into the app; '/' only redirects here.
-                start_url: '/dashboard',
+                start_url: '/today',
                 icons: [
                     {
                         src: '/favicon.svg',

@@ -32,7 +32,7 @@ it('renders app pages with the shared right-panel widgets, no error', function (
     // share() (with the city-widget props) runs on every Inertia request:
     // these must not 500.
     $this->actingAs($user)->get('/composer')->assertOk();
-    $this->actingAs($user)->get('/dashboard')->assertOk();
+    $this->actingAs($user)->get('/today')->assertOk();
 });
 
 it('sends the widgets in the first response, never deferred', function () {
@@ -60,12 +60,12 @@ it('a partial reload builds only the props it returns', function () {
     // A partial reload of the shared widgets alone never works out the day.
     $this->actingAs($user)
         ->withHeaders(inertiaVisit([
-            'X-Inertia-Partial-Component' => 'dashboard',
+            'X-Inertia-Partial-Component' => 'today',
             'X-Inertia-Partial-Data' => 'weather',
         ]))
-        ->get('/dashboard')
+        ->get('/today')
         ->assertOk()
-        ->assertJsonPath('component', 'dashboard');
+        ->assertJsonPath('component', 'today');
 
     // Departures' 30 s board poll (usePoll, only: ['boards']).
     DB::enableQueryLog();

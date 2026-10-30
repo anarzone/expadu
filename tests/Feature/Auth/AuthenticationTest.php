@@ -19,7 +19,7 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('today', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {
@@ -66,7 +66,7 @@ test('an authenticated user is bounced off the login screen with a flash', funct
 
     $this->actingAs($user)
         ->get(route('login'))
-        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertRedirect(route('today', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -75,7 +75,7 @@ test('an authenticated, new user is returned from register to Today with a flash
 
     $this->actingAs($user)
         ->get(route('register'))
-        ->assertRedirect(route('dashboard', absolute: false))
+        ->assertRedirect(route('today', absolute: false))
         ->assertSessionHas('status');
 });
 
@@ -148,7 +148,7 @@ test('a return to another site is ignored', function (string $return) {
     $this->get(route('login', ['return' => $return]))->assertOk();
     $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
 
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('today', absolute: false));
 })->with([
     'another host' => ['https://evil.example/around-here'],
     'protocol-relative' => ['//evil.example/around-here'],
@@ -164,5 +164,5 @@ test('signing in again while still signed in goes straight back to the page', fu
         ->assertRedirect('/around-here?name=Neumarkt');
     $this->actingAs($user)
         ->get(route('login', ['return' => '//evil.example']))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('today'));
 });

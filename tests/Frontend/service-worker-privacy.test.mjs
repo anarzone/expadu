@@ -54,7 +54,7 @@ test('private pages and APIs never match a runtime cache route, including mislea
     const { routes } = worker();
 
     for (const path of [
-        '/dashboard',
+        '/today',
         '/api/journey',
         '/api/tiles/triage',
         '/api/places',

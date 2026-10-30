@@ -21,7 +21,7 @@ test.describe('Composer (universal prompt)', () => {
         });
         // From another page, as Today's cards do: the words go by POST, never in the URL,
         // and wait for Send (the tray's own Send answers in place: composer-tray.spec).
-        await page.goto('/dashboard');
+        await page.goto('/today');
         await page.evaluate(() => {
             const form = document.createElement('form');
             form.method = 'POST';

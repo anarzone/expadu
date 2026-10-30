@@ -78,7 +78,7 @@ test('overdue Paperwork needs them, saying only that', function () {
 test('Today has it in its first response', function () {
     needsTrip($this->user, '23:30', 'cancelled', 'Late shift');
 
-    $this->actingAs($this->user)->get(route('dashboard'))->assertOk()->assertInertia(fn ($page) => $page
+    $this->actingAs($this->user)->get(route('today'))->assertOk()->assertInertia(fn ($page) => $page
         ->where('needsYou.items.0.kind', 'trip_change')->has('needsYou.checked_at'));
 });
 
