@@ -131,3 +131,38 @@ test('a throttled sign-in says so on the poster, the same for any email', functi
     expect(session('error'))->toStartWith('Too many requests');
     $this->assertGuest();
 })->with(['an account' => true, 'no account' => false]);
+
+test('signing in again comes back to the page the session ended on', function () {
+    $user = User::factory()->create();
+
+    $this->get(route('login', ['return' => '/explore?near=50.9,6.9&name=Neumarkt']))->assertOk();
+    $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect('/explore?near=50.9,6.9&name=Neumarkt');
+});
+
+test('a return to another site is ignored', function (string $return) {
+    $user = User::factory()->create();
+
+    $this->get(route('login', ['return' => $return]))->assertOk();
+    $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+
+    $response->assertRedirect(route('dashboard', absolute: false));
+})->with([
+    'another host' => ['https://evil.example/explore'],
+    'protocol-relative' => ['//evil.example/explore'],
+    'backslash' => ['/\\evil.example'],
+    'not a path' => ['explore'],
+]);
+
+test('signing in again while still signed in goes straight back to the page', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('login', ['return' => '/explore?name=Neumarkt']))
+        ->assertRedirect('/explore?name=Neumarkt');
+    $this->actingAs($user)
+        ->get(route('login', ['return' => '//evil.example']))
+        ->assertRedirect(route('dashboard'));
+});
