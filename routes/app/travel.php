@@ -70,4 +70,4 @@ Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.
 Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
 
 // Live departures (KVB-style board)
-Route::get('timetable', TimetableController::class)->name('timetable');
+Route::get('travel', TimetableController::class)->name('travel');

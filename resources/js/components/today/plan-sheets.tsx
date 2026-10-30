@@ -11,7 +11,7 @@ import { Pill } from '@/components/ui/pill';
 import { Sheet } from '@/components/ui/sheet';
 import { normalizeTime, TimeField } from '@/components/ui/time-field';
 import { showToast } from '@/components/ui/toast';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import type { DayItem, DayProjection } from '@/types/day';
 
 /*
@@ -269,7 +269,7 @@ function TripRow({ item, day }: { item: DayItem; day: DayProjection }) {
             .join(' · ');
 
         return (
-            <Link className="sheet-row is-trip" href={route ?? timetable.url()}>
+            <Link className="sheet-row is-trip" href={route ?? travel.url()}>
                 {line ? (
                     <LineBadge line={line} kind={kind} />
                 ) : (

@@ -345,7 +345,7 @@ test('a cancelled ride sends its owner one Change of plan, with the way instead,
         $data = $change->toArray($this->user);
 
         return $data['body'] === 'Your 13:14 tram 4 is cancelled. Instead: leave 13:20 for tram 4 at 13:24, there 13:58, only 2 min before 14:00.'
-            && $data['url'] === '/timetable?view=journey&activity=blue-card';
+            && $data['url'] === '/travel?view=journey&activity=blue-card';
     });
     expect($trip->fresh()->alerted_kind)->toBe('cancelled');
 });

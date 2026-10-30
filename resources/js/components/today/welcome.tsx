@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { Icon } from '@/components/ui/icon';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import { store as composerEntry } from '@/routes/composer/entry';
 
 /*
@@ -38,7 +38,7 @@ export function TodayWelcome() {
                     <Icon name="plus" />
                     Plan my day
                 </button>
-                <Link href={timetable()}>
+                <Link href={travel()}>
                     <Icon name="train" />
                     Find a route
                 </Link>

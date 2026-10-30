@@ -37,7 +37,7 @@ class WeatherAlertNotification extends Notification implements ShouldQueue
             ->body($this->detail)
             ->action('View forecast', 'view_weather')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/timetable']);
+            ->data(['url' => '/travel']);
     }
 
     /** @return array<string, mixed> */

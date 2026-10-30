@@ -1,5 +1,5 @@
 import { travelDestinationParams } from '@/components/departures/travel-request';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import type { DayItem } from '@/types/day';
 
 /**
@@ -19,7 +19,7 @@ export function routeTo(item: DayItem): string | null {
         return null;
     }
 
-    return `${timetable.url()}?${new URLSearchParams(
+    return `${travel.url()}?${new URLSearchParams(
         travelDestinationParams({
             name: place.label,
             lat: place.lat,

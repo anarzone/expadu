@@ -690,7 +690,7 @@ function Body({
 function travelUrl(listing: DetailsListing): string {
     const venue = listing.poster.venue ?? listing.occurrence.venue.name;
 
-    return `/timetable?${new URLSearchParams({
+    return `/travel?${new URLSearchParams({
         ...(venue ? { to: venue } : {}),
         context: String(listing.occurrence.id),
         ...(listing.poster.date ? { date: listing.poster.date } : {}),

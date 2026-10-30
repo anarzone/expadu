@@ -48,7 +48,7 @@ test('what needs them, leave now first, then the brief’s order, in quiet hours
         [1, 'leave_now', 'conflict', 'Leave now for Night bus home.', 'Your way leaves at 22:40.'],
         [1, 'trip_change', 'conflict', 'Your 23:30 way to Late shift is cancelled.', null],
         [1, 'disruption', 'conflict', 'Line 13 disrupted.', 'On one of your lines.'],
-    ])->and($needs['items'][0]['href'])->toStartWith('/timetable?view=journey&activity=plan-')
+    ])->and($needs['items'][0]['href'])->toStartWith('/travel?view=journey&activity=plan-')
         ->and($needs['items'][0]['at'])->toBe(needsAt('22:40')->toIso8601String())
         ->and($needs['checked_at'])->toBe(needsAt('22:30')->toIso8601String())
         // The same item keeps its id, which says nothing of what it is.

@@ -643,7 +643,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
                                             as="button"
                                             type="button"
                                             className="quiet-button"
-                                            href={`/timetable?${new URLSearchParams({ view: 'journey', set: 'home' })}`}
+                                            href={`/travel?${new URLSearchParams({ view: 'journey', set: 'home' })}`}
                                         >
                                             <TravelIcon name="home" />
                                             Add home

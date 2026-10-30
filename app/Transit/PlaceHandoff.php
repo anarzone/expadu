@@ -7,7 +7,7 @@ use App\Places\PlaceFacts;
 
 /**
  * A place's "Get there" hands it to Plan a trip by its id
- * (`/timetable?view=journey&place=`), never by coordinates. The point is
+ * (`/travel?view=journey&place=`), never by coordinates. The point is
  * the one the place sheet routes to: its verified entrance, else its map
  * point. It's named as the sheet names it ("Football pitch in Merkenich",
  * never the importer's "Bolzplatz"); a large park's part (`part`, a Veedel)

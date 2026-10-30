@@ -19,7 +19,7 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { showToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import { store as composerEntry } from '@/routes/composer/entry';
 import type { DayItem, DayLink, DayProjection } from '@/types/day';
 
@@ -521,7 +521,7 @@ function DayPrompts() {
                 <Icon name="spark" />
                 {late ? 'Plan tomorrow' : 'Plan the rest of today'}
             </button>
-            <Link href={timetable()}>
+            <Link href={travel()}>
                 <Icon name="train" />
                 Find a route
             </Link>

@@ -87,7 +87,7 @@ final class TodayNeeds
             ->where(fn ($q) => $q->whereNull('alerted_kind')->orWhere('alerted_kind', '!=', 'cancelled'))->orderBy('depart_at')->get()
             ->map(fn (PlannedTrip $trip): array => ['kind' => 'leave_now', 'type' => 'planned_trip_leave', 'severity' => 'major',
                 'text' => "Leave now for {$trip->title}.", 'why' => 'Your way leaves at '.$trip->depart_at->setTimezone('Europe/Berlin')->format('H:i').'.',
-                'link' => '/timetable?'.http_build_query(['view' => 'journey', 'activity' => (string) $trip->target_id]), 'about' => "trip:{$trip->id}",
+                'link' => '/travel?'.http_build_query(['view' => 'journey', 'activity' => (string) $trip->target_id]), 'about' => "trip:{$trip->id}",
                 'at' => $trip->depart_at->setTimezone('Europe/Berlin')->toIso8601String()])
             ->filter(fn (array $item): bool => NotificationThrottle::eligible($user, $item['type']));
         $needs = Cache::remember(self::key($user->id, $now->toDateString()), self::KEEP_SECONDS, fn (): array => collect($this->briefs->items($user, $now->startOfDay(), DayBriefs::MORNING))

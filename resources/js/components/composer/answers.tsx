@@ -18,7 +18,7 @@ import {
 import type { TripFor } from '@/components/travel/trip/trip-model';
 import { Way } from '@/components/travel/way';
 import { Icon } from '@/components/ui/icon';
-import { timetable } from '@/routes';
+import { travel } from '@/routes';
 import type { Journey, JourneyLeg } from '@/types/transit';
 import {
     DoneLine,
@@ -228,11 +228,11 @@ function tripHref(trip: TripAnswer): string {
 
     if (trip.link === 'trip' || !end) {
         return trip.link === 'trip'
-            ? `${timetable.url()}?view=route`
-            : timetable.url();
+            ? `${travel.url()}?view=route`
+            : travel.url();
     }
 
-    return `${timetable.url()}?${new URLSearchParams(
+    return `${travel.url()}?${new URLSearchParams(
         travelDestinationParams({
             name: trip.for.label ?? trip.for.place,
             lat: end.lat,

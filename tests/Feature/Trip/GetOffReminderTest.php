@@ -167,7 +167,7 @@ test('the push message deep-links to the trip page with the right copy', functio
         ->toArray();
 
     expect($final['title'])->toBe('Get off next · Exit Stop');
-    expect($final['data'])->toBe(['url' => '/timetable?view=route']);
+    expect($final['data'])->toBe(['url' => '/travel?view=route']);
     expect($final['tag'])->toBe('trip-get-off');
 
     $change = (new GetOffReminderNotification('Change Stop', false))

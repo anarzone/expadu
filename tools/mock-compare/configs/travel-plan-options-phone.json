@@ -33,7 +33,7 @@
         ]
     },
     "app": {
-        "url": "/timetable?view=journey&activity=appointment%3A7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d&compare=1",
+        "url": "/travel?view=journey&activity=appointment%3A7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d&compare=1",
         "wait": ".plan-option",
         "init": [
             "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'",

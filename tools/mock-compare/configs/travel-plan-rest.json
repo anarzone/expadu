@@ -13,7 +13,7 @@
         ]
     },
     "app": {
-        "url": "/timetable",
+        "url": "/travel",
         "wait": "#day-places button",
         "init": [
             "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'",

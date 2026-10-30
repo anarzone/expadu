@@ -299,7 +299,7 @@ export function travelRouteSignature(journey: Journey): string {
 
 export function savedJourneyHref(request: SavedJourneyRequest): string {
     return (
-        '/timetable?' +
+        '/travel?' +
         new URLSearchParams(
             travelDestinationParams({
                 name: request.destination.name,
