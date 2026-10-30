@@ -118,7 +118,7 @@ final class AssessPerson
         return new PersonAssessment(['schema_version' => 'bureaucracy.assessment.1', 'evaluated_at' => $input->at->toIso8601String(),
             'next_reassessment_at' => $input->at->addDay()->startOfDay()->toIso8601String(), 'jurisdiction' => $input->jurisdiction,
             'input_revision' => CatalogueHash::of(['decision_version' => self::DecisionVersion, 'facts' => $input->facts, 'relationships' => $input->relationships, 'processes' => $input->processes,
-                'catalogue' => $input->catalogue, 'date' => $input->at->toDateString(), 'jurisdiction' => $input->jurisdiction, 'goal' => $input->goal]),
+                'catalogue' => $input->catalogueRevision ?? $input->catalogue, 'date' => $input->at->toDateString(), 'jurisdiction' => $input->jurisdiction, 'goal' => $input->goal]),
             'processes' => $results, 'question_dependencies' => $dependencies->toArray(), 'withdrawn' => $input->catalogue['withdrawn'] ?? []]);
     }
 

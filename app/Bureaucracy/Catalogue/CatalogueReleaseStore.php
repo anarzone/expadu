@@ -21,7 +21,7 @@ use Throwable;
 final class CatalogueReleaseStore
 {
     /** The code current()'s checks run; a change to any of it checks everything again. */
-    private const CheckedBy = [self::class, CatalogueCompiler::class, CatalogueHash::class, GuidancePublication::class, RuleSourcePolicy::class, Task::class];
+    private const CheckedBy = [self::class, CatalogueCompiler::class, CatalogueHash::class, GuidancePublication::class, RuleSourcePolicy::class, Task::class, VerifiedActionDirectory::class];
 
     public function __construct(private CatalogueCompiler $compiler, private GuidancePublication $publication, private RuleSourcePolicy $policy, private FactRegistry $facts, private VerifiedActionDirectory $actions) {}
 
@@ -188,7 +188,12 @@ final class CatalogueReleaseStore
         }
         unset($definition);
 
-        return [...$artifact, 'release_id' => $release->id, 'release_hash' => $release->content_hash, 'pointer_version' => $pointer->version, 'withdrawn' => $withdrawn];
+        // What this result is made from, for a revision that needn't hash the whole catalogue:
+        // the check key already covers the release bytes, its cards, today, the config
+        // (action hosts and jurisdictions too) and the code that filters it.
+        $revision = hash('sha256', $key."\n".json_encode([$pointer->version, $withdrawn], JSON_THROW_ON_ERROR));
+
+        return [...$artifact, 'release_id' => $release->id, 'release_hash' => $release->content_hash, 'pointer_version' => $pointer->version, 'withdrawn' => $withdrawn, 'revision' => $revision];
     }
 
     /** Everything the checks read; any change to it is a new key. */
