@@ -3,8 +3,10 @@
 return [
 
     // Private page props must become unreadable after logout on shared devices.
+    // On everywhere deployed. It needs a secure context (https or localhost), so
+    // the local preview turns it off to be reached over plain http from a phone.
     'history' => [
-        'encrypt' => true,
+        'encrypt' => (bool) env('INERTIA_ENCRYPT_HISTORY', true),
     ],
 
     /*

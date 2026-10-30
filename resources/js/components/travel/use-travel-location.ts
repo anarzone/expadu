@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
+import { csrfHeaders } from '@/lib/csrf';
 
 /**
  * Where Travel starts from: the device's position, confirmed to the server
@@ -14,14 +15,6 @@ import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
 const FOLLOW_METRES = 150;
 const FOLLOW_FLOOR_MS = 20_000;
 const AUTO_THROTTLE_MS = 5 * 60_000;
-
-function csrfToken(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
-}
 
 function usable(position: GeolocationPosition, maxAccuracy = 200): boolean {
     const { latitude, longitude, accuracy } = position.coords;
@@ -95,7 +88,7 @@ export function useTravelLocation({
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrfToken(),
+                        ...csrfHeaders(),
                     },
                     body: JSON.stringify({ lat, lng }),
                 });
@@ -187,7 +180,7 @@ export function useTravelLocation({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({ settings: { share_location: true } }),
             });

@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -15,14 +16,6 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
     }
 
     return outputArray;
-}
-
-function getCookie(name: string): string | null {
-    const match = document.cookie.match(
-        new RegExp('(^|;\\s*)' + name + '=([^;]*)'),
-    );
-
-    return match ? decodeURIComponent(match[2]) : null;
 }
 
 export type UsePushSubscriptionReturn = {
@@ -98,7 +91,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
+                        ...csrfHeaders(),
                     },
                     body: JSON.stringify({ endpoint: subscription.endpoint }),
                 });
@@ -158,7 +151,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify(subscription.toJSON()),
             });
@@ -205,7 +198,7 @@ export function usePushSubscription(): UsePushSubscriptionReturn {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({ endpoint: subscription.endpoint }),
             });
