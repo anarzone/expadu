@@ -437,7 +437,9 @@ jobs:
     # Tests must pass before we deploy — build runs in parallel with them but
     # the image only ships if the unit/feature suite and the browser suite come
     # back green.
-    needs: [build-and-push, test, browser-test]
+    # Browser tests still run and report, but don't hold staging back (owner, 30 Oct 2026):
+    # 14 specs test the pre-redesign screens and are being rewritten. Production keeps the gate.
+    needs: [build-and-push, test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
