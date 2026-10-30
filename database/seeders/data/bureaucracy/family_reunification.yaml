@@ -104,7 +104,7 @@ tasks:
     key: fam.kindergeld
     depends_on: []
     description: |
-      €250/month per child until age 18 (or 25 if in education). Available to most
+      {{figure:kindergeld_monthly}} per child until age 18 (or 25 if in education). Available to most
       residents regardless of income. Apply via the Familienkasse — separate from the
       tax office.
     phase: settling
@@ -202,8 +202,9 @@ tasks:
       on Germany's legal order, culture and history. The general course runs 700 lessons.
       A first residence permit for family reunification normally gives you a right to
       take part, and that right lapses one year after the permit is issued, so sign up
-      early. If you cannot yet communicate in simple German, the Ausländerbehörde can
-      oblige you to attend when it issues your permit.
+      early. You must attend if you have that right and cannot yet communicate in simple
+      German, or if your permit to join your spouse is issued while your German is not yet
+      sufficient (§44a AufenthG). The Ausländerbehörde records it when it issues your permit.
     phase: settling
     urgency: low
     deadline_type: none
@@ -229,7 +230,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§44 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__44.html'}
@@ -252,8 +253,16 @@ tasks:
         states: that right lapses one year after the permit is issued
         source: '§44 AufenthG'
         quote: Der Teilnahmeanspruch nach Absatz 1 erlischt ein Jahr nach Erteilung des den Anspruch begründenden Aufenthaltstitels oder bei dessen Wegfall.
+      - id: obligation-simple-german
+        states: You must attend if you have that right and cannot yet communicate in simple German
+        source: '§44a AufenthG'
+        quote: sich nicht zumindest auf einfache Art in deutscher Sprache verständigen kann
+      - id: obligation-spouse
+        states: or if your permit to join your spouse is issued while your German is not yet sufficient (§44a AufenthG)
+        source: '§44a AufenthG'
+        quote: zum Zeitpunkt der Erteilung eines Aufenthaltstitels nach § 23 Abs. 2, § 28 Abs. 1 Satz 1 Nr. 1, § 30, oder § 36a Absatz 1 Satz 1 erste Alternative nicht über ausreichende Kenntnisse der deutschen Sprache verfügt
       - id: obligation
-        states: the Ausländerbehörde can oblige you to attend when it issues your permit
+        states: The Ausländerbehörde records it when it issues your permit
         source: '§44a AufenthG'
         quote: In den Fällen des Satzes 1 Nr. 1 stellt die Ausländerbehörde bei der Erteilung des Aufenthaltstitels fest, dass der Ausländer zur Teilnahme verpflichtet ist.
       - id: b1-exam

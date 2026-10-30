@@ -430,12 +430,17 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§20 AufenthG — Arbeitsplatzsuche', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20.html'}
       - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
     claims:
+      - id: apply-before-expiry
+        states: If you apply before your student permit expires, it stays valid until the Ausländerbehörde decides
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
       - id: title-period
         states: 18 months to find your job
         source: '§20 AufenthG — Arbeitsplatzsuche'
@@ -475,8 +480,9 @@ tasks:
       The job you find does not have to match your degree,
       as long as you meet the requirements of a permit such as the one for skilled workers with an academic qualification or the EU Blue Card.
       You can also use the permit to prepare self-employment.
+      If you apply before your student permit expires, it stays valid until the Ausländerbehörde decides.
     phase: ongoing
-    urgency: low
+    urgency: medium
     deadline_type: none
     applies_if:
       citizenship_group: non_eu
@@ -493,7 +499,7 @@ tasks:
       certain residence titles. The amount depends on your housing, insurance, income,
       and family circumstances; use the official portal for the current calculation.
     phase: settling
-    urgency: low
+    urgency: medium
     deadline_type: none
     documents_required:
       - Immatrikulationsbescheinigung
@@ -504,9 +510,9 @@ tasks:
       - https://www.bafoeg-digital.de/
     how_to_steps:
       - title: Check eligibility
-        body: Generally for German citizens, EU citizens, or non-EU students with at least 5 years of legal residence. The official portal has an eligibility quiz.
+        body: German and EU citizens qualify, and non-EU students with a settlement permit, an EU long-term residence permit or certain other permits. Otherwise you qualify only after five years in Germany with lawful work of your own, or if a parent lived and worked lawfully here for three of the last six years (§8 BAföG). The official portal has an eligibility quiz.
       - title: File online via bafoeg-digital.de
-        body: Fully digital application; takes 6–10 weeks to process. Submit early in the semester to start receiving funds sooner.
+        body: Fully digital application; takes 6–10 weeks to process. BAföG is paid from the month you apply at the earliest, never for months before (§15 BAföG), so apply in your first month.
       - title: Submit yearly updates
         body: BAföG is recalculated each year — keep income + enrolment docs ready every September.
 
@@ -517,11 +523,16 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit', url: 'https://www.gesetze-im-internet.de/estg/__46.html'}
+      - {kind: primary, label: '§169 AO — Festsetzungsfrist', url: 'https://www.gesetze-im-internet.de/ao_1977/__169.html'}
     claims:
+      - id: time-limit
+        states: the time limit for a tax assessment is four years (§169 AO)
+        source: '§169 AO — Festsetzungsfrist'
+        quote: vier Jahre für Steuern und Steuervergütungen
       - id: mandatory-cases
         states: §46 EStG lists cases in which an assessment is required
         source: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit'
@@ -543,7 +554,7 @@ tasks:
       §46 EStG lists cases in which an assessment is required,
       for example if you were paid by several employers at the same time. Otherwise
       you can still apply for an assessment yourself, in particular to have the withheld wage tax credited against your income tax.
-      You apply by filing an income tax return.
+      You apply by filing an income tax return. Don't leave it too long: the time limit for a tax assessment is four years (§169 AO).
     phase: ongoing
     urgency: low
     deadline_type: none

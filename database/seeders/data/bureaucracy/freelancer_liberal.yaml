@@ -91,7 +91,7 @@ tasks:
     documents_required:
       - label: Application form (online Erstantrag 33-F07)
       - label: Valid national passport + visa for self-employment
-        note: Or the 90-day window if you entered visa-free. A tourist/Schengen visa can never be converted.
+        note: Or the 90-day window if you entered visa-free under §41 AufenthV (for example as a citizen of Australia, Canada, Japan, the UK or the USA). Entered visa-free on any other basis? Ask the Ausländerbehörde before you apply from inside Germany. A tourist/Schengen visa can never be converted.
       - label: Biometric photo
       - label: CV + qualification proofs (degree, certificates, portfolio)
       - label: Letters of intent (Absichtserklärungen) from prospective clients

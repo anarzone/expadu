@@ -27,10 +27,12 @@ tasks:
       Daueraufenthalt-EU (or is an EU/EEA citizen with free movement). The Standesamt
       registers citizenship when certifying the birth. If the child isn't German, it
       gets its own §33 permit — often ex officio, with no application needed, when both
-      parents (or the sole custodian) held a residence title at birth.
+      parents (or the sole custodian) held a residence title at birth. When it isn't
+      issued ex officio, apply for it within six months of the birth (§81 Abs. 2 AufenthG).
     phase: ongoing
     urgency: high
-    deadline_type: none
+    deadline_type: days_since_event
+    deadline_days: 180
     documents_required:
       - label: Child's birth certificate
         note: Register the birth at the Standesamt within ONE WEEK — everything else hangs off this.
@@ -47,7 +49,7 @@ tasks:
       - title: Certify the birth at the Standesamt first
         body: Within one week of the birth. Ask explicitly whether your child qualifies for German citizenship by birth — the Standesamt checks it when certifying.
       - title: If not German, the §33 permit is often automatic
-        body: When both parents (or the sole custodian) held a residence title at birth, the permit is issued ex officio. If a parent was on a visa, the child's stay is automatically legal until that expires. Fee from ~€25.
+        body: When both parents (or the sole custodian) held a residence title at birth, the permit is issued ex officio. Otherwise apply within six months of the birth. If a parent was on a visa, the child's stay is automatically legal until that expires. Fee from ~€25.
       - title: Unmarried? Sort the Vaterschaftsanerkennung
         body: Ideally BEFORE the birth — it determines custody and the child's status from day one.
 
@@ -126,7 +128,7 @@ tasks:
       purpose: [employment, study, freelance, digital_nomad, other]
     depends_on: []
     description: |
-      €250/month per child, paid by the Familienkasse (separate from the tax office),
+      {{figure:kindergeld_monthly}} per child, paid by the Familienkasse (separate from the tax office),
       for most residents regardless of income. Payments are backdated at most 6 months
       — apply once the child's Steuer-ID arrives.
     phase: ongoing

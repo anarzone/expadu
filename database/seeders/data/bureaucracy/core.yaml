@@ -201,6 +201,10 @@ tasks:
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: core.rundfunkbeitrag
     depends_on: [core.anmeldung]
+    # Every household pays it, whatever brought them here: the file's legacy `core` label
+    # had narrowed it to digital nomads and "other" (card check, 30 Oct 2026).
+    applies_if_mode: explicit
+    applies_if: {}
     # Stays `legacy` on purpose, and cannot be approved as the allowlist stands.
     # The obligation comes from the Rundfunkbeitragsstaatsvertrag — a treaty
     # between the Länder, not federal law — so it appears on neither
@@ -233,6 +237,8 @@ tasks:
     key: core.liability_insurance
     type: info
     depends_on: [core.bank_account]
+    applies_if_mode: explicit
+    applies_if: {}
     # Demoted from a task to an info card. Privathaftpflicht is voluntary —
     # there is no statute behind it, and the only source we had was a price
     # comparison site. As an info card it keeps its advice but loses the

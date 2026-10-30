@@ -40,6 +40,12 @@ return [
         'source' => 'https://www.studis-online.de/studierendenversicherung/krankenversicherung.php',
         'changes' => 'yearly (base + Zusatzbeitrag + Pflege)',
     ],
+    'kindergeld_monthly' => [
+        'value' => '€259/month',
+        'verified_at' => '2026-10-30',
+        'source' => 'https://www.gesetze-im-internet.de/estg/__66.html',
+        'changes' => 'when §66 EStG changes, usually on 1 January',
+    ],
     'rundfunkbeitrag_monthly' => [
         'value' => '€18.36/month',
         'verified_at' => '2026-06-11',
