@@ -85,6 +85,7 @@ test('an error, a broken notice or no network is unreadable, and the next send r
     for (let i = 0; i < 3; i++) {
         assert.deepEqual(await readAiNotice(URL), { state: 'unreadable' });
     }
+
     assert.equal((await readAiNotice(URL)).state, 'on');
     assert.equal(calls.count, 4);
 });

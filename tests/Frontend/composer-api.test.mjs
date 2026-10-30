@@ -6,6 +6,7 @@ function browser(t, handler) {
     const originalFetch = globalThis.fetch;
     const originalDocument = globalThis.document;
     globalThis.document = {
+        cookie: '',
         querySelector: () => ({ getAttribute: () => 'csrf-token' }),
     };
     globalThis.fetch = handler;

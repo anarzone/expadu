@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { writeJson } from '../../resources/js/lib/reliable-write.ts';
 
-const token = { querySelector: () => ({ getAttribute: () => 'csrf-token' }) };
+// No XSRF-TOKEN cookie, so csrfHeaders falls back to the page's meta token.
+const token = {
+    cookie: '',
+    querySelector: () => ({ getAttribute: () => 'csrf-token' }),
+};
 
 test('writes accept only a successful JSON acknowledgement', async () => {
     globalThis.document = token;

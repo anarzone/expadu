@@ -26,6 +26,7 @@ beforeEach(() => {
     currentRequests = 0;
     const document = new EventTarget();
     document.visibilityState = 'visible';
+    document.cookie = '';
     document.querySelector = () => null;
     const navigator = {
         geolocation: {
