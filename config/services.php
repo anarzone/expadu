@@ -203,6 +203,11 @@ return [
         'area' => [50.83, 6.77, 51.09, 7.17],
     ],
 
+    'kvb' => [
+        // The last good stop list, kept under storage/ for a cold cache; empty keeps none (tests).
+        'stops_file' => env('KVB_STOPS_FILE', 'app/kvb-stops.json'),
+    ],
+
     'vrs' => [
         'gtfsrt_url' => env('VRS_GTFSRT_URL'),
         'trias_url' => env('VRS_TRIAS_URL'),
