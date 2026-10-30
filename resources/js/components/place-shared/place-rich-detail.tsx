@@ -96,6 +96,7 @@ export function PlaceRichDetail({
     backLabel?: string;
     feedback?: {
         state: FeedbackState | null;
+        been?: boolean;
         rating: FeedbackRating | null;
         onAction: (action: FeedbackAction, rating?: FeedbackRating) => void;
     };
@@ -348,6 +349,7 @@ export function PlaceRichDetail({
             {feedback && (
                 <PlaceFeedbackBar
                     state={feedback.state}
+                    been={feedback.been}
                     rating={feedback.rating}
                     onAction={feedback.onAction}
                     label={place.name}

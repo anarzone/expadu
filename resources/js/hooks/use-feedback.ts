@@ -12,7 +12,12 @@ export type FeedbackState =
 export type FeedbackAction = FeedbackState | 'clear' | 'unbeen';
 export type FeedbackRating = 'up' | 'down';
 
-type Entry = { state: FeedbackState | null; rating: FeedbackRating | null };
+type Entry = {
+    state: FeedbackState | null;
+    rating: FeedbackRating | null;
+    /** Been, apart from the choice; unset until changed here. */
+    been?: boolean;
+};
 
 /** Confirmation copy per action — the social "we heard you" nudge. */
 function toastFor(
@@ -85,8 +90,13 @@ export function useFeedback(initial: Record<string, Entry> = {}) {
                                 ? null
                                 : prev.state,
                       rating: action === 'been' ? rating : null,
+                      been: action === 'been',
                   }
-                : { state: action === 'clear' ? null : action, rating: null };
+                : {
+                      state: action === 'clear' ? null : action,
+                      rating: null,
+                      been: prev.been,
+                  };
 
             ref.current = { ...ref.current, [key]: next };
             setEntries(ref.current);
@@ -132,6 +142,9 @@ export function useFeedback(initial: Record<string, Entry> = {}) {
             entries[String(spotId)]?.state ?? null,
         ratingFor: (spotId: number | string): FeedbackRating | null =>
             entries[String(spotId)]?.rating ?? null,
+        /** Whether Been was changed here to on or off; null when it wasn't. */
+        beenFor: (spotId: number | string): boolean | null =>
+            entries[String(spotId)]?.been ?? null,
         setFeedback,
         toast,
         dismissToast: () => flashToast(null),
