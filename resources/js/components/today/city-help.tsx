@@ -17,7 +17,7 @@ import type {
     ShownDir,
     ShownLine,
 } from '@/components/travel/nearby/nearby-model';
-import { StationNotice } from '@/components/travel/nearby/station-notice';
+import { MajorHeadline, NoticeLine } from '@/components/travel/nearby/notices';
 import { closestNow, closestWords } from '@/components/travel/nearby/types';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { Icon } from '@/components/ui/icon';
@@ -380,15 +380,22 @@ function DepartureBoard({
                                 No departures from {station.name} in the feed.
                             </p>
                         )}
-                        {/* KVB's notices for this stop's lines, as Travel shows them. */}
+                        {/* KVB's notices for this stop's lines in Travel's two tiers: one headline for
+                            a major problem, everyday ones as a line each. */}
                         {(station.notices ?? []).length > 0 && (
                             <div className="board-notices">
-                                {station.notices.slice(0, 2).map((notice) => (
-                                    <StationNotice
-                                        key={notice.id}
-                                        notice={notice}
-                                    />
-                                ))}
+                                <MajorHeadline station={station} />
+                                {station.notices
+                                    .filter(
+                                        (notice) => notice.scale !== 'major',
+                                    )
+                                    .slice(0, 2)
+                                    .map((notice) => (
+                                        <NoticeLine
+                                            key={notice.id}
+                                            notice={notice}
+                                        />
+                                    ))}
                             </div>
                         )}
                         <a
