@@ -72,7 +72,7 @@ test('🔒 without the AI, Composer says so and shows what’s around you now, w
     $reply = whatsUpAsk($this, 'tell me a joke');
 
     expect($reply)->kind->toBe('around')->request->toBe('ask')->written->toBe('code')->without_ai->toBe('off')
-        ->text->toBe('Composer’s AI is off right now, so I can’t answer that. Here’s what’s still on in Cologne tonight.')
+        ->text->toBe('I can’t answer messages right now, so I can’t answer that. Here’s what’s still on in Cologne tonight.')
         ->and(collect($reply['blocks'])->pluck('type')->all())->toBe(['facts', 'events'])
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Jazz im Stadtgarten'])
         ->and(collect($reply['facts'])->map(fn (array $fact): string => "{$fact['label']}: {$fact['value']}")->all())
@@ -101,7 +101,7 @@ test('🔒 a part whose query fails leaves it out, and the answer is still saved
 });
 
 test('🔒 a sentence keeps only the names, numbers and claims its items hold', function (string $sentence, bool $holds) {
-    $source = "Thursday 5 November, 19:05, Cologne\n\"Jazz im Stadtgarten\" (music) at Stadtgarten, Neustadt-Nord. today 20:00–23:00.\nCologne now: 9°, Overcast, Rain from 22:00 (2h+)";
+    $source = "Thursday 5 November, 19:05, Cologne\n\"Jazz im Stadtgarten\" (music) at Stadtgarten, Neustadt-Nord. today 20:00–23:00, 12,50 €.\nCologne now: 9°, Overcast, Rain from 22:00 (2h+)";
 
     expect(app(AroundCheck::class)->holds($sentence, $source))->toBe($holds);
 })->with([
@@ -121,5 +121,18 @@ test('🔒 a sentence keeps only the names, numbers and claims its items hold', 
     'a name after a full stop' => ['It’s 9°. Rhine Week starts today.', false],
     'a link' => ['See https://example.com for more.', false],
     'access its listing doesn\'t state' => ['Jazz im Stadtgarten is step-free.', false],
+    'access it says isn\'t listed' => ['Step-free access isn’t listed for Jazz im Stadtgarten.', true],
+    'access it can\'t confirm' => ['I can’t confirm step-free access at Stadtgarten.', true],
+    'access no listing states' => ['Neither listing mentions wheelchair access.', true],
+    'access claimed beside an unknown' => ['Jazz im Stadtgarten is step-free and its price isn’t listed.', false],
+    'access claimed after a but' => ['I can’t confirm the price, but Stadtgarten is step-free.', false],
+    'their own hours' => ['For your two hours, Jazz im Stadtgarten starts at 20:00.', false],
+    'a two-hour evening' => ['Jazz im Stadtgarten makes a two-hour evening from 20:00.', true],
+    'a price written the other way' => ['Jazz im Stadtgarten is €12.50 at 20:00.', true],
+    'a price it doesn’t have' => ['Jazz im Stadtgarten is €12.00 at 20:00.', false],
+    'a welcome' => ['Welcome to Neustadt-Nord!', true],
+    'what it didn’t find' => ['I didn’t find anything free tonight.', true],
+    'a free claim beside what it didn’t find' => ['I didn’t find a bar, but Jazz im Stadtgarten is free.', false],
+    'wifi it says isn’t listed' => ['Wi-Fi isn’t listed for Stadtgarten.', true],
     'a question back' => ['Which Stadtgarten do you mean?', true],
 ]);

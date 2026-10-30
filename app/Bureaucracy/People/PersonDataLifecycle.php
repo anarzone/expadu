@@ -18,14 +18,13 @@ use App\Models\BureaucracyQuestionSession;
 use App\Models\BureaucracyRelationship;
 use App\Models\BureaucracyRequirementUse;
 use App\Models\User;
-use App\Privacy\LegacyProcessingUsage;
 use App\Privacy\ProcessingOptIns;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 final class PersonDataLifecycle
 {
-    public function __construct(private PersonAccess $access, private LegacyProcessingUsage $legacyUsage, private FactRegistry $registry, private ReassessmentEvents $refresh) {}
+    public function __construct(private PersonAccess $access, private FactRegistry $registry, private ReassessmentEvents $refresh) {}
 
     public function export(User $actor, BureaucracyPerson $person): array
     {
@@ -138,10 +137,6 @@ final class PersonDataLifecycle
         $case = BureaucracyCase::query()->where('person_id', $current->id)->lockForUpdate()->first();
         $this->refresh->beforeErasure($current);
         if ($case !== null) {
-            if ($case->user_id !== null) {
-                $subject = User::query()->findOrFail($case->user_id);
-                $this->legacyUsage->preserve($subject, [$case->id]);
-            }
             BureaucracyProcessingConsent::query()->where('case_id', $case->id)->update([
                 'withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null,
             ]);

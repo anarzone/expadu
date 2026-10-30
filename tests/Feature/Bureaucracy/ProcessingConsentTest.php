@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\BureaucracyCase;
-use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use App\Privacy\ExternalProcessingGate;
@@ -177,7 +176,7 @@ test('subject permission cannot be borrowed from another account or a closed dos
     $user = User::factory()->create();
     $case = BureaucracyCase::factory()->create();
 
-    expect(fn () => app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::FactExtraction, [], processingAcceptance(ProcessingPurpose::FactExtraction), $case))
+    expect(fn () => app(ProcessingConsentStore::class)->grant($user, ProcessingPurpose::ComposerPaperwork, [], ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerPaperwork), $case))
         ->toThrow(AuthorizationException::class);
     Http::assertNothingSent();
 });
@@ -215,24 +214,6 @@ test('a permission handle cannot be borrowed by another actor', function () {
 
     expect(app(ExternalProcessingGate::class)->send($forged, $purpose, $context, consentTransport()))->toBeNull();
     Http::assertNothingSent();
-});
-
-test('removing pre migration raw messages does not reset the rolling quota', function () {
-    ExternalProcessingFixtures::configure();
-    config()->set('services.bureaucracy_llm.daily_limit', 2);
-    $request = ExternalProcessingFixtures::factRequest('german_level', 'B1');
-    $row = BureaucracyProcessingConsent::query()->findOrFail($request->permit->id);
-    $user = User::query()->findOrFail($row->actor_id);
-    $case = BureaucracyCase::query()->findOrFail($row->case_id);
-    BureaucracyCaseMessage::factory()->count(2)->for($case, 'case')->create([
-        'operation' => 'extract_case_fact', 'role' => 'user', 'created_at' => now()->subHour(),
-    ]);
-    app(ProcessingConsentStore::class)->withdraw($user);
-
-    expect($case->messages()->count())->toBe(0)
-        ->and(app(ExternalProcessingGate::class)->used($user->id, ProcessingPurpose::FactExtraction))->toBe(2);
-    $this->travel(24)->hours();
-    expect(app(ExternalProcessingGate::class)->used($user->id, ProcessingPurpose::FactExtraction))->toBe(0);
 });
 
 test('withdrawal between reservation and dispatch prevents the transport from starting', function () {

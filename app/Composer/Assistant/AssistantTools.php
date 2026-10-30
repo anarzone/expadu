@@ -195,7 +195,7 @@ final class AssistantTools
         private array $earlier = ['event' => [], 'spot' => [], 'areas' => [], 'places' => []],
         // Their Composer plans, by date (their next plan, from code only).
         private array $plans = [],
-        // With their Paperwork permission for this message (paperwork_answer): their record is read,
+        // With their Paperwork permission for this message (composer_paperwork): their record is read,
         // and changed through Paperwork's own writes.
         private bool $paperwork = false,
         // Their message, in their words: an answer's legal detail (a settlement permit's section)

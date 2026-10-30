@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TasteFacts;
 use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayTaste;
 use App\Privacy\ProcessingPurpose;
@@ -51,7 +52,7 @@ beforeEach(function () {
 
 function rankingOn(User $user): void
 {
-    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
     $user->load('userSetting');
 }
 
@@ -82,11 +83,25 @@ test('a why that isn’t theirs and Today keeps its own order; one about another
         ->toMatchArray(['places' => ['p1', 'p2', 'p3'], 'why' => []]);
 });
 
+test('an event named without its start counts while only one start of it is listed', function () {
+    $events = [
+        ['id' => 'e1@1', 'name' => 'Orgelkonzert', 'kind' => 'Concert', 'area' => 'Altstadt-Nord', 'start' => '17:00'],
+        ['id' => 'e1@2', 'name' => 'Orgelkonzert', 'kind' => 'Concert', 'area' => 'Altstadt-Nord', 'start' => '19:00'],
+        ['id' => 'e2@1', 'name' => 'Latte Art Night', 'kind' => 'Café', 'area' => 'Ehrenfeld', 'start' => '18:00'],
+    ];
+    $context = ['day' => '2026-11-11 15:00', 'facts' => TasteFacts::forModel($this->facts), 'recent' => ['categories' => [], 'areas' => []], 'candidates' => ['events' => $events, 'places' => []]];
+    $reply = ['content' => [['type' => 'tool_use', 'name' => 'order', 'input' => ['events' => [['id' => 'e1'], ['id' => 'e2', 'why' => 'You lean to cafés in Ehrenfeld.']], 'places' => []]]]];
+
+    // e2 has one start listed; e1 has two, so a bare e1 names neither.
+    expect(app(TodayRanker::class)->compose($context, fn () => $reply))
+        ->toMatchArray(['events' => ['e2@1', 'e1@1', 'e1@2'], 'why' => ['e2@1' => 'You lean to cafés in Ehrenfeld.']]);
+});
+
 test('nothing goes to the AI without personalisation on under its second wording', function () {
     expect(app(TodayRanker::class)->rankFrom($this->user, $this->candidates, $this->facts, CarbonImmutable::now('Europe/Berlin')))->toBeNull();
 
     // On before 26 Oct 2026: not until they turn it on again.
-    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['personalisation' => true]]);
+    $this->user->userSetting()->updateOrCreate(['user_id' => $this->user->id], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
     expect(app(TodayRanker::class)->rankFrom($this->user->fresh(), $this->candidates, $this->facts, CarbonImmutable::now('Europe/Berlin')))->toBeNull();
     Http::assertNothingSent();
 
@@ -119,5 +134,6 @@ test('the notice names everything a ranking sends; stops, Paperwork and their wo
         ->and(collect(array_unique($parts))->every(fn (string $part): bool => str_contains($notice, ProcessingPurpose::TODAY_WORDS[$part])))->toBeTrue()
         ->and($content)->not->toContain('Neumarkt')->not->toContain('Paperwork')
         ->and($disclosure['scope'])->toBe('until_you_turn_it_off')
-        ->and(PersonalisationWording::CURRENT)->toBe(2);
+        // The wording that turns it on covers it (2 and after).
+        ->and(PersonalisationWording::CURRENT)->toBeGreaterThanOrEqual(2);
 });

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Notifications;
 
+use App\Ai\UsageMeter;
 use App\ContextEngine\BriefWriter;
 use App\ContextEngine\DayBriefs;
 use Carbon\CarbonImmutable;
@@ -18,12 +19,18 @@ use Throwable;
  */
 class EvaluateBriefs extends Command
 {
-    protected $signature = 'notifications:brief-eval {--runs=1 : Times to run each case} {--only= : Comma-separated case ids}';
+    protected $signature = 'notifications:brief-eval {--runs=1 : Times to run each case} {--only= : Comma-separated case ids}
+        {--model= : Run on this model instead (an eval comparison; see AiRequest)}
+        {--effort= : low, medium, high, xhigh or max}
+        {--max-tokens= : Room for each reply, at least}
+        {--label=run : Name for the report file}';
 
     protected $description = 'Have the AI write briefs for made-up days and check every line against its items';
 
     public function handle(BriefWriter $writer): int
     {
+        UsageMeter::override($this->option('model') ?: null, $this->option('effort') ?: null, $this->option('max-tokens') ? (int) $this->option('max-tokens') : null);
+        $meter = (new UsageMeter)->start();
         $cases = json_decode((string) file_get_contents(base_path('tests/Fixtures/notification-briefs.json')), true)['cases'];
         $only = array_filter(explode(',', (string) $this->option('only')));
         $passed = 0;
@@ -42,7 +49,7 @@ class EvaluateBriefs extends Command
                         function (array $request) use (&$raw): ?array {
                             return $raw = Http::baseUrl((string) config('services.llm.base_url'))
                                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
-                                ->timeout(15)->post('/v1/messages', $request)->throw()->json();
+                                ->timeout(60)->post('/v1/messages', $request)->throw()->json();
                         });
                 } catch (Throwable $e) {
                     $this->line("  ERROR {$case['id']} ".class_basename($e));
@@ -68,6 +75,13 @@ class EvaluateBriefs extends Command
             }
         }
         $this->info("{$passed}/{$total} passed");
+        $usage = $meter->summary();
+        $this->line(sprintf('model %s · effort %s · $%s · p50 %d ms · p95 %d ms · tokens %s · stops %s', $this->option('model') ?: (string) config('services.llm.model'),
+            $this->option('effort') ?: 'default', $usage['cost_usd'] ?? 'unpriced', $usage['ms_p50'], $usage['ms_p95'], json_encode($usage['tokens']), json_encode($usage['stops'])));
+        $path = storage_path('app/evals/briefs-'.$this->option('label').'-'.now()->format('Ymd-His').'.json');
+        @mkdir(dirname($path), 0775, true);
+        file_put_contents($path, (string) json_encode(['label' => $this->option('label'), 'model' => $this->option('model') ?: (string) config('services.llm.model'),
+            'effort' => $this->option('effort') ?: 'default', 'passed' => $passed, 'total' => $total, 'usage' => $usage], JSON_PRETTY_PRINT));
 
         return self::SUCCESS;
     }

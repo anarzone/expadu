@@ -17,6 +17,7 @@ use App\Jobs\WarmStation;
 use App\Models\FavouriteStop;
 use App\Personalisation\SignalItemType;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TodayRankPause;
 use App\Personalisation\TodayTaste;
 use App\Services\KvbApiService;
 use App\Services\LocationContext;
@@ -73,7 +74,11 @@ class HomeFeedController extends Controller
             'needsYou' => fn () => app(TodayNeeds::class)->for($request->user()),
             // Discovery: tonight's events that fit around the plans, and the
             // everyday places open near the next plan (TodayDiscovery).
-            'discovery' => fn () => app(TodayDiscovery::class)->for($request->user()),
+            // Its lists are logged as shown, for people who opted in (ListImpressions).
+            'discovery' => fn () => app(TodayDiscovery::class)->for($request->user(), shown: true),
+            // Today's AI order waiting for them to agree again after its notice changed (TodayRankPause),
+            // unless put off; what changed is in Settings › Privacy.
+            'aiOrderPaused' => fn () => app(TodayRankPause::class)->onToday($request->user()) !== null,
             // Coming up: the next plans after today (ComingUp), with the day.
             'comingUp' => fn () => app(ComingUp::class)->for($request->user()),
             // Saved for later (the one Saved collection) and the Composer

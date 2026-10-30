@@ -14,6 +14,8 @@ return [
         'gesetze-im-internet.de',
         'eur-lex.europa.eu',
         'recht.bund.de',
+        // NRW state law (owner decision, 30 Oct 2026): the school law and the broadcasting fee treaty.
+        'recht.nrw.de',
     ],
 
     'implementation_hosts' => [

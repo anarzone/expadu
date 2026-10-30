@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RankToday;
 use App\Models\UserSetting;
 use App\Personalisation\PersonalisationWording;
 use App\Personalisation\SignalRecorder;
@@ -34,6 +35,10 @@ class UserSettingController extends Controller
             'settings.composer_ask_first_everyday' => ['sometimes', 'boolean'],
             'settings.composer_ask_first_paperwork' => ['sometimes', 'boolean'],
         ]);
+        // Personalisation is for people 16 or older (Settings › Privacy asks): their word with each yes.
+        if (($validated['settings']['personalisation'] ?? null) === true) {
+            $request->validate(['sixteen_or_older' => ['accepted']], ['sixteen_or_older.accepted' => 'Tick that you’re 16 or older to turn it on.']);
+        }
 
         $user = $request->user();
         $merged = $retention->withUserLock($user->id, function () use ($user, $validated, $retention): array {
@@ -52,7 +57,7 @@ class UserSettingController extends Controller
             }
             // On under this wording: its AI order too, under the notice and provider as they are now.
             if (($validated['settings']['personalisation'] ?? null) === true && ProcessingPurpose::TodayRank->available()) {
-                app(ProcessingOptIns::class)->turnOn($user, ProcessingPurpose::TodayRank, config('bureaucracy_privacy.notice_version'), ProcessingPurpose::TodayRank->providerVersion());
+                app(ProcessingOptIns::class)->turnOn($user, ProcessingPurpose::TodayRank, ProcessingPurpose::TodayRank->noticeVersion(), ProcessingPurpose::TodayRank->providerVersion());
             }
 
             $user->userSetting()->updateOrCreate(
@@ -62,6 +67,11 @@ class UserSettingController extends Controller
 
             return $merged;
         });
+
+        // Saved on: Today put in order now rather than at the next morning's run.
+        if (($validated['settings']['personalisation'] ?? null) === true && ProcessingPurpose::TodayRank->available()) {
+            dispatch(new RankToday($request->user()->id));
+        }
 
         return response()->json(['settings' => $merged]);
     }

@@ -119,7 +119,7 @@ test('🔒 an "around you now" answer draws every block it rests on', async ({
     // Who wrote it, and where to check it.
     await expect(
         // Stored before #330, no `read`: the AI was given the listings and the weather.
-        reply.getByText('Written by AI from the listings and the weather;', {
+        reply.getByText('From the listings and the weather;', {
             exact: false,
         }),
     ).toBeVisible();
@@ -150,10 +150,9 @@ test('🔒 the fine print names only what the AI was given', async ({ page }) =>
     const reply = await ask(page, 'ai', ['taste', 'listings', 'weather']);
 
     await expect(
-        reply.getByText(
-            'Written by AI from the listings, the weather and what you like;',
-            { exact: false },
-        ),
+        reply.getByText('From the listings, the weather and what you like;', {
+            exact: false,
+        }),
     ).toBeVisible();
     await expect(reply.getByText('your plans', { exact: false })).toHaveCount(
         0,

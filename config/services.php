@@ -128,6 +128,9 @@ return [
     'llm_pricing' => [
         // Prompts up to 100K tokens; longer ones bill at $0.50 / $2.50.
         'claude-haiku-5-5' => ['input_per_mtok' => 0.10, 'output_per_mtok' => 0.50],
+        // Not used by the app (Haiku only); priced so evals and one-off audits report cost.
+        'claude-sonnet-5-5' => ['input_per_mtok' => 2.00, 'output_per_mtok' => 10.00],
+        'claude-opus-5-5' => ['input_per_mtok' => 4.00, 'output_per_mtok' => 20.00],
     ],
 
     /*
@@ -146,39 +149,6 @@ return [
         'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
         // Composer's assistant: one loop for every message (it looks things up with tools, then answers).
         'prompt_version' => '2026-10-22.assistant.2',
-    ],
-
-    'bureaucracy_llm' => [
-        'enabled' => env('BUREAUCRACY_LLM_ENABLED', false),
-        'base_url' => env('BUREAUCRACY_LLM_BASE_URL', 'https://api.anthropic.com'),
-        'model' => $haiku(env('BUREAUCRACY_LLM_MODEL')),
-        'effort' => env('BUREAUCRACY_LLM_EFFORT', 'low'),
-        'key' => env('BUREAUCRACY_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
-        'processor_name' => env('BUREAUCRACY_LLM_PROCESSOR_NAME', 'Anthropic PBC'),
-        'processor_privacy_url' => env('BUREAUCRACY_LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
-        'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.2'),
-        // Per person per 24 hours; none by default (bureaucracy_privacy.daily_limits).
-        'daily_limit' => env('BUREAUCRACY_LLM_DAILY_LIMIT'),
-    ],
-
-    /*
-     * Paperwork's analyser: answers a case question only from source-checked
-     * cards, behind the same per-request consent gate as fact extraction. Off
-     * by default; without it the endpoint returns the related cards only.
-     */
-    'paperwork_analyser' => [
-        'enabled' => env('PAPERWORK_ANALYSER_ENABLED', false),
-        'base_url' => env('PAPERWORK_ANALYSER_BASE_URL', 'https://api.anthropic.com'),
-        'model' => $haiku(env('PAPERWORK_ANALYSER_MODEL')),
-        'effort' => env('PAPERWORK_ANALYSER_EFFORT', 'low'),
-        'key' => env('PAPERWORK_ANALYSER_KEY') ?: env('ANTHROPIC_API_KEY'),
-        'processor_name' => env('PAPERWORK_ANALYSER_PROCESSOR_NAME', 'Anthropic PBC'),
-        'processor_privacy_url' => env('PAPERWORK_ANALYSER_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
-        'timeout' => (int) env('PAPERWORK_ANALYSER_TIMEOUT', 15),
-        'prompt_version' => env('PAPERWORK_ANALYSER_PROMPT_VERSION', '2026-10-21.analyser.1'),
-        // Per person per 24 hours; none by default (bureaucracy_privacy.daily_limits).
-        'daily_limit' => env('PAPERWORK_ANALYSER_DAILY_LIMIT'),
     ],
 
     'motis' => [

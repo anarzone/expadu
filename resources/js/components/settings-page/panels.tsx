@@ -3,7 +3,14 @@ import { useEffect, useState } from 'react';
 import ComposerPaperworkPermissionController from '@/actions/App/Http/Controllers/ComposerPaperworkPermissionController';
 import AccountExportController from '@/actions/App/Http/Controllers/Settings/AccountExportController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import {
+    AiOrderChange,
+    agreeToAiOrder,
+} from '@/components/personalisation/ai-order-paused';
+import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
+import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
 import type { IconName } from '@/components/ui/icon';
+import { Sheet } from '@/components/ui/sheet';
 import { csrfHeaders } from '@/lib/csrf';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
@@ -249,7 +256,7 @@ export function AccountPanel({
     );
 }
 
-/** Where personalisation learns from (PersonalisationWording, the second wording). */
+/** Where personalisation learns from (PersonalisationWording, from the second wording). */
 const LEARNS_FROM: [IconName, string][] = [
     ['pin', 'Places'],
     ['calendar', 'Events'],
@@ -258,25 +265,87 @@ const LEARNS_FROM: [IconName, string][] = [
     ['spark', 'Composer topics'],
 ];
 
-/** Personalised suggestions: the opt-in (EXP-182); off erases what was learned. */
-export function LearnPanel() {
-    const { userSettings } = usePage<{
-        userSettings?: Record<string, boolean | string>;
+/** What it never uses (App\Personalisation\Sensitive; what TodayRank never sends). */
+const NEVER_USES = [
+    'Your Paperwork and documents',
+    'What you type to Composer',
+    'Your exact location',
+    'Places of worship, health services and LGBTQ+ venues',
+    'Events about religion, politics, unions, health or LGBTQ+ life',
+];
+
+/** What it learned (App\Personalisation\Learned); null while it's off. */
+type Learned = {
+    actions: number;
+    leanings: string[];
+    /** When Today was put in order for them today, as HH:MM. */
+    ordered_at: string | null;
+} | null;
+
+const capitalised = (words: string) =>
+    words.charAt(0).toUpperCase() + words.slice(1);
+
+/** What turning it off deletes, from what was learned. */
+function forgetting(learned: Learned): string[] {
+    if (!learned) {
+        return [];
+    }
+
+    return [
+        ...(learned.actions > 0
+            ? [
+                  `${learned.actions} ${learned.actions === 1 ? 'action' : 'actions'} learned`,
+              ]
+            : []),
+        ...(learned.leanings.length > 0
+            ? [
+                  `Your interests (${learned.leanings.map(capitalised).join(', ')})`,
+              ]
+            : []),
+        ...(learned.ordered_at ? ['Today’s order made for you'] : []),
+    ];
+}
+
+/**
+ * Privacy (owner, 29 Oct 2026, the consent canvas's boards 1, 2 and 7):
+ * personalised suggestions, said in full: what it learns from, what it
+ * never uses, who puts Today in order, how long it's kept. On needs their
+ * word that they're 16 or older; off deletes what was learned, asked first.
+ */
+export function PrivacyPanel() {
+    const { userSettings, todayRankPaused, learned } = usePage<{
+        userSettings?: Record<string, boolean | string | number>;
+        /** Today's AI order, waiting for them to agree to a change (TodayRankPause). */
+        todayRankPaused?: AiOrderPaused;
+        learned?: Learned;
     }>().props;
     const [on, setOn] = useState<boolean>(
         (userSettings?.personalisation as boolean) ?? false,
     );
-    // On under the older wording (places and events only): Today, Travel
-    // and Composer join once they turn it on again under this one
-    // (PersonalisationWording).
+    // On under an older wording (PersonalisationWording): the first learned
+    // from places and events only; each asks them to turn it on again
+    // under this one.
     const older = on && userSettings?.personalisation_current === false;
+    const first = Number(userSettings?.personalisation_wording ?? 1) < 2;
+    const [age, setAge] = useState(false);
+    const [needAge, setNeedAge] = useState(false);
     const [asking, setAsking] = useState(false);
+    const [reviewing, setReviewing] = useState(false);
+    const [agreeing, setAgreeing] = useState(false);
     const [erased, setErased] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const deleting = forgetting(learned ?? null);
 
     async function save(next: boolean) {
         if (busy) {
+            return;
+        }
+
+        if (next && !age) {
+            setNeedAge(true);
+            focusSoon('[data-age]');
+
             return;
         }
 
@@ -286,11 +355,20 @@ export function LearnPanel() {
         try {
             await writeJson('/user-settings', 'PUT', {
                 settings: { personalisation: next },
+                ...(next ? { sixteen_or_older: true } : {}),
             });
             setOn(next);
             setAsking(false);
             setErased(!next);
-            router.reload({ only: ['userSettings'] });
+            setAge(false);
+            router.reload({
+                only: [
+                    'userSettings',
+                    'learned',
+                    'todayRank',
+                    'todayRankPaused',
+                ],
+            });
             focusSoon('[data-learn]');
         } catch (e) {
             setError(
@@ -303,34 +381,88 @@ export function LearnPanel() {
         }
     }
 
-    const keep = () => {
-        setAsking(false);
-        focusSoon('[data-learn]');
+    // Agreed to the change: Settings reads Today's AI order afresh.
+    const agreed = () => {
+        setReviewing(false);
+        router.reload({ only: ['todayRank', 'todayRankPaused', 'learned'] });
     };
 
+    async function agreeNow(paused: NonNullable<AiOrderPaused>) {
+        if (agreeing) {
+            return;
+        }
+
+        setAgreeing(true);
+        setError('');
+
+        try {
+            await agreeToAiOrder(paused);
+            agreed();
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? e.message
+                    : 'That didn’t go through. Try again.',
+            );
+        } finally {
+            setAgreeing(false);
+        }
+    }
+
+    const ageBox = (
+        <>
+            <label className="privacy-age">
+                <input
+                    type="checkbox"
+                    data-age
+                    checked={age}
+                    aria-describedby={needAge ? 'privacy-age-error' : undefined}
+                    onChange={(event) => {
+                        setAge(event.target.checked);
+                        setNeedAge(false);
+                    }}
+                />
+                I’m 16 or older
+            </label>
+            {needAge ? (
+                <p className="settings-error" id="privacy-age-error">
+                    Tick this first: you need to be 16 or older to turn it on.
+                </p>
+            ) : null}
+        </>
+    );
+
     return (
-        <section className="settings-panel" aria-labelledby="learn-title">
+        <section className="settings-panel" aria-labelledby="privacy-title">
             <div className="settings-head">
                 <span className="settings-chip learn">
-                    <SettingsIcon name="spark-small" />
+                    <SettingsIcon name="eye" />
                 </span>
                 <div>
-                    <h2 id="learn-title">Personalised suggestions</h2>
+                    <h2 id="privacy-title">Privacy</h2>
                     <p>
-                        Let Expadu learn from the places, events, Today alerts,
-                        Travel stops and Composer topics you open, search, save,
-                        skip or dismiss, and let AI (Claude Haiku) put Today in
-                        order from that.
+                        What Expadu learns from what you do, and the AI that
+                        puts Today in order from it.
                     </p>
                 </div>
             </div>
             <div className="settings-tiles">
                 <div className="settings-tile">
                     <span className="settings-tile-copy">
-                        <strong id="learn-label">Learn what I like</strong>
+                        <strong id="learn-label">
+                            Put what suits you first
+                        </strong>
                         <span className="settings-tile-note" id="learn-state">
+                            Today puts the events and places you’re most likely
+                            to want first, and says why.
+                        </span>
+                        <span
+                            className={
+                                on ? 'privacy-state is-on' : 'privacy-state'
+                            }
+                        >
                             {on
-                                ? 'On: suggestions follow what you open and save'
+                                ? 'On: your suggestions follow what you open and save'
                                 : 'Off: everyone sees the same suggestions'}
                         </span>
                     </span>
@@ -339,14 +471,13 @@ export function LearnPanel() {
                         className="settings-switch"
                         role="switch"
                         aria-checked={on}
-                        aria-labelledby="learn-label"
+                        aria-label="Personalised suggestions"
                         aria-describedby="learn-state"
                         aria-busy={busy || undefined}
                         data-learn
                         onClick={() => {
                             if (on) {
                                 setAsking(true);
-                                focusSoon('[data-keep-on]');
                             } else {
                                 void save(true);
                             }
@@ -354,54 +485,92 @@ export function LearnPanel() {
                     />
                 </div>
             </div>
-            {older && !asking ? (
-                <p className="settings-learn-older">
-                    It learns only from places and events for now.{' '}
+            {!on ? ageBox : null}
+            {older ? (
+                <div className="privacy-older">
+                    <p>
+                        {first
+                            ? 'It learns only from places and events for now. '
+                            : 'This now says in full what it never uses and who puts Today in order. '}
+                        Confirm you’re 16 or older and turn it on again
+                        {first
+                            ? ' to include Today, Travel and Composer.'
+                            : ' to keep it.'}
+                    </p>
+                    {ageBox}
                     <button
                         type="button"
-                        className="settings-link"
+                        className="settings-quiet"
                         aria-busy={busy || undefined}
                         onClick={() => void save(true)}
                     >
                         Turn on again
-                    </button>{' '}
-                    to include Today, Travel and Composer.
-                </p>
-            ) : null}
-            {asking ? (
-                <div
-                    className="settings-confirm"
-                    role="group"
-                    aria-labelledby="off-title"
-                    onKeyDown={(event) => event.key === 'Escape' && keep()}
-                >
-                    <strong id="off-title">
-                        Turn off and delete what was learned?
-                    </strong>
-                    <p>
-                        What Expadu learned from what you opened, saved or
-                        skipped is deleted, and can’t be brought back.
-                        Suggestions go back to the same ones everyone sees.
-                    </p>
-                    <div className="settings-actions">
-                        <button
-                            type="button"
-                            className="settings-quiet"
-                            data-keep-on
-                            onClick={keep}
-                        >
-                            Keep it on
-                        </button>
-                        <button
-                            type="button"
-                            className="settings-primary"
-                            aria-busy={busy || undefined}
-                            onClick={() => void save(false)}
-                        >
-                            Turn off and delete
-                        </button>
-                    </div>
+                    </button>
                 </div>
+            ) : null}
+            {on && !older && todayRankPaused ? (
+                <div className="ai-order-note" role="status">
+                    <SettingsIcon name="clock" />
+                    <div>
+                        <strong>Today’s AI order is paused</strong>
+                        <p>
+                            We changed how the AI that puts Today in order
+                            works. Until you agree to the change, Today shows
+                            the order everyone sees. What Expadu learned is
+                            kept.
+                        </p>
+                        <div className="settings-actions">
+                            <button
+                                type="button"
+                                className="settings-primary"
+                                aria-busy={agreeing || undefined}
+                                onClick={() => void agreeNow(todayRankPaused)}
+                            >
+                                Agree to the change
+                            </button>
+                            <button
+                                type="button"
+                                className="settings-quiet"
+                                onClick={() => setReviewing(true)}
+                            >
+                                See what changed
+                            </button>
+                        </div>
+                    </div>
+                    <AiOrderChange
+                        paused={todayRankPaused}
+                        open={reviewing}
+                        onClose={() => setReviewing(false)}
+                        onAgreed={agreed}
+                        notNow={() => setReviewing(false)}
+                    />
+                </div>
+            ) : null}
+            {on && learned ? (
+                <dl className="privacy-learned">
+                    <div>
+                        <dt>
+                            {learned.actions === 0
+                                ? 'Nothing yet'
+                                : learned.actions}
+                        </dt>
+                        <dd>actions learned</dd>
+                    </div>
+                    {learned.leanings.length > 0 ? (
+                        <div>
+                            <dt>
+                                {learned.leanings.map(capitalised).join(', ')}
+                            </dt>
+                            <dd>you lean towards</dd>
+                        </div>
+                    ) : null}
+                    {learned.ordered_at ? (
+                        <div>
+                            <dt>{learned.ordered_at}</dt>
+                            <dd>Today last ordered</dd>
+                        </div>
+                    ) : null}
+                </dl>
             ) : null}
             {error ? (
                 <p className="settings-error" role="alert">
@@ -415,23 +584,99 @@ export function LearnPanel() {
                         : ''
                 }
             />
-            {/* What it learns from, as the text above says it: under the
-                older wording, places and events only. */}
-            {on ? (
-                <>
-                    <h3 className="settings-sub">It learns from</h3>
-                    <ul className="settings-learns">
-                        {(older ? LEARNS_FROM.slice(0, 2) : LEARNS_FROM).map(
-                            ([icon, label]) => (
-                                <li key={label}>
-                                    <SettingsIcon name={icon} />
-                                    {label}
-                                </li>
-                            ),
-                        )}
-                    </ul>
-                </>
-            ) : null}
+            <h3 className="settings-sub">What it learns from</h3>
+            <ul className="settings-learns">
+                {(older && first ? LEARNS_FROM.slice(0, 2) : LEARNS_FROM).map(
+                    ([icon, label]) => (
+                        <li key={label}>
+                            <SettingsIcon name={icon} />
+                            {label}
+                        </li>
+                    ),
+                )}
+            </ul>
+            <p className="privacy-fine">
+                What you open, save, plan, travel to or turn down there.
+            </p>
+            <h3 className="settings-sub">What it never uses</h3>
+            <ul className="privacy-never">
+                {NEVER_USES.map((line) => (
+                    <li key={line}>
+                        <SettingsIcon name="cancel" />
+                        {line}
+                    </li>
+                ))}
+            </ul>
+            <h3 className="settings-sub">Who puts it in order</h3>
+            <p className="privacy-ai">
+                <SettingsIcon name="spark-small" />
+                <span>
+                    <strong>
+                        Claude Haiku, an AI model by Anthropic in the USA,
+                    </strong>{' '}
+                    puts Today’s ideas in order from what was learned, and words
+                    the short “why” lines. It gets your interests, never your
+                    name, email or account. Anthropic doesn’t train its models
+                    on it.
+                </span>
+            </p>
+            <p className="privacy-fine">
+                Kept for 90 days, then deleted. Turning this off deletes
+                everything learned at once. Your yes is saved with the date and
+                this wording (version 3).{' '}
+                <a href="/datenschutz">Privacy notice</a> ·{' '}
+                <HowWeRankLink className="privacy-link" />
+            </p>
+            <Sheet
+                open={asking}
+                onClose={() => {
+                    setAsking(false);
+                    focusSoon('[data-learn]');
+                }}
+                title="Turn off and delete what we learned?"
+                description="Suggestions go back to the same order for everyone."
+                footer={
+                    <>
+                        <p className="privacy-fine is-wide">
+                            This can’t be undone. You can turn it on again any
+                            time and it starts fresh.
+                        </p>
+                        <button
+                            type="button"
+                            className="settings-quiet"
+                            onClick={() => {
+                                setAsking(false);
+                                focusSoon('[data-learn]');
+                            }}
+                        >
+                            Keep it on
+                        </button>
+                        <button
+                            type="button"
+                            className="settings-danger"
+                            aria-busy={busy || undefined}
+                            onClick={() => void save(false)}
+                        >
+                            Turn off and delete
+                        </button>
+                    </>
+                }
+            >
+                {deleting.length > 0 ? (
+                    <>
+                        <p className="privacy-lead">We delete:</p>
+                        <ul className="privacy-deletes">
+                            {deleting.map((line) => (
+                                <li key={line}>{line}</li>
+                            ))}
+                        </ul>
+                    </>
+                ) : (
+                    <p className="privacy-lead">
+                        Nothing has been learned yet.
+                    </p>
+                )}
+            </Sheet>
         </section>
     );
 }

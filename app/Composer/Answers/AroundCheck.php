@@ -15,7 +15,7 @@ final class AroundCheck
     public const MAX_LENGTH = 300;
 
     /** Capitalised words that name nothing to check: the speaker, the app and its parts, the city, days and months. */
-    private const ALWAYS = ['i', "i'm", "i'll", "i've", "i'd", 'expadu', 'composer', 'paperwork', 'travel', 'events', 'cologne', 'köln',
+    private const ALWAYS = ['i', "i'm", "i'll", "i've", "i'd", 'expadu', 'composer', 'paperwork', 'travel', 'events', 'cologne', 'köln', 'germany', 'kvb',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'ok'];
 
@@ -36,7 +36,9 @@ final class AroundCheck
         // Kinds of place a sentence may start with ("Places can't be filtered…", "Cafés near you…").
         'places', 'restaurants', 'cafés', 'cafes', 'bars', 'pubs', 'libraries', 'museums', 'parks', 'playgrounds', 'pitches', 'gyms', 'gym',
         'coworking', 'pools', 'climbing',
-        'shops', 'bakeries', 'pharmacies', 'supermarkets', 'events', 'concerts', 'listings'];
+        'shops', 'bakeries', 'pharmacies', 'supermarkets', 'events', 'concerts', 'listings',
+        // "Welcome to Ehrenfeld!", "Further options…", "Prices aren't listed", "Tap Apply on the card" (composer:eval, 29 Oct 2026).
+        'welcome', 'further', 'among', 'most', 'every', 'same', 'going', 'ask', 'tap', 'prices'];
 
     /** Claims a sentence may make only when its items make them too. */
     private const CLAIMS = ['/\bfree\b/u', '/\bcheap\w*/u', '/\bexpensive\b/u', '/\bsold[ -]?out\b/u', '/\btickets?\b/u', '/€|\beuros?\b/u',
@@ -83,26 +85,41 @@ final class AroundCheck
      */
     public function holds(string $sentence, string $source, bool $personal = false, int $named = 0): bool
     {
+        return $this->why($sentence, $source, $personal, $named) === null;
+    }
+
+    /** Why a sentence doesn't hold, in a few words (composer:eval and the logs read it), or null when it does. */
+    public function why(string $sentence, string $source, bool $personal = false, int $named = 0): ?string
+    {
         $sentence = trim(str_replace(['’', '‘'], "'", $sentence));
         $lower = mb_strtolower($sentence);
         $source = mb_strtolower(str_replace(['’', '‘'], "'", $source));
 
         if ($sentence === '' || mb_strlen($sentence) > self::MAX_LENGTH || preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence)
             || (! $personal && (preg_match(self::HEDGES, $lower) || preg_match(self::PERSONAL, $lower)))) {
-            return false;
+            return match (true) {
+                $sentence === '' => 'empty',
+                mb_strlen($sentence) > self::MAX_LENGTH => 'too long',
+                preg_match('/https?:|www\.|[*_#`<>\n]/u', $sentence) === 1 => 'a link or markup',
+                preg_match(self::HEDGES, $lower, $hedge) === 1 => 'hedged: '.$hedge[0],
+                default => 'about their own day',
+            };
         }
         // A count holds when it's how many things the sentence names, or a number its results give ("3 places nearby").
-        preg_match_all(self::COUNTS, $lower, $counts);
+        // A length of time ("your two hours", "a two-hour walk") counts nothing.
+        preg_match_all(self::COUNTS, preg_replace('/'.substr(self::COUNTS, 1, -2).'[ -](?:hours?|minutes?|mins?|days?|nights?|weeks?|months?|years?)\b/u', '', $lower), $counts);
         if (collect($counts[0])->contains(fn (string $count): bool => (self::NUMBERS[$count] ?? PHP_INT_MAX) > $named
             && (! isset(self::NUMBERS[$count]) || preg_match('/\b'.self::NUMBERS[$count].'\b/u', $source) !== 1))) {
-            return false;
+            return 'a count: '.implode(', ', $counts[0]);
         }
 
         // Every number and time, as written in the items.
         preg_match_all('/\d+(?:[:.,]\d+)*/u', $sentence, $numbers);
         preg_match_all('/\d+(?:[:.,]\d+)*/u', $source, $known);
-        if (array_diff($numbers[0], $known[0]) !== []) {
-            return false;
+        // A price as either writes it: "€27.50" for a listing's "27,50 €", "€48" for "48.00".
+        $price = fn (string $n): string => preg_replace(['/^(\d+),(\d{1,2})$/u', '/^(\d+)\.0+$/u'], ['$1.$2', '$1'], $n);
+        if (($unknown = array_diff(array_map($price, $numbers[0]), array_map($price, $known[0]))) !== []) {
+            return 'a number not in its results: '.implode(', ', $unknown);
         }
 
         // An unlisted fact ("has Wi-Fi", "good for laptops") holds only where a source says it, not where
@@ -113,18 +130,22 @@ final class AroundCheck
         preg_match_all(self::UNLISTED, $said, $listed);
         $listed = array_map($fact, $listed[0]);
         preg_match_all(self::UNLISTED, $lower, $claimed);
-        if (preg_match(self::NOT, $lower) !== 1 && collect($claimed[0])->contains(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) {
-            return false;
+        if (preg_match(self::NOT, $lower) !== 1 && ($unlistedClaim = collect($claimed[0])->first(fn (string $phrase): bool => ! in_array($fact($phrase), $listed, true))) !== null) {
+            return 'not listed: '.$unlistedClaim;
         }
+        $excused = [];
         foreach (self::CLAIMS as $claim) {
-            if (preg_match($claim, $lower) && ! preg_match($claim, $source)) {
-                return false;
+            if (preg_match($claim, $lower, $made) && ! preg_match($claim, $source)) {
+                if (! self::saysUnknown($lower, $made[0])) {
+                    return 'a claim its results don\'t make: '.$made[0];
+                }
+                $excused[] = $made[0];
             }
         }
 
-        // The words of an unlisted fact it names ("Live music isn't listed") are words, not names.
+        // The words of an unlisted fact it names ("Live music isn't listed", "Step-free access isn't listed") are words, not names.
         preg_match_all(self::UNLISTED, $lower, $phrases);
-        $unlisted = array_merge([], ...array_map(fn (string $phrase): array => preg_split('/[\s-]+/u', $phrase), $phrases[0]));
+        $unlisted = [...$phrases[0], ...$excused, ...array_merge([], ...array_map(fn (string $phrase): array => preg_split('/[\s-]+/u', $phrase), [...$phrases[0], ...$excused]))];
         // Every name: a capitalised word the items hold, unless it's the speaker, the
         // app, the city, a day or month, or an ordinary word starting a sentence.
         preg_match_all("/\p{Lu}[\p{L}'-]*/u", $sentence, $names, PREG_OFFSET_CAPTURE);
@@ -137,9 +158,33 @@ final class AroundCheck
                 continue;
             }
 
-            return false;
+            return 'a name not in its results: '.$name;
         }
 
-        return true;
+        return null;
+    }
+
+    /**
+     * The sentence says that very fact isn't listed or can't be confirmed ("Step-free access isn't
+     * listed for either park", "I can't confirm step-free access"): the words right beside it, in
+     * the same clause, so "It's step-free, but its hours aren't listed" still claims it. Before
+     * 30 Oct 2026 every such sentence was dropped, and Composer couldn't tell a wheelchair user
+     * that access is unknown.
+     */
+    private static function saysUnknown(string $lower, string $word): bool
+    {
+        $w = preg_quote($word, '/');
+        // The rest of the clause, never past a "but", "though" or "and" that starts another.
+        $gap = '(?:(?!\b(?:but|though|although|while|whereas|and|yet)\b)[^.,;!?:–—]){0,40}';
+
+        return preg_match('/\b'.$w.'(?: (?:access|entry|entrance|routes?|toilets?|facilities|seating))? (?:is|are|was|were)(?: not|n\'t) (?:listed|known|shown|confirmed|mentioned|given|stated)\b/u', $lower) === 1
+            || preg_match('/\b'.$w.'(?: (?:access|entry|entrance))? (?:is |are )?unknown\b/u', $lower) === 1
+            || preg_match('/\b(?:can\'t|cannot|couldn\'t|can not) (?:confirm|say|tell|check)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\b(?:no|none of (?:them|these|those|the \w+)|neither(?: \w+)?) (?:lists?|mentions?|shows?|says?|states?)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\b(?:doesn\'t|don\'t|didn\'t|does not|do not) (?:list|mention|show|say|state)\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\bno (?:information|details|word) (?:on|about)(?: (?:the|its|their))? '.$w.'/u', $lower) === 1
+            // What it looked for and didn't find ("I didn't find a cheap restaurant", "I found no free place").
+            || preg_match('/\b(?:didn\'t|did not|couldn\'t|could not|can\'t|cannot) find\b'.$gap.'\b'.$w.'/u', $lower) === 1
+            || preg_match('/\bfound no\b'.$gap.'\b'.$w.'/u', $lower) === 1;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Composer\Assistant;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Composer\Answers\AroundCheck;
 use App\Composer\Answers\AroundNow;
@@ -52,7 +53,7 @@ final class Assistant
     private const CARD = '/\b(?:the|this|that|a|these|those)\s+cards?\b/iu';
 
     /** A sentence saying it made a change ("I've turned off…", "Done: …"): so only when one was made or proposed. */
-    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|took|put|marked|made|booked|deleted|swapped|replaced|moved)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting|swapping|replacing|moving|taking)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete|swap|replace|move|take)\b|^(?:Done|Saved|Added|Removed|Muted|Unmuted|Dismissed|Starred|Noted|Cleared|Changed|Updated|Marked|Swapped|Replaced|Moved|Took|Turned\s+(?:on|off))\b/iu';
+    private const DONE = '/\b(?:I\s*(?:\'|’)ve|I\s+have)\s+(?:now\s+|just\s+)?(?:turned|switched|saved|set|added|removed|muted|unmuted|dismissed|cleared|changed|updated|starred|noted|taken|took|put(?!\s+together)|marked|made|booked|deleted|swapped|replaced|moved)\b|\bI\s*(?:\'|’)m\s+(?:now\s+|just\s+)?(?:turning|switching|saving|setting|adding|removing|muting|unmuting|dismissing|clearing|changing|updating|starring|noting|putting|marking|booking|deleting|swapping|replacing|moving|taking)\b|\bI\s*(?:\'|’)ll\s+(?:now\s+|just\s+)?(?:turn|switch|save|set|add|remove|mute|unmute|dismiss|clear|change|update|star|note|put|mark|book|delete|swap|replace|move|take)\b|^(?:Done|Saved|Added|Removed|Muted|Unmuted|Dismissed|Starred|Noted|Cleared|Changed|Updated|Marked|Swapped|Replaced|Moved|Took|Turned\s+(?:on|off))\b/iu';
 
     /** Said back to an answer saying it made a change when none was made. */
     private const CLAIMED = 'That answer says a change was made, but none was made for this message. If they asked for it, make it with its tool; otherwise answer without saying it was made.';
@@ -110,7 +111,7 @@ final class Assistant
         - If nothing fits, say plainly what you looked at and offer to plan something.
         TXT;
 
-    /** Added when they allowed Composer to read their Paperwork record for this message (paperwork_answer). */
+    /** Added when they allowed Composer to read their Paperwork record for this message (composer_paperwork). */
     private const PAPERWORK = <<<'TXT'
         They allowed you to read their Paperwork record for this message. When they tell you a new answer, call change_paperwork_fact right away, in your first round, for only the answers they said (a date as YYYY-MM-DD): you needn't read the record first, and the proposal card shows them the change. To tick a step or record a report, call paperwork for the task and step ids, then paperwork_step or paperwork_report. To say what their record says, call paperwork. Say only what the record and the change's result say: never what an office requires, decides or allows.
         TXT;
@@ -152,6 +153,9 @@ final class Assistant
 
     /** @var list<array{text: string, uses: list<string>}> the last answer's sentences that held, with what they cite */
     public array $kept = [];
+
+    /** @var list<array{text: string, why: string}> the last answer's sentences that didn't, and why (composer:eval reads them) */
+    public array $dropped = [];
 
     /** @var array{input: int, output: int, calls: int} the tokens its calls used, since this instance was made */
     public array $usage = ['input' => 0, 'output' => 0, 'calls' => 0];
@@ -239,6 +243,7 @@ final class Assistant
         $now = $now->setTimezone('Europe/Berlin');
         $this->timings = [];
         $this->kept = [];
+        $this->dropped = [];
         $personal = $user->personalises();
         $tools = new AssistantTools($user, $now, $location, $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
@@ -301,7 +306,7 @@ final class Assistant
         $sentBack = false;
         for ($round = 1; $round <= $limit; $round++) {
             $elapsed = (hrtime(true) - $started) / 1e9;
-            $left = self::BUDGET_SECONDS - $elapsed;
+            $left = (float) (config('ai.override.budget_seconds') ?? self::BUDGET_SECONDS) - $elapsed;
             if ($left < 1.5) {
                 return null;
             }
@@ -313,20 +318,21 @@ final class Assistant
             $body = $call(fn () => Http::baseUrl((string) config('services.llm.base_url'))
                 ->withOptions(['allow_redirects' => false])
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
-                ->timeout((int) max(2, min(10, floor($left))))
+                ->timeout((int) max(2, min((int) (config('ai.override.call_timeout') ?? 10), floor($left))))
                 ->connectTimeout(3)
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
                     'output_config' => ['effort' => (string) config('services.llm.effort', 'low')],
                     'tools' => [...AssistantTools::definitions($tools->personal(), $weather, $tools->paperwork()), self::ANSWER],
                     // It must use a tool each round; the last round, the answer.
                     'tool_choice' => $last ? ['type' => 'tool', 'name' => 'answer'] : ['type' => 'any'],
-                    'system' => [['type' => 'text', 'text' => self::SYSTEM, 'cache_control' => ['type' => 'ephemeral']],
+                    // composer:eval --system tries other instructions (AiRequest's eval override).
+                    'system' => [['type' => 'text', 'text' => (string) (config('ai.override.composer_system') ?? self::SYSTEM), 'cache_control' => ['type' => 'ephemeral']],
                         ...($tools->personal() ? [['type' => 'text', 'text' => self::PERSONAL]] : []),
                         ...($tools->paperwork() ? [['type' => 'text', 'text' => self::PAPERWORK]] : [])],
                     'messages' => $messages,
-                ]));
+                ])));
             $this->record($callStarted, $body);
             $this->timings[] = ['call'.$round, (int) round((hrtime(true) - $callStarted) / 1e6)];
             if (! is_array($body) || ($body['stop_reason'] ?? null) !== 'tool_use') {
@@ -350,6 +356,7 @@ final class Assistant
             $hollow = $answer !== null && ! $last && is_array($answer['input'] ?? null)
                 && ($this->built($answer['input'], $tools, $now, $known) === null || ($written->isNotEmpty() && $this->kept === []));
             $this->kept = [];
+            $this->dropped = [];
             $unbacked = $claimed || $pointed || $hollow;
             if ($answer !== null && ! $unbacked) {
                 return is_array($answer['input'] ?? null) ? ['answer' => $answer['input'], 'rounds' => $round] : null;
@@ -403,7 +410,7 @@ final class Assistant
         ]));
         // A sentence citing the person's own facts may speak of them (only they were given those);
         // it may count the listings and places it names, and no more.
-        $holds = fn (string $text, array $uses, string $also = ''): bool => $this->check->holds($text,
+        $why = fn (string $text, array $uses, string $also = ''): ?string => $this->check->why($text,
             $always."\n".$also."\n".implode("\n", array_map(fn (string $id): string => $tools->read[$id], $uses)),
             preg_grep(AssistantTools::PERSONAL_IDS, $uses) !== [],
             // A count may be as many as it names, or as its lookups found ("two more nearby" among 8 pitches).
@@ -411,6 +418,7 @@ final class Assistant
                 + array_sum(array_map(fn (string $id): int => count($tools->cards[$id]['options'] ?? []) + (int) ($tools->cards[$id]['stops'] ?? 0), $uses))
                 // ...and the stops of the plan this conversation made.
                 + (in_array('plan', $uses, true) ? substr_count($tools->read['plan'] ?? '', "\n- ") : 0));
+        $holds = fn (string $text, array $uses, string $also = ''): bool => $why($text, $uses, $also) === null;
         $kept = [];
         $dropped = false;
         $mentioned = [];
@@ -426,6 +434,7 @@ final class Assistant
                 $uses = array_values(array_unique([...$uses, ...preg_grep('/^(r|c|b|k|g|n|x|o|s|plan)\d+$|^here$|^plan$/', array_keys($tools->read))]));
             }
             if (! $holds($s['text'], $uses) || ($dropped && preg_match(self::LEANS, $s['text']) === 1)) {
+                $this->dropped[] = ['text' => trim($s['text']), 'why' => $why($s['text'], $uses) ?? 'leans on a dropped sentence'];
                 $dropped = true;
 
                 continue;
@@ -502,6 +511,11 @@ final class Assistant
         ]));
         if ($false !== []) {
             $holds = fn (string $text): bool => collect($false)->every(fn (string $pattern): bool => preg_match($pattern, $text) !== 1);
+            foreach ($this->kept as $sentence) {
+                if (! $holds($sentence['text'])) {
+                    $this->dropped[] = ['text' => $sentence['text'], 'why' => preg_match(self::CARD, $sentence['text']) === 1 ? 'points at a card not shown' : 'says it did something it didn\'t'];
+                }
+            }
             $kept = array_values(array_filter($kept, $holds));
             $this->kept = array_values(array_filter($this->kept, fn (array $s): bool => $holds($s['text'])));
             $lead = implode(' ', array_slice($kept, 0, 3));

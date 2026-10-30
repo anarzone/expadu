@@ -4,8 +4,6 @@ import { answerLabel, choices, fieldIcon, fieldLabel, order } from './facts';
 import { formatDate } from './format';
 import { Icon } from './icons';
 import { offerFor } from './questions';
-import { SayItInYourWords } from './say-it';
-import type { Suggestion } from './say-it';
 import { usePaperwork } from './state';
 import type { SituationRequest } from './state';
 import type {
@@ -35,8 +33,6 @@ interface Draft {
     question?: Question;
     /** The saved answer as it was when the person reviewed the change. */
     previous?: Answer | null;
-    /** A suggested answer the person chose to use; it is saved only on confirm. */
-    suggestion?: Suggestion | null;
 }
 
 /** Someone who may change the answers but not see them gets the question alone. */
@@ -229,16 +225,7 @@ export function Situation({ request }: { request: SituationRequest }) {
         const { key, answer, operation } = draft;
 
         try {
-            if (operation === 'assert' && draft.suggestion) {
-                // The suggestion the person reviewed: confirmed as they left it.
-                const { session, id, token } = draft.suggestion;
-                await commands.confirmSuggestion(
-                    session,
-                    id,
-                    token,
-                    answer.value,
-                );
-            } else if (operation === 'assert' && draft.question) {
+            if (operation === 'assert' && draft.question) {
                 const offer = await offerFor(
                     plan,
                     jurisdiction,
@@ -581,9 +568,7 @@ export function Situation({ request }: { request: SituationRequest }) {
             definition?.allows_not_applicable ??
             draft.question?.answer_schema.allows_not_applicable;
         const answer = draft.answer;
-        // A hand-picked answer is the person's own, not the suggestion's.
-        const pick = (next: Answer) =>
-            setDraft({ ...draft, answer: next, suggestion: null });
+        const pick = (next: Answer) => setDraft({ ...draft, answer: next });
         const unsure = [
             ...uncertain,
             ...(allowsNotApplicable
@@ -714,24 +699,6 @@ export function Situation({ request }: { request: SituationRequest }) {
                         </button>
                     ))}
                 </div>
-                {kind === 'date' &&
-                !conflict &&
-                draft.question &&
-                plan.ai?.available ? (
-                    <SayItInYourWords
-                        question={draft.question}
-                        label={(value) =>
-                            show(draft.key, { state: 'value', value })
-                        }
-                        onUse={(value, suggestion) =>
-                            setDraft({
-                                ...draft,
-                                answer: { state: 'value', value },
-                                suggestion,
-                            })
-                        }
-                    />
-                ) : null}
                 {draft.operation === 'change' ? (
                     <label className="details-date details-effective">
                         When did this change? <small>Optional</small>

@@ -255,8 +255,8 @@ export function useComposerEngine(
 
         throw new Error(
             read.state === 'on'
-                ? 'Composer answers with an AI service: the line under the box says which. Send again to go ahead.'
-                : 'Couldn’t reach the AI service. Try again.',
+                ? 'Composer needs your go-ahead first: the line under the box says what it sends and to whom. Send again to go ahead.'
+                : 'Couldn’t get an answer. Try again.',
         );
     }
 

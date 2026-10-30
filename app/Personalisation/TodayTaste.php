@@ -4,6 +4,8 @@ namespace App\Personalisation;
 
 use App\Enums\SpotCategory;
 use App\Models\User;
+use App\Privacy\ProcessingOptIns;
+use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -106,7 +108,8 @@ final class TodayTaste
     /**
      * Today's events and open places in the order the AI put them, with a "why" for some, for today
      * (TodayRank, worked out in the background); null for the builders' own order: the first view of
-     * the day, personalisation off, or the AI's reply not holding.
+     * the day, personalisation off, the AI's reply not holding, or its permission waiting for them
+     * to agree to a change (TodayRankPause), even for an order made earlier in the day.
      *
      * @return array{events: list<string>, places: list<string>, why: array<string, string>, at: string}|null
      */
@@ -114,7 +117,8 @@ final class TodayTaste
     {
         $order = Cache::get(self::orderKey($user->id));
 
-        return is_array($order) && PersonalisationWording::covers($user, 2) ? $order : null;
+        return is_array($order) && PersonalisationWording::covers($user, 2)
+            && app(ProcessingOptIns::class)->active($user, ProcessingPurpose::TodayRank) ? $order : null;
     }
 
     private static function key(int $userId): string

@@ -56,7 +56,7 @@ test('🔒 without the person\'s say-so for the request, nothing is sent and the
 
     Http::assertNothingSent();
     expect($answer)->without_ai->toBe('unpermitted')->written->toBe('code')
-        ->text->toBe('I answer with an AI service, and this message came without your go-ahead for it, so I haven’t read it.')
+        ->text->toBe('This message came without your go-ahead to send it on, so I haven’t read it.')
         // One line, never the "without the AI" cards (weather, listings) that read as if it were off.
         ->and($answer['blocks'] ?? [])->toBe([])
         ->and($answer['suggestions'])->toBe([['label' => 'Send it again', 'prompt' => 'Anmeldung appointment']]);
@@ -72,8 +72,8 @@ test('🔒 Composer permission is purpose scoped, and a retry with the same say-
         ->and(BureaucracyProcessingConsent::query()->sole()->purpose)->toBe('composer_assist');
 });
 
-test('🔒 permission for fact extraction does not also authorise Composer', function () {
-    consentAsk($this, 'Anmeldung appointment', ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction)])
+test('🔒 permission for another purpose does not also authorise Composer', function () {
+    consentAsk($this, 'Anmeldung appointment', ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::NotificationBrief)])
         ->assertUnprocessable();
     Http::assertNothingSent();
 });
@@ -117,7 +117,7 @@ test('🔒 an answer without the AI says why, and one the AI wrote says nothing 
     config()->set('bureaucracy_privacy.daily_limits.composer_assist', 1);
     $limited = collect(consentAsk($this, 'Anmeldung appointment please', ['processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerAssist)])
         ->assertOk()->json('conversations.0.messages'))->last();
-    expect($limited)->without_ai->toBe('limited')->and($limited['text'])->toStartWith('Composer’s AI has reached today’s limit');
+    expect($limited)->without_ai->toBe('limited')->and($limited['text'])->toStartWith('I’ve reached today’s limit');
 
     // The AI off: nothing is sent, whatever the page sends.
     config()->set('services.llm.driver', 'off');

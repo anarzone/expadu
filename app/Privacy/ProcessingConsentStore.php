@@ -2,12 +2,9 @@
 
 namespace App\Privacy;
 
-use App\Bureaucracy\Ai\FactExtractionAccess;
 use App\Bureaucracy\Analyser\AnalyserAccess;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseMessage;
-use App\Models\BureaucracyCaseQuestion;
-use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\ProcessingOptIn;
 use App\Models\User;
@@ -20,34 +17,29 @@ use Illuminate\Validation\ValidationException;
 final class ProcessingConsentStore
 {
     /** @param array<string, mixed> $context @param array<string, mixed> $acceptance */
-    public function grant(User $actor, ProcessingPurpose $purpose, array $context, array $acceptance, ?BureaucracyCase $case = null, ?BureaucracyCaseQuestion $question = null): ProcessingPermit
+    public function grant(User $actor, ProcessingPurpose $purpose, array $context, array $acceptance, ?BureaucracyCase $case = null): ProcessingPermit
     {
         if (($acceptance['consent'] ?? null) !== true
             || ! is_string($acceptance['request_id'] ?? null) || ! Str::isUuid($acceptance['request_id'])
-            || ($acceptance['notice_version'] ?? null) !== config('bureaucracy_privacy.notice_version')
+            || ($acceptance['notice_version'] ?? null) !== $purpose->noticeVersion()
             || ($acceptance['provider_version'] ?? null) !== $purpose->providerVersion()) {
             throw ValidationException::withMessages(['processing' => 'Please review the current permission for this request.']);
         }
 
-        return DB::transaction(function () use ($actor, $purpose, $context, $acceptance, $case, $question): ProcessingPermit {
+        return DB::transaction(function () use ($actor, $purpose, $context, $acceptance, $case): ProcessingPermit {
             User::query()->whereKey($actor->getKey())->lock('for no key update')->firstOrFail();
             if ($case !== null) {
-                $case = app(FactExtractionAccess::class)->lockCase($case->id);
+                $case = CaseLock::lock($case->id);
                 if ($case === null) {
                     throw new AuthorizationException;
                 }
             }
-            if ($purpose === ProcessingPurpose::FactExtraction) {
-                $current = $case && $question ? app(FactExtractionAccess::class)->question($actor, $case, $question->id, $context) : null;
-                if ($current === null || $question === null || $current->id !== $question->id || $current->answered_at !== null) {
-                    throw new AuthorizationException;
-                }
-            } elseif (in_array($purpose, [ProcessingPurpose::PaperworkAnswer, ProcessingPurpose::ComposerPaperwork], true)) {
+            if ($purpose === ProcessingPurpose::ComposerPaperwork) {
                 // Bound to one case, so withdrawing or erasing that person ends it too.
-                if ($case === null || $question !== null || ! app(AnalyserAccess::class)->allows($actor, $case)) {
+                if ($case === null || ! app(AnalyserAccess::class)->allows($actor, $case)) {
                     throw new AuthorizationException;
                 }
-            } elseif ($case !== null || $question !== null) {
+            } elseif ($case !== null) {
                 throw new AuthorizationException;
             }
 
@@ -57,7 +49,7 @@ final class ProcessingConsentStore
                 ->where('request_key', $acceptance['request_id'])->lockForUpdate()->first();
             if ($existing !== null) {
                 if ($existing->purpose !== $purpose->value || ! hash_equals($existing->input_digest, $digest)
-                    || $existing->case_id !== $case?->id || $existing->question_id !== $question?->id
+                    || $existing->case_id !== $case?->id || $existing->question_id !== null
                     || $existing->provider_version !== $purpose->providerVersion()
                     || $existing->notice_version !== $acceptance['notice_version']) {
                     throw ValidationException::withMessages(['processing.request_id' => 'This request identifier was already used for different input.']);
@@ -71,7 +63,7 @@ final class ProcessingConsentStore
 
             $row = BureaucracyProcessingConsent::query()->create([
                 'id' => (string) Str::uuid(), 'actor_id' => $actor->getKey(), 'case_id' => $case?->id,
-                'question_id' => $question?->id, 'fact_version' => $case?->fact_version,
+                'fact_version' => $case?->fact_version,
                 'request_key' => $acceptance['request_id'], 'purpose' => $purpose->value,
                 'provider_version' => $purpose->providerVersion(), 'notice_version' => $acceptance['notice_version'],
                 'input_digest' => $digest, 'state' => 'pending', 'granted_at' => now()->utc(),
@@ -110,13 +102,10 @@ final class ProcessingConsentStore
                 ProcessingOptIn::query()->where('user_id', $actor->id)->whereIn('purpose', array_map(fn (ProcessingPurpose $p): string => $p->value, $standing))
                     ->whereNull('withdrawn_at')->update(['withdrawn_at' => now()->utc()]);
             }
-            BureaucracyExtractionCandidate::query()->whereIn('consent_id', (clone $permissions)->select('id'))
-                ->update(['value' => null, 'confirmation_token' => null, 'state' => 'invalidated']);
-            if ($purpose === null || $purpose === ProcessingPurpose::FactExtraction) {
-                $caseIds = BureaucracyCase::query()->where('user_id', $actor->id)
-                    ->when($case !== null, fn ($query) => $query->whereKey($case->id))->pluck('id')->all();
-                app(LegacyProcessingUsage::class)->preserve($actor, $caseIds);
-                BureaucracyCaseMessage::query()->whereIn('case_id', $caseIds)->delete();
+            // Everything withdrawn: the raw messages kept from before the gate go too.
+            if ($purpose === null) {
+                BureaucracyCaseMessage::query()->whereIn('case_id', BureaucracyCase::query()->where('user_id', $actor->id)
+                    ->when($case !== null, fn ($query) => $query->whereKey($case->id))->select('id'))->delete();
             }
 
             return $inFlight;

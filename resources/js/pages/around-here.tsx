@@ -16,6 +16,7 @@ import type {
     AroundPlace,
 } from '@/components/around-here/place-model';
 import { PlaceRow } from '@/components/around-here/place-row';
+import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { Icon } from '@/components/ui/icon';
 import AppLayout from '@/layouts/app-layout';
@@ -288,6 +289,7 @@ export default function AroundHere({
                                         Show {hiddenCount} more
                                     </button>
                                 ) : null}
+                                <HowWeRankLink />
                                 <p className="place-map-credit">
                                     Place data and maps © OpenStreetMap
                                     contributors · OpenFreeMap. Straight-line

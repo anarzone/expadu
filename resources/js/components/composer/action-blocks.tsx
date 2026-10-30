@@ -176,7 +176,7 @@ export type Disclosure = {
 /** Paperwork needs their say-so before Composer reads or changes it, for this one message. */
 export type PermissionBlock = {
     type: 'permission';
-    purpose: 'composer_paperwork' | 'paperwork_answer';
+    purpose: 'composer_paperwork';
     title: string;
     sub?: string | null;
     disclosure: Disclosure;
@@ -830,7 +830,7 @@ export function Permission({
                         ))
                     ) : (
                         <p>
-                            {`Read by ${disclosure.processor_name}, an AI service, for this message only`}
+                            {`Read by ${disclosure.processor_name} for this message only`}
                         </p>
                     )}
                     {disclosure.processor_privacy_url && (

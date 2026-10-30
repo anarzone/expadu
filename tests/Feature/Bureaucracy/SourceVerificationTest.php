@@ -112,6 +112,23 @@ it('requires the stored deadline itself to be quoted', function () {
         ->toBe(['the 30-day deadline needs a `covers: deadline` claim whose quote states that period']);
 });
 
+it('backs a deadline in months with its shortest span, never a later day', function (int $days, array $errors) {
+    $card = checkedCard([
+        'description' => 'Register within a six-month period under §17 BMG after moving in.',
+        'deadline_days' => $days,
+        'claims' => [
+            ['id' => 'period', 'states' => 'six-month period under §17 BMG', 'source' => '§17 BMG', 'quote' => 'innerhalb von sechs Monaten nach dem Einzug'],
+            ['id' => 'deadline', 'covers' => 'deadline', 'source' => '§17 BMG', 'quote' => 'innerhalb von sechs Monaten nach dem Einzug'],
+        ],
+    ]);
+
+    expect(app(ClaimCheck::class)->offlineErrors($card))->toBe($errors);
+})->with([
+    'the shortest six months' => [181, []],
+    'a day later than some six months' => [182, ['the 182-day deadline needs a `covers: deadline` claim whose quote states that period']],
+    'thirty days a month' => [180, ['the 180-day deadline needs a `covers: deadline` claim whose quote states that period']],
+]);
+
 it('rejects malformed claims before anything is fetched', function (array $claims, string $error) {
     expect(app(ClaimCheck::class)->offlineErrors(checkedCard(['claims' => $claims])))->toContain($error);
 })->with([

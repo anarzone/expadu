@@ -43,7 +43,7 @@ final class AccountData
             'travel.json' => ['Your places (Home, Work), favourite stops, saved and recent journeys, planned and active trips.', fn () => $this->travel($user)],
             'alerts.json' => ['Alerts and notifications sent to you, and what you muted.', fn () => $this->alerts($user)],
             'activity.json' => ['What you did in the app that Expadu recorded (opened, saved, skipped).', fn () => $this->activity($user)],
-            'personalisation.json' => ['What personalisation learned (places, events, Today alerts, Travel stops and Composer topics), kept under a pseudonym; each signal says what it was.', fn () => $this->personalisation($user)],
+            'personalisation.json' => ['What personalisation learned (places, events, Today alerts, Travel stops and Composer topics) and the lists Today showed, kept under a pseudonym; each signal says what it was.', fn () => $this->personalisation($user)],
             'location.json' => ['Locations kept for the last 7 days, when location sharing is on.', fn () => $this->location($user)],
         ];
 
@@ -94,7 +94,6 @@ final class AccountData
     {
         return [
             'processing' => $this->rows('bureaucracy_processing_consents', 'actor_id', $user->id),
-            'legacy_processing' => $this->rows('bureaucracy_processing_legacy_usage', 'actor_id', $user->id),
             // What they turned on until they turn it off (AI briefs, Today's order, Composer's use of their Paperwork).
             'standing' => $this->rows('processing_opt_ins', 'user_id', $user->id),
         ];
@@ -207,6 +206,7 @@ final class AccountData
             'signals' => array_map(fn (array $row): array => ['what' => self::signal($row), ...$row], $this->rows('user_signals', 'subject_key', $subject)),
             'affinities' => $this->rows('user_affinities', 'subject_key', $subject),
             'hidden_places' => $this->rows('user_place_negatives', 'subject_key', $subject),
+            'lists_shown' => $this->rows('list_impressions', 'subject_key', $subject),
         ];
     }
 

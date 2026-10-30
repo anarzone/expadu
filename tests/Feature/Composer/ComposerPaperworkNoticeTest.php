@@ -139,7 +139,7 @@ test('🔒 a Paperwork message sends only what Composer’s Paperwork notice nam
     // Never sent: their coordinates, the address of a saved place.
     $sent = $bodies->map(fn (array $b): string => json_encode($b['messages'], JSON_UNESCAPED_UNICODE))->implode("\n");
     expect($sent)->not->toContain('50.94721')->not->toContain('6.91573')->not->toContain('Venloer Straße 210')
-        ->and($notice)->toContain('Anthropic PBC (Claude Haiku)')
+        ->and($notice)->toContain('it sends to Anthropic PBC: ')
         ->and($notice)->toContain('It never sends your coordinates, the addresses of your saved places, your documents or evidence');
 
     // What it says is kept is what the code keeps: the answer and its cards in their History, the change's

@@ -23,9 +23,7 @@ function assertPlanContract(array $plan): void
     expect($plan['coverage']['state'])->toBeIn($contract['coverage_states'])
         ->and($plan['overview']['next_actions'])->toBe(array_slice($plan['actions'], 0, 3))
         ->and($plan['overview']['remaining_action_count'])->toBe(max(0, count($plan['actions']) - 3))
-        ->and($plan['overview']['question'])->toBe($plan['questions']['question'])
-        ->and($plan['ai']['confirmation_required'])->toBeTrue()
-        ->and($plan['ai']['consent_scope'])->toBe('single_request');
+        ->and($plan['overview']['question'])->toBe($plan['questions']['question']);
     $ids = [];
     foreach ($contract['progress_buckets'] as $bucket) {
         expect($plan['progress'][$bucket]['count'])->toBe(count($plan['progress'][$bucket]['ids']));

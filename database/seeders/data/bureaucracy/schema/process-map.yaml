@@ -1,6 +1,6 @@
 # Structural mapping only. This does not approve prose or declare complete eligibility.
 # `position` is the reviewed display order of a unit's step within its process (1 = first).
-version: '2026-09-08.1'
+version: '2026-10-30.1'
 entries:
   core.anmeldung: {process_id: address.registration, position: 1, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at}
   core.steuer_id: {process_id: tax.identification, position: 1, topic: tax, kind: preparation, coverage: partial}
@@ -51,3 +51,10 @@ entries:
   famde.residence_permit: {process_id: residence.family.german.first, position: 2, topic: residence, kind: action, coverage: partial}
   famde.ne_three_years: {process_id: residence.settlement.german_family, position: 1, topic: residence, kind: context, coverage: partial}
   fameu.aufenthaltskarte: {process_id: residence.family.eu_card, position: 1, topic: residence, kind: action, coverage: partial}
+  # Sourced from their official pages and approved on 2026-10-30 (owner: "if the newly sourced cards are not unlawful to show then I approve").
+  fam.kindergeld: {process_id: family.kindergeld, position: 1, topic: family, kind: action, coverage: partial}
+  shared.child_born: {process_id: residence.child_born, position: 1, topic: residence, kind: context, coverage: partial}
+  stu.bafoeg: {process_id: education.bafoeg, position: 1, topic: education, kind: action, coverage: partial}
+  shared.church_tax: {process_id: tax.church_tax, position: 1, topic: tax, kind: context, coverage: partial}
+  shared.recognition: {process_id: work.recognition, position: 1, topic: work, kind: context, coverage: partial}
+  fam.school_kita: {process_id: education.school_and_childcare, position: 1, topic: education, kind: action, coverage: partial}

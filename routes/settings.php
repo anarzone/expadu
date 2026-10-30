@@ -24,7 +24,8 @@ Route::middleware(['auth', 'throttle:app-writes'])->group(function () {
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::redirect('settings/security', '/settings/account');
-    Route::redirect('settings/privacy', '/settings/transit');
+    // Personalised suggestions is Privacy now (owner, 29 Oct 2026).
+    Route::redirect('settings/suggestions', '/settings/privacy');
 
     // The step-free need: one writer (SetStepFreeNeed), which Composer's set_needs uses too.
     Route::put('settings/needs/step-free', StepFreeNeedController::class)->name('needs.step-free.update');

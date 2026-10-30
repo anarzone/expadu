@@ -2,6 +2,8 @@
 
 namespace App\Personalisation;
 
+use App\Ai\AiRequest;
+use App\Enums\EventCategory;
 use App\Home\TodayDiscovery;
 use App\Models\User;
 use App\Privacy\ExternalProcessingGate;
@@ -28,7 +30,13 @@ final class TodayRanker
     /** What each part of its request is, as its notice names it (ProcessingPurpose::TODAY_WORDS). */
     public const CATEGORIES = ['the_day', 'your_taste', 'recent_interests', 'todays_candidates'];
 
+    /** Logged with each list it ordered (ListImpressions): change it when the prompt, tool or candidates change. */
+    public const VERSION = 'haiku-1';
+
     private const MAX_WHY = 90;
+
+    /** Whys shown at most, as the prompt asks: the first picks' that hold. */
+    private const MAX_WHYS = 3;
 
     private const SYSTEM = <<<'TEXT'
         You put the events and places Today shows a person in Cologne in the order they'd most likely want, from what they lean to and what they looked at lately. Order every id you're given, each once: first those whose kind and neighbourhood match their leanings or recent looks, then the rest, and last any kind they avoid. For at most 3 picks that match, add a why under 70 characters saying which of their leanings it matches ("You've been looking at cafés in Ehrenfeld"): name only the pick's own kind as given in brackets and its own neighbourhood, never its name, no times, no numbers, no reasons of your own. Leave the why out when the pick's own kind or neighbourhood isn't one of their leanings.
@@ -71,7 +79,8 @@ final class TodayRanker
         }
         $recent = $this->recent->for($user);
         $context = ['day' => $now->format('Y-m-d H:i'), 'facts' => $facts === [] ? [] : TasteFacts::forModel($facts),
-            'recent' => ['categories' => array_slice($recent['categories'], 0, 5), 'areas' => array_slice($recent['areas'], 0, 3)], 'candidates' => $candidates];
+            // Other is what nothing else fits, never a leaning (TasteFacts::categoryLabel).
+            'recent' => ['categories' => array_slice(array_values(array_diff($recent['categories'], [EventCategory::Other->value])), 0, 5), 'areas' => array_slice($recent['areas'], 0, 3)], 'candidates' => $candidates];
         $permit = $this->optIns->permit($user, ProcessingPurpose::TodayRank, $context);
         if ($permit === null) {
             return null;
@@ -82,7 +91,7 @@ final class TodayRanker
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
                 ->timeout((int) config('services.llm.timeout', 8))->connectTimeout(3)
                 ->post('/v1/messages', $request)));
-        Cache::put(TodayTaste::orderKey($user->id, $now), $order === null ? null : [...$order, 'at' => $now->toIso8601String()], $now->endOfDay());
+        Cache::put(TodayTaste::orderKey($user->id, $now), $order === null ? null : [...$order, 'at' => $now->toIso8601String(), 'version' => self::VERSION], $now->endOfDay());
 
         return $order;
     }
@@ -119,7 +128,7 @@ final class TodayRanker
         $leans = fn (string $key): string => implode(', ', array_map(fn (array $row): string => $row['level'] === 'avoid' ? "not {$row['name']}" : $row['name'], $facts[$key] ?? []));
         $recentKinds = array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind) ?? $kind, $context['recent']['categories'])));
         $line = fn (array $c): string => "{$c['id']}: \"{$c['name']}\" ({$c['kind']})".($c['area'] ? " in {$c['area']}" : '').($c['start'] ? " at {$c['start']}" : '');
-        $body = $send([
+        $body = $send(AiRequest::shape([
             'model' => (string) config('services.llm.model'),
             'max_tokens' => 600,
             'system' => self::SYSTEM,
@@ -134,7 +143,7 @@ final class TodayRanker
                 $context['candidates']['events'] !== [] ? "Events:\n".implode("\n", array_map($line, $context['candidates']['events'])) : null,
                 $context['candidates']['places'] !== [] ? "Places:\n".implode("\n", array_map($line, $context['candidates']['places'])) : null,
             ]))]],
-        ]);
+        ]));
         $input = collect($body['content'] ?? [])->first(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')['input'] ?? null;
         if (! is_array($input)) {
             return null;
@@ -150,6 +159,11 @@ final class TodayRanker
             $picked = [];
             foreach (is_array($input[$list] ?? null) ? $input[$list] : [] as $pick) {
                 $id = is_array($pick) && is_string($pick['id'] ?? null) ? $pick['id'] : null;
+                // An event's id without its "@start" names it while only one start of it is listed.
+                if ($id !== null && ! $byId->has($id)) {
+                    $starts = $byId->keys()->filter(fn (string $key): bool => str_starts_with($key, $id.'@'));
+                    $id = $starts->count() === 1 ? $starts->first() : null;
+                }
                 if ($id === null || ! $byId->has($id) || in_array($id, $picked, true)) {
                     continue;
                 }
@@ -164,7 +178,7 @@ final class TodayRanker
                     return null;
                 }
                 // Theirs, but naming a kind or Veedel the pick isn't ("museums" for an exhibition): no why for it.
-                if (self::about($why, $byId[$id], $grounding)) {
+                if (count($order['why']) < self::MAX_WHYS && self::about($why, $byId[$id], $grounding)) {
                     $order['why'][$id] = $why;
                 }
             }

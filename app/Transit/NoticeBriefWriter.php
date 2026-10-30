@@ -2,6 +2,7 @@
 
 namespace App\Transit;
 
+use App\Ai\AiRequest;
 use App\Ai\LlmCalls;
 use App\Models\CityNews;
 use App\Models\NoticeBrief;
@@ -53,7 +54,7 @@ class NoticeBriefWriter
                     'x-api-key' => config('services.anthropic.key'),
                     'anthropic-version' => '2023-06-01',
                 ])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => config('services.transit_briefs.model'),
                     'max_tokens' => 600,
                     'output_config' => ['effort' => config('services.transit_briefs.effort', 'low')],
@@ -90,7 +91,7 @@ class NoticeBriefWriter
                             $details !== '' ? '<source_details>'.$this->escape($details).'</source_details>' : null,
                         ])),
                     ]],
-                ])
+                ]))
                 ->throw();
         } catch (\Throwable $exception) {
             $this->record($startedAt, 'error:'.class_basename($exception));
@@ -158,7 +159,7 @@ class NoticeBriefWriter
                     'x-api-key' => config('services.anthropic.key'),
                     'anthropic-version' => '2023-06-01',
                 ])
-                ->post('/v1/messages', [
+                ->post('/v1/messages', AiRequest::shape([
                     'model' => config('services.transit_briefs.model'),
                     'max_tokens' => 900,
                     'output_config' => ['effort' => config('services.transit_briefs.effort', 'low')],
@@ -183,7 +184,7 @@ class NoticeBriefWriter
                             $details !== '' ? '<source_details>'.$this->escape($details).'</source_details>' : null,
                         ])),
                     ]],
-                ])
+                ]))
                 ->throw();
         } catch (\Throwable $exception) {
             $this->record($startedAt, 'error:'.class_basename($exception), null, 'transit_translation');

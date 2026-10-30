@@ -7,12 +7,9 @@ use App\Composer\Assistant\AssistantTools;
 
 enum ProcessingPurpose: string
 {
-    case FactExtraction = 'extract_case_fact';
     case ComposerRank = 'composer_rank';
     /** Composer's assistant: every message, answered from what it looks up (where you are, trips, what's on, places, plans). */
     case ComposerAssist = 'composer_assist';
-    /** A question about one person's case, answered only from source-checked cards. Bound to that case. */
-    case PaperworkAnswer = 'paperwork_answer';
     /**
      * Composer's assistant with the person's own Paperwork record, for one message (owner, 23 Oct
      * 2026: "make sure its accurate"): Composer's own call, so its own notice. Bound to their case;
@@ -127,21 +124,43 @@ enum ProcessingPurpose: string
 
     public function disclosure(): array
     {
+        $shown = $this->shown();
+
+        return ['purpose' => $shown['purpose'], 'scope' => $shown['scope'], 'available' => $this->available(),
+            'notice_version' => $this->noticeVersion(), 'provider_version' => $this->providerVersion(),
+            ...array_diff_key($shown, ['purpose' => true, 'scope' => true])];
+    }
+
+    /**
+     * The notice a yes is bound to. A standing yes (ProcessingOptIns::STANDING) is bound to its own
+     * notice as it reads, so it lapses only when that notice changes (owner, 29 Oct 2026: a change
+     * to Composer's notice had paused Today's AI order for everyone). Every other request is bound
+     * to the shared processing notice.
+     */
+    public function noticeVersion(): string
+    {
+        if (! in_array($this, ProcessingOptIns::STANDING, true)) {
+            return (string) config('bureaucracy_privacy.notice_version');
+        }
+
+        return $this->value.'.'.substr(hash('sha256', json_encode($this->shown(), JSON_THROW_ON_ERROR)), 0, 16);
+    }
+
+    /** @return array<string, mixed> what the notice tells the person, without its versions */
+    private function shown(): array
+    {
         return [
-            'purpose' => $this->value, 'scope' => in_array($this, [self::NotificationBrief, self::TodayRank, self::ComposerPaperwork], true) ? 'until_you_turn_it_off' : 'single_request', 'available' => $this->available(),
-            'notice_version' => config('bureaucracy_privacy.notice_version'), 'provider_version' => $this->providerVersion(),
+            'purpose' => $this->value, 'scope' => in_array($this, ProcessingOptIns::STANDING, true) ? 'until_you_turn_it_off' : 'single_request',
             'processor_name' => config($this->configPrefix().'.processor_name'),
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
             // Paperwork's own responses; Composer says what it keeps under `kept`.
             ...(in_array($this, [self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank], true) ? [] : ['response_retention_minutes' => self::requestMinutes()]),
             'payload_categories' => match ($this) {
-                self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 // Everything Composer's request can carry, from its own map of what each part is
                 // (AssistantTools::CATEGORIES): ComposerPaperworkNoticeTest checks a real request against it.
                 self::ComposerAssist => AssistantTools::categories(false),
                 self::ComposerPaperwork => AssistantTools::categories(true),
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
-                self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
                 // What a brief's request can carry, from BriefWriter's own map of its items (NotificationBriefNoticeTest).
                 self::NotificationBrief => array_keys(self::BRIEF_WORDS),
                 // What a request to put Today in order can carry, from TodayRanker's own map (TodayRankTest).
@@ -202,19 +221,21 @@ enum ProcessingPurpose: string
         $paperwork = $this === self::ComposerPaperwork;
         $minutes = self::requestMinutes();
         $hours = ComposerActions::HOURS;
-        $model = str_contains((string) config($this->configPrefix().'.model'), 'haiku') ? 'Claude Haiku' : 'Claude';
+        $processor = config($this->configPrefix().'.processor_name');
 
+        // Shown in Composer itself, so it names who receives it, not the model (owner, 29 Oct 2026:
+        // the AI is told about in Settings only).
         return [
             ($paperwork ? 'Once you allow it, Composer reads and can change your Paperwork record when a message needs it. To answer, it sends to '
-                : 'To answer your message, Composer sends to ').config($this->configPrefix().'.processor_name')." ({$model}), an AI service: "
+                : 'To answer your message, Composer sends to ').$processor.': '
                 .implode('; ', array_map(fn (string $category): string => self::WORDS[$category], self::categoryOrder($paperwork))).'.',
             'It never sends '.self::either([...array_values(self::NEVER), ...($paperwork ? [] : ['your Paperwork record without its own permission'])]).'. Nothing is sent to an authority.',
             ...($paperwork ? ['A change to your Paperwork answers always waits for your Apply.'] : []),
-            'The AI service doesn’t use it to train its models.',
+            "{$processor} doesn’t use it for training.",
             "Composer keeps this conversation, its answers and cards, in your History until you delete it; a change it makes can be undone for {$hours} hours."
                 .($paperwork ? ' Deleting your Paperwork record removes Composer’s copies of it; stopping its processing ends this permission.' : ''),
-            $paperwork ? 'Your Allow is remembered until you turn it off, in the notice under Composer’s box or in Settings › Composer, which stops it at once; withdrawing Composer’s AI turns it off too. '
-                ."Each message’s use of it lasts {$minutes} minutes. If this notice or the AI service’s model changes, Composer asks you again."
+            $paperwork ? 'Your Allow is remembered until you turn it off, in the notice under Composer’s box or in Settings › Composer, which stops it at once; withdrawing Composer’s go-ahead turns it off too. '
+                ."Each message’s use of it lasts {$minutes} minutes. If this notice or how Composer answers changes, Composer asks you again."
                 : "Sending is your permission for that one message, and it lasts {$minutes} minutes. You can withdraw it in the notice under Composer’s box.",
         ];
     }
@@ -276,10 +297,8 @@ enum ProcessingPurpose: string
     private function configPrefix(): string
     {
         return match ($this) {
-            self::FactExtraction => 'services.bureaucracy_llm',
             self::ComposerAssist, self::ComposerPaperwork, self::NotificationBrief, self::TodayRank => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
-            self::PaperworkAnswer => 'services.paperwork_analyser',
         };
     }
 
@@ -291,8 +310,6 @@ enum ProcessingPurpose: string
     public function dailyLimit(): ?int
     {
         $limit = (int) match ($this) {
-            self::FactExtraction => config('services.bureaucracy_llm.daily_limit'),
-            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit'),
             default => config('bureaucracy_privacy.daily_limits.'.$this->value),
         };
 

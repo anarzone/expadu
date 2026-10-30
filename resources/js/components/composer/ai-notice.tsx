@@ -127,7 +127,7 @@ export function AiNoticeLine({ notice }: { notice: AiNotice }) {
 
     return (
         <p ref={line} className="composer-ai-notice">
-            {`Composer sends what you type, with your nearest stop and neighbourhood, to ${notice.processor_name}, an AI service, to answer you`}
+            {`Composer sends what you type, with your nearest stop and neighbourhood, to ${notice.processor_name} to answer you`}
             {notice.processor_privacy_url ? (
                 <>
                     {' · '}

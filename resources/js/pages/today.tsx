@@ -80,6 +80,7 @@ export default function Today() {
         learnedStops,
         paperwork,
         discovery,
+        aiOrderPaused,
         comingUp,
         saved,
         continuation,
@@ -101,6 +102,8 @@ export default function Today() {
         learnedStops: string[];
         paperwork: TodayPaperwork;
         discovery: TodayDiscovery;
+        /** Today's AI order is waiting for them to agree to a change (TodayRankPause). */
+        aiOrderPaused: boolean;
         comingUp: ComingUpData;
         saved: TodaySavedData;
         continuation: TodayContinuationData;
@@ -211,6 +214,7 @@ export default function Today() {
                 discovery={discovery}
                 free={lead === 'discovery'}
                 weather={weather}
+                aiOrderPaused={aiOrderPaused}
             />
         ),
         // The room left under the departures, from 1200px: more of today's

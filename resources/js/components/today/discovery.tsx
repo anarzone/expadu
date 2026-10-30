@@ -8,6 +8,9 @@ import {
     noFilters,
     whatsOnUrl,
 } from '@/components/events-filters/event-filters';
+import { AiOrderPausedLine } from '@/components/personalisation/ai-order-paused';
+import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
+import { WhySheet } from '@/components/personalisation/why-sheet';
 import { PlaceSheet } from '@/components/place-sheet/place-sheet';
 import { PosterArt } from '@/components/posters/poster-art';
 import {
@@ -23,6 +26,7 @@ import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
+import { cn } from '@/lib/utils';
 import { aroundHere } from '@/routes';
 
 /*
@@ -43,6 +47,8 @@ export type DiscoveryEvent = PosterSource & {
     category_label: string;
     /** Why the AI put it here for them (TodayTaste), when it gave one. */
     why?: string;
+    /** With a why: which of their leanings it matches, as code reads them (TodayDiscovery::reasons). */
+    reasons?: string[];
     venue: { name: string | null; veedel: string | null };
 };
 
@@ -113,6 +119,77 @@ function useSaves() {
 }
 
 /**
+ * An AI pick's "why" and its "Why am I seeing this?" sheet. "Not for me"
+ * takes the event off at once (Undo puts it back); the server keeps it off
+ * Today once the Undo has passed.
+ */
+function useWhy() {
+    const [open, setOpen] = useState<DiscoveryEvent | null>(null);
+    const [hidden, setHidden] = useState<ReadonlySet<number>>(() => new Set());
+    const sheet = (
+        <WhySheet
+            event={
+                open?.why
+                    ? {
+                          id: open.id,
+                          title: posterEvent(open).title,
+                          when: timeRange(open),
+                          why: open.why,
+                          reasons: open.reasons ?? [],
+                      }
+                    : null
+            }
+            onClose={() => setOpen(null)}
+            onNotForMe={(undo) => {
+                const id = open?.id;
+
+                if (id === undefined) {
+                    return;
+                }
+
+                setHidden((was) => {
+                    const next = new Set(was);
+
+                    if (undo) {
+                        next.delete(id);
+                    } else {
+                        next.add(id);
+                    }
+
+                    return next;
+                });
+            }}
+        />
+    );
+
+    return {
+        sheet,
+        open: setOpen,
+        shown: (event: DiscoveryEvent) => !hidden.has(event.id),
+    };
+}
+
+/** The AI's why on a card, which opens Why am I seeing this? */
+function WhyButton({
+    event,
+    onOpen,
+}: {
+    event: DiscoveryEvent;
+    onOpen: (event: DiscoveryEvent) => void;
+}) {
+    return (
+        <button
+            type="button"
+            className="discovery-why"
+            aria-label={`Why am I seeing this? ${event.why}`}
+            onClick={() => onOpen(event)}
+        >
+            <span>{event.why}</span>
+        </button>
+    );
+}
+
+/**
  * "A little Cologne": posters for the next two, compact listings after. A
  * free day (nothing left in the plan, and not a first visit) heads it as
  * ideas for this part of the day.
@@ -121,14 +198,22 @@ export function Discovery({
     discovery,
     free,
     weather,
+    aiOrderPaused,
 }: {
     discovery: NonNullable<TodayDiscovery>;
     free: boolean;
     weather?: Weather;
+    /** Their AI order is waiting for them to agree to a change: these are in the usual order. */
+    aiOrderPaused?: boolean;
 }) {
     const saves = useSaves();
-    const posters = discovery.events.filter((e) => e.layout === 'poster');
-    const compact = discovery.events.filter((e) => e.layout === 'compact');
+    const why = useWhy();
+    const posters = discovery.events.filter(
+        (e) => e.layout === 'poster' && why.shown(e),
+    );
+    const compact = discovery.events.filter(
+        (e) => e.layout === 'compact' && why.shown(e),
+    );
 
     return (
         <section className="discovery" aria-labelledby="discovery-title">
@@ -164,6 +249,7 @@ export function Discovery({
                     See more
                 </Link>
             </div>
+            {aiOrderPaused ? <AiOrderPausedLine /> : null}
             {posters.length > 0 && (
                 <div
                     className="event-rail"
@@ -176,6 +262,7 @@ export function Discovery({
                             event={event}
                             saved={saves.saved(event)}
                             onSave={() => saves.toggle(event)}
+                            onWhy={why.open}
                         />
                     ))}
                 </div>
@@ -188,6 +275,7 @@ export function Discovery({
                             event={event}
                             saved={saves.saved(event)}
                             onSave={() => saves.toggle(event)}
+                            onWhy={why.open}
                         />
                     ))}
                 </div>
@@ -197,6 +285,8 @@ export function Discovery({
                     More dates and ideas in What’s on.
                 </p>
             )}
+            <HowWeRankLink />
+            {why.sheet}
         </section>
     );
 }
@@ -205,17 +295,23 @@ function EventCard({
     event,
     saved,
     onSave,
+    onWhy,
 }: {
     event: DiscoveryEvent;
     saved: boolean;
     onSave: () => void;
+    onWhy: (event: DiscoveryEvent) => void;
 }) {
     const poster = posterEvent(event);
     const href = eventHref(event);
 
     return (
         <article
-            className={`event-card is-poster pp--${posterInk(poster.start)}`}
+            className={cn(
+                'event-card is-poster',
+                `pp--${posterInk(poster.start)}`,
+                event.why && 'has-why',
+            )}
         >
             <Link
                 className="event-open"
@@ -230,11 +326,9 @@ function EventCard({
                     </strong>
                     <small>{timeRange(event)}</small>
                     <small>{poster.venue}</small>
-                    {event.why ? (
-                        <small className="discovery-why">{event.why}</small>
-                    ) : null}
                 </span>
             </Link>
+            {event.why ? <WhyButton event={event} onOpen={onWhy} /> : null}
             <button
                 type="button"
                 className="event-save"
@@ -274,11 +368,13 @@ function CompactEvent({
     event,
     saved,
     onSave,
+    onWhy,
     clipped = false,
 }: {
     event: DiscoveryEvent;
     saved: boolean;
     onSave: () => void;
+    onWhy: (event: DiscoveryEvent) => void;
     /** Laid out but clipped off, unseen and inert (the room under the departures). */
     clipped?: boolean;
 }) {
@@ -287,7 +383,7 @@ function CompactEvent({
 
     return (
         <article
-            className="compact-event"
+            className={cn('compact-event', event.why && 'has-why')}
             inert={clipped}
             style={clipped ? { visibility: 'hidden' } : undefined}
         >
@@ -309,9 +405,6 @@ function CompactEvent({
                         </time>
                         {poster.area ? ` · ${poster.area}` : ''}
                     </small>
-                    {event.why ? (
-                        <small className="discovery-why">{event.why}</small>
-                    ) : null}
                 </span>
                 <span className="compact-category">{event.category_label}</span>
             </Link>
@@ -332,6 +425,7 @@ function CompactEvent({
             >
                 <Icon name="plus" />
             </Link>
+            {event.why ? <WhyButton event={event} onOpen={onWhy} /> : null}
         </article>
     );
 }
@@ -352,7 +446,10 @@ export function MoreEvents({
     beside: RefObject<HTMLDivElement | null>[];
 }) {
     const saves = useSaves();
-    const more = discovery.events.filter((e) => e.layout === 'more');
+    const why = useWhy();
+    const more = discovery.events.filter(
+        (e) => e.layout === 'more' && why.shown(e),
+    );
     const list = useRef<HTMLElement>(null);
     // Unmeasured (null) until the first look: nothing shows before it.
     const [room, setRoom] = useState<{ rows: number; height: number } | null>(
@@ -432,10 +529,12 @@ export function MoreEvents({
                         event={event}
                         saved={saves.saved(event)}
                         onSave={() => saves.toggle(event)}
+                        onWhy={why.open}
                         clipped={index >= shown}
                     />
                 ))}
             </div>
+            {why.sheet}
         </section>
     );
 }

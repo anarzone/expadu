@@ -6,6 +6,11 @@ use App\Models\Spot;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Models\Venue;
+use App\Personalisation\AffinityAggregator;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\SignalRecorder;
+use App\Personalisation\SignalSurface;
 use App\Personalisation\TodayTaste;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
@@ -127,10 +132,14 @@ test('with nothing open within 1 km of the Veedel, it looks at 2 km before givin
         ->and($around['places'][0]['km'])->toBeGreaterThan(1.0)->toBeLessThan(2.0);
 });
 
-/** Personalisation on under its current wording, and the AI's order for today as TodayRank keeps it. */
+/** Personalisation on under its current wording with the AI's ordering agreed to, and its order for today as TodayRank keeps it. */
 function todayOrder(User $user, array $order): void
 {
-    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true]])->assertOk();
+    config()->set('services.llm', [
+        'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'claude-haiku-5-5', 'key' => 'synthetic',
+        'processor_name' => 'Anthropic PBC', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
+    ]);
+    test()->actingAs($user)->putJson('/user-settings', ['settings' => ['personalisation' => true], 'sixteen_or_older' => true])->assertOk();
     $user->load('userSetting');
     Cache::put(TodayTaste::orderKey($user->id), [...$order, 'at' => discoveryNoon()->toIso8601String()], 3600);
 }
@@ -156,6 +165,45 @@ test('the AI\'s order puts its picks first, each why on its own pick only, the r
         ->and($events[0]['why'])->toBe('You\'ve been looking at concerts in Ehrenfeld')
         ->and($events[1])->not->toHaveKey('why')
         ->and($events[2])->not->toHaveKey('why');
+});
+
+test('🔒 an event they said isn’t for them leaves Today, and Less like this is for events only', function () {
+    $this->travelTo(discoveryNoon());
+    $user = User::factory()->create(['veedel' => 'Ehrenfeld']);
+    $a = discoveryEvent('A at six', '2026-10-26 18:00');
+    discoveryEvent('B at seven', '2026-10-26 19:00');
+    todayOrder($user, ['events' => [], 'places' => [], 'why' => []]);
+
+    $this->actingAs($user->fresh())->postJson('/api/signals', ['signals' => [
+        ['action' => 'not_for_me', 'surface' => 'today', 'item_type' => 'event', 'item_id' => $a->id],
+        ['action' => 'less_like_this', 'surface' => 'today', 'item_type' => 'event', 'item_id' => $a->id],
+    ]])->assertAccepted();
+    $spot = Spot::factory()->create();
+    $this->postJson('/api/signals', ['signals' => [['action' => 'less_like_this', 'surface' => 'today', 'item_type' => 'spot', 'item_id' => $spot->id]]])
+        ->assertUnprocessable();
+
+    expect(collect(app(TodayDiscovery::class)->for($user->fresh(), discoveryNoon())['events'])->pluck('title')->all())->toBe(['B at seven']);
+});
+
+test('an AI pick says which of their leanings it matches, as code reads them', function () {
+    $this->travelTo(discoveryNoon());
+    $user = User::factory()->create(['veedel' => 'Ehrenfeld']);
+    $venue = Venue::create(['name' => 'Club Bahnhof Ehrenfeld', 'lat' => 50.9510, 'lng' => 6.9170, 'veedel' => 'Ehrenfeld']);
+    $gig = discoveryEvent('Gig', '2026-10-26 20:00', $venue);
+    $gig->update(['category' => 'music']);
+    todayOrder($user, ['events' => [eventKey($gig)], 'places' => [], 'why' => [eventKey($gig) => 'You lean to music']]);
+    // What they did before: five saved concerts in Ehrenfeld, learned overnight.
+    foreach (range(1, 5) as $day) {
+        $past = discoveryEvent("Concert {$day}", "2026-10-1{$day} 20:00", $venue);
+        $past->update(['category' => 'music']);
+        app(SignalRecorder::class)->record($user->fresh(), SignalAction::Saved, SignalSurface::Events, SignalItemType::Event, $past->id);
+    }
+    app(AffinityAggregator::class)->rebuild();
+
+    $event = app(TodayDiscovery::class)->for($user->fresh(), discoveryNoon())['events'][0];
+
+    expect($event['why'])->toBe('You lean to music')
+        ->and($event['reasons'])->toBe(['You lean to music, from what you open, save and go to.', 'You lean to what’s on in Ehrenfeld.']);
 });
 
 test('with no order (personalisation off, or not ranked yet), Today keeps its own order', function () {

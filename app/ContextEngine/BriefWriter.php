@@ -2,6 +2,7 @@
 
 namespace App\ContextEngine;
 
+use App\Ai\AiRequest;
 use App\Composer\Answers\AroundCheck;
 use App\Models\User;
 use App\Privacy\ExternalProcessingGate;
@@ -130,14 +131,16 @@ final class BriefWriter
         }
         $facts = array_column($sent, 'facts', 'id');
         $when = ($kind === DayBriefs::EVENING ? 'Tomorrow is ' : 'Today is ').$day->isoFormat('dddd D MMMM').'.';
-        $body = $send([
+        $body = $send(AiRequest::shape([
             'model' => (string) config('services.llm.model'),
             'max_tokens' => 400,
+            // notifications:brief-eval, 29 Oct 2026: 35/35 at high, 29/35 at the default, same cost and time.
+            'output_config' => ['effort' => 'high'],
             'system' => self::SYSTEM,
             'tools' => [self::TOOL],
             'tool_choice' => ['type' => 'tool', 'name' => 'brief'],
             'messages' => [['role' => 'user', 'content' => $when."\n".implode("\n", array_map(fn (string $id, string $fact): string => "{$id}: {$fact}", array_keys($facts), $facts))]],
-        ]);
+        ]));
         $lines = collect($body['content'] ?? [])->first(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')['input']['lines'] ?? null;
         if (! is_array($lines)) {
             return null;

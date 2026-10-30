@@ -2,10 +2,8 @@
 
 namespace App\Privacy;
 
-use App\Bureaucracy\Ai\FactExtractionAccess;
 use App\Bureaucracy\Analyser\AnalyserAccess;
 use App\Models\BureaucracyCase;
-use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use Closure;
@@ -198,15 +196,8 @@ final class ExternalProcessingGate
 
     public function used(int $actorId, ProcessingPurpose $purpose): int
     {
-        $used = BureaucracyProcessingConsent::query()->where('actor_id', $actorId)->where('purpose', $purpose->value)
+        return BureaucracyProcessingConsent::query()->where('actor_id', $actorId)->where('purpose', $purpose->value)
             ->where('attempted_at', '>', now()->utc()->subDay())->count();
-        if ($purpose === ProcessingPurpose::FactExtraction) {
-            $used += app(LegacyProcessingUsage::class)->used($actorId);
-            $used += BureaucracyCaseMessage::query()->whereIn('case_id', BureaucracyCase::query()->select('id')->where('user_id', $actorId))
-                ->where('operation', $purpose->value)->where('role', 'user')->where('created_at', '>', now()->subDay())->count();
-        }
-
-        return $used;
     }
 
     private function locked(ProcessingPermit $permit): ?BureaucracyProcessingConsent
@@ -217,7 +208,7 @@ final class ExternalProcessingGate
         $reference = BureaucracyProcessingConsent::query()->whereKey($permit->id)->where('actor_id', $permit->actorId)->first();
         if ($reference?->case_id !== null) {
             // All family mutations acquire the subject/case before consent rows.
-            app(FactExtractionAccess::class)->lockCase($reference->case_id);
+            CaseLock::lock($reference->case_id);
         }
 
         return BureaucracyProcessingConsent::query()->whereKey($permit->id)->where('actor_id', $permit->actorId)->lockForUpdate()->first();
@@ -227,7 +218,7 @@ final class ExternalProcessingGate
     {
         if (! $purpose->available() || $row->purpose !== $purpose->value || $row->withdrawn_at !== null || $row->expires_at->lessThanOrEqualTo(now())
             || $row->provider_version !== $purpose->providerVersion()
-            || $row->notice_version !== config('bureaucracy_privacy.notice_version')
+            || $row->notice_version !== $purpose->noticeVersion()
             || ! hash_equals($row->input_digest, ProcessingConsentStore::digest($context))) {
             return false;
         }
@@ -239,25 +230,8 @@ final class ExternalProcessingGate
 
             return $row->question_id === null && $case !== null && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
         }
-        if ($purpose === ProcessingPurpose::PaperworkAnswer) {
-            // The answers sent were read at this fact version, by someone still allowed to ask.
-            $case = $row->case_id === null ? null : BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
-            $actor = User::query()->find($row->actor_id);
 
-            return $row->question_id === null && $case !== null && $case->fact_version === $row->fact_version
-                && $actor !== null && app(AnalyserAccess::class)->allows($actor, $case);
-        }
-        if ($purpose !== ProcessingPurpose::FactExtraction) {
-            return $row->case_id === null && $row->question_id === null;
-        }
-        $case = BureaucracyCase::query()->whereKey($row->case_id)->where('status', 'active')->first();
-        if ($case === null || $case->fact_version !== $row->fact_version) {
-            return false;
-        }
-        $actor = User::query()->find($row->actor_id);
-        $question = $actor !== null && $row->question_id !== null ? app(FactExtractionAccess::class)->question($actor, $case, $row->question_id, $context) : null;
-
-        return $question !== null && $question->id === $row->question_id && $question->answered_at === null;
+        return $row->case_id === null && $row->question_id === null;
     }
 
     /** The cURL error number behind a failed request, when the transport says one. */

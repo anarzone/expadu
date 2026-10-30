@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Ai\LlmCalls;
+use App\Ai\UsageMeter;
 use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\People\EnsureAccountHolder;
@@ -68,8 +69,12 @@ class EvaluateComposer extends Command
         {--limit= : Run at most this many requests}
         {--week= : Monday of the week to run in (default: next Monday)}
         {--label=baseline : Name for the report file}
-        {--effort= : The assistant\'s effort for this run (low, medium, high)}
-        {--cohort= : Suffix for the synthetic users, so runs can go side by side}';
+        {--effort= : The assistant\'s effort for this run (low, medium, high, xhigh, max)}
+        {--model= : Run on this model instead (a comparison; see AiRequest)}
+        {--max-tokens= : Room for each reply, at least}
+        {--budget= : Seconds an answer may take instead of Composer\'s own (a comparison of quality without its time limit)}
+        {--cohort= : Suffix for the synthetic users, so runs can go side by side}
+        {--system= : A file with other instructions for the assistant to try}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
@@ -126,6 +131,10 @@ class EvaluateComposer extends Command
         if ($this->option('effort')) {
             config(['services.llm.effort' => (string) $this->option('effort')]);
         }
+        UsageMeter::override($this->option('model') ?: null, $this->option('effort') ?: null, $this->option('max-tokens') ? (int) $this->option('max-tokens') : null,
+            [...($this->option('budget') ? ['budget_seconds' => (float) $this->option('budget'), 'call_timeout' => (int) $this->option('budget')] : []),
+                ...($this->option('system') ? ['composer_system' => rtrim((string) file_get_contents($this->option('system')), "\n")] : [])]);
+        $meter = (new UsageMeter)->start();
 
         $results = [];
         $bar = $this->output->createProgressBar($requests->count());
@@ -139,7 +148,15 @@ class EvaluateComposer extends Command
         CarbonImmutable::setTestNow();
 
         $summary = $this->summarise($results);
+        $answered = collect($results)->pluck('ask_ms')->filter()->sort()->values();
+        $summary['run'] = ['model' => $this->option('model') ?: (string) config('services.llm.model'), 'effort' => (string) config('services.llm.effort'),
+            'budget_seconds' => (float) ($this->option('budget') ?: 14), 'system' => $this->option('system') ?: null, 'usage' => $meter->summary(),
+            'ask_ms_p50' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.5)] ?? 0),
+            'ask_ms_p95' => (int) ($answered[(int) floor(max(0, $answered->count() - 1) * 0.95)] ?? 0),
+            // Answers that would have run past Composer's own 14 seconds.
+            'over_14s' => $answered->filter(fn (int $ms): bool => $ms > 14000)->count()];
         $this->report($summary, $results);
+        $this->line('Run: '.json_encode($summary['run']));
 
         $path = storage_path('app/composer-eval/'.$this->option('label').'-'.now()->format('Ymd-His').'.json');
         @mkdir(dirname($path), 0775, true);
@@ -210,11 +227,9 @@ class EvaluateComposer extends Command
             'blocks' => $blocks, 'written' => $answer['written'] ?? null, 'without_ai' => $answer['without_ai'] ?? null,
             'looked' => $answer['read'] ?? null, 'events' => array_column($answer['events'] ?? [], 'title'), 'places' => array_column($answer['places'] ?? [], 'name'),
             'next' => array_column($answer['suggestions'] ?? [], 'label')], fn ($v) => $v !== null && $v !== []);
-        // Written but nothing held: what it wrote, to see why.
-        $dropped = array_values(array_filter(array_column($assistant->written['sentences'] ?? [], 'text'),
-            fn (mixed $sentence): bool => is_string($sentence) && ! str_contains((string) ($answer['lead'] ?? ''), trim($sentence))));
-        if ($dropped !== []) {
-            $row['said']['dropped'] = $dropped;
+        // What it wrote that didn't hold, and why.
+        if ($assistant->dropped !== []) {
+            $row['said']['dropped'] = $assistant->dropped;
         }
 
         // Where it should go ("What's on tonight?" → an answer), what it should show, and its plan.
@@ -529,14 +544,14 @@ class EvaluateComposer extends Command
     }
 
     /**
-     * @return array{consent: true, request_id: string, notice_version: mixed, provider_version: string}
+     * @return array{consent: true, request_id: string, notice_version: string, provider_version: string}
      */
     private function acceptance(ProcessingPurpose $purpose): array
     {
         return [
             'consent' => true,
             'request_id' => (string) Str::uuid(),
-            'notice_version' => config('bureaucracy_privacy.notice_version'),
+            'notice_version' => $purpose->noticeVersion(),
             'provider_version' => $purpose->providerVersion(),
         ];
     }

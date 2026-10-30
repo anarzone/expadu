@@ -9,6 +9,11 @@ use App\Enums\SpotFeedbackState;
 use App\Models\Event;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Personalisation\Affinities;
+use App\Personalisation\ListImpressions;
+use App\Personalisation\SignalItemType;
+use App\Personalisation\TasteFacts;
+use App\Personalisation\TodayRanker;
 use App\Personalisation\TodayTaste;
 use App\Places\OpenNearby;
 use App\Saved\SavedCollection;
@@ -51,6 +56,9 @@ final class TodayDiscovery
     /** Today's listings at most: two posters, three compact, six for the room under the departures. */
     private const LISTED = 11;
 
+    /** The rule order's version, logged with each list shown (ListImpressions): change it when events() or the places' order changes. */
+    public const RULES = 'rules-1';
+
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
 
@@ -70,10 +78,16 @@ final class TodayDiscovery
         private SavedCollection $saved,
         private EventStartingPoint $points,
         private TodayTaste $taste,
+        private ListImpressions $impressions,
+        private Affinities $affinities,
+        private TasteFacts $facts,
     ) {}
 
-    /** @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
-    public function for(User $user, ?CarbonImmutable $now = null): array
+    /**
+     * @param  bool  $shown  the person is about to see it (Today's own render, not the ranker's read): its lists are logged
+     * @return array{part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null}
+     */
+    public function for(User $user, ?CarbonImmutable $now = null, bool $shown = false): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(DayProjection::TIMEZONE);
         $active = collect($this->days->itemsOn($user, $now->format('Y-m-d')))
@@ -82,7 +96,11 @@ final class TodayDiscovery
             ->values();
 
         $home = $this->home($user);
-        $events = $this->events($now, $active, $home);
+        // What they turned down ("Not for me") stays off Today while it's hidden.
+        $hidden = $user->personalises() ? $this->affinities->for($user) : null;
+        $events = $this->events($now, $active, $home)
+            ->reject(fn (array $event) => $hidden?->isHidden(SignalItemType::Event->value, (int) $event['id']) ?? false)
+            ->values();
         // "Also in ‹area›" is for after today's plan: tomorrow's listings stay out of it.
         $around = $this->around($user, $now, $active, $events->reject(fn (array $event) => isset($event['day'])))
             // No plan stop with a place to go by: open now near their Veedel or Home.
@@ -101,19 +119,29 @@ final class TodayDiscovery
         // room under the departures (`more`, owner 28 Oct 2026: the page
         // fills around the board, which never moves). Posters fill first,
         // and the event "Also in ‹area›" suggests is in none.
-        $listed = self::ranked(
-            $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values(),
-            $order['events'] ?? null,
-            $order['why'] ?? [],
-            fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp(),
-        )->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
-            $index < 2 => 'poster',
-            $index < 5 => 'compact',
-            default => 'more',
-        }]);
-
+        $eventKey = fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp();
+        $placeKey = fn (array $place) => 'p'.$place['id'];
+        $candidates = $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values();
+        // Each AI pick with a why also says which of their leanings it matches, as code reads
+        // them (reasons()): "Why am I seeing this?" shows those, the why only words one.
+        $reasons = $order === null ? null : $this->reasons($user);
+        $listed = self::ranked($candidates, $order['events'] ?? null, $order['why'] ?? [], $eventKey)
+            ->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
+                $index < 2 => 'poster',
+                $index < 5 => 'compact',
+                default => 'more',
+            }, ...(isset($event['why']) && $reasons !== null ? ['reasons' => $reasons($event)] : [])]);
+        $places = collect($around['places'] ?? []);
         if ($around !== null) {
-            $around['places'] = self::ranked(collect($around['places']), $order['places'] ?? null, $order['why'] ?? [], fn (array $place) => 'p'.$place['id'])->all();
+            $around['places'] = self::ranked($places, $order['places'] ?? null, $order['why'] ?? [], $placeKey)->all();
+        }
+
+        if ($shown) {
+            [$policy, $version] = $order === null ? ['rule', self::RULES] : ['haiku', (string) ($order['version'] ?? TodayRanker::VERSION)];
+            $this->impressions->record($user, 'today_events', $now, $policy, $version, $candidates->map($eventKey)->all(),
+                $listed->map(fn (array $event) => ['key' => $eventKey($event), 'layout' => $event['layout']])->all());
+            $this->impressions->record($user, 'today_places', $now, $policy, $version, $places->map($placeKey)->all(),
+                collect($around['places'] ?? [])->map(fn (array $place) => ['key' => $placeKey($place)])->all());
         }
 
         $onlyTomorrow = $listed->isNotEmpty() && $listed->every(fn (array $event) => isset($event['day']));
@@ -154,6 +182,40 @@ final class TodayDiscovery
             ->sortBy(fn (array $pair) => $pair[1])
             ->map(fn (array $pair) => isset($why[$key($pair[0])]) ? [...$pair[0], 'why' => $why[$key($pair[0])]] : $pair[0])
             ->values();
+    }
+
+    /**
+     * Which of the person's leanings an event matches, in words, from what personalisation learned
+     * (TasteFacts) and what they looked at lately (TodayTaste): its kind, then its neighbourhood.
+     *
+     * @return Closure(array<string, mixed>): list<string>
+     */
+    private function reasons(User $user): Closure
+    {
+        $facts = $this->facts->for($user) ?? [];
+        $recent = $this->taste->for($user);
+        $leaning = fn (string $key): array => collect($facts[$key] ?? [])->whereIn('level', ['strong', 'some'])->pluck('name')->all();
+        $kinds = $leaning('categories');
+        $areas = $leaning('veedels');
+        $lately = array_values(array_filter(array_map(fn (string $kind): ?string => TasteFacts::categoryLabel($kind), $recent['categories'])));
+
+        return function (array $event) use ($kinds, $areas, $lately, $recent): array {
+            $kind = TasteFacts::categoryLabel((string) ($event['category'] ?? ''));
+            $area = $event['venue']['veedel'] ?? null;
+
+            return array_values(array_filter([
+                match (true) {
+                    $kind !== null && in_array($kind, $kinds, true) => "You lean to {$kind}, from what you open, save and go to.",
+                    $kind !== null && in_array($kind, $lately, true) => "You looked at {$kind} lately.",
+                    default => null,
+                },
+                match (true) {
+                    is_string($area) && in_array($area, $areas, true) => "You lean to what’s on in {$area}.",
+                    is_string($area) && in_array($area, $recent['areas'], true) => "You looked at {$area} lately.",
+                    default => null,
+                },
+            ]));
+        };
     }
 
     /**

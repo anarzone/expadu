@@ -687,17 +687,6 @@ button.settings-tile:active {
     transform: translateX(20px);
 }
 /* On under the older wording: a quiet way to take in the new one. */
-.settings-learn-older {
-    margin: 0;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-    line-height: 1.5;
-}
-.settings-learn-older .settings-link {
-    min-height: 0;
-    padding-block: 6px;
-    font-size: inherit;
-}
 .settings-learns {
     display: flex;
     flex-wrap: wrap;
@@ -844,5 +833,145 @@ button.settings-tile:active {
     .settings-switch,
     .settings-switch::after {
         transition: none;
+    }
+}
+
+/* ── Privacy (the consent canvas's boards 1, 2 and 7): the yes, what it
+   learned, what it never uses, and who puts Today in order. ─────────── */
+.privacy-state {
+    align-self: start;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.privacy-state.is-on {
+    background: var(--color-success-soft, var(--color-bg-quiet));
+    color: var(--color-success);
+}
+.privacy-age {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.privacy-age input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-action);
+}
+.privacy-older {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-canvas);
+}
+.privacy-older p {
+    margin: 0;
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.privacy-learned {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    margin: 0;
+}
+.privacy-learned dt {
+    font-size: 20px;
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+}
+.privacy-learned dd {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.privacy-fine {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.privacy-fine.is-wide {
+    flex: 1 1 100%;
+}
+.privacy-fine a,
+.privacy-link {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.privacy-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.privacy-never {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.privacy-never li {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    font-size: var(--text-control);
+    line-height: 1.4;
+}
+.privacy-never svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    color: var(--color-conflict-text);
+}
+.privacy-ai {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-canvas);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.privacy-ai svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+}
+.privacy-lead {
+    margin: 0 0 8px;
+    font-size: var(--text-body);
+}
+.privacy-deletes {
+    margin: 0;
+    padding-left: 20px;
+    font-size: var(--text-body);
+    line-height: 1.7;
+}
+@media (max-width: 700px) {
+    .privacy-never {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

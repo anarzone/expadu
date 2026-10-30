@@ -26,6 +26,7 @@ import type {
     TravelMode,
 } from '@/components/events-filters/events-filter-bar';
 import { PastNote } from '@/components/events-filters/past-note';
+import { HowWeRankLink } from '@/components/personalisation/how-we-rank';
 import { posterEvent, posterInk } from '@/components/posters/poster-model';
 import type { PosterEvent } from '@/components/posters/poster-model';
 import { openComposerTray } from '@/components/shell/composer-tray';
@@ -752,6 +753,7 @@ export function WhatsOn({
                                 </ul>
                             </section>
                         ))}
+                        <HowWeRankLink />
                     </div>
                 )}
             </Sheet>
