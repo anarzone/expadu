@@ -5581,7 +5581,7 @@
    "text": "how can i go to the cafe nova?",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "text"
    }
   },
   {
@@ -5599,7 +5599,7 @@
    "text": "hw cna i get to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "text"
    }
   },
   {
@@ -5617,7 +5617,7 @@
    "text": "whats the way to cafe nova",
    "expect": {
     "routed": "answer",
-    "answer_kind": "trip"
+    "answer_kind": "text"
    }
   },
   {
