@@ -145,9 +145,8 @@ class SeedPersonasCommand extends Command
     }
 
     /**
-     * Create the required Home + Work places if they don't exist yet —
-     * mirrors OnboardingController::complete() so a seeded account looks
-     * exactly like one that just finished onboarding for real.
+     * Create Home + Work places if they don't exist yet, as the old
+     * onboarding did for a seeded persona.
      */
     private function ensurePlaces(User $user): void
     {
