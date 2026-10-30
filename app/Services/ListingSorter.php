@@ -65,9 +65,12 @@ final class ListingSorter
                                     'properties' => [
                                         'id' => ['type' => 'integer'],
                                         'category' => ['type' => 'string', 'enum' => $values],
+                                        // Named first, so sensitive is decided on what going is, not on a word in the listing
+                                        // (a hospital benefit concert, comedy about politics; the import classifier, 30 Oct 2026).
+                                        'what' => ['type' => 'string', 'description' => 'What going to it is, in a few words: "a rock concert", "comedy about politics", "a support group".'],
                                         'sensitive' => Sensitive::eventField(),
                                     ],
-                                    'required' => ['id', 'category', 'sensitive'],
+                                    'required' => ['id', 'category', 'what', 'sensitive'],
                                 ],
                             ],
                         ],
