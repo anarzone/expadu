@@ -1,8 +1,8 @@
-/* The Events page's filters (the mock's events-next event-model.js): one
-   day, narrowed by a search, a category, an area, Free and Saved, in an
-   order, measured from a starting point. They live in the URL, so a deep
-   link opens the same view; the day's listings are filtered here, as the
-   mock does, and api/events/other-day matches the same way. */
+/* What's on's filters (the Events page's, from the mock's events-next
+   event-model.js): one day, narrowed by a search, a category, an area, Free
+   and Saved, in an order, measured from a starting point. They live in the
+   URL, so a link opens the same view; the day's listings are filtered here,
+   as the mock does, and api/events/other-day matches the same way. */
 
 import type { EventOccurrence } from '@/components/events/types';
 import { posterCategory } from '@/components/posters/poster-model';
@@ -40,9 +40,9 @@ export const narrowed = (f: EventFilters) =>
 export const anyFilter = (f: EventFilters) =>
     narrowed(f) || f.sort !== 'soonest';
 
-/** The page's URL for a day and its filters (defaults left out). */
-export function eventsUrl(date: string, f: EventFilters): string {
-    const params = new URLSearchParams({ date });
+/** Today with What's on open on a day and its filters (defaults left out). */
+export function whatsOnUrl(date: string, f: EventFilters): string {
+    const params = new URLSearchParams({ whats_on: '1', date });
 
     if (f.q.trim()) {
         params.set('q', f.q.trim());
@@ -72,7 +72,7 @@ export function eventsUrl(date: string, f: EventFilters): string {
         params.set('from', f.from);
     }
 
-    return `/events?${params.toString()}`;
+    return `/today?${params.toString()}`;
 }
 
 const words = (q: string) =>

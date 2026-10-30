@@ -1,6 +1,8 @@
-/* The Events filters, from the mock's rendered rows (events-next
-   events.css, spotlight.css and wall.css as they compute). Breakpoints:
-   ≤700 phone, 701–999 tablet, ≥1000 desktop. */
+/* What's on's filters (the Events page's, from the mock's rendered rows:
+   events-next events.css, spotlight.css and wall.css as they compute). They
+   follow the width of their container, `evf` (What's on's head): ≤440 a
+   phone's arrangement, 441–999 the tablet's, ≥1000 the desktop's. The menus
+   they open keep the window's breakpoints. */
 
 .evf {
     display: flex;
@@ -182,7 +184,7 @@
 }
 /* Narrower desktops: the categories drop their icons so the search keeps
    its room, as the mock's wall does (1000–1399px). */
-@media (min-width: 1000px) and (max-width: 1399px) {
+@container evf (min-width: 1000px) and (max-width: 1399px) {
     .evf-categories svg {
         display: none;
     }
@@ -285,7 +287,7 @@
 .evf-place {
     max-width: 180px;
 }
-@media (max-width: 1365px) {
+@container evf (max-width: 1365px) {
     .evf-place-from {
         display: none;
     }
@@ -580,12 +582,12 @@
 }
 
 /* ---------- Which arrangement shows ---------- */
-@media (min-width: 1000px) {
+@container evf (min-width: 1000px) {
     .evf-narrow-only {
         display: none !important;
     }
 }
-@media (max-width: 999px) {
+@container evf (max-width: 999px) {
     .evf {
         flex-wrap: wrap;
     }
@@ -612,12 +614,12 @@
         margin-left: auto;
     }
 }
-@media (min-width: 701px) {
+@container evf (min-width: 441px) {
     .evf-phone-only {
         display: none !important;
     }
 }
-@media (max-width: 700px) {
+@container evf (max-width: 440px) {
     .evf {
         font-size: 15px;
     }
@@ -659,14 +661,14 @@
         margin-top: -0.6px;
     }
 }
-@media (max-width: 480px) {
+@container evf (max-width: 400px) {
     /* Category and Area name themselves without their icons. */
     .evf-category-icon > svg,
     .evf-area > .evf-glyph {
         display: none;
     }
 }
-@media (max-width: 380px) {
+@container evf (max-width: 340px) {
     .evf-controls {
         gap: 6px;
     }

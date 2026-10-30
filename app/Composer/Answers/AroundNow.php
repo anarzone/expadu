@@ -4,6 +4,7 @@ namespace App\Composer\Answers;
 
 use App\Bureaucracy\ReadModel\RecordedAppointmentsBetween;
 use App\Composer\PaperworkGlance;
+use App\Home\WhatsOn;
 use App\Models\User;
 use App\Services\DisruptionService;
 use App\Services\UserTransitLinesService;
@@ -72,7 +73,7 @@ final class AroundNow
                     'sources' => collect([...array_map(fn (array $notice): ?array => $notice['source'], $notices), $deadline['source'] ?? null])
                         ->filter()->unique('href')->values()->all() ?: null], fn ($v) => $v !== null) : null,
                 $events !== [] ? ['type' => 'events', 'events' => $events,
-                    'sources' => [['label' => 'Events', 'href' => route('events', ['date' => $now->toDateString()], false)]]] : null,
+                    'sources' => [['label' => 'What’s on', 'href' => WhatsOn::url(['date' => $now->toDateString()])]]] : null,
             ])),
             'suggestions' => $this->next($events !== [], $weather, $now),
         ];

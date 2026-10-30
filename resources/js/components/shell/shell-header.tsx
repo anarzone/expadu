@@ -12,7 +12,7 @@ import {
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { sectionAgain } from '@/hooks/use-shell-scroll';
-import { composer, events, paperwork, today, travel } from '@/routes';
+import { composer, paperwork, today, travel } from '@/routes';
 
 const sections: {
     key: string;
@@ -21,7 +21,6 @@ const sections: {
     url: string;
 }[] = [
     { key: 'today', label: 'Today', icon: 'home', url: today.url() },
-    { key: 'events', label: 'Events', icon: 'calendar', url: events.url() },
     {
         key: 'paperwork',
         label: 'Paperwork',

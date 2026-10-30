@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Home\WhatsOn;
 use App\Models\EventReminder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -35,8 +36,8 @@ class EventOccurrenceReminder extends Notification
             ->title($event->title_en ?: $event->title)
             ->icon('/favicon.svg')
             ->body(($event->location_name ? "{$event->location_name} · " : '')."starts {$time}")
-            ->action('View events', 'view_events')
-            ->data(['url' => '/events'])
+            ->action('View event', 'view_event')
+            ->data(['url' => WhatsOn::eventUrl($event->id, $this->reminder->occurrence_start->toImmutable())])
             ->options(['TTL' => 7200]);
     }
 
@@ -52,7 +53,7 @@ class EventOccurrenceReminder extends Notification
             'type' => 'event_reminder',
             'title' => $event->title_en ?: $event->title,
             'body' => ($event->location_name ? "At {$event->location_name}. " : '')."Starts at {$time}.",
-            'url' => '/events',
+            'url' => WhatsOn::eventUrl($event->id, $this->reminder->occurrence_start->toImmutable()),
         ];
     }
 }

@@ -192,6 +192,7 @@ export function EventDetails({
     saved,
     onSave,
     onClose,
+    onBack,
     starts = [],
 }: {
     /** The listing shown; null closes the page. */
@@ -209,6 +210,8 @@ export function EventDetails({
     saved: boolean;
     onSave: () => void;
     onClose: () => void;
+    /** Opened from What's on's list: back to it (the panel's own close closes both). */
+    onBack?: () => void;
     /** Get there's starts: Home, Work and starred stops, real ones. */
     starts?: WayPlace[];
 }) {
@@ -263,8 +266,9 @@ export function EventDetails({
                     shareItem(
                         {
                             title: l.poster.title,
-                            url: `${location.origin}/events?${new URLSearchParams(
+                            url: `${location.origin}/today?${new URLSearchParams(
                                 {
+                                    whats_on: '1',
                                     date,
                                     event: String(l.occurrence.id),
                                     start: l.occurrence.occurrence_start,
@@ -287,6 +291,20 @@ export function EventDetails({
         <Sheet
             open={!!listing}
             onClose={onClose}
+            side={!!onBack}
+            lead={
+                onBack ? (
+                    <button
+                        type="button"
+                        className="evd-back"
+                        aria-label="Back to What’s on"
+                        onClick={onBack}
+                    >
+                        <Icon name="back" variant="line" />
+                        <span>What’s on</span>
+                    </button>
+                ) : undefined
+            }
             className={cn(
                 'ev-details',
                 `pp--${posterInk(l?.poster.start)}`,
@@ -403,7 +421,9 @@ const sourceName = (source: string | null | undefined): string | null =>
         ? null
         : source === 'stadt-koeln.de'
           ? 'City listing'
-          : source;
+          : source === 'datenhub-nrw'
+            ? 'KölnTourismus'
+            : source;
 
 function Head({
     poster,
@@ -599,6 +619,42 @@ function Body({
                     </dl>
                 </details>
             </section>
+            {/* A photo we may show, freely licensed, with its credit: the listing's own (the
+                tourism board's open data) or its venue's. Other listings' photos stay out
+                until their owners allow them. */}
+            {o.photo_url ? (
+                <figure className="evd-venue-photo">
+                    <img
+                        src={o.photo_url}
+                        alt={
+                            o.photo_of === 'event'
+                                ? o.title
+                                : (o.venue.name ?? 'The venue')
+                        }
+                        loading="lazy"
+                    />
+                    <figcaption>
+                        <span>
+                            {o.photo_of === 'event'
+                                ? 'From the listing'
+                                : `At the venue${o.venue.name ? ` · ${o.venue.name}` : ''}`}
+                        </span>
+                        {o.photo_attribution ? (
+                            o.photo_source_url ? (
+                                <a
+                                    href={o.photo_source_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    {o.photo_attribution}
+                                </a>
+                            ) : (
+                                <span>{o.photo_attribution}</span>
+                            )
+                        ) : null}
+                    </figcaption>
+                </figure>
+            ) : null}
             <div className="evd-facts">
                 <Row
                     icon="clock"

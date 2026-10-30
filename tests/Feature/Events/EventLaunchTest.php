@@ -71,11 +71,3 @@ test('removing a bookmark preserves its reminder and unavailable saved items sta
     $this->getJson('/api/event-bookmarks')->assertJsonCount(0, 'data');
     expect(EventReminder::where('user_id', auth()->id())->count())->toBe(1);
 });
-
-test('event and saved links retain their intended content', function () {
-    $event = launchEvent();
-    $start = $event->starts_at->toIso8601String();
-    $this->get('/events/'.$event->id.'?'.http_build_query(['start' => $start]))
-        ->assertRedirect(route('events', ['event' => $event->id, 'start' => $start, 'date' => '2026-10-08']));
-    $this->get('/events/saved')->assertRedirect(route('events', ['saved' => 1]));
-});

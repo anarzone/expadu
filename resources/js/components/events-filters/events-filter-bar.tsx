@@ -112,6 +112,7 @@ export function EventsFilterBar({
     mode,
     onFrom,
     onMode,
+    trailing,
 }: {
     date: string;
     filters: EventFilters;
@@ -125,6 +126,8 @@ export function EventsFilterBar({
     mode: TravelMode;
     onFrom: (from: StartingPoint | null) => void;
     onMode: (mode: TravelMode) => void;
+    /** At the controls' end (What's on's List or Grid). */
+    trailing?: ReactNode;
 }) {
     const chosenCategory = categories.find((c) => c.value === filters.category);
     // The category row scrolls; an edge fades where more chips wait.
@@ -497,6 +500,7 @@ export function EventsFilterBar({
                         <Glyph name="reset" />
                     </button>
                 ) : null}
+                {trailing}
             </div>
         </section>
     );

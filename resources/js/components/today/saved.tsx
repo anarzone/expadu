@@ -1,8 +1,11 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import {
+    noFilters,
+    whatsOnUrl,
+} from '@/components/events-filters/event-filters';
 import { openComposerView } from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
-import { events } from '@/routes';
 
 /*
  * Saved for later (the mock's .saved-ideas), from App\Home\TodaySaved: the
@@ -33,17 +36,11 @@ const shortDate = (date: string) =>
         timeZone: 'UTC',
     });
 
-// An event opens in Events; a place, and View all, open Composer's Saved in
-// place, as the header's bookmark does.
+// An event opens its details in What's on over Today; a place, and View all,
+// open Composer's Saved in place, as the header's bookmark does.
 const hrefOf = (item: SavedItem) =>
     item.type === 'event' && item.date && item.occurrence_start
-        ? events({
-              query: {
-                  date: item.date,
-                  event: item.id,
-                  start: item.occurrence_start,
-              },
-          })
+        ? `${whatsOnUrl(item.date, noFilters)}&event=${item.id}&start=${encodeURIComponent(item.occurrence_start)}`
         : null;
 const openSaved = () => openComposerView('saved');
 
@@ -65,6 +62,9 @@ function Open({
         <Link
             className={className}
             href={href}
+            only={['whatsOn']}
+            preserveState
+            preserveScroll
             aria-label={label}
             title={title}
         >

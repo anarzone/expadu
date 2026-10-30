@@ -21,6 +21,10 @@ type SheetProps = {
     footer?: ReactNode;
     children: ReactNode;
     className?: string;
+    /** From 701px, a panel down the window's right edge over the page (What's on), not a dialog. */
+    side?: boolean;
+    /** Before the title: a way back to what this opened from (What's on's list). */
+    lead?: ReactNode;
 };
 
 /**
@@ -39,6 +43,8 @@ export function Sheet({
     footer,
     children,
     className,
+    side = false,
+    lead,
 }: SheetProps) {
     const dialog = useRef<HTMLDialogElement>(null);
     const opener = useRef<Element | null>(null);
@@ -79,13 +85,18 @@ export function Sheet({
                               { transform: 'translateY(100%)' },
                               { transform: 'translateY(0)' },
                           ]
-                        : [
-                              {
-                                  opacity: 0,
-                                  transform: 'translateY(28px) scale(.99)',
-                              },
-                              { opacity: 1, transform: 'none' },
-                          ],
+                        : side
+                          ? [
+                                { opacity: 0, transform: 'translateX(40px)' },
+                                { opacity: 1, transform: 'none' },
+                            ]
+                          : [
+                                {
+                                    opacity: 0,
+                                    transform: 'translateY(28px) scale(.99)',
+                                },
+                                { opacity: 1, transform: 'none' },
+                            ],
                     {
                         duration: phone() ? 280 : 300,
                         easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
@@ -124,7 +135,12 @@ export function Sheet({
                 ? [{ transform: from }, { transform: 'translateY(100%)' }]
                 : [
                       { opacity: 1, transform: 'none' },
-                      { opacity: 0, transform: 'translateY(20px) scale(.99)' },
+                      {
+                          opacity: 0,
+                          transform: side
+                              ? 'translateX(32px)'
+                              : 'translateY(20px) scale(.99)',
+                      },
                   ],
             {
                 duration: phone() ? 220 : 180,
@@ -139,7 +155,7 @@ export function Sheet({
             },
             () => {},
         );
-    }, [open, shown]);
+    }, [open, shown, side]);
 
     const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
         if (!phone() || (event.target as Element).closest('button')) {
@@ -189,7 +205,7 @@ export function Sheet({
     return (
         <dialog
             ref={dialog}
-            className={cn('ui-sheet', className)}
+            className={cn('ui-sheet', side && 'is-side', className)}
             aria-labelledby={titleId}
             aria-describedby={description ? descriptionId : undefined}
             onCancel={(event) => {
@@ -222,6 +238,7 @@ export function Sheet({
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
             >
+                {lead}
                 <div>
                     <h2 id={titleId}>{title}</h2>
                     {description && <p id={descriptionId}>{description}</p>}

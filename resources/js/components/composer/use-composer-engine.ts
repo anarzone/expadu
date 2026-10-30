@@ -30,7 +30,6 @@ import type { Command, Slot, Workspace } from './types';
 const PAGES: Record<string, string> = {
     today: 'Today',
     timetable: 'Travel',
-    events: 'Events',
     'around-here': 'Places',
     paperwork: 'Paperwork',
     composer: 'Composer',

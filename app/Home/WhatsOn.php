@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Home;
 
 use App\Day\Contracts\RecordedAppointments;
 use App\Day\DayProjection;
@@ -13,85 +13,117 @@ use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
 use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
+use Throwable;
 
 /**
- * Events: the day's listings on the street (the mock's events-next). The
- * page shows one day at a time, the whole day, earlier hours included;
- * filters narrow the wall in the browser, as in the mock.
+ * What's on: the day's listings in a panel over Today (owner, 27 Oct 2026: no Events page of its
+ * own, "I don't want to build the next one"), with the Events page's filters and details. One day
+ * at a time, earlier hours included; the filters narrow it in the browser. Read only when the
+ * panel is open (?whats_on=1), so Today's own response never waits on it.
  */
-class EventController extends Controller
+final class WhatsOn
 {
-    public function __construct(private readonly EventOccurrencePresenter $presenter) {}
+    public function __construct(private EventOccurrencePresenter $presenter, private EventStartingPoint $points) {}
 
-    public function index(Request $request, EventStartingPoint $points): Response
+    /** Today with the panel open, on a day, filters or a listing's details (`event`, `start`). */
+    public static function url(array $query = []): string
     {
-        $input = $request->validate([
-            'date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
-            // A listing's details (?event=&start=) open on that listing's day.
-            'event' => ['nullable', 'integer'],
-            'start' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
-        ]);
+        return '/today?'.http_build_query(['whats_on' => 1, ...array_filter($query, fn ($value) => $value !== null && $value !== '')]);
+    }
+
+    /** One listing's details: its occurrence's day, open on it. */
+    public static function eventUrl(int $event, CarbonImmutable $start): string
+    {
+        $start = $start->setTimezone('Europe/Berlin');
+
+        return self::url(['date' => $start->toDateString(), 'event' => $event, 'start' => $start->toIso8601String()]);
+    }
+
+    /** @return array<string, mixed> */
+    public function for(Request $request): array
+    {
+        $user = $request->user();
         $today = CarbonImmutable::now('Europe/Berlin');
+        $start = $this->instant($request->query('start'));
+        $event = filter_var($request->query('event'), FILTER_VALIDATE_INT) ?: null;
+        // A listing without its start (an older link) opens on its next occurrence.
+        if ($event !== null && $start === null) {
+            $start = Event::occurringBetween($today->startOfDay(), $today->addYear(), [$event])
+                ->first(fn (array $o) => $o['starts_at']->isFuture())['starts_at'] ?? null;
+        }
+        $date = $this->day($request->query('date'));
         $day = match (true) {
-            isset($input['date']) => CarbonImmutable::parse($input['date'], 'Europe/Berlin'),
-            isset($input['start']) => CarbonImmutable::parse($input['start'])->setTimezone('Europe/Berlin')->startOfDay(),
+            $date !== null => CarbonImmutable::parse($date, 'Europe/Berlin'),
+            $start !== null => $start->setTimezone('Europe/Berlin')->startOfDay(),
             default => $today,
         };
         $filters = $this->filters($request);
-        // The URL's starting point counts only as a public point or the
-        // person's own saved place; anything else is dropped.
-        $from = $points->resolve($filters['from'], $request->user());
+        // The URL's starting point counts only as a public point or the person's own saved place.
+        $from = $this->points->resolve($filters['from'], $user);
         $filters['from'] = $from['key'] ?? null;
-
         if ($from === null && $filters['sort'] === 'closest') {
             $filters['sort'] = 'soonest';
         }
+        $past = $day->lessThan($today->startOfDay());
 
-        // The day's listings, the catalogue, the saved places and the appointment are
-        // read only when the response carries them, not again for Get there's
-        // `only: ['day']`. Everything the page shows comes in this first
-        // response (owner, 26 Oct 2026: pages load whole): nothing deferred.
-        return Inertia::render('events', [
+        return [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
             'filters' => $filters,
+            // The listing whose details the URL opens, as the page reads it back.
+            'event' => $event !== null && $start !== null ? ['event' => $event, 'start' => $start->setTimezone('Europe/Berlin')->toIso8601String()] : null,
             'starting_point' => $from,
-            'saved_places' => fn () => $points->savedPlaces($request->user()),
+            'saved_places' => $this->points->savedPlaces($user),
             // Get there's "Where do you start?": the stops starred in Travel.
-            'favourite_stops' => fn () => $this->favouriteStops($request->user(), $points),
-            'appointment' => fn () => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
-            // The day shown, as Travel reads it: what Get there checks a way
-            // against ("My day"). Only when Get there asks for it; a past day
-            // has nothing to plan.
-            'day' => $day->lessThan($today->startOfDay())
-                ? null
-                : Inertia::optional(fn () => app(DayProjection::class)->for($request->user(), $day->toDateString(), $request)),
-            'catalogue' => fn () => $this->catalogue(),
-            'listings' => fn () => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
+            'favourite_stops' => $this->favouriteStops($user),
+            'appointment' => $day->isSameDay($today) ? $this->appointment($user, $today) : null,
+            // Get there checks a way against the day it's on: Today's own day when it's today,
+            // else that day's, read only when a listing's details are open.
+            'day' => ! $past && ! $day->isSameDay($today) && $event !== null
+                ? app(DayProjection::class)->for($user, $day->toDateString(), $request) : null,
+            'catalogue' => $this->catalogue(),
+            'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
                 ->all()),
-            // The street's sky and the rain warnings, from the forecast's cache
-            // (WeatherService never waits on a provider); the page says so
-            // when there is none.
-            'weather' => fn () => app(WeatherService::class)->getDayForecast($day->toDateString()),
+            // The rain warnings, from the forecast's cache (WeatherService never waits on a provider).
+            'weather' => app(WeatherService::class)->getDayForecast($day->toDateString()),
             // A past day points on to the next day with listings.
-            'next_listed' => $day->lessThan($today->startOfDay())
-                ? fn () => $this->nextListed($today)
-                : null,
-        ]);
+            'next_listed' => $past ? $this->nextListed($today) : null,
+        ];
+    }
+
+    /** A real calendar day, YYYY-MM-DD; anything else (2026-02-31) is none. */
+    private function day(mixed $value): ?string
+    {
+        if (! is_string($value) || preg_match('/^20\d\d-\d\d-\d\d$/', $value) !== 1) {
+            return null;
+        }
+        [$year, $month, $day] = array_map('intval', explode('-', $value));
+
+        return checkdate($month, $day, $year) ? $value : null;
+    }
+
+    private function instant(mixed $value): ?CarbonImmutable
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+        try {
+            $at = CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $at->year >= 2000 && $at->year < 2100 ? $at : null;
     }
 
     /**
-     * The first day from today with listings, within 60 days: the coming
-     * week first (nearly always enough), then the rest. The same for
-     * everyone, so it's read once every five minutes ('' for none).
+     * The first day from today with listings, within 60 days: the coming week first (nearly
+     * always enough), then the rest. The same for everyone, so it's read once every five minutes.
      */
     private function nextListed(CarbonImmutable $today): ?string
     {
@@ -99,7 +131,6 @@ class EventController extends Controller
             foreach ([[0, 6], [7, 59]] as [$from, $to]) {
                 $first = Event::occurringBetween($today->addDays($from)->startOfDay(), $today->addDays($to)->endOfDay())
                     ->min(fn (array $o) => $o['starts_at']->setTimezone('Europe/Berlin')->toDateString());
-
                 if (is_string($first)) {
                     return $first;
                 }
@@ -112,10 +143,8 @@ class EventController extends Controller
     }
 
     /**
-     * What the filters offer: every category and area the listed events
-     * have, on any day, as the mock's pickers do (its whole catalogue), so a
-     * choice can point to another day. The same for everyone and changed only
-     * by an import or a moderator, so it is read once every five minutes.
+     * What the filters offer: every category and area the listed events have, on any day, so a
+     * choice can point to another day. The same for everyone, read once every five minutes.
      *
      * @return array{categories: list<string>, areas: list<string>}
      */
@@ -138,45 +167,34 @@ class EventController extends Controller
     }
 
     /**
-     * The person's own last appointment today that has an end (recorded in
-     * Paperwork, or planned in their day), for the details' "For you" (how an
-     * event sits after it) and Get there's start (where it is, when they
-     * recorded a place on the map). Only what they recorded; nothing when none.
-     *
-     * @return array{title: string, end: string, place: array{name: string, lat: float, lng: float}|null}|null
-     */
-    /**
-     * The stops the person starred in Travel, where the timetable knows them,
-     * as starting points (at most six). A name it doesn't know is left out.
+     * The stops the person starred in Travel, where the timetable knows them, as starting points
+     * (at most six). A name it doesn't know is left out.
      *
      * @return list<array{key: string, name: string, lat: float, lng: float}>
      */
-    private function favouriteStops(?User $user, EventStartingPoint $points): array
+    private function favouriteStops(User $user): array
     {
-        if ($user === null) {
-            return [];
-        }
-
         $names = FavouriteStop::query()->where('user_id', $user->id)->orderBy('id')->limit(6)->pluck('name')->all();
-        $found = $points->publicMany($names);
+        $found = $this->points->publicMany($names);
 
-        return array_values(array_filter(array_map(
-            fn (string $name) => $found[mb_strtolower(trim($name))] ?? null,
-            $names,
-        )));
+        return array_values(array_filter(array_map(fn (string $name) => $found[mb_strtolower(trim($name))] ?? null, $names)));
     }
 
-    private function appointment(Request $request, CarbonImmutable $today): ?array
+    /**
+     * The person's own last appointment today that has an end (recorded in Paperwork, or planned
+     * in their day), for the details' "For you" and Get there's start. Only what they recorded.
+     *
+     * @return array{title: string, end: string, place: array{name: string, lat: float, lng: float}|null}|null
+     */
+    private function appointment(User $user, CarbonImmutable $today): ?array
     {
-        $user = $request->user();
         $place = fn (?string $name, mixed $lat, mixed $lng) => $name !== null && $name !== '' && is_numeric($lat) && is_numeric($lng)
             ? ['name' => $name, 'lat' => (float) $lat, 'lng' => (float) $lng]
             : null;
         $recorded = collect(app(RecordedAppointments::class)->between($user, $today->startOfDay(), $today->endOfDay()))
             ->filter(fn ($item) => $item->endAt !== null)
             ->map(fn ($item) => ['title' => $item->title, 'end' => $item->endAt, 'place' => $place($item->locationLabel, $item->lat, $item->lng)]);
-        // An official appointment the person planned their day around (as
-        // DayProjection reads plans): it carries its end.
+        // An official appointment the person planned their day around (as DayProjection reads plans).
         $planned = collect(ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state['plans'][$today->toDateString()]['slots'] ?? [])
             ->filter(fn (array $slot) => ($slot['type'] ?? null) === 'appointment' && is_string($slot['end_at'] ?? null) && is_string($slot['name'] ?? null))
             ->map(fn (array $slot) => ['title' => $slot['name'], 'end' => CarbonImmutable::parse($slot['end_at']), 'place' => $place(is_string($slot['location'] ?? null) ? $slot['location'] : null, $slot['lat'] ?? null, $slot['lng'] ?? null)]);
@@ -190,9 +208,8 @@ class EventController extends Controller
     }
 
     /**
-     * The venue's recorded setting (indoor/outdoor) and step-free access,
-     * from place_features, in one query for the day: what the street's rain
-     * warning and the poster's Accessibility read. Unknown stays null.
+     * The venue's recorded setting (indoor/outdoor) and step-free access, from place_features, in
+     * one query for the day: what the rain warning and the details' Accessibility read.
      *
      * @param  list<array<string, mixed>>  $listings
      * @return list<array<string, mixed>>
@@ -212,8 +229,8 @@ class EventController extends Controller
     }
 
     /**
-     * The page's filters from its URL, so a deep link opens the same view.
-     * Lenient: a value it doesn't know is dropped, not an error.
+     * The filters from the URL, so a link opens the same view. Lenient: a value it doesn't know is
+     * dropped, not an error.
      *
      * @return array{q: string, category: ?string, area: ?string, free: bool, saved: bool, sort: string, from: ?string}
      */
@@ -233,27 +250,5 @@ class EventController extends Controller
             'sort' => in_array($request->query('sort'), ['soonest', 'evening', 'closest'], true) ? $request->query('sort') : 'soonest',
             'from' => $text('from', 120),
         ];
-    }
-
-    /**
-     * Legacy detail URLs — the v2 page expands inline, no detail route.
-     */
-    public function show(Request $request, Event $event): RedirectResponse
-    {
-        abort_unless(Event::query()->visible()->whereKey($event->id)->exists(), 404);
-        $input = $request->validate(['start' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
-        $start = isset($input['start']) ? CarbonImmutable::parse($input['start'])->setTimezone('Europe/Berlin') : null;
-        if ($start === null) {
-            $now = CarbonImmutable::now('Europe/Berlin');
-            $start = Event::occurringBetween($now->startOfDay(), $now->addYear(), [$event->id])
-                ->first(fn ($item) => $item['starts_at']->isFuture())['starts_at'] ?? CarbonImmutable::parse($event->starts_at);
-        }
-
-        return redirect()->route('events', ['event' => $event->id, 'start' => $start->toIso8601String(), 'date' => $start->toDateString()]);
-    }
-
-    public function saved(Request $request): RedirectResponse
-    {
-        return redirect()->route('events', ['saved' => 1]);
     }
 }

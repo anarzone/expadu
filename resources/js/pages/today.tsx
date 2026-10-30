@@ -21,6 +21,8 @@ import { useDayRefresh } from '@/components/today/use-day-refresh';
 import { TodayWelcome } from '@/components/today/welcome';
 import { YourDay } from '@/components/today/your-day';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
+import { WhatsOn } from '@/components/whats-on/whats-on';
+import type { WhatsOnData } from '@/components/whats-on/whats-on';
 import { usePhone } from '@/hooks/use-phone';
 import AppLayout from '@/layouts/app-layout';
 import type { DayProjection } from '@/types/day';
@@ -49,6 +51,7 @@ export default function Today() {
         continuation,
         welcome,
         needsYou,
+        whatsOn,
     } = usePage<{
         // All in the first response (HomeFeedController: pages load whole).
         day: DayProjection;
@@ -68,6 +71,8 @@ export default function Today() {
         welcome: boolean;
         /** The engine's tier-1 and tier-2 items for today (Needs you). */
         needsYou: TodayNeeds;
+        /** What's on, while its panel is open (?whats_on=1); null otherwise. */
+        whatsOn: WhatsOnData | null;
     }>().props;
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
@@ -229,6 +234,7 @@ export default function Today() {
                     )}
                 </div>
             </div>
+            {whatsOn && <WhatsOn data={whatsOn} todayPlan={day} />}
         </AppLayout>
     );
 }

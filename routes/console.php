@@ -72,6 +72,7 @@ Schedule::command('marketing:check-links')->timezone('Europe/Berlin')->dailyAt('
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:import-official --days=40')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('events:import-datenhub --days=60')->everySixHours()->withoutOverlapping()->onOneServer()->runInBackground();
 Schedule::command('events:enrich')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:curate')->hourly()->withoutOverlapping()->runInBackground();
 Schedule::command('events:expire')->dailyAt('03:30')->withoutOverlapping()->runInBackground();
