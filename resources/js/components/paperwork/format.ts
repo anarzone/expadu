@@ -106,11 +106,20 @@ export function formatDate(d: string | null | undefined): string {
         : 'Date unknown';
 }
 
-/** Catalogue text arrives wrapped at a fixed width: blank lines are paragraphs, single breaks are spaces. */
+/**
+ * Catalogue text arrives wrapped at a fixed width: blank lines are paragraphs, single breaks are
+ * spaces. A line starting "- " is a list item (a card's document list): it gets a line of its own.
+ */
 export function paragraphs(text: string): string[] {
     return text
         .split(/\n\s*\n/)
-        .map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
+        .flatMap((p) => p.split(/\n\s*(?=- )/))
+        .map((p) =>
+            p
+                .replace(/\s*\n\s*/g, ' ')
+                .replace(/^- /, '• ')
+                .trim(),
+        )
         .filter(Boolean);
 }
 
