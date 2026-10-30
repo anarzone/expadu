@@ -48,6 +48,9 @@ final class TodayDiscovery
     /** How long a Veedel's centre is kept (home()): public, and it doesn't move. */
     private const VEEDEL_SECONDS = 86400;
 
+    /** Today's listings at most: two posters, three compact, six for the room under the departures. */
+    private const LISTED = 11;
+
     /** How long a day's listings are kept (listings()). */
     private const LISTINGS_SECONDS = 300;
 
@@ -94,14 +97,20 @@ final class TodayDiscovery
         $order = $this->taste->order($user);
 
         // Posters for the first two eligible events, compact listings for
-        // the next three (coordinator, 20 Oct). Posters fill first, and the
-        // event "Also in ‹area›" suggests is in neither.
+        // the next three (coordinator, 20 Oct), and up to six more for the
+        // room under the departures (`more`, owner 28 Oct 2026: the page
+        // fills around the board, which never moves). Posters fill first,
+        // and the event "Also in ‹area›" suggests is in none.
         $listed = self::ranked(
-            $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(5)->values(),
+            $events->reject(fn (array $event) => $event['id'] === $idea && $event['occurrence_start'] === $ideaStart)->take(self::LISTED)->values(),
             $order['events'] ?? null,
             $order['why'] ?? [],
             fn (array $event) => 'e'.$event['id'].'@'.CarbonImmutable::parse($event['occurrence_start'])->getTimestamp(),
-        )->map(fn (array $event, int $index) => [...$event, 'layout' => $index < 2 ? 'poster' : 'compact']);
+        )->map(fn (array $event, int $index) => [...$event, 'layout' => match (true) {
+            $index < 2 => 'poster',
+            $index < 5 => 'compact',
+            default => 'more',
+        }]);
 
         if ($around !== null) {
             $around['places'] = self::ranked(collect($around['places']), $order['places'] ?? null, $order['why'] ?? [], fn (array $place) => 'p'.$place['id'])->all();
@@ -182,10 +191,10 @@ final class TodayDiscovery
             return $this->nearFirst($today, $home);
         }
 
-        // Today shows five at most, so only the first five are dressed.
+        // Today shows eleven at most, so only the first eleven are dressed.
         return $this->nearFirst($this->listings($now, $now->addDay())
             ->map(fn (array $listing) => [...$listing['event'], 'day' => 'tomorrow'])
-            ->values(), $home)->take(5)->values();
+            ->values(), $home)->take(self::LISTED)->values();
     }
 
     /**

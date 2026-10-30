@@ -193,39 +193,46 @@
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     }
 }
-/* Check departures open makes City help tall: it takes the right column on
-   its own, and the ideas (always first), Paperwork and the links follow each
-   other on the left. The last row takes City help's extra height, so the
-   rows on the left stay as tall as their content. Closed, the ideas use the
-   whole width. */
-@media (min-width: 701px) {
-    .next-area:has(.departure-board[open]) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: repeat(6, auto) 1fr;
+/* Three columns from 1200px (owner, 28 Oct 2026): Your day, the ideas,
+   and the city's help with the departures, which never move. The day keeps
+   its share; the ideas and the city's column split the rest. Narrower,
+   three columns squeeze every title onto a word per line. */
+@media (min-width: 1200px) {
+    .daily-canvas {
+        grid-template-columns: minmax(340px, 34fr) minmax(0, 66fr);
+    }
+    .next-area {
+        grid-template-columns: minmax(0, 36fr) minmax(0, 30fr);
         align-items: start;
     }
-    .next-area:has(.departure-board[open]) > .practical-surface {
-        display: contents;
+    .city-area {
+        position: relative;
     }
-    .next-area:has(.departure-board[open]) > .practical-surface > * {
-        grid-column: 1;
-        padding: 16px;
+    .city-area::before {
+        content: '';
+        position: absolute;
+        inset: 20px auto 20px 0;
+        width: 1px;
+        background: linear-gradient(
+            transparent,
+            var(--color-border) 12%,
+            var(--color-border) 88%,
+            transparent
+        );
     }
-    .next-area:has(.departure-board[open]) > .practical-surface > .city-help {
-        grid-column: 2;
-        grid-row: 1 / -1;
-        padding: 16px 16px 16px 20px;
-    }
-    .next-area:has(.departure-board[open]) > :not(.practical-surface) {
-        grid-column: 1;
-    }
-    .next-area:has(.departure-board[open]) > .discovery {
-        order: -1;
-    }
-    /* Half as wide, the posters go one at a time, the next showing at the
-       edge: a poster keeps the width its title is set for. */
-    .next-area:has(.departure-board[open]) .event-rail {
+    /* Half the width it had: one poster at a time, the next at the edge. */
+    .ideas-area .event-rail {
         grid-auto-columns: 86%;
+    }
+    /* The city's column is narrow: its rows keep the title, not the category. */
+    .city-area .compact-category {
+        display: none;
+    }
+}
+/* Two columns from 701px: the city's help heads the right one, over the ideas. */
+@media (min-width: 701px) and (max-width: 1199px) {
+    .city-area {
+        order: -1;
     }
 }
 
@@ -899,10 +906,16 @@ a.plan-link:hover {
 .practical-surface {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     padding: 16px;
     border-radius: 0 var(--radius-xl) 0 0;
+}
+/* Paperwork's next step, or its way in: under Your day on a free day, under
+   the ideas when plans make the day long, first on a first visit. */
+.today-paperwork {
+    position: relative;
+    padding: 16px;
 }
 .city-help {
     position: relative;
@@ -983,38 +996,34 @@ a.plan-link:hover {
     gap: 8px;
     margin: 10px 0 0;
 }
-/* Check departures: a stop, its next lines as Travel draws them. */
+/* The departures: a stop, its next lines as Travel draws them, always shown. */
 .departure-board {
     grid-column: 1 / -1;
     margin: 10px 0 0;
 }
-.departure-board > summary {
+.board-head {
     display: flex;
     align-items: center;
     gap: 9px;
     min-height: 44px;
-    border-radius: var(--radius-md);
+}
+.board-head h3 {
+    margin: 0;
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
-    list-style: none;
-    cursor: pointer;
 }
-.departure-board > summary::-webkit-details-marker {
-    display: none;
-}
-.departure-board > summary svg {
+.board-head svg {
     width: 20px;
     height: 20px;
-}
-.departure-board > summary svg:first-child {
     color: var(--color-select-text);
 }
-.departure-board > summary svg:last-child {
-    width: 16px;
+.board-head small {
     margin-left: auto;
-}
-.departure-board[open] > summary svg:last-child {
-    transform: rotate(180deg);
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .board-content {
     padding: 0 0 4px;
@@ -1112,22 +1121,56 @@ a.plan-link:hover {
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
-.board-full {
+/* The next plan's ride on its line: tinted in the line's colour, tagged
+   "Your tram · 17:09" in the line's own colour and text colour. */
+.departure-strips .nearby-strip.is-yours {
+    border-radius: var(--radius-md);
+    background: var(--tint);
+}
+.board-yours {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    background: var(--line);
+    color: var(--ink);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.board-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.board-full,
+.board-travel {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     min-height: 44px;
+    margin-left: auto;
+    color: var(--color-text);
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
     text-decoration: none;
+    cursor: pointer;
 }
-.board-full::after {
+:is(.board-full, .board-travel)::after {
     content: '→';
+}
+.board-sheet .departure-strips {
+    margin: 8px 0 0;
+}
+.board-sheet .board-notices {
+    margin: 14px 0 0;
 }
 
 @media (min-width: 701px) and (max-width: 999px) {
     .practical-surface {
-        grid-template-columns: minmax(0, 1fr);
         gap: 18px;
         padding: 20px;
     }
@@ -1378,7 +1421,9 @@ a.plan-link:hover {
     /* The server renders the two columns; until the page hydrates, a phone
        reads them as one. */
     .day-area,
-    .next-area {
+    .next-area,
+    .ideas-area,
+    .city-area {
         display: contents;
     }
     .next-area::before {
@@ -2212,15 +2257,6 @@ button.saved-all {
 .welcome-choices svg {
     color: var(--color-welcome-icon);
 }
-/* On a first visit (or a free evening with no ideas left) City help and
-   the way into Paperwork lead the day's column, one under the other, City
-   help flush with the column (the mock's priorities.css). */
-.day-area > .practical-surface {
-    grid-template-columns: minmax(0, 1fr);
-}
-.day-area > .practical-surface .city-help {
-    padding: 0;
-}
 .paperwork-optional a {
     display: flex;
     align-items: center;
@@ -2267,4 +2303,20 @@ button.saved-all {
     .welcome-choices > :last-child {
         grid-column: 1 / -1;
     }
+}
+
+/* ── The room under the departures: more of today's events ──────────── */
+.more-events {
+    overflow: hidden;
+    padding: 4px 16px 16px 20px;
+}
+.more-events h3 {
+    margin: 0 0 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
 }

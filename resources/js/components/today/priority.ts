@@ -3,56 +3,91 @@ import type { DayProjection } from '@/types/day';
 
 /*
  * What Today puts first (the mock's priority() in brief/content.js): plans
- * still ahead lead; with none, a first visit leads with the city's help
- * and the way into Paperwork, and any other free day with ideas, or with
- * the city's help when there are none left.
+ * still ahead lead; with none, a first visit leads with the way into
+ * Paperwork, and any other free day with ideas, or with Paperwork when there
+ * are none left.
  */
 
 export type Lead = 'agenda' | 'essentials' | 'discovery';
 
 export type Block =
     | 'agenda'
-    | 'essentials'
+    | 'paperwork'
+    | 'city'
     | 'around'
     | 'discovery'
+    | 'more'
     | 'composer'
     | 'saved'
     | 'upcoming'
     | 'support';
 
-/** A phone's one column, per lead (the mock's priority().order). */
+/*
+ * Where each part goes (owner, 28 Oct 2026: the departures stay put and the
+ * page fills around them). The city's help, with the departures, always
+ * heads the right column (on a phone, right after the day); the ideas head
+ * the middle one; Paperwork goes where there's room: under Your day when the
+ * day is free, under the ideas when plans make Your day long, first on a
+ * first visit. The room left under the departures takes more events (`more`).
+ */
+
+/** A phone's one column, per lead. */
 export const PHONE_ORDER: Record<Lead, Block[]> = {
     agenda: [
         'agenda',
-        'essentials',
+        'city',
         'around',
         'discovery',
+        'paperwork',
         'composer',
         'saved',
         'upcoming',
         'support',
     ],
     essentials: [
-        'essentials',
+        'paperwork',
         'agenda',
-        'around',
+        'city',
         'discovery',
+        'around',
         'composer',
         'saved',
         'upcoming',
         'support',
     ],
-    // A free day opens with ideas, then the way to add a plan.
     discovery: [
-        'discovery',
         'agenda',
-        'essentials',
+        'city',
+        'discovery',
         'around',
+        'paperwork',
         'composer',
         'saved',
         'upcoming',
         'support',
     ],
+};
+
+/** The three columns from 1200px (two from 701px: the day, then the city's help over the ideas). */
+export const COLUMNS: Record<
+    Lead,
+    { day: Block[]; ideas: Block[]; city: Block[] }
+> = {
+    agenda: {
+        day: ['agenda', 'around', 'saved', 'upcoming', 'composer'],
+        ideas: ['discovery', 'paperwork', 'support'],
+        city: ['city', 'more'],
+    },
+    essentials: {
+        day: ['paperwork', 'agenda', 'around', 'saved', 'upcoming', 'composer'],
+        ideas: ['discovery', 'support'],
+        city: ['city', 'more'],
+    },
+    discovery: {
+        day: ['agenda', 'around', 'paperwork', 'saved', 'upcoming', 'composer'],
+        ideas: ['discovery', 'support'],
+        city: ['city', 'more'],
+    },
 };
 
 const leadOf = (

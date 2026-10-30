@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import type { AroundPlace } from '@/components/around-here/place-model';
 import { PlaceRow } from '@/components/around-here/place-row';
 import { occurrenceKey } from '@/components/events/event-presentation';
@@ -35,7 +36,8 @@ import { aroundHere } from '@/routes';
 
 export type DiscoveryEvent = PosterSource & {
     id: number;
-    layout: 'poster' | 'compact';
+    /** A poster, a compact row, or one for the room under the departures. */
+    layout: 'poster' | 'compact' | 'more';
     /** Tomorrow's listing, after the evening's last start. */
     day?: 'tomorrow';
     category_label: string;
@@ -272,16 +274,23 @@ function CompactEvent({
     event,
     saved,
     onSave,
+    clipped = false,
 }: {
     event: DiscoveryEvent;
     saved: boolean;
     onSave: () => void;
+    /** Laid out but clipped off, unseen and inert (the room under the departures). */
+    clipped?: boolean;
 }) {
     const poster = posterEvent(event);
     const href = eventHref(event);
 
     return (
-        <article className="compact-event">
+        <article
+            className="compact-event"
+            inert={clipped}
+            style={clipped ? { visibility: 'hidden' } : undefined}
+        >
             <Link
                 className="compact-event-open"
                 href={href}
@@ -324,6 +333,110 @@ function CompactEvent({
                 <Icon name="plus" />
             </Link>
         </article>
+    );
+}
+
+/**
+ * The room left under the departures (1200px and wider; owner, 28 Oct 2026):
+ * more of today's events, in Today's own order, as many whole rows as end
+ * by the other columns' bottom. Every row stays laid out, so it can be
+ * measured; those that don't fit are clipped off, unseen and inert. It
+ * measures again whenever a column beside it changes size.
+ */
+export function MoreEvents({
+    discovery,
+    beside,
+}: {
+    discovery: NonNullable<TodayDiscovery>;
+    /** The columns it may not reach past. */
+    beside: RefObject<HTMLDivElement | null>[];
+}) {
+    const saves = useSaves();
+    const more = discovery.events.filter((e) => e.layout === 'more');
+    const list = useRef<HTMLElement>(null);
+    // Unmeasured (null) until the first look: nothing shows before it.
+    const [room, setRoom] = useState<{ rows: number; height: number } | null>(
+        null,
+    );
+
+    useEffect(() => {
+        const box = list.current;
+
+        if (!box) {
+            return;
+        }
+
+        const measure = () => {
+            const end = Math.max(
+                0,
+                ...beside.map(
+                    (column) =>
+                        column.current?.getBoundingClientRect().bottom ?? 0,
+                ),
+            );
+            const top = box.getBoundingClientRect().top;
+            const fits = window.matchMedia('(min-width: 1200px)').matches
+                ? Array.from(
+                      box.querySelectorAll<HTMLElement>('.compact-event'),
+                  ).filter((row) => row.getBoundingClientRect().bottom <= end)
+                : [];
+            const last = fits.at(-1);
+            const next = {
+                rows: fits.length,
+                height: last ? last.getBoundingClientRect().bottom - top : 0,
+            };
+
+            setRoom((was) =>
+                was?.rows === next.rows &&
+                Math.abs(was.height - next.height) < 1
+                    ? was
+                    : next,
+            );
+        };
+        const watch = new ResizeObserver(measure);
+
+        beside.forEach(
+            (column) => column.current && watch.observe(column.current),
+        );
+        watch.observe(box);
+
+        return () => watch.disconnect();
+    }, [beside]);
+
+    if (more.length === 0) {
+        return null;
+    }
+
+    const shown = room?.rows ?? 0;
+
+    return (
+        <section
+            ref={list}
+            className="more-events"
+            aria-labelledby="more-events-title"
+            aria-hidden={shown === 0 ? true : undefined}
+            style={{
+                maxHeight: shown === 0 ? 0 : room?.height,
+                visibility: shown === 0 ? 'hidden' : undefined,
+            }}
+        >
+            <h3 id="more-events-title">
+                {discovery.part === 'tomorrow'
+                    ? 'More tomorrow'
+                    : `More this ${discovery.part}`}
+            </h3>
+            <div className="compact-events">
+                {more.map((event, index) => (
+                    <CompactEvent
+                        key={`${event.id}|${event.occurrence_start}`}
+                        event={event}
+                        saved={saves.saved(event)}
+                        onSave={() => saves.toggle(event)}
+                        clipped={index >= shown}
+                    />
+                ))}
+            </div>
+        </section>
     );
 }
 

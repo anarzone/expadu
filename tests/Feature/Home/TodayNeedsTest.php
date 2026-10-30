@@ -71,7 +71,7 @@ test('overdue Paperwork needs them, saying only that', function () {
     $items = app(TodayNeeds::class)->for($this->user)['items'];
     expect($items)->toHaveCount(1)->and($items[0])->toMatchArray([
         'tier' => 1, 'kind' => 'paperwork', 'headline' => 'Your Paperwork needs attention.', 'detail' => null, 'at' => null,
-        'severity' => 'conflict', 'href' => '/bureaucracy',
+        'severity' => 'conflict', 'href' => '/paperwork',
     ]);
 });
 
