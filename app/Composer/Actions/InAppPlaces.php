@@ -79,6 +79,31 @@ final class InAppPlaces
             'place' => ['crumb' => 'Settings › Your account', 'actions' => ['Name', 'Email address'], 'here' => 'Email address',
                 'label' => 'Open Settings →', 'href' => '/settings/account'],
         ],
+        'change_password' => [
+            'title' => 'Change your password',
+            'text' => 'A new password needs your current one, so it’s changed in Settings, never typed here.',
+            'place' => ['crumb' => 'Settings › Your account', 'actions' => ['Email address', 'Change password'], 'here' => 'Change password',
+                'label' => 'Open Settings →', 'href' => '/settings/account'],
+        ],
+        'download_your_data' => [
+            'title' => 'Download your data',
+            'text' => 'Everything Expadu keeps about you comes in one file, after you confirm it’s you, so it’s downloaded in Settings.',
+            'place' => ['crumb' => 'Settings › Your data', 'actions' => ['Your data', 'Prepare my file'], 'here' => 'Prepare my file',
+                'label' => 'Open Settings →', 'href' => '/settings/data'],
+            'note' => 'Your Paperwork record has its own copy, in Paperwork.',
+        ],
+        'start_personalisation' => [
+            'title' => 'Turn on personalised suggestions',
+            'text' => 'Learning what you like is your choice to make, so it’s turned on with your own tap in Settings.',
+            'place' => ['crumb' => 'Settings › Personalised suggestions', 'actions' => ['Learn what I like'], 'here' => 'Learn what I like',
+                'label' => 'Open Settings →', 'href' => '/settings/suggestions'],
+        ],
+        'start_location_sharing' => [
+            'title' => 'Share your location for transit',
+            'text' => 'Sharing your location is your choice to make, and needs your browser’s own permission, so it’s turned on in Settings.',
+            'place' => ['crumb' => 'Settings › Transit & tickets', 'actions' => ['I have a Deutschlandticket', 'Share location for transit'], 'here' => 'Share location for transit',
+                'label' => 'Open Transit settings →', 'href' => '/settings/transit'],
+        ],
         'stop_personalisation' => [
             'title' => 'Turn off personalised suggestions',
             'text' => 'Turning personalisation off deletes what Expadu learnt about what you like, so it’s your tap, in Settings.',
