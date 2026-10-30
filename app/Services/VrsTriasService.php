@@ -21,7 +21,16 @@ class VrsTriasService
     /** Failures in a row that make an outage rather than a blip. */
     private const OUTAGE_FAILURES = 3;
 
-    /** Seconds TRIAS is skipped after one failure. */
+    /**
+     * Failures in a row before TRIAS is skipped at all. VRS's live server
+     * answers in a quarter of a second but now and then one request hangs
+     * (23 Oct 2026: 61 of 64 failures were a single 3 s timeout with 0
+     * bytes); skipping everything for 30 s after one sent a 37-stop route's
+     * boards to the timetable. One hang now falls back for that request alone.
+     */
+    private const BLIP_FAILURES = 2;
+
+    /** Seconds TRIAS is skipped after a blip. */
     private const BLIP_SECONDS = 30;
 
     /** Seconds TRIAS is skipped in an outage. */
@@ -1160,8 +1169,11 @@ class VrsTriasService
     {
         $failures = (int) Cache::get('trias_failures', 0) + 1;
         Cache::put('trias_failures', $failures, now()->addMinutes(30));
-        $skip = $failures >= self::OUTAGE_FAILURES ? self::OUTAGE_SECONDS : self::BLIP_SECONDS;
-        Cache::put('trias_down', true, $skip);
+        $skip = $failures >= self::OUTAGE_FAILURES ? self::OUTAGE_SECONDS
+            : ($failures >= self::BLIP_FAILURES ? self::BLIP_SECONDS : 0);
+        if ($skip > 0) {
+            Cache::put('trias_down', true, $skip);
+        }
 
         Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs, 'failures' => $failures, 'skip_s' => $skip]);
     }
