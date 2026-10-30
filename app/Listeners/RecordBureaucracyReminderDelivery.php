@@ -23,7 +23,7 @@ final class RecordBureaucracyReminderDelivery
         $reference = $event->message->reference();
         if ($user instanceof User && ($reference['recipient_id'] ?? null) === $user->id
             && app(PlanReminderDelivery::class)->delivered($reference)) {
-            NotificationThrottle::recordSent($user);
+            NotificationThrottle::recordSent($user, 'bureaucracy_task');
         }
     }
 

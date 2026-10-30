@@ -22,7 +22,7 @@ test('🔒 a kind of notification is turned off and back with Undo, the others u
     expect($made['blocks'][0])->toMatchArray(['type' => 'done', 'text' => 'Weather alerts are off.'])
         ->and($this->user->fresh()->wantsNotification('weather'))->toBeFalse()
         ->and($this->user->fresh()->wantsNotification('transit'))->toBeTrue()
-        ->and($this->user->fresh()->wantsNotification('digest'))->toBeFalse();
+        ->and($this->user->fresh()->wantsNotification('brief'))->toBeTrue();
 
     $this->actions->undo($this->user, $made['blocks'][0]['id'], CarbonImmutable::now());
     expect($this->user->fresh()->wantsNotification('weather'))->toBeTrue();

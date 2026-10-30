@@ -75,7 +75,7 @@ final class ProcessingConsentStore
                 'provider_version' => $purpose->providerVersion(), 'notice_version' => $acceptance['notice_version'],
                 'input_digest' => $digest, 'state' => 'pending', 'granted_at' => now()->utc(),
                 'expires_at' => now()->utc()->addMinutes(min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15)))),
-                'delete_after' => now()->utc()->addDays(min(30, max(2, (int) config('bureaucracy_privacy.audit_days', 30)))),
+                'delete_after' => now()->utc()->addDays(ProcessingPurpose::auditDays()),
             ]);
 
             return new ProcessingPermit($row->id, $actor->getKey());
