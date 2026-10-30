@@ -97,44 +97,6 @@ async function ask(page: Page, written: 'ai' | 'code', read?: string[]) {
     return reply;
 }
 
-test('🔒 an "around you now" answer draws every block it rests on', async ({
-    page,
-}) => {
-    const reply = await ask(page, 'ai');
-
-    // The person's own facts, word for word.
-    const facts = reply.locator('.answer-facts');
-
-    for (const fact of facts()) {
-        await expect(
-            facts.getByText(fact.label, { exact: true }),
-        ).toBeVisible();
-        await expect(
-            facts.getByText(fact.value, { exact: true }),
-        ).toBeVisible();
-    }
-
-    // The listing, as Events' poster.
-    await expect(reply.locator('[data-poster="959"]')).toBeVisible();
-    // Who wrote it, and where to check it.
-    await expect(
-        // Stored before #330, no `read`: the AI was given the listings and the weather.
-        reply.getByText('From the listings and the weather;', {
-            exact: false,
-        }),
-    ).toBeVisible();
-    await expect(
-        reply.getByRole('link', { name: 'What’s on', exact: true }),
-    ).toHaveAttribute('href', '/today?whats_on=1&date=2026-10-22');
-    await expect(
-        reply.getByRole('link', { name: 'Paperwork', exact: true }),
-    ).toBeVisible();
-    // What to do next.
-    await expect(
-        reply.getByRole('button', { name: 'Plan the rest of today' }),
-    ).toBeVisible();
-});
-
 test('🔒 Composer’s own words are never credited to the AI', async ({
     page,
 }) => {

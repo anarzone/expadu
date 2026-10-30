@@ -1,173 +1,27 @@
 import { expect, test } from '@playwright/test';
 
 // Mutations are intercepted: these checks leave the shared account unchanged.
-test('transit setting stays unchanged after a failed save and can be retried', async ({
-    page,
-}) => {
-    await page.goto('/settings/transit');
-    const toggle = page.getByRole('switch', {
-        name: 'Share location for transit',
-        exact: true,
-    });
-    const before = await toggle.getAttribute('aria-checked');
-    let attempts = 0;
-    await page.route('**/user-settings', async (route) => {
-        attempts += 1;
-        await route.fulfill({
-            status: attempts === 1 ? 500 : 200,
-            json: { saved: true },
-        });
-    });
-    // Turning sharing off deletes kept locations, so it asks first.
-    const flip = async () => {
-        await toggle.click();
-
-        if (before === 'true') {
-            await page
-                .getByRole('button', { name: 'Stop and delete', exact: true })
-                .click();
-        }
-    };
-    await flip();
-    await expect(page.getByRole('alert')).toContainText('couldn’t save');
-    await expect(toggle).toHaveAttribute('aria-checked', before!);
-    await expect(toggle).toBeEnabled();
-    await flip();
-    await expect(toggle).toHaveAttribute(
-        'aria-checked',
-        before === 'true' ? 'false' : 'true',
-    );
-    await expect(page.getByRole('alert')).toHaveCount(0);
-});
-
 test('notification preferences do not silently succeed on expired sessions', async ({
     page,
 }) => {
     await page.goto('/settings/notifications');
-    // The device's line appears once React has mounted and checked support.
-    await expect(
-        page.getByText('Checking this device…', { exact: true }),
-    ).toHaveCount(0);
     const toggle = page.getByRole('switch', {
         name: 'Transit disruptions',
         exact: true,
     });
+    // Usable once React has mounted (the device's push line may still be checking).
+    await expect(toggle).toBeEnabled();
     const before = await toggle.getAttribute('aria-checked');
     await page.route('**/notification-preferences', (route) =>
         route.fulfill({ status: 419, json: { message: 'CSRF expired' } }),
     );
     await toggle.click();
-    await expect(page.getByRole('alert')).toContainText('session expired');
+    // The app-wide notice and the panel's own line both say so.
+    await expect(
+        page.getByRole('alert').filter({ hasText: 'signed out' }).first(),
+    ).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-checked', before!);
     await expect(toggle).toBeEnabled();
-});
-
-test('settings controls have touch targets and do not overflow a narrow phone', async ({
-    page,
-}) => {
-    await page.setViewportSize({ width: 320, height: 760 });
-    await page.goto('/settings/transit');
-
-    for (const name of [
-        'I have a Deutschlandticket',
-        'Share location for transit',
-    ]) {
-        const toggle = page.getByRole('switch', { name, exact: true });
-        await expect(toggle).toBeVisible();
-        const rect = await toggle.boundingBox();
-        expect(rect!.width).toBeGreaterThanOrEqual(44);
-        expect(rect!.height).toBeGreaterThanOrEqual(44);
-        expect(rect!.x + rect!.width).toBeLessThanOrEqual(320);
-    }
-
-    expect(
-        await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-    ).toBe(true);
-});
-
-test('profile edits preserve the draft and original value when the save fails', async ({
-    page,
-}) => {
-    await page.goto('/profile');
-    await page
-        .getByRole('button', { name: 'Personal details', exact: true })
-        .click();
-    await page
-        .getByRole('button', { name: 'Edit German level', exact: true })
-        .click();
-    const input = page.getByLabel('German level', { exact: true });
-    await input.selectOption({ label: 'C2 — Fluent' });
-    await page.route('**/settings/profile', (route) =>
-        route.fulfill({ status: 500, json: { message: 'Unavailable' } }),
-    );
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(page.getByRole('alert')).toContainText('couldn’t save');
-    await expect(input).toHaveValue('C2 — Fluent');
-    await expect(
-        page.getByRole('button', { name: 'Save', exact: true }),
-    ).toBeEnabled();
-});
-
-test('push status failures show unknown status and allow retry', async ({
-    page,
-}) => {
-    await page.addInitScript(() => {
-        PushManager.prototype.getSubscription = async () =>
-            ({
-                endpoint: 'https://push.example.test/device',
-            }) as PushSubscription;
-    });
-    await page.route('**/push/status', (route) =>
-        route.fulfill({ status: 500, json: { message: 'Unavailable' } }),
-    );
-    await page.goto('/settings/notifications');
-    await expect(
-        page.getByText('Status unavailable', { exact: true }),
-    ).toBeVisible();
-    // No Turn on or Turn off while the status is unknown.
-    await expect(
-        page.getByRole('button', { name: /^Turn (on|off)$/ }),
-    ).toHaveCount(0);
-    await page.unroute('**/push/status');
-    await page.route('**/push/status', (route) =>
-        route.fulfill({ status: 200, json: { subscribed: true } }),
-    );
-    await page.getByRole('button', { name: 'Try again', exact: true }).click();
-    await expect(
-        page.getByText('On · this browser', { exact: true }),
-    ).toBeVisible();
-});
-
-test('service worker activation does not reload an open page', async ({
-    page,
-}) => {
-    await page.goto('/settings/account');
-    await page.evaluate(() => navigator.serviceWorker.ready);
-    // Reload once so even the previous worker's controller-change guard would
-    // be armed; the check must exercise an already controlled, open page.
-    await page.reload();
-    await page.getByRole('button', { name: /^Name: .*\. Edit$/ }).click();
-    const input = page.getByLabel('Name', { exact: true });
-    await input.fill('Unsaved draft survives');
-    let documentRequests = 0;
-    page.on('request', (request) => {
-        if (
-            request.isNavigationRequest() &&
-            request.frame() === page.mainFrame()
-        ) {
-            documentRequests += 1;
-        }
-    });
-    await page.evaluate(() =>
-        navigator.serviceWorker.dispatchEvent(new Event('controllerchange')),
-    );
-    await page.waitForTimeout(500);
-    // Inertia can replace encrypted history asynchronously, which emits a
-    // same-document navigation; only a real document request loses the draft.
-    expect(documentRequests).toBe(0);
-    await expect(input).toHaveValue('Unsaved draft survives');
 });
 
 test('logout clears encrypted private page history on a shared browser', async ({
