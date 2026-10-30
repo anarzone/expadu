@@ -5,6 +5,7 @@ namespace App\Composer\Assistant;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Composer\Actions\ActionRefused;
+use App\Composer\Actions\AlertActions;
 use App\Composer\Actions\ComposerActions;
 use App\Composer\Actions\DayActions;
 use App\Composer\Actions\InAppPlaces;
@@ -94,7 +95,7 @@ final class AssistantTools
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
-        'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for',
+        'mute_alerts' => 'changes_you_ask_for', 'dismiss_alert' => 'changes_you_ask_for', 'read_alerts' => 'changes_you_ask_for',
         'set_notifications' => 'changes_you_ask_for', 'set_needs' => 'changes_you_ask_for', 'update_profile' => 'changes_you_ask_for',
         // Without their Paperwork permission, these only say it's needed.
         'change_paperwork_fact' => 'changes_you_ask_for', 'paperwork_step' => 'changes_you_ask_for', 'paperwork_report' => 'changes_you_ask_for',
@@ -1604,8 +1605,10 @@ final class AssistantTools
                     'for' => ['type' => 'string', 'enum' => ['today', 'week']],
                     'on' => ['type' => 'boolean', 'description' => 'false to turn the alerts back on'],
                 ], 'required' => ['line']]],
-            ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind. You\'re told only how many.',
-                'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => ['all', 'transit', 'city', 'events']]]]],
+            ['name' => 'dismiss_alert', 'description' => 'Dismisses their alerts on the Alerts page, as its Dismiss does: all of them, or those of one kind (paperwork: Paperwork deadlines and appointments). You\'re told only how many.',
+                'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => array_keys(AlertActions::KINDS)]]]],
+            ['name' => 'read_alerts', 'description' => 'Marks their unread alerts as read, as the Alerts page\'s Mark all read does: all of them, or those of one kind. They stay on the page. You\'re told only how many.',
+                'input_schema' => ['type' => 'object', 'properties' => ['kind' => ['type' => 'string', 'enum' => array_keys(AlertActions::KINDS)]]]],
             ['name' => 'set_notifications', 'description' => 'Turns a kind of notification on or off, as Settings › Notifications does: transit (disruptions on their lines and trips), checklist (Paperwork deadlines), events (event reminders), weather, rhine (Rhine flood alerts), brief (their morning and evening briefs). Or, with no kind, sets when their brief comes (brief_at, HH:MM, or "automatic": 45 minutes before their first plan) and their quiet hours (quiet_from and quiet_to, HH:MM, may run past midnight). Push on this device needs their own tap in the browser: for that, open_in_app "push_notifications".',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'kind' => ['type' => 'string', 'enum' => array_keys(SettingsActions::NOTIFICATIONS)],

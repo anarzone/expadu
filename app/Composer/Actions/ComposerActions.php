@@ -41,6 +41,7 @@ final class ComposerActions
         'remove_way' => [TravelActions::class, 'everyday'],
         'mute_alerts' => [AlertActions::class, 'everyday'],
         'dismiss_alert' => [AlertActions::class, 'everyday'],
+        'read_alerts' => [AlertActions::class, 'everyday'],
         'set_notifications' => [SettingsActions::class, 'everyday'],
         'set_needs' => [SettingsActions::class, 'everyday'],
         'update_profile' => [SettingsActions::class, 'everyday'],
