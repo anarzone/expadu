@@ -4,7 +4,9 @@ import {
     show,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
 import { Icon } from '@/components/ui/icon';
+import { aiNoticeUrl } from './ai-notice';
 import type { AiNotice } from './ai-notice';
+import { readAiNotice } from './ai-notice-read';
 import type { MenuPick } from './composer-box';
 import { ManagedConversation } from './conversation-menu';
 import { ComposerLoading } from './loading';
@@ -24,6 +26,9 @@ let lastDay: SurfaceContext = {};
 
 /** Loads them ahead, while the page is idle, so even the first opening isn't empty. */
 export function prefetchTray(): void {
+    // The AI notice too, so its line is under the box before the first message.
+    void readAiNotice(aiNoticeUrl());
+
     if (lastSeen) {
         return;
     }
