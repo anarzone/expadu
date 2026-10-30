@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection, PlannedTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
 import type { FavouriteStop } from '../nearby/types';
+import { Slide } from '../slide';
 import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
 import type { TripFor } from '../trip/trip-model';
@@ -1599,96 +1600,103 @@ export function PlanPanel({
                                 <TravelIcon name="down" />
                             </span>
                         </button>
-                        <div
-                            className={cn(
-                                'plan-controls',
-                                choicesOpen && 'is-open',
-                            )}
+                        {/* On a laptop, once there are ways, When and what matters fold
+                            under their summary; they open and close with Slide. */}
+                        <Slide
+                            open={
+                                !(desktop && stage === 'picked') || choicesOpen
+                            }
                             id="plan-choices"
                         >
-                            <span className="plan-label" id="when-label">
-                                When
-                            </span>
-                            <div
-                                className="segmented plan-when"
-                                role="group"
-                                aria-labelledby="when-label"
-                            >
-                                {(
-                                    [
-                                        ['now', 'Leave now'],
-                                        ['depart', 'Leave at'],
-                                        ['arrive', 'Arrive by'],
-                                    ] as const
-                                ).map(([mode, label]) => (
-                                    <button
-                                        key={mode}
-                                        type="button"
-                                        aria-pressed={schedule === mode}
-                                        onClick={() => setSchedule(mode)}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                            <p
-                                className="plan-when-time"
-                                id="plan-when-time"
-                                hidden={schedule === 'now'}
-                            >
-                                <span id="plan-when-caption">
-                                    {schedule === 'arrive'
-                                        ? 'Be there by'
-                                        : 'Leave at'}
+                            <div className="plan-controls">
+                                <span className="plan-label" id="when-label">
+                                    When
                                 </span>
-                                {scheduleMenu}
-                                {whenNote ? (
-                                    <span
-                                        id="plan-when-note"
-                                        className="plan-when-note"
-                                    >
-                                        {whenNote}
+                                <div
+                                    className="segmented plan-when"
+                                    role="group"
+                                    aria-labelledby="when-label"
+                                >
+                                    {(
+                                        [
+                                            ['now', 'Leave now'],
+                                            ['depart', 'Leave at'],
+                                            ['arrive', 'Arrive by'],
+                                        ] as const
+                                    ).map(([mode, label]) => (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            aria-pressed={schedule === mode}
+                                            onClick={() => setSchedule(mode)}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p
+                                    className="plan-when-time"
+                                    id="plan-when-time"
+                                    hidden={schedule === 'now'}
+                                >
+                                    <span id="plan-when-caption">
+                                        {schedule === 'arrive'
+                                            ? 'Be there by'
+                                            : 'Leave at'}
                                     </span>
-                                ) : null}
-                            </p>
-                            <span className="plan-label" id="prefs-label">
-                                What matters to you
-                            </span>
-                            <div
-                                className="plan-prefs"
-                                role="group"
-                                aria-labelledby="prefs-label"
-                            >
-                                {PREFS.map((pref) => (
-                                    <button
-                                        key={pref.id}
-                                        type="button"
-                                        aria-pressed={prefs.includes(pref.id)}
-                                        onClick={() =>
-                                            setPrefs((list) =>
-                                                list.includes(pref.id)
-                                                    ? list.filter(
-                                                          (id) =>
-                                                              id !== pref.id,
-                                                      )
-                                                    : [...list, pref.id],
-                                            )
-                                        }
-                                    >
-                                        <span>{pref.label}</span>
-                                    </button>
-                                ))}
+                                    {scheduleMenu}
+                                    {whenNote ? (
+                                        <span
+                                            id="plan-when-note"
+                                            className="plan-when-note"
+                                        >
+                                            {whenNote}
+                                        </span>
+                                    ) : null}
+                                </p>
+                                <span className="plan-label" id="prefs-label">
+                                    What matters to you
+                                </span>
+                                <div
+                                    className="plan-prefs"
+                                    role="group"
+                                    aria-labelledby="prefs-label"
+                                >
+                                    {PREFS.map((pref) => (
+                                        <button
+                                            key={pref.id}
+                                            type="button"
+                                            aria-pressed={prefs.includes(
+                                                pref.id,
+                                            )}
+                                            onClick={() =>
+                                                setPrefs((list) =>
+                                                    list.includes(pref.id)
+                                                        ? list.filter(
+                                                              (id) =>
+                                                                  id !==
+                                                                  pref.id,
+                                                          )
+                                                        : [...list, pref.id],
+                                                )
+                                            }
+                                        >
+                                            <span>{pref.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <p
+                                    className="plan-note"
+                                    id="stepfree-note"
+                                    hidden={!prefs.includes('stepfree')}
+                                >
+                                    Step-free uses KVB’s lift status; other
+                                    operators’ lifts and the way down to a
+                                    platform aren’t known, so it can’t be
+                                    promised.
+                                </p>
                             </div>
-                            <p
-                                className="plan-note"
-                                id="stepfree-note"
-                                hidden={!prefs.includes('stepfree')}
-                            >
-                                Step-free uses KVB’s lift status; other
-                                operators’ lifts and the way down to a platform
-                                aren’t known, so it can’t be promised.
-                            </p>
-                        </div>
+                        </Slide>
                         <p
                             id="form-error"
                             className="form-error"
