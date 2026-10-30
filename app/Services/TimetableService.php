@@ -196,6 +196,9 @@ class TimetableService
                     $context = ['direction' => null, 'via' => []];
                 }
 
+                // Where today's runs really end, when the live headsign isn't it.
+                $d['destination'] = $context['end'] ?? $d['destination'];
+
                 return $d + ['direction' => $context['direction'], 'via' => $context['via']];
             })
             ->values()
