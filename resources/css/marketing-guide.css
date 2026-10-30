@@ -54,7 +54,8 @@
     --sans: 'Geist', system-ui, sans-serif;
     --serif: 'Bricolage Grotesque', Geist, system-ui, sans-serif;
     --mono: 'Geist Mono', monospace;
-    --wrap: min(1180px, calc(100vw - 48px));
+    /* the header's own frame (.xv-wrap), so every edge lines up with it */
+    --wrap: min(1184px, 100% - 2 * clamp(16px, 4vw, 48px));
 }
 
 * {
@@ -111,7 +112,9 @@ h3 {
 }
 .wrap {
     width: var(--wrap);
+    max-width: none;
     margin-inline: auto;
+    padding-inline: 0;
 }
 /* .eyebrow: the shared ink pill from marketing.css */
 
@@ -164,25 +167,47 @@ h3 {
     border-bottom: 1px solid var(--line);
     padding: 68px 0 62px;
 }
+/* The way back to all guides: an ink pill with an arrow, in place of a
+   breadcrumb that repeated (and cut off) the title right below it. */
 .breadcrumb {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 42px;
-    color: var(--muted);
-    font-size: 14px;
+    margin-bottom: 22px;
 }
 .breadcrumb a {
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px 0 12px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
 }
+.breadcrumb svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+/* Long German words break only at the soft hyphens GermanCompounds puts in;
+   the size leaves room for the longest piece on a 375px phone. */
 .article-hero h1 {
     max-width: 1080px;
-    margin: 18px 0 24px;
+    margin: 0 0 24px;
     font-family: var(--serif);
-    font-size: clamp(3rem, 7vw, 7rem);
+    font-size: clamp(2.5rem, 4.4vw, 4.25rem);
     font-weight: 800;
-    letter-spacing: -0.05em;
-    line-height: 0.92;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+    hyphens: manual;
+    overflow-wrap: break-word;
+    text-wrap: balance;
 }
 .article-hero h1 em {
     color: var(--orange);
@@ -302,6 +327,99 @@ h3 {
 .article-body li {
     margin: 10px 0;
     padding-left: 6px;
+}
+/* Markdown tables: same rules as .timeline; wide ones scroll sideways on phones. */
+.article-body table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 30px 0;
+    border-collapse: collapse;
+    border-block: 1px solid var(--ink);
+    font-size: 15px;
+    line-height: 1.5;
+}
+.article-body th,
+.article-body td {
+    min-width: 7.5em;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 18px 12px 0;
+    text-align: left;
+    vertical-align: top;
+}
+.article-body th {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+.article-body tr:last-child td {
+    border-bottom: 0;
+}
+.article-body :is(th, td):last-child {
+    padding-right: 0;
+}
+.article-body td:first-child {
+    font-weight: 700;
+}
+.article-body a[href^='tel:'] {
+    white-space: nowrap;
+}
+@media (max-width: 600px) {
+    /* Cells shrink to their longest word; words only break between words. */
+    .article-body th,
+    .article-body td {
+        min-width: 0;
+        padding-right: 12px;
+    }
+}
+/* A table too wide for the screen becomes one card per row; the page's
+   script sets .is-stacked and labels each value with its column header. */
+.article-body table.is-stacked {
+    width: 100%;
+    border-bottom: 0;
+}
+.article-body table.is-stacked thead {
+    display: none;
+}
+.article-body table.is-stacked :is(tbody, tr, td) {
+    display: block;
+}
+.article-body table.is-stacked tr {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+}
+.article-body table.is-stacked td {
+    min-width: 0;
+    border: 0;
+    padding: 2px 0;
+}
+.article-body table.is-stacked td:first-child {
+    font-size: 17px;
+}
+.article-body table.is-stacked td + td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+/* Markdown task lists ("- [ ]") render bare disabled checkboxes. */
+.article-body ul:has(> li > input[type='checkbox']) {
+    padding-left: 0;
+    list-style: none;
+}
+.article-body li:has(> input[type='checkbox']) {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-left: 0;
+}
+.article-body li > input[type='checkbox'] {
+    flex: none;
+    margin: 0;
+    accent-color: var(--orange);
 }
 .fact {
     margin: 30px 0;
@@ -805,9 +923,6 @@ h3 {
     }
 }
 @media (max-width: 800px) {
-    :root {
-        --wrap: min(100% - 32px, 720px);
-    }
     .article-layout {
         grid-template-columns: 1fr;
     }
@@ -821,10 +936,10 @@ h3 {
         padding: 42px 0 48px;
     }
     .breadcrumb {
-        margin-bottom: 30px;
+        margin-bottom: 18px;
     }
     .article-hero h1 {
-        font-size: clamp(3rem, 15vw, 4.7rem);
+        font-size: clamp(2rem, 8.5vw, 2.5rem);
     }
     .article-layout {
         gap: 38px;
