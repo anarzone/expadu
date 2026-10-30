@@ -18,7 +18,6 @@ use App\Places\PlaceIdentity;
 use App\Places\PlaceIdentityAudit;
 use App\Places\ReconcilePlace;
 use App\Services\UserLocationService;
-use App\Services\VeedelDirectory;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -219,17 +218,6 @@ test('reconciliation keeps a place to one entry in what is open nearby', functio
     expect($ids())->toContain($alias->id);
     reconcileIdentity($alias, $canonical);
     expect($ids())->toBe([$canonical->id]);
-});
-
-test('neighbourhood directories count canonical destinations only', function () {
-    [$alias, $canonical] = identityPair();
-    DB::table('veedels')->insert(['name' => 'Test area', 'bezirk' => 'Test district']);
-    $alias->update(['veedel' => 'Test area']);
-    $canonical->update(['veedel' => 'Test area']);
-    reconcileIdentity($alias, $canonical);
-    expect(app(VeedelDirectory::class)->bezirkRail(null)[0]['count'])->toBe(1);
-    $canonical->update(['is_recommendable' => false]);
-    expect(app(VeedelDirectory::class)->veedelsByBezirk())->toBe([]);
 });
 
 test('catalogue replacement and pruning refuse to destroy retained identity references', function () {

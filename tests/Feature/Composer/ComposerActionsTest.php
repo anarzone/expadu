@@ -262,11 +262,12 @@ test('their own appointment, a done mark and a kept way’s reminder, each with 
 
     $at = $now->addHours(2);
     $trip = PlannedTrip::query()->create(['user_id' => $this->user->id, 'date' => $today, 'target_id' => 'plan-1', 'title' => 'Dinner at Haxenhaus',
-        'journey' => ['legs' => []], 'remind' => true, 'depart_at' => $at, 'arrive_at' => $at->addMinutes(30)]);
+        'journey' => ['legs' => []], 'remind' => true, 'reminded_at' => $now, 'depart_at' => $at, 'arrive_at' => $at->addMinutes(30)]);
     $off = $actions->request($this->user, 'way_reminder', ['plan' => 'dinner', 'on' => false], $now);
     expect($trip->fresh()->remind)->toBeFalse();
     $actions->undo($this->user, $off['blocks'][0]['id'], $now);
-    expect($trip->fresh()->remind)->toBeTrue();
+    // A reminder already sent stays sent: Undo never sends it twice.
+    expect($trip->fresh())->remind->toBeTrue()->reminded_at->not->toBeNull();
 
     $removed = $actions->request($this->user, 'remove_way', ['plan' => 'next'], $now);
     expect(PlannedTrip::query()->whereKey($trip->id)->exists())->toBeFalse();
