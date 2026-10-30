@@ -18,7 +18,7 @@ import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
-import { events, explore } from '@/routes';
+import { aroundHere, events } from '@/routes';
 
 /*
  * Today's discovery (the mock's .discovery and .around-plan), from
@@ -349,7 +349,7 @@ export function AroundPlan({
                 {!anchor && near ? (
                     <Link
                         className="around-more"
-                        href={explore({ query: { near: near.key } })}
+                        href={aroundHere({ query: { near: near.key } })}
                     >
                         Around here
                     </Link>

@@ -33,4 +33,4 @@ Route::delete('api/places/{spot}/work-answer', [PlaceWorkAnswerController::class
 
 // Around here: places of a kind near a point (AH1); not in the navigation.
 // Its near and time say where someone will be: the session keeps neither.
-Route::get('explore', AroundHereController::class)->middleware(KeepQueryPrivate::class)->name('explore');
+Route::get('around-here', AroundHereController::class)->middleware(KeepQueryPrivate::class)->name('around-here');

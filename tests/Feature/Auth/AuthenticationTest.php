@@ -135,11 +135,11 @@ test('a throttled sign-in says so on the poster, the same for any email', functi
 test('signing in again comes back to the page the session ended on', function () {
     $user = User::factory()->create();
 
-    $this->get(route('login', ['return' => '/explore?near=50.9,6.9&name=Neumarkt']))->assertOk();
+    $this->get(route('login', ['return' => '/around-here?near=50.9,6.9&name=Neumarkt']))->assertOk();
     $response = $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
 
     $this->assertAuthenticated();
-    $response->assertRedirect('/explore?near=50.9,6.9&name=Neumarkt');
+    $response->assertRedirect('/around-here?near=50.9,6.9&name=Neumarkt');
 });
 
 test('a return to another site is ignored', function (string $return) {
@@ -150,18 +150,18 @@ test('a return to another site is ignored', function (string $return) {
 
     $response->assertRedirect(route('dashboard', absolute: false));
 })->with([
-    'another host' => ['https://evil.example/explore'],
-    'protocol-relative' => ['//evil.example/explore'],
+    'another host' => ['https://evil.example/around-here'],
+    'protocol-relative' => ['//evil.example/around-here'],
     'backslash' => ['/\\evil.example'],
-    'not a path' => ['explore'],
+    'not a path' => ['around-here'],
 ]);
 
 test('signing in again while still signed in goes straight back to the page', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('login', ['return' => '/explore?name=Neumarkt']))
-        ->assertRedirect('/explore?name=Neumarkt');
+        ->get(route('login', ['return' => '/around-here?name=Neumarkt']))
+        ->assertRedirect('/around-here?name=Neumarkt');
     $this->actingAs($user)
         ->get(route('login', ['return' => '//evil.example']))
         ->assertRedirect(route('dashboard'));
