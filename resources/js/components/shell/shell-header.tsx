@@ -6,6 +6,7 @@ import { AccountMenu } from '@/components/shell/account-menu';
 import { CityPicker } from '@/components/shell/city-picker';
 import {
     openComposerTray,
+    openComposerView,
     useComposerWaiting,
 } from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
@@ -126,14 +127,16 @@ export function ShellHeader() {
                         <kbd>{shortcut}</kbd>
                     </button>
                     <CityPicker />
-                    <Link
-                        href={composer({ query: { panel: 'saved' } })}
+                    <button
+                        type="button"
                         className="shell-icon-button shell-saved"
                         aria-label="Saved"
                         title="Saved"
+                        data-composer-opener
+                        onClick={() => openComposerView('saved')}
                     >
                         <Icon name="bookmark" />
-                    </Link>
+                    </button>
                     <AccountMenu />
                 </div>
             </header>

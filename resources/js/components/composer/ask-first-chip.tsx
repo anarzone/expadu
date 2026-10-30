@@ -20,6 +20,8 @@ export function AskFirstChip() {
               : everyday
                 ? 'Asks before everyday changes'
                 : 'Changes with Undo';
+    // A phone's head has room for the gist only.
+    const short = everyday || paperwork ? 'Asks first' : 'With Undo';
 
     return (
         <Link
@@ -27,7 +29,10 @@ export function AskFirstChip() {
             href={edit()}
             aria-label={`${label}. Change it in Settings`}
         >
-            {label}
+            <span className="composer-mode-long">{label}</span>
+            <span className="composer-mode-short" aria-hidden="true">
+                {short}
+            </span>
         </Link>
     );
 }
