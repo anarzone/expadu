@@ -73,54 +73,90 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§138 AO', url: 'https://www.gesetze-im-internet.de/ao_1977/__138.html'}
+      - {kind: primary, label: '§14 GewO', url: 'https://www.gesetze-im-internet.de/gewo/__14.html'}
       - {kind: primary, label: '§14 UStG', url: 'https://www.gesetze-im-internet.de/ustg_1980/__14.html'}
+      - {kind: implementation, label: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens', url: 'https://www.stadt-koeln.de/service/produkte/00268/index.html'}
+      - {kind: implementation, label: 'BZSt — Vergabe und Erteilung der USt-IdNr.', url: 'https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/Vergabe_USt_IdNr/vergabe_ust_idnr_node.html'}
+      - {kind: implementation, label: 'BZSt FAQ — Wo kann eine USt-IdNr. beantragt werden?', url: 'https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/FAQ/FAQ_Vergabe/FAQTexte/faq_003.html'}
     claims:
-      - id: one-month-notice
-        states: within one month (§138 AO)
-        source: '§138 AO'
-        quote: Mitteilungen nach den Absätzen 1, 1a und 1b sind innerhalb eines Monats nach dem meldepflichtigen Ereignis zu erstatten
       - id: freelance-notice
         states: notify the Finanzamt directly
         source: '§138 AO'
         quote: Wer eine freiberufliche Tätigkeit aufnimmt, hat dies dem nach § 19 zuständigen Finanzamt mitzuteilen
+      - id: one-month-notice
+        states: within one month (§138 AO)
+        source: '§138 AO'
+        quote: Mitteilungen nach den Absätzen 1, 1a und 1b sind innerhalb eines Monats nach dem meldepflichtigen Ereignis zu erstatten
+      - id: both-one-month
+        states: In both cases, within one month
+        source: '§138 AO'
+        quote: Mitteilungen nach den Absätzen 1, 1a und 1b sind innerhalb eines Monats nach dem meldepflichtigen Ereignis zu erstatten
+      - id: trade-same-time
+        states: A trade business must be reported at the same time as you start it (§14 GewO)
+        source: '§14 GewO'
+        quote: Wer den selbständigen Betrieb eines stehenden Gewerbes, einer Zweigniederlassung oder einer unselbständigen Zweigstelle anfängt, muss dies der zuständigen Behörde gleichzeitig anzeigen
+      - id: cologne-gewerbemeldestelle
+        states: in Cologne you register it with the trade registration office (Gewerbemeldestelle)
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: Zur persönlichen Vorsprache kommen Sie bitte zu den angegebenen Öffnungszeiten in die Gewerbemeldestelle
+      - id: municipality-informs
+        states: the municipality informs the Finanzamt
+        source: '§138 AO'
+        quote: die Gemeinde unterrichtet unverzüglich das nach § 22 Absatz 1 zuständige Finanzamt von dem Inhalt der Mitteilung
       - id: further-information
         states: give the Finanzamt further information about the tax-relevant facts
         source: '§138 AO'
         quote: haben sie dem in Absatz 1 bezeichneten Finanzamt weitere Auskünfte über die für die Besteuerung erheblichen rechtlichen und tatsächlichen Verhältnisse zu erteilen
+      - id: electronic-data-set
+        states: online, using the official form
+        source: '§138 AO'
+        quote: Die Auskünfte im Sinne des Satzes 1 sind nach amtlich vorgeschriebenem Datensatz über die amtlich bestimmte Schnittstelle zu übermitteln
+      - id: paper-hardship
+        states: If electronic submission would be an unreasonable hardship, you can ask the Finanzamt to accept the paper form instead
+        source: '§138 AO'
+        quote: Auf Antrag kann das Finanzamt zur Vermeidung unbilliger Härten auf eine Übermittlung gemäß Satz 2 verzichten
+      - id: form-name
+        states: the Fragebogen zur steuerlichen Erfassung
+        source: 'BZSt — Vergabe und Erteilung der USt-IdNr.'
+        quote: Neugegründete Unternehmen übermitteln den Fragebogen zur steuerlichen Erfassung an ihr zuständiges Finanzamt
+      - id: vat-id-box
+        states: A box in it lets you apply for a VAT identification number
+        source: 'BZSt FAQ — Wo kann eine USt-IdNr. beantragt werden?'
+        quote: Im Fragebogen zur steuerlichen Erfassung, welchen neugegründeten Unternehmen bei Ihrem zuständigen Finanzamt einreichen, ist zu diesem Zweck ein entsprechendes Feld anzukreuzen
       - id: invoice-tax-number
-        states: (§14 UStG)
+        states: Your invoices must show the Steuernummer the Finanzamt gives you, or a VAT identification number (§14 UStG)
         source: '§14 UStG'
         quote: die dem leistenden Unternehmer vom Finanzamt erteilte Steuernummer oder die ihm vom Bundeszentralamt für Steuern erteilte Umsatzsteuer-Identifikationsnummer
     description: |
-      When you start self-employed work, the tax office has to be told within one month (§138 AO).
-      If you take up a liberal profession, you notify the Finanzamt directly; a trade business
-      is reported to the municipality, which informs the Finanzamt. In both cases you also
-      give the Finanzamt further information about the tax-relevant facts of your business,
-      electronically in the official data set — on ELSTER this is the Fragebogen zur
-      steuerlichen Erfassung. Your invoices must show the Steuernummer the Finanzamt gives
-      you, or a VAT identification number (§14 UStG).
+      If you work in a freelance profession (Freiberufler), you notify the Finanzamt directly, within one month (§138 AO).
+
+      A trade business must be reported at the same time as you start it (§14 GewO).
+      Here in Cologne you register it with the trade registration office (Gewerbemeldestelle), and the municipality informs the Finanzamt.
+
+      In both cases, within one month, you also give the Finanzamt further information about the tax-relevant facts of your business.
+      You send it online, using the official form: the Fragebogen zur steuerlichen Erfassung.
+      A box in it lets you apply for a VAT identification number.
+      Your invoices must show the Steuernummer the Finanzamt gives you, or a VAT identification number (§14 UStG).
     phase: first_30_days
     urgency: critical
     deadline_type: none
     booking_service_key: finanzamt
-    documents_required:
-      - label: 'Steuer-ID'
-        from: core.steuer_id
-      - ELSTER account
-      - Estimates of your expected revenue and profit
+    documents_required: []
     links:
       - https://www.gesetze-im-internet.de/ao_1977/__138.html
-      - https://www.elster.de/eportal/formulare-leistungen/alleformulare/fseeun
+      - https://www.gesetze-im-internet.de/gewo/__14.html
+      - https://www.stadt-koeln.de/service/produkte/00268/index.html
+      - https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/Vergabe_USt_IdNr/vergabe_ust_idnr_node.html
+      - https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/FAQ/FAQ_Vergabe/FAQTexte/faq_003.html
     how_to_steps:
-      - title: Set up your ELSTER access early
-        body: The information is submitted electronically, so set up ELSTER before you start work. If electronic submission would be an unreasonable hardship, you can ask the Finanzamt to accept the paper form instead.
-        link: https://www.elster.de/eportal/start
+      - title: Get ready to submit online
+        body: You send the information online, using the official form, through the channel the tax administration has set up. Prepare early. If electronic submission would be an unreasonable hardship, you can ask the Finanzamt to accept the paper form instead.
       - title: Answer the questionnaire accurately
-        body: It asks about the legal and factual details of your business that matter for your taxes. Give realistic figures; the Finanzamt uses them for your taxation.
+        body: It asks about the legal and factual details of your business that matter for your taxes.
       - title: Put your Steuernummer on every invoice
         body: Once the Finanzamt has issued your Steuernummer, include it (or your VAT identification number) on your invoices.
 
@@ -139,7 +175,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§19 UStG', url: 'https://www.gesetze-im-internet.de/ustg_1980/__19.html'}
@@ -172,8 +208,8 @@ tasks:
         quote: mit einem Hinweis darauf, dass für die Lieferung oder sonstige Leistung die Steuerbefreiung für Kleinunternehmer gilt
     description: |
       When you register with the Finanzamt, you choose whether to use the small-business
-      VAT exemption (§19 UStG). It is available when your turnover was no more than 25 000 euros
-      in the previous calendar year and does not exceed 100 000 euros in the current year.
+      VAT exemption (§19 UStG).
+      It is available when your turnover was no more than 25 000 euros in the previous calendar year and does not exceed 100 000 euros in the current year.
       Kleinunternehmer don't charge VAT and don't file the regular VAT returns, but they also
       can't reclaim VAT on their own purchases. Otherwise you charge VAT, generally 19%.
       You can waive the exemption, but the waiver binds you for at least five calendar years.
@@ -187,7 +223,7 @@ tasks:
       - title: Check who your clients are
         body: VAT-registered business clients can normally reclaim the VAT you charge them, and opting out of the exemption lets you reclaim VAT on your own business purchases. Consumers can't reclaim VAT, so for them it adds to your price.
       - title: Watch your running turnover
-        body: Keep track of your turnover during the year so you notice in time if you approach the current-year limit.
+        body: Keep track of your turnover during the year so you notice in time if you approach the current-year limit. If you start your business during the year, ask your Finanzamt which limit applies to your first year before you rely on it.
       - title: Put the required note on your invoices
         body: Invoices under the exemption must say that the small-business exemption applies (§34a UStDV).
         link: https://www.gesetze-im-internet.de/ustdv_1980/__34a.html

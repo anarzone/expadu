@@ -64,10 +64,10 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
-      - {kind: primary, label: '§39 AufenthV — Aufenthaltstitel im Bundesgebiet einholen', url: 'https://www.gesetze-im-internet.de/aufenthv/__39.html'}
+      - {kind: primary, label: '§39 AufenthV — Verlängerung eines Aufenthalts im Bundesgebiet für längerfristige Zwecke', url: 'https://www.gesetze-im-internet.de/aufenthv/__39.html'}
       - {kind: primary, label: '§20a AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html'}
       - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
@@ -75,7 +75,7 @@ tasks:
     claims:
       - id: apply-in-germany
         states: apply from within Germany
-        source: '§39 AufenthV — Aufenthaltstitel im Bundesgebiet einholen'
+        source: '§39 AufenthV — Verlängerung eines Aufenthalts im Bundesgebiet für längerfristige Zwecke'
         quote: er ein nationales Visum (§ 6 Absatz 3 des Aufenthaltsgesetzes) oder eine Aufenthaltserlaubnis besitzt
       - id: card-is-residence-permit
         states: The Chancenkarte is a residence permit for job seeking
@@ -85,6 +85,18 @@ tasks:
         states: your Chancenkarte continues to count until the decision
         source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
         quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: twenty-hour-limit
+        states: your Chancenkarte work limit still applies
+        source: '§20a AufenthG'
+        quote: eine Beschäftigung von durchschnittlich insgesamt höchstens 20 Stunden je Woche auszuüben
+      - id: new-work-allowed-on-issuing
+        states: From then on, the job described in your new permit counts as allowed
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: beschriebene Erwerbstätigkeit ab Veranlassung der Ausstellung bis zur Ausgabe des Dokuments nach § 78 Absatz 1 Satz 1 als erlaubt
+      - id: permission-on-certificate
+        states: this permission is entered on your Fiktionsbescheinigung
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Die Erlaubnis zur Erwerbstätigkeit nach Satz 1 ist in die Bescheinigung nach Absatz 5 aufzunehmen.
       - id: fiktionsbescheinigung
         states: certificate confirming the effect of your application (Fiktionsbescheinigung)
         source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
@@ -97,6 +109,38 @@ tasks:
         states: Two current passport photos
         source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
         quote: Zwei aktuelle Passfotos
+      - id: personal-visit
+        states: a personal visit is still required
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Eine persönliche Vorsprache ist erforderlich.
+      - id: blue-card-online
+        states: Blue Card first applications can also be filed online
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Wenn Sie zum ersten Mal eine Blaue Karte EU beantragen möchten, können Sie den Antrag online stellen:'
+      - id: blue-card-invitation
+        states: if the Blue Card can be issued, you receive an invitation to an appointment
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Können wir Ihnen die Blaue Karte EU ausstellen, erhalten Sie eine Termineinladung zur Vorsprache.
+      - id: blue-card-first-application
+        states: 'For a first Blue Card: proof of your qualification'
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Wir benötigen Nachweise über eine der folgenden Qualifikationen:'
+      - id: certified-translation
+        states: certified German or English translation
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Bei einem ausländischen Zeugnis müssen Sie eine beglaubigte deutsche oder englische Übersetzung vorlegen
+      - id: it-experience
+        states: proof of at least three years' IT work experience within the last seven years
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Nachweise über mindestens drei Jahre Berufserfahrung innerhalb der letzten sieben Jahre
+      - id: regulated-professions
+        states: 'Regulated professions: your licence to practise (Berufsausübungserlaubnis)'
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'bei reglementierten Berufen: Berufsausübungserlaubnis'
+      - id: rent-statement
+        states: a bank statement showing your current rent payment
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Mietvertrag und Kontoauszug über die aktuelle Mietzahlung
       - id: earlier-settlement
         states: Blue Card holders can apply for permanent residence earlier
         source: 'Stadt Köln · EU Blue Card'
@@ -107,6 +151,7 @@ tasks:
       residence permit for employment or — if the salary clears the threshold — the
       EU Blue Card. The application is tied to a concrete job offer. File it as soon
       as you have the contract: if you apply before the card expires, your Chancenkarte continues to count until the decision.
+      Until the Ausländeramt orders your new permit card, your Chancenkarte work limit still applies. From then on, the job described in your new permit counts as allowed.
     phase: ongoing
     urgency: high
     deadline_type: none
@@ -116,11 +161,19 @@ tasks:
       - label: Valid national passport + your Chancenkarte
       - label: Employer's job-description form (Vordruck Stellenbeschreibung)
         note: The form describes the position planned for you. Ask your employer for it when you sign.
+      - label: 'For a first Blue Card: proof of your qualification'
+        note: |
+          Degree: your university degree certificate.
+          Foreign degree: add a certified German or English translation and an Anabin printout or a ZAB certificate evaluation.
+          IT specialists without a formal qualification: proof of at least three years' IT work experience within the last seven years, plus a CV.
+          Regulated professions: your licence to practise (Berufsausübungserlaubnis).
+        tone: warn
       - label: Proof of health insurance
         from: core.health_insurance
         note: If you have an insurance card, showing it is enough; otherwise ask your insurer for a confirmation.
         tone: warn
       - label: Rental contract (Mietvertrag)
+        note: For a Blue Card, also bring a bank statement showing your current rent payment.
       - label: Two current passport photos
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
@@ -129,8 +182,8 @@ tasks:
       - title: Check which permit your offer qualifies for
         body: A salary of at least {{figure:blue_card_salary}} (or {{figure:blue_card_salary_shortage}} in shortage occupations, for recent graduates and for IT specialists without a formal qualification) can qualify for the Blue Card. Blue Card holders can apply for permanent residence earlier. Otherwise the residence permit for employment is the route. In the app, switch your path once converted.
         link: https://www.stadt-koeln.de/service/produkte/20321/index.html
-      - title: Apply via Cologne's online application
-        body: Cologne accepts the application for a residence permit for employment digitally; Blue Card first applications can also be filed online.
+      - title: Apply online, then go to the Ausländeramt in person
+        body: Cologne accepts the application for a residence permit for employment digitally, but a personal visit is still required. Blue Card first applications can also be filed online; if the Blue Card can be issued, you receive an invitation to an appointment.
         link: https://www.stadt-koeln.de/service/produkte/01083/index.html
       - title: Mind your card's expiry
-        body: File before your Chancenkarte expires. You then receive a certificate confirming the effect of your application (Fiktionsbescheinigung).
+        body: File before your Chancenkarte expires. You then receive a certificate confirming the effect of your application (Fiktionsbescheinigung). Once your new job is allowed, this permission is entered on your Fiktionsbescheinigung.

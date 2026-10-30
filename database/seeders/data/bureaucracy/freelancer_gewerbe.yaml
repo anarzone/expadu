@@ -4,16 +4,168 @@
 situation: freelancer_gewerbe
 
 tasks:
-  - title: Apply for the self-employment residence permit (§21 Abs. 1)
+  - title: Apply for the self-employment residence permit
     key: gw.residence_permit
     eu_filter: non_eu_only
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§21 AufenthG — Selbständige Tätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__21.html'}
+      - {kind: primary, label: '§5 AufenthG — Allgemeine Erteilungsvoraussetzungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__5.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: implementation, label: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen', url: 'https://www.stadt-koeln.de/service/produkte/00947/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige', url: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/flucht-einwanderung/auslaendische-akademikerinnen-akademiker-und-selbststaendige'}
+      - {kind: implementation, label: 'Stadt Köln — Ausländerangelegenheiten - Arbeitsmigration', url: 'https://www.stadt-koeln.de/service/adressen/00735/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
+    claims:
+      - id: permit-needed
+        states: You need a residence permit to work self-employed
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Für diese selbstständige Erwerbstätigkeit benötigen Sie eine Erlaubnis
+      - id: section-21
+        states: Under §21 AufenthG (the Residence Act), it can be granted if
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Einem Ausländer kann eine Aufenthaltserlaubnis zur Ausübung einer selbständigen Tätigkeit erteilt werden, wenn
+      - id: economic-interest
+        states: there is an economic interest or a regional need
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: ein wirtschaftliches Interesse oder ein regionales Bedürfnis besteht
+      - id: positive-effects
+        states: the business is expected to have positive effects on the economy
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Tätigkeit positive Auswirkungen auf die Wirtschaft erwarten lässt
+      - id: financing-secured
+        states: its financing is secured by your own capital or a loan commitment
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: die Finanzierung der Umsetzung durch Eigenkapital oder durch eine Kreditzusage gesichert ist
+      - id: assessment-criteria
+        states: how viable your business idea is, your experience as an entrepreneur and how much capital you put in
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: insbesondere nach der Tragfähigkeit der zu Grunde liegenden Geschäftsidee, den unternehmerischen Erfahrungen des Ausländers, der Höhe des Kapitaleinsatzes
+      - id: service-desk-decides
+        states: Cologne's special service desk for the self-employed checks and decides on the permit after you arrive
+        source: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige'
+        quote: Hier werden nach Ihrer Einreise die Erteilung einer Beschäftigungserlaubnis und Aufenthaltserlaubnis geprüft und entschieden.
+      - id: visa-free-countries
+        states: Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA can enter visa-free
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland im Sinne des § 1 Absatz 2 Nummer 6 des Freizügigkeitsgesetzes/EU und der Vereinigten Staaten von Amerika können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten.
+      - id: permit-in-germany
+        states: get the permit here
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel kann im Bundesgebiet eingeholt werden.
+      - id: visa-free-90-days
+        states: they must apply within 90 days of entry (§41 AufenthV, the Residence Ordinance)
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: apply-before-expiry
+        states: If you came on a national visa, apply before it expires; it then counts as still valid until the office decides (§81 AufenthG)
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: passport
+        states: Valid passport
+        source: '§5 AufenthG — Allgemeine Erteilungsvoraussetzungen'
+        quote: die Passpflicht nach § 3 erfüllt wird
+      - id: required-visa
+        states: As a rule you must have entered with the required visa
+        source: '§5 AufenthG — Allgemeine Erteilungsvoraussetzungen'
+        quote: mit dem erforderlichen Visum eingereist ist
+      - id: visitor-visa
+        states: Cologne's general guidance on work permits says a visitor or business visa is not enough for a residence permit for work
+        source: 'Stadt Köln — Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Ein Besuchs- oder Geschäftsvisum reicht nicht aus für die Erteilung einer Aufenthaltserlaubnis zum Zweck der Erwerbstätigkeit.
+      - id: cv-table
+        states: List your schooling, training, jobs and any self-employment in a table
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Bitte führen Sie Ihre Schul- und Berufsausbildungszeiten, sowie Zeiten von Beschäftigungen oder selbständiger Erwerbstätigkeit tabellarisch auf.
+      - id: qualification-proofs
+        states: Certain self-employed activities need proof of vocational training or a degree
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: für bestimmte selbständige Tätigkeiten benötigen Sie Qualifikationsnachweise über berufliche Ausbildung oder Studium.
+      - id: qualification-link
+        states: your qualification should relate to your planned business
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Ausbildung oder sonstige berufliche Qualifikation sollten im Zusammenahng mit Ihrer beabsichtigten selbständigen Erwerbstätigkeit stehen.
+      - id: german-skills
+        states: German is usually required, especially if you need customer contact, open or take over a restaurant, found a company or provide services
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: In der Regel werden deutsche Sprachkenntnisse von Ihnen gefordert, insbesondere bei erforderlichen Kundenkontakten, Eröffnung oder Übernahme eines Restaurants, Firmengründung oder bei Erbringung von Dienstleistungen.
+      - id: concept-in-german
+        states: Cologne needs a coherent concept in German about your planned business to check whether your business idea is viable and in the public interest
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Für die Prüfung der Tragfähigkeit Ihrer Geschäftsidee und des öffentlichen Interesses wird ein schlüssiges Konzept in deutscher Sprache über Ihr Geschäftsvorhaben benötigt.
+      - id: concept-financing
+        states: a financing plan
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Finanzierungskonzept
+      - id: concept-experience
+        states: your experience in this field
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Ihre Erfahrungen auf diesem Geschäftsgebiet
+      - id: concept-clients
+        states: any existing client contacts
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: eventuell bereits bestehende Kundenkontakte
+      - id: concept-forecast
+        states: for a new business, a revenue and profit forecast
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: 'Bei Neugründung: Umsatz- und Gewinnprognose'
+      - id: concept-livelihood
+        states: proof that you can support yourself
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Nachweis über die Sicherung des Lebensunterhaltes
+      - id: equity-proof
+        states: 'Proof of your own capital: a bank certificate or other credible proof'
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Eigenkapitalnachweis durch Vorlage einer Bankbescheinigung oder eines glaubhaften sonstigen Nachweises
+      - id: over-45
+        states: 'If you are older than 45 years: proof of adequate retirement provision'
+        source: '§21 AufenthG — Selbständige Tätigkeit'
+        quote: Ausländern, die älter sind als 45 Jahre, soll die Aufenthaltserlaubnis nur erteilt werden, wenn sie über eine angemessene Altersversorgung verfügen.
+      - id: desk-address
+        states: Dillenburger Straße 56-66 in Kalk
+        source: 'Stadt Köln — Ausländische Akademikerinnen, Akademiker und Selbstständige'
+        quote: Hierzu wurden zentral im Dienstgebäude an der Dillenburger Straße 56-66 in Kalk Serviceteams eingerichtet
+      - id: appointment-in-writing
+        states: ask for an appointment in writing by email, contact form or post
+        source: 'Stadt Köln — Ausländerangelegenheiten - Arbeitsmigration'
+        quote: Termine können Sie schriftlich per E-Mail, Kontaktformular oder Post vereinbaren.
+      - id: appointment-invitation
+        states: Go only once you have both an appointment and an invitation letter from the Ausländeramt
+        source: 'Stadt Köln — Ausländerangelegenheiten - Arbeitsmigration'
+        quote: Persönliche Besuche und Vorsprachen sind nur mit Termin und einem Einladungsschreiben des Ausländeramtes möglich.
+      - id: extra-proofs
+        states: Some types of business need extra proof
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Einige zusätzliche Nachweise, die geeignet sind, die Ernsthaftigkeit und Plausibilität des Geschäftsvorhabens zu belegen, können bei bestimmten Vorhaben sein
+      - id: ihk-contacts
+        states: For more on starting a business, Cologne points you to contacts at the IHK Köln
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Ansprechpersonen der Industrie- und Handelskammer zu Köln
+      - id: personal-visit
+        states: You must go in person
+        source: 'Stadt Köln — Selbstständige Erwerbstätigkeit für Ausländer*innen'
+        quote: Eine persönliche Vorsprache ist erforderlich.
     description: |
-      Commercial self-employment needs the §21(1) permit before you trade. Cologne's
-      stated conditions: an overriding economic interest or regional need for your
-      business, and secured financing. The full business plan is what carries the
-      application — Cologne's dedicated desk for foreign academics and the self-employed
-      assesses it, often with an IHK opinion.
+      From outside the EU or EEA and want to work for yourself? You need a residence permit to work self-employed.
+      If you entered visa-free, don't start working until you have it.
+      Under §21 AufenthG (the Residence Act), it can be granted if there is an economic interest or a regional need,
+      the business is expected to have positive effects on the economy, and its financing is secured by your own capital or a loan commitment.
+      The check looks in particular at how viable your business idea is, your experience as an entrepreneur and how much capital you put in.
+      Cologne's special service desk for the self-employed checks and decides on the permit after you arrive.
+      Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA can enter visa-free and get the permit here;
+      they must apply within 90 days of entry (§41 AufenthV, the Residence Ordinance).
+      If you came on a national visa, apply before it expires; it then counts as still valid until the office decides (§81 AufenthG).
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -22,29 +174,29 @@ tasks:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Application form (online Erstantrag 33-F07)
-      - label: Valid national passport + visa for self-employment
-        note: A tourist/Schengen visa can never be converted into a self-employment permit.
-      - label: Biometric photo
-      - label: Full business plan, in German
-        note: Activities, location, market, financing, your experience, existing client contacts and revenue projections — the decisive document for the economic-interest test.
-      - label: Financing plan + proof of capital (bank statements)
-      - label: CV + qualification proofs
-      - label: Proof of health insurance
-      - label: Housing proof (Mietvertrag)
-      - label: 'Age 45+: proof of adequate retirement provision'
-        note: A statutory requirement in §21.
-      - label: Trade-specific licences, where applicable
+      - label: Valid passport
+        note: As a rule you must have entered with the required visa. Cologne's general guidance on work permits says a visitor or business visa is not enough for a residence permit for work. The visa-free route above is the exception.
+      - label: CV
+        note: List your schooling, training, jobs and any self-employment in a table.
+      - label: Certificates and proof of qualifications and past jobs
+        note: Certain self-employed activities need proof of vocational training or a degree, and your qualification should relate to your planned business.
+      - label: Proof of German skills (usually required)
+        note: German is usually required, especially if you need customer contact, open or take over a restaurant, found a company or provide services.
+      - label: Business concept, in German
+        note: 'Cologne needs a coherent concept in German about your planned business to check whether your business idea is viable and in the public interest. Include: a financing plan; your experience in this field; any existing client contacts; for a new business, a revenue and profit forecast; and proof that you can support yourself.'
+      - label: 'Proof of your own capital: a bank certificate or other credible proof'
+      - label: 'If you are older than 45 years: proof of adequate retirement provision'
+        note: The law says the permit should otherwise not be granted.
     links:
-      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.stadt-koeln.de/service/produkte/00947/index.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__21.html
     how_to_steps:
-      - title: Contact the Servicestelle for the current checklist
-        body: Cologne routes this group to its dedicated desk (Dillenburger Straße 56–66) — appointments by email, contact form or post. Confirm the document list for your specific business before the appointment.
-      - title: Build the business case in German
-        body: Cologne expects the plan in German. If your numbers are thin, an IHK Köln pre-assessment strengthens the file.
-      - title: Bring originals plus copies of everything
-        body: The financing evidence is the most common gap — triple-check it.
+      - title: Ask the service desk for an appointment
+        body: Cologne sends the self-employed to its special service desk at Dillenburger Straße 56-66 in Kalk. First, ask for an appointment in writing by email, contact form or post. Go only once you have both an appointment and an invitation letter from the Ausländeramt (immigration office). Some types of business need extra proof, so ask which documents apply to your business before the appointment.
+      - title: Write your business concept in German
+        body: For more on starting a business, Cologne points you to contacts at the IHK Köln.
+      - title: Go in person with your documents
+        body: You must go in person. Bring the documents listed on this card.
 
   - title: Register your trade (Gewerbeanmeldung)
     key: gw.gewerbeanmeldung
@@ -54,25 +206,112 @@ tasks:
     # permit. The permit is a soft prerequisite for non-EU only — conveyed in the
     # copy + document list below, not as a hard DAG edge.
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§14 GewO — Anzeigepflicht; Verordnungsermächtigung', url: 'https://www.gesetze-im-internet.de/gewo/__14.html'}
+      - {kind: primary, label: '§146 GewO — Verletzung sonstiger Vorschriften über die Ausübung eines Gewerbes', url: 'https://www.gesetze-im-internet.de/gewo/__146.html'}
+      - {kind: primary, label: '§138 AO — Anzeigen über die Erwerbstätigkeit', url: 'https://www.gesetze-im-internet.de/ao_1977/__138.html'}
+      - {kind: primary, label: '§2 IHKG', url: 'https://www.gesetze-im-internet.de/ihkg/__2.html'}
+      - {kind: primary, label: '§3 IHKG', url: 'https://www.gesetze-im-internet.de/ihkg/__3.html'}
+      - {kind: implementation, label: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens', url: 'https://www.stadt-koeln.de/service/produkte/00268/index.html'}
+      - {kind: implementation, label: 'BZSt — Vergabe der USt-IdNr.', url: 'https://www.bzst.de/DE/Unternehmen/Identifikationsnummern/Umsatzsteuer-Identifikationsnummer/Vergabe_USt_IdNr/vergabe_ust_idnr_node.html'}
+    claims:
+      - id: non-eu-scope
+        states: not from the EU, the EEA or Switzerland
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: Wenn Sie nicht aus einem Staat der Europäischen Union, dem Europäischen Wirtschaftsraum (EWR) oder der Schweiz kommen.
+      - id: permit-work-allowed
+        states: your residence permit must say Erwerbstätigkeit gestattet
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: 'Aufenthaltstitel mit dem Vermerk "Erwerbstätigkeit gestattet"'
+      - id: register-at-start
+        states: at the same time as you start the business (§14 GewO)
+        source: '§14 GewO — Anzeigepflicht; Verordnungsermächtigung'
+        quote: muss dies der zuständigen Behörde gleichzeitig anzeigen
+      - id: fee
+        states: costs €26 per registration
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: 26 Euro pro Gewerbeanmeldung/Gewerbeummeldung
+      - id: fee-notice
+        states: you get a fee notice for it
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: Über diese Gebühren erhalten Sie einen Gebührenbescheid.
+      - id: late-is-offence
+        states: Under §146 GewO, not registering or registering late is an Ordnungswidrigkeit
+        source: '§146 GewO — Verletzung sonstiger Vorschriften über die Ausübung eines Gewerbes'
+        quote: eine Anzeige nicht, nicht richtig, nicht vollständig oder nicht rechtzeitig erstattet
+      - id: finanzamt-informed
+        states: informs the Finanzamt without delay
+        source: '§138 AO — Anzeigen über die Erwerbstätigkeit'
+        quote: die Gemeinde unterrichtet unverzüglich das nach § 22 Absatz 1 zuständige Finanzamt von dem Inhalt der Mitteilung
+      - id: further-tax-info
+        states: you still have to give the Finanzamt further tax information yourself
+        source: '§138 AO — Anzeigen über die Erwerbstätigkeit'
+        quote: haben sie dem in Absatz 1 bezeichneten Finanzamt weitere Auskünfte über die für die Besteuerung erheblichen rechtlichen und tatsächlichen Verhältnisse zu erteilen
+      - id: fragebogen
+        states: New businesses send the Fragebogen zur steuerlichen Erfassung (tax registration questionnaire) to their Finanzamt
+        source: 'BZSt — Vergabe der USt-IdNr.'
+        quote: Neugegründete Unternehmen übermitteln den Fragebogen zur steuerlichen Erfassung an ihr zuständiges Finanzamt.
+      - id: one-month
+        states: within one month of opening the business (§138 AO)
+        source: '§138 AO — Anzeigen über die Erwerbstätigkeit'
+        quote: Mitteilungen nach den Absätzen 1, 1a und 1b sind innerhalb eines Monats nach dem meldepflichtigen Ereignis zu erstatten.
+      - id: data-passed-on
+        states: passes your data on regularly
+        source: '§14 GewO — Anzeigepflicht; Verordnungsermächtigung'
+        quote: Daten aus der Gewerbeanzeige regelmäßig an
+      - id: data-to-ihk
+        states: to the Industrie- und Handelskammer (IHK)
+        source: '§14 GewO — Anzeigepflicht; Verordnungsermächtigung'
+        quote: die Industrie- und Handelskammer zur Wahrnehmung der in den
+      - id: ihk-membership
+        states: You belong to the IHK if you are assessed for Gewerbesteuer (trade tax) and have business premises in its district
+        source: '§2 IHKG'
+        quote: Zur Industrie- und Handelskammer gehören, sofern sie zur Gewerbesteuer veranlagt sind, natürliche Personen, Handelsgesellschaften, andere Personenmehrheiten und juristische Personen des privaten und des öffentlichen Rechts, welche im Bezirk der Industrie- und Handelskammer eine Betriebsstätte unterhalten (Kammerzugehörige).
+      - id: ihk-fee-exemption
+        states: Sole traders not entered in the Handelsregister (commercial register) pay no IHK fee if their trade profit stays under a limit set by law
+        source: '§3 IHKG'
+        quote: sind vom Beitrag freigestellt, soweit ihr Gewerbeertrag nach dem Gewerbesteuergesetz
+      - id: ihk-information-duty
+        states: you must give the IHK the information it needs to set your fee
+        source: '§3 IHKG'
+        quote: Die Kammerzugehörigen sind verpflichtet, der Kammer Auskunft über die zur Festsetzung der Beiträge erforderlichen Grundlagen zu geben
+      - id: id-document
+        states: ID card or national passport
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: Personalausweis oder Nationalpass
+      - id: anmeldung-proof
+        states: if your ID document shows no private address
+        source: 'Stadt Köln — Gewerbemeldung eines Einzelunternehmens'
+        quote: sofern in Ihrem Ausweisdokument keine Privatanschrift vermerkt ist
     description: |
-      Once your permit allows it, register the trade at the Gewerbeamt — €26 for a sole
-      proprietorship in Cologne, fully online via the NRW business portal, with the
-      Gewerbeschein issued immediately as a PDF. The Finanzamt is notified automatically,
-      but the Fragebogen zur steuerlichen Erfassung is still required separately.
+      Register your trade at the same time as you start the business (§14 GewO). In Cologne it costs €26 per registration, and you can do it online.
+      If you are not from the EU, the EEA or Switzerland, your residence permit must say Erwerbstätigkeit gestattet (work, including self-employment, allowed).
+      You also send the Finanzamt (tax office) a separate form.
     phase: first_30_days
     urgency: high
     deadline_type: none
     documents_required:
-      - label: ID or passport
-      - label: Residence permit allowing self-employment (non-EU citizens)
+      - label: ID card or national passport
+      - label: Residence permit marked Erwerbstätigkeit gestattet
+        note: Only if you are not from the EU, the EEA or Switzerland
+      - label: Current Anmeldebestätigung (proof of address registration)
+        note: Only if your ID document shows no private address
     links:
       - https://www.stadt-koeln.de/service/produkte/00268/index.html
+      - https://www.gesetze-im-internet.de/gewo/__14.html
     how_to_steps:
-      - title: Register online via the NRW portal
-        body: €26, immediate PDF Gewerbeschein. Do it before your first invoice — trading without registration is an Ordnungswidrigkeit.
+      - title: Register with the Gewerbemeldestelle (trade office)
+        body: You can register online in the Wirtschafts-Service-Portal Nordrhein-Westfalen. If you do, you get your Gewerbeschein (proof of your trade registration) right after you finish. It costs €26 per registration, and you get a fee notice for it. Under §146 GewO, not registering or registering late is an Ordnungswidrigkeit (regulatory offence).
         link: https://www.stadt-koeln.de/service/produkte/00268/index.html
       - title: Expect IHK membership
-        body: Gewerbe registrations are forwarded to the IHK Köln, where membership is mandatory for trade businesses. Small businesses pay little or nothing at low profit — but don't ignore their letters, the fees don't disappear.
+        body: The city passes your data on regularly to the Industrie- und Handelskammer (IHK). You belong to the IHK if you are assessed for Gewerbesteuer (trade tax) and have business premises in its district. Sole traders not entered in the Handelsregister (commercial register) pay no IHK fee if their trade profit stays under a limit set by law. Answer their letters, because you must give the IHK the information it needs to set your fee.
         link: https://www.ihk.de/koeln/
       - title: Still file the Fragebogen
-        body: The automatic Finanzamt notification does not replace the Fragebogen zur steuerlichen Erfassung — the one-month clock from your start of activity applies regardless.
+        body: The city informs the Finanzamt without delay, but you still have to give the Finanzamt further tax information yourself. New businesses send the Fragebogen zur steuerlichen Erfassung (tax registration questionnaire) to their Finanzamt. Do it within one month of opening the business (§138 AO).
+        link: https://www.gesetze-im-internet.de/ao_1977/__138.html

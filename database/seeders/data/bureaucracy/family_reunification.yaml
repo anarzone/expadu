@@ -78,53 +78,147 @@ tasks:
     key: fam.school_kita
     depends_on: []
     description: |
-      School is compulsory from age 6. Kita (daycare) is widely available from age 1 but
-      has long waitlists in Cologne — apply as soon as you have a confirmed address.
+      Compulsory schooling starts on 1 August for children who have turned 6 by 30 September,
+      and it applies to all school-age children, including those who move here from abroad.
+      From age 1, children have a legal right to a place in a Kita (daycare) or with a
+      childminder (Kindertagespflege). Register for Kita as early as you can: you must state
+      your need at least six months before the place should start.
     phase: first_30_days
     urgency: high
-    deadline_type: days_since_arrival
-    deadline_days: 60
+    deadline_type: none
     documents_required:
-      - Child's passport + birth certificate
-      - Child's vaccination record (Impfausweis)
-      - Meldebescheinigung
-      - Parents' Meldebescheinigung
+      - Child's passport or ID
+      - Child's birth certificate (for first-grade registration)
+      - Proof of measles protection
+      - Proof of your Cologne address (Meldebescheinigung)
+      - Your own passport or ID
+      - School reports from your previous country, if you have them
     links:
       - https://www.stadt-koeln.de/leben-in-koeln/familie-kinder/index.html
+      - https://www.stadt-koeln.de/service/produkte/00083/index.html
+      - https://www.stadt-koeln.de/service/produkte/00082/index.html
+      - https://www.stadt-koeln.de/service/produkte/00386/index.html
     how_to_steps:
-      - title: For school-age children
-        body: Contact the local Grundschule for your address. Cologne assigns by catchment area — the Schulamt has a map. Submit enrolment forms 6+ months before school start.
+      - title: For school-age children new to Germany
+        body: Once you are registered in Cologne, the city sends you a letter so you can book an advice appointment with the Kommunales Integrationszentrum (municipal integration centre, 0221 / 221-29292). After that, the Gesundheitsamt (public health office) gives your child a school medical check, and the Schulamt (school authority) finds a school place. You usually get the letter with the school place after about two weeks. Children who don't yet speak enough German first join a preparatory class (Vorbereitungsklasse).
+        link: https://www.stadt-koeln.de/service/produkte/00083/index.html
+      - title: For children starting first grade
+        body: You can choose which primary school to register at. Your child has a right to a place at the nearest city school if it has enough places. Register at one primary school only, and always give a second choice on the form. There is a fixed registration deadline. For the 2026/27 school year it ended on 15 November 2025, so check the city's Einschulung page for the current one.
+        link: https://www.stadt-koeln.de/service/produkte/00082/index.html
       - title: For Kita-age children
-        body: Apply via Little Bird (Cologne's central Kita waiting list) — accepts applications up to 12 months in advance. Most Kitas are full; expect to apply to 8–10 to get one offer.
-        link: https://www.little-bird.de/koeln
-      - title: Check vaccination record
-        body: German law requires proof of measles vaccination. If the record is in another language, get a German translation before submitting.
+        body: |
+          Apply online via LITTLE BIRD, Cologne's portal for Kita places, or in person at the Kita. You can register before you move, using your current address. A Kita place is only offered once at least one parent is registered in Cologne with their main residence. You can have up to six active requests per child per year.
+
+          Offers come at the earliest eight months before the start date. You have two weeks to accept or decline. If the Kita you chose has no place, the city offers another place or a childminder.
+        link: https://portal-koeln.little-bird.de/
+      - title: Check measles protection
+        body: Children aged 1 and over who go to a Kita or school must show proof of measles protection. This can be proof of vaccination, proof of immunity, or a certificate that your child can't be vaccinated, for example because of an intolerance.
 
   - title: Apply for Kindergeld (child benefit)
     key: fam.kindergeld
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§62 EStG — Anspruchsberechtigte', url: 'https://www.gesetze-im-internet.de/estg/__62.html'}
+      - {kind: primary, label: '§63 EStG — Kinder', url: 'https://www.gesetze-im-internet.de/estg/__63.html'}
+      - {kind: primary, label: '§32 EStG — Kinder, Freibeträge für Kinder', url: 'https://www.gesetze-im-internet.de/estg/__32.html'}
+      - {kind: primary, label: '§66 EStG — Höhe des Kindergeldes, Zahlungszeitraum', url: 'https://www.gesetze-im-internet.de/estg/__66.html'}
+      - {kind: primary, label: '§67 EStG — Antrag', url: 'https://www.gesetze-im-internet.de/estg/__67.html'}
+    claims:
+      - id: amount
+        states: per child
+        source: '§66 EStG — Höhe des Kindergeldes, Zahlungszeitraum'
+        quote: Das Kindergeld beträgt monatlich für jedes Kind
+      - id: until-18
+        states: A child counts until they turn 18
+        source: '§32 EStG — Kinder, Freibeträge für Kinder'
+        quote: zu dessen Beginn es das 18. Lebensjahr noch nicht vollendet hat
+      - id: up-to-25
+        states: up to 25 in some cases
+        source: '§32 EStG — Kinder, Freibeträge für Kinder'
+        quote: noch nicht das 25. Lebensjahr vollendet hat und
+      - id: in-training
+        states: while in school, university or vocational training
+        source: '§32 EStG — Kinder, Freibeträge für Kinder'
+        quote: für einen Beruf ausgebildet wird
+      - id: live-in-germany
+        states: You can get it if you live in Germany
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: im Inland einen Wohnsitz oder seinen gewöhnlichen Aufenthalt hat oder
+      - id: titles-only
+        states: only some residence permits qualify
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: Ein nicht freizügigkeitsberechtigter Ausländer erhält Kindergeld nur, wenn er
+      - id: settlement-permit
+        states: a settlement permit
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt-EU besitzt
+      - id: blue-card-six-months
+        states: an EU Blue Card, or a residence permit that lets you work for at least six months
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: eine Blaue Karte EU, eine ICT-Karte, eine Mobiler-ICT-Karte oder eine Aufenthaltserlaubnis besitzt, die für einen Zeitraum von mindestens sechs Monaten zur Ausübung einer Erwerbstätigkeit berechtigen
+      - id: some-permits-excluded
+        states: Some permits don't count
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: es sei denn, die Aufenthaltserlaubnis wurde
+      - id: student-permit
+        states: a student residence permit
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: zum Zweck eines Studiums
+      - id: student-only-if-working
+        states: only counts while you work or take parental leave
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: und er ist weder erwerbstätig noch nimmt er Elternzeit
+      - id: eu-three-months
+        states: EU citizens who move here get no Kindergeld for the first three months
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: so hat er für die ersten drei Monate ab Begründung des Wohnsitzes oder des gewöhnlichen Aufenthalts keinen Anspruch auf Kindergeld
+      - id: eu-income-exception
+        states: unless they show they earn income in Germany
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: Dies gilt nicht, wenn er nachweist, dass er inländische Einkünfte
+      - id: parent-tax-id
+        states: You need your own tax ID (Steuer-ID) to get Kindergeld
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: Voraussetzung für den Anspruch nach Satz 1 ist, dass der Berechtigte durch die an ihn vergebene Identifikationsnummer
+      - id: child-tax-id
+        states: each child needs their own Steuer-ID
+        source: '§63 EStG — Kinder'
+        quote: Voraussetzung für die Berücksichtigung ist die Identifizierung des Kindes durch die an dieses Kind vergebene Identifikationsnummer
+      - id: late-tax-id
+        states: you still get Kindergeld for earlier months you qualified for
+        source: '§63 EStG — Kinder'
+        quote: Die nachträgliche Identifizierung oder nachträgliche Vergabe der Identifikationsnummer wirkt auf Monate zurück
+      - id: apply-online
+        states: Apply online to your Familienkasse
+        source: '§67 EStG — Antrag'
+        quote: Das Kindergeld ist bei der zuständigen Familienkasse elektronisch nach amtlich vorgeschriebenem Datensatz über die amtlich vorgeschriebene Schnittstelle zu beantragen
     description: |
-      {{figure:kindergeld_monthly}} per child until age 18 (or 25 if in education). Available to most
-      residents regardless of income. Apply via the Familienkasse — separate from the
-      tax office.
+      {{figure:kindergeld_monthly}} per child, paid every month.
+      - You can get it if you live in Germany.
+      - A child counts until they turn 18.
+      - A child can count up to 25 in some cases, for example while in school, university or vocational training.
+      - EU citizens who move here get no Kindergeld for the first three months, unless they show they earn income in Germany.
+      - If you're not an EU, EEA or Swiss citizen (or their family member), only some residence permits qualify, such as a settlement permit, an EU Blue Card, or a residence permit that lets you work for at least six months.
+      - Some permits don't count, and a student residence permit only counts while you work or take parental leave.
     phase: settling
     urgency: medium
-    deadline_type: days_since_arrival
-    deadline_days: 60
+    deadline_type: none
     documents_required:
-      - Steuer-ID for each parent + each child
-      - Birth certificates (apostilled + translated)
-      - Meldebescheinigung
-      - Residence permits
+      - Your Steuer-ID and each child's Steuer-ID
+      - Your residence permit, if you're not an EU, EEA or Swiss citizen
     links:
       - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld
     how_to_steps:
-      - title: Wait for everyone's Steuer-IDs
-        body: Each child gets their own Steuer-ID a few weeks after Anmeldung. You can't file the Kindergeld application without all of them.
-      - title: File online via the Familienkasse portal
-        body: One application per family. Processing takes 6–10 weeks; payments are backdated to the application month.
-      - title: Set up direct deposit
-        body: Use the German bank account that receives your salary — they pay into a single household account.
+      - title: Get everyone's Steuer-IDs
+        body: You need your own tax ID (Steuer-ID) to get Kindergeld, and each child needs their own Steuer-ID. Apply as soon as you have them. If an ID only arrives later, you still get Kindergeld for earlier months you qualified for.
+      - title: Apply online to your Familienkasse
+        body: Have your bank details (IBAN) ready, because Kindergeld is paid into a bank account. The Familienkasse may also ask for proof of your children, such as birth certificates, so keep them at hand.
 
   # Retired 2026-10-08: covered by core.steuer_id.
   - title: Wait for everyone's Steuer-IDs
@@ -206,27 +300,30 @@ tasks:
       German, or if your permit to join your spouse is issued while your German is not yet
       sufficient (§44a AufenthG). The Ausländerbehörde records it when it issues your permit.
     phase: settling
-    urgency: low
+    urgency: medium
     deadline_type: none
     applies_if_mode: explicit
     applies_if:
       purpose: family
       sponsor: {in: [non_eu, german]}
     documents_required:
-      - Residence permit
-      - Passport
+      - Berechtigungsschein (certificate of eligibility) from the Ausländerbehörde
     links:
       - https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/InhaltAblauf/inhaltablauf-node.html
+      - https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/TeilnahmeKosten/Titelab2005/titelab2005-node.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__44.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__44a.html
     how_to_steps:
       - title: Check whether the course is mandatory for you
         body: The Ausländerbehörde records an obligation to attend when it issues your permit, if one applies to you. Check the papers you receive with your permit.
-      - title: Find a course provider
-        body: BAMF's BAMF-NAvI search shows integration courses near your home.
+      - title: Get your Berechtigungsschein
+        body: You get the Berechtigungsschein (certificate of eligibility) from the Ausländerbehörde. If you have not received one, ask the Ausländerbehörde for it.
+        link: https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/TeilnahmeKosten/Titelab2005/titelab2005-node.html
+      - title: Find a course provider and register
+        body: Once the Ausländerbehörde has given you your Berechtigungsschein, you can choose a course provider. BAMF's BAMF-NAvI search shows integration courses near your home. Go to the provider to hand in the Berechtigungsschein and register.
         link: https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/integrationskurse-node.html
       - title: Know how the course ends
-        body: The language part ends with the "Deutsch-Test für Zuwanderer" and only a B1 exam counts as completing it. The orientation part ends with the "Leben in Deutschland" test.
+        body: The language part ends with the "Deutsch-Test für Zuwanderer". The orientation part ends with the "Leben in Deutschland" test.
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -236,11 +333,17 @@ tasks:
       - {kind: primary, label: '§44 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__44.html'}
       - {kind: primary, label: '§44a AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__44a.html'}
       - {kind: implementation, label: 'BAMF · Integrationskurs Inhalt und Ablauf', url: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/InhaltAblauf/inhaltablauf-node.html'}
+      - {kind: implementation, label: 'BAMF · Integrationskurse', url: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/integrationskurse-node.html'}
+      - {kind: implementation, label: 'BAMF · Aufenthaltstitel ab 2005', url: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/TeilnahmeKosten/Titelab2005/titelab2005-node.html'}
     claims:
       - id: course-parts
         states: combines a German language course with an orientation course
         source: 'BAMF · Integrationskurs Inhalt und Ablauf'
         quote: Jeder Integrationskurs besteht aus einem Sprachkurs und einem Orientierungskurs
+      - id: orientation-topics
+        states: Germany's legal order, culture and history
+        source: 'BAMF · Integrationskurs Inhalt und Ablauf'
+        quote: die deutsche Rechtsordnung, Geschichte und Kultur
       - id: course-length
         states: The general course runs 700 lessons
         source: 'BAMF · Integrationskurs Inhalt und Ablauf'
@@ -265,10 +368,30 @@ tasks:
         states: The Ausländerbehörde records it when it issues your permit
         source: '§44a AufenthG'
         quote: In den Fällen des Satzes 1 Nr. 1 stellt die Ausländerbehörde bei der Erteilung des Aufenthaltstitels fest, dass der Ausländer zur Teilnahme verpflichtet ist.
-      - id: b1-exam
-        states: only a B1 exam counts as completing it
+      - id: berechtigungsschein-issuer
+        states: You get the Berechtigungsschein (certificate of eligibility) from the Ausländerbehörde
+        source: 'BAMF · Aufenthaltstitel ab 2005'
+        quote: Wenn Sie von der Ausländerbehörde Ihren Berechtigungsschein erhalten haben, können Sie sich einen Integrationskursträger aussuchen.
+      - id: berechtigungsschein
+        states: Once the Ausländerbehörde has given you your Berechtigungsschein, you can choose a course provider
+        source: 'BAMF · Aufenthaltstitel ab 2005'
+        quote: Wenn Sie von der Ausländerbehörde Ihren Berechtigungsschein erhalten haben, können Sie sich einen Integrationskursträger aussuchen.
+      - id: navi-courses
+        states: BAMF-NAvI search shows integration courses near your home
+        source: 'BAMF · Integrationskurse'
+        quote: führt Sie zu vielfältigen, wohnortnahen Integrationsangeboten
+      - id: register-provider
+        states: Go to the provider to hand in the Berechtigungsschein and register
+        source: 'BAMF · Aufenthaltstitel ab 2005'
+        quote: Sobald Sie einen Kursträger gefunden haben, sollten Sie zu ihm gehen, um den Berechtigungsschein abzugeben und sich anzumelden.
+      - id: dtz-exam
+        states: The language part ends with the "Deutsch-Test für Zuwanderer"
         source: 'BAMF · Integrationskurs Inhalt und Ablauf'
-        quote: B1 -Prüfung kann für den Abschluss des Integrationskurses anerkannt werden
+        quote: Der Sprachkurs schließt mit der Prüfung "Deutsch-Test für Zuwanderer" (DTZ) ab.
+      - id: lid-test
+        states: The orientation part ends with the "Leben in Deutschland" test
+        source: 'BAMF · Integrationskurs Inhalt und Ablauf'
+        quote: Den Orientierungskurs schließen Sie mit dem Abschlusstest "Leben in Deutschland" ab.
 
   - title: Register the joining spouse's address
     key: case.family.register_address

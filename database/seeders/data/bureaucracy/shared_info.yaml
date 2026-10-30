@@ -21,19 +21,107 @@ tasks:
     depends_on: []
     applies_if:
       license_country: [other]
-    verified_at: 2026-06-11
+    # Source-checked, but its audience reads the profile's license_country, which approved cards may not use.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§29 FeV — Ausländische Fahrerlaubnisse', url: 'https://www.gesetze-im-internet.de/fev_2010/__29.html'}
+      - {kind: primary, label: '§7 FeV — Ordentlicher Wohnsitz im Inland', url: 'https://www.gesetze-im-internet.de/fev_2010/__7.html'}
+      - {kind: primary, label: '§31 FeV — Erteilung einer Fahrerlaubnis an Inhaber einer Fahrerlaubnis aus einem Staat außerhalb des EWR', url: 'https://www.gesetze-im-internet.de/fev_2010/__31.html'}
+      - {kind: primary, label: '§21 StVG — Fahren ohne Fahrerlaubnis', url: 'https://www.gesetze-im-internet.de/stvg/__21.html'}
+      - {kind: implementation, label: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11', url: 'https://www.stadt-koeln.de/service/produkte/00834/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Drittstaaten', url: 'https://www.stadt-koeln.de/service/produkte/00836/index.html'}
+    claims:
+      - id: eu-licences
+        states: those licences follow different rules
+        source: '§29 FeV — Ausländische Fahrerlaubnisse'
+        quote: richtet sich seine weitere Berechtigung zum Führen von Kraftfahrzeugen nach § 28
+      - id: six-months
+        states: you may keep driving on your licence for six months once Germany becomes your ordinary residence
+        source: '§29 FeV — Ausländische Fahrerlaubnisse'
+        quote: Begründet der Inhaber einer in einem anderen Staat erteilten Fahrerlaubnis einen ordentlichen Wohnsitz im Inland, besteht die Berechtigung noch sechs Monate.
+      - id: six-month-deadline
+        covers: deadline
+        source: '§29 FeV — Ausländische Fahrerlaubnisse'
+        quote: Begründet der Inhaber einer in einem anderen Staat erteilten Fahrerlaubnis einen ordentlichen Wohnsitz im Inland, besteht die Berechtigung noch sechs Monate.
+      - id: ordinary-residence
+        states: you usually live here because of personal ties, and work ties if you have them
+        source: '§7 FeV — Ordentlicher Wohnsitz im Inland'
+        quote: Dies wird angenommen, wenn der Bewerber wegen persönlicher und beruflicher Bindungen oder – bei fehlenden beruflichen Bindungen – wegen persönlicher Bindungen, die enge Beziehungen zwischen ihm und dem Wohnort erkennen lassen, gewöhnlich, das heißt während mindestens 185 Tagen im Jahr, im Inland wohnt.
+      - id: criminal-offence
+        states: driving without the required licence is a criminal offence, punished with prison or a fine
+        source: '§21 StVG — Fahren ohne Fahrerlaubnis'
+        quote: Mit Freiheitsstrafe bis zu einem Jahr oder mit Geldstrafe wird bestraft, wer
+      - id: eu-students
+        states: If you lived in another EU/EEA country before and are here only to attend a university or school, you do not set up an ordinary residence in Germany
+        source: '§7 FeV — Ordentlicher Wohnsitz im Inland'
+        quote: Bewerber, die bislang ihren ordentlichen Wohnsitz in einem anderen Mitgliedstaat der Europäischen Union oder einem anderen Vertragsstaat des Abkommens über den Europäischen Wirtschaftsraum hatten und die sich ausschließlich wegen des Besuchs einer Hochschule oder Schule im Inland aufhalten, begründen keinen ordentlichen Wohnsitz im Inland.
+      - id: eu-students-no-clock
+        states: so the six months do not start
+        source: '§29 FeV — Ausländische Fahrerlaubnisse'
+        quote: Begründet der Inhaber einer in einem anderen Staat erteilten Fahrerlaubnis einen ordentlichen Wohnsitz im Inland, besteht die Berechtigung noch sechs Monate.
+      - id: anlage-11-country-class
+        states: issued in a country and class listed in Anlage 11 (a list in the licence regulations)
+        source: '§31 FeV — Erteilung einer Fahrerlaubnis an Inhaber einer Fahrerlaubnis aus einem Staat außerhalb des EWR'
+        quote: die in einem in Anlage 11 aufgeführten Staat und in einer in der Anlage 11 aufgeführten Klasse erteilt worden ist
+      - id: anlage-11-test
+        states: that list sets whether you still need a test
+        source: '§31 FeV — Erteilung einer Fahrerlaubnis an Inhaber einer Fahrerlaubnis aus einem Staat außerhalb des EWR'
+        quote: § 15 über die Befähigungsprüfung nach Maßgabe der Anlage 11
+      - id: anlage-11-step-title
+        states: 'Anlage 11 country: convert your licence'
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11
+      - id: other-countries-tests
+        states: you must pass a theory and a practical test in every case
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Drittstaaten'
+        quote: Sie müssen in jedem Fall eine theoretische und eine praktische Prüfung ablegen.
+      - id: kundenzentrum
+        states: Go in person to any Kundenzentrum (city service centre) in Cologne
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: Dazu können Sie ein Kundenzentrum Ihrer Wahl in Köln aufsuchen.
+      - id: fee-test-free
+        states: 'Fee: €36.30 when no test is needed and no probation period (Probezeit) applies'
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: 'Umschreibung prüfungsfrei ohne Probezeit: 36,30 Euro'
+      - id: processing-time
+        states: Processing takes about two to three weeks
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: Die Bearbeitungszeit dauert ungefähr zwei bis drei Wochen.
+      - id: anlage-11-driving-school
+        states: If a practical test is needed, you also name a Fahrschule (driving school)
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: Sofern eine praktische Prüfung erforderlich ist, müssen Sie noch eine Fahrschule angeben
+      - id: school-registers
+        states: it registers you for the tests
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Drittstaaten'
+        quote: Zur Prüfung werden Sie durch Ihre Fahrschule zugelassen.
+      - id: extension
+        states: On request, the six months can be extended by up to six months if you show you will have your ordinary residence in Germany for no more than twelve months
+        source: '§29 FeV — Ausländische Fahrerlaubnisse'
+        quote: Die Fahrerlaubnisbehörde kann die Frist auf Antrag bis zu sechs Monate verlängern, wenn der Antragsteller glaubhaft macht, dass er seinen ordentlichen Wohnsitz nicht länger als zwölf Monate im Inland haben wird.
+      - id: surrender-licence
+        states: you hand it in when you get the German card
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Staaten der Anlage 11'
+        quote: bei Aushändigung des deutschen Kartenführerscheines Ihren ausländischen Führerschein abgeben müssen
+      - id: first-aid-in-person
+        states: The first-aid course must have been in person; online courses are not accepted
+        source: 'Stadt Köln — Umschreibung einer Fahrerlaubnis aus Drittstaaten'
+        quote: Online-Schulungen können wir nicht anerkennen.
     description: |
-      A valid foreign licence works for 6 months after entry + Anmeldung. After that,
-      driving in Germany is driving WITHOUT a licence — a criminal offence, not a fine.
-      What you must do depends on where the licence was issued: EU/EEA licences keep
-      working indefinitely (mark this task as not applicable); "Anlage 11" countries
-      (Japan, South Korea, Switzerland, Israel, New Zealand, Singapore, parts of the
-      US/Australia and more) exchange test-free; everyone else needs German theory +
-      practical exams. Don't drive past month six.
+      If your licence is from an EU/EEA country, this task doesn't apply to you; those licences follow different rules.
+      Otherwise, you may keep driving on your licence for six months once Germany becomes your ordinary residence, meaning you usually live here because of personal ties, and work ties if you have them.
+      After that, driving without the required licence is a criminal offence, punished with prison or a fine.
+      If you lived in another EU/EEA country before and are here only to attend a university or school, you do not set up an ordinary residence in Germany, so the six months do not start.
+      If your licence was issued in a country and class listed in Anlage 11 (a list in the licence regulations), you convert it, and that list sets whether you still need a test.
+      With a licence from any other country, you must pass a theory and a practical test in every case.
     phase: settling
     urgency: medium
     deadline_type: days_since_arrival
-    deadline_days: 180
+    deadline_days: 181
     booking_service_key: kfz
     # Scoped per route. One flat list made the translation look universal and
     # left the exam-only certificates reading as everyone's problem — the
@@ -41,48 +129,95 @@ tasks:
     # branches?". Documents with no branch apply to both routes below.
     documents_required:
       - label: Passport or ID
+        note: If you are not an EU citizen, bring your passport with your residence permit.
       - label: The valid foreign licence
-        note: It must be surrendered when the German card is handed over — plan for that.
-      - label: Translation of the licence — by ADAC or a sworn translator
-        note: Some English-language licences are exempt; ask before paying.
+        note: It must still be valid when you apply, and you hand it in when you get the German card.
+      - label: Translation and classification of the licence — for example by ADAC or a sworn translator
       - label: Biometric photo
-      - label: Proof of when you first registered in Germany, if not first registered in Cologne
+      - label: Proof of when you first registered in Germany
+        note: Not needed if you first registered in Cologne and have lived here ever since.
+      - label: Proof of the date your licence was issued
+        note: Only needed if the date is not shown on the licence.
       - label: Vision test certificate + first-aid course certificate
         branch: Exam route
-        note: Standard for exam-based applications — both are cheap and bookable within days.
+        note: The first-aid course must have been in person; online courses are not accepted.
+      - label: Confirmation or training contract from your Fahrschule
+        branch: Exam route
     # Links belong to the route they describe, not to a flat list a reader has
     # to guess their way through: 00834 is the Anlage 11 conversion, 00836 the
     # third-country one.
     links: []
     how_to_steps:
-      - title: 'Anlage 11 country: test-free exchange'
+      - title: 'Anlage 11 country: convert your licence'
         branch: Exchange route
-        body: Fee €36.30, processing ~2–3 weeks at any Kundenzentrum. Bring the documents listed — the translation is the piece people forget.
+        body: 'Go in person to any Kundenzentrum (city service centre) in Cologne. Fee: €36.30 when no test is needed and no probation period (Probezeit) applies. Processing takes about two to three weeks. If a practical test is needed, you also name a Fahrschule (driving school). Bring the documents listed.'
         link: https://www.stadt-koeln.de/service/produkte/00834/index.html
-      - title: 'All other countries: exams required'
+      - title: 'All other countries: tests required'
         branch: Exam route
-        body: Conversion needs German theory + practical exams, booked through a Fahrschule (no minimum lessons mandated, but the Fahrschule files the exam request). Realistic cost is several hundred euros and exam slots queue — start in month one, not month five.
+        body: Start early, well before your deadline. Sign up with a Fahrschule (driving school) first; it registers you for the tests. Then apply with the documents listed.
         link: https://www.stadt-koeln.de/service/produkte/00836/index.html
       - title: Started late? Stop driving, then fix it
-        body: 'The 6-month validity can only be extended (up to 6 more months) if you can show you''ll stay under 12 months total. Otherwise: no driving until the German licence is issued.'
+        body: On request, the six months can be extended by up to six months if you show you will have your ordinary residence in Germany for no more than twelve months. Otherwise, don't drive until you have the German licence.
 
-  - title: 'Church tax: know before you tick the box'
+  - title: 'Church tax: how church membership affects your tax'
     key: shared.church_tax
     coverage_scope: universal
     type: info
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§51a EStG — Festsetzung und Erhebung von Zuschlagsteuern', url: 'https://www.gesetze-im-internet.de/estg/__51a.html'}
+      - {kind: primary, label: '§39e EStG — Verfahren zur Bildung und Anwendung der elektronischen Lohnsteuerabzugsmerkmale', url: 'https://www.gesetze-im-internet.de/estg/__39e.html'}
+      - {kind: primary, label: '§39 EStG — Lohnsteuerabzugsmerkmale', url: 'https://www.gesetze-im-internet.de/estg/__39.html'}
+      - {kind: implementation, label: 'Stadt Köln — Die Zukunft der Lohnsteuerkarte ist elektronisch', url: 'https://www.stadt-koeln.de/artikel/06479/index.html'}
+    claims:
+      - id: surcharge-on-income-tax
+        states: Church tax is calculated from your income tax
+        source: '§51a EStG — Festsetzung und Erhebung von Zuschlagsteuern'
+        quote: 'Steuern, die nach der Einkommensteuer bemessen werden (Zuschlagsteuern)'
+      - id: legal-membership
+        states: It follows your legal membership of a religious community that levies tax
+        source: '§51a EStG — Festsetzung und Erhebung von Zuschlagsteuern'
+        quote: die rechtliche Zugehörigkeit zu einer steuererhebenden Religionsgemeinschaft und den für die Religionsgemeinschaft geltenden Kirchensteuersatz
+      - id: register-reports
+        states: The registration office reports this membership, and any change to it, to the Federal Central Tax Office
+        source: '§39e EStG — Verfahren zur Bildung und Anwendung der elektronischen Lohnsteuerabzugsmerkmale'
+        quote: haben dem Bundeszentralamt für Steuern unter Angabe der Identifikationsnummer und des Tages der Geburt die in Satz 1 Nummer 1 bis 3 bezeichneten Daten und deren Änderungen im Melderegister mitzuteilen
+      - id: membership-data
+        states: legal membership
+        source: '§39e EStG — Verfahren zur Bildung und Anwendung der elektronischen Lohnsteuerabzugsmerkmale'
+        quote: rechtliche Zugehörigkeit zu einer steuererhebenden Religionsgemeinschaft sowie Datum des Eintritts und Austritts
+      - id: employer-withholds
+        states: If you are employed, your employer withholds church tax together with the income tax taken from your salary (wage tax)
+        source: '§39 EStG — Lohnsteuerabzugsmerkmale'
+        quote: nur für die Einbehaltung der Lohn- und Kirchensteuer verarbeiten
+      - id: changes-automatic
+        states: Once a change such as joining or leaving a church is in the registration register, it is taken into account automatically for wage tax
+        source: 'Stadt Köln — Die Zukunft der Lohnsteuerkarte ist elektronisch'
+        quote: Steuerlich bedeutsame Änderungen im Melderegister, wie beispielsweise Heirat, Geburt eines Kindes, Kircheneinritt oder Kirchenaustritt, werden automatisch für den Lohnsteuerabzug berücksichtigt
+      - id: prepayments
+        states: If you pay income tax prepayments, church tax prepayments are due at the same time
+        source: '§51a EStG — Festsetzung und Erhebung von Zuschlagsteuern'
+        quote: Die Vorauszahlungen auf Zuschlagsteuern sind gleichzeitig mit den festgesetzten Vorauszahlungen auf die Einkommensteuer zu entrichten
     description: |
-      The Anmeldung form asks your religion. Declaring a recognized denomination
-      (Catholic, Protestant, Jewish…) enrols you in Kirchensteuer — 9% of your income
-      tax in NRW, deducted automatically from every payslip. Leaving later requires a
-      formal, fee-charged Kirchenaustritt at the Amtsgericht. Answer accurately — but
-      know what the box means before you tick it.
+      Church tax is calculated from your income tax.
+      It follows your legal membership of a religious community that levies tax.
+      The registration office reports this membership, and any change to it, to the Federal Central Tax Office.
+      If you are employed, your employer withholds church tax together with the income tax taken from your salary (wage tax).
+      Once a change such as joining or leaving a church is in the registration register, it is taken into account automatically for wage tax.
+      No employer? If you pay income tax prepayments, church tax prepayments are due at the same time.
     phase: arrival
     urgency: medium
     deadline_type: none
     documents_required: []
     links:
-      - https://www.kirchenaustritt.de/nrw
+      - https://www.gesetze-im-internet.de/estg/__51a.html
+      - https://www.stadt-koeln.de/artikel/06479/index.html
 
   - title: 'Schufa: how Germany decides if it trusts you'
     key: shared.schufa
@@ -93,14 +228,16 @@ tasks:
       The Schufa is Germany's credit register. No history means no flat, no phone
       contract, no credit card — landlords ask for it before they'll even show you in.
       Bootstrap sequence: Anmeldung → bank account → pay everything on time. After a few
-      weeks, request the free Datenkopie (§34 BDSG) to check your record; the paid
-      BonitätsAuskunft (~€30) is the version landlords want to see.
+      weeks, request the free Datenkopie to check your record. Some landlords ask for a
+      paid Schufa report (BonitätsAuskunft), but a free report is often enough. Ask your
+      landlord which report they accept.
     phase: settling
     urgency: low
     deadline_type: none
     documents_required: []
     links:
       - https://www.meineschufa.de/
+      - https://www.stadt-koeln.de/mediaasset/content/pdf16/wegweiser_wohnen-englisch.pdf
 
   - title: 'Inviting family or friends to visit? Verpflichtungserklärung'
     key: shared.verpflichtungserklaerung
@@ -112,7 +249,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§68 AufenthG — Haftung für Lebensunterhalt', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__68.html'}
@@ -126,6 +263,26 @@ tasks:
         states: €29 per declaration
         source: 'Stadt Köln · Verpflichtungserklärung'
         quote: Die Verwaltungsgebühr pro Verpflichtungserklärung beträgt 29 Euro.
+      - id: main-residence-income
+        states: You need your main residence in Cologne and a regular income that could be seized if you don't pay
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Als Gastgeber*in müssen Sie in Köln Ihren Hauptwohnsitz haben und über ein regelmäßiges pfändbares Einkommen verfügen.
+      - id: income-threshold
+        states: your net income must be above the amount protected from seizure (Pfändungsfreigrenze)
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Ihr Nettoeinkommen muss hoch genug sein, vergleichen Sie hierzu bitte Ihre Pfändungsfreigrenze.
+      - id: no-benefit-recipients
+        states: If you receive Bürgergeld, social assistance (Sozialhilfe), Wohngeld or Lastenzuschuss (a housing-cost subsidy for homeowners), you cannot invite visa-required guests
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: können keine Gäste, die ein Visum benötigen, einladen
+      - id: long-stay-definition
+        states: more than 90 days
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Langfristiger Aufenthalt (mehr als 90 Tage)
+      - id: long-stay-permit
+        states: your permit must stay valid longer than your guest's stay and your commitment
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: dann muss diese länger gültig sein als die Dauer der Verpflichtung und/oder des Aufenthalts des Gastes
       - id: lead-time
         states: at least three months before their visa appointment
         source: 'Stadt Köln · Verpflichtungserklärung'
@@ -134,22 +291,61 @@ tasks:
         states: up to six months after issue
         source: 'Stadt Köln · Verpflichtungserklärung'
         quote: Die Verpflichtungserklärung wird in der Regel für bis zu sechs Monate nach ihrer Ausstellung von der deutschen Auslandsvertretung anerkannt.
+      - id: id-document
+        states: a valid ID card, travel document (Reiseausweis) or a residence permit valid for at least six months
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: gültiger Personalausweis, Reiseausweis oder ein mindestens sechs Monate gültiger Aufenthaltstitel
       - id: payslips
         states: payslips for the last three months
         source: 'Stadt Köln · Verpflichtungserklärung'
         quote: Gehaltsbescheinigungen der letzten drei Monate über monatliches Nettoeinkommen
+      - id: employee-bank-statement
+        states: a bank statement for the last full month showing the salary
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: einen Auszug Ihres Bankkontos des letzten Monats (vollständiger Monat), auf dem der Erhalt Ihres Gehaltes zu sehen ist
+      - id: self-employed-certificate
+        states: a current Steuerberater certificate of your net monthly income for the last three months
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: aktuelle Bescheinigung der*des Steuerberaters*in über das monatliche Nettoeinkommender letzten drei Monate
+      - id: self-employed-bank-statement
+        states: Plus a bank statement for the last full month
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: einen Auszug Ihres Bankkontos des letzten Monats (vollständiger Monat)
+      - id: freelancer-bank-statements
+        states: bank statements for the last three months
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Vorlage von aktuellen Kontoauszügen der letzten drei Monate des eigenen Bankkontos
     description: |
       If you invite visa-required family or friends to visit, they can use a
       Verpflichtungserklärung to show the German embassy or consulate that their costs
-      are covered. You file it at the Ausländeramt (€29 per declaration; the fee is
-      charged even if your income is not sufficient). You commit to covering public
-      costs of their stay, for five years from their entry. You need your main
-      residence in Cologne. File it at least three months before their visa appointment
-      (by post, online contact form, or in person on Tuesday and Thursday mornings);
-      the embassy usually recognises it for up to six months after issue. Employees
-      bring payslips for the last three months and a bank statement showing the salary;
-      self-employed people bring a Steuerberater certificate or their last tax
-      assessment instead.
+      are covered. You commit to covering public costs of their stay, for five years
+      from their entry.
+
+      Who can sign: You need your main residence in Cologne and a regular income
+      that could be seized if you don't pay; your net income must be above the amount
+      protected from seizure (Pfändungsfreigrenze). If you receive Bürgergeld, social
+      assistance (Sozialhilfe), Wohngeld or Lastenzuschuss (a housing-cost subsidy for
+      homeowners), you cannot invite visa-required guests.
+
+      If your guest stays more than 90 days and you hold a fixed-term residence permit,
+      your permit must stay valid longer than your guest's stay and your commitment.
+
+      How to file: at the Ausländeramt, at least three months before their visa
+      appointment, by post, online contact form, or in person on Tuesday and Thursday
+      mornings. The fee is €29 per declaration and is charged even if your income is
+      not sufficient. The embassy usually recognises it for up to six months after issue.
+
+      What to bring:
+      - Everyone (employees, self-employed people and freelancers): the application
+        form and a valid ID card, travel document (Reiseausweis) or a residence permit
+        valid for at least six months.
+      - Employees also: payslips for the last three months and a bank statement for
+        the last full month showing the salary.
+      - Self-employed people also, instead of payslips: a current Steuerberater
+        certificate of your net monthly income for the last three months, or your last
+        tax assessment. Plus a bank statement for the last full month.
+      - Freelancers also: bank statements for the last three months, plus the same
+        Steuerberater certificate or your last tax assessment.
     phase: ongoing
     urgency: low
     deadline_type: none
@@ -418,15 +614,75 @@ tasks:
     key: shared.recognition
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: 'Bundesärzteordnung (BÄO)', url: 'https://www.gesetze-im-internet.de/b_o/BJNR018570961.html'}
+      - {kind: implementation, label: 'BAMF — Ausländische Berufsabschlüsse', url: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/AnerkennungBerufsabschluesse/anerkennungberufsabschluesse-node.html'}
+      - {kind: implementation, label: 'BAMF — To Germany as a graduate', url: 'https://www.bamf.de/EN/Themen/MigrationAufenthalt/ZuwandererDrittstaaten/Arbeit/Hochschulabsolvent/hochschulabsolvent-node.html'}
+    claims:
+      - id: regulated-meaning
+        states: you may only work in them after a state approval procedure and recognition of your qualification
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: bedeutet, dass der Beruf ohne ein staatliches Zulassungsverfahren und ohne eine Anerkennung ihrer Berufsqualifikation nicht ausgeübt werden darf
+      - id: regulated-examples
+        states: jobs in health and education are among the regulated ones, for example doctor, nurse or nursery teacher
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: In Deutschland sind unter anderem Berufe im Gesundheits- und Bildungssektor (beispielsweise Ärztin, Krankenpfleger oder Erzieher) reglementiert.
+      - id: non-regulated
+        states: In other jobs you need no formal recognition to work
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: In nicht-reglementierten Berufen brauchen Sie dagegen keine formelle Anerkennung Ihres Abschlusses, um arbeiten zu dürfen
+      - id: assessment-helps-employers
+        states: having your qualifications assessed can still help employers judge them
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: Eine Prüfung Ihrer Qualifikationen kann aber trotzdem sinnvoll sein, damit der Arbeitgeber Ihre Qualifikationen besser einschätzen kann.
+      - id: nationality-irrelevant
+        states: Your nationality does not matter for the procedure
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: Ihre Staatsangehörigkeit ist für das Verfahren nicht entscheidend.
+      - id: responsible-office
+        states: You apply to the office responsible for your profession
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: Um den Antrag zu stellen, müssen sich Interessierte an die Stelle wenden, die für ihre Berufsgruppe zuständig ist.
+      - id: portal-and-hotline
+        states: www.anerkennung-in-deutschland.de or call the "Working and Living in Germany" hotline (Hotline Arbeiten und Leben in Deutschland) on +49 30-1815-1111
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: 'erfahren Sie im Internet unter www.anerkennung-in-deutschland.de oder bei der "Hotline Arbeiten und Leben in Deutschland" unter der Nummer +49 30-1815-1111'
+      - id: doctors-licence
+        states: Doctors need a licence to practise (Approbation)
+        source: 'Bundesärzteordnung (BÄO)'
+        quote: Wer im Geltungsbereich dieses Gesetzes den ärztlichen Beruf ausüben will, bedarf der Approbation als Arzt.
+      - id: doctors-authority
+        states: the authority of the federal state where you want to work as a doctor decides on it
+        source: 'Bundesärzteordnung (BÄO)'
+        quote: trifft die zuständige Behörde des Landes, in dem der ärztliche Beruf ausgeübt werden soll
+      - id: fees
+        states: The procedure costs fees, set by the responsible office
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: Für das Verfahren fallen Gebühren an. Diese werden von der jeweils zuständigen Stelle festgelegt.
+      - id: duration
+        states: once all documents are complete, it should as a rule take no longer than three months
+        source: 'BAMF — Ausländische Berufsabschlüsse'
+        quote: Wenn alle Unterlagen vollständig sind, sollte das Verfahren ab 1. Dezember 2012 in der Regel nicht länger als drei Monate dauern.
+      - id: degree-database-overview
+        states: gives a good overview of the equivalence of foreign academic degrees
+        source: 'BAMF — To Germany as a graduate'
+        quote: database of the Standing Conference of Ministers of Education and Cultural Affairs provides a good overview of the equivalence of foreign academic degrees
     description: |
-      For regulated professions (healthcare, teaching, engineering titles…) and for
-      stronger job applications generally, get your foreign qualification recognized.
-      Check the Anabin database first; if your degree isn't listed as equivalent, order
-      a ZAB Zeugnisbewertung. Profession-specific authorities (IHK FOSA, Bezirksregierung,
-      Ärztekammer) handle regulated fields — start at the official "Anerkennung in
-      Deutschland" portal, which routes you to the right one.
+      Some professions are regulated: you may only work in them after a state approval procedure and recognition of your qualification.
+      In Germany, jobs in health and education are among the regulated ones, for example doctor, nurse or nursery teacher.
+      In other jobs you need no formal recognition to work, but having your qualifications assessed can still help employers judge them. This is only about doing the job itself: if you need a residence permit, check that permit's card for what it asks of your qualification.
+      Your nationality does not matter for the procedure.
+      You apply to the office responsible for your profession. To find out whether your job is regulated and which office that is, use the portal www.anerkennung-in-deutschland.de or call the "Working and Living in Germany" hotline (Hotline Arbeiten und Leben in Deutschland) on +49 30-1815-1111.
+      Doctors need a licence to practise (Approbation); the authority of the federal state where you want to work as a doctor decides on it.
+      The procedure costs fees, set by the responsible office; once all documents are complete, it should as a rule take no longer than three months.
+      Have a university degree? The database of the education ministers' conference (link below) gives a good overview of the equivalence of foreign academic degrees.
     phase: ongoing
     urgency: low
     deadline_type: none
@@ -462,24 +718,157 @@ tasks:
     coverage_scope: universal
     type: info
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§4 StAG — Erwerb der Staatsangehörigkeit durch Geburt', url: 'https://www.gesetze-im-internet.de/stag/__4.html'}
+      - {kind: primary, label: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__33.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§18 PStG — Anzeige', url: 'https://www.gesetze-im-internet.de/pstg/__18.html'}
+      - {kind: primary, label: '§1594 BGB — Anerkennung der Vaterschaft', url: 'https://www.gesetze-im-internet.de/bgb/__1594.html'}
+      - {kind: implementation, label: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland', url: 'https://www.stadt-koeln.de/service/produkt/erwerb-der-deutschen-staatsangehoerigkeit-durch-geburt-deutschland-1'}
+      - {kind: implementation, label: 'Stadt Köln — Beurkundung von Geburten', url: 'https://www.stadt-koeln.de/service/produkte/00466/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Vaterschaftsanerkennung', url: 'https://www.stadt-koeln.de/service/produkt/vaterschaftsanerkennung'}
+    claims:
+      - id: german-by-birth
+        states: A child of foreign parents born in Germany becomes German
+        source: '§4 StAG — Erwerb der Staatsangehörigkeit durch Geburt'
+        quote: Durch die Geburt im Inland erwirbt ein Kind ausländischer Eltern die deutsche Staatsangehörigkeit
+      - id: five-years
+        states: has lived here lawfully for five years
+        source: '§4 StAG — Erwerb der Staatsangehörigkeit durch Geburt'
+        quote: seit fünf Jahren rechtmäßig seinen gewöhnlichen Aufenthalt im Inland hat
+      - id: unlimited-right
+        states: holds an unlimited right of residence
+        source: '§4 StAG — Erwerb der Staatsangehörigkeit durch Geburt'
+        quote: ein unbefristetes Aufenthaltsrecht
+      - id: eu-citizen
+        states: is an EU citizen with free movement rights
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: freizügigkeitsberechtigte Unionsbürger*in
+      - id: checked-ex-officio
+        states: The city checks this automatically, without you applying
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Wir prüfen den Erwerb der deutschen Staatsangehörigkeit von Amts wegen.
+      - id: check-duration
+        states: the check takes a few weeks
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: da die Prüfung auf Erwerb der deutschen Staatsangehörigkeit einige Wochen in Anspruch nimmt
+      - id: told-unasked
+        states: you are told without asking if your child is German
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Wenn Ihr Kind die deutsche Staatsangehörigkeit erworben hat, werden wir Sie unaufgefordert darüber informieren.
+      - id: home-consulate
+        states: Your child usually also has your citizenship
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Da Ihr Kind auch die Staatsangehörigkeit seiner Eltern erwirbt, ist es grundsätzlich erforderlich, dass Sie es auch bei Ihrem zuständigen Heimatkonsulat anmelden.
+      - id: both-parents-permit
+        states: both parents or the parent with sole custody hold a residence permit, a Niederlassungserlaubnis or a Daueraufenthalt-EU
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: Wenn zum Zeitpunkt der Geburt beide Elternteile oder der allein personensorgeberechtigte Elternteil eine Aufenthaltserlaubnis, eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt
+      - id: permit-ex-officio
+        states: the child gets its own residence permit automatically, without applying
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: wird dem im Bundesgebiet geborenen Kind die Aufenthaltserlaubnis von Amts wegen erteilt
+      - id: one-parent-permit
+        states: the office can then grant it automatically
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: von Amts wegen eine Aufenthaltserlaubnis erteilt werden, wenn ein Elternteil eine Aufenthaltserlaubnis
+      - id: parent-on-visa
+        states: "If a parent holds a visa or may stay visa-free at the birth, the child's stay counts as allowed only until the visa or visa-free stay ends"
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: dessen Mutter oder Vater zum Zeitpunkt der Geburt im Besitz eines Visums ist oder sich visumfrei aufhalten darf, gilt bis zum Ablauf des Visums oder des rechtmäßigen visumfreien Aufenthalts als erlaubt
+      - id: six-months
+        states: Otherwise, apply within six months of the birth
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Für ein im Bundesgebiet geborenes Kind, dem nicht von Amts wegen ein Aufenthaltstitel zu erteilen ist, ist der Antrag innerhalb von sechs Monaten nach der Geburt zu stellen.
+      - id: fiktionsbescheinigung
+        states: "a Fiktionsbescheinigung, a paper showing what the application means for the child's stay"
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Dem Ausländer ist eine Bescheinigung über die Wirkung seiner Antragstellung (Fiktionsbescheinigung) auszustellen.
+      - id: report-birth
+        states: The birth must be reported to the Standesamt within one week
+        source: '§18 PStG — Anzeige'
+        quote: Die Geburt eines Kindes ist dem Standesamt, in dessen Zuständigkeitsbereich es geboren ist, binnen einer Woche anzuzeigen
+      - id: hospital-registers
+        states: if your child is born in a Cologne hospital, the hospital handles this with the Standesamt
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Kommt Ihr Kind in einem Kölner Krankenhaus zur Welt, wickeln die Kliniken die Formalitäten der Anmeldung mit uns ab.
+      - id: registration-free
+        states: Registering the birth is free
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Beurkundung der Geburt ist gebührenfrei.
+      - id: tax-id
+        states: "Your child's tax ID arrives automatically by post from the Bundeszentralamt für Steuern"
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Steueridentifikations-Nummer für Ihr Kind erhalten Sie per Post automatisch vom Bundeszentralamt für Steuern.
+      - id: tax-id-kindergeld
+        states: you need it to apply for Kindergeld
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Steuernummer benötigen Sie für für die Beantragung des
+      - id: paternity-needed
+        states: If you are not married to each other, recognition of paternity is needed
+        source: 'Stadt Köln — Vaterschaftsanerkennung'
+        quote: Sie ist erforderlich, wenn Sie als Eltern eines gemeinsamen Kindes nicht miteinander verheiratet sind.
+      - id: paternity-before-birth
+        states: the father can recognise paternity even before the birth
+        source: '§1594 BGB — Anerkennung der Vaterschaft'
+        quote: Die Anerkennung ist schon vor der Geburt des Kindes zulässig.
+      - id: mother-consent
+        states: the mother must consent
+        source: 'Stadt Köln — Vaterschaftsanerkennung'
+        quote: Damit die Anerkennung wirksam wird, ist die Zustimmung der Mutter erforderlich.
+      - id: paternity-free
+        states: it is free of charge
+        source: 'Stadt Köln — Vaterschaftsanerkennung'
+        quote: Die Beurkundung der Vaterschaftsanerkennung ist kostenfrei.
+      - id: paternity-where
+        states: at the Standesamt or the Bezirksjugendamt
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Vaterschaftsanerkennung können Sie bei uns oder im Bezirksjugendamt erledigen.
     description: |
-      Before any permit paperwork: your child may be German by birth — if at birth one
-      parent had 5+ years of lawful residence and holds a Niederlassungserlaubnis or
-      Daueraufenthalt-EU, or is an EU/EEA citizen with free movement. The Standesamt
-      registers citizenship when certifying the birth. If not German, the child gets
-      its own permit (§33) — often ex officio; if not, apply within six months of the
-      birth (§81 Abs. 2 AufenthG) — needing the birth
-      certificate (register the birth within one week!), the child's passport (the
-      consulate wait is the bottleneck; a Fiktionsbescheinigung bridges), one biometric
-      photo and the parents' documents; fee from ~€25. Then chain the good stuff:
-      Kindergeld, free family health insurance, and — if unmarried — the
-      Vaterschaftsanerkennung, ideally done before the birth.
+      Check first whether your child is German by birth.
+      A child of foreign parents born in Germany becomes German if, at the birth, one parent
+      has lived here lawfully for five years and also either
+      holds an unlimited right of residence (a permanent right to stay)
+      or is an EU citizen with free movement rights.
+      Parents from an EEA country or Switzerland: ask the city how this applies to you.
+      The city checks this automatically, without you applying;
+      the check takes a few weeks, and you are told without asking if your child is German.
+      Your child usually also has your citizenship: check with your home consulate and register the child there too.
+
+      If your child is not German, the parents' permits at the birth decide what happens.
+      When both parents or the parent with sole custody hold a residence permit, a Niederlassungserlaubnis or a Daueraufenthalt-EU,
+      the child gets its own residence permit automatically, without applying.
+      Otherwise, apply within six months of the birth, even if only one parent holds a permit;
+      the office can then grant it automatically, but don't wait for that.
+      If a parent holds a visa or may stay visa-free at the birth, the child's stay counts as allowed only until the visa or visa-free stay ends,
+      so apply before then, even if that is sooner.
+      Ask the Ausländerbehörde which documents to bring, and start the child's passport at your consulate early.
+      The office may give you a Fiktionsbescheinigung, a paper showing what the application means for the child's stay.
+
+      The birth must be reported to the Standesamt within one week;
+      if your child is born in a Cologne hospital, the hospital handles this with the Standesamt.
+      Registering the birth is free.
+      Your child's tax ID arrives automatically by post from the Bundeszentralamt für Steuern;
+      you need it to apply for Kindergeld.
+      Tell your Krankenkasse about the birth.
+      If you are not married to each other, recognition of paternity is needed:
+      the father can recognise paternity even before the birth,
+      the mother must consent, and it is free of charge at the Standesamt or the Bezirksjugendamt.
     phase: ongoing
-    urgency: low
+    urgency: high
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/service/produkte/00237/index.html
+      - https://www.stadt-koeln.de/service/produkt/erwerb-der-deutschen-staatsangehoerigkeit-durch-geburt-deutschland-1
+      - https://www.stadt-koeln.de/service/produkte/00466/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__33.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
 
   - title: 'Other permit types: where to look'
     key: shared.other_permits

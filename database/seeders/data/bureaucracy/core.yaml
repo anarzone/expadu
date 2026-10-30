@@ -13,7 +13,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-09-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§17 BMG — Anmeldung, Abmeldung', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
@@ -27,8 +27,8 @@ tasks:
         quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
       - id: registration-deadline
         covers: deadline
-        source: '§17 BMG — Anmeldung, Abmeldung'
-        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
+        source: 'Stadt Köln · Anmeldung Ihres Wohnsitzes'
+        quote: Dann müssen Sie Ihren neuen Wohnsitz innerhalb von 14 Tagen nach dem
       - id: registration-exceptions
         states: exceptions in §27 BMG
         source: '§27 BMG — Registration exceptions'
@@ -37,6 +37,22 @@ tasks:
         states: notify the registration authority without delay as required by §19(2) BMG
         source: '§19 BMG — Wohnungsgeber confirmation'
         quote: so hat die meldepflichtige Person dies der Meldebehörde unverzüglich mitzuteilen
+      - id: marriage-certificate
+        states: if married or partnered and moving from abroad
+        source: 'Stadt Köln · Anmeldung Ihres Wohnsitzes'
+        quote: 'Wenn Sie aus dem Ausland zuziehen und verheiratet oder verpartnert sind: Eheurkunde oder Lebenspartnerschaftsurkunde'
+      - id: children-birth-certificates
+        states: if moving from abroad with your minor children
+        source: 'Stadt Köln · Anmeldung Ihres Wohnsitzes'
+        quote: 'Wenn Sie aus dem Ausland mit eigenen minderjährigen Kindern zuziehen: Geburtsurkunden der Kinder'
+      - id: sworn-translation
+        states: translator publicly appointed or sworn in Germany
+        source: 'Stadt Köln · Anmeldung Ihres Wohnsitzes'
+        quote: 'Diese*r muss in Deutschland öffentlich bestellt oder beeidigt sein.'
+      - id: originals
+        states: Bring the original certificate and the original of any translation
+        source: 'Stadt Köln · Anmeldung Ihres Wohnsitzes'
+        quote: Sie müssen die Urkunden und Übersetzungen im Original vorlegen.
     description: |
       Registration normally follows moving into a dwelling, with a two-week
       period under §17 BMG. Temporary stays and other situations can fall under
@@ -56,6 +72,10 @@ tasks:
         note: Check the city list for your case.
       - label: Wohnungsgeberbescheinigung confirming actual move-in
         note: A rental contract alone is not sufficient. Owners use the self-declaration described by the city.
+      - label: Marriage or partnership certificate (if married or partnered and moving from abroad)
+        note: Any translation must be by a translator publicly appointed or sworn in Germany. Check the city page for when a translation is needed. Bring the original certificate and the original of any translation.
+      - label: Children's birth certificates (if moving from abroad with your minor children)
+        note: Any translation must be by a translator publicly appointed or sworn in Germany. Check the city page for when a translation is needed. Bring the original certificate and the original of any translation.
     links:
       - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
@@ -231,32 +251,44 @@ tasks:
         body: Direct debit saves you from missed quarterly invoices and reminder fees.
         link: https://www.rundfunkbeitrag.de/welcome/english
       - title: Apply for exemption or reduction if eligible
-        body: Recipients of BAföG or Bürgergeld can be exempted; people with an RF disability code pay a reduced €6.12/month. Details on the official site.
+        body: Some people who receive benefits can apply to be exempted from the fee, for example people receiving Hilfe zum Lebensunterhalt (social assistance). Some people with disabilities can apply for a reduction. The official site lists who qualifies and has the forms.
 
-  - title: Get private liability insurance (Haftpflichtversicherung)
+  - title: Private liability insurance (Privathaftpflichtversicherung)
     key: core.liability_insurance
     type: info
     depends_on: [core.bank_account]
     applies_if_mode: explicit
     applies_if: {}
-    # Demoted from a task to an info card. Privathaftpflicht is voluntary —
-    # there is no statute behind it, and the only source we had was a price
-    # comparison site. As an info card it keeps its advice but loses the
-    # checkbox and its weight in the completion count, so "8 of 12 done" stops
-    # counting something nobody is actually required to do.
+    # Info card, not a task: it carries no checkbox and no weight in the
+    # completion count. Sourced from §823 BGB only. The price comparison link
+    # was removed, and the Make it in Germany pages are unreachable for the
+    # source checker. The card does not say whether the insurance is required,
+    # what it pays for or how large claims can get, because no reachable
+    # allowed page says so.
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§823 BGB — Schadensersatzpflicht', url: 'https://www.gesetze-im-internet.de/bgb/__823.html'}
+    claims:
+      - id: duty-to-compensate
+        states: Under §823 BGB, if you unlawfully injure someone or damage their property, on purpose or through carelessness, you must pay for the damage that results
+        source: '§823 BGB — Schadensersatzpflicht'
+        quote: Wer vorsätzlich oder fahrlässig das Leben, den Körper, die Gesundheit, die Freiheit, das Eigentum oder ein sonstiges Recht eines anderen widerrechtlich verletzt, ist dem anderen zum Ersatz des daraus entstehenden Schadens verpflichtet.
     description: |
-      Not legally required, but culturally near-universal (~85% of Germans have it) and
-      landlords increasingly expect it — it covers damage you accidentally cause to other
-      people or their property. In Germany you are personally liable without limit;
-      €3–6/month caps what could otherwise be an unbounded bill.
+      Under §823 BGB, if you unlawfully injure someone or damage their property, on purpose or through carelessness, you must pay for the damage that results.
+      If you look into private liability insurance, find out which of these claims a policy would pay for you.
     phase: settling
     urgency: low
     deadline_type: none
     documents_required: []
     links:
-      - https://www.check24.de/haftpflichtversicherung/
+      - https://www.gesetze-im-internet.de/bgb/__823.html
     how_to_steps:
-      - title: Compare on Check24 or Verivox
-        body: Look for "Privathaftpflicht" with at least €10M coverage and no deductible. Annual payment is usually cheaper than monthly.
+      - title: Compare policies
+        body: Search for "Privathaftpflicht", the short name for this insurance. In each offer, read what it covers, what it excludes and the most it pays per claim before you sign.
       - title: Note your policy number
-        body: You'll need it the day you break something — a friend's laptop, a rented e-scooter, a neighbour's window.
+        body: Keep it somewhere you can find it. You'll need it when you report damage to your insurer.

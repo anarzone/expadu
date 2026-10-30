@@ -11,7 +11,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
@@ -54,6 +54,14 @@ tasks:
         states: a Blue Card normally requires entry with the matching visa
         source: 'Stadt Köln · EU Blue Card'
         quote: Für den Erhalt einer Blauen Karte EU müssen Sie in der Regel mit einem entsprechenden Visum einreisen.
+      - id: it-experience-proof
+        states: at least three years of IT experience within the last seven years
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Nachweise über mindestens drei Jahre Berufserfahrung innerhalb der letzten sieben Jahre
+      - id: photo-age
+        states: no older than three months
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Das Foto darf nicht älter als drei Monate sein.
     description: |
       Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK and the USA may enter Germany visa-free and obtain the residence permit here
       — but they must apply within 90 days of arrival. Cologne accepts first Blue Card
@@ -77,10 +85,24 @@ tasks:
       entry_mode: visa_free
     documents_required:
       - label: Cologne's online first application for the EU Blue Card
-        note: Upload scans of the documents listed on the appointment task.
+        note: Have the documents below ready. In individual cases Cologne may ask for more.
+      - label: Valid passport or passport substitute
+        note: Cologne needs it for every application.
+      - label: Biometric passport photo
+        note: Bring it to the appointment. It must be no older than three months.
+      - label: Employment contract or binding job offer
+        note: Required for the Blue Card.
+      - label: Proof of your qualification
+        note: Your degree certificate (for a foreign degree, see the recognition step below). IT specialists without a formal qualification need proof of at least three years of IT experience within the last seven years, plus a CV. Regulated professions also need the licence to practise (Berufsausübungserlaubnis).
       - label: BA advance approval or the completed form "Erklärung zum Beschäftigungsverhältnis", if available
         note: Cologne lists it as optional. Ask your employer about it early.
         tone: warn
+      - label: 'Proof of your housing: if you rent'
+        note: Your rental contract and a bank statement showing the current rent payment.
+      - label: 'Proof of your housing: if you own'
+        note: A land register extract (Grundbuchauszug). Also proof of the monthly costs for interest, repayments and running costs.
+      - label: Proof of full health insurance
+        note: Only if you are not in statutory health insurance.
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
       - https://anabin.kmk.org/anabin.html
@@ -89,7 +111,7 @@ tasks:
         body: For a foreign degree, Cologne asks for a certified German or English translation plus an Anabin extract or a statement of comparability from the Zentralstelle für ausländisches Bildungswesen (ZAB).
         link: https://anabin.kmk.org/anabin.html
       - title: Submit the online first application
-        body: Cologne accepts first Blue Card applications online and contacts you once it has reviewed your application.
+        body: Cologne accepts first Blue Card applications online and contacts you once it has reviewed your application. If it can issue the Blue Card, it sends you an invitation to an appointment.
         link: https://www.stadt-koeln.de/service/produkte/20321/index.html
 
   - title: Attend your Blue Card appointment with the originals
@@ -194,13 +216,14 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
       - {kind: primary, label: '§2 AufenthG — Begriffsbestimmungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__2.html'}
-      - {kind: primary, label: '§44 AufenthV — Gebühren für die Niederlassungserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthv/__44.html'}
+      - {kind: primary, label: '§9 AufenthG — Niederlassungserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+      - {kind: implementation, label: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte', url: 'https://www.stadt-koeln.de/service/produkte/20359/index.html'}
     claims:
       - id: route-lengths
         states: 21 or 27 months
@@ -232,14 +255,41 @@ tasks:
         quote: die Voraussetzungen des § 9 Absatz 2 Satz 1 Nummer 2 und 4 bis 6, 8 und 9 vorliegen
       - id: fee
         states: fee is €113
-        source: '§44 AufenthV — Gebühren für die Niederlassungserlaubnis'
-        quote: für die Erteilung einer Niederlassungserlaubnis in allen übrigen Fällen 113 Euro
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Für die Erteilung einer Niederlassungserlaubnis müssen Sie eine Gebühr in Höhe von 113 Euro bezahlen.
+      - id: housing-docs
+        states: Rental contract + proof of your current monthly rent (Warmmiete)
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Mietvertrag sowie einen Nachweis über die aktuellen monatlichen Kosten (Warmmiete), zum Beispiel durch Kontoauszüge.
+      - id: living-space
+        states: you need enough living space for yourself and the family members who live with you
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: er über ausreichenden Wohnraum für sich und seine mit ihm in häuslicher Gemeinschaft lebenden Familienangehörigen verfügt
+      - id: owner-docs
+        states: an extract from the land register (Grundbuchauszug), your monthly Hausgeld (building service charges) and any monthly loan costs
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Bei einer eigenen Immobilie benötigen wir die dritte Abteilung des Grundbuchauszugs, Kosten des monatlichen Hausgeldes und eventuell monatliche Kreditkosten für die Immobilie.
+      - id: civics-required
+        states: basic knowledge of the legal and social order and living conditions in Germany
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: er über Grundkenntnisse der Rechts- und Gesellschaftsordnung und der Lebensverhältnisse im Bundesgebiet verfügt
+      - id: civics-proof
+        states: 'Usually the "Leben in Deutschland" test or a school-leaving certificate from at least a Mittelschule'
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: 'Der Nachweis erfolgt in der Regel über den Test "Leben in Deutschland" oder durch die Vorlage eines Abschlusszeugnisses mindestens einer Mittelschule.'
+      - id: integration-course
+        states: A successfully completed integration course also counts
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: Die Voraussetzungen des Satzes 1 Nr. 7 und 8 sind nachgewiesen, wenn ein Integrationskurs erfolgreich abgeschlossen wurde.
     description: |
       Blue Card holders can get the Niederlassungserlaubnis (permanent residence)
       after 27 months of Blue Card employment with pension or equivalent contributions and A1 German — or
       after 21 months with B1 German. Cologne puts it as 21 or 27 months instead of three or five years.
-      The authority still checks the further conditions referenced in §18c, so keep
-      your contributions running and book a German course early. The Niederlassungserlaubnis
+      The authority still checks the further conditions referenced in §18c, for example
+      basic knowledge of the legal and social order and living conditions in Germany
+      (usually shown with the "Leben in Deutschland" test). Whether you rent or own,
+      you need enough living space for yourself and the family members who live with you.
+      Keep your contributions running and book a German course early. The Niederlassungserlaubnis
       fee is €113.
     phase: ongoing
     urgency: low
@@ -255,9 +305,16 @@ tasks:
       - label: Current pension record (Versicherungsverlauf)
         note: Request it from the Deutsche Rentenversicherung early — it shows your contribution months.
       - label: Employment contract + recent payslips
+      - label: Rental contract + proof of your current monthly rent (Warmmiete)
+        note: Warmmiete is rent including heating and service charges. Bank statements, for example, can serve as proof.
+      - label: 'If you own your home: land register extract and monthly costs'
+        note: Bring an extract from the land register (Grundbuchauszug), your monthly Hausgeld (building service charges) and any monthly loan costs instead of the rental documents.
+      - label: Proof of basic knowledge of life in Germany (civics)
+        note: Usually the "Leben in Deutschland" test or a school-leaving certificate from at least a Mittelschule (lower-secondary school). Ask the Ausländeramt whether a school certificate from abroad counts. A successfully completed integration course also counts.
     links:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - https://www.stadt-koeln.de/service/produkte/20359/index.html
     how_to_steps:
       - title: Apply when your window opens
         body: Submit the application to the Ausländeramt once you meet the conditions; the authority checks every requirement before issuing the permit.
@@ -265,12 +322,28 @@ tasks:
   - title: Prepare the evidence for your first Blue Card application
     key: case.bc.first_application.prepare
     description: |
-      If you hold a national D visa and plan to apply for an EU Blue Card,
-      prepare the passport, employment contract or binding offer, qualification
-      evidence, health-insurance evidence, and any professional licence the Cologne
-      authority requests. The job offer must cover at least six months and the
-      statutory Blue Card conditions still have to be checked. This is preparation,
-      not a prediction that the application will be approved.
+      If you hold a national D visa and plan to apply for an EU Blue Card, get your evidence ready and apply before your visa expires. If you do, your visa is treated as still valid after it expires, until the Ausländerbehörde (foreigners' office) decides (§81 AufenthG).
+
+      Cologne asks for these with every application:
+      - a valid passport or passport substitute
+      - a biometric passport photo no older than three months
+      - the employment contract or a binding job offer
+      - if you have it, the Federal Employment Agency's pre-approval; otherwise the completed form "Erklärung zum Beschäftigungsverhältnis" (employment declaration form)
+      - if you rent, the rental contract and a bank statement showing the current rent payment
+      - if you own your home, a land-register extract and proof of the monthly costs for interest, repayments and running costs
+      - proof of full health insurance if you are not statutorily insured
+
+      For a first application, Cologne also needs proof of one of these qualifications:
+      - a university degree certificate
+        - foreign degree: certified German or English translation, plus an anabin extract or a certificate evaluation from the Zentralstelle für ausländisches Bildungswesen (ZAB, the German office that evaluates foreign degrees; anabin is its online database)
+      - a certificate of a tertiary education programme and recognition of that qualification
+      - for IT specialists without a formal qualification, proof of at least three years' IT work experience within the last seven years and a CV
+
+      For regulated professions, also bring your licence to practise.
+      If your entry required a visa, bring your visa for qualified employment.
+      In individual cases Cologne may ask for further documents.
+
+      The job offer must cover at least six months and the statutory Blue Card conditions still have to be checked. This is preparation, not a prediction that the application will be approved.
     phase: arrival
     urgency: critical
     deadline_type: fact_date
@@ -282,24 +355,110 @@ tasks:
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
-    # The documents to bring are listed once, on the appointment step (bc.blue_card).
+    # The full Cologne document list now sits in this card's description. Keep the appointment step (bc.blue_card) in step with it.
     documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.2
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
     claims:
       - id: six-month-offer
         states: at least six months
         source: '§18g AufenthG'
         quote: eine Beschäftigungsdauer von mindestens sechs Monaten vorsieht
+      - id: apply-before-visa-expires
+        states: 'apply before your visa expires. If you do, your visa is treated as still valid after it expires, until the Ausländerbehörde (foreigners'' office) decides (§81 AufenthG)'
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: 'Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.'
+      - id: every-application
+        states: Cologne asks for these with every application
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Bei jedem Antrag'
+      - id: passport
+        states: a valid passport or passport substitute
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Gültiger Reisepass oder Passersatz'
+      - id: photo
+        states: a biometric passport photo no older than three months
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Das Foto darf nicht älter als drei Monate sein.'
+      - id: contract-or-offer
+        states: the employment contract or a binding job offer
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Arbeitsvertrag oder ein verbindliches Arbeitsplatzangebot'
+      - id: ba-pre-approval
+        states: 'if you have it, the Federal Employment Agency''s pre-approval'
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Falls vorhanden, die Vorabzustimmung der Bundesagentur für Arbeit'
+      - id: employment-form
+        states: 'otherwise the completed form "Erklärung zum Beschäftigungsverhältnis"'
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Erklärung zum Beschäftigungsverhältnis'
+      - id: rental-proof
+        states: if you rent, the rental contract and a bank statement showing the current rent payment
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Wenn Sie zur Miete wohnen: Mietvertrag und Kontoauszug über die aktuelle Mietzahlung.'
+      - id: owner-proof
+        states: if you own your home, a land-register extract and proof of the monthly costs for interest, repayments and running costs
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Wenn Sie in Eigentum wohnen: Grundbuchauszug und Nachweise über die monatlichen Belastungen durch Zins, Tilgungsraten und Nebenkosten.'
+      - id: health-insurance
+        states: proof of full health insurance if you are not statutorily insured
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Nachweis über einen vollständigen Krankversicherungsschutz, falls Sie nicht gesetzlich krankenversichert sind'
+      - id: first-application-only
+        states: For a first application
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Nur beim Erstantrag'
+      - id: one-qualification
+        states: Cologne also needs proof of one of these qualifications
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'eine der folgenden Qualifikationen'
+      - id: degree-certificate
+        states: a university degree certificate
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Hochschulabschlusszeugnis'
+      - id: foreign-translation
+        states: certified German or English translation
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Bei einem ausländischen Zeugnis müssen Sie eine beglaubigte deutsche oder englische Übersetzung vorlegen'
+      - id: foreign-recognition
+        states: plus an anabin extract or a certificate evaluation from the Zentralstelle für ausländisches Bildungswesen
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Zentralstelle für ausländisches Bildungswesen'
+      - id: tertiary-programme
+        states: a certificate of a tertiary education programme and recognition of that qualification
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Abschlusszeugnis eines tertiären Bildungsprogramms und Anerkennung des Abschlusses'
+      - id: it-experience
+        states: 'for IT specialists without a formal qualification, proof of at least three years'' IT work experience within the last seven years'
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Fachkräften ohne formalen Bildungsabschluss: Nachweise über mindestens drei Jahre Berufserfahrung innerhalb der letzten sieben Jahre'
+      - id: it-cv
+        states: and a CV
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Bereich sowie einen Lebenslauf'
+      - id: professional-licence
+        states: For regulated professions, also bring your licence to practise
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'bei reglementierten Berufen: Berufsausübungserlaubnis'
+      - id: entry-visa
+        states: If your entry required a visa, bring your visa for qualified employment
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Soweit es für Ihre Einreise erforderlich ist, benötigen wir Ihr Visum zur Einreise zur Ausübung der qualifizierten Beschäftigung.'
+      - id: further-documents
+        states: In individual cases Cologne may ask for further documents
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Im Einzelfall kann es vorkommen, dass wir weitere Unterlagen bei Ihnen anfragen.'
 
   - title: Submit the Blue Card application before your D visa expires
     key: case.bc.first_application.submit

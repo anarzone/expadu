@@ -21,105 +21,532 @@ tasks:
     trigger: child_born
     eu_filter: non_eu_only
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§4 StAG — Erwerb durch Geburt', url: 'https://www.gesetze-im-internet.de/stag/__4.html'}
+      - {kind: primary, label: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__33.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§18 PStG — Anzeige', url: 'https://www.gesetze-im-internet.de/pstg/__18.html'}
+      - {kind: primary, label: '§1626a BGB — Elterliche Sorge nicht miteinander verheirateter Eltern; Sorgeerklärungen', url: 'https://www.gesetze-im-internet.de/bgb/__1626a.html'}
+      - {kind: primary, label: '§1626b BGB — Besondere Wirksamkeitsvoraussetzungen der Sorgeerklärung', url: 'https://www.gesetze-im-internet.de/bgb/__1626b.html'}
+      - {kind: implementation, label: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland', url: 'https://www.stadt-koeln.de/service/produkte/00479/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Beurkundung von Geburten', url: 'https://www.stadt-koeln.de/service/produkt/beurkundung-von-geburten-1'}
+      - {kind: implementation, label: 'Stadt Köln — Aufenthaltserlaubnis für Kinder von ausländischen Staatsangehörigen', url: 'https://www.stadt-koeln.de/service/produkte/20336/index.html'}
+    claims:
+      - id: citizenship-five-years
+        states: a parent has lawfully lived in Germany for five years
+        source: '§4 StAG — Erwerb durch Geburt'
+        quote: seit fünf Jahren rechtmäßig seinen gewöhnlichen Aufenthalt im Inland hat
+      - id: citizenship-permanent-right
+        states: has a permanent right of residence
+        source: '§4 StAG — Erwerb durch Geburt'
+        quote: ein unbefristetes Aufenthaltsrecht
+      - id: citizenship-niederlassungserlaubnis
+        states: such as a Niederlassungserlaubnis
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: oder eine Niederlassungserlaubnis besitzt.
+      - id: citizenship-eu
+        states: EU/EEA citizen with free-movement rights
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: freizügigkeitsberechtigte Unionsbürger
+      - id: citizenship-eea
+        states: EU/EEA citizen
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Staatsangehörige*r eines EWR
+      - id: citizenship-registered-by-standesamt
+        states: The Standesamt that certifies the birth registers German citizenship
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Der Erwerb der deutschen Staatsangehörigkeit wird durch das für die Beurkundung der Geburt des Kindes zuständige Standesamt eingetragen.
+      - id: permit-ex-officio-both-parents
+        states: at the birth both parents (or the parent with sole custody) held a German residence permit (an Aufenthaltserlaubnis, a Niederlassungserlaubnis or an Erlaubnis zum Daueraufenthalt – EU), the child gets its own residence permit without a formal application (§33 AufenthG)
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: Wenn zum Zeitpunkt der Geburt beide Elternteile oder der allein personensorgeberechtigte Elternteil eine Aufenthaltserlaubnis, eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt – EU besitzen, wird dem im Bundesgebiet geborenen Kind die Aufenthaltserlaubnis von Amts wegen erteilt.
+      - id: permit-section-33
+        states: If not German, get the §33 permit
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: Einem Kind, das im Bundesgebiet geboren wird, kann abweichend von den §§ 5 und 29 Abs. 1 Nr. 2 von Amts wegen eine Aufenthaltserlaubnis erteilt werden
+      - id: permit-one-parent
+        states: If only one parent holds such a permit, the authorities can issue it without an application, but don't have to
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: kann abweichend von den §§ 5 und 29 Abs. 1 Nr. 2 von Amts wegen eine Aufenthaltserlaubnis erteilt werden, wenn ein Elternteil eine Aufenthaltserlaubnis, eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt – EU besitzt
+      - id: apply-within-six-months
+        states: apply for the permit within six months of the birth
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Für ein im Bundesgebiet geborenes Kind, dem nicht von Amts wegen ein Aufenthaltstitel zu erteilen ist, ist der Antrag innerhalb von sechs Monaten nach der Geburt zu stellen.
+      - id: apply-section-81
+        states: (§81 AufenthG)
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: ist der Antrag innerhalb von sechs Monaten nach der Geburt zu stellen
+      - id: apply-deadline
+        covers: deadline
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: ist der Antrag innerhalb von sechs Monaten nach der Geburt zu stellen
+      - id: parent-on-visa
+        states: If a parent held a visa or was allowed to stay visa-free at the birth, the child's stay counts as permitted only until that visa or visa-free stay ends
+        source: '§33 AufenthG — Geburt eines Kindes im Bundesgebiet'
+        quote: Der Aufenthalt eines im Bundesgebiet geborenen Kindes, dessen Mutter oder Vater zum Zeitpunkt der Geburt im Besitz eines Visums ist oder sich visumfrei aufhalten darf, gilt bis zum Ablauf des Visums oder des rechtmäßigen visumfreien Aufenthalts als erlaubt.
+      - id: birth-report-one-week
+        states: The birth must be reported to the Standesamt within one week
+        source: '§18 PStG — Anzeige'
+        quote: Die Geburt eines Kindes ist dem Standesamt, in dessen Zuständigkeitsbereich es geboren ist, binnen einer Woche anzuzeigen
+      - id: hospital-registers
+        states: If your baby is born in a Cologne hospital, the clinic handles the registration
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Kommt Ihr Kind in einem Kölner Krankenhaus zur Welt, wickeln die Kliniken die Formalitäten der Anmeldung mit uns ab.
+      - id: meldeamt-informed
+        states: The Standesamt then informs your Meldeamt
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Ihr Meldeamt erhält von uns eine Mitteilung über die Geburt Ihres Kindes.
+      - id: child-registered
+        states: that completes your child's registration at your address
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Anmeldung ist damit erfolgt.
+      - id: no-visit
+        states: No visit is needed
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Eine Vorsprache ist nicht erforderlich.
+      - id: checked-ex-officio
+        states: the city checks this on its own
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Wir prüfen den Erwerb der deutschen Staatsangehörigkeit von Amts wegen.
+      - id: check-free
+        states: free of charge
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Für die Prüfung auf Erwerb der deutschen Staatsangehörigkeit durch Geburt im Inland fallen keine Gebühren an.
+      - id: told-unasked
+        states: tells you without being asked if your child is German
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: Wenn Ihr Kind die deutsche Staatsangehörigkeit erworben hat, werden wir Sie unaufgefordert darüber informieren.
+      - id: check-takes-weeks
+        states: The check takes some weeks
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: da die Prüfung auf Erwerb der deutschen Staatsangehörigkeit einige Wochen in Anspruch nimmt
+      - id: home-consulate
+        states: register your child with your home consulate
+        source: 'Stadt Köln — Erwerb der deutschen Staatsangehörigkeit durch Geburt in Deutschland'
+        quote: ist es grundsätzlich erforderlich, dass Sie es auch bei Ihrem zuständigen Heimatkonsulat anmelden
+      - id: permit-passport
+        states: a valid passport from your child's country, recognised in Germany
+        source: 'Stadt Köln — Aufenthaltserlaubnis für Kinder von ausländischen Staatsangehörigen'
+        quote: Anerkannter und gültiger Nationalpass des Kindes
+      - id: permit-photo
+        states: Digital biometric passport photo
+        source: 'Stadt Köln — Aufenthaltserlaubnis für Kinder von ausländischen Staatsangehörigen'
+        quote: Digitales biometrisches Passfoto
+      - id: paternity-for-birth-certificate
+        states: For the father to be entered on the birth certificate straight away, the Standesamt needs the Vaterschaftsanerkennung when it certifies the birth
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Soll der Vater direkt in die Geburtsurkunde eingetragen werden, benötigen wir zur Beurkundung Ihre Geburtsurkunde, die Geburtsurkunde des Vaters, Ihre Ausweise und die Vaterschaftsanerkennung.
+      - id: paternity-where
+        states: you can do it at the Standesamt or the Bezirksjugendamt
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Die Vaterschaftsanerkennung können Sie bei uns oder im Bezirksjugendamt erledigen.
+      - id: custody-unmarried
+        states: you share custody only through Sorgeerklärungen, by marrying or by a family court order
+        source: '§1626a BGB — Elterliche Sorge nicht miteinander verheirateter Eltern; Sorgeerklärungen'
+        quote: Sind die Eltern bei der Geburt des Kindes nicht miteinander verheiratet, so steht ihnen die elterliche Sorge gemeinsam zu,
+      - id: custody-mother
+        states: otherwise the mother has custody
+        source: '§1626a BGB — Elterliche Sorge nicht miteinander verheirateter Eltern; Sorgeerklärungen'
+        quote: Im Übrigen hat die Mutter die elterliche Sorge.
+      - id: sorge-before-birth
+        states: You can make the Sorgeerklärung before the birth
+        source: '§1626b BGB — Besondere Wirksamkeitsvoraussetzungen der Sorgeerklärung'
+        quote: Die Sorgeerklärung kann schon vor der Geburt des Kindes abgegeben werden.
+      - id: sorge-where
+        states: at the Bezirksjugendamt or with a notary (for a fee), not at the Standesamt
+        source: 'Stadt Köln — Beurkundung von Geburten'
+        quote: Diese können Sie nur im Bezirksjugendamt oder durch Notar*innen (gebührenpflichtig) beurkunden lassen.
     description: |
-      Before any permit paperwork: your child may be German by birth — if at birth one
-      parent had 5+ years of lawful residence and holds a Niederlassungserlaubnis or
-      Daueraufenthalt-EU (or is an EU/EEA citizen with free movement). The Standesamt
-      registers citizenship when certifying the birth. If the child isn't German, it
-      gets its own §33 permit — often ex officio, with no application needed, when both
-      parents (or the sole custodian) held a residence title at birth. When it isn't
-      issued ex officio, apply for it within six months of the birth (§81 Abs. 2 AufenthG).
+      Before any permit paperwork: your child may be German by birth. That is the case if, at the birth,
+      a parent has lawfully lived in Germany for five years and also has a permanent right of residence,
+      such as a Niederlassungserlaubnis, or by being an EU/EEA citizen with free-movement rights. Both conditions
+      apply to EU/EEA parents too. The Standesamt that certifies the birth registers German citizenship.
+      If the child isn't German and at the birth both parents (or the parent with sole custody) held a German residence permit (an Aufenthaltserlaubnis, a Niederlassungserlaubnis or an Erlaubnis zum Daueraufenthalt – EU), the child gets its own residence permit without a formal application (§33 AufenthG).
+      You still need to get in touch with the Ausländeramt for it; the city's child-permit page is in the links.
+      In every other case, apply for the permit within six months of the birth (§81 AufenthG).
     phase: ongoing
     urgency: high
     deadline_type: days_since_event
-    deadline_days: 180
+    deadline_days: 181
     documents_required:
       - label: Child's birth certificate
-        note: Register the birth at the Standesamt within ONE WEEK — everything else hangs off this.
-        tone: warn
-      - label: "Child's passport (or entry in a parent's passport)"
-        note: The home-consulate passport wait is the bottleneck; a Fiktionsbescheinigung bridges the gap.
-      - label: One biometric photo (35×45, under 6 months old)
-      - label: Parents' passports + residence titles
-      - label: "Child's Meldebestätigung"
-        note: Register the child at the custodial parents' address.
+        note: Issued by the Standesamt when it certifies the birth (see the first step).
+      - label: "Child's passport"
+        note: Needs to be a valid passport from your child's country, recognised in Germany. Getting it from your home consulate is often what takes longest, so don't wait for it before contacting the Ausländeramt.
+      - label: Digital biometric passport photo
     links:
-      - https://www.stadt-koeln.de/service/produkte/00237/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__33.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
+      - https://www.stadt-koeln.de/service/produkte/00479/index.html
+      - https://www.stadt-koeln.de/service/produkt/beurkundung-von-geburten-1
+      - https://www.stadt-koeln.de/service/produkte/20336/index.html
+      - https://www.gesetze-im-internet.de/bgb/__1626a.html
     how_to_steps:
-      - title: Certify the birth at the Standesamt first
-        body: Within one week of the birth. Ask explicitly whether your child qualifies for German citizenship by birth — the Standesamt checks it when certifying.
-      - title: If not German, the §33 permit is often automatic
-        body: When both parents (or the sole custodian) held a residence title at birth, the permit is issued ex officio. Otherwise apply within six months of the birth. If a parent was on a visa, the child's stay is automatically legal until that expires. Fee from ~€25.
-      - title: Unmarried? Sort the Vaterschaftsanerkennung
-        body: Ideally BEFORE the birth — it determines custody and the child's status from day one.
+      - title: Let the Standesamt certify the birth
+        body: The birth must be reported to the Standesamt within one week. If your baby is born in a Cologne hospital, the clinic handles the registration. The Standesamt then informs your Meldeamt, and that completes your child's registration at your address.
+      - title: The city checks whether your child is German
+        body: No visit is needed — the city checks this on its own, free of charge, and tells you without being asked if your child is German. The check takes some weeks, so register your child with your home consulate soon.
+      - title: If not German, get the §33 permit
+        body: When both parents (or the parent with sole custody) held one of the residence permits named above at the birth, the permit comes without a formal application, but contact the Ausländeramt anyway (city page in the links). If only one parent holds such a permit, the authorities can issue it without an application, but don't have to — so apply for the permit within six months of the birth. If a parent held a visa or was allowed to stay visa-free at the birth, the child's stay counts as permitted only until that visa or visa-free stay ends. That can be sooner than the application deadline, so in that case apply before it ends.
+      - title: Not married to each other? Sort paternity and custody
+        body: For the father to be entered on the birth certificate straight away, the Standesamt needs the Vaterschaftsanerkennung when it certifies the birth, so sort it out early; you can do it at the Standesamt or the Bezirksjugendamt. Paternity alone doesn't give joint custody — you share custody only through Sorgeerklärungen, by marrying or by a family court order; otherwise the mother has custody. This decides who has sole custody for the permit rule above. You can make the Sorgeerklärung before the birth, at the Bezirksjugendamt or with a notary (for a fee), not at the Standesamt.
 
   - title: Reserve a Kita place via LITTLE BIRD
     key: le.kita
     trigger: child_born
     depends_on: []
-    verified_at: 2026-06-12
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§24 SGB VIII — Anspruch auf Förderung in Tageseinrichtungen und in Kindertagespflege', url: 'https://www.gesetze-im-internet.de/sgb_8/__24.html'}
+      - {kind: implementation, label: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD', url: 'https://www.stadt-koeln.de/artikel/65229/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Vormerkung eines Kindergartenplatzes', url: 'https://www.stadt-koeln.de/service/produkt/vormerkung-eines-kindergartenplatzes'}
+      - {kind: implementation, label: 'Stadt Köln — Elternbeiträge für Kindertageseinrichtungen und OGTS', url: 'https://www.stadt-koeln.de/service/produkt/elternbeitraege-fuer-kindertageseinrichtungen-ogts'}
+      - {kind: implementation, label: 'Stadt Köln — Kinderbetreuung', url: 'https://www.stadt-koeln.de/leben-in-koeln/familie/betreuung'}
+    claims:
+      - id: right-after-birth
+        states: You can reserve a place for your child right after the birth
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Bereits unmittelbar nach der Geburt haben Sie die Möglichkeit, Ihr Kind für einen Platz bei uns vorzumerken.
+      - id: online-or-in-writing
+        states: online or in writing at the Kita
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Dies können Sie online oder schriftlich in der jeweiligen Kindertageseinrichtung erledigen.
+      - id: not-before-birth
+        states: You cannot send a request for an unborn child
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Warum ist es nicht möglich, eine Betreuungsanfrage für ein ungeborenes Kind zu stellen?
+      - id: legal-right-age-one
+        states: From age 1, children have a legal right
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Seit 1. August 2013 haben Kinder ab dem vollendeten 1. Lebensjahr einen Rechtsanspruch auf einen Platz in einer Kindertageseinrichtung oder eine Betreuung in der Kindertagespflege.
+      - id: legal-basis
+        states: a legal right (§24 SGB VIII) to a place in a Kita or with a childminder (Kindertagespflege)
+        source: '§24 SGB VIII — Anspruch auf Förderung in Tageseinrichtungen und in Kindertagespflege'
+        quote: Anspruch auf frühkindliche Förderung in einer Tageseinrichtung oder in Kindertagespflege
+      - id: as-early-as-possible
+        states: Register your child as early as possible
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie sollten Ihr Kind so früh wie möglich für einen Betreuungsplatz anmelden.
+      - id: six-months-notice
+        states: You must state your child's care need at least six months before the start you want
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: spätestens sechs Monate vor Inanspruchnahme
+      - id: central-allocation
+        states: The city's Amt für Kinder, Jugend und Familie hands out places in city-run Kitas centrally
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Die Vergabe der städtischen Betreuungsplätze erfolgt zentral durch das Amt für Kinder, Jugend und Familie.
+      - id: free-carriers
+        states: Kitas not run by the city (free carriers) mostly hand out their places themselves
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Die Platzvergabe bei Einrichtungen in freier Trägerschaft erfolgt überwiegend dezentral in der jeweiligen Einrichtung.
+      - id: six-requests
+        states: You can hold up to six active requests per child per care year
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie können für jedes Kind bis zu sechs aktive Betreuungsanfragen pro Betreuungsjahr stellen.
+      - id: care-year
+        states: A care year runs from 1 August to 31 July
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Ein Betreuungsjahr beginnt immer am 1. August und endet am 31. Juli des Folgejahres.
+      - id: no-claim-to-reserved-place
+        states: A reservation does not give you a right to a place at that specific Kita
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie haben keinen Anspruch auf den vorgemerkten Betreuungsplatz in einer konkreten Einrichtung.
+      - id: city-kita-age
+        states: City-run Kitas only take children registered in Köln aged 1 to 6 years
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Einen Platz in einer städtischen Kindertageseinrichtung gibt es nur für in Köln gemeldete Kinder im Alter von 1 bis 6 Jahren.
+      - id: reserve-before-moving
+        states: You can reserve before you live in Köln
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Wenn Sie noch nicht in Köln wohnen, können Sie Ihr Kind schon vormerken lassen.
+      - id: erstwohnsitz
+        states: you only get an offer once at least one parent or guardian is registered with their main residence (Erstwohnsitz) in Köln
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Ein Platzangebot kann aber erst erfolgen, wenn mindestens ein Elternteil, eine Erziehungsberechtigte oder ein Erziehungsberechtigter mit Erstwohnsitz in Köln gemeldet ist.
+      - id: free-reservation
+        states: Reserving is free
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Für die Vormerkung werden keine Gebühren erhoben.
+      - id: income-based
+        states: the parent contribution depends on your income and the care time you choose
+        source: 'Stadt Köln — Elternbeiträge für Kindertageseinrichtungen und OGTS'
+        quote: orientiert sich an Ihrem Einkommen und an der von Ihnen gewählten Betreuungsdauer
+      - id: account-needed
+        states: Once you are registered in the parent portal, you can reserve your child at the Kita you prefer
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Wenn Sie im Elternportal registriert sind, haben Sie die Möglichkeit, Ihr Kind bei Ihrer bevorzugten Einrichtung vorzumerken.
+      - id: no-ranking
+        states: All your requests count the same; there is no ranking
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Nein, die Anfragen sind alle gleichwertig.
+      - id: other-place
+        states: if there is no place at the Kita you named, the city offers you another place or a place with a childminder
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Sollte in der von Ihnen genannten Kindertageseinrichtung kein Platz zur Verfügung stehen, unterbreiten wir Ihnen ein anderes Platzangebot oder bieten einen Platz in der Kindertagespflege an.
+      - id: offer-locks
+        states: When you get an offer, all your reservations for that care period are locked
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Durch das Platzangebot werden alle Ihre Vormerkungen, die in den Betreuungszeitraum fallen, gesperrt.
+      - id: two-weeks-to-answer
+        states: You have two weeks to accept or decline the offer in your profile
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie haben innerhalb von zwei Wochen die Möglichkeit, in Ihrem Profil das Platzangebot anzunehmen oder abzulehnen.
+      - id: decline-city-offer
+        states: If you decline an offer from a city-run Kita, your locked reservations at city-run Kitas stay switched off
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Lehnen Sie ein Platzangebot in einer städtischen Kindertageseinrichtung ab, gilt außerdem, dass alle durch das Platzangebot gesperrten Vormerkungen in städtischen Kindertageseinrichtungen auch nach der Ablehnung deaktiviert bleiben.
+      - id: request-again
+        states: if you still want them, you must request them again
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Bei weiterem Interesse müssen Sie diese erneut anfragen.
+      - id: after-rejection
+        states: If your requests are rejected, you can send further requests to other Kitas
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Wenn Ihre Betreuungsanfragen abgelehnt wurden, haben Sie die Möglichkeit, weitere Betreuungsanfragen bei anderen Einrichtungen zu stellen
+      - id: care-bands
+        states: Depending on what the Kita offers, you can choose a weekly care time of 25, 35 or 45 hours
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie können, je nach aktuellem Angebot der gewünschten Kindertagesstätte, eine wöchentliche Betreuungszeit von 25, 35 oder 45 Stunden auswählen.
+      - id: familienbuero
+        states: The city's Familienbüro helps with questions about childcare
+        source: 'Stadt Köln — Kinderbetreuung'
+        quote: Familienbüro – bei Fragen zur Kinderbetreuung
     description: |
-      Cologne allocates childcare through the LITTLE BIRD parent portal (not the
-      Kita-Navigator other NRW towns use). The legal right to a place starts at the
-      child's FIRST birthday — but places are scarce, so reserve in month one. Key
-      rules: reservations are only possible AFTER the birth (registering a due date is
-      pointless — allocation isn't first-come-first-served), you can hold up to 5
-      simultaneous non-binding reservations per care year, and at least one parent
-      needs their Erstwohnsitz registered in Köln. Care bands are 25/35/45 hours/week;
-      reserving is free, parent contributions are income-based.
+      Cologne hands out childcare places through the LITTLE BIRD parent portal.
+      You can reserve a place for your child right after the birth, online or in writing at the Kita.
+      You cannot send a request for an unborn child.
+
+      From age 1, children have a legal right (§24 SGB VIII) to a place in a Kita or with a childminder (Kindertagespflege).
+
+      Register your child as early as possible. You must state your child's care need at least six months before the start you want.
     phase: ongoing
     urgency: high
     deadline_type: none
     documents_required:
-      - label: LITTLE BIRD account (online registration)
-      - label: Child's birth certificate
-        from: le.child_permit
-      - label: Meldebescheinigung
+      - label: LITTLE BIRD account (only for online requests)
     links:
       - https://portal-koeln.little-bird.de/
-      - https://www.stadt-koeln.de/leben-in-koeln/familie-kinder/index.html
+      - https://www.stadt-koeln.de/service/produkt/vormerkung-eines-kindergartenplatzes
+      - https://www.stadt-koeln.de/artikel/65229/index.html
+      - https://www.stadt-koeln.de/leben-in-koeln/familie/betreuung
     how_to_steps:
-      - title: Reserve in month one — five Kitas, mixed carriers
-        body: Spread your 5 reservations across municipal and free-carrier Kitas, near home AND near work. A municipal offer comes with an acceptance window; if everything is rejected centrally, re-reserve (Wiedervormerkung).
-      - title: Know your care band
-        body: 25, 35 or 45 hours/week — pick what you'll actually need; it affects allocation and the income-based contribution.
-      - title: Stuck? The Elternbüro helps
-        body: The Elternbüro of the Amt für Kinder, Jugend und Familie is the human escalation path when the portal gets you nowhere.
+      - title: Check who can get a place
+        body: City-run Kitas only take children registered in Köln aged 1 to 6 years. You can reserve before you live in Köln, but you only get an offer once at least one parent or guardian is registered with their main residence (Erstwohnsitz) in Köln.
+      - title: Register and send your requests
+        body: Once you are registered in the parent portal, you can reserve your child at the Kita you prefer. You can hold up to six active requests per child per care year. A care year runs from 1 August to 31 July. All your requests count the same; there is no ranking. A reservation does not give you a right to a place at that specific Kita.
+      - title: Ask city-run and free-carrier Kitas
+        body: The city's Amt für Kinder, Jugend und Familie hands out places in city-run Kitas centrally. Kitas not run by the city (free carriers) mostly hand out their places themselves, so send requests to them too. Choose Kitas near home and near work. For a city-run Kita, if there is no place at the Kita you named, the city offers you another place or a place with a childminder.
+      - title: Answer an offer in time
+        body: When you get an offer, all your reservations for that care period are locked. You have two weeks to accept or decline the offer in your profile. If you decline an offer from a city-run Kita, your locked reservations at city-run Kitas stay switched off; if you still want them, you must request them again.
+      - title: If a Kita says no
+        body: If your requests are rejected, you can send further requests to other Kitas.
+      - title: Know your care time and costs
+        body: Depending on what the Kita offers, you can choose a weekly care time of 25, 35 or 45 hours. Reserving is free; the parent contribution depends on your income and the care time you choose.
+      - title: Questions? Ask the Familienbüro
+        body: The city's Familienbüro helps with questions about childcare. See the city's childcare page in the links.
 
-  - title: Apply for Elterngeld — within 3 months of the birth
+  - title: Apply for Elterngeld — back pay covers only three months
     key: le.elterngeld
     trigger: child_born
     depends_on: []
-    verified_at: 2026-06-12
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§1 BEEG — Berechtigte', url: 'https://www.gesetze-im-internet.de/beeg/__1.html'}
+      - {kind: primary, label: '§7 BEEG — Antragstellung', url: 'https://www.gesetze-im-internet.de/beeg/__7.html'}
+      - {kind: implementation, label: 'Stadt Köln — Elterngeld', url: 'https://www.stadt-koeln.de/service/produkte/00793/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Eltern-Geld (Leichte Sprache)', url: 'https://www.stadt-koeln.de/artikel/65180/index.html'}
+    claims:
+      - id: title-back-pay
+        states: back pay covers only three months
+        source: 'Stadt Köln — Elterngeld'
+        quote: Rückwirkend werden Zahlungen jedoch nur für die letzten drei Monate vor Beginn des Monats geleistet, in dem der Antrag auf Elterngeld eingegangen ist.
+      - id: deadline
+        covers: deadline
+        source: 'Stadt Köln — Elterngeld'
+        quote: Rückwirkend werden Zahlungen jedoch nur für die letzten drei Monate vor Beginn des Monats geleistet, in dem der Antrag auf Elterngeld eingegangen ist.
+      - id: cologne-only
+        states: which only takes applications from people living in Cologne
+        source: 'Stadt Köln — Elterngeld'
+        quote: 'Die Anträge auf Elterngeld nehmen wir nur von Kölner*innen entgegen.'
+      - id: apply-online
+        states: You can apply online
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Sie können das Elterngeld auch im Internet beantragen.
+      - id: paper-form
+        states: fill in a paper form
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Ein Papier-Formular ausfüllen und unterschreiben
+      - id: from-birth
+        states: You can only apply from the day of the birth
+        source: 'Stadt Köln — Elterngeld'
+        quote: Den Antrag auf Elterngeld können Sie grundsätzlich erst ab dem Tag der Geburt des Kindes stellen.
+      - id: back-pay
+        states: back payments are made only for the last three months before the month in which your application arrives
+        source: 'Stadt Köln — Elterngeld'
+        quote: Rückwirkend werden Zahlungen jedoch nur für die letzten drei Monate vor Beginn des Monats geleistet, in dem der Antrag auf Elterngeld eingegangen ist.
+      - id: income-limit
+        states: No Elterngeld if your taxable income was over €175,000
+        source: 'Stadt Köln — Elterngeld'
+        quote: Die Einkommensgrenze, ab der Eltern keinen Anspruch mehr auf Elterngeld haben, wird für Paare und Alleinerziehende für Geburten ab dem 1. April 2024 auf 200.000 Euro zu versteuerndes Einkommen und für Geburten ab dem 1. April 2025 auf 175.000 Euro zu versteuerndes Einkommen festgelegt.
+      - id: income-year
+        states: What counts is the last completed tax year before the birth
+        source: '§1 BEEG — Berechtigte'
+        quote: im letzten abgeschlossenen Veranlagungszeitraum vor der Geburt des Kindes
+      - id: both-incomes
+        states: if you have a partner who also qualifies, both incomes are added together
+        source: '§1 BEEG — Berechtigte'
+        quote: Erfüllt auch eine andere Person die Voraussetzungen des Absatzes 1 Satz 1 Nummer 2 oder der Absätze 3 oder 4, entfällt abweichend von Satz 1 der Anspruch, wenn die Summe des zu versteuernden Einkommens beider Personen
+      - id: special-copy
+        states: special birth-certificate copy titled "Zur Beantragung von Elterngeld"
+        source: 'Stadt Köln — Elterngeld'
+        quote: 'In der Überschrift steht der Zusatz "Zur Beantragung von Elterngeld".'
+      - id: send-original
+        states: The original of the special birth-certificate copy
+        source: 'Stadt Köln — Elterngeld'
+        quote: Für den Elterngeldantrag gibt es eine spezielle Ausfertigung der Geburtsurkunde, die im Original einzureichen ist.
+      - id: if-mutterschaftsgeld
+        states: If you got maternity pay (Mutterschaftsgeld)
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Wenn Sie Mutterschafts-Geld bekommen haben, müssen Sie uns einen Nachweis von der Kranken-Kasse zeigen.
+      - id: full-period
+        states: Covering the full period before and after the birth
+        source: 'Stadt Köln — Elterngeld'
+        quote: Fügen Sie einen Nachweis der Krankenkasse über das Mutterschaftsgeld für den vollständigen Zeitraum vor und nach der Geburt an Ihren Antrag.
+      - id: if-top-up
+        states: If your employer topped up your maternity pay
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Wenn Sie einen Zuschuss von Ihrem Chef bekommen haben,
+      - id: top-up-payslips
+        states: Or payslips covering the entire maternity protection period (Mutterschutz)
+        source: 'Stadt Köln — Elterngeld'
+        quote: Alternativ können Sie die Gehaltsabrechnungen für den gesamten Zeitraum der Mutterschutzfrist einreichen.
+      - id: mothers-payslips
+        states: 'Mothers: the last 14 payslips'
+        source: 'Stadt Köln — Elterngeld'
+        quote: 14 Gehaltsabrechnungen vor dem Geburtsmonat
+      - id: fathers-payslips
+        states: 'Fathers: the last 12 payslips'
+        source: 'Stadt Köln — Elterngeld'
+        quote: 12 Gehaltsabrechnungen vor dem Geburtsmonat
+      - id: self-employed-proof
+        states: the relevant tax assessment or records of business income and expenses
+        source: 'Stadt Köln — Elterngeld'
+        quote: Steuerbescheid für das Jahr 2021 oder Nachweise über die Betriebseinnahmen und –ausgaben gemäß Paragraph 4 Absatz 3 Einkommenssteuergesetz (EStG)
+      - id: self-employed-forms
+        states: Also fill in the extra forms for the self-employed
+        source: 'Stadt Köln — Elterngeld'
+        quote: Selbstständige müssen ergänzend die Zusatzformulare für Selbstständige ausfüllen.
+      - id: mixed-income
+        states: Mixed income needs proof for both kinds of income
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: dann brauchen wir die Einkommens-Nachweise für beide Einkommens-Arten.
+      - id: residence-title-doc
+        states: 'Non-EU citizens: a valid residence title including the supplementary sheet'
+        source: 'Stadt Köln — Elterngeld'
+        quote: Wenn Sie aus einem Staat kommen, der nicht zur Europäischen Union gehört, ist ein gültiger Aufenthaltstitel inklusive Zusatzblatt beizufügen.
+      - id: prepare-online
+        states: You can start the online application before the birth
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Und Sie können den Antrag schon vor der Geburt von Ihrem Kind anlegen.
+      - id: save-portal
+        states: save it at any time in the Familienportal
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Sie können Ihren Antrag jederzeit im Familien-Portal speichern.
+      - id: signature-page
+        states: send the signed signature page with your documents to the Elterngeldstelle
+        source: 'Stadt Köln — Elterngeld'
+        quote: Bitte senden Sie die unterschriebene Unterschriftsseite zusammen mit den erforderlichen Unterlagen an die Elterngeldstelle der Stadt Köln.
+      - id: both-sign
+        states: both parents must sign
+        source: 'Stadt Köln — Eltern-Geld (Leichte Sprache)'
+        quote: Ist der Antrag von beiden Eltern-Teilen unterschrieben?
+      - id: choose-months
+        states: In the form you choose for which months of your child's life you take basic Elterngeld (Basiselterngeld), ElterngeldPlus or the partnership bonus (Partnerschaftsbonus)
+        source: '§7 BEEG — Antragstellung'
+        quote: Im Antrag ist anzugeben, für welche Lebensmonate Basiselterngeld, für welche Lebensmonate Elterngeld Plus oder für welche Lebensmonate Partnerschaftsbonus beantragt wird.
+      - id: non-eu-titles
+        states: without EU free-movement rights can only get Elterngeld with certain titles
+        source: '§1 BEEG — Berechtigte'
+        quote: Ein nicht freizügigkeitsberechtigter Ausländer oder eine nicht freizügigkeitsberechtigte Ausländerin ist nur anspruchsberechtigt, wenn diese Person
+      - id: settlement-permit
+        states: for example a settlement permit
+        source: '§1 BEEG — Berechtigte'
+        quote: eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt-EU besitzt
+      - id: six-months-work
+        states: an EU Blue Card or a residence permit that allows work for at least six months
+        source: '§1 BEEG — Berechtigte'
+        quote: eine Blaue Karte EU, eine ICT-Karte, eine Mobiler-ICT-Karte oder eine Aufenthaltserlaubnis besitzt, die für einen Zeitraum von mindestens sechs Monaten zur Ausübung einer Erwerbstätigkeit berechtigen oder berechtigt haben oder diese erlauben
+      - id: never-count
+        states: permits for au-pair or seasonal work
+        source: '§1 BEEG — Berechtigte'
+        quote: nach § 19c Absatz 1 des Aufenthaltsgesetzes zum Zweck der Beschäftigung als Au-Pair oder zum Zweck der Saisonbeschäftigung
+      - id: study-job-search
+        states: only if you work, take parental leave (Elternzeit) or get certain job-agency benefits
+        source: '§1 BEEG — Berechtigte'
+        quote: und die Person ist weder erwerbstätig noch nimmt sie Elternzeit nach § 15 dieses Gesetzes oder laufende Geldleistungen nach dem Dritten Buch Sozialgesetzbuch in Anspruch
+      - id: war-permits
+        states: granted because of a war in your home country
+        source: '§1 BEEG — Berechtigte'
+        quote: nach § 23 Absatz 1 des Aufenthaltsgesetzes wegen eines Krieges im Heimatland dieser Person
     description: |
-      Parental allowance is applied for at Cologne's Elterngeldstelle — online via
-      Familienportal.NRW (guided form) or by PDF. You can only apply AFTER the birth,
-      and it's paid retroactively for at most 3 months — so the real deadline is the
-      end of the third life month. Good news: everything except the birth certificate
-      can be prepared during pregnancy.
+      You apply at Cologne's Elterngeld office (Elterngeldstelle), which only takes applications from people living in Cologne.
+      You can apply online, or fill in a paper form.
+      You can only apply from the day of the birth, and
+      back payments are made only for the last three months before the month in which your application arrives, so don't wait.
+      No Elterngeld if your taxable income was over €175,000.
+      What counts is the last completed tax year before the birth; if you have a partner who also qualifies, both incomes are added together.
     phase: ongoing
     urgency: critical
     deadline_type: days_since_event
-    deadline_days: 90
+    deadline_days: 89
     documents_required:
-      - label: 'The special birth-certificate copy titled "Zur Beantragung von Elterngeld"'
-        note: The Standesamt issues several purpose-bound copies — mailing the wrong one is the classic delay.
+      - label: 'The original of the special birth-certificate copy titled "Zur Beantragung von Elterngeld"'
+        note: Send your application as soon as it arrives.
         tone: warn
-      - label: Krankenkasse certificate on Mutterschaftsgeld
+      - label: 'If you got maternity pay (Mutterschaftsgeld): a certificate from your health insurer (Krankenkasse)'
         note: Covering the full period before and after the birth.
-      - label: Employer certificate on the Mutterschaftsgeld top-up
-        note: Or payslips covering the entire Mutterschutz period.
-      - label: 12 payslips from the year before the birth (employees)
-        note: 'Self-employed: the last tax assessment or §4(3) EStG profit records instead; mixed income needs both sets.'
+      - label: 'If your employer topped up your maternity pay: their certificate on the top-up'
+        note: Or payslips covering the entire maternity protection period (Mutterschutz).
+      - label: 'Employees: payslips from before the month of birth'
+        note: 'Mothers: the last 14 payslips. Fathers: the last 12 payslips.'
+      - label: 'Self-employed: the relevant tax assessment or records of business income and expenses'
+        note: Also fill in the extra forms for the self-employed. Mixed income needs proof for both kinds of income.
+      - label: 'Non-EU citizens: a valid residence title including the supplementary sheet (Zusatzblatt)'
     links:
-      - https://www.familienportal.nrw/
+      - https://www.stadt-koeln.de/service/produkte/00793/index.html
+      - https://familienportal.nrw/elterngeld
+      - https://www.gesetze-im-internet.de/beeg/__1.html
     how_to_steps:
-      - title: Prepare the pack during pregnancy
-        body: Everything except the birth certificate can sit ready in a folder. The day the certificate arrives, you file.
-      - title: Decide the partner months with the official planner
-        body: Basis-Elterngeld vs ElterngeldPlus and the partner-month split is a real decision — use the official planner; we never recommend a split.
-      - title: Non-EU parents — check your title first
-        body: Eligibility depends on your residence title permitting work. If your permit is restricted, check with the Elterngeldstelle before planning around the money.
+      - title: Get ready during pregnancy
+        body: Gather the documents you already can, such as payslips, in one folder. You can start the online application before the birth and save it at any time in the Familienportal.
+      - title: Send it as soon as the birth certificate arrives
+        body: 'You can only apply from the day of the birth. Send your application as soon as you have the special birth-certificate copy. If you applied online, then send the signed signature page with your documents to the Elterngeldstelle. Couples: both parents must sign.'
+      - title: Choose your months in the application
+        body: In the form you choose for which months of your child's life you take basic Elterngeld (Basiselterngeld), ElterngeldPlus or the partnership bonus (Partnerschaftsbonus). This choice is yours; we don't recommend any split.
+      - title: Non-EU citizens — check your residence title first
+        body: |
+          Non-EU citizens without EU free-movement rights can only get Elterngeld with certain titles.
+          Counts: for example a settlement permit, an EU Blue Card or a residence permit that allows work for at least six months.
+          Never counts, for example: permits for au-pair or seasonal work.
+          Some permits, such as study or some job-search permits, count only if you work, take parental leave (Elternzeit) or get certain job-agency benefits.
+          Extra conditions apply to others, for example permits granted because of a war in your home country.
+          If unsure, ask the Elterngeldstelle before planning around the money.
 
   - title: Apply for Kindergeld
     key: le.kindergeld
@@ -127,62 +554,242 @@ tasks:
     applies_if:
       purpose: [employment, study, freelance, digital_nomad, other]
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§62 EStG — Anspruchsberechtigte', url: 'https://www.gesetze-im-internet.de/estg/__62.html'}
+      - {kind: primary, label: '§64 EStG — Zusammentreffen mehrerer Ansprüche', url: 'https://www.gesetze-im-internet.de/estg/__64.html'}
+      - {kind: primary, label: '§66 EStG — Höhe des Kindergeldes, Zahlungszeitraum', url: 'https://www.gesetze-im-internet.de/estg/__66.html'}
+      - {kind: primary, label: '§70 EStG — Festsetzung und Zahlung des Kindergeldes', url: 'https://www.gesetze-im-internet.de/estg/__70.html'}
+      - {kind: implementation, label: 'BZSt — Professional Supervision of the Family Benefits Offices', url: 'https://www.bzst.de/EN/Private_individuals/Supervision_family_benefits_offices/supervision_family_benefits_offices_node.html'}
+    claims:
+      - id: amount
+        states: Kindergeld is paid monthly for each child
+        source: '§66 EStG — Höhe des Kindergeldes, Zahlungszeitraum'
+        quote: Das Kindergeld beträgt monatlich für jedes Kind 259 Euro.
+      - id: paid-by-familienkasse
+        states: paid by the Familienkasse
+        source: '§70 EStG — Festsetzung und Zahlung des Kindergeldes'
+        quote: Das Kindergeld nach § 62 wird von den Familienkassen durch Bescheid festgesetzt und ausgezahlt.
+      - id: familienkasse-agency
+        states: part of the Federal Employment Agency
+        source: 'BZSt — Professional Supervision of the Family Benefits Offices'
+        quote: the family benefits offices of the Federal Employment Agency
+      - id: lives-in-germany
+        states: In general, anyone who lives in Germany can get it
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: im Inland einen Wohnsitz oder seinen gewöhnlichen Aufenthalt hat
+      - id: eu-first-three-months
+        states: EU/EEA citizens who move here can't get it for the first three months
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: so hat er für die ersten drei Monate ab Begründung des Wohnsitzes oder des gewöhnlichen Aufenthalts keinen Anspruch auf Kindergeld
+      - id: eu-income-exception
+        states: unless they show they earn income in Germany, for example from a job or a business
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: Dies gilt nicht, wenn er nachweist, dass er inländische Einkünfte im Sinne des § 2 Absatz 1 Satz 1 Nummer 1 bis 4 mit Ausnahme von Einkünften nach § 19 Absatz 1 Satz 1 Nummer 2 erzielt.
+      - id: non-eu-permits-only
+        states: Non-EU citizens without EU free-movement rights can get it only with certain residence permits
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: Ein nicht freizügigkeitsberechtigter Ausländer erhält Kindergeld nur, wenn er
+      - id: settlement-permit
+        states: a settlement permit (Niederlassungserlaubnis)
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt-EU besitzt
+      - id: blue-card-work-permit
+        states: an EU Blue Card, or a residence permit that allows you to work for at least six months
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: eine Blaue Karte EU, eine ICT-Karte, eine Mobiler-ICT-Karte oder eine Aufenthaltserlaubnis besitzt, die für einen Zeitraum von mindestens sechs Monaten zur Ausübung einer Erwerbstätigkeit berechtigen
+      - id: study-permit
+        states: With a study or job-search permit
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: zum Zweck eines Studiums
+      - id: job-search-permit
+        states: job-search permit
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: zur Suche nach einer Erwerbstätigkeit
+      - id: study-job-search-condition
+        states: you only qualify if you also work, are on parental leave (Elternzeit) or get unemployment-insurance payments
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: und er ist weder erwerbstätig noch nimmt er Elternzeit nach § 15 des Bundeselterngeld- und Elternzeitgesetzes oder laufende Geldleistungen nach dem Dritten Buch Sozialgesetzbuch in Anspruch
+      - id: backdating
+        states: Payments are backdated only for the six months before the month your application arrives
+        source: '§70 EStG — Festsetzung und Zahlung des Kindergeldes'
+        quote: Die Auszahlung von festgesetztem Kindergeld erfolgt rückwirkend nur für die letzten sechs Monate vor Beginn des Monats, in dem der Antrag auf Kindergeld eingegangen ist.
+      - id: both-steuer-ids
+        states: You need the Steuer-ID of both the child and the applicant
+        source: 'BZSt — Professional Supervision of the Family Benefits Offices'
+        quote: of the child and the applicant is required for the application
+      - id: applicant-steuer-id
+        states: must be identified by their own Steuer-ID
+        source: '§62 EStG — Anspruchsberechtigte'
+        quote: dass der Berechtigte durch die an ihn vergebene Identifikationsnummer (§ 139b der Abgabenordnung) identifiziert wird
+      - id: one-person-per-child
+        states: Only one person is paid Kindergeld for each child
+        source: '§64 EStG — Zusammentreffen mehrerer Ansprüche'
+        quote: Für jedes Kind wird nur einem Berechtigten Kindergeld gezahlt.
+      - id: parents-decide
+        states: they decide between themselves who that is
+        source: '§64 EStG — Zusammentreffen mehrerer Ansprüche'
+        quote: so bestimmen diese untereinander den Berechtigten
+      - id: online-or-writing
+        states: submitted online via the eServices of the Familienkasse or in writing
+        source: 'BZSt — Professional Supervision of the Family Benefits Offices'
+        quote: The application can be submitted online via the eServices of the family benefits office or in writing to the responsible family benefits office.
     description: |
-      {{figure:kindergeld_monthly}} per child, paid by the Familienkasse (separate from the tax office),
-      for most residents regardless of income. Payments are backdated at most 6 months
-      — apply once the child's Steuer-ID arrives.
+      Kindergeld is paid monthly for each child: {{figure:kindergeld_monthly}}.
+      It is paid by the Familienkasse (part of the Federal Employment Agency).
+      In general, anyone who lives in Germany can get it. Check the first step to see if you qualify.
+      Payments are backdated only for the six months before the month your application arrives, so apply without delay.
+      You need the Steuer-ID of both the child and the applicant.
     phase: ongoing
     urgency: high
     deadline_type: none
     documents_required:
       - label: "Child's Steuer-ID"
-        note: Arrives by post a few weeks after the child's registration — you can't file without it.
-      - label: Birth certificate
-        from: le.child_permit
-      - label: Meldebescheinigung
+        note: Required for the application.
+      - label: Your own Steuer-ID
+        note: The parent who applies must be identified by their own Steuer-ID.
       - label: Residence permit(s), if non-EU
+        note: Only certain residence permits give entitlement (see the first step).
     links:
       - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld
+      - https://www.gesetze-im-internet.de/estg/__62.html
+      - https://www.bzst.de/EN/Private_individuals/Supervision_family_benefits_offices/supervision_family_benefits_offices_node.html
     how_to_steps:
-      - title: File online via the Familienkasse portal
-        body: One application per family; processing takes 6–10 weeks and payments arrive backdated.
-      - title: Use your salary account
-        body: The Familienkasse pays into a single household account.
+      - title: Check who qualifies
+        body: EU/EEA citizens who move here can't get it for the first three months, unless they show they earn income in Germany, for example from a job or a business. Non-EU citizens without EU free-movement rights can get it only with certain residence permits, for example a settlement permit (Niederlassungserlaubnis), an EU Blue Card, or a residence permit that allows you to work for at least six months. With a study or job-search permit, you only qualify if you also work, are on parental leave (Elternzeit) or get unemployment-insurance payments.
+      - title: Decide which parent applies
+        body: Only one person is paid Kindergeld for each child. If both parents live with the child, they decide between themselves who that is.
+      - title: Apply online or in writing
+        body: The application can be submitted online via the eServices of the Familienkasse or in writing to your Familienkasse.
 
-  - title: Apply for your 18-month job-search permit (§20 Abs. 3)
+  - title: Apply for your job-search permit after graduating (§20 AufenthG)
     key: le.job_search_permit
     trigger: graduated
     eu_filter: non_eu_only
     applies_if:
       purpose: [study]
     depends_on: []
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§20 AufenthG — Arbeitsplatzsuche im Anschluss an Aufenthalte im Bundesgebiet', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20.html'}
+      - {kind: primary, label: '§2 AufenthG — Begriffsbestimmungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__2.html'}
+      - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§18b AufenthG — Fachkräfte mit akademischer Ausbildung', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18b.html'}
+      - {kind: primary, label: '§190 SGB V', url: 'https://www.gesetze-im-internet.de/sgb_5/__190.html'}
+      - {kind: implementation, label: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Informationen zu Fiktionsbescheinigungen', url: 'https://www.stadt-koeln.de/artikel/71447/index.html'}
+      - {kind: implementation, label: 'BAMF — Fachkräfte mit akademischer Ausbildung', url: 'https://www.bamf.de/DE/Themen/MigrationAufenthalt/ZuwandererDrittstaaten/Arbeit/Hochschulabsolvent/hochschulabsolvent-node.html'}
+    claims:
+      - id: title-law
+        states: job-search permit after graduating (§20 AufenthG)
+        source: '§20 AufenthG — Arbeitsplatzsuche im Anschluss an Aufenthalte im Bundesgebiet'
+        quote: wird einem Ausländer nach erfolgreichem Abschluss eines Studiums im Bundesgebiet im Rahmen eines Aufenthalts nach § 16b oder § 16c eine Aufenthaltserlaubnis erteilt
+      - id: duration
+        states: a residence permit of up to 18 months
+        source: '§20 AufenthG — Arbeitsplatzsuche im Anschluss an Aufenthalte im Bundesgebiet'
+        quote: für einen Zeitraum von bis zu 18 Monaten erteilt
+      - id: qualified-job
+        states: to find a job that matches your qualification
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Diese Zeit können Sie nutzen, um einen Arbeitsplatz zu finden, der Ihrer Qualifikation entspricht.
+      - id: may-work
+        states: You may work during this time
+        source: 'BAMF — Fachkräfte mit akademischer Ausbildung'
+        quote: Sie dürfen während dieser Zeit arbeiten.
+      - id: no-extension
+        states: The permit cannot be extended
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Eine Verlängerung der Aufenthaltserlaubnis zur Arbeitsplatzsuche ist nicht möglich.
+      - id: livelihood
+        states: your living costs must be covered for the whole time
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Ihr Lebensunterhalt muss während der gesamten Dauer der Aufenthaltserlaubnis gesichert sein.
+      - id: apply-before
+        states: Apply before your student permit expires
+        source: 'Stadt Köln — Informationen zu Fiktionsbescheinigungen'
+        quote: Wenn Sie rechtzeitig einen Antrag auf Verlängerung oder einen neuen Aufenthaltstitel gestellt haben, das heißt vor Ablauf der Befristung
+      - id: permit-continues
+        states: your current permit counts as continuing until a decision is made
+        source: '§81 AufenthG'
+        quote: gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
+      - id: fiktion
+        states: A Fiktionsbescheinigung is temporary proof that you may stay in Germany while your application is processed
+        source: 'Stadt Köln — Informationen zu Fiktionsbescheinigungen'
+        quote: Die Fiktionsbescheinigung ist ein vorübergehender Nachweis, dass Sie während der Bearbeitung Ihres Antrags auf Aufenthaltstitel weiterhin in Deutschland bleiben dürfen.
+      - id: self-employment
+        states: you can also use the permit to build up self-employed or freelance work
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Sie haben außerdem die Möglichkeit sich während der Dauer der Aufenthaltserlaubnis eine selbstständige oder freiberufliche Tätigkeit aufzubauen.
+      - id: not-linked
+        states: The job you find does not have to be linked to your degree
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Ab diesem Zeitpunkt muss die von Ihnen gefundene Arbeitsstelle keinen Zusammenhang mit Ihrem Studienabschluss erkennen lassen.
+      - id: switch-options
+        states: meet the requirements for a permit as a skilled worker with an academic degree or for the EU Blue Card, among others
+        source: 'Stadt Köln — Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Es genügt, wenn Sie die Voraussetzungen zum Erhalt einer Aufenthaltserlaubnis als Fachkraft mit akademischer Ausbildung, zur Forschung, als Beamter oder die Voraussetzungen der Blauen Karte
+      - id: skilled-worker-18b
+        states: The skilled-worker permit (§18b AufenthG) is for any qualified job
+        source: '§18b AufenthG — Fachkräfte mit akademischer Ausbildung'
+        quote: Einer Fachkraft mit akademischer Ausbildung wird eine Aufenthaltserlaubnis zur Ausübung jeder qualifizierten Beschäftigung erteilt.
+      - id: blue-card-salary
+        states: With a certain minimum salary you are entitled to an EU Blue Card
+        source: 'BAMF — Fachkräfte mit akademischer Ausbildung'
+        quote: Wenn Sie ein bestimmtes Mindestgehalt erhalten, haben Sie einen Rechtsanspruch auf die Erteilung einer Blauen Karte
+      - id: doc-degree
+        states: Proof that you successfully completed your studies in Germany
+        source: 'BAMF — Fachkräfte mit akademischer Ausbildung'
+        quote: Haben Sie Ihr Studium in Deutschland erfolgreich abgeschlossen
+      - id: doc-livelihood
+        states: Proof that you can cover your living costs
+        source: '§20 AufenthG — Arbeitsplatzsuche im Anschluss an Aufenthalte im Bundesgebiet'
+        quote: Die Erteilung einer Aufenthaltserlaubnis nach Absatz 1 setzt die Lebensunterhaltssicherung voraus.
+      - id: doc-insurance
+        states: Proof of adequate health insurance
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: einschließlich ausreichenden Krankenversicherungsschutzes ohne Inanspruchnahme öffentlicher Mittel
+      - id: insurance-part-of-livelihood
+        states: Health insurance counts as part of your living costs
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: Der Lebensunterhalt eines Ausländers ist gesichert, wenn er ihn einschließlich ausreichenden Krankenversicherungsschutzes ohne Inanspruchnahme öffentlicher Mittel bestreiten kann.
+      - id: student-insurance-ends
+        states: Your statutory student health insurance ends at the end of the last semester you enrolled for
+        source: '§190 SGB V'
+        quote: Die Mitgliedschaft versicherungspflichtiger Studenten endet mit Ablauf des Semesters, für das sie sich zuletzt eingeschrieben oder zurückgemeldet haben
     description: |
-      After completing your German degree you can get a residence permit of up to 18
-      months to find a qualified job — with unrestricted work allowed while you search.
-      Apply before your student permit expires. Practical tips: the degree certificate
-      often arrives months late, but the university's official confirmation of
-      completion suffices — and your health insurance leaves the student rate after
-      exmatriculation, so budget for the jump.
+      After completing your degree in Germany you can get a residence permit of up to 18 months
+      to find a job that matches your qualification.
+      You may work during this time.
+      The permit cannot be extended, and your living costs must be covered for the whole time.
+      Apply before your student permit expires.
     phase: ongoing
     urgency: critical
     deadline_type: none
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Application form (online 33-F06/F07)
-      - label: Passport + biometric photo
-      - label: Degree certificate OR university confirmation of completion
-        note: The confirmation letter is accepted — don't wait months for the printed certificate.
-      - label: Proof of health insurance
-        note: No longer the student rate after exmatriculation — expect the cost jump.
+      - label: Proof that you successfully completed your studies in Germany
+      - label: Proof of adequate health insurance
+        note: Health insurance counts as part of your living costs. Your statutory student health insurance ends at the end of the last semester you enrolled for, so arrange your new cover in time and budget for its cost.
         tone: warn
-      - label: Livelihood proof (bank statements or a part-time contract)
-      - label: Housing proof (Mietvertrag)
+      - label: Proof that you can cover your living costs
     links:
-      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.stadt-koeln.de/service/produkte/00973/index.html
+      - https://www.stadt-koeln.de/service/onlinedienste/auslaenderamt/index.html
+      - https://www.bamf.de/DE/Themen/MigrationAufenthalt/ZuwandererDrittstaaten/Arbeit/Hochschulabsolvent/hochschulabsolvent-node.html
     how_to_steps:
-      - title: Apply before the student permit expires
-        body: File the online form while your current permit is valid — a Fiktionsbescheinigung bridges the processing time.
-      - title: Work without limits while you search
-        body: Unlike the student permit's 140-day account, the job-search permit allows unrestricted work.
-      - title: Found the job? Convert without leaving Germany
-        body: Switch to a skilled-worker permit (§18a/b) or Blue Card directly from this permit — salary decides which.
+      - title: Apply before your student permit expires
+        body: Apply while your current permit is still valid. If you applied in time, your current permit counts as continuing until a decision is made. A Fiktionsbescheinigung is temporary proof that you may stay in Germany while your application is processed, so ask the Ausländerbehörde about one.
+      - title: Work while you search
+        body: You may work during this time, and you can also use the permit to build up self-employed or freelance work.
+      - title: Found a job? Switch to a work permit
+        body: The job you find does not have to be linked to your degree. It is enough to meet the requirements for a permit as a skilled worker with an academic degree or for the EU Blue Card, among others. The skilled-worker permit (§18b AufenthG) is for any qualified job. With a certain minimum salary you are entitled to an EU Blue Card.

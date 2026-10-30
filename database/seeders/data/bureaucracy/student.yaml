@@ -85,7 +85,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§5 SGB V — Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__5.html'}
@@ -104,10 +104,22 @@ tasks:
         states: You can apply to a statutory health insurer to be exempted
         source: '§8 SGB V — Befreiung von der Versicherungspflicht'
         quote: durch die Einschreibung als Student oder die berufspraktische Tätigkeit
+      - id: exemption-needs-other-cover
+        states: only takes effect if you prove that you have other health cover
+        source: '§8 SGB V — Befreiung von der Versicherungspflicht'
+        quote: Die Befreiung wird nur wirksam, wenn das Mitglied das Bestehen eines anderweitigen Anspruchs auf Absicherung im Krankheitsfall nachweist.
+      - id: exemption-irrevocable
+        states: Once granted, you cannot withdraw the exemption
+        source: '§8 SGB V — Befreiung von der Versicherungspflicht'
+        quote: Die Befreiung kann nicht widerrufen werden.
       - id: proof-before-enrolment
         states: before you enrol you must prove your insurance status to your university
         source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
         quote: Jeder Studieninteressierte hat gegenüber der staatlichen oder staatlich anerkannten Hochschule vor der Einschreibung nachzuweisen, dass er in der gesetzlichen Krankenversicherung versichert ist
+      - id: proof-also-if-exempt
+        states: also if you are exempt or not compulsorily insured
+        source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
+        quote: dass er nicht gesetzlich versichert ist, weil er versicherungsfrei, von der Versicherungspflicht befreit oder nicht versicherungspflichtig ist
       - id: insurer-reports
         states: §199a SGB V
         source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
@@ -115,10 +127,13 @@ tasks:
     description: |
       Students enrolled at a state or state-recognised university are
       generally compulsorily insured in statutory health insurance up to the age of thirty, unless they are entitled to benefits through another country under EU or international rules (§5 SGB V).
+
       You can apply to a statutory health insurer to be exempted from this, applying within three months of compulsory insurance starting (§8 SGB V).
-      Either way, before you enrol you must prove your insurance status to your
-      university: a statutory health insurer reports it to the university at your
-      request, also if you are exempt or not compulsorily insured (§199a SGB V).
+      The exemption only takes effect if you prove that you have other health cover.
+      Once granted, you cannot withdraw the exemption.
+
+      Either way, before you enrol you must prove your insurance status to your university:
+      a statutory health insurer reports it to the university at your request, also if you are exempt or not compulsorily insured (§199a SGB V).
     phase: arrival
     urgency: critical
     deadline_type: none
@@ -140,7 +155,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§16b AufenthG — Studium', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html'}
@@ -172,9 +187,49 @@ tasks:
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
         quote: Immatrikulationsbescheinigung oder bedingte Hochschulzulassung
       - id: finance-alternatives
-        states: a Verpflichtungserklärung, a scholarship certificate, or your parents' declaration that they will fund your studies
+        states: a Verpflichtungserklärung (a sponsor's formal declaration of financial support), a scholarship certificate, or your parents' declaration that they will fund your studies
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
         quote: Verpflichtungserklärung / Stipendienbescheinigung / Erklärung der Eltern, für die Dauer des Studiums den Lebensunterhalt zu sichern
+      - id: doc-passport
+        states: Valid passport, with copies of all printed pages
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Gültiger Nationalpass (inklusive Kopien aller bedruckten Seiten)
+      - id: doc-photo
+        states: Digital biometric photo
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Digitales biometrisches Lichtbild
+      - id: doc-visa
+        states: Valid study visa, if you needed one to enter
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Gültiges Visum zur Einreise zum Zweck des Studiums, sofern erforderlich
+      - id: doc-admission
+        states: Enrolment certificate or conditional university admission
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Immatrikulationsbescheinigung oder bedingte Hochschulzulassung
+      - id: doc-prep-course
+        states: 'For a preparatory course: proof that you attend the language course'
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: 'bei Studienvorbereitung: Nachweis über den Besuch des studienvorbereitenden Sprachkurses'
+      - id: doc-studienkolleg
+        states: or an enrolment certificate from your Studienkolleg
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: oder Immatrikulationsbescheinigung über den Besuch des Studienkollegs
+      - id: prep-course-hours
+        states: at least 18 lessons per week
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: mindestens 18 Unterrichtsstunden pro Woche
+      - id: doc-study-plan
+        states: 'For degree study: your study plan (Studienverlaufsplan)'
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: 'beim Fachstudium: Studienverlaufsplan'
+      - id: doc-health-insurance
+        states: Proof of adequate health insurance
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Nachweise über einen ausreichenden Krankenversicherungsschutz
+      - id: doc-rental-contract
+        states: Copy of your rental contract
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Mietvertrag in Kopie
     description: |
       Non-EU students turn their entry visa into a residence permit for study under
       §16b AufenthG. Register your address in Cologne first, then apply (Erstantrag)
@@ -190,9 +245,18 @@ tasks:
       entry_mode: [d_visa, visa_free]
     documents_required:
       - label: Residence permit application (Erstantrag)
-        note: Apply online via the city page or book an appointment at your Bezirksausländeramt. A conditional university admission works if you're not enrolled yet.
+        note: Apply online via the city page or book an appointment at your district immigration office (Bezirksausländeramt).
+      - label: Valid passport, with copies of all printed pages
+      - label: Digital biometric photo
+      - label: Valid study visa, if you needed one to enter
+      - label: Enrolment certificate or conditional university admission
+      - label: 'For a preparatory course: proof that you attend the language course, or an enrolment certificate from your Studienkolleg (university foundation course)'
+        note: The language course must have at least 18 lessons per week.
+      - label: 'For degree study: your study plan (Studienverlaufsplan)'
       - label: 'Finance proof, for example a Sperrkonto with {{figure:sperrkonto_students}}'
-        note: Cologne also accepts a Verpflichtungserklärung, a scholarship certificate, or your parents' declaration that they will fund your studies.
+        note: Cologne also accepts a Verpflichtungserklärung (a sponsor's formal declaration of financial support), a scholarship certificate, or your parents' declaration that they will fund your studies.
+      - label: Proof of adequate health insurance
+      - label: Copy of your rental contract
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
@@ -209,7 +273,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-30.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§16b AufenthG — Studium', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html'}
@@ -219,14 +283,46 @@ tasks:
         states: work of up to 140 working days per year (§16b(3) AufenthG)
         source: '§16b AufenthG — Studium'
         quote: Die Aufenthaltserlaubnis berechtigt nach Maßgabe der folgenden Sätze nur zur Ausübung von Beschäftigungen, die insgesamt bis zu 140 Arbeitstage im Jahr nicht überschreiten dürfen (Arbeitstagekonto).
+      - id: book-appointment
+        states: Book an appointment at your Bezirksausländeramt
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Buchen Sie hierzu einen Termin in Ihrem Bezirksausländeramt.
+      - id: visa-period
+        states: within the period your visa allows
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: innerhalb des erlaubten Visumszeitraums
+      - id: visa-free-90-days
+        states: within 90 days if you entered visa-free
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: beziehungsweise innerhalb von 90 Tagen (bei Befreiung von der Visumpflicht) einen Aufenthaltstitel (Erstantrag).
+      - id: apply-deadline
+        covers: deadline
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: innerhalb von 90 Tagen (bei Befreiung von der Visumpflicht)
       - id: bring-documents
         states: Bring all the required documents to your appointment
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
         quote: Bringen Sie bitte alle benötigten Unterlagen zum Termin mit.
       - id: further-documents
-        states: the office can ask for further documents and give you another appointment
+        states: the office can ask for further documents
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
         quote: Im Einzelfall kann es erforderlich sein, dass im Termin weitere Unterlagen und Nachweise angefordert werden.
+      - id: another-appointment
+        states: another appointment
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Sie erhalten dann einen weiteren Termin durch die Mitarbeitenden.
+      - id: passport-copies
+        states: copies of all printed passport pages
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Gültiger Nationalpass (inklusive Kopien aller bedruckten Seiten)
+      - id: rental-contract-copy
+        states: a copy of your rental contract
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Mietvertrag in Kopie
+      - id: first-permit-finance
+        states: a first permit, for example a Sperrkonto at a German bank
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: 'Bei erstmaliger Erteilung: zum Beispiel Sperrkonto bei einer deutschen Bank'
       - id: language-course-hours
         states: at least 18 lessons per week
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
@@ -236,13 +332,16 @@ tasks:
         source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
         quote: dass ein Besuchsvisum nicht zur Erteilung einer Aufenthaltserlaubnis zu Studienzwecken führt
     description: |
-      Bring all the required documents to your appointment at the Bezirksausländeramt.
+      Book an appointment at your Bezirksausländeramt (district immigration office) and apply for your first residence permit
+      within the period your visa allows, or within 90 days if you entered visa-free.
+      Bring all the required documents to your appointment.
       In some cases the office can ask for further documents and give you another appointment.
       The permit covers your studies and allows work of up to 140 working days per year (§16b(3) AufenthG);
       the work card explains how days are counted.
     phase: first_30_days
     urgency: critical
-    deadline_type: none
+    deadline_type: permit_window
+    deadline_days: 90
     applies_if:
       citizenship_group: non_eu
       entry_mode: [d_visa, visa_free]
@@ -258,8 +357,8 @@ tasks:
         note: 'If you''re still in study preparation: proof of the preparatory language course with its length and weekly hours (at least 18 lessons per week), or your Studienkolleg enrolment certificate.'
       - label: Studienverlaufsplan (study plan), if already in degree study
         note: Renewals additionally need a certificate of orderly study progress.
-      - label: 'Finance proof, for example a Sperrkonto with {{figure:sperrkonto_students}}'
-        note: The blocked account confirmation, Verpflichtungserklärung, scholarship certificate or your parents' funding declaration.
+      - label: 'Finance proof, e.g. a Sperrkonto with {{figure:sperrkonto_students}}'
+        note: For a first permit, for example a Sperrkonto at a German bank. Bring the blocked account confirmation, Verpflichtungserklärung, scholarship certificate or your parents' funding declaration.
       - label: Proof of sufficient health insurance
         from: stu.health_insurance
         note: Renewals also need your insurer's confirmation of continuous cover.
@@ -267,8 +366,8 @@ tasks:
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
-      - title: Bring originals and copies of everything
-        body: Check the city's document list before the appointment. A missing document can mean a further appointment.
+      - title: Bring originals and the required copies
+        body: Check the city's document list before the appointment. Bring the originals of all required documents, plus copies of all printed passport pages and a copy of your rental contract. If the office needs further documents, you get another appointment.
         link: https://www.stadt-koeln.de/service/produkte/00973/index.html
 
   # Retired 2026-10-08: covered by core.steuer_id.
@@ -322,25 +421,23 @@ tasks:
       - title: Activate online banking + share IBAN with university
         body: For getting refunds (e.g., dropped courses) you'll need the IBAN on file with the registrar.
 
-  - title: Register with Studierendenwerk for housing + meals
+  - title: 'Studierendenwerk (student services): canteens, advice and student halls'
     key: stu.studierendenwerk
     depends_on: [stu.enrolment]
     description: |
-      Studierendenwerk Köln runs the dorms, mensa cards, and student support services.
-      Even if you live off-campus, your student ID gives you discounted meals at the
-      mensa — load it with the Studierendenwerk card.
+      The Studierendenwerk (student union, a student services organisation) funds university canteens (Mensa), advice services and student halls.
+      You pay for it through a social contribution in your semester fee.
     phase: settling
     urgency: low
     deadline_type: none
-    documents_required:
-      - Student ID
+    documents_required: []
     links:
       - https://www.kstw.de/
+      - https://www.make-it-in-germany.com/en/service/glossary/glossar/do/show/studierendenwerk
+      - https://www.make-it-in-germany.com/en/study-training/study/planning/arrival
     how_to_steps:
-      - title: Set up your mensa card
-        body: Either via your student ID directly (if your uni supports it) or by picking up a separate Studierendenwerk card.
-      - title: Top it up online
-        body: Most dorms have charging stations. Meals are €3–6 vs. €10+ outside.
+      - title: Apply for a room in a student hall early
+        body: Paying the semester fee does not get you a room. You have to look for one and apply yourself, so start as early as you can. Many students in Germany live in halls of residence, and the rooms are affordable. Look for a hall near your university. In Cologne, see kstw.de. The International Office at your university will also help you with your search.
 
   # Retired 2026-10-08: covered by core.rundfunkbeitrag.
   - title: Settle your Rundfunkbeitrag (or apply for exemption)
@@ -494,27 +591,122 @@ tasks:
   - title: Apply for BAföG (if eligible)
     key: stu.bafoeg
     depends_on: [stu.enrolment]
+    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    review_status: legacy
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§8 BAföG — Staatsangehörigkeit', url: 'https://www.gesetze-im-internet.de/baf_g/__8.html'}
+      - {kind: primary, label: '§15 BAföG — Förderungsdauer', url: 'https://www.gesetze-im-internet.de/baf_g/__15.html'}
+      - {kind: primary, label: '§46 BAföG — Antrag', url: 'https://www.gesetze-im-internet.de/baf_g/__46.html'}
+      - {kind: primary, label: '§50 BAföG — Bescheid', url: 'https://www.gesetze-im-internet.de/baf_g/__50.html'}
+    claims:
+      - id: federal-support
+        states: federal support for your education
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: Bundesgesetz über individuelle Förderung der Ausbildung
+      - id: need-minus-income
+        states: your need, minus your own income and assets and your parents' (and spouse's or partner's) income
+        source: '§50 BAföG — Bescheid'
+        quote: die Höhe der auf den Bedarf angerechneten Beträge von Einkommen und Vermögen des Auszubildenden sowie vom Einkommen seines Ehegatten oder Lebenspartners und seiner Eltern
+      - id: germans
+        states: German citizens qualify
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: Deutschen im Sinne des Grundgesetzes
+      - id: eu-permanent-residence
+        states: with a right of permanent residence
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: die ein Recht auf Daueraufenthalt im Sinne des Freizügigkeitsgesetzes/EU besitzen
+      - id: eu-workers
+        states: as workers or self-employed people
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: als Arbeitnehmer oder Selbständige unionsrechtlich freizügigkeitsberechtigt sind
+      - id: settlement-permit
+        states: Non-EU citizens qualify with a settlement permit or an EU long-term residence permit
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: Ausländern, die eine Niederlassungserlaubnis oder eine Erlaubnis zum Daueraufenthalt – EU nach dem Aufenthaltsgesetz besitzen
+      - id: other-permits
+        states: If you live in Germany permanently, certain other residence permits listed in the law also count
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: Anderen Ausländern wird Ausbildungsförderung geleistet, wenn sie ihren ständigen Wohnsitz im Inland haben
+      - id: fifteen-months
+        states: some only after 15 months in Germany
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: sich seit mindestens 15 Monaten in Deutschland ununterbrochen rechtmäßig, gestattet oder geduldet aufhalten
+      - id: own-five-years-work
+        states: you lived in Germany for a total of five years and worked lawfully before your course
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: sie selbst sich vor Beginn des förderungsfähigen Teils des Ausbildungsabschnitts insgesamt fünf Jahre im Inland aufgehalten haben und rechtmäßig erwerbstätig gewesen sind
+      - id: parent-three-of-six-years
+        states: a parent lived and worked lawfully here for a total of three years during the last six years before it
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: zumindest ein Elternteil während der letzten sechs Jahre vor Beginn des förderungsfähigen Teils des Ausbildungsabschnitts sich insgesamt drei Jahre im Inland aufgehalten hat und rechtmäßig erwerbstätig gewesen ist
+      - id: section-8
+        states: §8 BAföG
+        source: '§8 BAföG — Staatsangehörigkeit'
+        quote: Ausbildungsförderung wird geleistet
+      - id: paid-from-month
+        states: BAföG is paid from the start of the month you start your course, but at the earliest from the start of the month you apply
+        source: '§15 BAföG — Förderungsdauer'
+        quote: Ausbildungsförderung wird vom Beginn des Monats an geleistet, in dem die Ausbildung aufgenommen wird, frühestens jedoch vom Beginn des Antragsmonats an.
+      - id: no-back-pay
+        states: Months before you apply are not paid
+        source: '§15 BAföG — Förderungsdauer'
+        quote: frühestens jedoch vom Beginn des Antragsmonats an
+      - id: section-15
+        states: §15 BAföG
+        source: '§15 BAföG — Förderungsdauer'
+        quote: Ausbildungsförderung wird vom Beginn des Monats an geleistet
+      - id: written-or-online
+        states: Apply in writing or online
+        source: '§46 BAföG — Antrag'
+        quote: auf schriftlichen oder elektronischen Antrag entschieden
+      - id: responsible-office
+        states: to the BAföG office (Amt für Ausbildungsförderung) responsible for you
+        source: '§46 BAföG — Antrag'
+        quote: Der Antrag ist an das örtlich zuständige Amt für Ausbildungsförderung zu richten.
+      - id: official-forms
+        states: using the official forms
+        source: '§46 BAföG — Antrag'
+        quote: Die zur Feststellung des Anspruchs erforderlichen Tatsachen sind auf den Formblättern anzugeben
+      - id: one-year-approval
+        states: BAföG is usually granted for one year at a time
+        source: '§50 BAföG — Bescheid'
+        quote: Über die Ausbildungsförderung wird in der Regel für ein Jahr (Bewilligungszeitraum) entschieden.
+      - id: renew-two-months-before
+        states: Send your complete new application with the required proof at least two calendar months before your approval period ends
+        source: '§50 BAföG — Bescheid'
+        quote: wenn der neue Antrag im Wesentlichen vollständig zwei Kalendermonate vor Ablauf des Bewilligungszeitraums gestellt war und ihm die erforderlichen Nachweise beigefügt wurden
+      - id: payments-continue
+        states: you keep getting payments based on the old decision, but you may have to pay some back
+        source: '§50 BAföG — Bescheid'
+        quote: nach Maßgabe des früheren Bewilligungsbescheids unter dem Vorbehalt der Rückforderung geleistet
     description: |
-      Federal student aid for low-income students, including some non-EU students with
-      certain residence titles. The amount depends on your housing, insurance, income,
-      and family circumstances; use the official portal for the current calculation.
+      BAföG is federal support for your education while you study. Not every student qualifies, so check the conditions below first.
+      The amount depends on your need, minus your own income and assets and your parents' (and spouse's or partner's) income.
     phase: settling
-    urgency: medium
+    urgency: high
     deadline_type: none
-    documents_required:
-      - Immatrikulationsbescheinigung
-      - Income statements (yours + parents')
-      - Bank statements
-      - Tax IDs
+    documents_required: []
     links:
+      - https://www.gesetze-im-internet.de/baf_g/__8.html
       - https://www.bafoeg-digital.de/
     how_to_steps:
       - title: Check eligibility
-        body: German and EU citizens qualify, and non-EU students with a settlement permit, an EU long-term residence permit or certain other permits. Otherwise you qualify only after five years in Germany with lawful work of your own, or if a parent lived and worked lawfully here for three of the last six years (§8 BAföG). The official portal has an eligibility quiz.
-      - title: File online via bafoeg-digital.de
-        body: Fully digital application; takes 6–10 weeks to process. BAföG is paid from the month you apply at the earliest, never for months before (§15 BAföG), so apply in your first month.
-      - title: Submit yearly updates
-        body: BAföG is recalculated each year — keep income + enrolment docs ready every September.
+        body: |
+          - German citizens qualify.
+          - EU citizens qualify in certain cases, for example with a right of permanent residence or as workers or self-employed people.
+          - Non-EU citizens qualify with a settlement permit or an EU long-term residence permit.
+          - If you live in Germany permanently, certain other residence permits listed in the law also count, some only after 15 months in Germany.
+          - Otherwise you qualify only if you lived in Germany for a total of five years and worked lawfully before your course, or if a parent lived and worked lawfully here for a total of three years during the last six years before it (§8 BAföG).
+      - title: Apply before or in the month your course starts
+        body: BAföG is paid from the start of the month you start your course, but at the earliest from the start of the month you apply (§15 BAföG). Months before you apply are not paid, so don't wait.
+      - title: Send your application to the BAföG office
+        body: Apply in writing or online to the BAföG office (Amt für Ausbildungsförderung) responsible for you, using the official forms.
+      - title: Apply again each year
+        body: BAföG is usually granted for one year at a time (the approval period, Bewilligungszeitraum). Send your complete new application with the required proof at least two calendar months before your approval period ends. Then, if the new decision is late, you keep getting payments based on the old decision, but you may have to pay some back.
 
   - title: 'Your first tax return: you can file one yourself'
     key: stu.tax_return
