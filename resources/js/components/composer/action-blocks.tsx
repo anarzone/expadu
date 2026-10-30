@@ -1,5 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import { choices } from '@/components/paperwork/facts';
+import { Icon } from '@/components/ui/icon';
 
 /*
  * What Composer did, or would do, in the person's app (the "Composer does
@@ -56,16 +59,23 @@ export type ProposalBlock = {
     from?: string | null;
     to?: string | null;
     sub?: string | null;
-    token: string;
+    /** What Apply makes; none for a question answered by its choices (they save themselves). */
+    token?: string | null;
     area: Area;
     action?: string;
     /** Composer's own words for it. */
     text?: string;
     /** Until when it can be applied (24 hours). */
     until?: string | null;
-    /** The record row it changes, with its date, so "Change the date" edits it here. */
+    /** The record row it changes, so its date or choices change it here. */
     fact_key?: string | null;
-    edit?: { kind: 'date'; value: string } | null;
+    edit?: FactField | null;
+    /** "Not sure": plain lines that help, and the one answer to keep for now. */
+    unsure?: {
+        label: string;
+        lines: string[];
+        keep: { value: string; label: string } | null;
+    } | null;
 };
 
 export type RecordRow = {
@@ -74,9 +84,32 @@ export type RecordRow = {
     /** As the record says it: "National D visa", "1 Oct 2026". */
     value: string;
     note?: string | null;
-    /** A field the person can change here, in place; no value when it isn't answered yet. */
-    edit?: { kind: 'date'; value: string | null } | null;
+    /**
+     * How the person changes it here, in place; no value when it isn't answered yet.
+     * A choice comes as the answer's own options, worded here as Paperwork words them.
+     */
+    edit?:
+        | { kind: 'date'; value: string | null }
+        | {
+              kind: 'choice';
+              type: 'enum' | 'boolean';
+              value: string | boolean | null;
+              options: string[];
+          }
+        | null;
 };
+
+/** One choice: the answer it saves, how it reads, and an optional plain line under it. */
+export type FactChoice = {
+    value: string | boolean;
+    label: string;
+    hint?: string | null;
+};
+
+/** A Paperwork answer's field, shared by record rows and proposals: a date, or its choices. */
+export type FactField =
+    | { kind: 'date'; value: string | null }
+    | { kind: 'choice'; value: string | boolean | null; options: FactChoice[] };
 
 export type RecordBlock = {
     type: 'record';
@@ -320,7 +353,7 @@ export function Proposal({
     calls: ActionCalls;
 }) {
     const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(block.edit?.value ?? '');
+    const [unsure, setUnsure] = useState(false);
     // It can be applied for 24 hours; the server says until when, and checks it again.
     const [now] = useState(() => Date.now());
     const expired = !!block.until && Date.parse(block.until) <= now;
@@ -343,45 +376,72 @@ export function Proposal({
                     This can no longer be applied. Ask again if you still want
                     it.
                 </span>
+            ) : key && edit?.kind === 'choice' ? (
+                // A question its choices answer, open on the card: a tap saves it.
+                <>
+                    <FactEdit
+                        label={block.title}
+                        field={edit}
+                        busy={calls.busy}
+                        onSave={(value) => calls.change(key, value)}
+                    />
+                    {block.unsure && (
+                        <div className="action-unsure">
+                            <button
+                                type="button"
+                                className="action-ghost"
+                                aria-expanded={unsure}
+                                onClick={() => setUnsure((open) => !open)}
+                            >
+                                {block.unsure.label}
+                            </button>
+                            {unsure && (
+                                <>
+                                    {block.unsure.lines.map((line) => (
+                                        <p key={line} className="action-sub">
+                                            {line}
+                                        </p>
+                                    ))}
+                                    {block.unsure.keep && (
+                                        <button
+                                            type="button"
+                                            className="action-choice"
+                                            disabled={calls.busy}
+                                            onClick={() =>
+                                                calls.change(
+                                                    key,
+                                                    block.unsure!.keep!.value,
+                                                )
+                                            }
+                                        >
+                                            {block.unsure.keep.label}
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </>
             ) : editing && key && edit ? (
-                <form
-                    className="action-record-edit"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        setEditing(false);
-
-                        if (draft && draft !== edit.value) {
-                            calls.change(key, draft);
-                        }
-                    }}
-                >
-                    <label>
-                        <span className="sr-only">The date</span>
-                        <input
-                            type="date"
-                            value={draft}
-                            onChange={(event) => setDraft(event.target.value)}
-                            autoFocus
-                        />
-                    </label>
-                    <button
-                        type="submit"
-                        className="action-save"
-                        disabled={calls.busy}
-                    >
-                        Save
-                    </button>
-                </form>
+                <FactEdit
+                    label="The date"
+                    field={edit}
+                    busy={calls.busy}
+                    onSave={(value) => calls.change(key, value)}
+                    onClose={() => setEditing(false)}
+                />
             ) : (
                 <span className="action-proposal-buttons">
-                    <button
-                        type="button"
-                        className="action-apply"
-                        disabled={calls.busy}
-                        onClick={() => calls.apply(block.token)}
-                    >
-                        Apply
-                    </button>
+                    {block.token && (
+                        <button
+                            type="button"
+                            className="action-apply"
+                            disabled={calls.busy}
+                            onClick={() => calls.apply(block.token!)}
+                        >
+                            Apply
+                        </button>
+                    )}
                     {key && edit ? (
                         <button
                             type="button"
@@ -405,7 +465,134 @@ export function Proposal({
     );
 }
 
-/** What the person's Paperwork record says now, each row changeable. */
+/**
+ * One Paperwork answer changed in place (owner, 27 Oct 2026: "update my info by prompt
+ * or by UI inside Composer"): a date field with Save, or the answer's choices as
+ * Paperwork's Your situation offers them, where tapping another one saves it. Saving
+ * goes as every change on a card does: made with Undo, or proposed under Ask first.
+ * Opened from a Change (`onClose`), Esc or Cancel leaves it as it was; a proposal's
+ * choices stay open.
+ */
+export function FactEdit({
+    label,
+    field,
+    busy,
+    onSave,
+    onClose,
+}: {
+    label: string;
+    field: FactField;
+    busy: boolean;
+    onSave: (value: string) => void;
+    onClose?: () => void;
+}) {
+    const [draft, setDraft] = useState(
+        field.kind === 'date' ? (field.value ?? '') : '',
+    );
+    const group = useRef<HTMLDivElement>(null);
+    const escape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && onClose) {
+            event.preventDefault();
+            event.stopPropagation();
+            onClose();
+        }
+    };
+
+    // Opened from a Change, the choice it has now (else the first) takes focus.
+    useEffect(() => {
+        if (!onClose) {
+            return;
+        }
+
+        (
+            group.current?.querySelector<HTMLButtonElement>(
+                '[aria-pressed="true"]',
+            ) ?? group.current?.querySelector<HTMLButtonElement>('button')
+        )?.focus({ preventScroll: true });
+        // Only when it opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const cancel = onClose && (
+        <button
+            type="button"
+            className="action-record-cancel"
+            aria-label={`Keep ${label.toLowerCase()} as it is`}
+            onClick={onClose}
+        >
+            <Icon name="close" />
+        </button>
+    );
+
+    if (field.kind === 'date') {
+        return (
+            <form
+                className="action-record-edit"
+                onKeyDown={escape}
+                onSubmit={(event) => {
+                    event.preventDefault();
+
+                    if (draft && draft !== field.value) {
+                        onSave(draft);
+                    }
+
+                    onClose?.();
+                }}
+            >
+                <label>
+                    <span className="sr-only">{label}</span>
+                    <input
+                        type="date"
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        autoFocus={!!onClose}
+                    />
+                </label>
+                <button
+                    type="submit"
+                    className="action-save"
+                    disabled={busy || !draft}
+                >
+                    Save
+                </button>
+                {cancel}
+            </form>
+        );
+    }
+
+    return (
+        <div
+            ref={group}
+            className="action-record-edit action-record-choices"
+            role="group"
+            aria-label={label}
+            onKeyDown={escape}
+        >
+            {field.options.map((choice) => (
+                <button
+                    key={String(choice.value)}
+                    type="button"
+                    className="action-choice"
+                    aria-pressed={choice.value === field.value}
+                    disabled={busy}
+                    onClick={() => {
+                        if (choice.value !== field.value) {
+                            onSave(String(choice.value));
+                        }
+
+                        onClose?.();
+                    }}
+                >
+                    {choice.label}
+                    {choice.hint && <small>{choice.hint}</small>}
+                </button>
+            ))}
+            {cancel}
+        </div>
+    );
+}
+
+/** What the person's Paperwork record says now, each row changeable in place. */
 export function RecordRows({
     block,
     calls,
@@ -413,53 +600,56 @@ export function RecordRows({
     block: RecordBlock;
     calls: ActionCalls;
 }) {
-    // The row being changed in place, if any.
+    // The row being changed in place, if any; closed, focus goes back to its Change.
     const [editing, onEdit] = useState<string | null>(null);
-    const [draft, setDraft] = useState('');
+    const card = useRef<HTMLDivElement>(null);
+    const close = (key: string) => {
+        onEdit(null);
+        requestAnimationFrame(() =>
+            card.current
+                ?.querySelector<HTMLButtonElement>(`[data-change="${key}"]`)
+                ?.focus({ preventScroll: true }),
+        );
+    };
 
     return (
         <>
             <div
+                ref={card}
                 className="action-record"
                 aria-label={block.title ?? 'Your Paperwork record'}
             >
                 {block.title && <h3>{block.title}</h3>}
                 {block.rows.map((row) => (
-                    <div key={row.key} className="action-record-row">
+                    <div
+                        key={row.key}
+                        className={
+                            editing === row.key
+                                ? 'action-record-row is-editing'
+                                : 'action-record-row'
+                        }
+                    >
                         <span>{row.label}</span>
                         {editing === row.key && row.edit ? (
-                            <form
-                                className="action-record-edit"
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    const value = draft || row.edit!.value;
-
-                                    if (value && value !== row.edit!.value) {
-                                        calls.change(row.key, value);
-                                    }
-
-                                    onEdit(null);
-                                }}
-                            >
-                                <label>
-                                    <span className="sr-only">{row.label}</span>
-                                    <input
-                                        type="date"
-                                        defaultValue={row.edit.value ?? ''}
-                                        onChange={(event) =>
-                                            setDraft(event.target.value)
-                                        }
-                                        autoFocus
-                                    />
-                                </label>
-                                <button
-                                    type="submit"
-                                    className="action-save"
-                                    disabled={calls.busy}
-                                >
-                                    Save
-                                </button>
-                            </form>
+                            <FactEdit
+                                label={row.label}
+                                field={
+                                    row.edit.kind === 'choice'
+                                        ? {
+                                              kind: 'choice',
+                                              value: row.edit.value,
+                                              options: choices(
+                                                  row.key,
+                                                  row.edit.type,
+                                                  row.edit.options,
+                                              ) as FactChoice[],
+                                          }
+                                        : row.edit
+                                }
+                                busy={calls.busy}
+                                onSave={(value) => calls.change(row.key, value)}
+                                onClose={() => close(row.key)}
+                            />
                         ) : (
                             <>
                                 <strong>
@@ -469,18 +659,16 @@ export function RecordRows({
                                 <button
                                     type="button"
                                     className="action-change"
+                                    data-change={row.key}
                                     aria-label={`Change ${row.label.toLowerCase()}`}
                                     disabled={calls.busy}
-                                    onClick={() => {
-                                        if (row.edit) {
-                                            setDraft('');
-                                            onEdit(row.key);
-                                        } else {
-                                            calls.ask(
-                                                `Change my ${row.label.toLowerCase()}`,
-                                            );
-                                        }
-                                    }}
+                                    onClick={() =>
+                                        row.edit
+                                            ? onEdit(row.key)
+                                            : calls.ask(
+                                                  `Change my ${row.label.toLowerCase()}`,
+                                              )
+                                    }
                                 >
                                     Change
                                 </button>
@@ -613,9 +801,9 @@ export function Handoff({
  * Paperwork's say-so, for this one message (Ask first's Paperwork rule): its
  * title, the one line on what it does, and Allow, which asks the same message
  * again with it. The whole notice stays, unchanged, folded under "What Composer
- * sends": open the first time in a conversation, folded after that, since
- * Paperwork asks again for each message. Without it, Composer neither reads
- * nor changes the record.
+ * sends": open the first time in a conversation, folded after that. One Allow
+ * holds until they turn it off (Settings › Composer). Without it, Composer
+ * neither reads nor changes the record.
  */
 export function Permission({
     block,
