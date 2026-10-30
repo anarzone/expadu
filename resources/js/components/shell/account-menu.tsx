@@ -5,7 +5,7 @@ import StepFreeNeedController from '@/actions/App/Http/Controllers/Settings/Step
 import { showToast } from '@/components/ui/toast';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
 import { writeJson } from '@/lib/reliable-write';
-import { alerts, bureaucracy, logout, settings } from '@/routes';
+import { alerts, logout, paperwork, settings } from '@/routes';
 
 /**
  * The account popover at the header's end (the mock's header-account
@@ -96,7 +96,7 @@ export function AccountMenu() {
                         <Menu.Item asChild>
                             {/* Paperwork's Your situation (?guide=details opens it). */}
                             <Link
-                                href={bureaucracy({
+                                href={paperwork({
                                     query: { guide: 'details' },
                                 })}
                             >

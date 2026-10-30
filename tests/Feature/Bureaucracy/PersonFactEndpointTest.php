@@ -7,7 +7,7 @@ use App\Models\User;
 test('person fact endpoints distinguish a real change from a correction with stale-write protection', function () {
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/facts';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/facts';
     $this->actingAs($actor)->getJson($url)->assertSuccessful()->assertJsonPath('revision', 1)->assertJsonPath('values', []);
     $this->putJson($url.'/current_residence_title', [
         'value' => 'blue_card', 'effective_from' => '2024-01-01', 'expected_revision' => 1, 'answer_state' => 'value',
@@ -27,7 +27,7 @@ test('a view-plan grant cannot read or change another adults facts through API e
     $two = app(EnsureAccountHolder::class)->dossier($subject);
     $invite = app(ManageDelegation::class)->invite($helper, $one->person->workspace, $subject->email, ['view_plan']);
     app(ManageDelegation::class)->accept($subject, $invite['token'], ['view_plan']);
-    $url = '/bureaucracy/v2/people/'.$two->person_id.'/facts';
+    $url = '/paperwork/v2/people/'.$two->person_id.'/facts';
     $this->actingAs($helper)->getJson($url)->assertForbidden();
     $this->putJson($url.'/german_level', ['value' => 'b1', 'expected_revision' => 1])->assertForbidden();
     expect($two->facts()->count())->toBe(0);
@@ -36,7 +36,7 @@ test('a view-plan grant cannot read or change another adults facts through API e
 test('new commands keep dates and omitted answers distinct without session disclosure', function () {
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
-    $url = '/bureaucracy/v2/people/'.$case->person_id.'/facts';
+    $url = '/paperwork/v2/people/'.$case->person_id.'/facts';
     $this->actingAs($actor)->put($url.'/moved_in_at', ['value' => '2026-02-30', 'expected_revision' => 1], ['Accept' => 'text/html'])
         ->assertUnprocessable()->assertSessionMissing('_old_input');
     $this->putJson($url.'/german_level', ['value' => null, 'answer_state' => 'declined', 'expected_revision' => 1])->assertSuccessful();

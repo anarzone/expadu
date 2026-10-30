@@ -42,7 +42,7 @@ function startedWith(array $answers = []): User
 it('tells the user the Anmeldung clock is missing instead of showing nothing', function () {
     $user = startedWith(['registration_status' => 'not_registered']);
 
-    $plan = $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $anmeldung = anmeldungAction($plan);
     expect($anmeldung)->not->toBeNull()
         ->and($anmeldung['dates'][0]['state'])->toBe('date_unknown')
@@ -59,7 +59,7 @@ it('anchors the imported preparation target to the supplied move-in date', funct
     expect(app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString())['values']['moved_in_at'] ?? null)
         ->toBe(now()->subDays(3)->toDateString());
 
-    $plan = $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $anmeldung = anmeldungAction($plan);
     expect($anmeldung['dates'][0]['state'])->toBe('dated')
         ->and($anmeldung['dates'][0]['date'])->toBe(now()->addDays(11)->toDateString())
@@ -69,7 +69,7 @@ it('anchors the imported preparation target to the supplied move-in date', funct
 it('keeps undated registration preparation reachable alongside its question', function () {
     $user = startedWith(['registration_status' => 'not_registered']);
 
-    $plan = $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $action = anmeldungAction($plan);
     expect($action)->not->toBeNull()
         ->and($action['id'])->toBeIn($plan['progress']['todo']['ids'])
@@ -78,7 +78,7 @@ it('keeps undated registration preparation reachable alongside its question', fu
 
 it('asks about actual registration before inventing a need to register again', function () {
     $user = startedWith(['moved_in_at' => now()->subDays(3)->toDateString()]);
-    $plan = $this->actingAs($user)->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $plan = $this->actingAs($user)->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $guidance = collect($plan['guidance'])->firstWhere('id', 'core.anmeldung');
     expect(anmeldungAction($plan))->toBeNull()
         ->and($guidance['missing_facts'])->toBe(['registration_status']);

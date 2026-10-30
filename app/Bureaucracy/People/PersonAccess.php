@@ -16,12 +16,12 @@ final class PersonAccess
 
     /** What may still happen while processing is stopped: each only reads, ends or takes processing away. */
     private const WHILE_STOPPED = [
-        'bureaucracy.v2.people.processing-restriction',
-        'bureaucracy.v2.people.processing.withdraw',
-        'bureaucracy.v2.people.export',
-        'bureaucracy.v2.people.destroy',
-        'bureaucracy.v2.grants.revoke',
-        'bureaucracy.v2.invitations.cancel',
+        'paperwork.v2.people.processing-restriction',
+        'paperwork.v2.people.processing.withdraw',
+        'paperwork.v2.people.export',
+        'paperwork.v2.people.destroy',
+        'paperwork.v2.grants.revoke',
+        'paperwork.v2.invitations.cancel',
     ];
 
     public function allows(User $actor, BureaucracyPerson $person, AccessScope $scope): bool

@@ -25,7 +25,7 @@ class RobotsController extends Controller
                 'Disallow: /events',
                 'Disallow: /transit',
                 'Disallow: /around-here',
-                'Disallow: /bureaucracy',
+                'Disallow: /paperwork',
                 'Disallow: /profile',
                 'Disallow: /settings',
                 'Disallow: /api/',

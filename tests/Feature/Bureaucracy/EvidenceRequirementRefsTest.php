@@ -26,7 +26,7 @@ beforeEach(function () {
     $store = app(CatalogueReleaseStore::class);
     $store->activate($store->stage(app(CatalogueCompiler::class)->compile($tasks, $mapping))->id, null);
     $this->paperwork = fn () => collect(app(PaperworkReadModel::class)->for($this->actor, $this->case->person, 'de-nrw-cologne')['requirements'])->keyBy('id');
-    $this->url = fn (string $id) => '/bureaucracy/v2/people/'.$this->case->person_id.'/evidence/'.$id;
+    $this->url = fn (string $id) => '/paperwork/v2/people/'.$this->case->person_id.'/evidence/'.$id;
 });
 
 test('one evidence item attached to requirements by reference shows as available on each of them without confirming any use', function () {

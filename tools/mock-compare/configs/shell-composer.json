@@ -16,7 +16,7 @@
         "screenshotStyle": "#composer-tray { backdrop-filter: none !important; background: rgb(255 253 248) !important; }"
     },
     "app": {
-        "url": "/bureaucracy",
+        "url": "/paperwork",
         "wait": "header",
         "login": {
             "email": "e2e@expadu.test",

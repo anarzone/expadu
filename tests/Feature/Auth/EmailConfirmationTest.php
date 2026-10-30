@@ -41,7 +41,7 @@ test('🔒 an account without a password confirms with the emailed code, and the
     $user = googleOnly(['email' => 'mover@example.com']);
     $person = app(EnsureAccountHolder::class)->person($user);
     app(EnsureAccountHolder::class)->dossier($user);
-    $this->actingAs($user)->postJson('/bureaucracy/v2/people/'.$person->id.'/export')->assertStatus(423);
+    $this->actingAs($user)->postJson('/paperwork/v2/people/'.$person->id.'/export')->assertStatus(423);
 
     $code = mailedCode($this);
 
@@ -53,7 +53,7 @@ test('🔒 an account without a password confirms with the emailed code, and the
     $this->postJson(route('email-confirmation.confirm'), ['code' => substr($code, 0, 3).' '.substr($code, 3)])->assertStatus(201);
 
     expect(isConfirmed($this))->toBeTrue();
-    $this->postJson('/bureaucracy/v2/people/'.$person->id.'/export')->assertSuccessful()->assertJsonPath('person.id', $person->id);
+    $this->postJson('/paperwork/v2/people/'.$person->id.'/export')->assertSuccessful()->assertJsonPath('person.id', $person->id);
 });
 
 test('🔒 the code is kept only as a hash, never in the session or the cache in clear', function () {
@@ -214,9 +214,9 @@ test('🔒 the confirm page goes back to where the person was going, on this sit
     $this->actingAs($user);
 
     $code = mailedCode($this);
-    $this->withSession(['url.intended' => url('/bureaucracy')])
+    $this->withSession(['url.intended' => url('/paperwork')])
         ->post(route('email-confirmation.confirm'), ['code' => $code])
-        ->assertRedirect(url('/bureaucracy'));
+        ->assertRedirect(url('/paperwork'));
 
     $code = mailedCode($this);
     $this->withSession(['url.intended' => 'https://evil.example/steal'])

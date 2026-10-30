@@ -34,7 +34,7 @@ function sharedWith(User $holder, BureaucracyPerson $person): User
 
 test('🔒 the record holder stops and resumes processing, and the stop stays until they resume', function () {
     [$holder, $person] = recordHolder();
-    $url = "/bureaucracy/v2/people/{$person->id}/processing-restriction";
+    $url = "/paperwork/v2/people/{$person->id}/processing-restriction";
 
     $stoppedAt = $this->actingAs($holder)->putJson($url, ['stopped' => true])->assertOk()->json('processing_stopped_at');
 
@@ -53,7 +53,7 @@ test('🔒 only the record holder can stop or resume: not someone it is shared w
     [$holder, $person] = recordHolder();
     $helper = sharedWith($holder, $person);
     $stranger = User::factory()->onboarded()->create();
-    $url = "/bureaucracy/v2/people/{$person->id}/processing-restriction";
+    $url = "/paperwork/v2/people/{$person->id}/processing-restriction";
 
     foreach ([$helper, $stranger] as $other) {
         $this->actingAs($other)->putJson($url, ['stopped' => true])->assertForbidden();
@@ -77,7 +77,7 @@ test('🔒 stopping withdraws the record\'s AI processing', function () {
         'state' => 'granted', 'result' => 'private', 'granted_at' => now(), 'expires_at' => now()->addHour(), 'delete_after' => now()->addDay(),
     ]);
 
-    $this->actingAs($holder)->putJson("/bureaucracy/v2/people/{$person->id}/processing-restriction", ['stopped' => true])->assertOk();
+    $this->actingAs($holder)->putJson("/paperwork/v2/people/{$person->id}/processing-restriction", ['stopped' => true])->assertOk();
 
     expect($consent->fresh()->state)->toBe('withdrawn')
         ->and($consent->fresh()->result)->toBeNull()

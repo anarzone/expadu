@@ -7,7 +7,7 @@
         "wait": "header"
     },
     "app": {
-        "url": "/bureaucracy",
+        "url": "/paperwork",
         "wait": "header",
         "login": {
             "email": "e2e@expadu.test",

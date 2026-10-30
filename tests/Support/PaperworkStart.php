@@ -22,8 +22,8 @@ final class PaperworkStart
      */
     public static function answer(User $user, array $answers, string $city = 'Köln'): BureaucracyCase
     {
-        test()->actingAs($user)->putJson('/bureaucracy/v2/people/self/city', ['city' => $city])->assertSuccessful();
-        test()->postJson('/bureaucracy/v2/people/self')->assertSuccessful();
+        test()->actingAs($user)->putJson('/paperwork/v2/people/self/city', ['city' => $city])->assertSuccessful();
+        test()->postJson('/paperwork/v2/people/self')->assertSuccessful();
         $case = BureaucracyCase::query()->where('user_id', $user->id)->sole();
         foreach ($answers as $key => $value) {
             app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);

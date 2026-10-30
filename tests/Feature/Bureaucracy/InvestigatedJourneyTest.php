@@ -180,13 +180,13 @@ test('a started plan and explicit follow ups produce the canonical reviewed case
 
     $user->refresh();
     expect($user->bureaucracy_path)->toBeNull();
-    $read = fn () => $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $read = fn () => $this->getJson('/paperwork/v2/plan')->assertSuccessful()->json('plan');
     $initial = $read();
     expect(BureaucracyCaseQuestion::query()->count())->toBe(0);
 
     $answers = $journey['structured_answers'];
     $remainingAnswers = $answers;
-    $session = $remainingAnswers === [] ? null : $this->postJson('/bureaucracy/v2/people/'.$initial['person_id'].'/question-sessions', [
+    $session = $remainingAnswers === [] ? null : $this->postJson('/paperwork/v2/people/'.$initial['person_id'].'/question-sessions', [
         'jurisdiction' => 'de-nrw-cologne', 'request_id' => (string) Str::uuid(),
     ])->assertCreated()->json('session_id');
     $offeredKeys = [];
@@ -194,10 +194,10 @@ test('a started plan and explicit follow ups produce the canonical reviewed case
 
     while ($remainingAnswers !== []) {
         expect(++$attempts)->toBeLessThanOrEqual(20);
-        $response = $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
+        $response = $this->postJson('/paperwork/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
             ->assertSuccessful()->json();
         if ($response['status'] === 'paused') {
-            $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/resume', ['revisit_deferred' => false])->assertNoContent();
+            $this->postJson('/paperwork/v2/question-sessions/'.$session.'/resume', ['revisit_deferred' => false])->assertNoContent();
 
             continue;
         }
@@ -209,11 +209,11 @@ test('a started plan and explicit follow ups produce the canonical reviewed case
         if (! array_key_exists($key, $remainingAnswers)) {
             // A historical persona does not know every orientation detail.
             // Skip explicitly instead of manufacturing an answer to finish QA.
-            $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/defer/'.$question['id'], ['token' => $question['token']])->assertNoContent();
+            $this->postJson('/paperwork/v2/question-sessions/'.$session.'/defer/'.$question['id'], ['token' => $question['token']])->assertNoContent();
 
             continue;
         }
-        $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/answers/'.$question['id'], [
+        $this->postJson('/paperwork/v2/question-sessions/'.$session.'/answers/'.$question['id'], [
             'token' => $question['token'], 'value' => $remainingAnswers[$key],
         ])->assertSuccessful();
         unset($remainingAnswers[$key]);
@@ -240,7 +240,7 @@ test('a started plan and explicit follow ups produce the canonical reviewed case
     foreach ($journey['universal'] ?? [] as $key) {
         expect(collect($plan['guidance'])->firstWhere('id', $key)['kind'])->toBe('context');
     }
-    $facts = $this->getJson('/bureaucracy/v2/people/'.$initial['person_id'].'/facts')->assertSuccessful()->json();
+    $facts = $this->getJson('/paperwork/v2/people/'.$initial['person_id'].'/facts')->assertSuccessful()->json();
     foreach ($answers as $key => $value) {
         expect($facts['values'][$key])->toBe($value)
             ->and($facts['evidence'][$key]['source'])->toBe($key === 'sponsor' ? 'attributed_report' : 'manual');

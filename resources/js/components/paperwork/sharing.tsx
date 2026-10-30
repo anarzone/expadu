@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { csrfHeaders } from '@/lib/csrf';
+import { paperwork } from '@/routes';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -43,7 +44,7 @@ const scopeLabels: Record<string, string> = {
     manage_evidence: 'Your documents',
 };
 
-const base = '/bureaucracy/v2';
+const base = '/paperwork/v2';
 
 /**
  * Share your plan (the mock's bureaucracy-next "sharing" editor): who sees
@@ -351,7 +352,7 @@ function RecordActions({
                                     onKeep={ui.closeSheet}
                                     onErased={() => {
                                         ui.closeSheet();
-                                        router.visit('/bureaucracy', {
+                                        router.visit(paperwork.url(), {
                                             replace: true,
                                             // Keeps the page, and the notice it carries.
                                             preserveState: true,

@@ -206,7 +206,7 @@ test('an old appointment can still be cancelled after the person records a new r
     app(RecordProcessEvent::class)->execute($actor, $process, 'appointment_recorded', ['appointment_id' => $appointmentId,
         'starts_at' => '2026-10-01T10:00:00+02:00', 'timezone' => 'Europe/Berlin', 'duration_minutes' => 30], 1, (string) Str::uuid());
     app(RecordFactChange::class)->execute($actor, $case->person, 'current_residence_title', 'blue_card', '2026-01-01', 2);
-    $url = '/bureaucracy/v2/processes/'.$process->id;
+    $url = '/paperwork/v2/processes/'.$process->id;
     $this->actingAs($actor)->getJson($url)->assertSuccessful()->assertJsonPath('guidance_state', 'history_only')->assertJsonPath('review_token', null);
     $requestId = (string) Str::uuid();
     app(RecordProcessEvent::class)->execute($actor, $process, 'appointment_cancelled', ['appointment_id' => $appointmentId], 2, $requestId);
@@ -222,6 +222,6 @@ test('explicitly separated provisional history never offers an impossible contin
     $process->update(['context_id' => 'unbound:current_residence_title', 'occurrence_key' => str_repeat('a', 64)]);
     $separate = app(ReconcileProcesses::class)->execute($actor, $case->person, $process->jurisdiction, [$process->id])[0];
     expect($separate->id)->not->toBe($process->id);
-    $this->actingAs($actor)->getJson('/bureaucracy/v2/processes/'.$process->id)->assertSuccessful()
+    $this->actingAs($actor)->getJson('/paperwork/v2/processes/'.$process->id)->assertSuccessful()
         ->assertJsonPath('guidance_state', 'history_only')->assertJsonPath('bind_occurrence', null)->assertJsonPath('review_token', null);
 });

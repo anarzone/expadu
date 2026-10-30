@@ -1,4 +1,4 @@
-// JSON commands for the bureaucracy/v2 API. Every write carries a fresh request id
+// JSON commands for the paperwork/v2 API. Every write carries a fresh request id
 // and the version the person last saw; the server refuses stale or replayed writes.
 
 import { csrfHeaders } from '@/lib/csrf';
@@ -112,7 +112,7 @@ export async function send<T = unknown>(
     return data as T;
 }
 
-const base = '/bureaucracy/v2';
+const base = '/paperwork/v2';
 
 export const reads = {
     facts: (personId: number) =>

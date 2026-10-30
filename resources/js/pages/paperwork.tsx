@@ -34,7 +34,7 @@ import {
 } from '@/components/paperwork/state';
 import type { Person, PlanEntry } from '@/components/paperwork/types';
 import AppLayout from '@/layouts/app-layout';
-import { composer } from '@/routes';
+import { composer, paperwork } from '@/routes';
 import { waitlist as joinWaitlist } from '@/routes/paperwork';
 import '../../css/paperwork.css';
 
@@ -112,8 +112,10 @@ function PersonPicker({ people }: { people: Person[] }) {
                                     ? undefined
                                     : router.visit(
                                           p.is_self
-                                              ? '/bureaucracy'
-                                              : `/bureaucracy?person=${p.id}`,
+                                              ? paperwork.url()
+                                              : paperwork.url({
+                                                    query: { person: p.id },
+                                                }),
                                       )
                             }
                         >
@@ -170,7 +172,7 @@ function Workspace({
     } = usePaperwork();
     const self = people.find((p) => p.id === plan.person_id)?.is_self ?? false;
 
-    // Handed over from Composer (/bureaucracy?record=delete): your record's
+    // Handed over from Composer (/paperwork?record=delete): your record's
     // actions open with the one asked for ringed. Only on your own plan; the
     // address forgets it once it's open.
     useEffect(() => {
