@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Bureaucracy\Facts\ProfileFacts;
 use App\Enums\GermanLevel;
 use App\Enums\Situation;
 use App\Enums\TransportMode;
@@ -33,6 +34,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         // Their "Good for laptop work?" answers go with the account, and the places'
         // anonymous totals are recomputed without them (the FK cascade alone wouldn't).
         static::deleting(fn (User $user) => app(PlaceWorkAnswers::class)->forget($user));
+        // A Paperwork answer kept on the profile (German level) changed: Paperwork's after-change steps.
+        static::updated(fn (User $user) => ProfileFacts::profileChanged($user, array_keys($user->getChanges())));
     }
 
     public function canAccessPanel(Panel $panel): bool

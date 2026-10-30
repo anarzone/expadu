@@ -4,7 +4,9 @@ namespace App\Onboarding;
 
 use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\FactSourceTrust;
+use App\Bureaucracy\Facts\ProfileFacts;
 use App\Models\BureaucracyCase;
+use App\Models\BureaucracyPerson;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -17,7 +19,16 @@ final class DraftFactChanges
     {
         $result = [];
         $view = $this->facts->forCase($case, now()->toDateString());
+        $person = $case->person_id === null ? null : BureaucracyPerson::query()->find($case->person_id);
         foreach ($answers as $key => $answer) {
+            // Kept on the account holder's profile: no record history to correct or change, only its value.
+            if (isset(ProfileFacts::KEYS[$key]) && $person !== null && ProfileFacts::owner($person) !== null) {
+                $state = $answer['answer_state'] ?? 'value';
+                $result[$key] = [...$answer, 'operation' => 'assert', 'effective_from' => null, '_corrects_id' => null,
+                    '_write' => ($view['states'][$key] ?? 'unknown') !== $state || ($view['values'][$key] ?? null) !== ($answer['value'] ?? null)];
+
+                continue;
+            }
             $current = $case->facts()->where('key', $key)->where('state', 'confirmed')->get()->reject(FactSourceTrust::isSynthetic(...));
             if (($view['states'][$key] ?? null) === 'conflict') {
                 throw new ConflictHttpException('Resolve the conflicting recorded answers before confirming this draft.');

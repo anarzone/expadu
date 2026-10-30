@@ -29,7 +29,8 @@ class PersonFactController extends Controller
         $view = $this->view->forCase($case, now()->toDateString());
         $checked = BureaucracyCaseFact::query()->where('case_id', $case->id)->whereIn('id', array_column($view['evidence'], 'fact_id'))->pluck('confirmed_at', 'id');
         foreach ($view['evidence'] as $key => $evidence) {
-            $view['evidence'][$key]['checked_at'] = $checked[$evidence['fact_id']]?->utc()->toIso8601String();
+            // An answer kept on the profile (fact_id null) has no record row to have been checked.
+            $view['evidence'][$key]['checked_at'] = ($checked[$evidence['fact_id'] ?? 0] ?? null)?->utc()->toIso8601String();
         }
 
         return response()->json($view)->header('Cache-Control', 'private, no-store');

@@ -64,13 +64,14 @@ test('legacy onboarding does not turn computed citizenship or permit tracks into
 })->with([['citizenship_group', 'non_eu'], ['permit_track', 'blue_card'], ['purpose', 'employment']]);
 
 test('direct legacy onboarding answers remain available but a sponsor answer is still only an attributed report', function () {
-    $actor = User::factory()->onboarded()->create();
+    $actor = User::factory()->onboarded()->create(['german_level' => 'b2']);
     $case = app(EnsureAccountHolder::class)->dossier($actor);
     foreach (['current_residence_title' => 'family_reunification', 'sponsor_current_title' => 'blue_card', 'german_level' => 'b1'] as $key => $value) {
         $case->facts()->create(['key' => $key, 'value' => $value, 'state' => 'confirmed', 'source' => 'onboarding', 'confirmed_at' => now()]);
     }
     $view = app(ConfirmedFactView::class)->forCase($case, now()->toDateString());
-    expect($view['values'])->toMatchArray(['current_residence_title' => 'family_reunification', 'sponsor_current_title' => 'blue_card', 'german_level' => 'b1'])
+    // Their German level is the profile's (owner, 27 Oct 2026): an old copy in the record is never read.
+    expect($view['values'])->toMatchArray(['current_residence_title' => 'family_reunification', 'sponsor_current_title' => 'blue_card', 'german_level' => 'b2'])
         ->and(BureaucracyRelationship::query()->where('person_id', $case->person_id)->count())->toBe(0);
 });
 

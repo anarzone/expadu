@@ -40,8 +40,8 @@ beforeEach(function () {
 });
 
 test('a fact reconfirmation boundary preserves the existing application-local timestamp semantics', function () {
-    ($this->activate)([['german_level' => 'b1']]);
-    $fact = app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'german_level', 'b1', null, 1);
+    ($this->activate)([['livelihood_secured' => 'yes']]);
+    $fact = app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'livelihood_secured', 'yes', null, 1);
     $fact->update(['reconfirm_at' => now()->addHours(2)]);
     $plan = ($this->read)();
     expect(strtotime($plan['next_reassessment_at']))->toBe(now()->addHours(2)->timestamp)->and($plan['actions'])->toHaveCount(1);

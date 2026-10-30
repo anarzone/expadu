@@ -75,6 +75,11 @@ final class ComposerActions
      */
     public function request(User $user, string $action, array $input, CarbonImmutable $now, bool $manual = false, bool $propose = false, ?string $answers = null): array
     {
+        // Their German level lives on the profile only (owner, 27 Oct 2026): changed there, from a
+        // Paperwork card's row too.
+        if ($action === 'change_paperwork_fact' && ($input['key'] ?? null) === 'german_level') {
+            [$action, $input] = ['update_profile', ['field' => 'german_level', 'value' => $input['value'] ?? null]];
+        }
         [$class, $domain] = self::ACTIONS[$action] ?? [null, null];
         if ($class === null) {
             return ['said' => 'Not done: Composer can’t do that.', 'blocks' => []];

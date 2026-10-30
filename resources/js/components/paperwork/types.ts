@@ -312,8 +312,9 @@ export interface FactView {
     evidence: Record<
         string,
         {
-            fact_id: number;
-            /** Where the answer came from: 'onboarding' (setup), 'manual' (a question or an edit), … */
+            /** None for an answer kept on the profile (source 'profile'). */
+            fact_id: number | null;
+            /** Where the answer came from: 'onboarding' (setup), 'manual' (a question or an edit), 'profile', … */
             source?: string;
             effective_from: string | null;
             checked_at: string | null;

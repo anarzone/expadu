@@ -26,8 +26,8 @@ test('the facts endpoint reports when each current answer was last checked', fun
     $actor = User::factory()->onboarded()->create();
     $case = app(EnsureAccountHolder::class)->dossier($actor);
     $url = '/paperwork/v2/people/'.$case->person_id.'/facts';
-    $this->actingAs($actor)->putJson($url.'/german_level', ['value' => 'b1', 'expected_revision' => 1])->assertSuccessful();
-    $this->getJson($url)->assertOk()->assertJsonPath('evidence.german_level.checked_at', now()->utc()->toIso8601String());
+    $this->actingAs($actor)->putJson($url.'/livelihood_secured', ['value' => 'yes', 'expected_revision' => 1])->assertSuccessful();
+    $this->getJson($url)->assertOk()->assertJsonPath('evidence.livelihood_secured.checked_at', now()->utc()->toIso8601String());
 });
 
 test('answer history shows assertions, corrections and changes with before and after values, newest first', function () {
@@ -59,5 +59,5 @@ test('answer history needs fact-reading access to the person', function () {
     $two = app(EnsureAccountHolder::class)->dossier($subject);
     $invite = app(ManageDelegation::class)->invite($helper, $one->person->workspace, $subject->email, ['view_plan']);
     app(ManageDelegation::class)->accept($subject, $invite['token'], ['view_plan']);
-    $this->actingAs($helper)->getJson('/paperwork/v2/people/'.$two->person_id.'/facts/german_level/history')->assertForbidden();
+    $this->actingAs($helper)->getJson('/paperwork/v2/people/'.$two->person_id.'/facts/livelihood_secured/history')->assertForbidden();
 });

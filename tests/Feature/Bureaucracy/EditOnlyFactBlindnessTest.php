@@ -19,7 +19,7 @@ function blindFixture($test, array $scopes, bool $due = true): array
 {
     $task = Task::factory()->approvedFixture()->create([
         'key' => 'fixture.blind', 'type' => 'task', 'deadline_type' => 'none', 'depends_on' => [],
-        'applies_if' => [['citizenship_group' => 'non_eu', 'german_level' => 'b1']],
+        'applies_if' => [['citizenship_group' => 'non_eu', 'livelihood_secured' => 'yes']],
         'documents_required' => [], 'how_to_steps' => [], 'links' => [],
     ])->fresh();
     $store = app(CatalogueReleaseStore::class);
