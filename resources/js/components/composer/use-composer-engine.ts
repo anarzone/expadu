@@ -70,20 +70,7 @@ export type EngineHooks = {
     onSettled?: () => void;
     /** The plan changed elsewhere: the newest is loaded. */
     onConflict?: () => void;
-    /** "Swap …" picks an item to replace. */
-    onSwap?: (swap: EngineSwap) => void;
-    /** "Show my plan" with no single day: open My Plans. */
-    onPlans?: () => void;
 };
-
-export const normal = (text: string) =>
-    text
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/ue/g, 'u')
-        .replace(/oe/g, 'o')
-        .replace(/ae/g, 'a');
 
 export function useComposerEngine(
     initial: Workspace,
@@ -373,9 +360,14 @@ export function useComposerEngine(
     }
 
     /** Asks a request; `shown` is the AI notice in view when they sent it. */
-    async function send(text: string, shown: AiNotice | null = aiNotice) {
+    /** fresh: into a new conversation, opened only once the message can go (its notice is in). Whether it went in. */
+    async function send(
+        text: string,
+        shown: AiNotice | null = aiNotice,
+        fresh = false,
+    ): Promise<boolean> {
         if (!text.trim() || busyRef.current) {
-            return;
+            return false;
         }
 
         busyRef.current = true;
@@ -393,85 +385,16 @@ export function useComposerEngine(
         try {
             // Before the message goes in: without its notice it stays in the box.
             const notice = await noticeFor(shown);
+
+            if (fresh) {
+                await sendCommand({ action: 'fresh' });
+            }
+
             await sendCommand({ action: 'message', text });
             asked = true;
             setPendingText('');
-            const state = stateRef.current;
-            const current = state.focus
-                ? (state.plans[state.focus] ?? null)
-                : null;
-            const clean = normal(text);
-
-            if (/^(show|view|open)( me)?( my| the)? plan\b/.test(clean)) {
-                const dates = Object.keys(state.plans);
-                const date =
-                    state.focus ?? (dates.length === 1 ? dates[0] : null);
-
-                if (date) {
-                    await sendCommand({ action: 'open', date });
-                } else {
-                    on.current.onPlans?.();
-                }
-            } else if (
-                current &&
-                /^(move|change|rename|remove|swap)\b/.test(clean)
-            ) {
-                const matched = current.slots.filter((slot) =>
-                    clean.includes(normal(slot.name)),
-                );
-
-                if (matched.length !== 1) {
-                    throw new Error(
-                        'Choose an activity in the plan below, or include its full name so I know which one to change.',
-                    );
-                }
-
-                const slot = matched[0];
-                const times = text.match(/\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g);
-
-                if (clean.startsWith('swap')) {
-                    on.current.onSwap?.({
-                        slot,
-                        date: current.date,
-                        revision: stateRef.current.revision,
-                    });
-                } else if (clean.startsWith('remove')) {
-                    await sendCommand({
-                        action: 'remove',
-                        id: slot.id,
-                        date: current.date,
-                    });
-                } else if (
-                    /^(rename|change.*name)/.test(clean) &&
-                    /\s+to\s+/i.test(text)
-                ) {
-                    await sendCommand({
-                        action: 'edit',
-                        id: slot.id,
-                        date: current.date,
-                        name: text
-                            .split(/\s+to\s+/i)
-                            .slice(1)
-                            .join(' to '),
-                    });
-                } else if (times?.length === 2) {
-                    await sendCommand({
-                        action: 'edit',
-                        id: slot.id,
-                        date: current.date,
-                        start: times[0].padStart(5, '0'),
-                        end: times[1].padStart(5, '0'),
-                    });
-                } else {
-                    throw new Error(
-                        'Include both times, for example “move ' +
-                            slot.name +
-                            ' to 14:00–15:00”, or use Edit time.',
-                    );
-                }
-            } else {
-                await answer(notice);
-            }
+            // Every message goes to the one AI loop: its tools show, move, swap and remove plans.
+            await answer(notice);
 
             on.current.onAnswered?.();
         } catch (err) {
@@ -505,6 +428,9 @@ export function useComposerEngine(
             busyRef.current = false;
             on.current.onSettled?.();
         }
+
+        // In the conversation: answered, or saying it couldn't be.
+        return asked;
     }
 
     /** Whether the person's newest message was left without a reply, not handled here. */

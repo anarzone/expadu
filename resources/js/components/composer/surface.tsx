@@ -89,11 +89,6 @@ export function useComposerSurface(
         onFailed,
         onSettled: focusBox,
         onConflict: () => setSwap(null),
-        onSwap: (next) => {
-            setSwap(next);
-            setView('chat');
-        },
-        onPlans: () => setView('plans'),
     });
 
     // Start fresh: a new conversation in place, made only when its first
@@ -114,21 +109,19 @@ export function useComposerSurface(
             (item) => item.id === state.active,
         );
 
-        if ((startNew || pendingFresh) && current?.messages.length) {
-            // The message shows at once; the previous conversation never does.
+        const fresh = Boolean(
+            (startNew || pendingFresh) && current?.messages.length,
+        );
+
+        // The message shows at once in the new conversation; the previous one never does.
+        // The new one is opened only when the message can go, so a held send leaves none behind.
+        if (fresh) {
             setPendingFresh(true);
-            engine.setPendingText(text);
-
-            if (!(await engine.command({ action: 'fresh' }))) {
-                setPendingFresh(false);
-                engine.setPendingText('');
-
-                return;
-            }
         }
 
-        setPendingFresh(false);
-        await engine.send(text);
+        const sent = await engine.send(text, undefined, fresh);
+        // Held (no notice yet): a new conversation waits for it as it did before.
+        setPendingFresh(sent ? false : pendingFresh);
     };
 
     const resume = async (id: string) => {
