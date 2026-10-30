@@ -21,7 +21,6 @@ it('refuses a move-in date from someone who has not arrived', function () {
         'arrival_planned' => true,
         'address_registration_status' => 'registrable',
         'moved_in_at' => now()->subDays(5)->toDateString(),
-        'interests' => [],
     ]);
 
     $response->assertSessionHasErrors('moved_in_at');
@@ -36,7 +35,6 @@ it('accepts a planning arrival with no address answers at all', function () {
         'is_eu' => false,
         'veedel' => 'Ehrenfeld',
         'arrival_planned' => true,
-        'interests' => [],
     ]);
 
     $response->assertSessionHasNoErrors();

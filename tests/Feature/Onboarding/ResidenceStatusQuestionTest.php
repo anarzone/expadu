@@ -43,7 +43,6 @@ it('still records a D visa entry as both the entry mode and the current title', 
         'arrival_date' => now()->subDays(10)->toDateString(),
         'entry_mode' => 'd_visa',
         'current_residence_title' => 'national_d_visa',
-        'interests' => [],
     ])->assertSessionHasNoErrors();
 
     $user->refresh();
@@ -66,7 +65,6 @@ it('accepts a real permit as the follow-up to holding one', function () {
         'entry_mode' => 'has_permit',
         'current_residence_title' => 'standard_work_permit',
         'residence_title_expires_at' => now()->addYear()->toDateString(),
-        'interests' => [],
     ])->assertSessionHasNoErrors();
 
     expect(confirmedFact($user->fresh(), 'current_residence_title'))
