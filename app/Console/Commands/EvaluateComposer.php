@@ -328,7 +328,9 @@ class EvaluateComposer extends Command
     private function said(User $user, array $answer, Assistant $assistant, CarbonImmutable $now, array $earlier, string $text, bool $planned): array
     {
         $dead = $answer === [] || (trim((string) ($answer['text'] ?? '')) === '' && ($answer['blocks'] ?? []) === [] && ! $planned);
-        $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel, ...$assistant->read];
+        // As the live check reads it: also what this conversation showed before ("the way to Café Nova").
+        $read = ['now' => $now->setTimezone('Europe/Berlin')->format('l j F, H:i').', Cologne', 'home' => 'Home Veedel: '.$user->veedel,
+            'earlier' => implode("\n", [...array_values($earlier['event']), ...array_values($earlier['spot'])]), ...$assistant->read];
         $invented = [];
         // Each sentence it kept, against everything it read (not only what it cited): a sentence may
         // speak of the person from their own facts, and count the listings, places and choices it cites.
@@ -486,6 +488,12 @@ class EvaluateComposer extends Command
         // ...and Travel's stars and planned ways, their alerts, mutes and notification kinds.
         FavouriteStop::query()->where('user_id', $user->id)->delete();
         PlannedTrip::query()->where('user_id', $user->id)->delete();
+        // A case's kept ways to its plans, leaving so many minutes from now.
+        foreach ($request['kept_ways'] ?? [] as $i => $way) {
+            $at = CarbonImmutable::now()->addMinutes((int) $way['in_minutes']);
+            PlannedTrip::query()->create(['user_id' => $user->id, 'date' => $at->setTimezone('Europe/Berlin')->toDateString(), 'target_id' => "eval-{$i}",
+                'title' => $way['title'], 'journey' => ['legs' => []], 'remind' => (bool) ($way['remind'] ?? true), 'depart_at' => $at, 'arrive_at' => $at->addMinutes(30)]);
+        }
         $user->notificationPreference()->delete();
         foreach (app(MuteService::class)->activeMutes($user) as $mute) {
             app(MuteService::class)->unmute($user, $mute['type'], $mute['key']);

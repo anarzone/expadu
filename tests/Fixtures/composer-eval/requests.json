@@ -8465,6 +8465,104 @@
    }
   },
   {
+   "id": "actions.add_appointment",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "text": "I have a dentist appointment at 4pm today",
+   "expect": {
+    "open": true,
+    "acted": "add_appointment",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.mark_done",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "plan": {
+    "day": "today",
+    "stops": [
+     {
+      "place": "Kolumba Kunstmuseum",
+      "start": "14:00",
+      "end": "15:00"
+     }
+    ]
+   },
+   "text": "I've done Kolumba already, tick it off",
+   "expect": {
+    "open": true,
+    "acted": "mark_done",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.way_reminder_off",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "kept_ways": [
+    {
+     "title": "Dinner at Haxenhaus",
+     "in_minutes": 240
+    }
+   ],
+   "text": "Don't remind me to leave for dinner, I know when to go",
+   "expect": {
+    "open": true,
+    "acted": "way_reminder",
+    "changed": "done"
+   }
+  },
+  {
+   "id": "actions.remove_way",
+   "persona": "new_person",
+   "home_veedel": "Ehrenfeld",
+   "origin": {
+    "lat": 50.9497,
+    "lng": 6.9177
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T13:10:00+01:00",
+   "weather": "dry",
+   "kept_ways": [
+    {
+     "title": "Dinner at Haxenhaus",
+     "in_minutes": 240
+    }
+   ],
+   "text": "I'm getting a lift to dinner, take the planned way out",
+   "expect": {
+    "open": true,
+    "acted": "remove_way",
+    "changed": "done"
+   }
+  },
+  {
    "id": "actions.no_change_for_a_question",
    "persona": "visa_holder",
    "home_veedel": "Ehrenfeld",

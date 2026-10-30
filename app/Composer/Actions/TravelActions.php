@@ -9,6 +9,7 @@ use App\Day\PlannedTrips;
 use App\Day\TripOrigin;
 use App\Enums\TransportMode;
 use App\Http\Requests\Concerns\StoredJourney;
+use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Services\LocationContext;
 use App\Transit\DepartureTime;
@@ -37,6 +38,7 @@ final class TravelActions implements ComposerAction
         return match ($action) {
             'save_stop' => $this->prepareStop($user, $input),
             'set_travel_prefs' => $this->preparePrefs($user, $input),
+            'way_reminder', 'remove_way' => $this->prepareKept($user, $action, $input, $now),
             default => $this->prepareWay($user, $input, $now),
         };
     }
@@ -54,6 +56,22 @@ final class TravelActions implements ComposerAction
             $title = self::prefsTitle($prepared['set']);
 
             return ['title' => $title, 'link' => self::LINK, 'said' => "{$title}.", 'undo' => ['previous' => $prepared['previous']]];
+        }
+        if ($action === 'way_reminder') {
+            $this->kept($user, $prepared['id'])->update(['remind' => $prepared['remind'], 'reminded_at' => null]);
+            $title = "The reminder to leave for {$prepared['title']} is ".($prepared['remind'] ? 'on' : 'off');
+
+            return ['title' => $title, 'sub' => $prepared['sub'], 'link' => self::LINK, 'said' => "{$title}.",
+                'undo' => ['id' => $prepared['id'], 'title' => $prepared['title'], 'remind' => ! $prepared['remind']]];
+        }
+        if ($action === 'remove_way') {
+            $trip = $this->kept($user, $prepared['id']);
+            $snapshot = $this->planned->snapshot($trip);
+            $trip->delete();
+            $title = "The way to {$prepared['title']} is out of your plan";
+
+            return ['title' => $title, 'sub' => $prepared['sub'], 'link' => self::LINK, 'said' => "{$title}.",
+                'undo' => ['date' => $prepared['date'], 'plan' => $prepared['plan'], 'title' => $prepared['title'], 'snapshot' => $snapshot]];
         }
         if (DepartureTime::parse($prepared['journey']['depart_at'])?->isPast() ?? true) {
             throw new ActionRefused('That way has left already. Ask again for the next one.');
@@ -82,6 +100,16 @@ final class TravelActions implements ComposerAction
             $this->setPrefs($user, $undo['previous']);
 
             return ['title' => 'Undone. '.self::prefsTitle($undo['previous'], again: true)];
+        }
+        if ($action === 'way_reminder') {
+            $this->kept($user, $undo['id'])->update(['remind' => $undo['remind'], 'reminded_at' => null]);
+
+            return ['title' => "Undone. The reminder to leave for {$undo['title']} is ".($undo['remind'] ? 'on' : 'off').' again.'];
+        }
+        if ($action === 'remove_way') {
+            $this->planned->restore($user, $undo['date'], $undo['plan'], $undo['snapshot']);
+
+            return ['title' => "Undone. The way to {$undo['title']} is back in your plan."];
         }
         if ($undo['previous'] === null) {
             $this->planned->forget($user, $undo['date'], $undo['plan']);
@@ -132,6 +160,44 @@ final class TravelActions implements ComposerAction
         }
 
         return ['set' => $set, 'previous' => array_intersect_key($previous, $set), 'propose' => self::prefsTitle($set, ask: true)];
+    }
+
+    /**
+     * A way they kept to a plan (plan_trip_for_later, or Travel's Plan the way), by the plan's
+     * name, "next" for the soonest: its leave reminder on or off, or the way taken out, as the
+     * way's own card does.
+     *
+     * @return array<string, mixed>
+     */
+    private function prepareKept(User $user, string $action, array $input, CarbonImmutable $now): array
+    {
+        $key = fn (string $text): string => preg_replace('/[^a-z0-9]/', '', mb_strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $text) ?: $text));
+        $said = $key(trim((string) ($input['plan'] ?? '')));
+        $kept = PlannedTrip::query()->where('user_id', $user->id)->where('arrive_at', '>', $now)->orderBy('depart_at')->get();
+        $named = $said === '' || in_array($said, ['next', 'mynext', 'mynextplan'], true) ? $kept->take(1)
+            : $kept->filter(fn (PlannedTrip $t): bool => str_contains($key($t->title), $said) || str_contains($said, $key($t->title)))->values();
+        if ($named->count() !== 1) {
+            throw new ActionRefused($kept->isEmpty() ? 'No way to a plan is kept on their day.'
+                : ($named->isEmpty() ? 'No way they kept goes to a plan of that name.' : 'More than one kept way fits that. Ask them which one.'));
+        }
+        $trip = $named->first();
+        $sub = 'Leave by '.$trip->depart_at->setTimezone(DayProjection::TIMEZONE)->format('H:i');
+        if ($action === 'remove_way') {
+            return ['id' => $trip->id, 'date' => $trip->date->toDateString(), 'plan' => $trip->target_id,
+                'title' => $trip->title, 'sub' => $sub, 'propose' => "Take the way to {$trip->title} out of your plan?"];
+        }
+        $remind = ($input['on'] ?? true) !== false;
+        if ((bool) $trip->remind === $remind) {
+            throw new ActionRefused("The reminder to leave for {$trip->title} is ".($remind ? 'on' : 'off').' already.');
+        }
+
+        return ['id' => $trip->id, 'title' => $trip->title, 'remind' => $remind, 'sub' => $sub,
+            'propose' => 'Turn '.($remind ? 'on' : 'off')." the reminder to leave for {$trip->title}?"];
+    }
+
+    private function kept(User $user, int $id): PlannedTrip
+    {
+        return PlannedTrip::query()->where('user_id', $user->id)->whereKey($id)->first() ?? throw new ActionRefused('That way isn’t kept any more.');
     }
 
     /**
