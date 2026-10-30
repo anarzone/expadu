@@ -18,6 +18,13 @@ enum SignalAction: string
     case MoreLikeThis = 'more_like_this';
     case BeenLiked = 'been_liked';
     case BeenDisliked = 'been_disliked';
+    // Under the second wording (PersonalisationWording): Composer's topics, Travel's stops and lines, Today's "Needs you".
+    case Searched = 'searched';
+    case LookedUp = 'looked_up';
+    case Tapped = 'tapped';
+    case Dismissed = 'dismissed';
+    case Kept = 'kept';
+    case Undone = 'undone';
 
     /**
      * The only actions a client may report (POST /api/signals): what the
