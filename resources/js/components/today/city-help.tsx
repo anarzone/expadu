@@ -115,12 +115,15 @@ export function CityHelp({
     station,
     stop,
     favourites,
+    learned = [],
 }: {
     weather?: Weather;
     forecast?: Forecast;
     station?: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
+    /** The stops they pick most (TodayTaste, opt-in only). */
+    learned?: string[];
 }) {
     const [sheet, setSheet] = useState(false);
     const later = laterHours(forecast);
@@ -164,6 +167,7 @@ export function CityHelp({
                 station={station}
                 stop={stop}
                 favourites={favourites}
+                learned={learned}
             />
             <Sheet
                 open={sheet}
@@ -246,10 +250,12 @@ function DepartureBoard({
     station,
     stop,
     favourites,
+    learned,
 }: {
     station?: Station | null;
     stop: string | null;
     favourites: FavouriteStop[];
+    learned: string[];
 }) {
     const board = useRef<HTMLDetailsElement>(null);
     const hasStation = !!station;
@@ -317,6 +323,7 @@ function DepartureBoard({
                 <StopPicker
                     current={station?.name ?? stop}
                     favourites={favourites}
+                    learned={learned}
                 />
                 {station ? (
                     <div>
@@ -408,22 +415,26 @@ function DepartureBoard({
     );
 }
 
-/** The mock's stop picker: the current stop and your favourites. */
+/** The mock's stop picker: the current stop, your favourites, then the stops you pick most. */
 function StopPicker({
     current,
     favourites,
+    learned,
 }: {
     current: string | null;
     favourites: FavouriteStop[];
+    /** The stops they pick most (opt-in): after the favourites, once each. */
+    learned: string[];
 }) {
     const [open, setOpen] = useState(false);
     const picker = useRef<HTMLDivElement>(null);
-    const stops = [
-        ...(current ? [current] : []),
-        ...favourites
-            .map((stop) => stop.name)
-            .filter((name) => name !== current),
-    ];
+    const saved = favourites
+        .map((stop) => stop.name)
+        .filter((name) => name !== current);
+    const often = learned.filter(
+        (name) => name !== current && !saved.includes(name),
+    );
+    const stops = [...(current ? [current] : []), ...saved, ...often];
 
     useEffect(() => {
         if (!open) {
@@ -499,6 +510,9 @@ function StopPicker({
                         }}
                     >
                         <span>{name}</span>
+                        {often.includes(name) && (
+                            <small className="stop-often">Often</small>
+                        )}
                         <Icon name="check" variant="line" />
                     </li>
                 ))}
