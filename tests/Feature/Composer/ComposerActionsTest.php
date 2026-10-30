@@ -13,9 +13,11 @@ use App\Models\BureaucracyCaseFact;
 use App\Models\Event;
 use App\Models\EventBookmark;
 use App\Models\EventReminder;
+use App\Models\PlaceWorkAnswer;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
+use App\Services\GeocodingService;
 use App\Services\LocationContext;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
@@ -158,6 +160,64 @@ test('every Paperwork record row changes in place: a date, or the answer\'s own 
     // A value that isn't one of its choices changes nothing.
     $this->actingAs($this->user->fresh())->postJson('/composer/act', ['action' => 'paperwork_fact', 'key' => 'registration_status', 'value' => 'maybe'])
         ->assertStatus(409);
+});
+
+test('🔒 their own places: times, other places and Home kept whole, each with an Undo that loses nothing', function () {
+    $this->mock(GeocodingService::class, fn ($mock) => $mock->shouldReceive('search')->andReturn([
+        ['name' => 'Venloer Straße 210', 'street_name' => 'Venloer Straße', 'housenumber' => '210', 'city' => 'Köln', 'lat' => 50.947, 'lng' => 6.916],
+    ]));
+    $actions = app(ComposerActions::class);
+    $now = CarbonImmutable::now();
+    // A Home kept without a point (an older account's), its times set.
+    $home = $this->user->places()->create(['emoji' => '🏠', 'name' => 'Home', 'category' => 'home', 'sort_order' => 0, 'arrive_by' => '18:30', 'day_mode' => 'weekdays']);
+
+    // Set, then undone: the point goes, the row and its times stay.
+    $set = $actions->request($this->user, 'set_my_place', ['which' => 'home', 'place' => 'Venloer Straße 210, Köln'], $now);
+    expect($home->fresh()->lat)->toBe(50.947);
+    $actions->undo($this->user, $set['blocks'][0]['id'], $now);
+    expect($home->fresh())->not->toBeNull()->lat->toBeNull()->arrive_by->toStartWith('18:30')->day_mode->toBe('weekdays');
+
+    // Work's times and days, then back.
+    $work = $this->user->places()->create(['emoji' => '💼', 'name' => 'Work', 'category' => 'work', 'sort_order' => 1, 'lat' => 50.94, 'lng' => 6.95]);
+    $times = $actions->request($this->user, 'set_place_times', ['which' => 'work', 'arrive_by' => '09:00', 'leave_at' => '17:30', 'days' => ['mon', 'tue', 'thu']], $now);
+    expect($times['blocks'][0]['text'])->toBe('Work: arrive by 09:00, leave at 17:30, Mon, Tue, Thu.')
+        ->and($work->fresh())->arrive_by->toStartWith('09:00')->leave_at->toStartWith('17:30')->day_mode->toBe('custom')->active_days->toBe(['mon', 'tue', 'thu']);
+    $actions->undo($this->user, $times['blocks'][0]['id'], $now);
+    expect($work->fresh())->arrive_by->toBeNull()->leave_at->toBeNull();
+
+    // Another place: added at an address the AI is never told, removed, and put back whole by Undo.
+    $added = $actions->request($this->user, 'add_my_place', ['name' => 'Gym', 'place' => 'Venloer Straße 210, Köln'], $now);
+    expect($added['said'])->not->toContain('Venloer');
+    $actions->request($this->user, 'set_place_times', ['which' => 'Gym', 'arrive_by' => '19:00', 'days' => 'weekends'], $now);
+    $removed = $actions->request($this->user, 'remove_my_place', ['which' => 'gym'], $now);
+    expect($this->user->places()->where('name', 'Gym')->exists())->toBeFalse();
+    $actions->undo($this->user, $removed['blocks'][0]['id'], $now);
+    expect($this->user->places()->where('name', 'Gym')->firstOrFail())->arrive_by->toStartWith('19:00')->day_mode->toBe('weekends')->address->toBe('Venloer Straße 210, Köln')
+        // Home and Work are never removed.
+        ->and($actions->request($this->user, 'remove_my_place', ['which' => 'home'], $now)['said'])->toStartWith('Not done');
+});
+
+test('a place been to, with how it was; a laptop answer only for a place they know, and only with their Apply', function () {
+    $spot = Spot::factory()->create(['name' => 'Café Nova', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'is_active' => true]);
+    $actions = app(ComposerActions::class);
+    $now = CarbonImmutable::now();
+
+    expect($actions->request($this->user, 'laptop_answer', ['place' => "spot:{$spot->id}", 'laptop' => 'yes'], $now)['said'])->toContain('mark it Been there or Saved first');
+
+    $been = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'been', 'rating' => 'up'], $now);
+    expect($been['blocks'][0]['text'])->toBe('Marked Café Nova as a place you’ve been, and you liked it.')
+        ->and(SpotFeedback::query()->where('spot_id', $spot->id)->value('been_rating'))->toBe('up');
+
+    $answer = $actions->request($this->user, 'laptop_answer', ['place' => "spot:{$spot->id}", 'laptop' => 'yes', 'wifi' => 'no'], $now);
+    expect($answer['blocks'][0])->toMatchArray(['type' => 'proposal', 'title' => 'Answer “Good for laptop work?” for Café Nova: laptops welcome: yes, Wi-Fi: no?'])
+        ->and(PlaceWorkAnswer::query()->where('user_id', $this->user->id)->exists())->toBeFalse();
+    $actions->apply($this->user, $answer['blocks'][0]['token'], $now);
+    expect(PlaceWorkAnswer::query()->where('user_id', $this->user->id)->firstOrFail())->laptop->toBe('yes')->wifi->toBe('no');
+
+    $unbeen = $actions->request($this->user, 'place_feedback', ['place' => "spot:{$spot->id}", 'state' => 'not_been'], $now);
+    expect(SpotFeedback::query()->where('spot_id', $spot->id)->value('been_at'))->toBeNull();
+    $actions->undo($this->user, $unbeen['blocks'][0]['id'], $now);
+    expect(SpotFeedback::query()->where('spot_id', $spot->id)->value('been_rating'))->toBe('up');
 });
 
 test('a saved place is made at once with Undo, and proposed when they ask first', function () {
