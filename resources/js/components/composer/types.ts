@@ -134,6 +134,8 @@ export async function api<T>(
     url: string,
     body?: object,
     signal?: AbortSignal,
+    /** How long to wait; the assistant's answer gets longer than a command. */
+    timeoutMs = 30_000,
 ): Promise<T> {
     const controller = new AbortController();
     const cancel = () => controller.abort(signal?.reason);
@@ -142,7 +144,7 @@ export async function api<T>(
             controller.abort(
                 new DOMException('Request timed out', 'TimeoutError'),
             ),
-        30_000,
+        timeoutMs,
     );
     signal?.addEventListener('abort', cancel, { once: true });
 
