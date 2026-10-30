@@ -116,9 +116,11 @@ tasks:
 
   - title: Apply for Kindergeld (child benefit)
     key: fam.kindergeld
+    applies_if_mode: explicit
+    applies_if:
+      purpose: family
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
-    review_status: legacy
+    review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
     content_version: 2026-10-30.2

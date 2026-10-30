@@ -8,7 +8,7 @@ tasks:
     key: gw.residence_permit
     eu_filter: non_eu_only
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: its audience needs business_type, which isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -206,7 +206,7 @@ tasks:
     # permit. The permit is a soft prerequisite for non-EU only — conveyed in the
     # copy + document list below, not as a hard DAG edge.
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: its audience needs business_type, which isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check

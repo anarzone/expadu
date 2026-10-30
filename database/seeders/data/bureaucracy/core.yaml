@@ -265,7 +265,7 @@ tasks:
     # source checker. The card does not say whether the insurance is required,
     # what it pays for or how large claims can get, because no reachable
     # allowed page says so.
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Stays legacy: voluntary, so no checkbox and no count (CoreSpineApprovalTest).
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check

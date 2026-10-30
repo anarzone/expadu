@@ -161,11 +161,12 @@ tasks:
 
   - title: 'Church tax: how church membership affects your tax'
     key: shared.church_tax
+    applies_if_mode: explicit
+    applies_if: {}
     coverage_scope: universal
     type: info
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
-    review_status: legacy
+    review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
     content_version: 2026-10-30.1
@@ -612,11 +613,12 @@ tasks:
 
   - title: 'Foreign professional qualification? Get it recognized'
     key: shared.recognition
+    applies_if_mode: explicit
+    applies_if: {}
     coverage_scope: universal
     type: info
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
-    review_status: legacy
+    review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
     content_version: 2026-10-30.1
@@ -715,11 +717,12 @@ tasks:
 
   - title: 'A child born in Germany: check citizenship first'
     key: shared.child_born
+    applies_if_mode: explicit
+    applies_if: {}
     coverage_scope: universal
     type: info
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
-    review_status: legacy
+    review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
     content_version: 2026-10-30.1

@@ -1,6 +1,6 @@
 # Short display names for each process (definition-level titles), shown above its steps.
 # Names only: no figures, deadlines or legal claims, so they need no source quotes.
-version: '2026-10-08.1'
+version: '2026-10-30.1'
 titles:
   address.registration: Address registration
   banking.account: Bank account
@@ -32,3 +32,9 @@ titles:
   tax.identification: Tax ID
   tax.income_tax_return: Income tax return
   tax.self_employment.registration: Registering as self-employed
+  family.kindergeld: Kindergeld (child benefit)
+  residence.child_born: A child born in Germany
+  education.bafoeg: Student finance (BAföG)
+  tax.church_tax: Church tax
+  work.recognition: Recognition of foreign qualifications
+

@@ -590,9 +590,11 @@ tasks:
 
   - title: Apply for BAföG (if eligible)
     key: stu.bafoeg
+    applies_if_mode: explicit
+    applies_if:
+      purpose: study
     depends_on: [stu.enrolment]
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
-    review_status: legacy
+    review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
     content_version: 2026-10-30.1

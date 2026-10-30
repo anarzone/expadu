@@ -21,7 +21,7 @@ tasks:
     trigger: child_born
     eu_filter: non_eu_only
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: a life-event card's date ({trigger}_at) isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -201,7 +201,7 @@ tasks:
     key: le.kita
     trigger: child_born
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: a life-event card's date ({trigger}_at) isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -360,7 +360,7 @@ tasks:
     key: le.elterngeld
     trigger: child_born
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: a life-event card's date ({trigger}_at) isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -554,7 +554,7 @@ tasks:
     applies_if:
       purpose: [employment, study, freelance, digital_nomad, other]
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: a life-event card's date ({trigger}_at) isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
@@ -674,7 +674,7 @@ tasks:
     applies_if:
       purpose: [study]
     depends_on: []
-    # Source-checked (claims verified daily), not yet mapped to a Paperwork process, so not approved.
+    # Source-checked (claims verified daily). Not approved: a life-event card's date ({trigger}_at) isn't a registered fact.
     review_status: legacy
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
