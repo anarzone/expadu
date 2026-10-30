@@ -130,6 +130,12 @@ const targetOf = (item: DayItem): PlanTarget | null =>
           }
         : null;
 
+/** Where a plan goes from and to, by place: an empty From is where you are. */
+const whereKey = (
+    from: { lat: number; lng: number } | null | undefined,
+    to: { lat: number; lng: number },
+) => `${from ? `${from.lat},${from.lng}` : 'here'}>${to.lat},${to.lng}`;
+
 function jsonHeaders() {
     return {
         'Content-Type': 'application/json',
@@ -186,11 +192,13 @@ type PlanPanelProps = {
     locating: boolean;
     /** Why the last "Use my location" didn't work. */
     locateError?: LocateError | null;
+    /** Location sharing was off: turn it on here, then locate. */
+    onAllowLocation?: () => void;
 };
 
 /** Why From couldn't be where you are, and what to do instead. */
 const fromLocateText: Record<LocateError, string> = {
-    off: 'Location sharing is off. Type where you’re starting, or turn it on in Settings.',
+    off: 'Location sharing is off. Share your location to start from where you are, or type where you’re starting.',
     unsupported:
         'Location isn’t available on this device. Type where you’re starting.',
     blocked:
@@ -225,6 +233,7 @@ export function PlanPanel({
     onLocate,
     locating,
     locateError = null,
+    onAllowLocation,
 }: PlanPanelProps) {
     const today = berlinToday();
     const [from, setFrom] = useState<FieldValue>(EMPTY);
@@ -244,9 +253,9 @@ export function PlanPanel({
     const [relocated, setRelocated] = useState(false);
     const relocating = useRef(false);
     const [status, setStatus] = useState<Status>({ kind: 'idle' });
+    // The option open in place: one at a time, none at first (owner,
+    // 22 Oct 2026, "Trip options" canvas).
     const [selected, setSelected] = useState<string | null>(null);
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
-    const [touched, setTouched] = useState(false);
     const [more, setMore] = useState(false);
     const [big, setBig] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -472,6 +481,7 @@ export function PlanPanel({
             });
 
             asked.current = `${whenMode}|${overrides?.date ?? date}|${overrides?.time ?? time}`;
+            askedWhere.current = whereKey(fromPlace, toPlace);
             request.current?.abort();
             const controller = new AbortController();
             request.current = controller;
@@ -479,7 +489,7 @@ export function PlanPanel({
             setEditing(false);
             setStatus({ kind: 'loading' });
             setMore(false);
-            setTouched(false);
+            setSelected(null);
 
             try {
                 // In the body: where you go and start never sit in a URL.
@@ -872,6 +882,31 @@ export function PlanPanel({
 
     // While the options show, a new day or time asks again, once it settles.
     const asked = useRef<string | null>(null);
+    // ...and picking or changing either place (a suggestion, Your location,
+    // Home or Work) asks again at once; typing alone waits until
+    // a place is picked (owner, 22 Oct 2026).
+    const askedWhere = useRef<string | null>(null);
+    const where =
+        to.place && (from.place || !from.text.trim())
+            ? whereKey(from.place, to.place)
+            : null;
+
+    useEffect(() => {
+        if (
+            !results ||
+            where === null ||
+            askedWhere.current === null ||
+            askedWhere.current === where ||
+            // Your location plans again itself, once the fix is in.
+            relocating.current ||
+            locating
+        ) {
+            return;
+        }
+
+        void plan();
+    }, [results, where, locating, plan]);
+
     const when = `${schedule}|${date}|${time}`;
 
     useEffect(() => {
@@ -914,11 +949,16 @@ export function PlanPanel({
     // From becomes where the device is now: the fix goes to the server as
     // "I'm here", so an empty From plans from it. A shown answer is planned
     // again from there once the fix is in.
-    const useMyLocation = () => {
+    const startFromHere = (allow = false) => {
         setFrom(EMPTY);
         setRelocated(true);
         relocating.current = true;
-        onLocate();
+
+        if (allow && onAllowLocation) {
+            onAllowLocation();
+        } else {
+            onLocate();
+        }
     };
 
     useEffect(() => {
@@ -940,14 +980,12 @@ export function PlanPanel({
         [options, sort, prefs, deadline],
     );
     const shown = more ? ranked : ranked.slice(0, 3);
+    const openOption = shown.some((option) => option.id === selected)
+        ? selected
+        : null;
+    // The open option, else the best: what the checks and a hand-off read.
     const chosen =
-        shown.find((option) => option.id === selected) ?? shown[0] ?? null;
-    const open = new Set(expanded);
-
-    // Desktop shows the chosen way's details until you fold them.
-    if (desktop && !touched && chosen) {
-        open.add(chosen.id);
-    }
+        shown.find((option) => option.id === openOption) ?? shown[0] ?? null;
 
     const go = (place: PlanPlace, next?: Picked | null) => {
         setTo({ text: place.name, place });
@@ -997,6 +1035,39 @@ export function PlanPanel({
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
+    // The Deutschlandticket, said where the fare is: kept with your account,
+    // then the ways are planned again so the fare matches.
+    const [ticketBusy, setTicketBusy] = useState(false);
+    const sayTicket = async (held: boolean) => {
+        setTicketBusy(true);
+
+        try {
+            const response = await fetch('/api/travel/deutschlandticket', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN':
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ held }),
+            });
+
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+
+            await plan();
+        } catch {
+            showToast('That couldn’t be saved. Try again.', { error: true });
+        } finally {
+            setTicketBusy(false);
+        }
+    };
+
     // What was picked (or typed and found) in the address line becomes your
     // Home or Work, kept with your account.
     const keepPlace = async (
@@ -1123,7 +1194,7 @@ export function PlanPanel({
                 kind: target?.kind ?? null,
             },
             inPlan: isPlanned(option),
-            addToPlan: target ? addToPlan : null,
+            addToPlan: target ? () => addToPlan(option) : null,
         });
     };
 
@@ -1138,12 +1209,12 @@ export function PlanPanel({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status.kind, chosen]);
 
-    const addToPlan = async (): Promise<boolean> => {
-        if (!chosen || !target || saving) {
+    const addToPlan = async (option: PlanOption): Promise<boolean> => {
+        if (!target || saving) {
             return false;
         }
 
-        if (isPlanned(chosen) && plannedNow) {
+        if (isPlanned(option) && plannedNow) {
             setSaved(plannedNow);
 
             return true;
@@ -1159,7 +1230,7 @@ export function PlanPanel({
                 body: JSON.stringify({
                     date: berlinNow(new Date(target.start_at)).date,
                     target_id: target.id,
-                    journey: chosen.journey,
+                    journey: option.journey,
                     // On by default where notifications are already allowed,
                     // as the mock shows it; otherwise the switch asks.
                     remind: push.isSubscribed,
@@ -1464,13 +1535,15 @@ export function PlanPanel({
                                     0,
                                 );
                             }}
-                            onSwap={() => {
-                                setFrom(to);
-                                setTo(from);
-                                setPicked(null);
-                            }}
                             toRef={toField}
-                            onUseLocation={useMyLocation}
+                            onUseLocation={() => startFromHere()}
+                            onAllowLocation={
+                                relocated &&
+                                locateError === 'off' &&
+                                onAllowLocation
+                                    ? () => startFromHere(true)
+                                    : undefined
+                            }
                             locating={locating}
                             locateNote={
                                 relocated && locateError
@@ -1923,6 +1996,10 @@ export function PlanPanel({
                                     ) : answer && ranked.length ? (
                                         <>
                                             <PlanChecks
+                                                onTicket={(held) =>
+                                                    void sayTicket(held)
+                                                }
+                                                ticketBusy={ticketBusy}
                                                 checks={checksFor(
                                                     answer,
                                                     chosen,
@@ -1946,28 +2023,58 @@ export function PlanPanel({
                                                         to.place?.name ??
                                                         to.text
                                                     }
-                                                    selected={
-                                                        chosen?.id ?? null
-                                                    }
                                                     planned={isPlanned}
                                                     onBoardStop={onBoardStop}
-                                                    onSelect={setSelected}
-                                                    expanded={open}
-                                                    onToggle={(id) => {
-                                                        setTouched(true);
-                                                        setExpanded(() => {
-                                                            const next =
-                                                                new Set(open);
-
-                                                            if (next.has(id)) {
-                                                                next.delete(id);
-                                                            } else {
-                                                                next.add(id);
-                                                            }
-
-                                                            return next;
-                                                        });
-                                                    }}
+                                                    expanded={
+                                                        new Set(
+                                                            openOption
+                                                                ? [openOption]
+                                                                : [],
+                                                        )
+                                                    }
+                                                    onToggle={(id) =>
+                                                        setSelected((now) =>
+                                                            now === id
+                                                                ? null
+                                                                : id,
+                                                        )
+                                                    }
+                                                    actions={(option) => (
+                                                        <div className="plan-option-actions">
+                                                            <button
+                                                                type="button"
+                                                                className="primary plan-go"
+                                                                onClick={() =>
+                                                                    showTheWay(
+                                                                        option,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <TravelIcon name="route" />
+                                                                Show the way
+                                                            </button>
+                                                            {target ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="quiet-button plan-save"
+                                                                    disabled={
+                                                                        saving
+                                                                    }
+                                                                    onClick={() =>
+                                                                        void addToPlan(
+                                                                            option,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {isPlanned(
+                                                                        option,
+                                                                    )
+                                                                        ? 'In your plan · see it'
+                                                                        : 'Add to plan'}
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
                                                 />
                                                 {ranked.length > 3 ? (
                                                     <button
@@ -1986,40 +2093,6 @@ export function PlanPanel({
                                                             : `${ranked.length - 3} more routes`}
                                                         <TravelIcon name="down" />
                                                     </button>
-                                                ) : null}
-                                                {chosen ? (
-                                                    <div className="plan-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="primary plan-go"
-                                                            onClick={() =>
-                                                                showTheWay(
-                                                                    chosen,
-                                                                )
-                                                            }
-                                                        >
-                                                            <TravelIcon name="route" />
-                                                            Show the way
-                                                        </button>
-                                                        {target ? (
-                                                            <button
-                                                                type="button"
-                                                                className="quiet-button plan-save"
-                                                                disabled={
-                                                                    saving
-                                                                }
-                                                                onClick={() =>
-                                                                    void addToPlan()
-                                                                }
-                                                            >
-                                                                {isPlanned(
-                                                                    chosen,
-                                                                )
-                                                                    ? 'In your plan · see it'
-                                                                    : 'Add to plan'}
-                                                            </button>
-                                                        ) : null}
-                                                    </div>
                                                 ) : null}
                                             </div>
                                         </>
