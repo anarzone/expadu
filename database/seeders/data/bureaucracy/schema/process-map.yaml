@@ -57,3 +57,4 @@ entries:
   stu.bafoeg: {process_id: education.bafoeg, position: 1, topic: education, kind: action, coverage: partial}
   shared.church_tax: {process_id: tax.church_tax, position: 1, topic: tax, kind: context, coverage: partial}
   shared.recognition: {process_id: work.recognition, position: 1, topic: work, kind: context, coverage: partial}
+  fam.school_kita: {process_id: education.school_and_childcare, position: 1, topic: education, kind: action, coverage: partial}

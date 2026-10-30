@@ -76,10 +76,118 @@ tasks:
 
   - title: Register children for school or Kita
     key: fam.school_kita
+    applies_if_mode: explicit
+    applies_if:
+      purpose: family
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-30.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: 'Schulgesetz NRW — Beginn der Schulpflicht', url: 'https://recht.nrw.de/lrgv/gesetz/01082026-schulgesetz-nrw-schulg/'}
+      - {kind: primary, label: '§20 IfSG — Schutzimpfungen', url: 'https://www.gesetze-im-internet.de/ifsg/__20.html'}
+      - {kind: implementation, label: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche', url: 'https://www.stadt-koeln.de/service/produkte/00083/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Einschulung von Schulkindern', url: 'https://www.stadt-koeln.de/service/produkte/00082/index.html'}
+      - {kind: implementation, label: 'Stadt Köln — Vormerkung eines Kindergartenplatzes', url: 'https://www.stadt-koeln.de/service/produkt/vormerkung-eines-kindergartenplatzes'}
+      - {kind: implementation, label: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD', url: 'https://www.stadt-koeln.de/artikel/65229/index.html'}
+    claims:
+      - id: school-start
+        states: Compulsory schooling starts on 1 August for children who have turned six by 30 September
+        source: 'Schulgesetz NRW — Beginn der Schulpflicht'
+        quote: Die Schulpflicht beginnt für Kinder, die bis zum Beginn des 30. September das sechste Lebensjahr vollendet haben, am 1. August desselben Kalenderjahres.
+      - id: every-nationality
+        states: It applies to children of every nationality
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: Auch alle Kinder und Jugendliche mit einer ausländischen Nationalität unterliegen der deutschen Schulpflicht.
+      - id: kita-right
+        states: From age 1, children have a legal right
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Seit 1. August 2013 haben Kinder ab dem vollendeten 1. Lebensjahr einen Rechtsanspruch auf einen Platz in einer Kindertageseinrichtung oder eine Betreuung in der Kindertagespflege.
+      - id: as-early
+        states: Register for Kita as early as you can
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie sollten Ihr Kind so früh wie möglich für einen Betreuungsplatz anmelden.
+      - id: six-months
+        states: you must state your need at least six months before the place should start
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: spätestens sechs Monate vor Inanspruchnahme
+      - id: letter
+        states: the city sends you a letter so you can book an advice appointment with the Kommunales Integrationszentrum
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: In diesem Schreiben stehen alle Informationen und Kontaktdaten, um mit dem Kommunalen Integrationszentrum einen Beratungstermin vereinbaren zu können.
+      - id: phone
+        states: 0221 / 221-29292
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: Kommunales Integrationszentrum, Telefonnummer 0221 / 221-29292
+      - id: medical-check
+        states: the Gesundheitsamt (public health office) gives your child a school medical check
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: Nach dieser Beratung wird Ihr Kind vom Gesundheitsamt schulärztlich untersucht.
+      - id: two-weeks-letter
+        states: You usually get the letter with the school place after about two weeks
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: In der Regel erhalten Sie nach etwa zwei Wochen das Zuweisungsschreiben.
+      - id: preparatory-class
+        states: Children who don't yet speak enough German first join a preparatory class (Vorbereitungsklasse)
+        source: 'Stadt Köln — Schulpflicht für neu zugewanderte Kinder und Jugendliche'
+        quote: Wenn Ihr Kind keine ausreichenden Deutschkenntnisse hat, um eine Regelklasse zu besuchen, besucht es eine Vorbereitungsklasse.
+      - id: choose-school
+        states: You can choose which primary school to register at
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: Sie können frei wählen, an welcher Schule Sie Ihr Kind anmelden möchten.
+      - id: nearest-school
+        states: Your child has a right to a place at the nearest city school if it has enough places
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: Sie haben Anspruch auf einen Schulplatz in der städtischen Schule, die Ihrem Wohnort am nächsten liegt, wenn diese ausreichend Plätze hat.
+      - id: one-school
+        states: Register at one primary school only
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: Sie dürfen Ihr Kind nur an einer Grundschule anmelden.
+      - id: second-choice
+        states: always give a second choice on the form
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: Daher ist es immer erforderlich, dass Sie einen Zweitwunsch auf dem Anmeldebogen angeben.
+      - id: registration-deadline
+        states: The city sets a registration deadline for each school year
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: Die Anmeldefrist für Grundschulen endete am
+      - id: online-or-in-writing
+        states: or in writing at the Kita
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Dies können Sie online oder schriftlich in der jeweiligen Kindertageseinrichtung erledigen.
+      - id: reserve-before-moving
+        states: You can reserve before you live in Köln
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Wenn Sie noch nicht in Köln wohnen, können Sie Ihr Kind schon vormerken lassen.
+      - id: erstwohnsitz
+        states: you only get an offer once at least one parent or guardian is registered with their main residence (Erstwohnsitz) in Köln
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Ein Platzangebot kann aber erst erfolgen, wenn mindestens ein Elternteil, eine Erziehungsberechtigte oder ein Erziehungsberechtigter mit Erstwohnsitz in Köln gemeldet ist.
+      - id: six-requests
+        states: You can hold up to six active requests per child per care year
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie können für jedes Kind bis zu sechs aktive Betreuungsanfragen pro Betreuungsjahr stellen.
+      - id: two-weeks-to-answer
+        states: You have two weeks to accept or decline the offer in your profile
+        source: 'Stadt Köln — Häufig gestellte Fragen zu LITTLE BIRD'
+        quote: Sie haben innerhalb von zwei Wochen die Möglichkeit, in Ihrem Profil das Platzangebot anzunehmen oder abzulehnen.
+      - id: other-place
+        states: If there is no place at the Kita you named, the city offers you another place or a place with a childminder
+        source: 'Stadt Köln — Vormerkung eines Kindergartenplatzes'
+        quote: Sollte in der von Ihnen genannten Kindertageseinrichtung kein Platz zur Verfügung stehen, unterbreiten wir Ihnen ein anderes Platzangebot oder bieten einen Platz in der Kindertagespflege an.
+      - id: measles-before-care
+        states: Children who go to a Kita or school must show proof of measles protection before their care starts
+        source: '§20 IfSG — Schutzimpfungen'
+        quote: haben der Leitung der jeweiligen Einrichtung vor Beginn ihrer Betreuung oder ihrer Tätigkeit folgenden Nachweis vorzulegen
+      - id: measles-proofs
+        states: proof of immunity, or a certificate that your child can't be vaccinated
+        source: 'Stadt Köln — Einschulung von Schulkindern'
+        quote: einen Immunitätsnachweis oder eine Bescheinigung über Kontraindikation
     description: |
-      Compulsory schooling starts on 1 August for children who have turned 6 by 30 September,
-      and it applies to all school-age children, including those who move here from abroad.
+      Compulsory schooling starts on 1 August for children who have turned six by 30 September.
+      It applies to children of every nationality.
       From age 1, children have a legal right to a place in a Kita (daycare) or with a
       childminder (Kindertagespflege). Register for Kita as early as you can: you must state
       your need at least six months before the place should start.
@@ -103,16 +211,16 @@ tasks:
         body: Once you are registered in Cologne, the city sends you a letter so you can book an advice appointment with the Kommunales Integrationszentrum (municipal integration centre, 0221 / 221-29292). After that, the Gesundheitsamt (public health office) gives your child a school medical check, and the Schulamt (school authority) finds a school place. You usually get the letter with the school place after about two weeks. Children who don't yet speak enough German first join a preparatory class (Vorbereitungsklasse).
         link: https://www.stadt-koeln.de/service/produkte/00083/index.html
       - title: For children starting first grade
-        body: You can choose which primary school to register at. Your child has a right to a place at the nearest city school if it has enough places. Register at one primary school only, and always give a second choice on the form. There is a fixed registration deadline. For the 2026/27 school year it ended on 15 November 2025, so check the city's Einschulung page for the current one.
+        body: You can choose which primary school to register at. Your child has a right to a place at the nearest city school if it has enough places. Register at one primary school only, and always give a second choice on the form. The city sets a registration deadline for each school year, so check its Einschulung page for the current one.
         link: https://www.stadt-koeln.de/service/produkte/00082/index.html
       - title: For Kita-age children
         body: |
-          Apply online via LITTLE BIRD, Cologne's portal for Kita places, or in person at the Kita. You can register before you move, using your current address. A Kita place is only offered once at least one parent is registered in Cologne with their main residence. You can have up to six active requests per child per year.
+          Apply online via LITTLE BIRD, Cologne's portal for Kita places, or in writing at the Kita. You can reserve before you live in Köln, but you only get an offer once at least one parent or guardian is registered with their main residence (Erstwohnsitz) in Köln. You can hold up to six active requests per child per care year.
 
-          Offers come at the earliest eight months before the start date. You have two weeks to accept or decline. If the Kita you chose has no place, the city offers another place or a childminder.
+          You have two weeks to accept or decline the offer in your profile. If there is no place at the Kita you named, the city offers you another place or a place with a childminder.
         link: https://portal-koeln.little-bird.de/
       - title: Check measles protection
-        body: Children aged 1 and over who go to a Kita or school must show proof of measles protection. This can be proof of vaccination, proof of immunity, or a certificate that your child can't be vaccinated, for example because of an intolerance.
+        body: Children who go to a Kita or school must show proof of measles protection before their care starts. This can be proof of vaccination, proof of immunity, or a certificate that your child can't be vaccinated, for example because of an intolerance.
 
   - title: Apply for Kindergeld (child benefit)
     key: fam.kindergeld

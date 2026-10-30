@@ -239,8 +239,7 @@ tasks:
       automatically and will write to you.
     phase: settling
     urgency: medium
-    deadline_type: days_since_arrival
-    deadline_days: 60
+    deadline_type: none
     documents_required: []
     links:
       - https://www.rundfunkbeitrag.de/welcome/english
