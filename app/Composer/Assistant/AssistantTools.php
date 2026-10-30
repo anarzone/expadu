@@ -23,9 +23,13 @@ use App\Composer\PlanFit;
 use App\Composer\WorkspaceStore;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
+use App\Enums\SpotFeedbackState;
 use App\Models\BureaucracyPerson;
 use App\Models\Event;
+use App\Models\EventBookmark;
+use App\Models\FavouriteStop;
 use App\Models\Spot;
+use App\Models\SpotFeedback;
 use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
@@ -71,6 +75,9 @@ final class AssistantTools
     /** Results per lookup. */
     private const SHOWN = 8;
 
+    /** How many of each kind they saved my_saved names. */
+    private const SAVED_SHOWN = 20;
+
     /** KVB notices per lookup. */
     private const NOTICES = 3;
 
@@ -84,7 +91,7 @@ final class AssistantTools
     public const CATEGORIES = [
         'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
         'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'weather' => 'weather',
-        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names',
+        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
         'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
@@ -308,6 +315,8 @@ final class AssistantTools
             ['name' => 'my_next', 'description' => 'Shows the person their next plan or appointment as a card. You don\'t get its contents.',
                 'input_schema' => ['type' => 'object', 'properties' => ['appointment' => ['type' => 'boolean', 'description' => 'they asked about appointments only']]]],
             ['name' => 'my_places', 'description' => 'The person\'s saved places (Home, Work and others) by name and Veedel.', 'input_schema' => $none],
+            ['name' => 'my_saved', 'description' => 'What the person saved, by name, only when they ask about it: places they saved (with their Veedel), events they saved that are still ahead (with when they start) and their favourite stops.',
+                'input_schema' => ['type' => 'object', 'properties' => ['what' => ['type' => 'string', 'enum' => ['places', 'events', 'stops', 'all']]]]],
             ...self::actions($paperwork),
             ...($personal ? [
                 ['name' => 'my_taste', 'description' => 'What this person tends to like and skip (kinds of places and events, areas, times of day), from what they saved, opened and marked. They turned personalisation on.', 'input_schema' => $none],
@@ -360,6 +369,7 @@ final class AssistantTools
                 'my_trip' => $this->own('trip', app(OwnCards::class)->trip($this->user, in_array($input['ask'] ?? null, ['leave', 'status', 'stop', 'arrive', 'next'], true) ? $input['ask'] : 'leave', $this->now), 'their trip'),
                 'my_next' => $this->own('next', app(OwnCards::class)->next($this->user, $this->plans, ($input['appointment'] ?? false) === true, $this->now), 'their next plan or appointment'),
                 'my_places' => $this->myPlaces(),
+                'my_saved' => $this->mySaved((string) ($input['what'] ?? 'all')),
                 'my_taste' => $this->myTaste(),
                 'my_day' => $this->myDay(),
                 // Every change Composer can make goes the one way, its card included.
@@ -1792,6 +1802,39 @@ final class AssistantTools
         return $places->values()->map(fn ($place, int $i): string => $this->line('m'.($i + 1),
             (in_array($place->category, ['home', 'work'], true) ? ucfirst((string) $place->category) : "\"{$place->name}\"")
             .' in '.($locations->veedelAt((float) $place->lat, (float) $place->lng) ?? 'an unknown Veedel')))->implode("\n");
+    }
+
+    /**
+     * What they saved, by name: places (with their Veedel), events still ahead (with when they
+     * start) and favourite stops. Never an address or a point.
+     */
+    private function mySaved(string $what): string
+    {
+        $lines = [];
+        if (in_array($what, ['places', 'all'], true)) {
+            $spots = SpotFeedback::query()->where('user_id', $this->user->id)->where('state', SpotFeedbackState::Saved)
+                ->with('spot:id,name,veedel')->latest('updated_at')->limit(self::SAVED_SHOWN)->get()->pluck('spot')->filter();
+            foreach ($spots->values() as $i => $spot) {
+                $lines[] = $this->line('sp'.($i + 1), "saved place \"{$spot->name}\"".($spot->veedel ? " in {$spot->veedel}" : ''));
+            }
+        }
+        if (in_array($what, ['events', 'all'], true)) {
+            // The occurrence they saved, as they saved it: a recurring event's own date, not its first.
+            $events = EventBookmark::query()->where('user_id', $this->user->id)->where('occurrence_start', '>=', $this->now->startOfDay())
+                ->orderBy('occurrence_start')->limit(self::SAVED_SHOWN)->get(['title', 'occurrence_start']);
+            foreach ($events->values() as $i => $event) {
+                $at = CarbonImmutable::parse($event->occurrence_start)->setTimezone('Europe/Berlin');
+                $lines[] = $this->line('se'.($i + 1), "saved event \"{$event->title}\", ".$at->format('D j M, H:i'));
+            }
+        }
+        if (in_array($what, ['stops', 'all'], true)) {
+            $stops = FavouriteStop::query()->where('user_id', $this->user->id)->orderBy('name')->pluck('name');
+            foreach ($stops->values() as $i => $stop) {
+                $lines[] = $this->line('fs'.($i + 1), "favourite stop {$stop}");
+            }
+        }
+
+        return $lines === [] ? 'Nothing saved of that kind.' : implode("\n", $lines);
     }
 
     /** What they like and skip, as TasteFacts states it: kinds, areas, times of day. */
