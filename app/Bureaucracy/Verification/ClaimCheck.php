@@ -2,6 +2,8 @@
 
 namespace App\Bureaucracy\Verification;
 
+use Carbon\CarbonImmutable;
+
 /**
  * Automated source check for one catalogue card.
  *
@@ -140,8 +142,11 @@ final class ClaimCheck
         $type = $this->value($card['deadline_type'] ?? null);
         if ($days !== null && in_array($type, self::DatedDeadlines, true)) {
             $token = 'duration:days:'.(int) $days;
+            // A period in months backs the shortest span that many months can last ("sechs Monate": 181
+            // days), so the reminder is never later than the legal deadline.
             $backed = collect($claims)->contains(fn ($claim) => ($claim['covers'] ?? null) === self::Deadline
-                && in_array($token, Figures::tokens(SourceText::key($claim['quote'])), true));
+                && collect(Figures::tokens(SourceText::key($claim['quote'])))->contains(fn (string $figure): bool => $figure === $token
+                    || (preg_match('/^duration:months:(\d+)$/', $figure, $months) === 1 && (int) $days === self::shortestDays((int) $months[1]))));
             if (! $backed) {
                 $errors[] = "the {$days}-day deadline needs a `covers: deadline` claim whose quote states that period";
             }
@@ -228,6 +233,21 @@ final class ClaimCheck
         }
 
         return array_values(array_filter($texts, fn ($text) => is_string($text) && trim($text) !== ''));
+    }
+
+    /** The fewest days a period of this many months can last (§188 BGB: a 31st ends on the month's last day). */
+    public static function shortestDays(int $months): int
+    {
+        static $known = [];
+        if (isset($known[$months])) {
+            return $known[$months];
+        }
+        $shortest = PHP_INT_MAX;
+        for ($start = CarbonImmutable::create(2024, 1, 1); $start->year < 2028; $start = $start->addDay()) {
+            $shortest = min($shortest, (int) $start->diffInDays($start->addMonthsNoOverflow($months)));
+        }
+
+        return $known[$months] = $shortest;
     }
 
     /** Figures from config/bureaucracy_figures.php carry their own source and verification date. */
