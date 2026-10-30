@@ -19,6 +19,7 @@ export async function resolve(specifier, context, next) {
         : specifier.startsWith('.') && context.parentURL?.startsWith('file:')
           ? new URL(specifier, context.parentURL).href
           : null;
+
     if (local !== null && !file(local)) {
         for (const candidate of [`${local}.ts`, `${local}/index.ts`]) {
             if (existsSync(fileURLToPath(candidate)) && file(candidate)) {
