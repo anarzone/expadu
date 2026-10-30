@@ -85,10 +85,26 @@ test('deleting the open conversation opens an empty one, listed nowhere, without
     $state = $this->actingAs($user)->deleteJson('/composer/conversations/weekend')->assertOk()->json();
     $open = collect($state['conversations'])->firstWhere('id', $state['active']);
     expect($open['messages'])->toBe([])
-        ->and(collect($state['conversations'])->filter(fn (array $c): bool => $c['messages'] !== [])->pluck('id')->all())->toBe(['visa'])
+        ->and(collect($state['conversations'])->filter(fn (array $c): bool => $c['asked'] > 0)->pluck('id')->all())->toBe(['visa'])
         ->and($state['focus'])->toBeNull();
 
     // An empty one already there is opened again, not another made.
     $state = $this->deleteJson('/composer/conversations/visa')->assertOk()->json();
     expect($state['conversations'])->toHaveCount(1)->and($state['active'])->toBe($open['id']);
+});
+
+test('only the open conversation carries its messages; the others are listed by title, count and last message', function () {
+    $user = User::factory()->onboarded()->create();
+    managedWorkspace($user, active: 'visa');
+    $this->actingAs($user);
+
+    $state = $this->getJson('/composer/workspace')->assertOk()->json();
+    $weekend = collect($state['conversations'])->firstWhere('id', 'weekend');
+    expect($weekend)->messages->toBe([])->title->toBe('Plan my weekend')->asked->toBe(1)->last_at->not->toBeNull()
+        ->and(collect($state['conversations'])->firstWhere('id', 'visa')['messages'])->toHaveCount(2);
+
+    // Opening it brings its messages, and the other one's go.
+    $state = $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'resume', 'id' => 'weekend'])->assertOk()->json();
+    expect(collect($state['conversations'])->firstWhere('id', 'weekend')['messages'])->toHaveCount(3)
+        ->and(collect($state['conversations'])->firstWhere('id', 'visa'))->messages->toBe([])->asked->toBe(1);
 });

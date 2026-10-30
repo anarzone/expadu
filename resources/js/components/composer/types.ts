@@ -88,7 +88,12 @@ export type Conversation = {
     id: string;
     title: string;
     created_at: string;
+    /** The open conversation's messages; the others come when one is opened (resume). */
     messages: Message[];
+    /** How many times they asked in it. */
+    asked: number;
+    /** When it was last written in: its newest message, else its start. */
+    last_at: string;
 };
 /** One applied change; Undo works newest first per day. */
 export type Change = {
