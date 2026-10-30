@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\RecurrenceExpander;
+use App\Support\EventAttractions;
 use Carbon\CarbonImmutable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -84,6 +85,9 @@ class Event extends Model
             ->visible()
             ->withPoint()
             ->when($ids !== null, fn (Builder $query) => $query->whereIn('id', $ids))
+            // Attractions (an exhibition, opening hours listed day by day) are no occurrence of
+            // anything; a listing asked for by id is still found.
+            ->when($ids === null, fn (Builder $query) => $query->whereNotIn('events.id', app(EventAttractions::class)->ids()))
             ->with([
                 'mediaAttachments.mediaAsset',
                 'venue.mediaAttachments.mediaAsset',
