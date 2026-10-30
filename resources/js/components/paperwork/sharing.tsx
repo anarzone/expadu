@@ -51,7 +51,16 @@ const base = '/bureaucracy/v2';
  * EXP-79 and the design (how an invitation travels, its email field and the
  * accept screen), so it isn't here yet.
  */
-export function Sharing({ personId }: { personId: number }) {
+/** A record action Composer handed over to (its hand-off), ringed when the panel opens. */
+export type RecordRing = 'download' | 'stop' | 'delete';
+
+export function Sharing({
+    personId,
+    ring = null,
+}: {
+    personId: number;
+    ring?: RecordRing | null;
+}) {
     const { toast, openSheet, closeSheet } = usePaperwork();
     const [grants, setGrants] = useState<Grant[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -137,6 +146,7 @@ export function Sharing({ personId }: { personId: number }) {
                     personId={personId}
                     stopped={false}
                     ui={{ openSheet, closeSheet, toast }}
+                    ring={ring}
                 />
             </section>
         </>
@@ -200,11 +210,23 @@ function RecordActions({
     personId,
     stopped,
     ui,
+    ring = null,
 }: {
     personId: number;
     stopped: boolean;
     ui: RecordUi;
+    /** The action Composer handed over to: ringed and in view, never pressed for them. */
+    ring?: RecordRing | null;
 }) {
+    const ringed = useRef<HTMLButtonElement | null>(null);
+    useEffect(() => {
+        ringed.current?.scrollIntoView({ block: 'center' });
+        ringed.current?.focus({ preventScroll: true });
+    }, []);
+    const mark = (action: RecordRing) =>
+        ring === action
+            ? { ref: ringed, className: 'button secondary is-ringed' }
+            : { className: 'button secondary' };
     const [downloading, setDownloading] = useState(false);
     const [switching, setSwitching] = useState(false);
     const [now, setNow] = useState(stopped);
@@ -301,7 +323,7 @@ function RecordActions({
             <div className="actions">
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('download')}
                     disabled={downloading}
                     onClick={() => void download()}
                 >
@@ -309,7 +331,7 @@ function RecordActions({
                 </button>
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('stop')}
                     data-record-processing
                     aria-busy={switching || undefined}
                     onClick={() => void setProcessing(!now)}
@@ -318,7 +340,7 @@ function RecordActions({
                 </button>
                 <button
                     type="button"
-                    className="button secondary"
+                    {...mark('delete')}
                     onClick={() =>
                         ui.openSheet({
                             title: 'Delete your record?',
