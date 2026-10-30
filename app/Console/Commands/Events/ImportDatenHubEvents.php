@@ -601,17 +601,24 @@ class ImportDatenHubEvents extends Command
         return null;
     }
 
-    /** @param  array<string, mixed>  $item */
+    /**
+     * The tourism board's own category, as ours: a first guess until the classifier sorts it.
+     *
+     * @param  array<string, mixed>  $item
+     */
     private function category(array $item, string $title): EventCategory
     {
         $categories = implode(' ', array_filter((array) ($item['categories'] ?? []), 'is_string'));
 
         return match (true) {
-            (bool) preg_match('/sport|turnier|wettbewerb|radtour/iu', $categories) => EventCategory::Sports,
-            (bool) preg_match('/party|nightlife|festival|open-air/iu', $categories) => EventCategory::Party,
-            (bool) preg_match('/führung|bühne|ausstellung|comedy|schauspiel|vortrag|lesung|film|klassisch|musical|konzert|ballett|tanz|zirkus|jazz|oper|kabarett|pop|theater|brauchtum|kultur/iu', $categories) => EventCategory::Culture,
-            (bool) preg_match('/sprach|language|tandem/iu', $title) => EventCategory::LanguageExchange,
-            (bool) preg_match('/stammtisch/iu', $title) => EventCategory::Stammtisch,
+            (bool) preg_match('/weihnachtsmarkt|festival|markt|genuss|brauchtum/iu', $categories) => EventCategory::Festivals,
+            (bool) preg_match('/führung|besichtigung|ausflug|exkursion|radtour/iu', $categories) => EventCategory::Tours,
+            (bool) preg_match('/bühne|comedy|schauspiel|kabarett|musical|oper|ballett|zirkus|figurentheater|vortrag|lesung/iu', $categories) => EventCategory::Stage,
+            (bool) preg_match('/konzert|klassisch|jazz|pop/iu', $categories) => EventCategory::Music,
+            (bool) preg_match('/party|nightlife/iu', $categories) => EventCategory::Party,
+            (bool) preg_match('/sport|turnier|wettbewerb/iu', $categories) => EventCategory::Sports,
+            (bool) preg_match('/geselligkeit|treffen/iu', $categories), (bool) preg_match('/sprach|language|tandem|stammtisch/iu', $title) => EventCategory::MeetPeople,
+            (bool) preg_match('/kinder|familie|kids/iu', $title) => EventCategory::Kids,
             default => EventCategory::Other,
         };
     }

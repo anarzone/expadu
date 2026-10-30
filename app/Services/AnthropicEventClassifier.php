@@ -45,6 +45,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
             'category' => [
                 'type' => 'string',
                 'enum' => array_map(fn (EventCategory $c) => $c->value, EventCategory::cases()),
+                'description' => 'What kind of event: '.implode('; ', array_map(fn (EventCategory $c) => "{$c->value} = {$c->description()}", EventCategory::cases())).'.',
             ],
             'language' => [
                 'type' => 'string',

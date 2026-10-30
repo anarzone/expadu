@@ -37,12 +37,14 @@ class InterestTaxonomy
     ];
 
     private const EVENTS = [
-        'language_exchange' => ['social'],
-        'stammtisch' => ['social', 'food_drink'],
-        'intl_meetup' => ['social'],
-        'sports' => ['sport'],
-        'culture' => ['culture'],
+        'music' => ['culture', 'nightlife'],
+        'stage' => ['culture'],
+        'tours' => ['culture', 'outdoors'],
+        'festivals' => ['culture', 'food_drink', 'social'],
+        'kids' => ['family'],
         'party' => ['nightlife'],
+        'sports' => ['sport'],
+        'meet_people' => ['social'],
     ];
 
     /** @return list<string> */

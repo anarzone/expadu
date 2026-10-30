@@ -14,7 +14,7 @@ events:
       Table-based language swap in a brewery hall — find your languages'
       table, sit down, switch halfway. No sign-up, no level requirement.
     tip_en: Mostly internationals — arrive by 19:15, the popular tables fill fast.
-    category: language_exchange
+    category: meet_people
     language: mixed
     chips: [English-friendly, newcomers welcome, solo-OK, free]
     price_text: free
@@ -40,7 +40,7 @@ events:
       newcomers get introduced around, Kölsch keeps coming until you
       cover your glass.
     tip_en: Say you're new — the regulars make a point of pulling newcomers in.
-    category: stammtisch
+    category: meet_people
     language: en
     chips: [English-friendly, newcomers welcome, solo-OK]
     price_text: free entry
@@ -91,7 +91,7 @@ events:
       Relaxed German practice round hosted by the adult education
       centre — small tables by level, native speakers moderate.
     tip_en: A1 is genuinely welcome — say your level at the door and you'll be seated accordingly.
-    category: language_exchange
+    category: meet_people
     language: mixed
     chips: [newcomers welcome, solo-OK, free]
     price_text: free
@@ -116,7 +116,7 @@ events:
       The open-to-everyone travellers' table — locals, new arrivals and
       people passing through, English by default.
     tip_en: Look for the table with the little globe flag; introductions are the whole point.
-    category: intl_meetup
+    category: meet_people
     language: en
     chips: [English-friendly, newcomers welcome, solo-OK, free]
     price_text: free
@@ -142,7 +142,7 @@ events:
       the fastest orientation a newcomer can get. Tip-based, book a
       free slot online.
     tip_en: Meets at the Dom's main portal — the guide holds a yellow umbrella.
-    category: culture
+    category: tours
     language: en
     chips: [English-friendly, newcomers welcome, solo-OK]
     price_text: tip-based
@@ -167,7 +167,7 @@ events:
       The Kollwitz collection stays open late with a short intro tour —
       quiet, small, and very Cologne.
     tip_en: The intro tour is German, but the collection needs no language at all.
-    category: culture
+    category: other
     language: none_needed
     chips: [solo-OK]
     price_text: "€5"
@@ -191,7 +191,7 @@ events:
       The big-room mixer for people new to Cologne — name stickers,
       icebreaker hosts, and a crowd that expects strangers.
     tip_en: Free for basic members — register online before the door.
-    category: intl_meetup
+    category: meet_people
     language: en
     chips: [English-friendly, newcomers welcome, solo-OK]
     price_text: "€8"

@@ -286,6 +286,10 @@ export function WhatsOn({
             if (current.saved) {
                 ask.saved = '1';
             }
+
+            if (current.no_german) {
+                ask.no_german = '1';
+            }
         }
 
         api<{ date: string | null; count: number }>(
@@ -346,9 +350,11 @@ export function WhatsOn({
             `${l.poster.title.trim().toLowerCase()}|${l.poster.start ?? ''}`,
         )
             ? { text: 'In your plan', tone: 'plan' }
-            : l.occurrence.language === 'en'
-              ? { text: 'In English', tone: 'language' }
-              : null;
+            : current.no_german && l.occurrence.no_german
+              ? { text: l.occurrence.no_german, tone: 'language' }
+              : l.occurrence.language === 'en'
+                ? { text: 'In English', tone: 'language' }
+                : null;
 
     // Soonest first: the day's hours as the Wall had them, what's on now first and what's over
     // folded away. Another order is one list.
@@ -674,7 +680,8 @@ export function WhatsOn({
                                 current.category ||
                                 current.area ||
                                 current.free ||
-                                current.saved
+                                current.saved ||
+                                current.no_german
                             )
                         }
                         other={otherDay}
@@ -689,6 +696,7 @@ export function WhatsOn({
                                           area: null,
                                           free: false,
                                           saved: false,
+                                          no_german: false,
                                       },
                             )
                         }

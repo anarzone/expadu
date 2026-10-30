@@ -72,7 +72,7 @@ test('a listing becomes its series and dates, with its open-licensed photo appro
         ->and($series->address)->toBe('Alter Markt 36-42, 50667 Köln')
         ->and((float) $series->price)->toBe(19.0)
         ->and($series->price_text)->toBe('19,00 €')
-        ->and($series->category)->toBe('culture')
+        ->and($series->category)->toBe('tours')
         ->and($series->source_url)->toBe('https://timeride.de/koeln/grusel-im-alten-koeln/');
 
     $photo = MediaAsset::where('provider', 'koeln-tourismus')->sole();

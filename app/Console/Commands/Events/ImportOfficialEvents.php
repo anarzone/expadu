@@ -453,13 +453,16 @@ class ImportOfficialEvents extends Command
 
     private function category(string $text): EventCategory
     {
+        // A first guess from the words, until the classifier sorts it (ProcessEventJob).
         return match (true) {
-            (bool) preg_match('/sprach|language|tandem|deutschkurs/iu', $text) => EventCategory::LanguageExchange,
-            (bool) preg_match('/stammtisch/iu', $text) => EventCategory::Stammtisch,
-            (bool) preg_match('/international|interkulturell|begegnung|network/iu', $text) => EventCategory::IntlMeetup,
+            (bool) preg_match('/sprachcaf|sprachtreff|language|tandem|stammtisch|international|interkulturell|begegnung|repair ?caf|lesekreis|strick|nachbarschaft/iu', $text) => EventCategory::MeetPeople,
+            (bool) preg_match('/kinder|kita|familie|vorlese|märchen|basteln|ferien|jugend|baby/iu', $text) => EventCategory::Kids,
+            (bool) preg_match('/festival|weihnachtsmarkt|flohmarkt|markt\b|kirmes|karneval/iu', $text) => EventCategory::Festivals,
+            (bool) preg_match('/führung|rundgang|stadtspaziergang/iu', $text) => EventCategory::Tours,
+            (bool) preg_match('/theater|kabarett|comedy|lesung|literar|oper\b|musical|zirkus/iu', $text) => EventCategory::Stage,
+            (bool) preg_match('/konzert|musik|chor\b|orchester|jazz/iu', $text) => EventCategory::Music,
+            (bool) preg_match('/party|clubbing|tanzparty/iu', $text) => EventCategory::Party,
             (bool) preg_match('/sport|lauf|rad|yoga|fitness|schwimm|wander/iu', $text) => EventCategory::Sports,
-            (bool) preg_match('/party|clubbing|dance|tanzparty/iu', $text) => EventCategory::Party,
-            (bool) preg_match('/konzert|musik|museum|ausstellung|führung|theater|kino|film|lesung|literar|kunst/iu', $text) => EventCategory::Culture,
             default => EventCategory::Other,
         };
     }

@@ -53,6 +53,8 @@ class EventOccurrencePresenter
             'title_translated' => $titleEnglish !== null,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
             'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
+            // Why a guest needs no German, or null (What's on's "No German needed").
+            'no_german' => EventEvidence::noGerman($manual ? $event->language : EventEvidence::language($event->language, $source), $event->language, $category),
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),

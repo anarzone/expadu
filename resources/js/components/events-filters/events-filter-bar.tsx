@@ -191,6 +191,19 @@ export function EventsFilterBar({
         </button>
     );
 
+    const noGermanButton = (
+        <button
+            type="button"
+            className="evf-square evf-wide-only"
+            aria-pressed={filters.no_german}
+            aria-label="No German needed only"
+            title="No German needed"
+            onClick={() => onFilters({ no_german: !filters.no_german })}
+        >
+            <Icon name="globe" variant="line" />
+        </button>
+    );
+
     const sortMenu = (where: string) => (
         <AnchoredMenu
             label="Sort events"
@@ -321,6 +334,7 @@ export function EventsFilterBar({
                 />
                 {freeButton}
                 {savedButton}
+                {noGermanButton}
             </div>
 
             <div
@@ -366,11 +380,12 @@ export function EventsFilterBar({
                             data-chosen={
                                 filters.category ||
                                 filters.free ||
-                                filters.saved
+                                filters.saved ||
+                                filters.no_german
                                     ? true
                                     : undefined
                             }
-                            aria-label={`Event category: ${chosenCategory?.label ?? 'All events'}${filters.free ? ', free only' : ''}${filters.saved ? ', saved only' : ''}`}
+                            aria-label={`Event category: ${chosenCategory?.label ?? 'All events'}${filters.free ? ', free only' : ''}${filters.saved ? ', saved only' : ''}${filters.no_german ? ', no German needed' : ''}`}
                         >
                             {/* Its icon's slot stays on a small phone, as in
                                 the mock, so the name keeps its offset. */}
@@ -381,7 +396,9 @@ export function EventsFilterBar({
                                 />
                             </span>
                             <span>{chosenCategory?.label ?? 'Category'}</span>
-                            {filters.free || filters.saved ? (
+                            {filters.free ||
+                            filters.saved ||
+                            filters.no_german ? (
                                 <i className="evf-dot" aria-hidden="true" />
                             ) : null}
                             {chevron}
@@ -435,6 +452,18 @@ export function EventsFilterBar({
                                 }
                             >
                                 Saved
+                            </MenuOption>
+                            <MenuOption
+                                icon="globe"
+                                selected={filters.no_german}
+                                keepOpen
+                                onSelect={() =>
+                                    onFilters({
+                                        no_german: !filters.no_german,
+                                    })
+                                }
+                            >
+                                No German needed
                             </MenuOption>
                         </MenuOptions>
                     </div>
@@ -493,6 +522,7 @@ export function EventsFilterBar({
                                 area: null,
                                 free: false,
                                 saved: false,
+                                no_german: false,
                                 sort: 'soonest',
                             })
                         }

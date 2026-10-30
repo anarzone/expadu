@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\EventCategory;
 use App\Jobs\ProcessEventJob;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
@@ -493,73 +494,51 @@ class ScrapeEvents extends Command
     protected function mapSourceCategory(array $sourceCategories): ?string
     {
         $map = [
-            'Konzerte' => 'music',
-            'Partys & Clubbing' => 'music',
-            'Festivals' => 'music',
-            'Jazz' => 'music',
-            'Theater' => 'culture',
-            'Ausstellungen' => 'culture',
-            'Kino' => 'culture',
-            'Lesungen' => 'culture',
-            'Kabarett & Comedy' => 'culture',
-            'Führungen' => 'culture',
-            'Vorträge' => 'culture',
-            'Stadtführungen' => 'culture',
-            'Märkte' => 'food',
-            'Flohmärkte' => 'food',
-            'Sport' => 'sports',
-            'Yoga' => 'sports',
-            'Laufen' => 'sports',
-            'Sprachen' => 'language',
-            'Networking' => 'social',
-            'Stammtisch' => 'social',
+            'konzerte' => EventCategory::Music, 'jazz' => EventCategory::Music, 'klassik' => EventCategory::Music,
+            'partys & clubbing' => EventCategory::Party, 'party' => EventCategory::Party,
+            'festivals' => EventCategory::Festivals, 'märkte' => EventCategory::Festivals,
+            'flohmärkte' => EventCategory::Festivals, 'weihnachtsmärkte' => EventCategory::Festivals,
+            'bühne' => EventCategory::Stage, 'theater' => EventCategory::Stage, 'lesungen' => EventCategory::Stage,
+            'kabarett & comedy' => EventCategory::Stage, 'comedy & kabarett' => EventCategory::Stage,
+            'musical' => EventCategory::Stage, 'oper' => EventCategory::Stage,
+            'führungen' => EventCategory::Tours, 'stadtführungen' => EventCategory::Tours,
+            'kinder' => EventCategory::Kids, 'familie' => EventCategory::Kids, 'kinder & familie' => EventCategory::Kids,
+            'sport' => EventCategory::Sports, 'yoga' => EventCategory::Sports, 'laufen' => EventCategory::Sports,
+            'sprachen' => EventCategory::MeetPeople, 'networking' => EventCategory::MeetPeople, 'stammtisch' => EventCategory::MeetPeople,
+            'ausstellungen' => EventCategory::Other, 'kino' => EventCategory::Other, 'vorträge' => EventCategory::Other,
         ];
 
         foreach ($sourceCategories as $name) {
-            if (isset($map[$name])) {
-                return $map[$name];
+            // koeln.de sends some names HTML-escaped ("Comedy &amp; Kabarett").
+            $key = mb_strtolower(trim(html_entity_decode((string) $name, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            if (isset($map[$key])) {
+                return $map[$key]->value;
             }
         }
 
         return null;
     }
 
+    /** A first guess from the words, until the classifier sorts it (ProcessEventJob). */
     protected function categoriseEvent(string $title, string $desc): string
     {
         $text = mb_strtolower($title.' '.$desc);
 
-        if (preg_match('/sprach|language|deutsch|german|tandem/i', $text)) {
-            return 'language';
-        }
-        if (preg_match('/musik|music|jazz|konzert|concert|live|dj/i', $text)) {
-            return 'music';
-        }
-        if (preg_match('/sport|lauf|run|yoga|fitness|schwimm/i', $text)) {
-            return 'sports';
-        }
-        if (preg_match('/food|essen|kulinar|street food|markt|market|brau|beer/i', $text)) {
-            return 'food';
-        }
-        if (preg_match('/kunst|art|museum|galerie|gallery|theater|theatre|kino|film|ausstellung|exhibit/i', $text)) {
-            return 'culture';
-        }
-        if (preg_match('/expat|international|community|meetup|stammtisch|networking/i', $text)) {
-            return 'social';
-        }
-
-        return 'culture';
+        return (match (true) {
+            (bool) preg_match('/sprachcaf|language|tandem|stammtisch|expat|international|meetup|repair ?caf|lesekreis|strick/iu', $text) => EventCategory::MeetPeople,
+            (bool) preg_match('/kinder|kids|familie|family|vorlese|märchen/iu', $text) => EventCategory::Kids,
+            (bool) preg_match('/festival|weihnachtsmarkt|flohmarkt|markt\b|market|kirmes/iu', $text) => EventCategory::Festivals,
+            (bool) preg_match('/führung|guided tour|stadtrundgang|rundgang/iu', $text) => EventCategory::Tours,
+            (bool) preg_match('/theater|theatre|comedy|kabarett|musical|oper\b|opera|lesung|zirkus|circus/iu', $text) => EventCategory::Stage,
+            (bool) preg_match('/konzert|concert|jazz|\bdj\b|orchester|chor\b/iu', $text) => EventCategory::Music,
+            (bool) preg_match('/party|clubbing/iu', $text) => EventCategory::Party,
+            (bool) preg_match('/sport|lauf|\brun\b|yoga|fitness|schwimm/iu', $text) => EventCategory::Sports,
+            default => EventCategory::Other,
+        })->value;
     }
 
     protected function categoryEmoji(string $category): string
     {
-        return match ($category) {
-            'language' => '🗣️',
-            'music' => '🎵',
-            'sports' => '🏃',
-            'food' => '🍽️',
-            'culture' => '🎭',
-            'social' => '🌍',
-            default => '📅',
-        };
+        return EventCategory::fromLegacy($category)->emoji();
     }
 }

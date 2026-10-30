@@ -247,7 +247,7 @@ test('saving an event and starting a trip to a planned place are recorded', func
 
     $rows = ledger($user)->keyBy('action');
     expect($rows['saved']->item_type)->toBe('event')
-        ->and($rows['saved']->category)->toBe('culture')
+        ->and($rows['saved']->category)->toBe('music')
         ->and($rows['saved']->price_band)->toBe('free')
         ->and((int) $rows['trip_taken']->item_id)->toBe($spot->id);
 });

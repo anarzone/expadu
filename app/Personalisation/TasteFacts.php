@@ -81,9 +81,6 @@ final class TasteFacts
     /** The words a category may be named by: its label, lower-cased. Unknown and "other" have none. */
     public static function categoryLabel(string $key): ?string
     {
-        if ($key === EventCategory::IntlMeetup->value) {
-            return 'international meetup';
-        }
         if ($key === EventCategory::Other->value) {
             return null;
         }

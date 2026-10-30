@@ -54,8 +54,8 @@ test('the filters come from the URL, and unknown values are dropped', function (
     $this->actingAs(User::factory()->onboarded()->create());
     DB::table('gtfs_stops')->insert(['stop_id' => 'neumarkt', 'stop_name' => 'Neumarkt', 'stop_lat' => 50.93576, 'stop_lng' => 6.94811]);
 
-    expect(whatsOn($this, ['q' => ' chess ', 'category' => 'culture', 'area' => 'Ehrenfeld', 'free' => 1, 'saved' => 1, 'sort' => 'closest', 'from' => 'Neumarkt'])['filters'])
-        ->toBe(['q' => 'chess', 'category' => 'culture', 'area' => 'Ehrenfeld', 'free' => true, 'saved' => true, 'sort' => 'closest', 'from' => 'Neumarkt']);
+    expect(whatsOn($this, ['q' => ' chess ', 'category' => 'music', 'area' => 'Ehrenfeld', 'free' => 1, 'saved' => 1, 'no_german' => 1, 'sort' => 'closest', 'from' => 'Neumarkt'])['filters'])
+        ->toBe(['q' => 'chess', 'category' => 'music', 'area' => 'Ehrenfeld', 'free' => true, 'saved' => true, 'no_german' => true, 'sort' => 'closest', 'from' => 'Neumarkt']);
 
     expect(whatsOn($this, ['category' => 'nonsense', 'sort' => 'random'])['filters'])
         ->category->toBeNull()->sort->toBe('soonest');
