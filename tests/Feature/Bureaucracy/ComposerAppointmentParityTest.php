@@ -11,7 +11,6 @@ use App\Composer\ActivePlanStore;
 use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
-use App\Composer\TodayPlanStore;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
@@ -98,50 +97,26 @@ function recordedComposerPlan($fixture): array
         'slots' => [(new PlanSlot($candidate, $candidate->fixedStart, $candidate->fixedStart->addMinutes(25), 0))->toArray()]];
 }
 
-test('active and saved day plans encrypt personal data and bind it to their owner and purpose', function () {
+test('active day plans encrypt personal data and bind it to their owner', function () {
     $plan = recordedComposerPlan($this);
     $active = app(ActivePlanStore::class);
     $active->save($this->actor, $plan);
-    app(TodayPlanStore::class)->save($this->actor, $active->get($this->actor), 'My private appointment prompt');
     $activeRaw = Cache::get('composer:plan:'.$this->actor->id);
-    $savedRaw = Cache::get('composer:today:'.$this->actor->id);
-    expect($activeRaw)->toBeString()->not->toContain('My recorded meeting place')
-        ->and($savedRaw)->toBeString()->not->toContain('My private appointment prompt');
+    expect($activeRaw)->toBeString()->not->toContain('My recorded meeting place');
     $stranger = User::factory()->onboarded()->create();
     Cache::put('composer:plan:'.$stranger->id, $activeRaw, 100);
     expect($active->get($stranger))->toBeNull();
-    Cache::put('composer:plan:'.$this->actor->id, $savedRaw, 100);
-    expect($active->get($this->actor))->toBeNull();
 });
 
-test('changed appointments invalidate active plans and return an explicit review state on Today', function () {
+test('changed appointments invalidate active plans', function () {
     $plan = recordedComposerPlan($this);
     $active = app(ActivePlanStore::class);
     $active->save($this->actor, $plan);
-    $today = app(TodayPlanStore::class);
-    $today->save($this->actor, $plan, 'My private prompt');
     app(RecordProcessEvent::class)->execute($this->actor, $this->process, 'appointment_cancelled', [
         'appointment_id' => $this->appointment['appointment_id'],
     ], 2, (string) Str::uuid());
-    expect(fn () => $active->get($this->actor))->toThrow(ValidationException::class)
-        ->and($today->get($this->actor)['state'])->toBe('needs_review')
-        ->and($today->get($this->actor)['slots'])->toBeEmpty()
-        ->and($today->get($this->actor)['prompt'])->toBeNull();
+    expect(fn () => $active->get($this->actor))->toThrow(ValidationException::class);
     expect(fn () => $active->save($this->actor, $plan))->toThrow(ValidationException::class);
-});
-
-test('a new appointment invalidates a saved leisure plan too', function () {
-    $plan = ['constraints' => $this->constraints->toArray(),
-        'appointment_revision' => app(AppointmentRepository::class)->revision($this->actor, $this->constraints),
-        'slots' => [['id' => 'personal:1', 'type' => 'personal', 'name' => 'Synthetic walk',
-            'start_at' => now()->addHours(2)->toIso8601String(), 'end_at' => now()->addHours(3)->toIso8601String()]]];
-    $today = app(TodayPlanStore::class);
-    $today->save($this->actor, $plan, null);
-    expect($today->get($this->actor)['state'])->toBe('current');
-    app(RecordProcessEvent::class)->execute($this->actor, $this->process, 'appointment_recorded', [
-        ...$this->appointment, 'location' => $this->location,
-    ], 1, (string) Str::uuid());
-    expect($today->get($this->actor)['state'])->toBe('needs_review')->and($today->get($this->actor)['slots'])->toBeEmpty();
 });
 
 test('legacy unbound caches and unverified accounts cannot expose a saved appointment', function () {
@@ -153,7 +128,7 @@ test('legacy unbound caches and unverified accounts cannot expose a saved appoin
     expect(app(ActivePlanStore::class)->get($this->actor))->toBeNull();
 });
 
-test('composer endpoints keep recorded appointments even when a client excludes them', function () {
+test('composing keeps recorded appointments even when a client excludes them', function () {
     Http::fake();
     $plan = recordedComposerPlan($this);
     $id = $plan['slots'][0]['id'];
@@ -161,19 +136,13 @@ test('composer endpoints keep recorded appointments even when a client excludes 
         'constraints' => $this->constraints->toArray(), 'excluded' => [$id],
     ])->assertOk()->assertJsonPath('plan.slots.0.id', $id);
     expect(Cache::get('composer:plan:'.$this->actor->id))->toBeString();
-    $this->postJson('/composer/save', ['keep' => ['spot:999']])->assertUnprocessable();
-    $this->postJson('/composer/save', [])->assertOk();
-    app(RecordProcessEvent::class)->execute($this->actor, $this->process, 'appointment_cancelled', [
-        'appointment_id' => $this->appointment['appointment_id'],
-    ], 2, (string) Str::uuid());
-    $this->postJson('/composer/swap', ['slot' => 0])->assertUnprocessable()->assertJsonValidationErrors('appointments');
-    $this->postJson('/composer/save', [])->assertUnprocessable()->assertJsonValidationErrors('appointments');
 });
 
 test('erasure cleans encrypted appointment copies without affecting another account', function () {
     $plan = recordedComposerPlan($this);
     app(ActivePlanStore::class)->save($this->actor, $plan);
-    app(TodayPlanStore::class)->save($this->actor, $plan, 'Synthetic private prompt');
+    // A copy left from the retired Today pin is erased too.
+    Cache::put('composer:today:'.$this->actor->id, 'leftover encrypted copy', 100);
     Cache::put('composer:plan:999999', 'another users encrypted snapshot', 100);
     app(PurgePersonCopies::class)->purge(['subject_user_id' => $this->actor->id]);
     expect(Cache::get('composer:plan:'.$this->actor->id))->toBeNull()
@@ -190,21 +159,20 @@ test('an existing appointment remains a commitment after changing to an unsuppor
         ->and($repository->revision($this->actor, $this->constraints))->toBe($before);
 });
 
-test('Today preserves the warning when two recorded appointments cannot fit together', function () {
+test('Composer keeps the warning when two recorded appointments cannot fit together', function () {
     Http::fake();
     recordedComposerPlan($this);
     app(RecordProcessEvent::class)->execute($this->actor, $this->process, 'appointment_recorded', [
         ...$this->appointment, 'appointment_id' => (string) Str::uuid(), 'location' => $this->location,
     ], 2, (string) Str::uuid());
-    $this->actingAs($this->actor)->postJson('/composer/compose', ['constraints' => $this->constraints->toArray()])
-        ->assertOk()->assertJsonPath('plan.schedule_feasible', false);
-    $this->postJson('/composer/save', [])->assertOk();
-    $saved = app(TodayPlanStore::class)->get($this->actor);
-    expect($saved['schedule_feasible'])->toBeFalse()->and($saved['notices'][0]['code'])->toBe('appointment_conflict')
-        ->and($saved['slots'])->toHaveCount(2);
+    $response = $this->actingAs($this->actor)->postJson('/composer/compose', ['constraints' => $this->constraints->toArray()])
+        ->assertOk()->assertJsonPath('plan.schedule_feasible', false)
+        ->assertJsonPath('notices.0.type', 'warn')
+        ->assertJsonCount(2, 'plan.slots');
+    expect($response->json('notices.0.text'))->toContain('cannot be reached in time');
 });
 
-test('a save cannot recreate an appointment copy after erasure wins the race', function (string $purpose) {
+test('a save cannot recreate an appointment copy after erasure wins the race', function () {
     $plan = recordedComposerPlan($this);
     $cache = Cache::store();
     Cache::swap(Mockery::mock(Cache::getFacadeRoot())->makePartial());
@@ -214,7 +182,6 @@ test('a save cannot recreate an appointment copy after erasure wins the race', f
 
         return $cache->put($key, $value, $ttl);
     });
-    expect(fn () => $purpose === 'plan' ? app(ActivePlanStore::class)->save($this->actor, $plan)
-        : app(TodayPlanStore::class)->save($this->actor, $plan, null))->toThrow(ValidationException::class);
-    expect($cache->get('composer:'.$purpose.':'.$this->actor->id))->toBeNull();
-})->with(['plan', 'today']);
+    expect(fn () => app(ActivePlanStore::class)->save($this->actor, $plan))->toThrow(ValidationException::class);
+    expect($cache->get('composer:plan:'.$this->actor->id))->toBeNull();
+});

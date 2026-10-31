@@ -30,6 +30,7 @@ test('an explicitly private place is excluded from general recommendations', fun
     $ids = collect($this->getJson('/api/places')->assertSuccessful()->json('data'))->pluck('id');
 
     expect($ids)->not->toContain($private->id);
+    expect(Spot::query()->recommendationEligible()->pluck('id'))->not->toContain($private->id);
 });
 
 test('a private playground does not inherit free or open claims from its category', function () {
@@ -937,7 +938,9 @@ test('catalogue access eligibility reads the stored flag without scanning source
     $visit($plan);
     // spots.public_access_allowed carries the rule, kept current on every
     // observation, correction and withdrawal, so the query never scans them.
-    expect($observationScans)->toBeEmpty();
+    expect($observationScans)->toBeEmpty()
+        // The stored flag agrees with a full recompute of the rule.
+        ->and(app(PlaceFacts::class)->refreshAllPublicAccess())->toBe(0);
 });
 
 test('activity qualification refuses unknown access without leaving a correction', function () {

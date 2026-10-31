@@ -19,16 +19,12 @@ use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
 use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
-use App\Composer\PlanCatalogue;
-use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
-use App\Composer\Swapper;
-use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
 use App\Day\DayProjection;
@@ -37,9 +33,7 @@ use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Models\ComposerRun;
 use App\Models\User;
-use App\Models\UserEvent;
 use App\Models\UserPlace;
-use App\Personalisation\SignalAction;
 use App\Personalisation\SignalRecorder;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
@@ -728,181 +722,6 @@ class ComposerController extends Controller
         return ['categories' => $categories, 'areas' => $areaList];
     }
 
-    public function swap(
-        Request $request,
-        CandidateRepository $candidates,
-        AppointmentRepository $appointments,
-        FeasibilityFilter $filter,
-        ProfileEngine $profiles,
-        IntentWeights $intents,
-    ): JsonResponse {
-        $validated = $request->validate([
-            'slot' => ['required', 'integer', 'min:0', 'max:10'],
-        ]);
-
-        $user = $request->user();
-        $stored = $this->plans->get($user);
-        if (! is_array($stored)) {
-            return response()->json(['message' => 'No active plan — compose one first.'], 404);
-        }
-
-        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
-        $pins = $stored['pins'] ?? [];
-        $excluded = $stored['excluded'] ?? [];
-        $storedConstraints = Constraints::fromArray($stored['constraints']);
-        $appointmentPool = $appointments->within($user, $storedConstraints);
-        try {
-            $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
-        } catch (\DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 409);
-        }
-        $slotIndex = (int) $validated['slot'];
-        $rejected = $stored['rejected'][$slotIndex] ?? [];
-
-        // Appointments and fixed-time events are anchors — refuse before
-        // recording a (spurious) negative signal for the scorer.
-        $target = $plan->slots[$slotIndex] ?? null;
-        if ($target !== null && ! $target->candidate->swappable) {
-            return response()->json(['message' => 'This slot is fixed and cannot be swapped.'], 422);
-        }
-
-        // The pick being swapped away is added to this slot's reject list so the
-        // swapper never re-offers it. The negative intent signal, though, is only
-        // recorded once the swap actually lands (below) — writing it here punished
-        // the category even when the swap 422'd for "no alternative fits".
-        $outgoing = $plan->slots[$slotIndex]->candidate ?? null;
-        if ($outgoing !== null) {
-            $rejected[] = $outgoing->id;
-        }
-
-        $profile = $profiles->build($user);
-        // Re-score against the same origin-derived area the compose used (stored
-        // with the plan), so a swap stays anchored to where the day starts.
-        $originArea = $stored['origin_area'] ?? null;
-        $context = new ScoringContext(
-            rainExpected: $this->rainExpected(),
-            coolExpected: $this->coolExpected(),
-            preferredAreas: $plan->constraints->areas !== []
-                ? $plan->constraints->areas
-                : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
-            intentWeights: $intents->for($user),
-            companions: $plan->constraints->companions,
-            pinnedIds: $pins,
-            affinity: $this->planAffinity($profile, $plan->constraints->companions),
-            rotationSeed: $this->rotationSeed($user, $plan->constraints),
-            moods: $plan->constraints->moods,
-        );
-
-        [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
-
-        // Honour removed picks here too — a removed spot must not return via Swap.
-        // Same origin + the same solo-activity widening the compose used, so a
-        // complement slot finds another complement, not only the activity.
-        $swapConstraints = $this->itineraryConstraints($plan->constraints, $this->soloCategory($plan->constraints));
-        $feasible = collect($filter->filter($swapConstraints, $candidates->candidatesFor($swapConstraints, $originLat, $originLng)))
-            ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
-            ->values()
-            ->all();
-        $estimator = $this->travelEstimator($user, $originLat, $originLng, $feasible);
-        $swapper = new Swapper(new PlanScorer($estimator), $estimator);
-        $swapped = $swapper->swap($plan, $slotIndex, $feasible, $context, $originLat, $originLng, $rejected);
-
-        if ($swapped === null) {
-            return response()->json(['message' => 'No alternative fits this slot.'], 422);
-        }
-
-        // The swap landed — record the swap-away as a negative intent signal now,
-        // never before the attempt (a failed swap must not skew the scorer).
-        if ($outgoing !== null) {
-            UserEvent::create([
-                'user_id' => $user->id,
-                'event_type' => 'composer_swap_away',
-                'payload' => [
-                    'candidate_id' => $outgoing->id,
-                    'category' => $outgoing->category,
-                    'veedel' => $outgoing->veedel,
-                ],
-            ]);
-            app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$plan->slots[$slotIndex]->toArray()], $plan->constraints->companions);
-        }
-
-        // Re-narrate so the swapped slot (and the one after it) keep their "why".
-        $swapped = new Plan(
-            $swapped->constraints,
-            PlanNarrator::narrate($swapped->slots, $context->rainExpected),
-            scheduleFeasible: $swapped->scheduleFeasible,
-        );
-
-        $rejectedMap = $stored['rejected'] ?? [];
-        $rejectedMap[$slotIndex] = $rejected;
-
-        $this->plans->save($user, $swapped->toArray() + [
-            'appointment_revision' => $stored['appointment_revision'],
-            'origin' => [$originLat, $originLng],
-            'origin_area' => $originArea,
-            'rejected' => $rejectedMap,
-            'pins' => $pins,
-            'excluded' => $excluded,
-        ]);
-
-        return response()->json([
-            'plan' => $swapped->toArray(),
-            'notices' => $this->notices($swapped->constraints, $swapped),
-        ]);
-    }
-
-    /**
-     * "Save to Today": pin the live plan (already cached) to the Today screen,
-     * carrying the original prompt so "Open in Day Composer" can reopen it.
-     */
-    public function save(Request $request, TodayPlanStore $today, CandidateRepository $candidates, AppointmentRepository $appointments): JsonResponse
-    {
-        $validated = $request->validate([
-            'prompt' => ['nullable', 'string', 'max:500'],
-            // The slot ids still shown in the Today draft. Present when the user
-            // removed a pick before saving — persist exactly what's on screen,
-            // not the fuller plan the compose cached, which resurrected removals.
-            'keep' => ['nullable', 'array'],
-            'keep.*' => ['string'],
-        ]);
-
-        $stored = $this->plans->get($request->user());
-        if (! is_array($stored) || empty($stored['slots'])) {
-            return response()->json(['message' => 'No plan to save — compose one first.'], 404);
-        }
-
-        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
-        if (is_array($validated['keep'] ?? null)) {
-            $keep = app(PlaceIdentity::class)->candidateIds($validated['keep']);
-            foreach ($stored['slots'] as $slot) {
-                if (($slot['is_appointment'] ?? false) && ! in_array($slot['id'], $keep, true)) {
-                    return response()->json(['message' => 'A recorded appointment cannot be removed from the itinerary. Review it in Bureaucracy or change the planning time.'], 422);
-                }
-            }
-            $stored['slots'] = array_values(array_filter(
-                $stored['slots'],
-                fn ($slot) => in_array($slot['id'] ?? null, $keep, true),
-            ));
-
-            if ($stored['slots'] === []) {
-                return response()->json(['message' => 'No picks left to save.'], 422);
-            }
-        }
-
-        try {
-            $constraints = Constraints::fromArray($stored['constraints']);
-            $fresh = $this->hydratePlan($stored, $candidates, $appointments->within($request->user(), $constraints));
-            $stored['slots'] = $fresh->toArray()['slots'];
-        } catch (\DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 409);
-        }
-        $today->save($request->user(), $stored, $validated['prompt'] ?? null);
-        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: isset($validated['keep']));
-
-        return response()->json(['saved' => true]);
-    }
-
-    /** Un-pin the Today plan (the dismiss control on the home card). */
     /**
      * The person keeps the composed plan as it is: each stop counts as kept
      * unedited (personalisation, with the opt-in). A plan with swaps or
@@ -917,13 +736,6 @@ class ComposerController extends Controller
         app(SignalRecorder::class)->planKept($request->user(), $stored, edited: false);
 
         return response()->json(['kept' => true]);
-    }
-
-    public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
-    {
-        $today->forget($request->user());
-
-        return response()->json(['cleared' => true]);
     }
 
     /**
@@ -1085,18 +897,6 @@ class ComposerController extends Controller
     }
 
     /**
-     * @return array{0: float, 1: float}
-     */
-    private function origin(User $user): array
-    {
-        $context = app(UserLocationService::class)->context($user);
-
-        return $context->hasOrigin()
-            ? [$context->lat, $context->lng]
-            : [50.9375, 6.9603]; // Cologne centre — a plan must start somewhere
-    }
-
-    /**
      * Real one-to-many street minutes from the origin to the candidate pool, in
      * the user's mode, wrapped so the pipeline uses them for the origin leg and
      * the haversine heuristic for everything else. Falls back to pure haversine
@@ -1139,42 +939,5 @@ class ComposerController extends Controller
         return $map === []
             ? $fallback
             : new MatrixTravelEstimator($fallback, $originLat, $originLng, $map);
-    }
-
-    /**
-     * Rebuild a Plan from its stored array using fresh candidate snapshots
-     * (so swapped-in venues carry current data). Appointment anchors aren't
-     * in the leisure pool, so they're merged back in by id — otherwise a
-     * swap would silently drop the user's appointment from the plan.
-     *
-     * @param  array<string, mixed>  $stored
-     * @param  list<Candidate>  $appointmentPool
-     * @param  list<Candidate>  $pinnedPool
-     */
-    private function hydratePlan(array $stored, CandidateRepository $candidates, array $appointmentPool = [], array $pinnedPool = []): Plan
-    {
-        $constraints = Constraints::fromArray($stored['constraints']);
-        // Refresh from the same local pool the plan was composed against.
-        [$originLat, $originLng] = $stored['origin'] ?? [50.9375, 6.9603];
-        $storedPool = $candidates->byIds(array_column($stored['slots'], 'id'), $constraints->windowStart, $originLat, $originLng);
-        $pool = collect([...$appointmentPool, ...$pinnedPool, ...$storedPool])->keyBy('id');
-
-        $slots = [];
-        foreach ($stored['slots'] as $slotData) {
-            $candidate = $pool->get($slotData['id']);
-            if ($candidate === null || (! $candidate->isAppointment()
-                && ! app(PlanCatalogue::class)->available($candidate, $constraints, CarbonImmutable::parse($slotData['start_at']), CarbonImmutable::parse($slotData['end_at'])))) {
-                throw new \DomainException('A place or event in this plan is no longer available. Review the plan before saving or swapping.');
-            }
-            $slots[] = new PlanSlot(
-                candidate: $candidate,
-                startAt: CarbonImmutable::parse($slotData['start_at']),
-                endAt: CarbonImmutable::parse($slotData['end_at']),
-                travelMinFromPrevious: (int) $slotData['travel_min_from_previous'],
-                why: $slotData['why'] ?? null,
-            );
-        }
-
-        return new Plan($constraints, $slots, scheduleFeasible: (bool) ($stored['schedule_feasible'] ?? true));
     }
 }
