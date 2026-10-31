@@ -102,7 +102,7 @@
         "tests/Feature/Bureaucracy/UnknownFactIntegrationTest.php": 4,
         "tests/Feature/Bureaucracy/VerifiedActionDirectoryTest.php": 1.31,
         "tests/Feature/BureaucracyBadgeTest.php": 1.88,
-        "tests/Feature/BureaucracyCoverageTest.php": 407.55,
+        "tests/Feature/BureaucracyCoverageTest.php": 158.1,
         "tests/Feature/BureaucracyEngineTest.php": 83.28,
         "tests/Feature/BureaucracyV2Test.php": 18.95,
         "tests/Feature/CheckMarketClosuresTest.php": 0.89,
