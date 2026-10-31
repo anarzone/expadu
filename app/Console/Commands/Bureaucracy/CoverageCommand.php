@@ -58,6 +58,14 @@ class CoverageCommand extends Command
      */
     private array $authoritative = [];
 
+    /**
+     * Authoritative rules whose source metadata passes, checked once per rule:
+     * the check reads only the rule, and the sweep asks it for every persona.
+     *
+     * @var array<string, true>
+     */
+    private array $verified = [];
+
     /** @var array<string, true> */
     private array $unresolvedDependencies = [];
 
@@ -81,6 +89,7 @@ class CoverageCommand extends Command
         }
 
         $this->unresolvedDependencies = [];
+        $this->verified = [];
         $this->tasks = Task::query()
             ->where('is_published', true)
             ->get()
@@ -102,8 +111,12 @@ class CoverageCommand extends Command
         $violations = [];  // list<string> human-readable invariant failures
 
         foreach ($this->tasks as $key => $task) {
-            foreach ($this->sourcePolicy->persistedErrors($task) as $error) {
+            $errors = $this->sourcePolicy->persistedErrors($task);
+            foreach ($errors as $error) {
                 $violations[] = "SOURCE REVIEW — `{$key}`: {$error}.";
+            }
+            if ($errors === [] && isset($this->authoritative[$key])) {
+                $this->verified[$key] = true;
             }
             // A missing edge is invalid even behind unanswered or dormant
             // conditions; the persona loop only checks definite mismatches.
@@ -361,16 +374,10 @@ class CoverageCommand extends Command
 
         // Separate source-approved synthetic matches from unreviewed ones.
         // Neither count substitutes for the canonical person assessment.
-        $approved = collect($yes)->filter(
-            fn (string $key) => isset($this->authoritative[$key])
-                && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
-        );
+        $approved = collect($yes)->filter(fn (string $key) => isset($this->verified[$key]));
         // An approved card that only waits on an answer is still the one the
         // person will get once they answer; count it as reviewed coverage.
-        $approvedAnmeldung = collect($reachable)->filter(
-            fn (string $key) => isset($this->authoritative[$key])
-                && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
-        )->contains(
+        $approvedAnmeldung = collect($reachable)->filter(fn (string $key) => isset($this->verified[$key]))->contains(
             fn (string $key) => str_ends_with($key, '.anmeldung')
                 || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
         );
