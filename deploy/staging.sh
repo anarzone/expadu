@@ -15,7 +15,9 @@ if [ "${PULL:-1}" = 1 ]; then
   docker compose pull
 fi
 
-docker compose up -d --force-recreate
+# Staging's compose says pull_policy: always, so a plain `up` would fetch the
+# registry's image again: over a loaded image (PULL=0) or a rolled-back one.
+docker compose up -d --force-recreate --pull never
 sleep 5
 
 # Staging's compose replaces the image entrypoint (fix-nginx.sh), so nothing
@@ -49,6 +51,6 @@ done
 echo "Staging did not answer /up after the deploy; rolling back."
 if [ -n "$PREVIOUS" ]; then
   docker tag "$PREVIOUS" "$(docker inspect --format '{{.Config.Image}}' staging-app)"
-  docker compose up -d --force-recreate
+  docker compose up -d --force-recreate --pull never
 fi
 exit 1
