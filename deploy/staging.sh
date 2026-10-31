@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Staging's deploy, run on the box: CI pipes it over SSH after pushing the image,
-# and bin/deploy-staging does the same after loading an image it built itself
+# and `bin/deploy staging` does the same after loading an image it built itself
 # (PULL=0, so the loaded image isn't replaced by the registry's).
 #
 # A failing step fails the deploy; without it the catalogue steps hit missing

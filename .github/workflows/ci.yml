@@ -442,17 +442,16 @@ jobs:
     name: Deploy to Staging
     # Tests must pass before we deploy — build runs in parallel with them but
     # the image only ships if the unit/feature suite and the browser suite come
-    # back green.
-    # Browser tests still run and report, but don't hold staging back (owner, 30 Oct 2026):
-    # 14 specs test the pre-redesign screens and are being rewritten. Production keeps the gate.
-    needs: [build-and-push, test]
+    # back green. Same gate as production: the browser suite is the core journeys
+    # since 31 Oct 2026 and takes ~3 min, under the slowest PHP shard.
+    needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      # The same deploy/staging.sh that bin/deploy-staging runs when Actions is down.
+      # The same deploy/staging.sh that `bin/deploy staging` runs when Actions is down.
       - name: Deploy via SSH
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
@@ -471,37 +470,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
+      # The same deploy/production.sh that `bin/deploy production` runs when Actions is down.
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
-            # Coolify names the container app-<service dir>; derived so the literal never
-            # appears here (it matches the Dify API-key pattern secret scanners look for).
-            APP_CONTAINER="app-$(basename "$PWD")"
-            # The image running now, so a deploy that doesn't come up can be rolled back.
-            PREVIOUS=$(docker inspect --format '{{.Image}}' "$APP_CONTAINER" 2>/dev/null || true)
-            docker pull ghcr.io/anarzone/expadu/app:latest
-            docker compose up -d app
-            sleep 5
-            # The entrypoint migrates before PHP-FPM starts; these are the
-            # deploy-time catalogue steps (import, source check, release, dossiers),
-            # run as www-data so the log files they create stay writable by the app.
-            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
-            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:verify-sources
-            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
-            docker exec -u www-data "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all
-            # Health: /up answers within a minute, or the previous image comes back and the job fails.
-            for attempt in $(seq 1 12); do
-              if curl -fsS -o /dev/null https://app.expadu.com/up; then docker image prune -f; exit 0; fi
-              sleep 5
-            done
-            echo "Production did not answer /up after the deploy; rolling back."
-            if [ -n "$PREVIOUS" ]; then
-              docker tag "$PREVIOUS" ghcr.io/anarzone/expadu/app:latest
-              docker compose up -d app
-            fi
-            exit 1
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "root@$SERVER_IP" 'bash -s' < deploy/production.sh

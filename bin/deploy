@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Deploy without GitHub Actions: build the image on this machine, stream it to the
+# box over SSH and run the same deploy/<target>.sh that CI runs (staging: migrations,
+# caches, catalogue; production: catalogue, its entrypoint migrates; both: /up
+# check and rollback). For when Actions is down or stuck.
+#
+#   bin/deploy staging                 # what origin/staging points at
+#   bin/deploy production              # what origin/main points at (asks first)
+#   bin/deploy <target> <ref>          # a commit or branch instead (GitHub itself down)
+#
+# Needs Docker running here and `ssh hetzner` working (override with DEPLOY_HOST).
+# Frontend Sentry is baked in only when VITE_SENTRY_DSN_PUBLIC is set.
+
+set -euo pipefail
+
+usage() { echo "usage: $(basename "$0") staging|production [ref]" >&2; exit 64; }
+
+[ $# -ge 1 ] || usage
+target="$1"
+case "$target" in
+  staging) branch=staging; tag=staging ;;
+  production) branch=main; tag=latest ;;
+  *) usage ;;
+esac
+
+host="${DEPLOY_HOST:-hetzner}"
+image="ghcr.io/anarzone/expadu/app"
+cd "$(git rev-parse --show-toplevel)"
+
+if [ $# -ge 2 ]; then
+  ref="$2"
+else
+  git fetch -q origin "$branch" || { echo "could not fetch origin/$branch; pass a ref" >&2; exit 69; }
+  ref="origin/$branch"
+fi
+sha=$(git rev-parse --verify "$ref^{commit}")
+echo "Deploying $(git log -1 --format='%h %s' "$sha") to $target on $host"
+
+if [ "$target" = production ]; then
+  read -r -p "This changes the live site. Type 'production' to go on: " answer
+  [ "$answer" = production ] || { echo "Nothing deployed." >&2; exit 1; }
+fi
+
+# Built from the commit itself, so nothing uncommitted here ever ships.
+src=$(mktemp -d)
+trap 'rm -rf "$src"' EXIT
+git archive "$sha" | tar -x -C "$src"
+
+# The box is arm64, like the CI runner that builds the image.
+docker build --platform linux/arm64 \
+  -t "$image:$tag" -t "$image:$sha" \
+  --build-arg APP_COMMIT="$sha" \
+  --build-arg VITE_SENTRY_DSN_PUBLIC="${VITE_SENTRY_DSN_PUBLIC:-}" \
+  --build-arg VITE_SENTRY_ENVIRONMENT="$target" \
+  --build-arg VITE_SENTRY_RELEASE="$sha" \
+  "$src"
+
+echo "Sending the image to $host"
+docker save "$image:$tag" "$image:$sha" | gzip -1 | ssh "$host" 'gunzip | docker load'
+
+ssh "$host" 'PULL=0 bash -s' < "deploy/$target.sh"
+echo "$target runs $sha"
