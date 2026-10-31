@@ -59,6 +59,13 @@ test('🔒 one press of the tray’s Send answers above the box, with its permit
     isMobile,
 }) => {
     const parsed = await stubAsk(page);
+    // The panel's code arrives after it opens, as on a slow phone: the switch to the
+    // loaded code once restarted the conversation and asked its last request again.
+    await page.route('**/build/assets/tray-body-*.js', async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        return route.continue();
+    });
     await page.goto('/today');
     const tray = await openTray(page, isMobile);
     const box = tray.getByRole('textbox', { name: 'Your request to Composer' });

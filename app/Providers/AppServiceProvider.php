@@ -167,6 +167,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         $userOrIp = fn (Request $request): string => (string) ($request->user()?->getAuthIdentifier() ?: $request->ip());
+        $scale = (int) config('app.rate_limit_scale', 1);
 
         // Web-wide ceiling against single-source floods and scrapers. Local
         // and testing are exempt: dev servers and browser suites burst far
@@ -194,7 +195,7 @@ class AppServiceProvider extends ServiceProvider
         // script. GETs pass through untouched.
         RateLimiter::for('app-writes', fn (Request $request): Limit => $request->isMethodSafe()
             ? Limit::none()
-            : Limit::perMinute(60)->by('writes:'.$userOrIp($request)));
+            : Limit::perMinute(60 * $scale)->by('writes:'.$userOrIp($request)));
 
         // Typeahead + geocoding endpoints hit MOTIS/Photon per request; a
         // debounced client peaks around 2/s while typing.
@@ -218,7 +219,7 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
         ]);
 
-        RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10)
+        RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10 * $scale)
             ->by('composer-ask:'.$request->user()?->getAuthIdentifier()));
 
         // The page polls about once a second while the assistant works (3–6 s).
@@ -230,7 +231,7 @@ class AppServiceProvider extends ServiceProvider
         // `throttle:N,M` middleware shares one per-user signature, so a stacked group
         // limit's shorter decay would reset the hourly caps on the routes below.
         $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
-        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
+        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60 * $scale)->by($bureaucracyKey('v2', $request)));
         RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
         RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
         // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.

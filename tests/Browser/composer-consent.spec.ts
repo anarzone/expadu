@@ -18,8 +18,8 @@ type Asked = { processing?: Record<string, unknown> };
 /**
  * The AI line as the server would give it, and each ask's body kept to check its
  * permit. Asks go on to the server (no AI there, so Composer answers itself).
- * `failNext` fails the next ask and its retry without the AI (the engine's
- * fallback, which carries no permit), so Retry shows.
+ * `failNext` fails the next ask, so Try again shows. Since the one-loop Composer there is no
+ * fallback ask without the AI: nothing is ever sent without a permit.
  */
 async function stubAsk(page: Page) {
     const asked: Asked[] = [];
@@ -48,7 +48,7 @@ async function stubAsk(page: Page) {
         asked,
         bare,
         failNext: () => {
-            failing = 2;
+            failing = 1;
         },
     };
 }
@@ -114,16 +114,14 @@ test('🔒 every way of sending a request carries its permit', async ({
     failNext();
     await box.fill('plan Thursday afternoon');
     await sent(() => send.click());
+    // The unfinished message stays in the conversation with its own Try again.
     await sent(() =>
-        page
-            .locator('.composer-error')
-            .getByRole('button', { name: 'Retry' })
-            .click(),
+        page.getByRole('button', { name: 'Try again' }).last().click(),
     );
 
     expectPermits(parsed, isMobile ? 4 : 5);
-    // Only the failed one's retry without the AI went without a permit.
-    expect(bare).toHaveLength(1);
+    // Nothing went without a permit.
+    expect(bare).toHaveLength(0);
 });
 
 test('🔒 a request handed over in the address carries its permit once sent', async ({

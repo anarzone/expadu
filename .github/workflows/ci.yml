@@ -193,6 +193,9 @@ jobs:
       # dev server and dies with "Couldn't reach the server". Pin local so the
       # build emits relative route URLs.
       APP_ENV: local
+      # Every spec signs in as the one E2E account, so the per-person write,
+      # Composer and Paperwork budgets would stop the later specs with 429s.
+      RATE_LIMIT_SCALE: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -270,8 +273,6 @@ jobs:
         run: |
           php artisan migrate --force --seed
           php artisan db:seed --force --class=E2ETestUserSeeder
-          # composer-workspace.spec plans a day from these test-only places.
-          php artisan db:seed --force --class=E2EComposerCatalogueSeeder
 
       # The browser download from Playwright's CDN failed several runs on 21–22 Oct
       # and blocked deploys; a cached copy skips it (system deps still install).
