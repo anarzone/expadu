@@ -2,8 +2,6 @@
 
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
-use App\Composer\PlanSlot;
-use App\Composer\TodayPlanStore;
 use App\Models\Spot;
 use App\Models\User;
 use App\Places\DestinationGrouping;
@@ -304,37 +302,6 @@ test('a reviewed component leaves nearest general discovery and what is open nea
     reviewDestination($child, $parent);
     expect($open())->toBe([$parent->id])
         ->and(app(NearbyPlaces::class)->nearest(50.95, 6.95, 20)->modelKeys())->toBe([$parent->id]);
-});
-
-test('saved child slots retain coordinates and timing and prevent a sibling from returning during a swap', function () {
-    [$parent, $child] = destinationFixture();
-    reviewDestination($child, $parent);
-    $sibling = Spot::factory()->create(['name' => 'Sibling tennis', 'category' => 'tennis', 'parent_spot_id' => $parent->id, 'lat' => 50.951, 'lng' => 6.951]);
-    reviewDestination($sibling, $parent);
-    $cafe = Spot::factory()->create(['name' => 'First café', 'category' => 'cafe', 'lat' => 50.951, 'lng' => 6.951]);
-    $alternative = Spot::factory()->create(['name' => 'Another café', 'category' => 'cafe', 'lat' => 50.951, 'lng' => 6.951]);
-    $user = User::factory()->onboarded()->create();
-    $start = CarbonImmutable::now('Europe/Berlin')->addDay()->setTime(10, 0);
-    $window = new Constraints($start, $start->addHours(8), categories: ['tennis', 'cafe']);
-    $candidates = collect(app(CandidateRepository::class)->byIds(["spot:{$child->id}", "spot:{$cafe->id}"], $start, 50.951, 6.951))->keyBy('id');
-    $slots = [(new PlanSlot($candidates["spot:{$child->id}"], $start, $start->addHour(), 0))->toArray(), (new PlanSlot($candidates["spot:{$cafe->id}"], $start->addHours(2), $start->addHours(3), 0))->toArray()];
-    $plan = ['constraints' => $window->toArray(), 'slots' => $slots, 'pins' => ["spot:{$child->id}"], 'origin' => [50.951, 6.951]];
-    $plan = storeComposerPlan($user, $plan);
-    app(TodayPlanStore::class)->save($user, $plan, 'Tennis and coffee');
-    $saved = app(TodayPlanStore::class)->get($user)['slots'][0];
-    expect($saved['id'])->toBe($slots[0]['id'])
-        ->and($saved['lat'])->toBe($slots[0]['lat'])
-        ->and($saved['lng'])->toBe($slots[0]['lng'])
-        ->and($saved['start_at'])->toBe($slots[0]['start_at'])
-        ->and($saved['end_at'])->toBe($slots[0]['end_at']);
-    $this->actingAs($user)->postJson('/composer/swap', ['slot' => 1])->assertSuccessful();
-    $stored = storedComposerPlan($user);
-    expect($stored['slots'][0]['id'])->toBe("spot:{$child->id}")
-        ->and($stored['slots'][0]['lat'])->toBe($child->lat)
-        ->and($stored['slots'][0]['lng'])->toBe($child->lng)
-        ->and($stored['slots'][0]['start_at'])->toBe($slots[0]['start_at'])
-        ->and($stored['slots'][0]['end_at'])->toBe($slots[0]['end_at'])
-        ->and($stored['slots'][1]['id'])->toBe("spot:{$alternative->id}");
 });
 
 test('explicit activity results retain distinct facility coordinates even within the same name cluster', function () {

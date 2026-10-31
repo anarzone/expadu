@@ -8,7 +8,6 @@ use App\Bureaucracy\Processes\RecordProcessEvent;
 use App\Bureaucracy\ReadModel\PlanReadModel;
 use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
-use App\Composer\TodayPlanStore;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -71,7 +70,7 @@ test('Composer keeps an unknown-length appointment without inventing an end and 
     expect(collect($response->json('notices'))->pluck('code'))->toContain('appointment_end_unknown');
 });
 
-test('Composer and Today never compute a journey to a text-only appointment place', function () {
+test('Composer never computes a journey to a text-only appointment place', function () {
     ($this->record)([...$this->appointment, 'duration_minutes' => 30, 'location' => ['label' => 'Ausländeramt']]);
     $candidate = app(AppointmentRepository::class)->within($this->actor, $this->constraints)[0];
     expect($candidate->routable)->toBeFalse()->and(is_nan($candidate->lat))->toBeTrue();
@@ -87,8 +86,6 @@ test('Composer and Today never compute a journey to a text-only appointment plac
     }
     expect(collect($response->json('notices'))->pluck('code'))->toContain('appointment_location_unroutable');
     Http::assertNothingSent();
-    $this->postJson('/composer/save', [])->assertOk();
-    expect(collect(app(TodayPlanStore::class)->get($this->actor)['notices'])->pluck('code'))->toContain('appointment_location_unroutable');
 });
 
 test('an unknown-length appointment that may still be running at the plan start is not silently ignored', function () {

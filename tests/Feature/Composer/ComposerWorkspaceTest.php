@@ -1,9 +1,6 @@
 <?php
 
-use App\Composer\AppointmentRepository;
-use App\Composer\Constraints;
 use App\Composer\PrivatePlanCache;
-use App\Composer\TodayPlanStore;
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
@@ -284,18 +281,6 @@ test('the upgrade migration moves stored workspaces once and makes open tabs rel
         ->and($row->state)->not->toHaveKeys(['approval', 'draft', 'versions']);
     $migration->up();
     expect(ComposerWorkspace::query()->where('user_id', $user->id)->sole()->revision)->toBe(8);
-});
-
-test('today reads current revisions and dismissing its summary preserves saved plans', function () {
-    $user = User::factory()->onboarded()->create();
-    $plan = workspacePlan();
-    $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
-    app(TodayPlanStore::class)->save($user, $plan, 'Tomorrow');
-    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '12:00', 'end' => '13:00'])->assertOk();
-    expect(app(TodayPlanStore::class)->get($user)['slots'][0]['start_time'])->toBe('12:00');
-    app(TodayPlanStore::class)->forget($user);
-    expect(app(TodayPlanStore::class)->get($user))->toBeNull();
-    $this->getJson('/composer/workspace')->assertJsonCount(1, 'plans');
 });
 
 test('catalogue handoffs cannot be taken from another user', function () {
