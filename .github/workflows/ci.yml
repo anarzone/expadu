@@ -117,7 +117,10 @@ jobs:
           # flicker green during postgis setup and crash if a host-side
           # client connects mid-init.
           for i in $(seq 1 60); do
-            if docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
+            # The init scripts run on a temporary server that then restarts: the
+            # extensions show up before that restart, so wait for init to finish too.
+            if docker logs pgsql 2>&1 | grep -q "PostgreSQL init process complete" \
+              && docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
               # Confirm both extensions are loadable (proves init finished)
               if docker exec pgsql psql -U sail -d testing -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','vector')" 2>/dev/null | grep -q vector; then
                 echo "postgres ready after ${i}s"
@@ -246,7 +249,9 @@ jobs:
             -p 5432:5432 \
             expadu-pgsql
           for i in $(seq 1 60); do
-            if docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
+            # As in the test job: the extensions appear before init's restart.
+            if docker logs pgsql 2>&1 | grep -q "PostgreSQL init process complete" \
+              && docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
               if docker exec pgsql psql -U sail -d testing -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','vector')" 2>/dev/null | grep -q vector; then
                 echo "postgres ready after ${i}s"
                 break
