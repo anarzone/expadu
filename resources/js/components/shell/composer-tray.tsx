@@ -4,6 +4,7 @@ import {
     Suspense,
     useEffect,
     useLayoutEffect,
+    useMemo,
     useRef,
     useState,
     useSyncExternalStore,
@@ -225,7 +226,7 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         const header = button?.offsetParent
             ? document.querySelector<HTMLElement>('.shell-header')
             : null;
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Measured from the page's own header, which is outside React's view.
+
         setDimTop(
             header ? Math.round(header.getBoundingClientRect().bottom) : 0,
         );
@@ -609,11 +610,15 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         return () => window.removeEventListener('composer:tray-view', open);
     }, [onComposer]);
 
+    // Chosen as the panel opens and kept while it's open: the code arriving
+    // mid-conversation would otherwise swap the lazy one for the loaded one,
+    // and a new component starts the conversation's place over.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const TrayBody = useMemo(() => Loaded ?? LazyTrayBody, [isOpen]);
+
     if (onComposer) {
         return null;
     }
-
-    const TrayBody = Loaded ?? LazyTrayBody;
 
     return (
         <>

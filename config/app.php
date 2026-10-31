@@ -70,6 +70,10 @@ return [
     'app_domain' => env('APP_DOMAIN'),
     'marketing_domain' => env('MARKETING_DOMAIN'),
 
+    // Multiplies the per-person write, Composer and Paperwork budgets. The browser suite signs
+    // every spec in as one account and raises it; everywhere else it stays 1.
+    'rate_limit_scale' => max(1, (int) env('RATE_LIMIT_SCALE', 1)),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
