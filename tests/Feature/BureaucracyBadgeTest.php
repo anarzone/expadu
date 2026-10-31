@@ -26,8 +26,9 @@ function attachUserTask(User $user, array $taskAttributes, array $userTaskAttrib
 }
 
 test('the attention count counts only open action tasks that are overdue or due within two weeks', function () {
-    // Arrived 10 days ago: deadline = arrival + deadline_days.
-    $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)->toDateString()]);
+    // Arrived 10 days ago: deadline = arrival + deadline_days. German level unknown, so
+    // the B1-only card stays undecided (the factory's random level made it apply sometimes).
+    $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)->toDateString(), 'german_level' => null]);
 
     $fixture = ReviewedHomePlan::activate($user, [
         'fixture.badge.overdue' => ['deadline_days' => 5],
