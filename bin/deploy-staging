@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Deploy staging without GitHub Actions: build the image on this machine, stream it
+# to the box over SSH and run the same deploy/staging.sh that CI runs (migrations,
+# caches, catalogue, /up check, rollback). For when Actions is down or stuck.
+#
+#   bin/deploy-staging              # what origin/staging points at
+#   bin/deploy-staging <ref>        # a commit or branch instead (GitHub itself down)
+#
+# Needs Docker running here and `ssh hetzner` working (override with DEPLOY_HOST).
+# Frontend Sentry is baked in only when VITE_SENTRY_DSN_PUBLIC is set.
+
+set -euo pipefail
+
+host="${DEPLOY_HOST:-hetzner}"
+image="ghcr.io/anarzone/expadu/app"
+cd "$(git rev-parse --show-toplevel)"
+
+if [ $# -ge 1 ]; then
+  ref="$1"
+else
+  git fetch -q origin staging || { echo "could not fetch origin/staging; pass a ref" >&2; exit 69; }
+  ref="origin/staging"
+fi
+sha=$(git rev-parse --verify "$ref^{commit}")
+echo "Deploying $(git log -1 --format='%h %s' "$sha") to staging on $host"
+
+# Built from the commit itself, so nothing uncommitted here ever ships.
+src=$(mktemp -d)
+trap 'rm -rf "$src"' EXIT
+git archive "$sha" | tar -x -C "$src"
+
+# The box is arm64, like the CI runner that builds the image.
+docker build --platform linux/arm64 \
+  -t "$image:staging" -t "$image:$sha" \
+  --build-arg APP_COMMIT="$sha" \
+  --build-arg VITE_SENTRY_DSN_PUBLIC="${VITE_SENTRY_DSN_PUBLIC:-}" \
+  --build-arg VITE_SENTRY_ENVIRONMENT=staging \
+  --build-arg VITE_SENTRY_RELEASE="$sha" \
+  "$src"
+
+echo "Sending the image to $host"
+docker save "$image:staging" "$image:$sha" | gzip -1 | ssh "$host" 'gunzip | docker load'
+
+ssh "$host" 'PULL=0 bash -s' < deploy/staging.sh
+echo "Staging runs $sha"

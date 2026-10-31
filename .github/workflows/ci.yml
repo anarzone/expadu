@@ -445,50 +445,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
+      # The same deploy/staging.sh that bin/deploy-staging runs when Actions is down.
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            # A failing step fails the job; without it the catalogue steps hit
-            # missing tables and the deploy still showed green.
-            set -e
-            cd /data/staging
-            # The image running now, so a deploy that doesn't come up can be rolled back.
-            PREVIOUS=$(docker inspect --format '{{.Image}}' staging-app 2>/dev/null || true)
-            docker compose pull
-            docker compose up -d --force-recreate
-            sleep 5
-            # Staging's compose replaces the image entrypoint (fix-nginx.sh), so
-            # nothing migrates or caches on boot: migrate and build the framework
-            # caches here (as the image's entrypoint does on prod), before the
-            # deploy-time catalogue steps (import, source check, release, dossiers),
-            # all run as www-data so the files they write stay writable by the app.
-            docker exec -u www-data staging-app php artisan migrate --force
-            docker exec -u www-data staging-app php artisan config:cache
-            docker exec -u www-data staging-app php artisan route:cache
-            docker exec -u www-data staging-app php artisan view:cache
-            docker exec -u www-data staging-app php artisan event:cache || echo "event:cache failed; events are discovered at runtime"
-            docker exec -u www-data staging-app php artisan filament:optimize || echo "filament:optimize failed; panels resolve at runtime"
-            docker exec -u www-data staging-app php artisan schedule:clear-cache || echo "Could not clear schedule locks"
-            docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --retire-missing
-            docker exec -u www-data staging-app php artisan bureaucracy:verify-sources
-            docker exec -u www-data staging-app php artisan bureaucracy:compile-catalogue --deploy
-            docker exec -u www-data staging-app php artisan bureaucracy:migrate-dossiers --apply --all
-            # Health: /up answers within a minute, or the previous image comes back and the job fails.
-            # Pruned only after, so the previous image is still there to return to.
-            for attempt in $(seq 1 12); do
-              if curl -fsS -o /dev/null https://app.staging.expadu.com/up; then docker image prune -f; exit 0; fi
-              sleep 5
-            done
-            echo "Staging did not answer /up after the deploy; rolling back."
-            if [ -n "$PREVIOUS" ]; then
-              docker tag "$PREVIOUS" "$(docker inspect --format '{{.Config.Image}}' staging-app)"
-              docker compose up -d --force-recreate
-            fi
-            exit 1
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "root@$SERVER_IP" 'bash -s' < deploy/staging.sh
 
   deploy-production:
     name: Deploy to Production
