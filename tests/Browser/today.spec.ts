@@ -14,7 +14,7 @@ test.describe('Today', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('keeps four labelled sections and account settings accessible', async ({
+    test('keeps its sections, the three-page navigation and account settings', async ({
         page,
     }) => {
         await page.goto('/today');
@@ -27,9 +27,9 @@ test.describe('Today', () => {
             page.getByRole('region', { name: 'Your day' }),
         ).toBeVisible();
         const nav = page.getByRole('navigation', { name: 'Main navigation' });
+        // What's on is a panel over Today since the Events page was removed (27 Oct 2026).
         await expect(nav.getByRole('link')).toHaveText([
             'Today',
-            'Events',
             'Paperwork',
             'Travel',
         ]);
