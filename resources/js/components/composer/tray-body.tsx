@@ -23,6 +23,9 @@ import '../../../css/composer-page.css';
 // draws them at once, at their final size, while the current ones load behind.
 let lastSeen: Workspace | null = null;
 let lastDay: SurfaceContext = {};
+// The tray's last request already handed to Composer, kept here so a panel
+// drawn again never asks it a second time.
+let lastSent: number | null = null;
 
 /** Loads them ahead, while the page is idle, so even the first opening isn't empty. */
 export function prefetchTray(): void {
@@ -228,7 +231,6 @@ function Body({
     useEffect(() => {
         lastSeen = workspace;
     }, [workspace]);
-    const sent = useRef<number | null>(null);
     const picked = useRef<number | null>(null);
     // The day in focus (with a plan), as the box's placeholder names it.
     const focus =
@@ -246,13 +248,21 @@ function Body({
     // conversation, as an empty box suggests; the one before stays in History.
     // Before paint, so the last conversation never flashes in its place.
     useLayoutEffect(() => {
-        if (!asked || sent.current === asked.id) {
+        if (!asked || lastSent === asked.id) {
             return;
         }
 
-        sent.current = asked.id;
+        lastSent = asked.id;
+
+        // Still answering the one before: the words go back in the box, never lost.
+        if (engine.busyRef.current) {
+            onDraft(asked.text);
+
+            return;
+        }
+
         void surface.send(asked.text, asked.fresh);
-    }, [asked, surface]);
+    }, [asked, surface, engine, onDraft]);
 
     // Each + menu choice, once: its view here, or a new conversation.
     useEffect(() => {
