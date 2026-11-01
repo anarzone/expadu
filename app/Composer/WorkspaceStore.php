@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Models\ComposerTrace;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Personalisation\SignalAction;
@@ -196,6 +197,8 @@ class WorkspaceStore
             }
             $s['changes'] = array_values(array_filter($s['changes'], fn (array $change): bool => ! in_array($change['id'], $changes, true)));
             $wasOpen = $s['conversations'][$i]['id'] === $s['active'];
+            // How its answers were made, gone with it.
+            ComposerTrace::query()->where('user_id', $user->id)->where('conversation_id', $s['conversations'][$i]['id'])->delete();
             array_splice($s['conversations'], $i, 1);
             if ($wasOpen) {
                 // An empty one to open (an existing one, else a new one): never listed, so no chat appears.
@@ -240,6 +243,8 @@ class WorkspaceStore
     public function purgePaperworkCopies(int $userId): void
     {
         DB::transaction(function () use ($userId): void {
+            // How its answers were made: any of them may quote the record, so all go.
+            ComposerTrace::query()->where('user_id', $userId)->delete();
             $row = ComposerWorkspace::query()->where('user_id', $userId)->lockForUpdate()->first();
             if ($row === null) {
                 return;

@@ -9,6 +9,7 @@ use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
 use App\Support\EventCancellation;
+use App\Support\TicketOffers;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -102,8 +103,18 @@ class ScrapeEvents extends Command
             foreach ($this->oneCopyPerOccurrence($fetched) as $ev) {
                 // One bad record is logged and skipped, not the rest of the run.
                 try {
-                    $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    $title = TicketOffers::title(html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8'));
                     if (! $title) {
+                        continue;
+                    }
+
+                    // A ticket product isn't an event: a copy kept from before is set aside now.
+                    if (TicketOffers::isProduct($title)) {
+                        if (isset($ev['id'])) {
+                            Event::query()->where('source', 'koeln.de')->where('source_uid', (string) $ev['id'])
+                                ->where('status', 'active')->update(['status' => 'unlisted', 'updated_at' => now()]);
+                        }
+
                         continue;
                     }
 

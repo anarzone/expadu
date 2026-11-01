@@ -127,6 +127,9 @@ function useMinuteClock(): number {
     return now;
 }
 
+/** How long the bar stays after the arrival time. */
+const ARRIVED_SHOWN_MS = 10 * 60 * 1000;
+
 /**
  * On your way (connected/journey-session.js): on every page while you're on a
  * trip, Travel's card surface, the line's badge and Back to your trip ("Your
@@ -143,6 +146,16 @@ export function OnYourWayBar() {
 
     const { instruction, leg } = tripMoment(activeTrip, now);
     const kind = vehicleOf(leg?.mode);
+    const arrived = instruction === 'Arrived';
+
+    // A nudge back to a trip under way: once you've arrived there's nothing to
+    // go back to, so it goes after a few minutes (the trip page keeps "Arrived").
+    if (
+        arrived &&
+        now - Date.parse(activeTrip.journey.arrive_at) > ARRIVED_SHOWN_MS
+    ) {
+        return null;
+    }
 
     return (
         <Link
@@ -161,7 +174,11 @@ export function OnYourWayBar() {
             )}
             <span>
                 <strong>{activeTrip.destination.name}</strong>
-                <small>On your way · {instruction}</small>
+                <small>
+                    {arrived
+                        ? "You've arrived"
+                        : `On your way · ${instruction}`}
+                </small>
             </span>
             <span className="journey-resume-go">
                 <span>Back to your trip</span>
