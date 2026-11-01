@@ -3,6 +3,10 @@ import { useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import type { AiOrderPaused } from '@/components/personalisation/ai-order-paused';
 import {
+    AppearancePanel,
+    appearanceLine,
+} from '@/components/settings-page/appearance-panel';
+import {
     NotificationsPanel,
     notificationsLine,
 } from '@/components/settings-page/notifications-panel';
@@ -19,6 +23,7 @@ import {
 import type { EditKey } from '@/components/settings-page/panels';
 import { SettingsIcon } from '@/components/settings-page/parts';
 import type { IconName } from '@/components/ui/icon';
+import { useAppearance, useIsDark } from '@/hooks/use-appearance';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
 import AppLayout from '@/layouts/app-layout';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
@@ -38,6 +43,7 @@ import '../../css/settings.css';
 type SectionId =
     | 'account'
     | 'city'
+    | 'appearance'
     | 'privacy'
     | 'composer'
     | 'notifications'
@@ -46,7 +52,7 @@ type SectionId =
     | 'delete';
 
 const GROUPS: { label: string; ids: SectionId[] }[] = [
-    { label: 'You', ids: ['account', 'city'] },
+    { label: 'You', ids: ['account', 'city', 'appearance'] },
     {
         label: 'Expadu for you',
         ids: ['privacy', 'composer', 'notifications', 'transit'],
@@ -60,6 +66,7 @@ const SECTIONS: Record<
 > = {
     account: { label: 'Your account', icon: 'user', tone: 'account' },
     city: { label: 'City', icon: 'pin-narrow', tone: 'place' },
+    appearance: { label: 'Appearance', icon: 'moon', tone: 'look' },
     privacy: { label: 'Privacy', icon: 'eye', tone: 'learn' },
     composer: { label: 'Composer', icon: 'spark-small', tone: 'composer' },
     notifications: { label: 'Notifications', icon: 'bell', tone: 'notify' },
@@ -117,6 +124,8 @@ export default function Settings() {
     const edit = open.in === current ? open.key : null;
     const setEdit = (key: EditKey) => setOpen({ in: current, key });
     const push = usePushSubscription();
+    const [appearance, setAppearance] = useAppearance();
+    const dark = useIsDark();
 
     const user = auth.user;
     const google = user.social_provider === 'google' && !auth.has_password;
@@ -130,6 +139,7 @@ export default function Settings() {
     const values: Record<SectionId, string> = {
         account: `${user.name} · ${google ? 'Google' : 'email and password'}`,
         city: city === '' ? 'Not set yet' : isCologne(city) ? 'Cologne' : city,
+        appearance: appearanceLine(appearance, dark),
         privacy: !userSettings?.personalisation
             ? 'Suggestions off'
             : userSettings.personalisation_current === false
@@ -160,6 +170,9 @@ export default function Settings() {
     const panels: Record<SectionId, ReactNode> = {
         account: <AccountPanel edit={edit} onEdit={setEdit} />,
         city: <CityPanel edit={edit} onEdit={setEdit} />,
+        appearance: (
+            <AppearancePanel appearance={appearance} onChange={setAppearance} />
+        ),
         privacy: <PrivacyPanel />,
         composer: <ComposerPanel />,
         notifications: (

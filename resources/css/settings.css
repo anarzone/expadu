@@ -318,7 +318,7 @@
     color: var(--color-nav-violet);
 }
 .settings-chip.composer {
-    background: var(--color-nav-teal);
+    background: var(--color-select-fill);
     color: var(--color-bg-surface);
 }
 .settings-chip.place {
@@ -332,6 +332,154 @@
 .settings-chip.delete {
     background: var(--color-conflict-bg);
     color: var(--color-conflict-text);
+}
+.settings-chip.look {
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+
+/* Appearance: each look as a small Expadu card in it. The previews keep
+   their own colours (the two looks' canvas, header, card and ink), so each
+   shows itself whichever look the page is in. */
+.settings-looks {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+@media (max-width: 560px) {
+    .settings-looks {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+.settings-look {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-flat);
+    cursor: pointer;
+    transition:
+        border-color var(--duration-fast) ease-out,
+        box-shadow var(--duration-fast) ease-out;
+}
+.settings-look:hover {
+    border-color: var(--color-border-strong);
+}
+.settings-look:has(input:checked) {
+    border-color: var(--color-select-text);
+    box-shadow:
+        0 0 0 1px var(--color-select-text),
+        var(--shadow-flat);
+}
+.settings-look:has(input:focus-visible) {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.settings-look-preview {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 10;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+}
+.settings-look[data-look='light'] .settings-look-preview,
+.settings-look-preview [data-half='light'] {
+    --look-canvas: #faf6ee;
+    --look-bar: #fffdf8;
+    --look-card: #fffdf8;
+    --look-edge: #e6ddcb;
+    --look-ink: #211d15;
+    --look-soft: #d4c7ad;
+}
+.settings-look[data-look='dark'] .settings-look-preview,
+.settings-look-preview [data-half='dark'] {
+    --look-canvas: #12100d;
+    --look-bar: #171511;
+    --look-card: #1b1814;
+    --look-edge: #2e2922;
+    --look-ink: #f3ece0;
+    --look-soft: #4a4339;
+}
+/* System: light on one side of the diagonal, dark on the other. */
+.settings-look-preview [data-half] {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+.settings-look-preview [data-half='dark'] {
+    clip-path: polygon(62% 0, 100% 0, 100% 100%, 38% 100%);
+}
+.settings-look-page {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12%;
+    background: var(--look-canvas);
+    box-shadow: inset 0 0 0 1px var(--look-edge);
+    border-radius: inherit;
+}
+.settings-look-bar {
+    height: 16%;
+    background: var(--look-bar);
+    border-bottom: 1px solid var(--look-edge);
+}
+.settings-look-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8%;
+    margin: 0 10%;
+    padding: 9% 9%;
+    border: 1px solid var(--look-edge);
+    border-radius: 9px;
+    background: var(--look-card);
+}
+.settings-look-dot {
+    width: 18%;
+    aspect-ratio: 1;
+    border-radius: 5px;
+    background: var(--color-brand-orange);
+}
+.settings-look-line {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--look-ink);
+}
+.settings-look-line.short {
+    width: 60%;
+    background: var(--look-soft);
+}
+.settings-look-copy {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0 4px;
+}
+.settings-look-copy input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin: 1px 0 0;
+    accent-color: var(--color-select-text);
+}
+.settings-look-copy > span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+.settings-look-copy strong {
+    display: block;
+    color: var(--color-text);
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
 }
 
 /* A section's facts: one container, a row each, hairlines between. */
@@ -974,4 +1122,20 @@ button.settings-tile:active {
     .privacy-never {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   The ink chips sit back instead of turning into cream squares, and a switch
+   that is on is a deep teal with a light knob. */
+:root.dark .settings-title .settings-chip,
+:root.dark .settings-chip.account,
+:root.dark .settings-chip.look {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+}
+:root.dark .settings-switch[aria-checked='true'] {
+    background-color: var(--color-select-fill);
+}
+:root.dark .settings-switch::after {
+    background: var(--color-text);
 }
