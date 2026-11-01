@@ -25,6 +25,7 @@ function fakeHealthyApiDependencies(array $overrides = []): void
         'photon.komoot.io/*' => Http::response(['features' => []]),
         'www.pegelonline.wsv.de/*' => Http::response(['value' => 218]),
         'motis.test/api/v1/geocode*' => Http::response(['places' => []]),
+        'motis.test/api/v1/plan*' => Http::response(['itineraries' => [['legs' => []]]]),
         'transitous.test/api/v1/geocode*' => Http::response(['places' => []]),
     ], $overrides));
 }
@@ -82,4 +83,19 @@ test('health monitoring skips MOTIS when it is not configured', function () {
 
     Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'localhost:8080'));
     Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'transitous.test/api/v1/geocode'));
+});
+
+test('health monitoring warns two weeks before the MOTIS timetable runs out', function () {
+    configureHealthyApiDependencies();
+    config()->set('mail.default', 'log');
+    fakeHealthyApiDependencies([
+        'motis.test/api/v1/plan*' => Http::response(['itineraries' => []]),
+    ]);
+
+    $this->artisan('api:health')
+        ->expectsOutputToContain('MOTIS timetable (14 days ahead)')
+        ->assertFailed();
+
+    Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'motis.test/api/v1/plan')
+        && str_contains(urldecode($request->url()), 'time='.now('Europe/Berlin')->addDays(14)->toDateString()));
 });

@@ -53,3 +53,35 @@ Region: VRS-core Rhineland (5,421 km²), VRS GTFS, **365-day** timetable, **tile
 ### Gotchas proven here
 - MOTIS import runs all tasks (osr/adr/tt/adr_extend/matches) **concurrently**; on **Docker Desktop for Mac named volumes** it dies instantly with `basic_ios::clear: iostream error` (concurrent-I/O quirk) — use a **bind mount** on Mac. On the Linux box this is moot.
 - API: plan is `GET /api/v1/plan?fromPlace=<lat>,<lng>&toPlace=<lat>,<lng>&time=<ISO8601 **with Z/offset**>` (bare `2026-06-17T22:05:22` → `failed to parse timestamp`). reverse-geocode: `/api/v1/reverse-geocode?place=<lat>,<lng>`.
+
+## Weekly refresh (since 1 Nov 2026)
+
+The box (3.8 GB) serves MOTIS (~150 MB) but can't build it (an import peaks at
+~3.5 GB), so the owner's Mac builds the store and swaps it in:
+`infra/motis/refresh.sh`.
+
+1. Downloads the VRS GTFS and reads `feed_info.txt` (version, end date).
+2. Warns (macOS notification, exit 2) when the timetable ends within 21 days:
+   VRS publishes the next timetable year only weeks before the December change.
+3. Stops if the box already runs that feed version (`/data/motis/store/feed_version`).
+4. Imports with the **pinned** image (the same digest the box serves: a store only
+   loads in the MOTIS version that built it), using the map extract and config in
+   `~/motis-bench/data`, and test-plans Dom → Rudolfplatz locally.
+5. Uploads to `/data/motis/store.new`, swaps (`store` → `store.prev`), starts MOTIS
+   with `--pull never`, and rolls back if MOTIS plans no trips.
+
+`FORCE=1` rebuilds an unchanged feed. On the server side, `api:health` also plans
+a trip 14 days ahead and reports "MOTIS timetable" down before the data runs out,
+even when the Mac is off.
+
+Install the weekly job (Mondays 05:00) once, with a stable copy of the script:
+
+```bash
+cp infra/motis/refresh.sh ~/motis-bench/refresh.sh
+sed "s|__HOME__|$HOME|g" infra/motis/com.expadu.motis-refresh.plist > ~/Library/LaunchAgents/com.expadu.motis-refresh.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.expadu.motis-refresh.plist
+```
+
+After changing `refresh.sh`, copy it to `~/motis-bench/` again. The map extract
+(`nrw.osm.pbf`, the VRS-core cut from June 2026) changes rarely; refresh it by hand
+from BBBike or a Geofabrik extract clipped to reference-complete ways.
