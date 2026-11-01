@@ -131,14 +131,16 @@
     background-size:
         37px 41px,
         83px 71px;
+    /* Shifted per listing (--pp-stars, PosterArt's placing()). */
     background-position:
-        0 0,
-        19px 23px;
+        var(--pp-stars, 0px) 0,
+        calc(19px + var(--pp-stars, 0px)) 23px;
     opacity: 1;
 }
 .pp-art.pp--night.pp--rings::before {
-    right: 9%;
-    top: 16%;
+    /* Where the moon sits varies per listing (PosterArt's placing()). */
+    right: var(--pp-x, 9%);
+    top: var(--pp-y, 16%);
     width: 32%;
     border: 0;
     background: var(--poster-cream);

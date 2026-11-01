@@ -1658,6 +1658,11 @@ a.plan-link:hover {
     scroll-snap-type: x mandatory;
     touch-action: pan-x pan-y;
 }
+/* The next card peeks to say there's more: its edge fades instead of cutting
+   through its words, until the rail is scrolled to the end (discovery.tsx). */
+.event-rail:has(> :nth-child(2)):not([data-end]) {
+    mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
+}
 .event-card {
     position: relative;
     isolation: isolate;
@@ -1859,8 +1864,11 @@ a.plan-link:hover {
     color: var(--color-text-soft);
 }
 .compact-category {
+    /* Its own width beside a title that wraps: the title gives way, not the chip. */
+    flex-shrink: 0;
     margin-left: auto;
     padding: 6px 8px;
+    white-space: nowrap;
     border-radius: var(--radius-sm);
     background: var(--color-event-chip-bg);
     color: var(--color-event-chip-text);
