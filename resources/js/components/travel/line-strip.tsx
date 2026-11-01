@@ -50,6 +50,17 @@ export function StripTime({
     );
 }
 
+/** Two stop names for the same place, ignoring case and a leading city ("Köln Merkenich"). */
+function sameStop(a: string, b: string): boolean {
+    const plain = (name: string) =>
+        name
+            .toLocaleLowerCase('de')
+            .replace(/^(köln|koeln|cologne)\s+/, '')
+            .trim();
+
+    return plain(a) === plain(b);
+}
+
 function Arrow({ back = false }: { back?: boolean }) {
     return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -82,6 +93,9 @@ function End({
         );
     }
 
+    // A stop named like the destination says nothing ("Merkenich via Merkenich").
+    const via = (end.via ?? []).filter((stop) => !sameStop(stop, end.dest));
+
     return (
         <span className={cn('strip-end', `is-${side}`)}>
             <span className="strip-dest">
@@ -89,8 +103,8 @@ function End({
                 <span>{end.dest}</span>
                 {side === 'right' ? <Arrow /> : null}
             </span>
-            {end.via?.length ? (
-                <small className="strip-via">via {end.via.join(' · ')}</small>
+            {via.length ? (
+                <small className="strip-via">via {via.join(' · ')}</small>
             ) : null}
             <span className="strip-when">{end.when}</span>
         </span>
