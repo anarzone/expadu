@@ -40,6 +40,9 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf 'Host box\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$SERVER_IP" >> ~/.ssh/config
 
+      - name: Runner size
+        run: echo "$(nproc) CPUs, $(free -g | awk '/Mem:/{print $2}') GB memory"
+
       - name: Refresh
         env:
           MOTIS_HOST: box

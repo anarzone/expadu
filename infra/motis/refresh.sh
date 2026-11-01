@@ -56,9 +56,13 @@ if [ "$version" = "$live" ] && [ "${FORCE:-0}" != 1 ]; then
 fi
 
 scp -q "$HOST:/data/motis/inputs/nrw.osm.pbf" "$HOST:/data/motis/inputs/config.yml" .
-if ! docker run --rm -w /data -v "$WORK:/data" "$IMG" /motis import > import.log 2>&1; then
-  tail -20 import.log
-  say error "MOTIS import failed; the box keeps its current store"
+docker run --name motis-import -w /data -v "$WORK:/data" "$IMG" /motis import > import.log 2>&1 || true
+code=$(docker inspect --format '{{.State.ExitCode}}' motis-import)
+oom=$(docker inspect --format '{{.State.OOMKilled}}' motis-import)
+docker rm motis-import > /dev/null
+if [ "$code" != 0 ]; then
+  grep -v '^ ' import.log | tail -40
+  say error "MOTIS import failed (exit $code, out of memory: $oom); the box keeps its current store"
   exit 1
 fi
 
