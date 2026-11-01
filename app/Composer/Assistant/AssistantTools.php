@@ -375,7 +375,10 @@ final class AssistantTools
                 // Every change Composer can make goes the one way, its card included.
                 default => isset(ComposerActions::ACTIONS[$name]) ? $this->act($name, $input) : 'Unknown tool.',
             };
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            // The answer goes on without it; the fault is still seen.
+            report($error);
+
             return 'Nothing found: the lookup failed.';
         } finally {
             $this->timings[] = [$name.' '.json_encode($input, JSON_UNESCAPED_UNICODE), (int) round((hrtime(true) - $started) / 1e6)];
@@ -1441,8 +1444,9 @@ final class AssistantTools
                 .'to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only. Only when they ask for a whole new plan instead, plan_day again with replacing (their words asking for it).');
         }
         $planned = app(PlanDay::class)->plan($this->user, $input, $this->now);
+        // Why there's no plan, under an id like any result, so the answer can say it.
         if (is_string($planned)) {
-            return $planned;
+            return $this->line('n'.(++$this->count), $planned);
         }
         $id = 'plan'.(++$this->count);
         $this->cards[$id] = ['type' => 'plan', 'token' => $planned['token'],

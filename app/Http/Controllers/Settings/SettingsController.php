@@ -26,7 +26,7 @@ use Inertia\Response;
 class SettingsController extends Controller
 {
     /** Every section, in the menu's order. */
-    public const SECTIONS = ['account', 'city', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete'];
+    public const SECTIONS = ['account', 'city', 'appearance', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete'];
 
     /** Sections whose endpoints need a verified email ('verified'), so they do too. */
     private const VERIFIED = ['data', 'delete'];

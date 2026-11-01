@@ -10,7 +10,7 @@
     <div class="wrap mk-hero__prose">
     <span class="eyebrow">Privacy</span>
     <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
-    <p class="meta">Last updated: 22 October 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    <p class="meta">Last updated: 1 November 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
     </div>
 @endsection
 
@@ -148,7 +148,11 @@
             sending is your consent for that one request (Art. 6(1)(a) GDPR), and it lasts 15 minutes.
             Nothing else from your account is sent. Composer keeps the conversation, its answers and
             their cards, in your History until you delete it; a change it makes for you can be undone
-            for 24 hours.
+            for 24 hours. To find out why an answer went wrong and put it right, we also keep how each
+            answer was made for 30 days: your message, what Composer looked up and what it found (never
+            your Paperwork record) and the answer it gave (Art. 6(1)(f) GDPR, our legitimate interest in
+            answers that are right). It goes when you delete that conversation, your Paperwork record or
+            your account, and Download your data includes it.
         </li>
         <li>
             <strong>Composer with your Paperwork.</strong> Composer reads your Paperwork record, and

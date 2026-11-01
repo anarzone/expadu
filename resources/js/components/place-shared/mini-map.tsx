@@ -54,9 +54,7 @@ export function MiniMap({
 
                     map = new basemap.maplibregl.Map({
                         container,
-                        style: basemap.style(
-                            document.documentElement.classList.contains('dark'),
-                        ),
+                        style: basemap.style(),
                         center: [lng, lat],
                         zoom: 15,
                         interactive: false,

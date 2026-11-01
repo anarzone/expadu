@@ -5,7 +5,7 @@
    place. */
 
 .ui-sheet.ev-details {
-    --evd-line: #e6ddcb;
+    --evd-line: var(--color-border);
     --evd-tile: #f1ead9;
     --evd-tile-ink: #4b4437;
     --evd-label: #6b6457;
@@ -542,7 +542,7 @@
 }
 
 .evd-where .evd-row-icon {
-    background: #fff;
+    background: var(--color-bg-field);
     color: var(--evd-where-icon);
 }
 
@@ -866,4 +866,26 @@
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .ui-sheet.ev-details {
+    --evd-tile: var(--color-bg-quiet);
+    --evd-tile-ink: var(--color-text-soft);
+    --evd-label: var(--color-text-soft);
+    --evd-sub: var(--color-text-soft);
+    --evd-body: var(--color-text);
+    --evd-where: var(--color-select-bg);
+    --evd-where-ink: var(--navy);
+    --evd-where-soft: var(--color-select-text);
+    --evd-fit: var(--color-attention-bg);
+    --evd-fit-ink: var(--color-attention-text);
+    --evd-on: var(--color-action-tint);
+    --evd-on-ink: var(--color-action-text);
+}
+:root.dark .evd-source small {
+    background: var(--color-paper-bg);
 }

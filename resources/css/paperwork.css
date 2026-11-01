@@ -187,7 +187,7 @@
         color: #fff;
     }
     .secondary {
-        background: #fff;
+        background: var(--color-bg-field);
         border: 1px solid var(--line);
     }
     .dark {
@@ -222,7 +222,7 @@
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
         padding: 28px;
-        background: #fff;
+        background: var(--color-bg-field);
         overflow: auto;
         color: var(--ink);
     }
@@ -320,7 +320,7 @@
     .form-field select,
     .form-field textarea {
         border: 1px solid #cad9dc;
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-md);
         padding: 12px;
         width: 100%;
@@ -506,7 +506,7 @@
         z-index: 30;
         width: 250px;
         padding: 8px;
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         box-shadow: 0 12px 40px #17303a24;
     }
@@ -555,7 +555,7 @@
         height: 18px;
     }
     .case-tabs [aria-pressed='true'] {
-        background: white;
+        background: var(--color-bg-field);
         box-shadow: 0 2px 6px #1537460b;
         font-weight: var(--weight-semibold);
     }
@@ -737,7 +737,7 @@
         margin-bottom: 10px;
     }
     .process-grid {
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         padding: 4px 16px;
     }
@@ -893,7 +893,7 @@
         align-items: start;
     }
     .detail-steps {
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         padding: 18px 16px;
     }
@@ -1046,7 +1046,7 @@
     }
     .process-records {
         margin-top: 20px;
-        background: white;
+        background: var(--color-bg-field);
         padding: 18px 16px;
         border-radius: var(--radius-xl);
     }
@@ -1170,7 +1170,7 @@
         gap: 18px;
     }
     .paperwork-group {
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         padding: 16px;
     }
@@ -1254,7 +1254,7 @@
         color: #08768c;
     }
     .case-inline {
-        background: white;
+        background: var(--color-bg-field);
         padding: 18px;
         border-radius: var(--radius-xl);
         margin-bottom: 20px;
@@ -1382,7 +1382,7 @@
         min-height: 44px;
         font-size: var(--text-control);
         padding: 8px 12px;
-        background: #fff;
+        background: var(--color-bg-field);
     }
     .deferred-question {
         display: flex;
@@ -1424,18 +1424,18 @@
         font-size: var(--text-control);
         border-radius: var(--radius-md);
         padding: 8px 12px;
-        background: #fff;
+        background: var(--color-bg-field);
     }
     .action-filters [aria-pressed='true'] {
         background: var(--blue);
     }
     .action-list {
         padding: 0 16px;
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
     }
     .history-list {
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         padding: 6px 16px;
     }
@@ -1464,7 +1464,7 @@
     .access-blank {
         padding: 28px 20px;
         border-radius: var(--radius-xl);
-        background: white;
+        background: var(--color-bg-field);
     }
     /* "Get started" is a link here, a button in the mock: centre it alike. */
     .access-blank .actions .button {
@@ -1482,7 +1482,7 @@
         padding: 0 16px;
         border: 1px solid var(--line);
         border-radius: var(--radius-pill);
-        background: white;
+        background: var(--color-bg-field);
         font-weight: var(--weight-medium);
     }
     .start-city button:active {
@@ -1585,7 +1585,7 @@
         padding: 10px 12px;
         border: 1px solid #d8e6e9;
         border-radius: var(--radius-md);
-        background: white;
+        background: var(--color-bg-field);
         font-size: var(--text-title-sm);
         font-weight: var(--weight-medium);
         font-variant-numeric: tabular-nums;
@@ -1658,7 +1658,7 @@
         margin-top: 1px;
     }
     .case-day {
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-lg);
         margin-top: 12px;
         overflow: hidden;
@@ -1785,7 +1785,7 @@
         color: var(--action);
     }
     .case-plan-feedback {
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-lg);
         padding: 12px;
         margin-top: 12px;
@@ -2333,7 +2333,7 @@
         gap: 16px;
     }
     .family-next {
-        background: white;
+        background: var(--color-bg-field);
         padding: 22px;
         border-radius: var(--radius-xl);
     }
@@ -2378,7 +2378,7 @@
         place-items: center;
         width: 40px;
         height: 40px;
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-md);
     }
     .family-personal h3 {
@@ -2388,7 +2388,7 @@
     }
     .family-personal .button {
         margin-top: 6px;
-        background: white;
+        background: var(--color-bg-field);
         border: 0;
     }
     .family-access {
@@ -2423,7 +2423,7 @@
     }
     .family-preview {
         padding: 16px;
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-lg);
     }
     .family-preview label {
@@ -2451,7 +2451,7 @@
     }
     .family-locked {
         padding: 28px 20px;
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         max-width: 680px;
     }
@@ -2473,7 +2473,7 @@
         line-height: 1.4;
     }
     .family-document {
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         margin-bottom: 10px;
         padding: 0 16px;
@@ -3622,7 +3622,7 @@
     /* Compact, shared orientation. Selected answers are confirmed explicitly. */
     .orientation {
         color: var(--ink);
-        background: white;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         padding: 16px 20px 20px;
         box-shadow: 0 8px 32px rgb(33 31 23 / 5%);
@@ -4266,7 +4266,7 @@
         margin: 10px 0 24px;
         border-radius: var(--radius-xl);
         overflow: hidden;
-        background: white;
+        background: var(--color-bg-field);
     }
     .situation-welcome-copy {
         padding: 24px 22px 0;
@@ -4863,4 +4863,145 @@
         opacity: 1;
         transform: translateX(0);
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .paperwork-page {
+    --green: var(--color-done-bg);
+    --peach: var(--color-action-tint);
+    --yellow: var(--color-attention-bg);
+    --warning-surface: var(--color-attention-bg);
+    --warning-ink: var(--color-attention-text);
+}
+:root.dark .paperwork-page a:focus-visible,
+:root.dark .paperwork-page button:focus-visible,
+:root.dark .paperwork-page input:focus-visible,
+:root.dark .paperwork-page select:focus-visible,
+:root.dark .paperwork-page textarea:focus-visible {
+    outline: 3px solid var(--color-focus);
+}
+:root.dark .paperwork-page .icon-button:hover {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .pill {
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .paperwork-page .pill.ink {
+    color: var(--color-bg-surface);
+}
+:root.dark .paperwork-page .form-field input,
+:root.dark .paperwork-page .form-field select,
+:root.dark .paperwork-page .form-field textarea {
+    border: 1px solid var(--color-border-strong);
+}
+:root.dark .paperwork-page .case-tabs {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .overview-action + .overview-action {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .topic-icon.green {
+    background: var(--color-done-bg);
+}
+:root.dark .paperwork-page .state-badge {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+:root.dark .paperwork-page .state-badge.blocked {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+:root.dark .paperwork-page .state-badge.waiting {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+:root.dark .paperwork-page .state-badge.completed {
+    background: var(--color-done-bg);
+    color: var(--color-done);
+}
+:root.dark .paperwork-page .state-badge.not_started {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .plan-states {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .process-summary + .process-summary {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .timeline-icon {
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .paperwork-page .process-step + .process-step {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .step-symbol.completed {
+    background: var(--color-done-bg);
+    color: var(--color-done);
+}
+:root.dark .paperwork-page .submission-line {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .paperwork-select select {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .paper-process-link > svg:first-child {
+    color: var(--color-text-soft);
+}
+:root.dark .paperwork-page .document-row + .document-row {
+    border-top: 1px solid var(--color-border);
+}
+:root.dark .paperwork-page .document-symbol.confirmed {
+    color: var(--color-select-text);
+}
+:root.dark .paperwork-page .document-confirmed {
+    color: var(--color-select-text);
+}
+:root.dark .paperwork-page .case-planner {
+    background: var(--color-select-bg);
+}
+:root.dark .paperwork-page .case-plan-choice {
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .paperwork-page .case-time-fields input {
+    border: 1px solid var(--color-border-strong);
+}
+:root.dark .paperwork-page .case-time-fields input[readonly] {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .case-time-ideas [role='group'] {
+    background: var(--color-bg-quiet);
+}
+:root.dark .paperwork-page .case-time-ideas button[aria-pressed='true'] {
+    color: var(--color-bg-surface);
+}
+:root.dark .paperwork-page .case-plan-footer {
+    background: linear-gradient(transparent, var(--color-select-bg));
+}
+:root.dark .paperwork-page .case-inline-error {
+    color: var(--color-conflict-text);
+}
+:root.dark
+    .paperwork-page.paperwork-page
+    main
+    :is(button, a, summary, input, select):focus-visible {
+    outline: 2px solid var(--color-focus);
+}
+:root.dark .paperwork-page.paperwork-page input:focus {
+    border-color: var(--color-focus);
+}
+:root.dark div.paperwork-page.paperwork-page {
+    --warning-surface: var(--color-attention-bg);
+    --warning-ink: var(--color-attention-text);
+}
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   The ink button's fill turns cream, so its words go dark. */
+:root.dark .paperwork-page .dark {
+    color: var(--color-bg-surface);
+}
+:root.dark .paperwork-page .detail-dialog::backdrop {
+    background: rgb(0 0 0 / 0.6);
 }

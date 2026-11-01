@@ -23,9 +23,16 @@ import './station-map.css';
  * On phones the map pans sideways and the pick bar stays on top.
  */
 
+/* The diagram's own inks, from the tokens so it turns over in dark mode:
+   the page behind its names (their halo), the casing under each line, the
+   stops and the station, and the ink they're drawn in. */
+const INK = 'var(--color-text)';
+const STOP = 'var(--color-bg-field)';
+const CASING = 'var(--color-bg-surface)';
+
 const halo = {
     paintOrder: 'stroke',
-    stroke: '#fbf6ec',
+    stroke: 'var(--color-bg-canvas)',
     strokeLinejoin: 'round',
 } as const;
 
@@ -69,7 +76,7 @@ function LinesDiagram({
                     key={`casing-${p.line}-${i}`}
                     d={d(p.points)}
                     fill="none"
-                    stroke="#fffdf8"
+                    stroke={CASING}
                     strokeWidth={10}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -98,8 +105,8 @@ function LinesDiagram({
                     height={s.length}
                     rx={7}
                     transform={`translate(${s.x} ${s.y}) rotate(${s.angle})`}
-                    fill="#fff"
-                    stroke="#211d15"
+                    fill={STOP}
+                    stroke={INK}
                     strokeWidth={2.5}
                     opacity={on(s.lines) ? 1 : 0.22}
                 />
@@ -112,7 +119,7 @@ function LinesDiagram({
                     textAnchor={n.anchor}
                     fontSize={15}
                     fontWeight={600}
-                    fill="#211d15"
+                    fill={INK}
                     strokeWidth={5}
                     opacity={on(n.lines) ? 1 : 0.22}
                     {...halo}
@@ -166,7 +173,7 @@ function LinesDiagram({
                             y={e.y}
                             fontSize={14}
                             fontWeight={600}
-                            fill="#211d15"
+                            fill={INK}
                             strokeWidth={5}
                             {...halo}
                         >
@@ -189,8 +196,8 @@ function LinesDiagram({
                 width={map.centre.w}
                 height={map.centre.h}
                 rx={16}
-                fill="#fff"
-                stroke="#211d15"
+                fill={STOP}
+                stroke={INK}
                 strokeWidth={3.5}
             />
             <text
@@ -199,7 +206,7 @@ function LinesDiagram({
                 textAnchor={map.title.anchor}
                 fontSize={22}
                 fontWeight={700}
-                fill="#211d15"
+                fill={INK}
                 strokeWidth={6}
                 {...halo}
             >

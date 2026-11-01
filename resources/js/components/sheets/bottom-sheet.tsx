@@ -164,7 +164,7 @@ export function BottomSheet({
             <div
                 ref={sheetRef}
                 data-bottom-sheet
-                className="fixed bottom-0 left-1/2 z-[300] flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[20px] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.16)] will-change-transform md:w-[600px] dark:bg-[#1E1D15]"
+                className="fixed bottom-0 left-1/2 z-[300] flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[20px] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.16)] will-change-transform md:w-[600px] dark:bg-bg-surface"
                 style={{
                     height: '72dvh',
                     transform: 'translateX(-50%) translateY(100%)',
@@ -176,7 +176,7 @@ export function BottomSheet({
                     className="flex shrink-0 cursor-grab justify-center py-3 pb-1 select-none"
                     style={{ touchAction: 'none' }}
                 >
-                    <div className="h-1 w-9 rounded-full bg-[#E2DFD6] transition-all hover:w-12 hover:bg-[#AAA89F]" />
+                    <div className="h-1 w-9 rounded-full bg-[#E2DFD6] transition-all hover:w-12 hover:bg-[#AAA89F] dark:bg-bg-hover dark:hover:bg-border-strong" />
                 </div>
 
                 {/* Scrollable content — pb-24 ensures content clears the dock */}

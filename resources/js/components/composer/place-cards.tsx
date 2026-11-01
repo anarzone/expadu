@@ -356,7 +356,7 @@ export function PlaceMapLayer({
 
                 const m = new basemap.maplibregl.Map({
                     container: box.current,
-                    style: basemap.style(false),
+                    style: basemap.style(),
                     center: [
                         from?.lng ?? pinned[0]?.point?.lng ?? 6.957,
                         from?.lat ?? pinned[0]?.point?.lat ?? 50.938,

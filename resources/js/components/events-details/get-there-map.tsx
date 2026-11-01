@@ -2,6 +2,7 @@ import type { GeoJSONSource, Map as MaplibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import { lineLook, vehicleOf } from '@/components/travel/line-look';
 import { lineIcons } from '@/components/ui/icon-paths';
+import { isDark } from '@/lib/appearance';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
 import { decodePolyline } from '@/lib/polyline';
@@ -15,7 +16,9 @@ import type { Journey } from '@/types/transit';
 
 type Point = { lat: number; lng: number };
 
-const WALK = '#6b6457';
+// Walks and bikes in the page's look: on the dark map they lift to read.
+const WALK = { light: '#6b6457', dark: '#a69c8b' };
+const BIKE = { light: '#1d4d8f', dark: '#8fb3e8' };
 
 function wayOf(journey: Journey | null) {
     return {
@@ -30,9 +33,9 @@ function wayOf(journey: Journey | null) {
                     properties: {
                         walk: walk ? 1 : 0,
                         colour: walk
-                            ? leg.mode === 'bike'
-                                ? '#1d4d8f'
-                                : WALK
+                            ? (leg.mode === 'bike' ? BIKE : WALK)[
+                                  isDark() ? 'dark' : 'light'
+                              ]
                             : lineLook(leg.line, vehicleOf(leg.mode)).colour,
                     },
                     geometry: {
@@ -75,7 +78,7 @@ export function GetThereMap({
                 basemap.current = bm;
                 const m = new bm.maplibregl.Map({
                     container: box.current,
-                    style: bm.style(false),
+                    style: bm.style(),
                     center: [venue.lng, venue.lat],
                     zoom: 14.5,
                     interactive: false,
@@ -133,7 +136,10 @@ export function GetThereMap({
                 source: 'gt-way',
                 filter: ['==', ['get', 'walk'], 0],
                 layout: round,
-                paint: { 'line-color': '#ffffff', 'line-width': 7 },
+                paint: {
+                    'line-color': isDark() ? '#12100d' : '#ffffff',
+                    'line-width': 7,
+                },
             });
             m.addLayer({
                 id: 'gt-way-ride',

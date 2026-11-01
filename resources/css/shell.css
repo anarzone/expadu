@@ -391,7 +391,7 @@ html {
     width: 28px;
     height: 28px;
     border-radius: var(--radius-round);
-    background: var(--color-nav-teal);
+    background: var(--color-select-fill);
     color: #fff;
 }
 .shell-composer-mark svg {
@@ -740,7 +740,7 @@ html {
         padding: 12px;
         border: 0;
         border-radius: var(--radius-round);
-        background: var(--color-select-text);
+        background: var(--color-select-fill);
         color: #fff;
         box-shadow: 0 4px 14px #183f4426;
         cursor: pointer;
@@ -1073,7 +1073,7 @@ html {
     width: 26px;
     height: 26px;
     border-radius: var(--radius-round);
-    background: var(--color-select-text);
+    background: var(--color-select-fill);
     color: var(--color-text-on-action);
 }
 :is(.composer-tray, .composer-full-head) .composer-tray-mark svg {
@@ -1300,4 +1300,19 @@ html {
     .composer-backdrop {
         animation: none;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .shell-account > span {
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+}
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   Composer's scrim darkens the page behind it rather than warming it. */
+:root.dark .composer-backdrop {
+    background: rgb(0 0 0 / 0.35);
 }

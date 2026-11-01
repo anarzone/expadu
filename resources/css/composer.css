@@ -2,7 +2,7 @@
    page's frame is composer-page.css. */
 .composer-page {
     --composer-bg: #f4f9fa;
-    --composer-paper: #fff;
+    --composer-paper: var(--color-bg-field);
     --composer-ink: #24251f;
     --composer-muted: #647c84;
     --composer-blue: #356774;
@@ -3506,4 +3506,98 @@
     .composer-page .plan-day-menu {
         animation: none;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .composer-page {
+    --composer-bg: var(--color-bg-quiet);
+    --composer-ink: var(--color-text);
+    --composer-muted: var(--color-text-soft);
+    --composer-line: var(--color-border);
+}
+:root.dark .composer-error {
+    background: var(--color-action-tint);
+    color: var(--color-conflict-text);
+    border: 1px solid var(--color-border);
+}
+:root.dark .composer-preview-placeholder {
+    background: var(--color-done-bg);
+    color: var(--color-text-soft);
+}
+:root.dark .composer-time-editor > small {
+    color: var(--color-action-text);
+}
+:root.dark .composer-time-field > span {
+    color: var(--color-text-soft);
+}
+:root.dark .composer-time-popover {
+    color: var(--color-select-text);
+}
+:root.dark .composer-wheels {
+    background: linear-gradient(
+        transparent 0 40%,
+        var(--color-bg-quiet) 40% 60%,
+        transparent 60% 100%
+    );
+}
+:root.dark .is-danger {
+    color: var(--color-conflict-text);
+}
+:root.dark .composer-loading {
+    color: var(--color-select-text);
+}
+:root.dark .composer-loading .spark-tips path {
+    stroke: var(--color-select-text);
+}
+:root.dark .composer-entry-review button:focus-visible,
+:root.dark .composer-entry-review a:focus-visible {
+    outline: 2px solid var(--color-focus);
+}
+:root.dark .place-card:is([data-kind='cafe'], [data-kind='bakery']),
+:root.dark .place-map-selected:is([data-kind='cafe'], [data-kind='bakery']) {
+    --kind-wash: color-mix(
+        in srgb,
+        hsl(35 49% 45%) 16%,
+        var(--color-bg-surface)
+    );
+}
+:root.dark .place-card:is([data-kind='restaurant'], [data-kind='fastfood']),
+:root.dark
+    .place-map-selected:is([data-kind='restaurant'], [data-kind='fastfood']) {
+    --kind-wash: color-mix(
+        in srgb,
+        hsl(16 59% 45%) 16%,
+        var(--color-bg-surface)
+    );
+}
+:root.dark .place-card-open .place-card-laptop.is-good {
+    color: var(--color-done);
+}
+:root.dark .place-card-open .place-card-laptop.is-mixed {
+    color: var(--color-text-soft);
+}
+:root.dark .place-card-open .place-card-laptop.is-not {
+    color: var(--color-conflict-text);
+}
+:root.dark .place-card-open .place-card-laptop.is-rule {
+    color: var(--color-action-text);
+}
+:root.dark .composer-page .plan-day-rail {
+    border-left: 2px dotted var(--color-border);
+}
+:root.dark .composer-page .plan-day-clash {
+    color: var(--color-attention-text);
+}
+:root.dark .composer-page .plan-day-more > button {
+    color: var(--color-text-soft);
+}
+:root.dark .composer-page .plan-day-keep {
+    border: 1px solid var(--color-border);
+}
+:root.dark .composer-page .plan-day-keep[aria-pressed='true'] {
+    background: var(--color-done-bg);
+    color: var(--color-done);
 }

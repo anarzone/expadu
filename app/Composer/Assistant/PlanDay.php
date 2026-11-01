@@ -21,6 +21,30 @@ use Throwable;
  */
 final class PlanDay
 {
+    /**
+     * How far ahead a day can be planned: today and the next six, so every weekday they
+     * name ("plan my Saturday" on a Sunday) is within reach (owner, 1 Nov 2026).
+     */
+    public const DAYS_AHEAD = 6;
+
+    /**
+     * The weekend day to offer planning for: Saturday on weekdays, Sunday on a Saturday, and
+     * next Saturday by its date on a Sunday, where "Plan my Saturday" read as the day just
+     * gone (a person's Sunday, 1 Nov 2026).
+     *
+     * @return array{label: string, prompt: string}
+     */
+    public static function weekendSuggestion(CarbonImmutable $now): array
+    {
+        $now = $now->setTimezone('Europe/Berlin');
+
+        return match ($now->dayOfWeekIso) {
+            6 => ['label' => 'Plan my Sunday', 'prompt' => 'Help me plan tomorrow, Sunday'],
+            7 => ['label' => 'Plan next Saturday', 'prompt' => 'Help me plan next Saturday, '.$now->next(CarbonImmutable::SATURDAY)->format('j F')],
+            default => ['label' => 'Plan my Saturday', 'prompt' => 'Help me plan Saturday'],
+        };
+    }
+
     /** Shortest stretch the planner can fill with an activity and the way there. */
     private const MIN_WINDOW_MINUTES = 180;
 
@@ -43,7 +67,7 @@ final class PlanDay
 
         return ['name' => 'plan_day', 'description' => 'Put a day or an evening together with Expadu\'s planner: places and listed events in order, with the way between them, from where the person starts. Use it when they ask to plan, or ask for a stretch of time with things to do ("my Saturday", "this evening in Ehrenfeld", "a museum and then coffee"). Fill in only what they said. Returns the plan, which you can show.',
             'input_schema' => ['type' => 'object', 'properties' => [
-                'day' => ['type' => 'string', 'description' => 'today, tomorrow, a weekday (Saturday) or YYYY-MM-DD, within 3 days'],
+                'day' => ['type' => 'string', 'description' => 'today, tomorrow, a weekday (Saturday) or YYYY-MM-DD, within the next 6 days'],
                 'from' => ['type' => 'string', 'description' => 'HH:MM. "after work" 17:30; "tonight" 18:00; "this afternoon" 13:00; "this morning" 09:00; a day named alone 10:00; none said: now'],
                 'until' => ['type' => 'string', 'description' => 'HH:MM. "after work" 20:00; "tonight" 23:00; "this afternoon" 18:00; "this morning" 12:00; a day named alone 20:00'],
                 'areas' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Cologne Veedel they named (Südstadt is Neustadt-Süd, the old town Altstadt-Nord). Never their home Veedel unless named.'],
@@ -72,8 +96,9 @@ final class PlanDay
     {
         $now = $now->setTimezone('Europe/Berlin');
         $day = self::dayOf($input['day'] ?? null, $now);
-        if ($day === null || $day->lessThan($now->startOfDay()) || $day->greaterThan($now->startOfDay()->addDays(3))) {
-            return 'The planner plans today and the next 3 days only.';
+        $last = $now->startOfDay()->addDays(self::DAYS_AHEAD);
+        if ($day === null || $day->lessThan($now->startOfDay()) || $day->greaterThan($last)) {
+            return 'The planner plans today and the next '.self::DAYS_AHEAD.' days only, up to '.$last->format('l j F').'.';
         }
         $from = self::clock($input['from'] ?? null, $day) ?? ($day->isSameDay($now) ? $now : $day->setTime(10, 0));
         // A day named alone ("plan my Saturday") is the day, until 20:00; a start alone, four hours.
@@ -166,12 +191,12 @@ final class PlanDay
     }
 
     /**
-     * Within the planner's reach: never in the past, at most 72 hours ahead, on one day, and
-     * long enough to fill when the time now cut it short.
+     * Within the planner's reach: never in the past, at most DAYS_AHEAD days ahead, on one day,
+     * and long enough to fill when the time now cut it short.
      */
     private function clamped(Constraints $constraints, CarbonImmutable $now, CarbonImmutable $asked): Constraints
     {
-        $horizon = $now->addHours(72);
+        $horizon = $now->startOfDay()->addDays(self::DAYS_AHEAD)->endOfDay();
         $start = self::quarter($constraints->windowStart->max($now), up: true);
         $end = self::quarter($constraints->windowEnd->min($horizon), up: false);
         // As long as asked ("two hours after work"); only a stretch cut short by the time now

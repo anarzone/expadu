@@ -382,7 +382,7 @@ function RouteOption({
                     journey.mode === 'transit'
                         ? 'bg-primary text-primary-foreground'
                         : journey.mode === 'bike'
-                          ? 'bg-cyan text-white'
+                          ? 'bg-select-fill text-white'
                           : 'bg-secondary text-muted-foreground',
                 )}
             >

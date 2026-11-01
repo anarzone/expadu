@@ -499,6 +499,51 @@ const TONES: Record<string, string> = {
 };
 
 /**
+ * The weekend day the starters plan, as Composer's own suggestions name it
+ * (PlanDay::weekendSuggestion): Saturday on weekdays, Sunday on a Saturday,
+ * next Saturday by its date on a Sunday, where "Plan my Saturday" read as the
+ * day just gone (a person's Sunday, 1 Nov 2026), and "this weekend" with it.
+ */
+function weekendDay(now = new Date()): {
+    ask: string;
+    label: string;
+    day: string;
+    weekend: string;
+} {
+    if (now.getDay() === 6) {
+        return {
+            ask: 'Help me plan tomorrow, Sunday',
+            label: 'Plan my Sunday',
+            day: 'Sunday',
+            weekend: 'this weekend',
+        };
+    }
+
+    if (now.getDay() === 0) {
+        const saturday = new Date(now);
+        saturday.setDate(now.getDate() + 6);
+        const date = saturday.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+        });
+
+        return {
+            ask: `Help me plan next Saturday, ${date}`,
+            label: 'Plan next Saturday',
+            day: 'next Saturday',
+            weekend: 'next weekend',
+        };
+    }
+
+    return {
+        ask: 'Help me plan Saturday',
+        label: 'Plan my Saturday',
+        day: 'Saturday',
+        weekend: 'this weekend',
+    };
+}
+
+/**
  * An empty conversation: a new one says so, with the way back to the one
  * before; then the starters, from what the person's day has (the old "Try
  * Composer" examples, owner 23 Oct 2026), and a few to ask any day.
@@ -521,10 +566,11 @@ export function NewConversation({
     onAsk: (prompt: string) => void;
 }) {
     const cards = starters(day, paperwork, around);
+    const weekend = weekendDay();
     const more: [string, string][] = [
-        ['Help me plan Saturday', 'Plan my Saturday'],
+        [weekend.ask, weekend.label],
         [
-            'Find something outdoors for Saturday afternoon.',
+            `Find something outdoors for ${weekend.day} afternoon.`,
             'A little time outdoors',
         ],
         // A film tonight raises the question the listing answers.
@@ -535,10 +581,12 @@ export function NewConversation({
               ][])
             : []),
         ...(cards.length < 2
-            ? ([['What’s on this weekend?', 'What’s on this weekend']] as [
-                  string,
-                  string,
-              ][])
+            ? ([
+                  [
+                      `What’s on ${weekend.weekend}?`,
+                      `What’s on ${weekend.weekend}`,
+                  ],
+              ] as [string, string][])
             : []),
     ];
 
