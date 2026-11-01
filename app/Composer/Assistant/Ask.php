@@ -6,6 +6,7 @@ use App\Composer\Answers\AroundNow;
 use App\Composer\WorkspaceStore;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
+use App\Models\ComposerTrace;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingOptIns;
@@ -19,6 +20,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * One message, answered (POST composer/ask; owner, 22 Oct 2026: one assistant for every
@@ -88,6 +90,9 @@ final class Ask
         $answer = $permit === null ? null : $this->assistant->answer($user, $text, $profile, $now, $this->locations->context($user, $request, $user->veedel),
             $permit, $workspace['plans'] ?? [], self::progressKey($user, (string) ($processing['request_id'] ?? '')),
             Assistant::history(array_slice($messages, 0, $asked)), $page, $paperwork);
+        if ($permit !== null) {
+            $this->trace($user, $conversation, $text, $page, $answer['text'] ?? null);
+        }
         if ($answer !== null) {
             return $this->workspace->answer($user, $conversation, self::message($answer['text'], $answer['blocks'], [
                 'written' => 'ai',
@@ -115,6 +120,33 @@ final class Ask
                 'dropped' => count($this->assistant->written['sentences'] ?? []) - count($this->assistant->kept),
             ] : []),
         ]), null);
+    }
+
+    /**
+     * The answer as it was made, for finding out later why one went wrong: kept 30 days and
+     * gone with the account (ComposerTrace). Never in the way of the answer itself.
+     */
+    private function trace(User $user, string $conversation, string $text, ?string $page, ?string $shown): void
+    {
+        try {
+            $assistant = $this->assistant;
+            ComposerTrace::query()->create([
+                'user_id' => $user->id,
+                'conversation_id' => mb_substr($conversation, 0, 64),
+                'message' => $text,
+                'page' => $page === null ? null : mb_substr($page, 0, 40),
+                'outcome' => $shown !== null ? 'ai' : ($assistant->written !== null ? 'unchecked' : 'failed'),
+                'steps' => $assistant->steps,
+                'written' => $assistant->written,
+                'kept' => $assistant->kept,
+                'dropped' => $assistant->dropped,
+                'timings' => $assistant->timings,
+                'usage' => $assistant->usage,
+                'shown' => $shown === null ? null : mb_substr($shown, 0, 2000),
+            ]);
+        } catch (Throwable $error) {
+            report($error);
+        }
     }
 
     /**

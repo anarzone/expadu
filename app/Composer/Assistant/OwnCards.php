@@ -134,7 +134,7 @@ final class OwnCards
             ->first();
         $what = $appointment ? 'appointment' : 'plan';
         if ($next === null) {
-            return self::note("You have no {$what}s from today onwards.", [['label' => 'Plan my Saturday', 'prompt' => 'Help me plan Saturday']]);
+            return self::note("You have no {$what}s from today onwards.", [PlanDay::weekendSuggestion($now)]);
         }
         $date = $next['start']->toDateString();
         $when = $date === $now->toDateString() ? 'today' : ($date === $now->addDay()->toDateString() ? 'tomorrow' : 'on '.$next['start']->format('l j F'));

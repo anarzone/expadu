@@ -133,6 +133,8 @@ final class AccountData
             'changes' => $state['changes'] ?? [],
             'workspace' => array_diff_key($state, array_flip(['conversations', 'plans', 'changes'])),
             'ranked_suggestions' => $this->rows('composer_runs', 'user_id', $user->id),
+            // How each answer was made (kept 30 days): the tools it called and what they returned.
+            'answer_traces' => $this->rows('composer_traces', 'user_id', $user->id),
         ];
     }
 

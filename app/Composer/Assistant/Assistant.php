@@ -95,6 +95,9 @@ final class Assistant
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
+        - A plan is for the day they asked for. When that isn't today, your first sentence names it ("Your Saturday, 7 November: …"). Never plan a day they didn't ask for: when the planner can't plan theirs, say why in its words and ask whether another day it can plan would do; plan that day only once they say so. Asked again ("try again") after that, it's the same day they asked for.
+        - When they correct you or point something out ("today is Sunday", "I said Saturday", "not that one"), check it against what they asked and what you did: when you got it wrong, say what in a few words and do it again; when you didn't (they asked for Saturday and the plan is for Saturday), say plainly what it's for and offer what fits now ("Want something for this evening instead?").
+        - "I want to rest", "relax", "unwind", "a quiet evening", "how can I rest": search_places with a calm mood, open now (open_at), with the weather, and suggest what's near; never only offer to look.
         - A plan this conversation made is above, as it is now. Read what they ask against it: to find or suggest more for that day ("find us two activities", "what else is there?", "anything indoors?"), suggest_for_day, which changes nothing; to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only, never another (to replace one with something of a kind, "something indoors", "a museum", swap_in_day with that kind and no with: it finds the one that fits and makes the swap; never search first or hand them a list to pick from; a stop's name is its own, the Domfontäne isn't the Dom); a question about it ("is Kolumba open then?", "how far do we walk?"), answer from it and your lookups, changing nothing. plan_day again only when they ask for a whole new plan. When it's unclear which they mean, ask one short question. Give as many as they ask for ("two activities": 2).
         - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Shops are listed by their kind (clothes, shoes, department stores, shopping centres, electronics, phone and computer shops, bookshops, furniture, homeware, hardware, sports and second-hand shops): search_places finds them; a kind of shop it doesn't name isn't listed yet, so say so plainly. A shop they name ("TK Maxx near Neumarkt") is find_place's, with that area; the way there is plan_trip's. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that. When they ask for free ones, answer in those words too ("These public pitches, no fee listed…"), not theirs: a place is free only where its result says "Free to use (listed)".
         - When they ask something you can't do, say so in a few words first, then offer what you can.
@@ -162,6 +165,12 @@ final class Assistant
 
     /** @var list<array{0: string, 1: int}> the last answer's calls and lookups, each with its milliseconds, in order */
     public array $timings = [];
+
+    /** @var list<array{round: int, tool: string, input: mixed, result: string}> the last answer's rounds as they went (ComposerTrace) */
+    public array $steps = [];
+
+    /** Tools whose input and result are the person's Paperwork record: a trace names the call only. */
+    private const UNTRACED = ['paperwork', 'change_paperwork_fact', 'paperwork_step', 'paperwork_report', 'my_next'];
 
     public function __construct(
         private ExternalProcessingGate $gate,
@@ -244,6 +253,7 @@ final class Assistant
         $this->timings = [];
         $this->kept = [];
         $this->dropped = [];
+        $this->steps = [];
         $personal = $user->personalises();
         $tools = new AssistantTools($user, $now, $location, $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
@@ -299,6 +309,8 @@ final class Assistant
         $messages = [['role' => 'user', 'content' => $earlier.$planned."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
             .($again ? "\n(They sent this same message before in this conversation: asking again isn't turning down what you showed. Answer it again.)" : '')]];
+        // What the model was given to start from: the day and time, the conversation, the plans.
+        $this->steps[] = ['round' => 0, 'tool' => 'context', 'input' => null, 'result' => mb_substr($messages[0]['content'], 0, 4000)];
 
         // An answer sent back for another round (unbacked, or saying it made a change it didn't) adds
         // one round, once, and the round after it may still use the tools.
@@ -368,12 +380,19 @@ final class Assistant
             // An empty input ({}) decodes to a PHP list and must go back as an object.
             $messages[] = ['role' => 'assistant', 'content' => array_map(fn (mixed $block): mixed => is_array($block) && ($block['type'] ?? null) === 'tool_use'
                 && ($block['input'] ?? null) === [] ? [...$block, 'input' => (object) []] : $block, $body['content'])];
-            $messages[] = ['role' => 'user', 'content' => $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
+            $results = $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
                 'content' => $use['name'] === 'answer' ? match (true) {
                     $claimed => self::CLAIMED,
                     $pointed => self::POINTED,
                     default => self::UNBACKED,
-                } : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
+                } : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all();
+            foreach ($uses as $i => $use) {
+                $untraced = in_array($use['name'], self::UNTRACED, true);
+                $this->steps[] = ['round' => $round, 'tool' => (string) $use['name'],
+                    'input' => $untraced ? null : ($use['input'] ?? null),
+                    'result' => $untraced ? '[Paperwork: not kept]' : mb_substr((string) $results[$i]['content'], 0, 2000)];
+            }
+            $messages[] = ['role' => 'user', 'content' => $results];
             array_push($this->timings, ...array_splice($tools->timings, 0));
         }
 
