@@ -100,3 +100,14 @@ test('health monitoring warns two weeks before the MOTIS timetable runs out', fu
     Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'motis.test/api/v1/plan')
         && str_contains(urldecode($request->url()), 'time='.now('Europe/Berlin')->addDays(14)->toDateString()));
 });
+
+test('health monitoring skips Transitous when production leaves it out', function () {
+    configureHealthyApiDependencies();
+    config()->set('services.transitous.url', '');
+    config()->set('mail.default', 'log');
+    fakeHealthyApiDependencies();
+
+    $this->artisan('api:health')->assertSuccessful();
+
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'transitous'));
+});

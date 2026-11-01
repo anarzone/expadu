@@ -37,7 +37,9 @@ class CheckApiHealth extends Command
             $this->check('MOTIS timetable (14 days ahead)', fn () => $this->checkMotisTimetable());
         }
 
-        $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
+        if (filled(config('services.transitous.url'))) {
+            $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
+        }
         $this->check('Redis memory', fn () => $this->checkRedisMemory());
 
         $this->table(
