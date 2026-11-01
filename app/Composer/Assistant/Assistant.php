@@ -166,6 +166,12 @@ final class Assistant
     /** @var list<array{0: string, 1: int}> the last answer's calls and lookups, each with its milliseconds, in order */
     public array $timings = [];
 
+    /** @var list<array{round: int, tool: string, input: mixed, result: string}> the last answer's rounds as they went (ComposerTrace) */
+    public array $steps = [];
+
+    /** Tools whose input and result are the person's Paperwork record: a trace names the call only. */
+    private const UNTRACED = ['paperwork', 'change_paperwork_fact', 'paperwork_step', 'paperwork_report', 'my_next'];
+
     public function __construct(
         private ExternalProcessingGate $gate,
         private CandidateRepository $catalogue,
@@ -247,6 +253,7 @@ final class Assistant
         $this->timings = [];
         $this->kept = [];
         $this->dropped = [];
+        $this->steps = [];
         $personal = $user->personalises();
         $tools = new AssistantTools($user, $now, $location, $this->catalogue, $this->listings, $this->weather,
             $personal ? app(Affinities::class)->for($user) : null,
@@ -302,6 +309,8 @@ final class Assistant
         $messages = [['role' => 'user', 'content' => $earlier.$planned."Now: {$now->format('l j F Y, H:i')} ({$now->toDateString()}), Cologne.".($page !== null ? " They opened Composer on the {$page} page." : '')."\n"
             .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nMessage: \"{$text}\""
             .($again ? "\n(They sent this same message before in this conversation: asking again isn't turning down what you showed. Answer it again.)" : '')]];
+        // What the model was given to start from: the day and time, the conversation, the plans.
+        $this->steps[] = ['round' => 0, 'tool' => 'context', 'input' => null, 'result' => mb_substr($messages[0]['content'], 0, 4000)];
 
         // An answer sent back for another round (unbacked, or saying it made a change it didn't) adds
         // one round, once, and the round after it may still use the tools.
@@ -371,12 +380,19 @@ final class Assistant
             // An empty input ({}) decodes to a PHP list and must go back as an object.
             $messages[] = ['role' => 'assistant', 'content' => array_map(fn (mixed $block): mixed => is_array($block) && ($block['type'] ?? null) === 'tool_use'
                 && ($block['input'] ?? null) === [] ? [...$block, 'input' => (object) []] : $block, $body['content'])];
-            $messages[] = ['role' => 'user', 'content' => $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
+            $results = $uses->map(fn (array $use): array => ['type' => 'tool_result', 'tool_use_id' => $use['id'],
                 'content' => $use['name'] === 'answer' ? match (true) {
                     $claimed => self::CLAIMED,
                     $pointed => self::POINTED,
                     default => self::UNBACKED,
-                } : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all()];
+                } : $tools->run((string) $use['name'], is_array($use['input'] ?? null) ? $use['input'] : [])])->all();
+            foreach ($uses as $i => $use) {
+                $untraced = in_array($use['name'], self::UNTRACED, true);
+                $this->steps[] = ['round' => $round, 'tool' => (string) $use['name'],
+                    'input' => $untraced ? null : ($use['input'] ?? null),
+                    'result' => $untraced ? '[Paperwork: not kept]' : mb_substr((string) $results[$i]['content'], 0, 2000)];
+            }
+            $messages[] = ['role' => 'user', 'content' => $results];
             array_push($this->timings, ...array_splice($tools->timings, 0));
         }
 
