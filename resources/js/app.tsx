@@ -164,7 +164,8 @@ createInertiaApp({
         });
     },
     progress: {
-        color: '#4B5563',
+        // A token, so the bar follows the look (Inertia writes it into its CSS).
+        color: 'var(--color-progress)',
     },
 });
 

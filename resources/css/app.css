@@ -286,6 +286,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-toast-bg: #211d15;
     --color-toast-text: #fffdf8;
     --color-toast-action: #86eaf4;
+    /* The page-load bar at the top (app.tsx, Inertia's progress). */
+    --color-progress: #4b5563;
 
     /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
     --color-attention-bg: #fff1d6;
@@ -681,6 +683,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-toast-bg: #3a3930;
     --color-toast-text: #f6f5f1;
     --color-toast-action: #5ccbe0;
+    --color-progress: #aaa89f;
 
     --color-attention-bg: #2c2311;
     --color-attention: #4a3912;
