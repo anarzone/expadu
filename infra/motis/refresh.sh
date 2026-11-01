@@ -56,7 +56,8 @@ if [ "$version" = "$live" ] && [ "${FORCE:-0}" != 1 ]; then
 fi
 
 scp -q "$HOST:/data/motis/inputs/nrw.osm.pbf" "$HOST:/data/motis/inputs/config.yml" .
-docker run --name motis-import -w /data -v "$WORK:/data" "$IMG" /motis import > import.log 2>&1 || true
+# As this user: the image's own user (motis, uid 100) can't write to the work folder.
+docker run --name motis-import --user "$(id -u):$(id -g)" -w /data -v "$WORK:/data" "$IMG" /motis import > import.log 2>&1 || true
 code=$(docker inspect --format '{{.State.ExitCode}}' motis-import)
 oom=$(docker inspect --format '{{.State.OOMKilled}}' motis-import)
 docker rm motis-import > /dev/null
@@ -81,9 +82,7 @@ if [ "$found" -eq 0 ]; then
 fi
 echo "Runner check: $found trips Dom → Rudolfplatz"
 
-# The import runs as root in the container: make the store readable for the copy.
-sudo chmod -R a+rX data
-echo "$version" | sudo tee data/feed_version > /dev/null
+echo "$version" > data/feed_version
 rsync -a --delete --exclude 'logs/' data/ "$HOST:/data/motis/store.new/"
 if ! ssh "$HOST" 'bash -s' < "$HERE/swap.sh"; then
   say error "MOTIS planned no trips on the new store on the box; the previous store is back"
