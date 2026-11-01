@@ -113,6 +113,28 @@ test('skips MOTIS when it is not configured', function () {
     Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'localhost:8080'));
 });
 
+test('without Transitous a trip goes from MOTIS straight to TRIAS', function () {
+    // Production: Transitous is for non-commercial use only, so TRANSITOUS_URL is empty.
+    config(['services.transitous.url' => '']);
+    Http::fake(['motis.test/*' => Http::response('down', 503)]);
+    fakeTriasTrips();
+
+    expect(app(RouteService::class)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.9401, 6.9601))->source)->toBe('trias');
+    Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'transitous'));
+});
+
+test('without Transitous address search asks MOTIS only', function () {
+    config(['services.transitous.url' => '']);
+    Http::fake([
+        'motis.test/api/v1/geocode*' => Http::response([
+            ['type' => 'PLACE', 'name' => 'Neumarkt', 'lat' => 50.9365, 'lon' => 6.9478],
+        ]),
+    ]);
+
+    expect(app(RouteService::class)->geocode('Neumarkt'))->toHaveCount(1);
+    Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'transitous'));
+});
+
 test('geocoding skips MOTIS when it is not configured', function () {
     config(['services.motis.url' => null]);
     Http::fake([

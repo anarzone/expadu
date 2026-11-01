@@ -130,6 +130,9 @@ class FailoverRouteService implements RouteService
             $deadline = min($deadline, $this->budgetDeadline);
         }
         $providers = ['transitous' => $this->transitous, 'trias' => $this->trias];
+        if (! $this->transitousConfigured()) {
+            unset($providers['transitous']);
+        }
         if ($departAt !== null || $arriveBy) {
             unset($providers['trias']);
         }
@@ -259,7 +262,7 @@ class FailoverRouteService implements RouteService
      */
     private function lookupProviders(): array
     {
-        $providers = ['transitous' => $this->transitous];
+        $providers = $this->transitousConfigured() ? ['transitous' => $this->transitous] : [];
 
         if ($this->motisConfigured()) {
             $providers = ['motis' => $this->motis] + $providers;
@@ -345,6 +348,15 @@ class FailoverRouteService implements RouteService
     private function motisConfigured(): bool
     {
         return filled(config('services.motis.url'));
+    }
+
+    /**
+     * The public Transitous instance is for non-commercial use only, so
+     * production leaves TRANSITOUS_URL empty and routes on MOTIS, then TRIAS.
+     */
+    private function transitousConfigured(): bool
+    {
+        return filled(config('services.transitous.url'));
     }
 
     /**
