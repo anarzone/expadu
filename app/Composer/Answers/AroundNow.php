@@ -3,6 +3,7 @@
 namespace App\Composer\Answers;
 
 use App\Bureaucracy\ReadModel\RecordedAppointmentsBetween;
+use App\Composer\Assistant\PlanDay;
 use App\Composer\PaperworkGlance;
 use App\Home\WhatsOn;
 use App\Models\User;
@@ -93,7 +94,7 @@ final class AroundNow
             $events && $now->format('H:i') < '22:00' ? ['label' => 'What’s on tonight?', 'prompt' => 'What’s on tonight?'] : null,
             $now->format('H:i') < '21:00' ? ['label' => 'Plan the rest of today', 'prompt' => 'Help me plan the rest of today'] : null,
             $rain && $now->format('H:i') < '21:00' ? ['label' => 'Something indoors', 'prompt' => 'Help me plan the rest of today indoors'] : null,
-            ['label' => 'Plan my Saturday', 'prompt' => 'Help me plan Saturday'],
+            PlanDay::weekendSuggestion($now),
         ]));
     }
 

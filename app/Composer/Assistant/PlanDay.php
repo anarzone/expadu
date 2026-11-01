@@ -27,6 +27,24 @@ final class PlanDay
      */
     public const DAYS_AHEAD = 6;
 
+    /**
+     * The weekend day to offer planning for: Saturday on weekdays, Sunday on a Saturday, and
+     * next Saturday by its date on a Sunday, where "Plan my Saturday" read as the day just
+     * gone (a person's Sunday, 1 Nov 2026).
+     *
+     * @return array{label: string, prompt: string}
+     */
+    public static function weekendSuggestion(CarbonImmutable $now): array
+    {
+        $now = $now->setTimezone('Europe/Berlin');
+
+        return match ($now->dayOfWeekIso) {
+            6 => ['label' => 'Plan my Sunday', 'prompt' => 'Help me plan tomorrow, Sunday'],
+            7 => ['label' => 'Plan next Saturday', 'prompt' => 'Help me plan next Saturday, '.$now->next(CarbonImmutable::SATURDAY)->format('j F')],
+            default => ['label' => 'Plan my Saturday', 'prompt' => 'Help me plan Saturday'],
+        };
+    }
+
     /** Shortest stretch the planner can fill with an activity and the way there. */
     private const MIN_WINDOW_MINUTES = 180;
 
