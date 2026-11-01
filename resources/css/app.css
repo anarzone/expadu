@@ -229,8 +229,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
 
     /* ── Colour · text ─────────────────────────────────────────────────── */
     --color-text: #211d15; /* titles, data, links */
-    --color-text-soft: #6e6657; /* body detail */
-    --color-text-muted: #6e6657; /* captions, labels */
+    --color-text-soft: #6a6253; /* body detail (4.5:1 even on bg-hover) */
+    --color-text-muted: #6a6253; /* captions, labels */
     --color-text-on-action: #ffffff;
 
     /* ── Colour · action (one main action per section) ─────────────────── */
@@ -242,7 +242,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     /* ── Colour · selection & travel ───────────────────────────────────── */
     --color-select-bg: #def5f8;
     --color-select-bg-hover: #cceef3;
-    --color-select-text: #00768b; /* teal: travel icons, line ink */
+    --color-select-text: #007287; /* teal: travel icons, line ink (4.5:1 on select-bg-hover) */
     --color-focus: #00768b;
     --color-field-focus: #05badd; /* a field that owns its focus (the mock's --cyan) */
 
@@ -262,7 +262,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-around-wash: #fff1cf80;
     --color-event-chip-bg: #eee7f6;
     --color-event-chip-text: #694888;
-    --color-sun: #c98a00;
+    --color-sun: #be8200; /* 3:1 on the page and cards */
     --color-poster-glass: #302b2566;
     --color-poster-glass-edge: #ffffff70;
     /* Saved for later's monogram, and a quiet outline button (Today). */
