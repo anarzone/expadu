@@ -399,9 +399,11 @@ class ComposerController extends Controller
         $llmRankWeights = $llmBucket
             ? $candidateRanker->rank($constraints, $rankable, $llmPreferences, $rankingPermit)
             : [];
+        // The weather now and in the next hours says nothing about another day's plan.
+        $today = $constraints->windowStart->isSameDay(CarbonImmutable::now('Europe/Berlin'));
         $context = new ScoringContext(
-            rainExpected: $this->rainExpected(),
-            coolExpected: $this->coolExpected(),
+            rainExpected: $today && $this->rainExpected(),
+            coolExpected: $today && $this->coolExpected(),
             preferredAreas: $constraints->areas !== []
                 ? $constraints->areas
                 : ($originArea !== null ? [$originArea] : $profile->defaultAreas),
