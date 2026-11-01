@@ -19,7 +19,8 @@ function fakeHealthyApiDependencies(array $overrides = []): void
     Http::fake(array_merge([
         'https://trias.test' => Http::response('<Trias/>'),
         'https://gtfsrt.test' => Http::response('gtfs-rt'),
-        'data.webservice-kvb.koeln/*' => Http::response([['name' => 'Neumarkt']]),
+        // KVB's real feed is a GeoJSON FeatureCollection, served in ISO-8859-1.
+        'data.webservice-kvb.koeln/*' => Http::response(mb_convert_encoding(json_encode(['type' => 'FeatureCollection', 'features' => [['properties' => ['Name' => 'Neumarkt']], ['properties' => ['Name' => 'Bahnhof Mülheim']]]], JSON_UNESCAPED_UNICODE), 'ISO-8859-1', 'UTF-8')),
         'api.open-meteo.com/*' => Http::response(['current' => ['temperature_2m' => 22]]),
         'api.brightsky.dev/*' => Http::response([]),
         'photon.komoot.io/*' => Http::response(['features' => []]),
