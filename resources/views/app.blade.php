@@ -27,7 +27,7 @@
                 background-color: #faf6ee;
             }
             html.dark {
-                background-color: #161208;
+                background-color: #18170f;
             }
         </style>
 
@@ -55,9 +55,9 @@
         <link rel="manifest" href="/site.webmanifest">
         @if ($appearance === 'system')
             <meta name="theme-color" content="#faf6ee" media="(prefers-color-scheme: light)">
-            <meta name="theme-color" content="#161208" media="(prefers-color-scheme: dark)">
+            <meta name="theme-color" content="#18170f" media="(prefers-color-scheme: dark)">
         @else
-            <meta name="theme-color" content="{{ $appearance === 'dark' ? '#161208' : '#faf6ee' }}">
+            <meta name="theme-color" content="{{ $appearance === 'dark' ? '#18170f' : '#faf6ee' }}">
         @endif
 
         @php

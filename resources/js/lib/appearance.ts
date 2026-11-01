@@ -11,7 +11,7 @@ export type Appearance = 'system' | 'light' | 'dark';
 const COOKIE = 'appearance';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 /** The page background in each look, for the browser's own chrome (app.css --color-bg-canvas). */
-const THEME_COLOR = { light: '#faf6ee', dark: '#161208' } as const;
+const THEME_COLOR = { light: '#faf6ee', dark: '#18170f' } as const;
 /** Fired on window whenever the look changes, for maps and canvases that draw their own colours. */
 export const APPEARANCE_EVENT = 'expadu:appearance';
 
