@@ -34,6 +34,7 @@ class CheckApiHealth extends Command
 
         if (filled(config('services.motis.url'))) {
             $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
+            $this->check('MOTIS timetable (14 days ahead)', fn () => $this->checkMotisTimetable());
         }
 
         $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
@@ -253,6 +254,31 @@ class CheckApiHealth extends Command
     private function checkMotis(): string
     {
         return $this->checkRoutingGeocoder((string) config('services.motis.url'), 'MOTIS');
+    }
+
+    /**
+     * MOTIS serves the VRS timetable it was built from, refreshed weekly by
+     * infra/motis/refresh.sh. VRS publishes the next timetable year only weeks
+     * before the December change; a trip that can't be planned two weeks out
+     * means the data runs out soon and the refresh hasn't picked up a new feed.
+     */
+    private function checkMotisTimetable(): string
+    {
+        $at = now('Europe/Berlin')->addDays(14)->setTime(9, 0);
+        $response = Http::timeout(5)
+            ->connectTimeout(2)
+            ->get(rtrim((string) config('services.motis.url'), '/').'/api/v1/plan', [
+                // Dom → Rudolfplatz, inside the VRS core every build covers.
+                'fromPlace' => '50.9413,6.9583',
+                'toPlace' => '50.9366,6.9408',
+                'time' => $at->toIso8601String(),
+            ]);
+
+        throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
+        $trips = count($response->json('itineraries') ?? []);
+        throw_if($trips === 0, new \RuntimeException('No trips on '.$at->toDateString().': the timetable runs out'));
+
+        return $trips.' trips on '.$at->toDateString();
     }
 
     private function checkTransitous(): string
