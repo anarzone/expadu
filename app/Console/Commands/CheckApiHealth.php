@@ -162,7 +162,15 @@ class CheckApiHealth extends Command
         $response = Http::timeout(5)->get('https://data.webservice-kvb.koeln/service/opendata/haltestellen/json');
         throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
 
-        return count($response->json() ?? []).' stops';
+        // KVB serves the GeoJSON in ISO-8859-1, which json_decode rejects outright.
+        $body = $response->body();
+        if (! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
+        $stops = count(json_decode($body, true)['features'] ?? []);
+        throw_if($stops === 0, new \RuntimeException('No stops in the response'));
+
+        return $stops.' stops';
     }
 
     private function checkOpenMeteo(): string
