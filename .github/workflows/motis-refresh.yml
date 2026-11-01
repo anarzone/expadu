@@ -1,0 +1,47 @@
+name: MOTIS timetable refresh
+
+# The box serves MOTIS but can't build its store (an import peaks at ~3.5 GB), so
+# a runner rebuilds it from VRS's current GTFS every week and swaps it in. Fails,
+# and so mails the owner, when VRS's timetable runs out within 21 days.
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Mondays 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if the box already runs this feed
+        type: boolean
+        default: false
+  # TEMPORARY: lets the branch test the whole run before merge; removed in the same PR.
+  push:
+    branches: [infra/motis-refresh-ci]
+
+concurrency:
+  group: motis-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Rebuild and swap MOTIS
+    # arm64, like the box: the pinned image is pulled for the runner's architecture.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH to the box
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf 'Host box\n  HostName %s\n  User root\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking accept-new\n' "$SERVER_IP" >> ~/.ssh/config
+
+      - name: Refresh
+        env:
+          MOTIS_HOST: box
+          FORCE: ${{ (github.event_name == 'push' || inputs.force) && '1' || '0' }}
+        run: infra/motis/refresh.sh
