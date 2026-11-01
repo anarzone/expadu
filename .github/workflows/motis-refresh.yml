@@ -12,9 +12,6 @@ on:
         description: Rebuild even if the box already runs this feed
         type: boolean
         default: false
-  # TEMPORARY: lets the branch test the whole run before merge; removed in the same PR.
-  push:
-    branches: [infra/motis-refresh-ci]
 
 concurrency:
   group: motis-refresh
