@@ -3,6 +3,7 @@ import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/ui/toast';
+import { initializeAppearance } from '@/lib/appearance';
 // Before the app starts: its Back listener must come before Inertia's.
 import '@/lib/history-steps';
 import { resolvePage } from '@/lib/resolve-page';
@@ -127,6 +128,8 @@ createInertiaApp({
     },
     setup({ el, App, props }) {
         setSignedIn(Boolean(userOf(props.initialPage.props)));
+        // System, Light or Dark: app.blade.php painted it; this keeps System in step.
+        initializeAppearance();
 
         // Reuse server markup so a slow startup does not replace an already
         // visible form or discard input. SSR can be unavailable, so keep the

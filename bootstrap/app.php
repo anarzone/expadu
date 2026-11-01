@@ -68,7 +68,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Innermost, so session and CSRF cookies keep the real clock.
             LocalMockClock::class,
         ]);
-        $middleware->encryptCookies(except: [MockClock::COOKIE, MockScenario::COOKIE]);
+        // `appearance` (System, Light or Dark) is written by the page and read by app.blade.php.
+        $middleware->encryptCookies(except: [MockClock::COOKIE, MockScenario::COOKIE, 'appearance']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // These are JSON commands even when Accept is missing/spoofed. A

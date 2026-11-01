@@ -194,11 +194,11 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
-/* Light only at launch, as the mock is (build plan call #5). Nothing sets
-   html.dark any more; the variant stays registered only so the dark: classes
-   left in pages awaiting their rebuild never fire on a dark system setting.
-   Delete this line once `grep -r "dark:" resources/js` finds none. */
-@custom-variant dark (&:is(.dark *));
+/* Dark is html.dark (resources/js/lib/appearance.ts: System, Light or Dark,
+   per device). Every colour token turns over under it (the dark block at the
+   end of the tokens), so pages read tokens and never need dark: classes; the
+   variant is for the rare value no token covers. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ─── Expadu design tokens ───────────────────────────────────────────────
    A 1:1 copy of prototype/dev/design/connected/tokens.css, the mock's single
@@ -208,8 +208,11 @@ input[type='time']::-webkit-calendar-picker-indicator {
    colour: one orange action per section; cyan means selected or travel;
    lavender means Paperwork; amber means attention; coral means conflict.
    Two deliberate differences: --font-sans keeps the metric-matched fallback
-   face, and the reference breakpoints are the Tailwind scale below. */
-:root {
+   face, and the reference breakpoints are the Tailwind scale below.
+   `.theme-light` holds the light look inside a dark page: the sign-in street
+   poster (auth-layout.tsx) stays as printed. */
+:root,
+.theme-light {
     /* ── Colour · surfaces ─────────────────────────────────────────────── */
     --color-bg-canvas: #faf6ee; /* page background */
     --color-bg-surface: #fffdf8; /* cards, sections, menus */
@@ -273,6 +276,17 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-welcome-ink: #222522;
     --color-welcome-icon: #197789;
 
+    /* ── Colour · done (saved, on, finished) ────────────────────────────── */
+    --color-done: #2b6b3f;
+    --color-done-bg: #f1f7f0;
+
+    /* ── Colour · fills under white (a teal button, Composer's mark) and the
+       toast, which stays dark on light pages and lifts off dark ones. ──── */
+    --color-select-fill: #00768b;
+    --color-toast-bg: #211d15;
+    --color-toast-text: #fffdf8;
+    --color-toast-action: #86eaf4;
+
     /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
     --color-attention-bg: #fff1d6;
     --color-attention: #ffe49a;
@@ -293,6 +307,9 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --poster-paper: #fff8e6;
     --poster-green: #1f7a4d;
     --poster-cream: #fff6d8;
+    /* The ink printed on paper and day posters: the same in light and dark. */
+    --poster-ink: #211d15;
+    --poster-ink-soft: #6e6657;
 
     /* ── Colour · section icons and brand ──────────────────────────────── */
     --color-nav-teal: #00768b; /* Today, Travel */
@@ -477,6 +494,12 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-welcome-text: var(--color-welcome-text);
     --color-welcome-ink: var(--color-welcome-ink);
     --color-welcome-icon: var(--color-welcome-icon);
+    --color-done: var(--color-done);
+    --color-done-bg: var(--color-done-bg);
+    --color-select-fill: var(--color-select-fill);
+    --color-toast-bg: var(--color-toast-bg);
+    --color-toast-text: var(--color-toast-text);
+    --color-toast-action: var(--color-toast-action);
     --color-attention-bg: var(--color-attention-bg);
     --color-attention: var(--color-attention);
     --color-attention-border: var(--color-attention-border);
@@ -491,6 +514,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-poster-paper: var(--poster-paper);
     --color-poster-green: var(--poster-green);
     --color-poster-cream: var(--poster-cream);
+    --color-poster-ink: var(--poster-ink);
+    --color-poster-ink-soft: var(--poster-ink-soft);
     --color-nav-teal: var(--color-nav-teal);
     --color-nav-violet: var(--color-nav-violet);
     --color-nav-rust: var(--color-nav-rust);
@@ -545,7 +570,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
    still read, as Tailwind colours and as raw var(--…), each mapped to the
    nearest token role. New UI uses the tokens; each alias goes when the last
    page reading it is rebuilt. */
-:root {
+:root,
+.theme-light {
     --background: var(--color-bg-canvas);
     --foreground: var(--color-text);
     --card: var(--color-bg-surface);
@@ -587,6 +613,113 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --text-2: var(--color-text-soft);
     --text-3: var(--color-text-muted);
     --shadow: var(--shadow-raised);
+}
+
+/* ─── Dark: Espresso (owner, 1 Nov 2026, "Dark mode" canvas) ────────────
+   The brand's paper turned over: espresso-brown blacks, cream text. Depth
+   comes from lightness (canvas darkest, cards a step up, fields and rows
+   another) and a 1px top highlight folded into the shadows; accents keep
+   their jobs, lifted to read on dark. Every text, control-edge and state
+   pair passes WCAG AA (scratchpad palette.py on the canvas). Posters, the
+   logo and KVB line colours stay as they are. */
+:root.dark {
+    --color-bg-canvas: #12100d;
+    --color-bg-surface: #1b1814;
+    --color-bg-quiet: #25211c;
+    --color-bg-inset: #25211c;
+    --color-bg-hover: #2f2a24;
+    --color-bg-header: #171511;
+    --color-bg-field: #211e19;
+
+    --color-border: #2e2922;
+    --color-border-strong: #7d7466;
+    --color-border-later: #4a4339;
+
+    --color-text: #f3ece0;
+    --color-text-soft: #c4baa9;
+    --color-text-muted: #a69c8b;
+    --color-text-on-action: #ffffff;
+
+    --color-action: #cc4512;
+    --color-action-hover: #bc3e0e;
+    --color-action-text: #ff8a5b;
+    --color-action-tint: #2c1d15;
+
+    --color-select-bg: #14303a;
+    --color-select-bg-hover: #1a3c47;
+    --color-select-text: #5ccbe0;
+    --color-select-fill: #0a7f94;
+    --color-focus: #5ccbe0;
+    --color-field-focus: #2cc6e6;
+
+    --color-paper-bg: #2a2238;
+    --color-paper-bg-quiet: #221d2c;
+    --color-paper-text: #cbb4f2;
+    --color-paper-progress: #a985e6;
+    --color-paper-track: #3a3050;
+    --color-paper-inset: #1f1a28;
+    --color-paper-ink: #e6d9fb;
+    --color-paper-ink-soft: #b7a3d3;
+    --color-around-wash: #ffc85014;
+    --color-event-chip-bg: #2b2436;
+    --color-event-chip-text: #d0b9ef;
+    --color-sun: #f2b632;
+    --color-poster-glass: #0000008c;
+    --color-poster-glass-edge: #ffffff3d;
+    --color-saved-bg: #2a2338;
+    --color-saved-ink: #cdb3f4;
+    --color-outline-quiet: #f3ece047;
+    --color-welcome-bg: #132b30;
+    --color-welcome-mark: #ff7a4d;
+    --color-welcome-text: #a8c4ca;
+    --color-welcome-ink: #eef2ee;
+    --color-welcome-icon: #5ccbe0;
+
+    --color-done: #6fcf8f;
+    --color-done-bg: #15261b;
+    --color-toast-bg: #2f2a24;
+    --color-toast-text: #f3ece0;
+    --color-toast-action: #5ccbe0;
+
+    --color-attention-bg: #2c2311;
+    --color-attention: #4a3912;
+    --color-attention-border: #5e4919;
+    --color-attention-text: #f4c96b;
+
+    --color-conflict-bg: #2f1610;
+    --color-conflict: #4a1f14;
+    --color-conflict-border: #6e2f1d;
+    --color-conflict-text: #ff9e80;
+
+    --color-nav-teal: #5ccbe0;
+    --color-nav-violet: #b894f2;
+    --color-nav-rust: #f2814f;
+
+    --shadow-flat:
+        inset 0 1px 0 rgb(255 244 225 / 0.04), 0 1px 0 rgb(0 0 0 / 0.4);
+    --shadow-raised:
+        inset 0 1px 0 rgb(255 244 225 / 0.05), 0 1px 0 rgb(0 0 0 / 0.45),
+        0 10px 28px rgb(0 0 0 / 0.32);
+    --shadow-menu:
+        inset 0 1px 0 rgb(255 244 225 / 0.05),
+        0 22px 48px -14px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 240 220 / 0.04);
+    --shadow-sheet:
+        inset 0 1px 0 rgb(255 244 225 / 0.05), 0 -12px 40px rgb(0 0 0 / 0.6);
+
+    /* The pre-mock names that are values, not token roles. */
+    --navy: #a3bde8;
+    --navy-soft: #1b2534;
+    --success: #62c99a;
+    --success-soft: #14281f;
+
+    --scrollbar-thumb: #4d463b;
+    color-scheme: dark;
+}
+
+@media (prefers-contrast: more) {
+    :root.dark {
+        --scrollbar-thumb: #7d7466;
+    }
 }
 
 @layer base {

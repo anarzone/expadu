@@ -1,15 +1,33 @@
+@php
+    // Appearance, per device (resources/js/lib/appearance.ts): Light or Dark from
+    // the cookie paints at once; System is settled by the script below, before
+    // the first paint, from the device's own setting.
+    $appearance = in_array(request()->cookie('appearance'), ['light', 'dark'], true)
+        ? request()->cookie('appearance')
+        : 'system';
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $appearance === 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Cache-Control" content="no-cache">
 
-        {{-- Light only at launch: the page background paints before app.css. --}}
-        <meta name="color-scheme" content="light">
+        {{-- The page background paints before app.css, in the look it will have. --}}
+        <meta name="color-scheme" content="{{ $appearance === 'system' ? 'light dark' : $appearance }}">
+        @if ($appearance === 'system')
+            <script>
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            </script>
+        @endif
         <style>
             html {
                 background-color: #faf6ee;
+            }
+            html.dark {
+                background-color: #12100d;
             }
         </style>
 
@@ -35,7 +53,12 @@
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1">
         <meta name="apple-mobile-web-app-title" content="Expadu">
         <link rel="manifest" href="/site.webmanifest">
-        <meta name="theme-color" content="#faf6ee">
+        @if ($appearance === 'system')
+            <meta name="theme-color" content="#faf6ee" media="(prefers-color-scheme: light)">
+            <meta name="theme-color" content="#12100d" media="(prefers-color-scheme: dark)">
+        @else
+            <meta name="theme-color" content="{{ $appearance === 'dark' ? '#12100d' : '#faf6ee' }}">
+        @endif
 
         @php
             // Only pages inside the app shell load its chunk and CSS; sign-in
