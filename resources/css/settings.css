@@ -106,6 +106,12 @@
 .settings-item[data-current] {
     background: var(--color-bg-hover);
 }
+/* On that darker fill the value line takes a little ink, so it keeps 4.5:1
+   (4.83:1 in light; text-soft alone was 4.33:1). */
+.settings-item:active .settings-item-copy span,
+.settings-item[data-current] .settings-item-copy span {
+    color: color-mix(in srgb, var(--color-text-soft) 90%, var(--color-text));
+}
 .settings-item:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: -2px;
