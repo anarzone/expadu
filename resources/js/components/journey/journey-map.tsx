@@ -5,6 +5,7 @@ import type {
     Marker,
 } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
+import { isDark } from '@/lib/appearance';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
 import { cn } from '@/lib/utils';
@@ -236,10 +237,10 @@ export function JourneyMap({
             )}
             {status === 'ready' && hasGeometry && (
                 <div className="pointer-events-none absolute bottom-2.5 left-2.5 flex gap-2.5 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur">
-                    <Key color="var(--map-walk, #AAA89F)" label="Walk" />
-                    <Key color="#D8232A" label="Tram" />
-                    <Key color="#6B4FBB" label="Bus" />
-                    <Key color="#0A7C52" label="Rail" />
+                    <Key color={modeColour('walk')} label="Walk" />
+                    <Key color={modeColour('tram')} label="Tram" />
+                    <Key color={modeColour('bus')} label="Bus" />
+                    <Key color={modeColour('rail')} label="Rail" />
                 </div>
             )}
         </div>
@@ -258,19 +259,20 @@ function Key({ color, label }: { color: string; label: string }) {
     );
 }
 
-function isDark(): boolean {
-    return document.documentElement.classList.contains('dark');
-}
-
 const MODE_COLOR: Record<string, { light: string; dark: string }> = {
-    walk: { light: '#AAA89F', dark: '#6B6860' },
-    bike: { light: '#AAA89F', dark: '#6B6860' },
+    walk: { light: '#AAA89F', dark: '#a69c8b' },
+    bike: { light: '#AAA89F', dark: '#a69c8b' },
     tram: { light: '#D8232A', dark: '#F0726C' },
     subway: { light: '#0A7C52', dark: '#34D399' },
     rail: { light: '#0A7C52', dark: '#34D399' },
     bus: { light: '#6B4FBB', dark: '#A892F0' },
     ferry: { light: '#1A4CD4', dark: '#5B8AF5' },
 };
+
+/** A mode's colour on the map now, as the key shows it. */
+function modeColour(mode: keyof typeof MODE_COLOR): string {
+    return MODE_COLOR[mode][isDark() ? 'dark' : 'light'];
+}
 
 type RouteGeoJson = {
     type: 'FeatureCollection';

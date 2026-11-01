@@ -53,7 +53,7 @@ export function AroundMap({
                 basemap.current = bm;
                 const m = new bm.maplibregl.Map({
                     container: box.current,
-                    style: bm.style(false),
+                    style: bm.style(),
                     center: [point.lng, point.lat],
                     zoom: 15,
                     attributionControl: { compact: true },

@@ -9,6 +9,8 @@
  * untracked local build artifact.
  */
 
+import { isDark } from '@/lib/appearance';
+
 const OPENFREEMAP_STYLES = {
     light: 'https://tiles.openfreemap.org/styles/positron',
     dark: 'https://tiles.openfreemap.org/styles/dark',
@@ -25,7 +27,8 @@ export async function loadBasemap() {
     const maplibregl = await import('maplibre-gl');
     await import('maplibre-gl/dist/maplibre-gl.css');
 
-    const style = (dark: boolean): string =>
+    // The page's own look unless a map asks for one (dark mode, 1 Nov 2026).
+    const style = (dark: boolean = isDark()): string =>
         dark ? OPENFREEMAP_STYLES.dark : OPENFREEMAP_STYLES.light;
 
     return { maplibregl, style };

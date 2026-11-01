@@ -41,7 +41,7 @@ function hiddenMap(): Promise<MaplibreMap> {
                     document.body.append(box);
                     const created = new basemap.maplibregl.Map({
                         container: box,
-                        style: basemap.style(false),
+                        style: basemap.style(),
                         center: [6.957, 50.938],
                         zoom: ZOOM,
                         interactive: false,
