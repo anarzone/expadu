@@ -17,6 +17,9 @@ export type PosterEvent = {
     start: string | null;
     /** HH:MM, or null when the listing gives no end. */
     end: string | null;
+    /** What a listing with no time says instead: its series ("Daily until
+        Thu 5 Nov") or "All day". Null when it has a time. */
+    untimed?: string | null;
     /** The title shown: in English when there's a checked translation
         (owner, 21 Oct), otherwise as listed. */
     title: string;
@@ -46,6 +49,8 @@ export type PosterSource = {
     title_lang?: string | null;
     title_translated?: boolean;
     time_listed?: boolean;
+    /** The series in words ("Daily until Thu 5 Nov"), for a repeating listing. */
+    recurrence_text?: string | null;
     category: string;
     price_text: string | null;
     language?: string | null;
@@ -103,6 +108,7 @@ export function posterEvent(source: PosterSource): PosterEvent {
             timed && source.occurrence_end
                 ? berlinClock(source.occurrence_end)
                 : null,
+        untimed: timed ? null : source.recurrence_text || 'All day',
         title: translated ? source.title : original,
         titleLang: translated ? null : (source.title_lang ?? null),
         titleOriginal:
@@ -113,6 +119,29 @@ export function posterEvent(source: PosterSource): PosterEvent {
         price: admission(source.price_text),
         language: source.language ?? null,
     };
+}
+
+/** When a card says it is: "On now · until 22:30" once a listed start has
+    passed and its end hasn't, "Started 18:00" with no end listed, the series
+    or "All day" without a time, otherwise the start. */
+export function whenText(
+    source: Pick<PosterSource, 'occurrence_start' | 'occurrence_end'>,
+    poster: Pick<PosterEvent, 'start' | 'end' | 'untimed'>,
+    now: number = Date.now(),
+): string {
+    if (!poster.start) {
+        return poster.untimed ?? 'All day';
+    }
+
+    if (Date.parse(source.occurrence_start) > now) {
+        return poster.start;
+    }
+
+    return poster.end &&
+        source.occurrence_end &&
+        Date.parse(source.occurrence_end) > now
+        ? `On now · until ${poster.end}`
+        : `Started ${poster.start}`;
 }
 
 /* Before 17:00 is daylight yellow, until 20:00 evening purple, later night
