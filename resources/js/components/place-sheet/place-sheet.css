@@ -721,15 +721,21 @@
     --band-ink: var(--color-text-soft);
 }
 :root.dark .ui-sheet.place-sheet .place-sheet-band-note {
-    background: color-mix(in srgb, hsl(43 70% 45%) 16%, var(--color-bg-surface));
+    background: color-mix(
+        in srgb,
+        hsl(43 70% 45%) 16%,
+        var(--color-bg-surface)
+    );
     color: var(--color-text-soft);
 }
-:root.dark .ui-sheet.place-sheet
+:root.dark
+    .ui-sheet.place-sheet
     .place-sheet-band:is([data-kind='restaurant'], [data-kind='fastfood']) {
     --band: color-mix(in srgb, hsl(20 63% 45%) 16%, var(--color-bg-surface));
     --band-ink: color-mix(in srgb, #b4441c 40%, var(--color-text));
 }
-:root.dark .ui-sheet.place-sheet
+:root.dark
+    .ui-sheet.place-sheet
     .place-sheet-band:is([data-kind='cafe'], [data-kind='bakery']) {
     --band: color-mix(in srgb, hsl(34 49% 45%) 16%, var(--color-bg-surface));
     --band-ink: color-mix(in srgb, #8a5a1e 40%, var(--color-text));
@@ -742,7 +748,8 @@
     --band: color-mix(in srgb, hsl(137 32% 45%) 16%, var(--color-bg-surface));
     --band-ink: color-mix(in srgb, #2f7d4f 40%, var(--color-text));
 }
-:root.dark .ui-sheet.place-sheet
+:root.dark
+    .ui-sheet.place-sheet
     .place-sheet-band:is(
         [data-kind='park'],
         [data-kind='nature'],

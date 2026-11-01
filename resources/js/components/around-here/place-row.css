@@ -222,37 +222,77 @@ li:first-child > .around-row {
    twin of a literal above (one that no token covers). Change a light colour
    above, change its twin here. */
 :root.dark [data-kind] {
-    --kind-tint: color-mix(in srgb, hsl(40 32% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(40 32% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='restaurant'],
 :root.dark [data-kind='fastfood'] {
-    --kind-tint: color-mix(in srgb, hsl(20 63% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(20 63% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='cafe'],
 :root.dark [data-kind='bakery'] {
-    --kind-tint: color-mix(in srgb, hsl(34 49% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(34 49% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='grocery'] {
-    --kind-tint: color-mix(in srgb, hsl(186 42% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(186 42% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='pharmacy'] {
-    --kind-tint: color-mix(in srgb, hsl(137 32% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(137 32% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='park'],
 :root.dark [data-kind='nature'] {
-    --kind-tint: color-mix(in srgb, hsl(80 43% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(80 43% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='playground'] {
-    --kind-tint: color-mix(in srgb, hsl(36 63% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(36 63% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='sports'] {
-    --kind-tint: color-mix(in srgb, hsl(214 54% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(214 54% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='library'] {
-    --kind-tint: color-mix(in srgb, hsl(266 39% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(266 39% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark [data-kind='culture'] {
-    --kind-tint: color-mix(in srgb, hsl(320 38% 45%) 16%, var(--color-bg-surface));
+    --kind-tint: color-mix(
+        in srgb,
+        hsl(320 38% 45%) 16%,
+        var(--color-bg-surface)
+    );
 }
 :root.dark .around-laptop.is-good {
     background: var(--color-done-bg);

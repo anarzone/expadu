@@ -505,7 +505,12 @@
    twin of a literal above (one that no token covers). Change a light colour
    above, change its twin here. */
 :root.dark .ev-details .place-route {
-    background: linear-gradient(135deg, var(--color-paper-bg), var(--color-paper-bg) 70%, var(--color-attention-bg));
+    background: linear-gradient(
+        135deg,
+        var(--color-paper-bg),
+        var(--color-paper-bg) 70%,
+        var(--color-attention-bg)
+    );
 }
 :root.dark .ev-details .event-route-connector {
     border-left: 2px dotted var(--color-border);
