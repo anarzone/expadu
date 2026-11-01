@@ -375,7 +375,10 @@ final class AssistantTools
                 // Every change Composer can make goes the one way, its card included.
                 default => isset(ComposerActions::ACTIONS[$name]) ? $this->act($name, $input) : 'Unknown tool.',
             };
-        } catch (Throwable) {
+        } catch (Throwable $error) {
+            // The answer goes on without it; the fault is still seen.
+            report($error);
+
             return 'Nothing found: the lookup failed.';
         } finally {
             $this->timings[] = [$name.' '.json_encode($input, JSON_UNESCAPED_UNICODE), (int) round((hrtime(true) - $started) / 1e6)];

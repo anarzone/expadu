@@ -502,18 +502,20 @@ const TONES: Record<string, string> = {
  * The weekend day the starters plan, as Composer's own suggestions name it
  * (PlanDay::weekendSuggestion): Saturday on weekdays, Sunday on a Saturday,
  * next Saturday by its date on a Sunday, where "Plan my Saturday" read as the
- * day just gone (a person's Sunday, 1 Nov 2026).
+ * day just gone (a person's Sunday, 1 Nov 2026), and "this weekend" with it.
  */
 function weekendDay(now = new Date()): {
     ask: string;
     label: string;
     day: string;
+    weekend: string;
 } {
     if (now.getDay() === 6) {
         return {
             ask: 'Help me plan tomorrow, Sunday',
             label: 'Plan my Sunday',
             day: 'Sunday',
+            weekend: 'this weekend',
         };
     }
 
@@ -529,6 +531,7 @@ function weekendDay(now = new Date()): {
             ask: `Help me plan next Saturday, ${date}`,
             label: 'Plan next Saturday',
             day: 'next Saturday',
+            weekend: 'next weekend',
         };
     }
 
@@ -536,6 +539,7 @@ function weekendDay(now = new Date()): {
         ask: 'Help me plan Saturday',
         label: 'Plan my Saturday',
         day: 'Saturday',
+        weekend: 'this weekend',
     };
 }
 
@@ -577,10 +581,12 @@ export function NewConversation({
               ][])
             : []),
         ...(cards.length < 2
-            ? ([['What’s on this weekend?', 'What’s on this weekend']] as [
-                  string,
-                  string,
-              ][])
+            ? ([
+                  [
+                      `What’s on ${weekend.weekend}?`,
+                      `What’s on ${weekend.weekend}`,
+                  ],
+              ] as [string, string][])
             : []),
     ];
 
