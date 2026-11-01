@@ -518,3 +518,32 @@ button.account-quiet {
         animation: none;
     }
 }
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   After dark the street is the Events street's own night (owner, 1 Nov
+   2026: "we already have the night version"): its sky, lit windows and
+   lamp, the wall in shade, cut to the same frame as the day street
+   (street-night*.webp, the same sizes and strips). The poster, the brand
+   and the corner link stay printed (theme-light). */
+:root.dark .account-page {
+    background: #7e757e;
+}
+:root.dark .account-street {
+    background-color: #7e757e;
+    background-image: url('/images/account/street-night.webp');
+}
+@media (max-width: 899px) {
+    :root.dark .account-street {
+        background-image: url('/images/account/street-night-strip-2400.webp');
+    }
+}
+@media (max-width: 899px) and (resolution < 1.85dppx) {
+    :root.dark .account-street {
+        background-image: url('/images/account/street-night-strip-1800.webp');
+    }
+}
+@media (max-width: 899px) and (resolution < 1.25dppx) {
+    :root.dark .account-street {
+        background-image: url('/images/account/street-night-strip-1200.webp');
+    }
+}

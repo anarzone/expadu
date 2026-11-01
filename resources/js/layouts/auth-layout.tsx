@@ -5,22 +5,29 @@ import './auth/account.css';
 /** The street behind the poster (account.css's .account-street) is the
     page's largest paint: fetch it with the page, not once the CSS has
     applied. Each file under the media query account.css shows it at, so
-    one matches and nothing loads twice. */
-const STREET = [
-    { href: '/images/account/street.webp', media: '(min-width: 900px)' },
+    one matches and nothing loads twice. The night street (dark mode) is
+    preloaded by the device's own setting, as System (the default) shows it. */
+const SIZES = [
+    { file: '', media: '(min-width: 900px)' },
     {
-        href: '/images/account/street-strip-2400.webp',
+        file: '-strip-2400',
         media: '(max-width: 899px) and (resolution >= 1.85dppx)',
     },
     {
-        href: '/images/account/street-strip-1800.webp',
+        file: '-strip-1800',
         media: '(max-width: 899px) and (1.25dppx <= resolution < 1.85dppx)',
     },
     {
-        href: '/images/account/street-strip-1200.webp',
+        file: '-strip-1200',
         media: '(max-width: 899px) and (resolution < 1.25dppx)',
     },
 ];
+const STREET = (['light', 'dark'] as const).flatMap((look) =>
+    SIZES.map(({ file, media }) => ({
+        href: `/images/account/street${look === 'dark' ? '-night' : ''}${file}.webp`,
+        media: `${media} and (prefers-color-scheme: ${look})`,
+    })),
+);
 
 /*
  * Sign in and create an account "On the street" (the owner's choice A,
