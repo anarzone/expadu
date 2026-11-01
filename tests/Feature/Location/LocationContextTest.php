@@ -185,3 +185,15 @@ test('confirming does not clobber the remembered area when no Veedel resolves', 
 
     expect($this->user->fresh()->veedel)->toBe('Ehrenfeld');
 });
+
+test('confirming a fix says whether it moved from where pages were worked out from', function () {
+    $this->actingAs($this->user);
+    $confirm = fn (float $lat, float $lng) => $this->postJson('/api/location/confirm', ['lat' => $lat, 'lng' => $lng, 'name' => 'Here'])->assertOk();
+
+    // None before: moved.
+    $confirm(50.9396, 6.9493)->assertJsonPath('moved', true);
+    // ~50 m on: the same place, no reload needed.
+    $confirm(50.9400, 6.9496)->assertJsonPath('moved', false);
+    // ~600 m on: moved.
+    $confirm(50.9450, 6.9493)->assertJsonPath('moved', true);
+});

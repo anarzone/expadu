@@ -1,0 +1,59 @@
+{
+    "name": "events-busy-day",
+    "clock": "2026-09-30T19:30:00+02:00",
+    "widths": [
+        1280,
+        1440
+    ],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30&now=19:30",
+        "wait": ".st-weather",
+        "screenshotStyle": ".rainfall, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T19:30:00%2B02:00"
+        },
+        "screenshotStyle": ".m-rainfall, .shell-composer-round, .shell-composer-round * { visibility: hidden !important; }"
+    },
+    "screenshotStyleReason": "The street's rain falls across the posters, the column and the pager; each side draws it its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky), so it is hidden only while these elements are shot, as is each side's floating Composer button.",
+    "pairs": [
+        {
+            "name": "Ended stack",
+            "mock": "[data-wall-zone] .st-bay",
+            "app": ".st-zone .st-bay",
+            "contentDiffers": true,
+            "reason": "The posters on the wall are each side's own drawing (the app's poster pictures, the mock's live SVG, as in events-wall); the bay's box, place and width are compared."
+        },
+        {
+            "name": "Ended tag",
+            "mock": "[data-wall-zone] .st-bay > span",
+            "app": ".st-zone .st-bay .st-hour",
+            "pixelThreshold": 1.5,
+            "reason": "The tag's words anti-alias a little differently on each side (up to 1.2% of its pixels); its box and styles are compared exactly."
+        },
+        {
+            "name": "first hour",
+            "mock": "[data-wall-zone] .st-bay",
+            "app": ".st-zone .st-bay",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "The posters on the wall are each side's own drawing (the app's poster pictures, the mock's live SVG, as in events-wall); the bay's box, place and width are compared."
+        },
+        {
+            "name": "first hour's tag",
+            "mock": "[data-wall-zone] .st-bay > span",
+            "app": ".st-zone .st-bay .st-hour",
+            "index": 1,
+            "pixelThreshold": 1.5,
+            "reason": "The tag's words anti-alias a little differently on each side (up to 1.2% of its pixels); its box and styles are compared exactly."
+        }
+    ],
+    "note": "The sample day has two events (18:30, 20:00), so at 19:30 it folds into an Ended stack beside the 20:00 hour; Later and the all-ended card need a busier day than the sample has, and are checked in the browser. A stack's count shows only when it holds more than its one poster (the mock's hasMore), so the sample's one ended event has none."
+}

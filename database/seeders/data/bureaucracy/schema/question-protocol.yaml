@@ -1,0 +1,21 @@
+version: '2026-10-08.1'
+reviewed_by: owner_authorised_product_review
+# Minimal orientation; remaining questions require a current reviewed dependency.
+orientation:
+  - {fact_key: citizenship_group, when: []}
+  - {fact_key: arrival_planned, when: []}
+  - fact_key: current_residence_title
+    when:
+      - {citizenship_group: non_eu, arrival_planned: false}
+  - fact_key: visa_expires_at
+    when:
+      - {current_residence_title: national_d_visa}
+  - fact_key: residence_title_expires_at
+    when:
+      - {current_residence_title: [standard_work_permit, blue_card, family_reunification]}
+# Not asked while the person's own answers settle it. Choosing the Blue Card as the goal
+# already says which employment track to follow (owner decision, 8 October 2026).
+not_asked:
+  - fact_key: permit_track
+    when:
+      - {case_goal: blue_card}

@@ -40,7 +40,11 @@ class SecurityHeaders
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // The reset page's address holds its token: requests from it name no
+        // page, so the token can't ride along in a Referer.
+        $response->headers->set('Referrer-Policy', $request->routeIs('password.reset')
+            ? 'no-referrer'
+            : 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(), payment=()');
 
         if ($robotsTag = SearchIndexing::robotsTag($request)) {

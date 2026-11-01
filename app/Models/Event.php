@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\RecurrenceExpander;
+use App\Support\EventAttractions;
 use Carbon\CarbonImmutable;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,13 +15,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
-#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
+#[Fillable(['title', 'emoji', 'category', 'description', 'starts_at', 'ends_at', 'location_name', 'address', 'max_attendees', 'is_free', 'price', 'price_text', 'organiser_id', 'tags', 'is_expat_relevant', 'source', 'source_url', 'quality_score', 'title_en', 'description_en', 'source_lang', 'is_curated', 'source_uid', 'summary_en', 'tip_en', 'language', 'chips', 'relevance', 'needs_review', 'sensitive', 'sensitive_kind', 'status', 'recurrence', 'recurrence_until', 'venue_id', 'verified_at', 'classification_input_hash'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
     use HasFactory;
 
     protected $table = 'events';
+
+    /** Coordinates selected alongside the row by withPoint(); read through lat/lng. */
+    protected $hidden = ['point_lat', 'point_lng'];
 
     protected static function booted(): void
     {
@@ -51,10 +55,10 @@ class Event extends Model
     }
 
     /**
-     * What any consumer (UI or composer) is allowed to see. Curation is
-     * a filter, not a feed: relevance-approved events, plus unscored
-     * legacy rows ONLY when the old curation heuristic vouched for them
-     * — an unscored museum-programme dump must never flood the feed.
+     * What any consumer (UI or composer) is allowed to see: active events that
+     * pass the ingest quality bar or were curated by hand. The AI relevance
+     * score only orders events; it never hides one (owner, 21 Oct 2026), since
+     * it hid about 98% of real listings.
      *
      * @param  Builder<Event>  $query
      */
@@ -62,18 +66,8 @@ class Event extends Model
     {
         $query->where('status', 'active')
             ->where(fn (Builder $q) => $q
-                // AI relevance, once scored, is authoritative.
-                ->where('relevance', '>=', config('events.relevance_threshold', 0.5))
-                // Until then (relevance is null on every scraped event), fall
-                // back to the enrichment quality_score — which IS populated on
-                // ingest — or a manual curate. Without this the gate read a
-                // column nothing fills and the feed collapsed to the handful of
-                // hand-curated events.
-                ->orWhere(fn (Builder $fallback) => $fallback
-                    ->whereNull('relevance')
-                    ->where(fn (Builder $unscored) => $unscored
-                        ->where('quality_score', '>=', config('events.quality_threshold', 0.5))
-                        ->orWhere('is_curated', true))));
+                ->where('quality_score', '>=', config('events.quality_threshold', 0.5))
+                ->orWhere('is_curated', true));
     }
 
     /**
@@ -83,16 +77,24 @@ class Event extends Model
      *
      * @return Collection<int, array{event: Event, starts_at: CarbonImmutable, ends_at: ?CarbonImmutable}>
      */
-    public static function occurringBetween(CarbonImmutable $from, CarbonImmutable $to): Collection
+    public static function occurringBetween(CarbonImmutable $from, CarbonImmutable $to, ?array $ids = null): Collection
     {
         $expander = app(RecurrenceExpander::class);
 
         $candidates = static::query()
             ->visible()
+            ->withPoint()
+            ->when($ids !== null, fn (Builder $query) => $query->whereIn('id', $ids))
+            // Attractions (an exhibition, opening hours listed day by day) are no occurrence of
+            // anything; a listing asked for by id is still found.
+            ->when($ids === null, fn (Builder $query) => $query->whereNotIn('events.id', app(EventAttractions::class)->ids()))
             ->with([
                 'mediaAttachments.mediaAsset',
                 'venue.mediaAttachments.mediaAsset',
                 'venue.place.mediaAttachments.mediaAsset',
+                // PublishedMediaSelector falls back to a place's identity
+                // aliases; load them here instead of once per venue.
+                'venue.place.identityAliases.mediaAttachments.mediaAsset',
             ])
             ->where(fn (Builder $q) => $q
                 // one-off events inside the window…
@@ -123,6 +125,21 @@ class Event extends Model
             })
             ->sortBy('starts_at')
             ->values();
+    }
+
+    /**
+     * Select the PostGIS point's coordinates with the row, so reading lat/lng
+     * on a list of events costs no query per event.
+     *
+     * @param  Builder<Event>  $query
+     */
+    public function scopeWithPoint(Builder $query): void
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->getTable().'.*');
+        }
+
+        $query->selectRaw('ST_Y(events.location::geometry) AS point_lat, ST_X(events.location::geometry) AS point_lng');
     }
 
     /** @var array{lat: ?float, lng: ?float}|null memoized PostGIS point */
@@ -156,6 +173,14 @@ class Event extends Model
 
         if (! $this->location) {
             return $this->resolvedPoint = ['lat' => null, 'lng' => null];
+        }
+
+        // Selected with the row by withPoint().
+        if (array_key_exists('point_lat', $this->attributes)) {
+            return $this->resolvedPoint = [
+                'lat' => $this->attributes['point_lat'] !== null ? (float) $this->attributes['point_lat'] : null,
+                'lng' => $this->attributes['point_lng'] !== null ? (float) $this->attributes['point_lng'] : null,
+            ];
         }
 
         $result = \DB::selectOne(

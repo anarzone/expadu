@@ -3,6 +3,8 @@
 namespace App\Composer;
 
 use App\Enums\SpotCategory;
+use App\Places\PlaceAmenities;
+use Carbon\CarbonImmutable;
 
 /**
  * Hard constraints only — deletes ~95% of candidates before any scoring.
@@ -35,15 +37,44 @@ class FeasibilityFilter
         };
     }
 
+    /** Validate a person's actual interval, which may differ from the default visit duration. */
+    public function matchesSelection(Constraints $constraints, Candidate $candidate, CarbonImmutable $start, CarbonImmutable $end): bool
+    {
+        return $this->matchesDiscovery($constraints, $candidate)
+            && $this->matchesCategoryAndCompanions($constraints, $candidate, $this->allowedCategories($constraints->categories))
+            && $start->greaterThanOrEqualTo($constraints->windowStart)
+            && $end->lessThanOrEqualTo($constraints->windowEnd)
+            && $end->greaterThan($start);
+    }
+
     /** Fact constraints are applied before retrieval caps and again before scoring. */
     public function matchesDiscovery(Constraints $constraints, Candidate $candidate): bool
     {
         if (! $this->matchesBudget($constraints, $candidate)) {
             return false;
         }
+        if ($candidate->type === 'spot'
+            && (in_array($candidate->sourceFacts['access_status'] ?? null, ['restricted', 'private', 'conditional', 'conflicting'], true)
+                || ($candidate->sourceFacts['requires_arrangement'] ?? false))) {
+            return false;
+        }
+        if ($constraints->budget === 'free' && $candidate->type === 'spot'
+            && in_array($candidate->category, ['pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'sports_centre'], true)
+            && ! in_array($candidate->sourceFacts['access_status'] ?? $candidate->access, ['public', 'permissive'], true)) {
+            return false;
+        }
         if ($constraints->radiusKm !== null
             && ($candidate->distanceKmFromOrigin === null || $candidate->distanceKmFromOrigin > $constraints->radiusKm)) {
             return false;
+        }
+        // A hard need is met only by a verified fact; an unknown never passes.
+        if (in_array('step_free', $constraints->needs, true) && ! $candidate->isAppointment() && ! $candidate->stepFree()) {
+            return false;
+        }
+        foreach ($constraints->features as $feature) {
+            if ($candidate->type !== 'spot' || ! PlaceAmenities::has($candidate->placeFacts['practical'] ?? [], $feature)) {
+                return false;
+            }
         }
         if ($constraints->activities !== []) {
             $facts = $candidate->placeFacts;
@@ -98,15 +129,7 @@ class FeasibilityFilter
             return false;
         }
 
-        // Category filter (empty = all), coarse buckets already expanded to fines.
-        if ($allowedCategories !== []
-            && ! in_array($candidate->category, $allowedCategories, true)) {
-            return false;
-        }
-
-        // A day with kids never routes through a bar or a coworking space.
-        if ($constraints->companions === 'kids'
-            && in_array($candidate->category, ['bar', 'coworking'], true)) {
+        if (! $this->matchesCategoryAndCompanions($constraints, $candidate, $allowedCategories)) {
             return false;
         }
 
@@ -118,5 +141,14 @@ class FeasibilityFilter
         }
 
         return $candidate->nextVisitStart($constraints->windowStart, $constraints->windowEnd) !== null;
+    }
+
+    private function matchesCategoryAndCompanions(Constraints $constraints, Candidate $candidate, array $allowedCategories): bool
+    {
+        return ($allowedCategories === [] || in_array($candidate->category, $allowedCategories, true)
+                // "event" asks for events of any kind; theirs are event categories, not place ones.
+                || ($candidate->type === 'event' && in_array('event', $allowedCategories, true)))
+            && ! in_array($candidate->category, $this->allowedCategories($constraints->avoid), true)
+            && ($constraints->companions !== 'kids' || ! in_array($candidate->category, ['bar', 'coworking'], true));
     }
 }

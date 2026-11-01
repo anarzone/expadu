@@ -1,0 +1,436 @@
+{
+    "name": "events-pickers",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
+    },
+    "pairs": [
+        {
+            "name": "Area panel",
+            "mock": "#events-area",
+            "app": ".ui-menu",
+            "mockBefore": [
+                {
+                    "click": "[data-event-picker='area']"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".evf-area"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "pixels": false,
+            "reason": "Its box and styles are compared, and its parts pixel for pixel below. As a whole, its rounded corners and edges show what is behind the panel: the street, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky)."
+        },
+        {
+            "name": "Area head",
+            "mock": "#events-area header",
+            "app": ".ui-menu-head"
+        },
+        {
+            "name": "Area title",
+            "mock": "#events-area header strong",
+            "app": ".ui-menu-head strong"
+        },
+        {
+            "name": "Area close",
+            "mock": "#events-area header button",
+            "app": ".ui-menu-head button"
+        },
+        {
+            "name": "Area close icon",
+            "mock": "#events-area header button svg",
+            "app": ".ui-menu-head button svg"
+        },
+        {
+            "name": "Area options",
+            "mock": "#events-area .events-options",
+            "app": ".ui-menu-options"
+        },
+        {
+            "name": "All areas",
+            "mock": "#events-area .events-options button",
+            "app": ".ui-menu-option"
+        },
+        {
+            "name": "an area",
+            "mock": "#events-area .events-options button",
+            "app": ".ui-menu-option",
+            "index": 1
+        },
+        {
+            "name": "starting point panel",
+            "mock": "#events-travel",
+            "app": ".ui-menu",
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": "[data-event-picker='travel']"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".evf-travel:visible"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "pixels": false,
+            "reason": "Its box and styles are compared, and its parts pixel for pixel below. As a whole, its rounded corners and edges show what is behind the panel: the street, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky)."
+        },
+        {
+            "name": "starting point head",
+            "mock": "#events-travel header",
+            "app": ".ui-menu-head"
+        },
+        {
+            "name": "starting point title",
+            "mock": "#events-travel header strong",
+            "app": ".ui-menu-head strong"
+        },
+        {
+            "name": "address field",
+            "mock": "#event-travel-form input[name=from]",
+            "app": ".evf-travel-form input[type=search], .evf-travel-form input:not([type=radio])"
+        },
+        {
+            "name": "Travel by",
+            "mock": "#event-travel-form legend",
+            "app": ".evf-travel-form legend"
+        },
+        {
+            "name": "modes",
+            "mock": ".event-mode-options",
+            "app": ".evf-modes"
+        },
+        {
+            "name": "a mode",
+            "mock": ".event-mode-options label",
+            "app": ".evf-modes label"
+        },
+        {
+            "name": "the chosen mode",
+            "mock": ".event-mode-options input:checked + span",
+            "app": ".evf-modes input:checked + span"
+        },
+        {
+            "name": "foot",
+            "mock": ".events-popover-foot",
+            "app": ".evf-travel-foot"
+        },
+        {
+            "name": "foot note",
+            "mock": ".events-popover-foot small",
+            "app": ".evf-travel-foot small"
+        },
+        {
+            "name": "Done",
+            "mock": ".events-popover-foot button",
+            "app": ".evf-travel-foot button"
+        },
+        {
+            "name": "Sort panel",
+            "mock": "#events-sort",
+            "app": ".ui-menu",
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": "[data-event-picker='sort']"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".evf-icon-control:not(.evf-reset):visible"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "pixels": false,
+            "reason": "Its box and styles are compared, and its parts pixel for pixel below. As a whole, its rounded corners and edges show what is behind the panel: the street, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky)."
+        },
+        {
+            "name": "Sort title",
+            "mock": "#events-sort header strong",
+            "app": ".ui-menu-head strong"
+        },
+        {
+            "name": "Sort options",
+            "mock": "#events-sort .events-options",
+            "app": ".ui-menu-options"
+        },
+        {
+            "name": "Soonest first",
+            "mock": "#events-sort .events-options button",
+            "app": ".ui-menu-option"
+        },
+        {
+            "name": "Evening first",
+            "mock": "#events-sort .events-options button",
+            "app": ".ui-menu-option",
+            "index": 1
+        },
+        {
+            "name": "Category panel",
+            "mock": "#events-category",
+            "app": ".ui-menu",
+            "widths": [390, 768],
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".event-category-trigger"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".evf-category"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "contentDiffers": true,
+            "reason": "The options name the categories in each side's own taxonomy (the mock's Games, Outdoors and Language, the app's Sports, Language exchange and Event); the boxes and styles are compared, and 'All events' and 'Culture' match pixel for pixel."
+        },
+        {
+            "name": "Category panel",
+            "mock": "#events-category",
+            "app": ".ui-menu",
+            "widths": [360],
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".event-category-trigger"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 500
+                },
+                {
+                    "click": ".evf-category"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "ignore": ["y", "h"],
+            "reason": "At 360 the app's 'Language exchange' takes two lines in its half-width option (the mock's 'Language' one): the app's own category names. Everything under it moves down by that line. The options name the categories in each side's own taxonomy (the mock's Games, Outdoors and Language, the app's Sports, Language exchange and Event); the boxes and styles are compared, and 'All events' and 'Culture' match pixel for pixel.",
+            "contentDiffers": true
+        },
+        {
+            "name": "Category title",
+            "mock": "#events-category header strong",
+            "app": ".ui-menu-head strong",
+            "widths": [390, 768]
+        },
+        {
+            "name": "Category title",
+            "mock": "#events-category header strong",
+            "app": ".ui-menu-head strong",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the app's 'Language exchange' takes two lines in its half-width option (the mock's 'Language' one): the app's own category names. Everything under it moves down by that line."
+        },
+        {
+            "name": "categories",
+            "mock": "#events-category > .events-options",
+            "app": ".ui-menu > .ui-menu-options",
+            "widths": [390, 768],
+            "contentDiffers": true,
+            "reason": "The options name the categories in each side's own taxonomy (the mock's Games, Outdoors and Language, the app's Sports, Language exchange and Event); the boxes and styles are compared, and 'All events' and 'Culture' match pixel for pixel."
+        },
+        {
+            "name": "categories",
+            "mock": "#events-category > .events-options",
+            "app": ".ui-menu > .ui-menu-options",
+            "widths": [360],
+            "ignore": ["y", "h"],
+            "reason": "At 360 the app's 'Language exchange' takes two lines in its half-width option (the mock's 'Language' one): the app's own category names. Everything under it moves down by that line. The options name the categories in each side's own taxonomy (the mock's Games, Outdoors and Language, the app's Sports, Language exchange and Event); the boxes and styles are compared, and 'All events' and 'Culture' match pixel for pixel.",
+            "contentDiffers": true
+        },
+        {
+            "name": "All events option",
+            "mock": "#events-category > .events-options button",
+            "app": ".ui-menu > .ui-menu-options .ui-menu-option",
+            "widths": [390, 768]
+        },
+        {
+            "name": "All events option",
+            "mock": "#events-category > .events-options button",
+            "app": ".ui-menu > .ui-menu-options .ui-menu-option",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the app's 'Language exchange' takes two lines in its half-width option (the mock's 'Language' one): the app's own category names. Everything under it moves down by that line."
+        },
+        {
+            "name": "a category option",
+            "mock": "#events-category > .events-options button",
+            "app": ".ui-menu > .ui-menu-options .ui-menu-option",
+            "index": 1,
+            "widths": [390, 768]
+        },
+        {
+            "name": "a category option",
+            "mock": "#events-category > .events-options button",
+            "app": ".ui-menu > .ui-menu-options .ui-menu-option",
+            "index": 1,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the app's 'Language exchange' takes two lines in its half-width option (the mock's 'Language' one): the app's own category names. Everything under it moves down by that line."
+        },
+        {
+            "name": "Show only",
+            "mock": ".events-only",
+            "app": ".evf-only",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Show only label",
+            "mock": ".events-only p",
+            "app": ".evf-only p",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Free only",
+            "mock": ".events-only #free-only",
+            "app": ".evf-only .ui-menu-option",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Saved only",
+            "mock": ".events-only #saved-events",
+            "app": ".evf-only .ui-menu-option",
+            "appIndex": 1,
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "a category with nothing on the day",
+            "mock": ".event-category-trigger",
+            "app": ".evf-category",
+            "widths": [360, 390, 768],
+            "mockBefore": [
+                {
+                    "click": "#events-category > .events-options button:nth-child(3)"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": "body > .ui-menu > .ui-menu-options .ui-menu-option:nth-child(3)"
+                },
+                {
+                    "wait": 5000
+                }
+            ],
+            "contentDiffers": true,
+            "reason": "The chosen category names itself in each side's own taxonomy (the mock's Games, the app's Sports: the same chess listing on 8 September), so the button's width follows its word; the empty state below must read the same.",
+            "ignore": ["w"]
+        },
+        {
+            "name": "its empty state",
+            "mock": ".event-empty",
+            "app": ".ev-empty",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "its title",
+            "mock": ".event-empty h2",
+            "app": ".ev-empty h2",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "its other day",
+            "mock": ".event-empty p",
+            "app": ".ev-empty p",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "its Clear filters",
+            "mock": "#event-empty-reset",
+            "app": ".ev-empty-clear",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "its way to the other day",
+            "mock": ".event-empty .event-text-button",
+            "app": ".ev-empty-other",
+            "widths": [360, 390, 768]
+        }
+    ]
+}

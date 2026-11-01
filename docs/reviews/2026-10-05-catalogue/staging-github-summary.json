@@ -1,0 +1,122 @@
+{
+  "checked_at": "2026-10-05T13:13:07Z",
+  "repository": "anarzone/expadu",
+  "branch": "staging",
+  "branch_sha": "89289db9641bb75a563e74b44be9b4717bd61b22",
+  "read_method": "read-only GitHub connector GET",
+  "latest_runs": [
+    {
+      "id": 36621142943,
+      "head_sha": "89289db9641bb75a563e74b44be9b4717bd61b22",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-29T19:42:28Z",
+      "updated_at": "2026-09-29T19:49:01Z",
+      "url": "https://github.com/anarzone/expadu/actions/runs/36621142943"
+    },
+    {
+      "id": 36584433844,
+      "head_sha": "c31c7456a7c0cddb7b3579f358654b5a948dd747",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-29T14:40:32Z",
+      "updated_at": "2026-09-29T14:47:31Z",
+      "url": "https://github.com/anarzone/expadu/actions/runs/36584433844"
+    },
+    {
+      "id": 36576262123,
+      "head_sha": "0741c491150929297a0eaf81951f62868562e42c",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-29T13:35:50Z",
+      "updated_at": "2026-09-29T13:49:47Z",
+      "url": "https://github.com/anarzone/expadu/actions/runs/36576262123"
+    },
+    {
+      "id": 36470573038,
+      "head_sha": "f81e2d3bfb597aec7050a3b87f72ed51a8b29cd4",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-28T19:12:09Z",
+      "updated_at": "2026-09-28T19:19:06Z",
+      "url": "https://github.com/anarzone/expadu/actions/runs/36470573038"
+    },
+    {
+      "id": 36047572552,
+      "head_sha": "5039a4cb1c8168434b9035b7aa87e917a7fa6f11",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-24T19:21:19Z",
+      "updated_at": "2026-09-24T19:27:45Z",
+      "url": "https://github.com/anarzone/expadu/actions/runs/36047572552"
+    }
+  ],
+  "latest_run_jobs": [
+    {
+      "id": 109586550404,
+      "name": "Lint",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109586550460,
+      "name": "Browser Tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109586550526,
+      "name": "Detect path changes",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109586550705,
+      "name": "Test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109587063331,
+      "name": "Build & Push Image",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109587065655,
+      "name": "Build & Push pgsql Image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 109588926843,
+      "name": "Deploy to Staging",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 109588929084,
+      "name": "Deploy to Production",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "readiness_pr": {
+    "number": 62,
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "head": "d75cb825e8ddb29b9ca9fb752b064c8f9b778380",
+    "base": "staging",
+    "updated_at": "2026-09-30T22:56:14Z",
+    "url": "https://github.com/anarzone/expadu/pull/62"
+  },
+  "live_container_inspected": false,
+  "current_database_counts_verified": false,
+  "remote_changes": false
+}

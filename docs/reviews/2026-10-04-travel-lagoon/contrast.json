@@ -1,0 +1,20 @@
+{
+  "palette": {
+    "canvas": "#ffffff",
+    "quiet": "#f7fafa",
+    "text": "#202a2d",
+    "secondary": "#536469",
+    "accent": "#00768b",
+    "selection": "#def5f8",
+    "action": "#c23b0e",
+    "line": "#d9e3e5"
+  },
+  "textContrast": {
+    "Primary text": 14.68,
+    "Secondary text": 6.19,
+    "Input caption": 5.89,
+    "Route accent": 5.3,
+    "Selected control": 4.67,
+    "Action label": 5.35
+  }
+}

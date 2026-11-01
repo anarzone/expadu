@@ -1,0 +1,207 @@
+{
+    "name": "shell-focus",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": "header"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "focusNote": "Each pair tabs once more through the header, as a keyboard does, and compares the ring (outline) on the element it lands on.",
+    "pairs": [
+        {
+            "name": "brand",
+            "mock": ":focus",
+            "app": ":focus",
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ],
+            "mockBefore": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 100
+                },
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ]
+        },
+        {
+            "name": "Today",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "Events (current)",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "Paperwork",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "Travel",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "Ask Composer",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "city",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "saved",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ]
+        },
+        {
+            "name": "account",
+            "mock": ":focus",
+            "app": ":focus",
+            "before": [
+                {
+                    "key": "Tab"
+                },
+                {
+                    "wait": 150
+                }
+            ],
+            "props": [
+                "outline-style",
+                "outline-width",
+                "outline-color",
+                "outline-offset"
+            ],
+            "contentDiffers": true
+        }
+    ],
+    "skipNote": "The app starts every page with a skip link ('Skip to content'); the mock's Events page has none, so the app tabs once more to reach the brand."
+}

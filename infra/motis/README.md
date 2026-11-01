@@ -53,3 +53,33 @@ Region: VRS-core Rhineland (5,421 km²), VRS GTFS, **365-day** timetable, **tile
 ### Gotchas proven here
 - MOTIS import runs all tasks (osr/adr/tt/adr_extend/matches) **concurrently**; on **Docker Desktop for Mac named volumes** it dies instantly with `basic_ios::clear: iostream error` (concurrent-I/O quirk) — use a **bind mount** on Mac. On the Linux box this is moot.
 - API: plan is `GET /api/v1/plan?fromPlace=<lat>,<lng>&toPlace=<lat>,<lng>&time=<ISO8601 **with Z/offset**>` (bare `2026-06-17T22:05:22` → `failed to parse timestamp`). reverse-geocode: `/api/v1/reverse-geocode?place=<lat>,<lng>`.
+
+## Weekly refresh (since 1 Nov 2026)
+
+The box (3.8 GB) serves MOTIS (~150 MB) but can't build its store (an import peaks
+at ~3.5 GB), so `.github/workflows/motis-refresh.yml` rebuilds it on a GitHub
+arm64 runner every Monday at 04:00 UTC (or by hand: Actions → "MOTIS timetable
+refresh" → Run workflow, with "force" to rebuild an unchanged feed). It runs
+`infra/motis/refresh.sh`:
+
+1. Downloads the VRS GTFS and reads `feed_info.txt` (version, end date).
+2. Fails the run (exit 2, so GitHub mails the owner) when the timetable ends
+   within 21 days: VRS publishes the next timetable year only weeks before the
+   December change.
+3. Stops if the box already runs that feed version (`/data/motis/store/feed_version`).
+4. Fetches the map extract and config from `/data/motis/inputs` on the box,
+   imports with the **pinned** image (the digest the box serves: a store only
+   loads in the MOTIS version that built it) and test-plans Dom → Rudolfplatz.
+5. Uploads to `/data/motis/store.new` and pipes `infra/motis/swap.sh` to the box:
+   `store` → `store.prev`, MOTIS restarts with `--pull never`, and the previous
+   store comes back if MOTIS then plans no trips.
+
+On the server side, `api:health` also plans a trip 14 days ahead and reports
+"MOTIS timetable" down before the data runs out.
+
+Scheduled workflows only run from the default branch: the weekly run starts once
+the workflow reaches `main` with a release.
+
+The map extract (`/data/motis/inputs/nrw.osm.pbf`, the VRS-core cut from June
+2026) changes rarely; replace it by hand with a BBBike extract or a Geofabrik
+extract clipped to reference-complete ways.

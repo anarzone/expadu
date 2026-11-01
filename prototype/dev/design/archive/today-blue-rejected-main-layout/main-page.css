@@ -1,0 +1,157 @@
+/* Main-page composition. Cyan locates actions; content supplies the character. */
+:root { --dock-clearance: 96px; }
+html { scroll-padding-bottom: var(--dock-clearance); }
+.context-refinement .app-header { padding-top: 14px; padding-bottom: 12px; }
+.context-refinement .today-board { padding-top: 6px; padding-bottom: calc(var(--dock-clearance) + 24px); }
+.context-refinement .day-heading { margin-bottom: 16px; gap: 20px; }
+.context-refinement .day-heading h1 { font-size: 32px; letter-spacing: -1.1px; }
+.context-refinement .day-date { margin-bottom: 5px; color: #536971; font-size: 12px; }
+.context-refinement .service-nav { padding-block: 4px 10px; margin-bottom: 24px; }
+.context-refinement .service-nav>button { min-height: 48px; }
+.context-refinement .service-nav>button:hover { background: #05badd; color: #15343c; }
+.context-refinement .service-nav>button:hover>span { color: #15343c; }
+.context-refinement .service-nav>button::before { background: #05badd; }
+.context-refinement #day-flow { gap: 28px; }
+.context-refinement .overview-heading { margin-bottom: 12px; }
+.context-refinement .overview-heading h2 { font-size: 22px; font-weight: 600; letter-spacing: -.65px; }
+.context-refinement .overview-dot { width: 24px; height: 6px; border-radius: 3px; background: #05badd; }
+.context-refinement .glance-content { display: grid; grid-template-columns: 1.1fr 1fr 1fr; background: #fff; border: 1px solid #d4e1e5; border-radius: 18px; overflow: hidden; gap: 0; padding: 0; box-shadow: none; }
+.context-refinement .glance-item { min-height: 182px; padding: 17px 20px 12px; border: 0; border-radius: 0; box-shadow: none; }
+.context-refinement .glance-item+.glance-item { border-left: 1px solid #e2eaed; }
+.context-refinement .glance-item.priority { background: #effbfe; border-top: 0; }
+.context-refinement .glance-item.priority::before { background: #05badd; height: 3px; }
+.context-refinement .glance-label { gap: 6px; margin-bottom: 13px; }
+.context-refinement .glance-label>span { font-size: 13px; color: #2c4650; gap: 7px; }
+.context-refinement .glance-label>small { display: none; }
+.context-refinement .glance-label b { color: #244a54; background: #d2f5fc; }
+.context-refinement .glance-label>span>svg { color: #176277; width: 19px; height: 19px; }
+.context-refinement .glance-item h3 { font-size: 22px; letter-spacing: -.7px; margin-bottom: 12px; }
+.context-refinement .check-progress { margin-bottom: 10px; gap: 4px; }
+.context-refinement .check-progress span { height: 7px; }
+.context-refinement .check-progress span.done { background: #05badd; }
+.context-refinement .glance-link { min-height: 40px; padding-top: 7px; color: #14576a; font-size: 13px; }
+.context-refinement .data-caption { margin-top: 2px; font-size: 11px; color: #597078; }
+.context-refinement .departure-row { gap: 8px; padding-bottom: 6px; }
+.context-refinement .destination { color: #344e57; font-size: 13px; }
+.context-refinement .route-code { background: #05badd; color: #193841; width: 24px; min-width: 24px; height: 23px; }
+.context-refinement .departure-row>strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.context-refinement .forecast-hours { gap: 8px; margin: 0 0 6px; }
+.context-refinement .forecast-hours>div { gap: 5px; }
+.context-refinement .forecast-hours strong { font-size: 22px; }
+.context-refinement .forecast-hours svg { width: 20px; height: 20px; }
+.context-refinement .forecast-hours>div>span { font-size: 11px; color: #536b73; }
+
+/* Image-led places and compact events share alignment, without a widgets rail. */
+.context-refinement .board-body { grid-template-columns: minmax(0,1.45fr) minmax(300px,1fr); gap: 30px; align-items: start; }
+.context-refinement .board-section-heading { min-height: 44px; margin-bottom: 12px; align-items: center; }
+.context-refinement .board-section-heading h2 { font-size: 22px; line-height: 1.2; letter-spacing: -.6px; }
+.context-refinement .all-link { min-height: 44px; color: #14576a; font-size: 12px; gap: 5px; }
+.context-refinement .events-section { padding: 0; border: 0; }
+.context-refinement .place-pair { gap: 18px; }
+.context-refinement .place-tile { border: 0; background: none; padding: 0; border-radius: 0; }
+.context-refinement .place-image { aspect-ratio: 1.5; border-radius: 17px; }
+.context-refinement .category-label { display: none; }
+.context-refinement .place-summary { padding: 10px 0 0; align-items: flex-start; gap: 8px; }
+.context-refinement .place-summary>button:first-child { flex: 1; min-height: 44px; }
+.context-refinement .place-summary h3 { font-size: 18px; line-height: 1.25; letter-spacing: -.4px; }
+.context-refinement .keep-round { position: static; width: 44px; height: 44px; border: 1px solid #a4cbd5; background: #fff; color: #17566a; border-radius: 50%; flex-shrink: 0; }
+.context-refinement .keep-round:hover,.context-refinement .keep-round.selected { background: #05badd; color: #15343c; border-color: #05badd; }
+.context-refinement .place-context { margin: 4px 0 0; font-size: 13px; color: #3c5963; }
+.context-refinement .place-check { margin: 5px 0 0; color: #596f77; font-size: 12px; }
+.context-refinement .image-provenance { font-size: 10px; top: 9px; left: 9px; }
+.context-refinement .event-list { display: flex; flex-direction: column; gap: 0; border: 1px solid #d4e1e5; border-radius: 17px; overflow: hidden; background: #fff; }
+.context-refinement .event-item,.context-refinement .event-item+.event-item { border: 0; background: transparent; border-radius: 0; padding: 23px 18px; gap: 14px; box-shadow: none; }
+.context-refinement .event-item+.event-item { border-top: 1px solid #e1e9ec; }
+.context-refinement .event-item:hover,.context-refinement .event-item+.event-item:hover { background: #f0fbfd; border-color: #e1e9ec; }
+.context-refinement .event-symbol,.context-refinement .event-symbol.music { width: 44px; height: 44px; border-radius: 14px; background: #05badd; color: #173a43; }
+.context-refinement .event-symbol.music { background: #fff1e8; color: #af3616; }
+.context-refinement .event-symbol>span svg { width: 24px; height: 24px; }
+.context-refinement .event-copy { gap: 5px; }
+.context-refinement .event-copy strong { font-size: 19px; line-height: 1.25; }
+.context-refinement .event-copy small,.context-refinement .event-meta { font-size: 12px; color: #516c75; }
+.context-refinement .event-arrow { display: none; }
+.context-refinement .your-day-overview { padding: 12px 16px; }
+.context-refinement .your-day-mark { border-radius: 10px; }
+
+/* The fixed Composer owns only its actual footprint, without a page-wide fade. */
+.context-refinement .dock-zone { left: 50%; right: auto; transform: translateX(-50%); width: min(790px,calc(100% - 28px)); padding: 0 0 calc(10px + var(--safe-bottom)); background: none; gap: 6px; }
+.context-refinement .compose-dock { border-radius: 17px; padding: 8px 10px 8px 15px; min-height: 62px; box-shadow: 0 4px 18px #17364120; }
+.context-refinement .compose-mark { width: 25px; }
+.context-refinement .compose-submit { min-height: 44px; }
+.context-refinement .composer-context { width: 100%; padding: 0; gap: 6px; }
+.context-refinement .context-intro { display: none; }
+.context-refinement .context-scroll button { background: #fff; border-color: #a9cbd5; min-height: 36px; border-radius: 10px; font-size: 12px; }
+.context-refinement .workspace-scroll { padding-bottom: calc(var(--dock-clearance) + 20px); scroll-padding-bottom: var(--dock-clearance); }
+.context-refinement .toast,.context-refinement.has-idea-context .toast { bottom: calc(var(--dock-clearance) + 8px); }
+.context-refinement :is(button,a,select,textarea):focus-visible { outline: 2px solid #145d72; outline-offset: 3px; }
+
+@media(max-width:900px) {
+ .context-refinement .board-body { grid-template-columns: 1fr; gap: 24px; }
+ .context-refinement .event-list { flex-direction: row; }
+ .context-refinement .event-item { flex: 1; min-width: 0; }
+ .context-refinement .event-item+.event-item { border-top: 0; border-left: 1px solid #e1e9ec; }
+ .context-refinement .glance-item { padding-inline: 14px; }
+ .context-refinement .glance-label { flex-wrap: wrap; }
+}
+@media(max-width:600px) {
+ .context-refinement .app-header { padding: 10px 20px 8px; }
+ .context-refinement .today-board { padding: 2px 20px calc(var(--dock-clearance) + 20px); }
+ .context-refinement .day-heading { margin-bottom: 10px; gap: 12px; align-items: center; }
+ .context-refinement .day-heading h1 { font-size: 26px; line-height: 1.12; letter-spacing: -.8px; max-width: none; }
+ .context-refinement .day-date { font-size: 11px; margin-bottom: 5px; }
+ .context-refinement .weather-compact { flex-direction: row; gap: 4px; min-width: 66px; margin: 0; }
+ .context-refinement .weather-compact .weather-art { width: 24px; height: 28px; }
+ .context-refinement .weather-compact .weather-art>svg { width: 23px; height: 23px; }
+ .context-refinement .weather-compact strong { font-size: 21px; }
+ .context-refinement .service-nav { padding: 3px 0 8px; margin-bottom: 18px; }
+ .context-refinement .service-nav>button { min-height: 56px; gap: 3px; }
+ .context-refinement .service-nav>button>span { height: 25px; width: 25px; }
+ .context-refinement .service-nav>button>span svg { height: 23px; width: 23px; }
+ .context-refinement #day-flow { gap: 23px; }
+ .context-refinement .overview-heading h2 { font-size: 20px; }
+ .context-refinement .overview-dot { width: 15px; }
+ .context-refinement .glance-content { grid-template-columns: minmax(0,1fr) minmax(0,1fr); scroll-snap-type: none; }
+ .context-refinement .glance-item { padding: 12px 12px 9px; min-height: 160px; overflow: visible; border: 0!important; background: transparent; }
+ .context-refinement .glance-item:first-child { grid-column: 1/-1; min-height: 0; border-bottom: 1px solid #e1e9ec!important; }
+ .context-refinement .glance-item:nth-child(3) { border-left: 1px solid #e1e9ec!important; }
+ .context-refinement .glance-label { margin-bottom: 10px; flex-wrap: wrap; }
+ .context-refinement .glance-label>span { font-size: 12px; gap: 5px; }
+ .context-refinement .glance-label>span>svg { width: 16px; height: 16px; }
+ .context-refinement .glance-label b { font-size: 10px; }
+ .context-refinement .glance-item h3 { font-size: 18px; line-height: 1.2; margin-bottom: 10px; }
+ .context-refinement .glance-link { font-size: 12px; min-height: 38px; padding-top: 6px; gap: 3px; line-height: 1.25; }
+ .context-refinement .glance-link svg { width: 13px; flex-shrink: 0; }
+ .context-refinement .data-caption { font-size: 10px; }
+ .context-refinement .paperwork-glance:first-child { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; }
+ .context-refinement .paperwork-glance:first-child .glance-label { grid-column: 1/-1; margin-bottom: 8px; }
+ .context-refinement .paperwork-glance:first-child h3 { font-size: 18px; margin-bottom: 8px; }
+ .context-refinement .paperwork-glance:first-child .check-progress { grid-column: 1; margin: 0 0 4px; }
+ .context-refinement .paperwork-glance:first-child .glance-link { grid-column: 2; grid-row: 2/4; align-self: center; border-top: 0; max-width: 80px; min-height: 44px; padding: 0; }
+ .context-refinement .paperwork-glance:first-child .data-caption { grid-column: 1; }
+ .context-refinement .destination { font-size: 11px; }
+ .context-refinement .departure-row { gap: 5px; }
+ .context-refinement .departure-row>strong { font-size: 18px; }
+ .context-refinement .departure-row>strong>small { font-size: 9px; }
+ .context-refinement .route-code { min-width: 20px; width: 20px; height: 20px; font-size: 10px; }
+ .context-refinement .forecast-hours { gap: 4px; }
+ .context-refinement .forecast-hours strong { font-size: 18px; }
+ .context-refinement .forecast-hours svg { width: 19px; height: 19px; }
+ .context-refinement .forecast-hours>div>span { font-size: 10px; }
+ .context-refinement .board-section-heading h2 { font-size: 21px; }
+ .context-refinement .place-pair { gap: 14px; }
+ .context-refinement .place-image { aspect-ratio: 1.25; border-radius: 14px; }
+ .context-refinement .place-summary { padding-top: 8px; gap: 5px; }
+ .context-refinement .place-summary h3 { font-size: 16px; line-height: 1.25; }
+ .context-refinement .place-context { font-size: 12px; gap: 4px; }
+ .context-refinement .place-check { font-size: 12px; line-height: 1.4; }
+ .context-refinement .keep-round { width: 44px; height: 44px; border-radius: 12px; }
+ .context-refinement .event-list { flex-direction: column; }
+ .context-refinement .event-item,.context-refinement .event-item+.event-item { padding: 19px 16px; gap: 13px; }
+ .context-refinement .event-item+.event-item { border-left: 0; border-top: 1px solid #e1e9ec; }
+ .context-refinement .event-copy strong { font-size: 18px; }
+ .context-refinement .event-symbol,.context-refinement .event-symbol.music { width: 40px; height: 40px; border-radius: 12px; }
+ .context-refinement .compose-dock { gap: 9px; }
+ .context-refinement .compose-mark { width: 22px; }
+ .context-refinement .compose-dock textarea { font-size: 16px; }
+}
+@media(prefers-reduced-motion:reduce) { .context-refinement .place-image img { transition: none; } }

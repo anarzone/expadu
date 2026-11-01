@@ -1,0 +1,299 @@
+/* Content only. Shell, discovery, sheets and planning keep their shared styles. */
+.guide-preview-note {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: var(--muted);
+}
+.guide-collections {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 20px;
+    margin: 16px 0;
+}
+.guide-collection {
+    min-width: 0;
+    padding: 20px 24px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: white;
+}
+.guide-collection.lead {
+    grid-row: span 2;
+}
+.guide-collection header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.guide-collection-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 12px;
+    background: var(--blue);
+}
+.guide-collection-icon svg {
+    width: 22px;
+    height: 22px;
+}
+.guide-collection h2,
+.guide-results-heading h2 {
+    margin: 0;
+    font-size: 23px;
+    line-height: 1.2;
+    letter-spacing: -0.65px;
+}
+.guide-collection header p,
+.guide-results-heading p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+.guide-place {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-content: start;
+    align-items: start;
+    column-gap: 8px;
+    padding: 14px 0 8px;
+    border-top: 1px solid var(--line);
+    min-width: 0;
+}
+.guide-place-open {
+    display: block;
+    min-height: 44px;
+    padding: 2px 0 6px;
+    text-align: left;
+    border-radius: 6px;
+    overflow-wrap: anywhere;
+}
+.guide-place h3 {
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.25;
+    letter-spacing: -0.25px;
+}
+.guide-place-open > span,
+.guide-place-open p {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.guide-place-open p {
+    margin: 6px 0 0;
+    color: var(--ink);
+}
+.guide-save {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--ink);
+}
+.guide-save[aria-pressed='true'] {
+    background: var(--blue);
+}
+.guide-save[aria-pressed='true'] svg {
+    fill: var(--cyan);
+}
+.guide-save svg,
+.guide-plan svg,
+.guide-more-ways svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+.guide-plan {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-self: start;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--action);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0;
+    border-radius: 8px;
+}
+.guide-explore {
+    min-height: 44px;
+    margin-top: 4px;
+    color: var(--action);
+    font-size: 13px;
+}
+.guide-collection.lead .guide-place {
+    padding-block: 20px;
+}
+.guide-more-ways {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 20px 0 32px;
+}
+.guide-more-ways button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 12px;
+    border-block: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 13px;
+    text-align: left;
+}
+.guide-more-ways button span {
+    flex: 1;
+}
+.guide-more-ways button > svg:last-child {
+    color: var(--action);
+    width: 16px;
+}
+.guide-results-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 18px 0 10px;
+}
+.guide-results-heading > div {
+    min-width: 0;
+}
+.guide-results-heading .inline-link {
+    min-height: 44px;
+    flex: none;
+    color: var(--action);
+}
+.guide-results {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 28px;
+}
+.guide-results .empty {
+    grid-column: 1 / -1;
+}
+.guide-more {
+    margin: 20px auto;
+    display: flex;
+}
+.guide-source-note {
+    margin-top: 24px;
+    max-width: 700px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+.guide-source-note summary {
+    cursor: pointer;
+    min-height: 44px;
+    padding-block: 12px;
+}
+.guide-source-note a {
+    text-decoration: underline;
+}
+.guide-collections button:focus-visible,
+.guide-results button:focus-visible,
+.guide-more-ways button:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+.guide-place-open:active,
+.guide-save:active,
+.guide-more-ways button:active {
+    background: var(--blue);
+}
+@media (max-width: 999px) {
+    .guide-collections {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .guide-collection {
+        padding: 16px 18px 10px;
+    }
+    .guide-collection.lead {
+        grid-column: 1 / -1;
+        grid-row: auto;
+    }
+    .guide-collection.lead .guide-choices {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 24px;
+    }
+    .guide-collection.lead .guide-place {
+        padding-block: 12px;
+    }
+    .guide-results {
+        grid-template-columns: 1fr 1fr;
+        gap: 0 24px;
+    }
+    .guide-more-ways {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 650px) {
+    .guide-collections {
+        display: block;
+        margin-top: 8px;
+    }
+    .guide-collection {
+        padding: 14px 16px 8px;
+        margin-bottom: 12px;
+        border-radius: 20px;
+    }
+    .guide-collection header {
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .guide-collection h2,
+    .guide-results-heading h2 {
+        font-size: 21px;
+    }
+    .guide-collection header p {
+        font-size: 13px;
+        margin-top: 4px;
+    }
+    .guide-collection.lead .guide-choices {
+        display: block;
+    }
+    .guide-collection.lead .guide-place {
+        padding-block: 10px;
+    }
+    .guide-collection.lead .guide-place:nth-child(n + 4) {
+        display: none;
+    }
+    .guide-place h3 {
+        font-size: 17px;
+    }
+    .guide-more-ways {
+        gap: 4px 12px;
+        margin: 16px 0 24px;
+    }
+    .guide-more-ways button {
+        padding-inline: 2px;
+        gap: 7px;
+    }
+    .guide-results {
+        display: block;
+    }
+    .guide-results-heading {
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .guide-results-heading .inline-link {
+        font-size: 12px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .guide-save,
+    .guide-place-open,
+    .guide-more-ways button {
+        transition: background-color 140ms ease;
+    }
+}

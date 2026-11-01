@@ -1,0 +1,44 @@
+{
+  "pages": [
+    {
+      "currentTrayCount": 1,
+      "headerCount": 1,
+      "launcherCount": 1,
+      "legacyCount": 0,
+      "page": "Expadu — Travel"
+    },
+    {
+      "currentTrayCount": 1,
+      "headerCount": 6,
+      "launcherCount": 1,
+      "legacyCount": 0,
+      "page": "Expadu — Good things to turn up for"
+    },
+    {
+      "currentTrayCount": 1,
+      "headerCount": 1,
+      "launcherCount": 1,
+      "legacyCount": 0,
+      "page": "Expadu — One step at a time"
+    },
+    {
+      "currentTrayCount": 1,
+      "headerCount": 1,
+      "launcherCount": 1,
+      "legacyCount": 0,
+      "page": "Expadu — A little help goes a long way"
+    },
+    {
+      "currentTrayCount": 1,
+      "headerCount": 2,
+      "launcherCount": 1,
+      "legacyCount": 0,
+      "page": "Expadu — Today preview"
+    }
+  ],
+  "openedComposer": {
+    "fieldVisible": true,
+    "focusedField": "Your request to Composer",
+    "legacyCount": 0
+  }
+}

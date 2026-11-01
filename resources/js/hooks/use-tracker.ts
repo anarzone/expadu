@@ -6,6 +6,7 @@
  * firing identical events twice within 1 second.
  */
 import { useCallback } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 let lastEvent = { type: '', time: 0 };
 
@@ -32,10 +33,7 @@ export function useTracker() {
             keepalive: true,
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute('content') || '',
+                ...csrfHeaders(),
             },
             body: JSON.stringify({
                 event_type: eventType,

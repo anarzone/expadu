@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-09-27T19:46:55.015Z",
+  "passed": 12,
+  "checks": [
+    "Full source catalogue uses the current route, shared shell and contextual discovery",
+    "Evidence-based collections, café/address search, area choices and pagination",
+    "Optional-media details use the shared sheet with exact coordinates and recorded facts",
+    "Save stays separate; shared date and time controls preserve unfinished visits across tabs",
+    "Proposal and Undo keep the full place identity; Composer review keeps plans unconfirmed",
+    "Shared travel preferences and exact source coordinates pass into Departures",
+    "Reviewed photos show full attribution; failed images collapse without placeholders",
+    "320px: shared navigation, first useful item and Save visible, sheet fits and restores focus",
+    "390px: shared navigation, first useful item and Save visible, sheet fits and restores focus",
+    "768px: shared navigation, first useful item and Save visible, sheet fits and restores focus",
+    "Catalogue failure has recovery; normal department navigation opens the integrated page",
+    "Composer returns to the same scroll position after a delayed catalogue response"
+  ],
+  "browserErrors": [],
+  "snapshotRecords": 4956,
+  "photoRecords": 8,
+  "scope": "Connected static prototype, no production migration"
+}

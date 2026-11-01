@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Travel</title>
+        <link rel="stylesheet" href="./style.css?v=56abd4d42c35" />
+        <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
+        <script defer src="./departure-data.js?v=05fcba8c8280"></script>
+        <script defer src="./journeys.js?v=47d3cc799a0f"></script>
+        <script defer src="./timetable.js?v=9fd1a28538f8"></script>
+        <script defer src="../connected/icons.js?v=685f482a1088"></script>
+        <script defer src="./icons.js?v=9339c39515e5"></script>
+        <script defer src="./journey-ui.js?v=0087a8e75992"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/date-control.css?v=4b7e0249842c"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/time-control.css?v=a705dda86460"
+        />
+        <script
+            defer
+            src="../composer-studio/wheel-motion.js?v=c203940ffe0e"
+        ></script>
+        <script
+            defer
+            src="../connected/date-control.js?v=f68610b210d4"
+        ></script>
+        <script
+            defer
+            src="../connected/time-control.js?v=255f0aaf235a"
+        ></script>
+        <script defer src="./app.js?v=eebf5ac317c4"></script>
+        <script defer src="../connected/model.js?v=dabdd8ed7179"></script>
+        <script defer src="../connected/store.js?v=3078f6a2275c"></script>
+        <script defer src="../connected/bridge.js?v=c5088d5be058"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/shell-review.css?v=159bcdf45f0d"
+        />
+        <script defer src="../today-next/icons.js?v=b1a07d3a4600"></script>
+        <script
+            defer
+            src="../connected/today-header.js?v=7b2c7dc03695"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/location-popover.css?v=62bbac630642"
+        />
+        <script
+            defer
+            src="../connected/location-popover.js?v=cca96c19fb5a"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/menu-colors.css?v=80281d6d2c46"
+        />
+
+        <script defer src="../connected/handoffs.js?v=22a268356e84"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/discovery.css?v=b72cbd4ccef6"
+        />
+        <link
+            rel="stylesheet"
+            href="../today-c/composer-controls.css?v=fea6bccd88f9"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/composer-entry.css?v=12a8c5eef18d"
+        />
+        <script
+            defer
+            src="../connected/composer-entry.js?v=dfed2d5132a7"
+        ></script>
+        <script
+            defer
+            src="../today-c/composer-controls.js?v=28a523bb58a5"
+        ></script>
+        <link rel="stylesheet" href="../connected/motion.css?v=2a54464bcba6" />
+        <link
+            rel="stylesheet"
+            href="../connected/journey-session.css?v=2dced2dc3206"
+        />
+        <script
+            defer
+            src="../connected/journey-session.js?v=d1750fb4f511"
+        ></script>
+        <link rel="stylesheet" href="./navigation.css?v=6b4a272828d1" />
+        <script defer src="./navigation-model.js?v=07372586ab2a"></script>
+        <script defer src="./route-map.js?v=e7364a3f805e"></script>
+        <script defer src="./navigation-ui.js?v=85c388e0ce7c"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/today-palette.css?v=2cfcc07b55a9"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/today-header.css?v=710e50e65104"
+        />
+        <link rel="stylesheet" href="./soft-palette.css?v=625754c4404f" />
+        <link rel="stylesheet" href="./workspace.css?v=987c3e1bd8ae" />
+    </head>
+    <body
+        class="shell-review departures-page today-palette today-header travel-palette"
+        data-view="journey"
+    >
+        <header class="app-header">
+            <a href="../today-c/" class="brand" aria-label="Expadu home"
+                ><svg viewBox="13 22 74 60" aria-hidden="true">
+                    <g transform="translate(2.45 2.05)">
+                        <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                        <rect
+                            x="30"
+                            y="24"
+                            width="13"
+                            height="52"
+                            rx="6"
+                            fill="currentColor"
+                        />
+                        <rect
+                            x="46"
+                            y="24"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-7 46 30)"
+                        />
+                        <rect
+                            x="46"
+                            y="43.5"
+                            width="25"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-4 46 50)"
+                        />
+                        <rect
+                            x="46"
+                            y="63"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-2 46 69)"
+                        />
+                    </g></svg
+                >Expadu</a
+            >
+            <div class="header-context">
+                <button class="city" data-action="city">
+                    <span data-icon="pin"></span>Cologne<span
+                        data-icon="down"
+                    ></span></button
+                ><span
+                    class="header-weather"
+                    role="img"
+                    aria-label="Sample weather: 21 degrees, partly sunny"
+                    title="Sample weather · not live"
+                    ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="4" />
+                        <path
+                            d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"
+                        /></svg
+                    ><strong>21°</strong></span
+                >
+            </div>
+            <div class="header-end">
+                <a href="../today-c/" class="my-day" aria-label="My day"
+                    ><span data-icon="bookmark"></span><span>My day</span></a
+                ><button
+                    class="avatar"
+                    data-action="account"
+                    aria-label="Your account"
+                >
+                    A
+                </button>
+            </div>
+        </header>
+        <nav class="services" aria-label="Main navigation">
+            <a data-page="today" href="../today-c/"
+                ><span data-icon="home"></span><span>Today</span></a
+            ><a data-page="events" href="../events-next/"
+                ><span data-icon="calendar"></span><span>Events</span></a
+            ><a data-page="bureaucracy" href="../bureaucracy-next/"
+                ><span data-icon="document"></span><span>Paperwork</span></a
+            ><a data-page="departures" href="./" aria-current="page"
+                ><span data-icon="train"></span><span>Travel</span></a
+            ><a data-page="services" href="../services-next/"
+                ><span data-icon="grid"></span><span>Services</span></a
+            >
+        </nav>
+        <main id="main">
+            <div class="page-heading">
+                <h1>Travel</h1>
+                <button
+                    class="icon-button saved-trigger"
+                    data-action="saved"
+                    aria-label="Saved journeys"
+                    title="Saved journeys"
+                >
+                    <span data-icon="bookmark"></span
+                    ><span id="saved-count" hidden></span>
+                </button>
+            </div>
+            <div class="page-navigation">
+                <div
+                    class="view-switch segmented"
+                    role="group"
+                    aria-label="Travel view"
+                >
+                    <button data-view="journey" aria-pressed="true">
+                        <span data-icon="route"></span>Plan a trip
+                    </button>
+                    <button data-view="stop" aria-pressed="false">
+                        <span data-icon="train"></span>Timetable
+                    </button>
+                </div>
+                <button class="sample-label" data-action="about">
+                    Sample<span class="sr-only"> data information</span>
+                </button>
+            </div>
+            <div id="journey-view">
+                <div class="journey-intro-grid">
+                    <section class="journey-desk" aria-label="Plan a journey">
+                        <button
+                            id="journey-summary"
+                            class="journey-summary"
+                            data-action="edit-journey"
+                            hidden
+                            aria-expanded="false"
+                            aria-controls="journey-form"
+                        ></button>
+                        <form id="journey-form" novalidate>
+                            <div class="journey-fields">
+                                <div class="field from-field">
+                                    <span
+                                        class="field-symbol origin-dot"
+                                        aria-hidden="true"
+                                    ></span>
+                                    <label for="from">From</label>
+                                    <input
+                                        id="from"
+                                        placeholder="Your starting point"
+                                        maxlength="120"
+                                        autocomplete="off"
+                                        role="combobox"
+                                        aria-haspopup="dialog"
+                                        aria-autocomplete="list"
+                                        aria-controls="suggestions"
+                                        aria-expanded="false"
+                                    />
+                                </div>
+                                <button
+                                    class="swap icon-button"
+                                    type="button"
+                                    data-action="swap"
+                                    aria-label="Swap origin and destination"
+                                >
+                                    <span data-icon="swap"></span>
+                                </button>
+                                <div class="field to-field">
+                                    <span
+                                        class="field-symbol"
+                                        data-icon="pin"
+                                        aria-hidden="true"
+                                    ></span>
+                                    <label for="to">To</label>
+                                    <input
+                                        id="to"
+                                        placeholder="Where to?"
+                                        maxlength="120"
+                                        autocomplete="off"
+                                        role="combobox"
+                                        aria-haspopup="dialog"
+                                        aria-autocomplete="list"
+                                        aria-controls="suggestions"
+                                        aria-expanded="false"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                id="suggestions"
+                                class="suggestions"
+                                role="dialog"
+                                hidden
+                                aria-label="Suggested locations"
+                            ></div>
+                            <div class="planner-controls">
+                                <div
+                                    id="planner-modes"
+                                    class="segmented route-modes"
+                                    role="group"
+                                    aria-label="Travel mode"
+                                ></div>
+                                <div class="journey-utilities">
+                                    <button
+                                        type="button"
+                                        class="quiet-button"
+                                        data-action="schedule"
+                                        aria-haspopup="dialog"
+                                        aria-expanded="false"
+                                    >
+                                        <span data-icon="clock"></span
+                                        ><span id="schedule-label"
+                                            >Leave now</span
+                                        ><span data-icon="down"></span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="icon-button"
+                                        data-action="preferences"
+                                        aria-label="Journey preferences"
+                                        title="Journey preferences"
+                                        aria-haspopup="dialog"
+                                        aria-expanded="false"
+                                    >
+                                        <span data-icon="sliders"></span
+                                        ><span
+                                            id="preferences-count"
+                                            hidden
+                                        ></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p
+                                id="form-error"
+                                class="form-error"
+                                role="alert"
+                                hidden
+                            ></p>
+                            <button class="primary find-routes" type="submit">
+                                Find a route<span data-icon="arrow"></span>
+                            </button>
+                        </form>
+                    </section>
+                    <section
+                        id="journey-start"
+                        class="journey-start"
+                        aria-labelledby="sample-title"
+                    >
+                        <div class="section-heading">
+                            <h2 id="sample-title">Explore a sample route</h2>
+                        </div>
+                        <button
+                            class="sample-journey"
+                            data-action="example"
+                            aria-label="Explore sample routes from Neumarkt to Museum Ludwig"
+                        >
+                            <span class="sample-route-names"
+                                ><span>Köln Neumarkt</span
+                                ><span data-icon="arrow"></span
+                                ><strong>Museum Ludwig</strong></span
+                            >
+                            <span class="sample-route-line" aria-hidden="true"
+                                ><span class="sample-node"
+                                    ><span data-icon="walk"></span
+                                    ><small>1 min</small></span
+                                ><span class="sample-connection"></span
+                                ><span class="sample-node transit"
+                                    ><span data-icon="train"></span
+                                    ><strong>9</strong></span
+                                ><span class="sample-connection"></span
+                                ><span class="sample-node"
+                                    ><span data-icon="walk"></span
+                                    ><small>13 min</small></span
+                                ></span
+                            >
+                            <span class="sample-route-bottom"
+                                ><span
+                                    ><strong>16 min</strong
+                                    ><small>Transit · 23:37–23:53</small></span
+                                ><span
+                                    class="round-arrow"
+                                    data-icon="arrow"
+                                ></span
+                            ></span>
+                        </button>
+                        <div class="sample-footnote">
+                            <span data-icon="info"></span
+                            ><span
+                                >7 Sep 2026 capture. Live routes aren’t
+                                connected yet.</span
+                            >
+                        </div>
+                    </section>
+                </div>
+                <section
+                    id="results"
+                    hidden
+                    aria-labelledby="results-title"
+                ></section>
+            </div>
+            <section id="departures" hidden aria-labelledby="at-stop-title">
+                <button
+                    class="quiet-button board-return"
+                    data-action="return-journey"
+                    hidden
+                >
+                    <span data-icon="back"></span>Back to your journey
+                </button>
+                <div class="timetable-context">
+                    <div class="stop-heading">
+                        <button
+                            class="stop-selector"
+                            data-action="stops"
+                            aria-haspopup="dialog"
+                            aria-expanded="false"
+                        >
+                            <span class="stop-symbol" data-icon="train"></span
+                            ><span
+                                ><small>Stop</small
+                                ><strong id="at-stop-title"
+                                    >Merkenich Mitte</strong
+                                ></span
+                            ><span data-icon="down"></span>
+                        </button>
+                        <button
+                            class="icon-button"
+                            data-action="notices"
+                            aria-label="Network notices"
+                            title="Network notices"
+                        >
+                            <span data-icon="info"></span
+                            ><span class="notice-count">2</span>
+                        </button>
+                    </div>
+                    <div class="timetable-toolbar">
+                        <button
+                            class="quiet-button"
+                            data-action="timetable-time"
+                            aria-haspopup="dialog"
+                            aria-expanded="false"
+                        >
+                            <span data-icon="calendar"></span
+                            ><span id="timetable-time-label">Now</span
+                            ><span data-icon="down"></span>
+                        </button>
+                        <div class="timetable-paging">
+                            <button
+                                class="icon-button"
+                                data-action="earlier-departures"
+                                aria-label="One hour earlier"
+                                title="One hour earlier"
+                            >
+                                <span data-icon="back"></span></button
+                            ><button
+                                class="icon-button"
+                                data-action="later-departures"
+                                aria-label="One hour later"
+                                title="One hour later"
+                            >
+                                <span data-icon="arrow"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="board-meta" id="board-meta"></div>
+                </div>
+                <div class="timetable-departures">
+                    <div
+                        id="departure-cards"
+                        class="timetable-list"
+                        aria-label="Scheduled departures"
+                    ></div>
+                    <div class="board-bottom">
+                        <span
+                            ><span data-icon="info"></span>Platform and live
+                            delays unavailable</span
+                        ><button class="quiet-button" data-action="stop-origin">
+                            Plan from here<span data-icon="arrow"></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+            <div id="active-trip" hidden></div>
+        </main>
+        <div
+            id="journey-popover"
+            class="journey-popover"
+            hidden
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="popover-title"
+        >
+            <div class="popover-heading">
+                <h2 id="popover-title"></h2>
+                <button
+                    class="icon-button"
+                    data-action="close-popover"
+                    aria-label="Close options"
+                >
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="popover-body"></div>
+        </div>
+        <div class="composer-dock">
+            <form id="compose-form">
+                <label for="request"
+                    ><span data-icon="spark"></span><span>Composer</span></label
+                ><input
+                    id="request"
+                    placeholder="What do you need today?"
+                    maxlength="700"
+                    aria-label="What do you need today?"
+                /><button class="compose" type="submit" aria-label="Compose">
+                    <span>Compose</span><span data-icon="arrow"></span>
+                </button>
+            </form>
+        </div>
+        <dialog id="sheet" aria-labelledby="sheet-title">
+            <div class="sheet-top">
+                <h2 id="sheet-title"></h2>
+                <button
+                    class="icon-button"
+                    data-action="close"
+                    aria-label="Close details"
+                >
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="sheet-body" class="sheet-scroll"></div>
+        </dialog>
+        <div class="toast" role="status" aria-live="polite">
+            <span id="toast-text"></span
+            ><button data-action="undo" hidden>Undo</button>
+        </div>
+    </body>
+</html>

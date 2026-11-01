@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-09-27T17:48:57.967Z",
+  "checks": [
+    "Source sample and media integrity",
+    "Photo absence does not affect search, eligibility or order",
+    "Initial list: complete with and without photos",
+    "Filters intersect, reset preserves travel preferences",
+    "Save is separate from planning and survives reload",
+    "Details preserve source facts, uncertainty and exact coordinates",
+    "Visit becomes an unconfirmed proposal, with undo and Composer handoff",
+    "Optional photo credits and all-photos-hidden mode",
+    "Composer receives editable sourced context, without auto-submission",
+    "Mobile: useful first item visible, keyboard and inline details work",
+    "Photo load failure removes image space without losing places",
+    "Map pins share the filters and map failures keep the list usable"
+  ],
+  "sourceRecords": 16,
+  "reviewedPhotoRecords": 8,
+  "realCoverageClaim": false,
+  "viewports": [
+    320,
+    390,
+    768,
+    1440
+  ],
+  "runtimeErrors": [],
+  "unexpectedRequests": [],
+  "mapTest": "Real MapLibre renderer with a local empty style, plus failed-library fallback; not a provider-availability assertion."
+}

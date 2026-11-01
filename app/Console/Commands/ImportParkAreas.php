@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\SpotCategory;
+use App\Models\SpotEnrichment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +28,8 @@ class ImportParkAreas extends Command
     public function handle(): int
     {
         $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
-        $query = "[out:json][timeout:60];(nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox}););out geom;";
+        // Named malls too (24 Oct 2026): the shops inside one stand in it ("TK Maxx in Hürth Park").
+        $query = "[out:json][timeout:60];(nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"name\"][\"sport\"~\"soccer|football|basketball|tennis|table_tennis|multi\"]({$bbox});wr[\"shop\"=\"mall\"][\"name\"]({$bbox}););out geom;";
 
         $elements = $this->fetch($query);
         if ($elements === null) {
@@ -54,9 +56,11 @@ class ImportParkAreas extends Command
             // clash can't overwrite the other's polygon.
             $osmId = $osmId * 10 + ($type === 'relation' ? 2 : 1);
             $sourceId = "{$type}/{$element['id']}";
-            $kind = ($element['tags']['leisure'] ?? null) === 'sports_centre'
-                ? 'sports_centre'
-                : 'park';
+            $kind = match (true) {
+                ($element['tags']['shop'] ?? null) === 'mall' => 'mall',
+                ($element['tags']['leisure'] ?? null) === 'sports_centre' => 'sports_centre',
+                default => 'park',
+            };
 
             $wkt = $this->toWkt($element);
             if ($wkt === null) {
@@ -174,16 +178,26 @@ class ImportParkAreas extends Command
     private function assignDestinations(): int
     {
         $fines = collect(SpotCategory::placesFines())
-            ->reject(fn (string $category) => in_array($category, ['park', 'sports_centre'], true))
+            ->reject(fn (string $category) => in_array($category, ['park', 'sports_centre', 'shopping_centre'], true))
             ->map(fn (string $category) => "'{$category}'")
             ->implode(', ');
 
-        DB::statement(
-            "UPDATE spots SET parent_spot_id = NULL, park_name = NULL
-             WHERE category IN ({$fines}) AND location IS NOT NULL",
-        );
+        $clearedSpotIds = collect(DB::select(
+            "UPDATE spots AS child
+             SET parent_spot_id = NULL, park_name = NULL
+             WHERE child.category IN ({$fines})
+               AND child.location IS NOT NULL
+               AND (child.parent_spot_id IS NOT NULL OR child.park_name IS NOT NULL)
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM park_areas AS area
+                   WHERE area.parent_spot_id IS NOT NULL
+                     AND ST_Covers(area.boundary, child.location::geometry)
+               )
+             RETURNING child.id",
+        ))->pluck('id')->map(static fn (int $id): int => $id)->all();
 
-        DB::statement(
+        $assignedSpotIds = collect(DB::select(
             "UPDATE spots AS child
              SET parent_spot_id = destination.parent_spot_id,
                  park_name = destination.name
@@ -201,8 +215,16 @@ class ImportParkAreas extends Command
                  WHERE candidate.category IN ({$fines})
                    AND candidate.location IS NOT NULL
              ) AS destination
-             WHERE child.id = destination.id",
-        );
+             WHERE child.id = destination.id
+               AND (child.parent_spot_id IS DISTINCT FROM destination.parent_spot_id
+                    OR child.park_name IS DISTINCT FROM destination.name)
+             RETURNING child.id",
+        ))->pluck('id')->map(static fn (int $id): int => $id)->all();
+
+        SpotEnrichment::markReadyAsStaleForSpots([
+            ...$clearedSpotIds,
+            ...$assignedSpotIds,
+        ]);
 
         return DB::table('spots')->whereNotNull('parent_spot_id')->count();
     }

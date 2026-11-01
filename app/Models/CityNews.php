@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['title', 'summary', 'source', 'source_url', 'category', 'relevance', 'affected_lines', 'severity', 'published_at', 'expires_at'])]
+#[Fillable(['title', 'summary', 'source', 'source_url', 'category', 'relevance', 'affected_lines', 'affected_stops', 'affected_trips', 'severity', 'published_at', 'expires_at'])]
 class CityNews extends Model
 {
     /** @use HasFactory<CityNewsFactory> */
@@ -19,6 +19,8 @@ class CityNews extends Model
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
             'affected_lines' => 'array',
+            'affected_stops' => 'array',
+            'affected_trips' => 'array',
         ];
     }
 }

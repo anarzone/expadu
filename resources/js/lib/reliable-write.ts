@@ -1,0 +1,51 @@
+import { csrfHeaders } from '@/lib/csrf';
+import { isSignedOutStatus, SIGNED_OUT } from '@/lib/signed-out';
+
+/** Resolve only after the server has acknowledged a write, never a login page. */
+export async function writeJson<T = Record<string, unknown>>(
+    url: string,
+    method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    data?: unknown,
+): Promise<T> {
+    const response = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        redirect: 'error',
+        signal: AbortSignal.timeout(15000),
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...csrfHeaders(),
+        },
+        body: data === undefined ? undefined : JSON.stringify(data),
+    }).catch(() => {
+        throw new Error(
+            'We couldn’t reach the server. Check your connection and try again.',
+        );
+    });
+
+    const json = response.headers
+        .get('content-type')
+        ?.includes('application/json');
+
+    // A refused value says why (the server's validation message).
+    if (response.status === 422 && json) {
+        const body = (await response.json().catch(() => null)) as {
+            message?: unknown;
+        } | null;
+
+        if (typeof body?.message === 'string' && body.message !== '') {
+            throw new Error(body.message);
+        }
+    }
+
+    if (!response.ok || !json) {
+        throw new Error(
+            isSignedOutStatus(response.status)
+                ? SIGNED_OUT
+                : 'We couldn’t save that. Please try again.',
+        );
+    }
+
+    return response.json() as Promise<T>;
+}

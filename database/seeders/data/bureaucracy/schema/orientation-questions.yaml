@@ -1,0 +1,12 @@
+version: '2026-09-08.1'
+reviewed_by: owner_authorised_product_review
+# Product orientation only. Reuse canonical wording; no legal route is approved here.
+questions:
+  - fact_key: citizenship_group
+  - fact_key: current_residence_title
+    requires_actual_arrival: true
+    when:
+      - citizenship_group: non_eu
+  - fact_key: residence_title_expires_at
+    when:
+      - current_residence_title: [national_d_visa, standard_work_permit, blue_card, family_reunification]

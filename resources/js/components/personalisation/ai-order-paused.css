@@ -1,0 +1,176 @@
+/* Today's AI order, paused until the person agrees to a change
+   (ai-order-paused.tsx): Today's line, Settings' note and the sheet. */
+
+.ai-order-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 6px 6px 6px 12px;
+    border: 1px solid var(--color-attention-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+.ai-order-line svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+.ai-order-line span {
+    min-width: 0;
+}
+.ai-order-line :is(a, button) {
+    flex: none;
+    min-height: 36px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-bold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.ai-order-line a {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+}
+.ai-order-line :is(a, button):hover {
+    background: var(--color-attention);
+}
+
+.ai-order-note {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border: 1px solid var(--color-attention-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.ai-order-note > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+}
+.ai-order-note strong {
+    display: block;
+    color: var(--color-text);
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+}
+.ai-order-note p {
+    margin: 4px 0 12px;
+    color: var(--color-text);
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+
+.ai-order-section h3 {
+    margin: 16px 0 8px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+.ai-order-section ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.ai-order-section li {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.ai-order-section li svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+}
+.ai-order-section.is-waits li svg {
+    color: var(--color-attention-text);
+}
+.ai-order-section.is-kept li svg {
+    color: var(--color-success, currentColor);
+}
+.ai-order-notice {
+    margin-top: 14px;
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.ai-order-notice summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.ai-order-notice p {
+    margin: 0 0 8px;
+    color: var(--color-text-soft);
+}
+
+.ai-order-fine {
+    flex: 1 1 100%;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.ai-order-error {
+    flex: 1 1 100%;
+    margin: 0;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+.ai-order-primary,
+.ai-order-quiet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-bold);
+    cursor: pointer;
+}
+.ai-order-primary {
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.ai-order-primary:hover {
+    background: var(--color-action-hover);
+}
+.ai-order-quiet {
+    border-color: var(--color-border);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+.ai-order-quiet:hover {
+    background: var(--color-bg-quiet);
+}
+@media (max-width: 700px) {
+    .ai-order-change .ai-order-primary,
+    .ai-order-change .ai-order-quiet {
+        flex: 1;
+    }
+}

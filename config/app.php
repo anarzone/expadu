@@ -61,7 +61,7 @@ return [
     | Subdomain Routing
     |--------------------------------------------------------------------------
     |
-    | The app domain serves the authenticated SPA (dashboard, explore, etc.).
+    | The app domain serves the authenticated SPA (Today, Around here, etc.).
     | The marketing domain serves the public site (landing, blog, auth).
     | In local dev, both default to null (no subdomain enforcement).
     |
@@ -69,6 +69,10 @@ return [
 
     'app_domain' => env('APP_DOMAIN'),
     'marketing_domain' => env('MARKETING_DOMAIN'),
+
+    // Multiplies the per-person write, Composer and Paperwork budgets. The browser suite signs
+    // every spec in as one account and raises it; everywhere else it stays 1.
+    'rate_limit_scale' => max(1, (int) env('RATE_LIMIT_SCALE', 1)),
 
     /*
     |--------------------------------------------------------------------------
@@ -82,6 +86,13 @@ return [
     */
 
     'timezone' => 'Europe/Berlin',
+
+    /*
+    | Share of PerfLogger timings kept (0–1). Every request used to write a
+    | Redis sorted-set entry kept for 7 days; a sample keeps the percentiles
+    | that `perf:report` shows at a fraction of the memory.
+    */
+    'perf_sample_rate' => (float) env('PERF_SAMPLE_RATE', 0.25),
 
     /*
     |--------------------------------------------------------------------------

@@ -1,0 +1,216 @@
+{
+  "base": "http://127.0.0.1:8765",
+  "rounds": [
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 42
+    },
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 4
+    },
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 7
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [
+        {
+          "url": "/dev/design/connected/model.js?v=dabdd8ed7179",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/connected/store.js?v=3078f6a2275c",
+          "error": "[Errno 54] Connection reset by peer",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/today-next/icons.js?v=b1a07d3a4600",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/connected/today-header.js?v=7b2c7dc03695",
+          "error": "[Errno 54] Connection reset by peer",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/connected/location-popover.css?v=62bbac630642",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/location-popover.js?v=cca96c19fb5a",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/menu-colors.css?v=80281d6d2c46",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/handoffs.js?v=22a268356e84",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/discovery.css?v=b72cbd4ccef6",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/today-c/composer-controls.css?v=fea6bccd88f9",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/composer-entry.css?v=12a8c5eef18d",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/composer-entry.js?v=dfed2d5132a7",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/today-c/composer-controls.js?v=28a523bb58a5",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/motion.css?v=2a54464bcba6",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/connected/journey-session.css?v=2dced2dc3206",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/journey-session.js?v=d1750fb4f511",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/navigation.css?v=6b4a272828d1",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/navigation-model.js?v=07372586ab2a",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/route-map.js?v=e7364a3f805e",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/navigation-ui.js?v=85c388e0ce7c",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/today-palette.css?v=2cfcc07b55a9",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/connected/today-header.css?v=710e50e65104",
+          "error": "[Errno 54] Connection reset by peer",
+          "ms": 0
+        },
+        {
+          "url": "/dev/design/departures-next/soft-palette.css?v=02e4a5d0a404",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/workspace.css?v=0713c0c9806d",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        }
+      ],
+      "slowest_ms": 24
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [
+        {
+          "url": "/dev/design/connected/discovery.css?v=b72cbd4ccef6",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/today-c/composer-controls.css?v=fea6bccd88f9",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/today-c/composer-controls.js?v=28a523bb58a5",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 2
+        },
+        {
+          "url": "/dev/design/departures-next/navigation.css?v=6b4a272828d1",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 3
+        },
+        {
+          "url": "/dev/design/departures-next/navigation-model.js?v=07372586ab2a",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 2
+        },
+        {
+          "url": "/dev/design/departures-next/navigation-ui.js?v=85c388e0ce7c",
+          "error": "[Errno 54] Connection reset by peer",
+          "ms": 2
+        }
+      ],
+      "slowest_ms": 11
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [
+        {
+          "url": "/dev/design/connected/time-control.js?v=255f0aaf235a",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 2
+        },
+        {
+          "url": "/dev/design/today-next/icons.js?v=b1a07d3a4600",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/connected/today-palette.css?v=2cfcc07b55a9",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        },
+        {
+          "url": "/dev/design/departures-next/workspace.css?v=0713c0c9806d",
+          "error": "<urlopen error [Errno 54] Connection reset by peer>",
+          "ms": 1
+        }
+      ],
+      "slowest_ms": 10
+    }
+  ],
+  "requests": 240,
+  "failures": 34
+}

@@ -62,7 +62,7 @@ test('new observations preserve practical facts and later omissions do not resur
 
 test('venue amenity tags become sourced facts and missing ones stay unknown', function () {
     $spot = Spot::factory()->create(['category' => 'cafe', 'source' => 'osm', 'source_id' => 'node/900104', 'lat' => 50.94, 'lng' => 6.95]);
-    practicalObservation($spot, ['practical' => [
+    practicalObservation($spot, ['location' => ['lat' => 50.94, 'lng' => 6.95, 'kind' => 'source_node'], 'practical' => [
         'internet_access' => 'wlan', 'outdoor_seating' => 'yes', 'cuisine' => 'coffee_shop;cake', 'diet:vegan' => 'yes',
     ]]);
     $facts = app(PlaceFacts::class)->resolve($spot->fresh());

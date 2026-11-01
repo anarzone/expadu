@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Events\Context\TransitDisruptionDetected;
 use App\Services\DisruptionService;
+use App\Transit\TransitNotices;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,11 @@ class CheckTransitDisruptions extends Command
 
     public function handle(DisruptionService $disruptionService): int
     {
-        $disruptions = $disruptionService->getLineDisruptions();
+        $disruptions = array_values(array_filter(
+            $disruptionService->getLineDisruptions(),
+            // VRS's and DELFI's notices show on boards; they aren't pushed yet.
+            fn (array $d) => ! in_array($d['source'] ?? null, TransitNotices::SOURCES, true),
+        ));
 
         if (empty($disruptions)) {
             $this->info('No disruptions found.');
@@ -58,7 +63,7 @@ class CheckTransitDisruptions extends Command
                 stopsAffected: array_values(array_map('strval', $d['stops_affected'] ?? [])),
                 severity: (string) ($d['severity'] ?? 'minor'),
                 bbox: $d['bbox'] ?? null,
-                expiresAt: ! empty($d['expires_at']) ? CarbonImmutable::parse($d['expires_at']) : null,
+                expiresAt: $this->endOf($d),
             ));
         }
 
@@ -69,5 +74,21 @@ class CheckTransitDisruptions extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * When the notice says it ends (DisruptionService's `estimated_end`), else
+     * null and the alert keeps its default window. A Betriebslage notice has
+     * no end of its own: its expiry is only the lease until the next scrape.
+     *
+     * @param  array<string, mixed>  $disruption
+     */
+    private function endOf(array $disruption): ?CarbonImmutable
+    {
+        if (($disruption['source'] ?? null) === 'kvb-betriebslage' || empty($disruption['estimated_end'])) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($disruption['estimated_end']);
     }
 }

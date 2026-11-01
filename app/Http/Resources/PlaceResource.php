@@ -5,6 +5,9 @@ namespace App\Http\Resources;
 use App\Enums\SpotCategory;
 use App\Media\PublishedMediaSelector;
 use App\Models\Spot;
+use App\Places\AroundKinds;
+use App\Places\FacilityGroups;
+use App\Places\PlaceAmenities;
 use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -28,6 +31,10 @@ class PlaceResource extends JsonResource
         $coarse = $fine?->coarse() ?? 'park';
         $mediaSelector = app(PublishedMediaSelector::class);
         $media = $mediaSelector->select($this->resource, 'hero');
+        $enrichment = $this->resource->relationLoaded('englishEnrichment') ? $this->englishEnrichment : null;
+        // Only the reviewed English enrichment carries a tip; a stored legacy
+        // tip has no evidence behind it and stays hidden.
+        $tip = $enrichment?->tip;
         $placeFacts = app(PlaceFacts::class)->resolve($this->resource);
         $mapPoint = $placeFacts['location']['map_point'];
         $entrancePoint = $placeFacts['location']['entrance_point'];
@@ -36,7 +43,7 @@ class PlaceResource extends JsonResource
         return [
             'id' => $this->id,
             'recommendation_status' => $this->whenHas('recommendation_available', fn () => $this->recommendation_available ? 'available' : 'unavailable'),
-            'name' => $placeFacts['name']['value'] ?? $this->name,
+            'name' => $placeFacts['display_name'] ?? $placeFacts['name']['value'] ?? $this->name,
             'category' => $coarse,
             'fine_label' => $fine?->label(),
             'emoji' => $fine?->emoji(),
@@ -61,30 +68,53 @@ class PlaceResource extends JsonResource
                 default => null,
             } : null,
             'feature_chips' => $this->resolveFeatureChips($placeFacts['practical']),
-            'tip' => null,
+            'summary' => $enrichment?->summary,
+            'tip' => $tip,
             'tip_is_generic' => false,
             'cluster_size' => (int) ($this->cluster_size ?? 1),
             'activities' => $this->activities ?? [],
+            // A park's own facilities (unnamed pitches, courts, playgrounds inside it), with counts.
+            ...$this->facilities(),
             'transit_hint' => $this->transit_hint ?? null,
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
+            'feedback_been' => (bool) ($this->feedback_been ?? false),
+            'feedback_been_rating' => $this->feedback_been_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
-            'place_facts' => [
-                'identity' => $placeFacts['identity'],
-                'name_kind' => $placeFacts['name_kind'],
-                'aliases' => $placeFacts['aliases'],
-                'location' => $placeFacts['location'],
-                'access' => $placeFacts['access'],
-                'fee' => $placeFacts['fee'],
-                'hours' => $placeFacts['hours'],
-                'contact' => $placeFacts['contact'],
-                'description' => $placeFacts['description'],
-                'negative_facts' => $placeFacts['negative_facts'],
-                'practical' => $placeFacts['practical'],
-                'activities' => $placeFacts['activities'],
-                'conflicts' => $placeFacts['conflicts'],
-                'revision' => $placeFacts['revision'],
-            ],
+            // What it lists, as search filters by it and Composer says it:
+            // "Italian", "Wi-Fi", "outdoor seating", "vegan options".
+            'amenities' => PlaceAmenities::listed($placeFacts['practical']),
+            'place_facts' => $this->placeFacts($placeFacts),
+            // The place sheet (Around here): its kind's icon, and what its
+            // listed hours say at the time asked (OpenNearby::hoursAt).
+            'kind_icon' => AroundKinds::icon($fine?->value ?? ''),
+            'hours_at' => $this->whenHas('hours_at'),
+        ];
+    }
+
+    /**
+     * The full evidence record a detail view shows.
+     *
+     * @param  array<string, mixed>  $placeFacts
+     * @return array<string, mixed>
+     */
+    protected function placeFacts(array $placeFacts): array
+    {
+        return [
+            'identity' => $placeFacts['identity'],
+            'name_kind' => $placeFacts['name_kind'],
+            'aliases' => $placeFacts['aliases'],
+            'location' => $placeFacts['location'],
+            'access' => $placeFacts['access'],
+            'fee' => $placeFacts['fee'],
+            'hours' => $placeFacts['hours'],
+            'contact' => $placeFacts['contact'],
+            'description' => $placeFacts['description'],
+            'negative_facts' => $placeFacts['negative_facts'],
+            'practical' => $placeFacts['practical'],
+            'activities' => $placeFacts['activities'],
+            'conflicts' => $placeFacts['conflicts'],
+            'revision' => $placeFacts['revision'],
         ];
     }
 
@@ -235,5 +265,16 @@ class PlaceResource extends JsonResource
         }
 
         return array_slice($facts, 0, 3);
+    }
+
+    /** @return array{facilities: list<array{kind: string, count: int}>, facilities_text: ?string} */
+    private function facilities(): array
+    {
+        $counts = app(FacilityGroups::class)->counts([(int) $this->id])[(int) $this->id] ?? [];
+
+        return [
+            'facilities' => array_map(fn (string $kind, int $count): array => ['kind' => $kind, 'count' => $count], array_keys($counts), array_values($counts)),
+            'facilities_text' => FacilityGroups::summary($counts),
+        ];
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Services;
 
 use App\Models\CityNews;
+use App\Models\NoticeBrief;
+use App\Transit\NoticeScale;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
  * Aggregates disruption data from multiple sources:
  * 1. KVB Open Data API — live elevator/escalator disruptions
- * 2. city_news table — scraped line disruptions from KVB aktuelles
+ * 2. city_news table — KVB's live service page and news, scraped
  *
  * Feeds the ContextEngine disruption pipeline and transit fallbacks.
  */
@@ -30,31 +33,87 @@ class DisruptionService
     }
 
     /**
-     * Line disruptions from scraped KVB aktuelles/news.
+     * Open KVB notices: the live service page and KVB news, newest first
+     * within each severity.
+     *
+     * @return Collection<int, CityNews>
+     */
+    public function openNotices(): Collection
+    {
+        return CityNews::query()
+            ->where('category', 'transit')
+            // Open: a dated notice until its end, however long the works run;
+            // an undated one for 30 days from when it was published.
+            ->where(fn ($q) => $q->where('expires_at', '>', now())
+                ->orWhere(fn ($undated) => $undated->whereNull('expires_at')->where('published_at', '>', now()->subDays(30))))
+            // Every open notice: a cap left most of KVB's list out, and the
+            // ones that rotated back in were announced again as new.
+            ->orderByRaw("case severity when 'critical' then 4 when 'major' then 3 when 'moderate' then 2 else 1 end desc")
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Line disruptions from scraped KVB aktuelles/news, each with its English
+     * brief when one has been written (null otherwise: show the notice as is).
      *
      * @return array<int, array<string, mixed>>
      */
     public function getLineDisruptions(): array
     {
-        return CityNews::query()
-            ->where('category', 'transit')
-            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-            ->where('published_at', '>', now()->subDays(30))
-            ->orderByDesc('published_at')
-            ->limit(15)
+        $notices = $this->openNotices();
+        $briefs = NoticeBrief::query()
+            ->where('locale', 'en')
+            ->whereIn('input_hash', $notices->map(fn (CityNews $n) => NoticeBrief::hashFor((string) $n->title, $n->summary)))
             ->get()
-            ->map(fn (CityNews $n) => [
-                'id' => 'news_'.$n->id,
-                'title' => $n->title,
-                'description' => $n->summary ?? '',
-                'severity' => $n->severity ?? 'minor',
-                'type' => 'line',
-                'affected_lines' => $n->affected_lines ?? [],
-                'started_at' => $n->published_at->toIso8601String(),
-                'estimated_end' => $n->expires_at?->toIso8601String(),
-                'source' => $n->source,
-            ])
+            ->keyBy('input_hash');
+
+        return $notices
+            ->map(function (CityNews $n) use ($briefs) {
+                $brief = $briefs->get(NoticeBrief::hashFor((string) $n->title, $n->summary));
+                $scale = NoticeScale::of((string) $n->title, $n->summary,
+                    array_map('strval', $n->affected_lines ?? []), $n->severity);
+                // Major from its start to its end: one announced ahead is everyday until then.
+                if ($n->source !== 'kvb-betriebslage' && $n->published_at?->isFuture()) {
+                    $scale = ['scale' => 'minor', 'reasons' => [...$scale['reasons'], 'not_started']];
+                }
+
+                return [
+                    'id' => 'news_'.$n->id,
+                    'title' => $n->title,
+                    'description' => $n->summary ?? '',
+                    'severity' => $n->severity ?? 'minor',
+                    // A major line problem (a headline) or an everyday one (in place), and why.
+                    'scale' => $scale['scale'],
+                    'scale_reasons' => $scale['reasons'],
+                    'type' => 'line',
+                    'affected_lines' => $n->affected_lines ?? [],
+                    // The stops it names (VRS's and DELFI's notices), for a trip's From and To.
+                    'affected_stops' => $n->affected_stops ?? [],
+                    // A live KVB notice's published_at is when it was last seen
+                    // (every scrape); it started when it was first seen.
+                    'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
+                    'estimated_end' => $n->expires_at?->toIso8601String(),
+                    'source' => $n->source,
+                    // KVB's own page for it: the German source, one tap from the brief.
+                    'url' => self::kvbPage($n->source_url),
+                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact, 'kind' => $brief->kind ?? 'brief'] : null,
+                ];
+            })
             ->all();
+    }
+
+    /**
+     * KVB's page a notice was read from; null for anyone else's (a city press
+     * release is not "KVB's notice"). The scraper's `#…` anchors only keep its
+     * rows apart; the page itself has no such element.
+     */
+    public static function kvbPage(?string $url): ?string
+    {
+        $page = $url === null ? '' : strtok($url, '#');
+        $host = is_string($page) && str_starts_with($page, 'https://') ? parse_url($page, PHP_URL_HOST) : null;
+
+        return is_string($host) && preg_match('/(^|\.)kvb\.(koeln|de)$/', $host) === 1 ? $page : null;
     }
 
     /**

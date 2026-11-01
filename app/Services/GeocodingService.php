@@ -10,10 +10,12 @@ class GeocodingService
     /**
      * Search for places using the Photon geocoding API.
      *
-     * @return array<int, array{name: string, street: string|null, city: string|null, lat: float, lng: float}>
+     * @return array<int, array{name: string, street: string|null, city: string|null, lat: float, lng: float, street_name: string|null, housenumber: string|null, postcode: string|null, kind: string|null}>
      */
-    public function search(string $query, float $lat = 50.9375, float $lng = 6.9603): array
+    public function search(string $query, ?float $lat = null, ?float $lng = null): array
     {
+        $lat ??= (float) config('geocoding.search_default.lat');
+        $lng ??= (float) config('geocoding.search_default.lng');
         $cacheKey = 'geocode_'.md5("{$query}_{$lat}_{$lng}");
 
         return Cache::remember($cacheKey, 300, function () use ($query, $lat, $lng) {
@@ -74,6 +76,11 @@ class GeocodingService
                     'city' => $props['city'] ?? $props['county'] ?? null,
                     'lat' => $feature['geometry']['coordinates'][1] ?? 0.0,
                     'lng' => $feature['geometry']['coordinates'][0] ?? 0.0,
+                    // For matching a typed address (AddressLocator).
+                    'street_name' => $street,
+                    'housenumber' => $houseNumber,
+                    'postcode' => $props['postcode'] ?? null,
+                    'kind' => $props['type'] ?? null,
                 ];
             })
             ->unique(fn (array $result) => "{$result['name']}|{$result['street']}|{$result['city']}")

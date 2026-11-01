@@ -4,9 +4,14 @@ use App\Jobs\ProcessEventJob;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\Venue;
+use App\Services\ClassificationRefused;
 use App\Services\ClassifiesEvents;
 use App\Services\VenueResolver;
 use Illuminate\Support\Facades\DB;
+
+beforeEach(function () {
+    config()->set('events.classification.enabled', true);
+});
 
 function fakeClassifier(array $result): object
 {
@@ -29,6 +34,10 @@ function fakeClassifier(array $result): object
                 throw new RuntimeException('Malformed classifier output');
             }
 
+            if (($this->result['__refuse'] ?? false) === true) {
+                throw new ClassificationRefused('Classifier declined: general_harms');
+            }
+
             return $this->result;
         }
     };
@@ -43,7 +52,7 @@ function classification(array $overrides = []): array
     return array_merge([
         'relevance' => 0.9,
         'confidence' => 0.95,
-        'category' => 'language_exchange',
+        'category' => 'meet_people',
         'language' => 'mixed',
         'chips' => ['English-friendly', 'free'],
         'title_en' => 'Language night',
@@ -52,6 +61,27 @@ function classification(array $overrides = []): array
         'tip_en' => 'Come early.',
     ], $overrides);
 }
+
+test('disabled classification skips the model but keeps deterministic enrichment', function () {
+    fakeClassifier(classification(['__throw' => true]));
+    config()->set('events.classification.enabled', false);
+
+    $event = Event::factory()->create([
+        'title' => 'English newcomer meetup',
+        'is_free' => true,
+        'location_name' => null,
+        'address' => null,
+        'summary_en' => null,
+    ]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    $event->refresh();
+    expect($event->is_expat_relevant)->toBeTrue()
+        ->and($event->tags)->toContain('free')
+        ->and($event->title_en)->toBeNull()
+        ->and($event->summary_en)->toBeNull();
+});
 
 test('a confident classification stores every AI field once', function () {
     fakeClassifier(classification());
@@ -63,7 +93,7 @@ test('a confident classification stores every AI field once', function () {
     expect($event->title_en)->toBe('Language night');
     expect($event->description_en)->toBe('A complete English translation of the source description.');
     expect($event->summary_en)->toBe('Our own short words. Two sentences max.');
-    expect($event->category)->toBe('language_exchange');
+    expect($event->category)->toBe('meet_people');
     expect($event->language)->toBe('mixed');
     expect($event->chips)->toBe(['English-friendly', 'free']);
     expect($event->relevance)->toBe(0.9);
@@ -71,14 +101,15 @@ test('a confident classification stores every AI field once', function () {
 });
 
 test('low confidence drops the chips and flags review', function () {
-    fakeClassifier(classification(['confidence' => 0.5, 'chips' => ['English-friendly']]));
-    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null]);
+    fakeClassifier(classification(['confidence' => 0.5, 'chips' => ['English-friendly'], 'category' => 'party']));
+    $event = Event::factory()->create(['summary_en' => null, 'location_name' => null, 'category' => 'culture']);
 
     (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
 
     $event->refresh();
     expect($event->needs_review)->toBeTrue();
     expect($event->chips)->toBe([]); // unsure chip dropped, never guessed
+    expect($event->category)->toBe('culture'); // the source's category, not the unsure guess
     expect($event->summary_en)->not->toBeNull(); // translation still kept
 });
 
@@ -236,4 +267,21 @@ test('events:import-manual upserts the curated catalogue with recurring rules', 
     expect($exchange->relevance)->toBe(1.0);
     expect($exchange->venue->name)->toBe('Gilden im Zims');
     expect(Event::where('source', 'manual')->whereNotNull('recurrence')->count())->toBeGreaterThanOrEqual(2);
+});
+
+test('a refused event is parked for review and not re-billed until its source changes', function () {
+    $fake = fakeClassifier(['__refuse' => true]);
+    $event = Event::factory()->create(['title_en' => null, 'summary_en' => null, 'location_name' => null]);
+
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(1);
+    expect($event->refresh()->needs_review)->toBeTrue();
+    expect($event->title_en)->toBeNull();
+
+    $event->update(['title' => 'Changed source title']);
+    (new ProcessEventJob($event))->handle(app(ClassifiesEvents::class));
+
+    expect($fake->calls)->toBe(2);
 });

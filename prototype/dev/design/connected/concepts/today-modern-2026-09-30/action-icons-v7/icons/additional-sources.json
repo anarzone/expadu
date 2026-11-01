@@ -1,0 +1,27 @@
+{
+  "family": "Phosphor Regular",
+  "retrieved_at": "2026-09-30",
+  "license": "MIT",
+  "assets": [
+    {
+      "file": "info.svg",
+      "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/info.svg",
+      "sha256": "438a1f319d53d86e840af73fb7b1d224c9224a437b9fa449a4e2cb45a82a3552"
+    },
+    {
+      "file": "map-trifold.svg",
+      "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/map-trifold.svg",
+      "sha256": "2de856029430ca68cfd9c1d8c8c45255c8d998d7716630d362c1eec153548da6"
+    },
+    {
+      "file": "folder-open.svg",
+      "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/folder-open.svg",
+      "sha256": "9157518d00547242d3986c4fdaaf44a62ef056caf3ecee0c88137529947170ea"
+    },
+    {
+      "file": "signpost.svg",
+      "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/signpost.svg",
+      "sha256": "f9b4d04cc8d4ff89a83630c8782b625a200762d94ce982da9bb31246d5df32ff"
+    }
+  ]
+}

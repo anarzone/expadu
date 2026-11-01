@@ -14,6 +14,10 @@ use Illuminate\Support\Collection;
  * place — the persistent half of place feedback. The transient ranking signal
  * is emitted separately as a user_event (see IntentWeights); this table powers
  * discovery suppression and the (later) saved/been views.
+ *
+ * `state` is one choice (Saved, More like this, Not interested) or null;
+ * "Been there" is separate (`been_at`, `been_rating`), so a place can be
+ * saved and been to, and each clears on its own. A row with neither is deleted.
  */
 class SpotFeedback extends Model
 {
@@ -22,7 +26,7 @@ class SpotFeedback extends Model
 
     protected $table = 'spot_feedback';
 
-    protected $fillable = ['user_id', 'spot_id', 'state', 'rating'];
+    protected $fillable = ['user_id', 'spot_id', 'state', 'rating', 'been_at', 'been_rating'];
 
     /** @return Collection<int, SpotFeedback> */
     public static function effectiveForUser(int $userId, ?int $canonicalId = null): Collection
@@ -43,7 +47,37 @@ class SpotFeedback extends Model
      */
     protected function casts(): array
     {
-        return ['state' => SpotFeedbackState::class];
+        return ['state' => SpotFeedbackState::class, 'been_at' => 'immutable_datetime'];
+    }
+
+    public function been(): bool
+    {
+        return $this->been_at !== null;
+    }
+
+    /**
+     * What the place payloads carry: `feedback_state` / `feedback_rating` as
+     * older clients read them (Been shows only when no choice is set), plus
+     * Been on its own.
+     *
+     * @return array{feedback_state: ?string, feedback_rating: ?string, feedback_been: bool, feedback_been_rating: ?string}
+     */
+    public static function forPlace(?self $row): array
+    {
+        $been = $row?->been() ?? false;
+
+        return [
+            'feedback_state' => $row?->state?->value ?? ($been ? SpotFeedbackState::Been->value : null),
+            'feedback_rating' => $row?->state === null && $been ? $row->been_rating : null,
+            'feedback_been' => $been,
+            'feedback_been_rating' => $been ? $row->been_rating : null,
+        ];
+    }
+
+    /** Hidden from discovery feeds (Today's "open near"): been to, or not for them. */
+    public function hiddenFromDiscovery(): bool
+    {
+        return $this->been() || $this->state === SpotFeedbackState::NotInterested;
     }
 
     /** @return BelongsTo<User, $this> */

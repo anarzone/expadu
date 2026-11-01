@@ -1,0 +1,88 @@
+{
+    "name": "account-sent",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/account/#sent",
+        "init": [
+            "/* Leaves out the mock's \"Sample: open the link\" (its stand-in for the emailed link; the app has none). */ addEventListener('DOMContentLoaded', () => { const style = document.createElement('style'); style.textContent = '.account-body > a.account-quiet:last-child { display: none; }'; document.head.append(style); });"
+        ],
+        "wait": ".account-message"
+    },
+    "app": {
+        "url": "/forgot-password",
+        "init": [
+            "addEventListener('DOMContentLoaded', () => { const tick = setInterval(() => { const inputs = [\"email\"].map((id) => document.getElementById(id)); if (inputs.some((el) => !el)) return; clearInterval(tick); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; const values = [\"you@example.com\"]; inputs.forEach((el, i) => { set.call(el, values[i]); el.dispatchEvent(new Event('input', { bubbles: true })); }); inputs[0].form.requestSubmit(); }, 50); });"
+        ],
+        "wait": ".account-message"
+    },
+    "pairs": [
+        {
+            "name": "street",
+            "mock": ".account-street",
+            "app": ".account-street",
+            "ignore": ["background-image"],
+            "reason": "The same picture at its own address on each side: the mock’s account/street.webp, copied into the app’s public/images/account/. Its pixels are compared."
+        },
+        {
+            "name": "top",
+            "mock": ".account-top",
+            "app": ".account-top"
+        },
+        {
+            "name": "brand",
+            "mock": ".account-brand",
+            "app": ".account-brand"
+        },
+        {
+            "name": "brand mark",
+            "mock": ".account-brand svg",
+            "app": ".account-brand svg"
+        },
+        {
+            "name": "switch",
+            "mock": ".account-switch",
+            "app": ".account-switch"
+        },
+        {
+            "name": "poster",
+            "mock": ".account-poster",
+            "app": ".account-poster"
+        },
+        {
+            "name": "label",
+            "mock": ".account-label",
+            "app": ".account-label"
+        },
+        {
+            "name": "heading",
+            "mock": ".account-poster h1",
+            "app": ".account-poster h1"
+        },
+        {
+            "name": "back",
+            "mock": ".account-back",
+            "app": ".account-back"
+        },
+        {
+            "name": "on its way",
+            "mock": ".account-message",
+            "app": ".account-message"
+        },
+        {
+            "name": "mail mark",
+            "mock": ".account-message svg",
+            "app": ".account-message svg"
+        },
+        {
+            "name": "on its way text",
+            "mock": ".account-message span",
+            "app": ".account-message span"
+        },
+        {
+            "name": "Send it again",
+            "mock": ".account-secondary",
+            "app": ".account-secondary"
+        }
+    ]
+}

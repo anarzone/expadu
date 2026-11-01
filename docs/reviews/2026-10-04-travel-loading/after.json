@@ -1,0 +1,43 @@
+{
+  "base": "http://127.0.0.1:8765",
+  "rounds": [
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 25
+    },
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 2
+    },
+    {
+      "concurrency": 6,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 3
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 19
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 10
+    },
+    {
+      "concurrency": 24,
+      "requests": 40,
+      "failures": [],
+      "slowest_ms": 7
+    }
+  ],
+  "requests": 240,
+  "failures": 0
+}

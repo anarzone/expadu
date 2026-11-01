@@ -1,0 +1,161 @@
+/* A local, explicitly simulated journey. Separate from proposals and saved plans. */
+(function (root) {
+    const key = 'expadu.journey-preview.v1';
+    let memory = null;
+    let memoryOnly = false;
+    const clock = (value) =>
+        typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+    // The trip's own steps and arrival, so Composer can answer about the
+    // trip you're on without Travel's timetable (composer-studio/app.js).
+    function stepsOf(list) {
+        if (!Array.isArray(list) || !list.length || list.length > 32)
+            return null;
+        const steps = list.map((step) =>
+            step &&
+            clock(step.time) &&
+            ['walk', 'transit', 'ride', 'alight', 'arrive', 'bike'].includes(
+                step.mode,
+            )
+                ? {
+                      time: step.time,
+                      mode: step.mode,
+                      title: String(step.title || '').slice(0, 120),
+                      detail: String(step.detail || '').slice(0, 120),
+                      place: String(step.place || '').slice(0, 80),
+                  }
+                : null,
+        );
+        return steps.every(Boolean) ? steps : null;
+    }
+    function normalize(record) {
+        if (
+            !record ||
+            record.version !== 1 ||
+            typeof record.routeId !== 'string' ||
+            !/^[\w-]{1,40}$/.test(record.routeId)
+        )
+            return null;
+        if (
+            !Number.isInteger(record.step) ||
+            record.step < 0 ||
+            record.step > 31
+        )
+            return null;
+        if (
+            record.boardingStop != null &&
+            (typeof record.boardingStop !== 'string' ||
+                !/^[\w-]{1,40}$/.test(record.boardingStop))
+        )
+            return null;
+        return {
+            version: 1,
+            routeId: record.routeId,
+            step: record.step,
+            ...(record.boardingStop != null
+                ? { boardingStop: record.boardingStop }
+                : {}),
+            title: String(record.title || 'Your journey').slice(0, 120),
+            instruction: String(record.instruction || '').slice(0, 160),
+            mode: ['transit', 'walk', 'bike'].includes(record.mode)
+                ? record.mode
+                : 'transit',
+            condition: ['normal', 'location', 'offline', 'changed'].includes(
+                record.condition,
+            )
+                ? record.condition
+                : 'normal',
+            ...(clock(record.arrive) ? { arrive: record.arrive } : {}),
+            ...(['tram', 'bus', 'train', 'line'].includes(record.vehicle)
+                ? { vehicle: record.vehicle }
+                : {}),
+            ...(typeof record.line === 'string' && /^[\w-]{1,8}$/.test(record.line)
+                ? { line: record.line }
+                : {}),
+            ...(stepsOf(record.steps) ? { steps: stepsOf(record.steps) } : {}),
+        };
+    }
+    function read() {
+        if (memoryOnly) return memory && { ...memory };
+        try {
+            memory = normalize(JSON.parse(localStorage.getItem(key)));
+        } catch {
+            /* Keep the current session if storage is unavailable. */
+        }
+        return memory && { ...memory };
+    }
+    function write(value) {
+        memory = value === null ? null : normalize({ ...value, version: 1 });
+        let persisted = true;
+        try {
+            if (memory) localStorage.setItem(key, JSON.stringify(memory));
+            else localStorage.removeItem(key);
+        } catch {
+            persisted = false;
+        }
+        memoryOnly = !persisted;
+        root.dispatchEvent?.(
+            new CustomEvent('expadu:journey-preview', {
+                detail: { persisted },
+            }),
+        );
+        return persisted;
+    }
+    const api = { read, write, normalize };
+    root.JourneySession = api;
+    if (typeof module !== 'undefined') module.exports = api;
+    if (typeof document === 'undefined') return;
+    const base = new URL('../departures-next/', document.currentScript.src);
+    const bar = document.createElement('a');
+    bar.className = 'journey-resume';
+    bar.hidden = true;
+    const host =
+        document.querySelector('.page-navigation') ||
+        document.querySelector('#shell') ||
+        document.querySelector('.service-nav, .services');
+    if (!host) return;
+    host.insertAdjacentElement('afterend', bar);
+    const escape = (value) =>
+        String(value).replace(
+            /[&<>"']/g,
+            (c) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[c],
+        );
+    function sync() {
+        const record = read();
+        bar.hidden = !record;
+        if (!record) return;
+        const url = new URL(base);
+        url.searchParams.set('journey', 'resume');
+        bar.href = url.href;
+        bar.setAttribute(
+            'aria-label',
+            `Back to your trip to ${record.title}, step ${record.step + 1}`,
+        );
+        // As Travel shows a trip you've started: the line's badge in its KVB
+        // colour (departures-next/labels.js) and Back to your trip (owner,
+        // 18 Oct 2026: trips look like Travel everywhere).
+        const L = root.TravelLabels;
+        const kind = record.vehicle === 'bus' ? 'bus' : 'tram';
+        const lead =
+            record.line && L
+                ? L.line(record.line, L.look(record.line, kind), { kind })
+                : root.ExpaduIcon?.(record.mode === 'transit' ? 'train' : record.mode) || '';
+        bar.innerHTML = `${lead}<span><strong>${escape(record.title)}</strong><small>On your way · ${escape(record.instruction)}</small></span><span class="journey-resume-go"><span>Back to your trip</span><span aria-hidden="true">Your trip</span></span>`;
+    }
+    bar.addEventListener('click', (event) => {
+        if (root.JourneyNavigation) {
+            event.preventDefault();
+            root.JourneyNavigation.resume();
+        }
+    });
+    root.addEventListener('expadu:journey-preview', sync);
+    root.addEventListener('storage', sync);
+    root.addEventListener('pageshow', sync);
+    sync();
+})(globalThis);

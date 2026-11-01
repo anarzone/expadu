@@ -1,0 +1,87 @@
+{
+    "name": "account-check-email",
+    "seed": "php artisan db:seed --class=\"Database\\Seeders\\MockSample\\AccountSeeder\"",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/account/#check-email",
+        "init": [
+            "sessionStorage.setItem('expadu-account-email', 'new.arrival@example.com')",
+            "/* Leaves out the mock's \"Sample: open the link\" (its stand-in for the emailed link; the app has none). */ addEventListener('DOMContentLoaded', () => { const style = document.createElement('style'); style.textContent = '.account-body > a.account-quiet:last-child { display: none; }'; document.head.append(style); });"
+        ],
+        "wait": ".account-mail"
+    },
+    "app": {
+        "url": "/email/verify",
+        "wait": ".account-mail",
+        "login": {
+            "email": "new.arrival@example.com",
+            "password": "check-email-password",
+            "own": true
+        }
+    },
+    "pairs": [
+        {
+            "name": "street",
+            "mock": ".account-street",
+            "app": ".account-street",
+            "ignore": ["background-image"],
+            "reason": "The same picture at its own address on each side: the mock’s account/street.webp, copied into the app’s public/images/account/. Its pixels are compared."
+        },
+        {
+            "name": "top",
+            "mock": ".account-top",
+            "app": ".account-top"
+        },
+        {
+            "name": "brand",
+            "mock": ".account-brand",
+            "app": ".account-brand"
+        },
+        {
+            "name": "brand mark",
+            "mock": ".account-brand svg",
+            "app": ".account-brand svg"
+        },
+        {
+            "name": "switch",
+            "mock": ".account-switch",
+            "app": ".account-switch"
+        },
+        {
+            "name": "poster",
+            "mock": ".account-poster",
+            "app": ".account-poster"
+        },
+        {
+            "name": "label",
+            "mock": ".account-label",
+            "app": ".account-label"
+        },
+        {
+            "name": "heading",
+            "mock": ".account-poster h1",
+            "app": ".account-poster h1"
+        },
+        {
+            "name": "where it went",
+            "mock": ".account-mail",
+            "app": ".account-mail"
+        },
+        {
+            "name": "note",
+            "mock": ".account-note",
+            "app": ".account-note"
+        },
+        {
+            "name": "Send the link again",
+            "mock": ".account-secondary",
+            "app": ".account-secondary"
+        },
+        {
+            "name": "Wrong email? Start again",
+            "mock": ".account-quiet",
+            "app": ".account-quiet"
+        }
+    ]
+}

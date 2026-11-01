@@ -1,0 +1,12 @@
+{
+  "focusedTests": 49,
+  "focusedPassed": 49,
+  "baselineComparison": {
+    "prototype/dev/design/today-c/index.html": false,
+    "prototype/dev/design/today-c/app.js": true,
+    "prototype/dev/design/places-next/index.html": true,
+    "prototype/dev/design/places-optional/index.html": true,
+    "prototype/dev/design/places-optional/app.js": true
+  },
+  "note": "Shared prototype files are being edited concurrently. Baseline hashes are diagnostic only; do not revert other work to satisfy them. This revision changes only the separate guide, its allowed return route/test and relevant cache references."
+}

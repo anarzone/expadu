@@ -1,0 +1,103 @@
+@import url('../connected/tokens.css');
+/* Place discovery and Saved use the same photo-optional cards. */
+.place-idea {
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border: 1px solid var(--line, #d6e4e8);
+}
+.place-idea-heading,
+.place-idea-heading > span,
+.place-idea-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.place-idea-heading {
+    justify-content: space-between;
+    min-height: 44px;
+    margin-bottom: 14px;
+    color: var(--muted, #60747b);
+    font-size: var(--text-small);
+}
+.place-idea-heading > span > svg {
+    box-sizing: content-box;
+    width: 23px;
+    height: 23px;
+    padding: 9px;
+    color: var(--ink, #222219);
+    background: var(--color-select-bg);
+    border-radius: var(--radius-lg);
+}
+.place-idea .studio-bookmark {
+    position: static;
+    flex: none;
+    color: var(--ink, #222219);
+    border-radius: var(--radius-round);
+}
+.place-idea .studio-bookmark::before {
+    display: none;
+}
+.place-idea .studio-bookmark:hover,
+.place-idea .studio-bookmark[aria-pressed='true'] {
+    background: var(--color-select-bg);
+}
+.place-idea-content {
+    flex: 1;
+    min-width: 0;
+}
+.place-idea-photo {
+    float: right;
+    width: 80px;
+    height: 80px;
+    margin: 0 0 12px 16px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+}
+.place-idea h3 {
+    margin: 0 0 10px;
+    font-size: var(--text-title);
+    line-height: 1.18;
+    letter-spacing: -0.5px;
+    overflow-wrap: anywhere;
+}
+.place-idea-area,
+.place-idea-fact,
+.place-idea-check {
+    font-size: var(--text-small);
+    line-height: 1.5;
+    margin: 6px 0;
+    color: var(--muted, #60747b);
+}
+.place-idea-area svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+}
+.place-idea-fact {
+    clear: both;
+    color: var(--ink, #222219);
+}
+.place-idea .card-actions {
+    clear: both;
+    gap: 8px;
+    margin-top: 16px;
+    align-items: center;
+}
+.place-idea .card-actions > button {
+    min-height: 44px;
+    font-size: var(--text-small);
+}
+.place-idea button:focus-visible {
+    outline: 2px solid var(--shell-focus, #316d7d);
+    outline-offset: -3px;
+}
+@media (max-width: 700px) {
+    .discovery-grid:has(.place-idea) {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .place-idea h3 {
+        font-size: var(--text-title-sm);
+    }
+}

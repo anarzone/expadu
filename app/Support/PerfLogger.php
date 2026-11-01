@@ -16,6 +16,9 @@ class PerfLogger
 
     private const KEY_PREFIX = 'perf:';
 
+    /** Every recorded key, so keys() never has to scan Redis with KEYS. */
+    private const INDEX_KEY = 'perf:index';
+
     /**
      * Time a callable, record outcome, return its value.
      *
@@ -48,13 +51,26 @@ class PerfLogger
      */
     public static function record(string $key, array $data): void
     {
+        // Sampled (config app.perf_sample_rate): percentiles hold, counts are
+        // a fraction of real traffic.
+        $rate = (float) config('app.perf_sample_rate', 1.0);
+        if ($rate < 1.0 && mt_rand() / mt_getrandmax() >= $rate) {
+            return;
+        }
+
         try {
             $now = now()->timestamp;
             $data['at'] = $now;
             $fullKey = self::KEY_PREFIX.$key;
-            Redis::zadd($fullKey, $now, (string) json_encode($data));
-            Redis::zremrangebyscore($fullKey, 0, $now - self::TTL);
-            Redis::expire($fullKey, self::TTL);
+
+            // One round trip instead of one per command.
+            Redis::pipeline(function ($pipe) use ($fullKey, $key, $now, $data) {
+                $pipe->zadd($fullKey, $now, (string) json_encode($data));
+                $pipe->zremrangebyscore($fullKey, 0, $now - self::TTL);
+                $pipe->expire($fullKey, self::TTL);
+                $pipe->sadd(self::INDEX_KEY, $key);
+                $pipe->expire(self::INDEX_KEY, self::TTL);
+            });
         } catch (Throwable) {
             // Redis unavailable — telemetry is best-effort, never break the request
         }
@@ -78,24 +94,22 @@ class PerfLogger
     }
 
     /**
-     * All known telemetry keys (without the perf: prefix).
+     * All known telemetry keys (without the perf: prefix). Keys whose entries
+     * have all expired are dropped from the index on the way out.
      *
      * @return array<int, string>
      */
     public static function keys(): array
     {
         try {
-            $raw = (array) Redis::keys(self::KEY_PREFIX.'*');
-            $configPrefix = (string) config('database.redis.options.prefix', '');
+            $keys = array_values(array_map('strval', (array) Redis::smembers(self::INDEX_KEY)));
+            $gone = array_values(array_filter($keys, fn (string $key) => ! Redis::exists(self::KEY_PREFIX.$key)));
 
-            return array_values(array_map(function ($k) use ($configPrefix) {
-                $k = (string) $k;
-                if ($configPrefix !== '' && str_starts_with($k, $configPrefix)) {
-                    $k = substr($k, strlen($configPrefix));
-                }
+            if ($gone !== []) {
+                Redis::srem(self::INDEX_KEY, ...$gone);
+            }
 
-                return str_starts_with($k, self::KEY_PREFIX) ? substr($k, strlen(self::KEY_PREFIX)) : $k;
-            }, $raw));
+            return array_values(array_diff($keys, $gone));
         } catch (Throwable) {
             return [];
         }

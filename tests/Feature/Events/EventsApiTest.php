@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Notifications\EventOccurrenceReminder;
 use App\Services\UserLocationService;
+use App\Support\EventOccurrencePresenter;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -34,6 +35,7 @@ test('today window returns chronological occurrences with server-built meta', fu
     $venue = makeVenue();
     Event::factory()->create([
         'title' => 'Sprachabend', 'title_en' => 'Language night',
+        'description' => 'Deutsch und Englisch sprechen bei einem Getränk.',
         'starts_at' => '2026-06-12 19:00:00', 'ends_at' => '2026-06-12 22:00:00',
         'recurrence' => null,
         'category' => 'language_exchange', 'chips' => ['English-friendly'],
@@ -52,7 +54,7 @@ test('today window returns chronological occurrences with server-built meta', fu
     expect($data[1]['title'])->toBe('Language night');
     expect($data[1]['meta'])->toBe('Tonight 19:00–22:00 · Gilden im Zims · Altstadt-Nord');
     expect($data[1]['chips'])->toBe(['English-friendly', 'free']); // free chip derived
-    expect($data[1]['category'])->toBe('language_exchange');
+    expect($data[1]['category'])->toBe('meet_people');
 });
 
 test('today includes events already in progress but excludes events that finished', function () {
@@ -203,7 +205,7 @@ test('placeholder venue text is never shown as a venue', function () {
     expect($data[0]['meta'])->not->toContain('Siehe');
 });
 
-test('an unreviewed legacy place photo never richens an event card', function () {
+test('an unmanaged venue place photo stays private', function () {
     $place = Spot::factory()->create([
         'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
         'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
@@ -272,7 +274,7 @@ test('weekend window catches a weekly recurring stammtisch', function () {
     expect($data[0]['recurrence_text'])->toBe('Every Saturday');
 });
 
-test('weekend means the upcoming weekend when requested on Sunday', function () {
+test('weekend retains remaining Sunday events when requested on Sunday', function () {
     $this->travelTo(CarbonImmutable::parse('2026-06-14 12:00', 'Europe/Berlin'));
 
     Event::factory()->create([
@@ -293,10 +295,10 @@ test('weekend means the upcoming weekend when requested on Sunday', function () 
 
     $response = $this->getJson('/api/events?window=weekend')->assertOk();
 
-    expect($response->json('window.from'))->toContain('2026-06-20T00:00:00')
-        ->and($response->json('window.to'))->toContain('2026-06-21T23:59:59')
+    expect($response->json('window.from'))->toContain('2026-06-14T00:00:00')
+        ->and($response->json('window.to'))->toContain('2026-06-14T23:59:59')
         ->and(collect($response->json('data'))->pluck('title')->all())
-        ->toBe(['Next Saturday', 'Next Sunday']);
+        ->toBe(['This Sunday']);
 });
 
 test('category, veedel and free filters compose', function () {
@@ -308,10 +310,10 @@ test('category, veedel and free filters compose', function () {
     Event::factory()->create(['title' => 'Not free', 'starts_at' => '2026-06-12 19:00:00', 'recurrence' => null, 'category' => 'language_exchange', 'is_free' => false, 'price_text' => '€10', 'venue_id' => $ehrenfeld->id]);
     Event::factory()->create(['title' => 'Wrong category', 'starts_at' => '2026-06-12 20:00:00', 'recurrence' => null, 'category' => 'party', 'is_free' => true, 'venue_id' => $ehrenfeld->id]);
 
-    $data = $this->getJson('/api/events?window=today&category=language_exchange&veedel=Ehrenfeld&free=1')
+    $data = $this->getJson('/api/events?window=today&category=meet_people&veedel=Ehrenfeld&free=1')
         ->assertOk()->json('data');
 
-    // legacy 'language' rows match the language_exchange filter
+    // legacy 'language' rows match the Meet people filter
     expect($data)->toHaveCount(1);
     expect($data[0]['title'])->toBe('Match A');
 });
@@ -395,4 +397,28 @@ test('due reminders are delivered once through the notification channel', functi
         1,
     );
     expect($reminder->refresh()->sent_at)->not->toBeNull();
+});
+
+test('an unreviewed legacy place photo never richens an event card', function () {
+    $place = Spot::factory()->create([
+        'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $venue = makeVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
+
+    expect($data[0]['photo_url'])->toBeNull();
+    expect($data[0]['photo_attribution'])->toBeNull();
+});
+
+test('the free chip shows only when the price fields say free', function () {
+    $presenter = app(EventOccurrencePresenter::class);
+    $guessed = Event::factory()->make(['chips' => ['free', 'solo-OK'], 'is_free' => false, 'price_text' => null, 'description' => 'Gern auch allein kommen.']);
+    $free = Event::factory()->make(['chips' => [], 'is_free' => true]);
+
+    expect($presenter->chips($guessed))->toBe(['solo-OK'])
+        ->and($presenter->chips($free))->toBe(['free']);
 });

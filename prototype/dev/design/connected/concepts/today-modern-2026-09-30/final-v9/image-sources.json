@@ -1,0 +1,49 @@
+{
+  "method": "built-in image_gen",
+  "created_at": "2026-09-30",
+  "purpose": "Final static Today concept: meaningful identifiers with direct opening",
+  "outputs": [
+    {
+      "file": "01-everyday.png",
+      "reference": "../direct-actions-v8/01-everyday.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-9565b365-d92e-4fba-a542-13e6a3af8e5e.png",
+      "sha256": "fde3302bdb94a5874b942f514fc4879ba96223f6d937cb02f48d8336b241a931",
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "file": "02-important-event.png",
+      "reference": "../direct-actions-v8/02-important-event.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-0c9224d6-4d1b-4153-824b-5b52735d9a98.png",
+      "sha256": "89f2160fafe7afa340bc95e91182b4d8905f60fa3f89c98b034de8df2c770e4d",
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "file": "03-route-delay.png",
+      "reference": "../direct-actions-v8/03-route-delay.png",
+      "first_pass": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-88e6e093-e434-416d-bb1b-6e26cec4d4f3.png",
+      "refinement": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-3aa38076-c3b6-45f6-94b5-c406d9540b6d.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-34ee37b4-f105-48ac-82b6-794d816d22a0.png",
+      "sha256": "32f47a35d680ea86b31e2308a6ba5a2991cb4cf8710e584883d0dbf799b07b1f",
+      "dimensions": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "file": "04-interactions.png",
+      "reference": "../direct-actions-v8/04-interactions.png",
+      "final_source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-48a3cc18-1407-42bf-9542-04c53d9fed24.png",
+      "sha256": "de85e3241801360870bbdd3ea9827f337127ac2c3cb0af271f12bfecdacc6dae",
+      "dimensions": [
+        1024,
+        1536
+      ]
+    }
+  ]
+}

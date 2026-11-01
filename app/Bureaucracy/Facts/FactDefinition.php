@@ -6,6 +6,8 @@ use DomainException;
 
 final readonly class FactDefinition
 {
+    public const Sources = ['manual', 'onboarding', 'ai_extracted_user_confirmed', 'attributed_report', 'legacy_profile'];
+
     /**
      * @param  list<string>  $options
      * @param  array<string, string>  $legacyValues
@@ -20,11 +22,25 @@ final readonly class FactDefinition
         public int $priority,
         public int $reconfirmAfterDays,
         public array $legacyValues = [],
+        public ?string $dateSemantics = null,
+        public string $subjectScope = 'person',
+        public bool $allowsNotApplicable = false,
+        public array $permissibleSources = self::Sources,
     ) {}
 
     public function normalize(mixed $value): mixed
     {
         if ($this->type !== 'enum') {
+            $valid = match ($this->type) {
+                'date' => ($this->dateSemantics === 'historical' ? CalendarDate::historical($value) : CalendarDate::parse($value)) !== null,
+                'integer' => is_int($value) && $value >= 0,
+                'boolean' => is_bool($value),
+                default => false,
+            };
+            if (! $valid) {
+                throw new DomainException("Value for fact [{$this->key}] does not match its registered type or date meaning.");
+            }
+
             return $value;
         }
 

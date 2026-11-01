@@ -1,0 +1,104 @@
+<?php
+
+/*
+| The account and its utility pages (session 1): alerts, preferences,
+| places, the situation profile, and the dev references.
+| Loaded inside the app's auth + verified + app-writes group in
+| routes/web.php.
+*/
+
+use App\Http\Controllers\AiBriefsController;
+use App\Http\Controllers\AlertController;
+use App\Http\Controllers\Api\LocationConfirmController;
+use App\Http\Controllers\Api\SignalController;
+use App\Http\Controllers\Api\TasteProfileController;
+use App\Http\Controllers\Api\TodayNeedSignalController;
+use App\Http\Controllers\Api\TrackEventController;
+use App\Http\Controllers\Api\TransportModeController;
+use App\Http\Controllers\EmailConfirmationController;
+use App\Http\Controllers\MuteController;
+use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\ProfilePageController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\TodayRankController;
+use App\Http\Controllers\UserPlaceController;
+use App\Http\Controllers\UserSettingController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::post('api/track', TrackEventController::class)->name('api.track');
+// Personalisation ledger: impressions and detail views only (opt-in; dropped otherwise).
+Route::post('api/signals', SignalController::class)->middleware('throttle:signals')->name('api.signals');
+// Today's "Needs you": shown, tapped, dismissed, kept, undone (TodayNeeds, SignalRecorder::need).
+Route::post('api/signals/needs', TodayNeedSignalController::class)->middleware('throttle:signals')->name('api.signals.needs');
+// The person's taste profile: read, edit or delete it (opt-in only).
+Route::middleware('throttle:taste-profile')->controller(TasteProfileController::class)->group(function () {
+    Route::get('api/taste-profile', 'show')->name('api.taste-profile.show');
+    Route::put('api/taste-profile', 'update')->name('api.taste-profile.update');
+    Route::delete('api/taste-profile', 'destroy')->name('api.taste-profile.destroy');
+});
+Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');
+Route::post('api/preferences/transport-mode', TransportModeController::class)->name('api.preferences.transport-mode');
+
+// Confirm it's you with an emailed code, where password.confirm asks an
+// account that has no password (EXP-174).
+Route::post('user/confirm-email/code', [EmailConfirmationController::class, 'send'])
+    ->middleware('throttle:email-confirmation')->name('email-confirmation.send');
+Route::post('user/confirm-email', [EmailConfirmationController::class, 'confirm'])
+    ->middleware('throttle:10,1')->name('email-confirmation.confirm');
+
+// The shared primitives (components/ui), for checking against the mock.
+// Visible on local + staging, hidden on production. Staging runs
+// APP_ENV=production, so gate on the host.
+Route::get('dev/primitives', function () {
+    abort_if(
+        app()->isProduction() && ! str_contains((string) request()->getHost(), 'staging'),
+        404,
+    );
+
+    return Inertia::render('dev/primitives');
+})->name('dev.primitives');
+
+// Alerts
+Route::get('alerts', [AlertController::class, 'index'])->name('alerts');
+Route::post('alerts/{alert}/read', [AlertController::class, 'markRead'])->name('alerts.read');
+Route::post('alerts/read-all', [AlertController::class, 'markAllRead'])->name('alerts.read-all');
+Route::post('alerts/{alert}/dismiss', [AlertController::class, 'dismiss'])->name('alerts.dismiss');
+
+// Mute + thumbs-down (Roadmap #6 + #7)
+Route::get('mutes', [MuteController::class, 'index'])->name('mutes.index');
+Route::post('mutes', [MuteController::class, 'store'])->name('mutes.store');
+Route::delete('mutes', [MuteController::class, 'destroy'])->name('mutes.destroy');
+Route::post('mutes/thumbs-down', [MuteController::class, 'thumbsDown'])->name('mutes.thumbs-down');
+
+// Push subscriptions
+Route::post('push/status', [PushSubscriptionController::class, 'status'])->name('push.status');
+Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
+// Notification preferences
+Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
+Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+// AI-written day briefs: opt-in, its own notice (ProcessingPurpose::NotificationBrief).
+Route::get('notification-preferences/ai-briefs', [AiBriefsController::class, 'show'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.show');
+Route::put('notification-preferences/ai-briefs', [AiBriefsController::class, 'update'])->middleware('throttle:privacy-processing')->name('notification-preferences.ai-briefs.update');
+// Today put in order by AI, again after its notice changed (TodayRankPause): agree, or not now for a week.
+Route::put('today-rank', [TodayRankController::class, 'update'])->middleware('throttle:privacy-processing')->name('today-rank.update');
+Route::post('today-rank/later', [TodayRankController::class, 'later'])->name('today-rank.later');
+
+// User settings
+Route::get('user-settings', [UserSettingController::class, 'show'])->name('user-settings.show');
+Route::put('user-settings', [UserSettingController::class, 'update'])->name('user-settings.update');
+
+// User places
+Route::post('user-places', [UserPlaceController::class, 'store'])->name('user-places.store');
+// Travel's "Add home" / "Add work": your one Home or Work, set or replaced.
+Route::put('user-places/{category}', [UserPlaceController::class, 'setCategory'])->whereIn('category', ['home', 'work'])->name('user-places.set');
+Route::put('user-places/{userPlace}', [UserPlaceController::class, 'update'])->whereNumber('userPlace')->name('user-places.update');
+Route::delete('user-places/{userPlace}', [UserPlaceController::class, 'destroy'])->whereNumber('userPlace')->name('user-places.destroy');
+
+// Services stays hidden from navigation (d38295bf).
+Route::get('services', [ServicesController::class, 'index'])->name('services');
+
+Route::get('profile', ProfilePageController::class)->name('profile');

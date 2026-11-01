@@ -3,6 +3,16 @@ export type EventOccurrence = {
     occurrence_start: string;
     occurrence_end: string | null;
     title: string;
+    /** The title as listed, and its language; `title` is its English meaning when there is one. */
+    title_original?: string;
+    title_lang?: string | null;
+    /** Whether `title` is a checked English translation, not the listing's own. */
+    title_translated?: boolean;
+    /** False for a listing that gives a date but no time. */
+    time_listed?: boolean;
+    language?: string | null;
+    /** Why a guest needs no German ("In English", "No words needed"), or null. */
+    no_german?: string | null;
     category: string;
     category_label: string;
     emoji: string;
@@ -11,9 +21,12 @@ export type EventOccurrence = {
     photo_attribution: string | null;
     photo_source_url: string | null;
     photo_license_url: string | null;
+    photo_of: 'event' | 'venue' | null;
     chips: string[];
     tip: string | null;
     summary: string | null;
+    /** Set when the summary is the listing's own words, untranslated (e.g. "de"). */
+    summary_lang?: string | null;
     price_text: string | null;
     venue: {
         name: string | null;
@@ -22,8 +35,16 @@ export type EventOccurrence = {
         lng: number | null;
         place_id: number | null;
         place_name: string | null;
+        /** The venue's recorded setting and step-free access (Events). */
+        setting?: 'indoor' | 'outdoor' | null;
+        wheelchair?: string | null;
     };
     source_url: string | null;
+    /** Where the listing came from (e.g. stadt-koeln.de). */
+    source?: string | null;
+    /** When it was last checked there, YYYY-MM-DD. */
+    checked_at?: string | null;
+    venue_id?: number | null;
     is_recurring: boolean;
     recurrence_text: string | null;
     verified: boolean;
@@ -37,14 +58,3 @@ export type EventReminderEntry = {
     occurrence_start: string;
     offset_minutes: number;
 };
-
-/** Maps an event category onto a CategoryIllustration visual key. */
-export function eventIllustrationKey(category: string): string {
-    return (
-        {
-            culture: 'event_culture',
-            sports: 'event_sports',
-            other: 'event_other',
-        }[category] ?? category
-    );
-}

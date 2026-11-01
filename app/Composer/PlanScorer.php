@@ -23,10 +23,25 @@ class PlanScorer
         'companion' => 18.0,       // fits who you're going with (kids etc.)
         'appeal' => 18.0,          // activities lead; cafés/bars don't dominate
         'landmark' => 12.0,        // notable places make the day's "main" pick
-        'affinity' => 22.0,        // the user's situation + picked interests
+        'affinity' => 22.0,        // the user's situation
         'daypart' => 15.0,         // the hour shapes the pick: lunch → food, evening → bar, daylight → park
         'rotation' => 8.0,         // deterministic day-to-day variety among near-equals
         'llm_rank' => 45.0,        // material taste judgment without erasing proximity/quality
+        'mood' => 25.0,            // the request's mood words met by a place's verified vibe tags
+    ];
+
+    /** Which verified vibe tags meet each mood word; a mood with none listed scores nothing. */
+    private const MOOD_TAGS = [
+        'quiet' => ['quiet', 'garden_or_park'],
+        'lively' => ['lively', 'late_night'],
+        'cosy' => ['cosy'],
+        'relaxed' => ['quiet', 'cosy', 'garden_or_park', 'waterside'],
+        'active' => ['kid_play'],
+        'romantic' => ['scenic_view', 'waterside', 'cosy'],
+        'cultural' => ['historic'],
+        'social' => ['lively'],
+        'scenic' => ['scenic_view', 'waterside'],
+        'local' => ['local_food'],
     ];
 
     public function __construct(
@@ -58,7 +73,8 @@ class PlanScorer
         $score += self::WEIGHTS['variety'] * max(0.0, 1.0 - 0.5 * $sameCategory);
 
         // Weather fit
-        $weatherFit = $candidate->outdoor && $context->rainExpected ? 0.0 : 1.0;
+        // ...and a beer garden in the cool (owner, 24 Oct 2026: none on a 13° late-October afternoon), unless asked for.
+        $weatherFit = ($candidate->outdoor && $context->rainExpected) || ($context->coolExpected && in_array('biergarten', $candidate->tags, true)) ? 0.0 : 1.0;
         $score += self::WEIGHTS['weather'] * $weatherFit;
 
         // Closes soon: a venue closing within 2h of the cursor gets a boost,
@@ -91,8 +107,11 @@ class PlanScorer
         // Notable places (OSM wikidata/wikipedia) make the day's hero pick.
         $score += self::WEIGHTS['landmark'] * ($candidate->isLandmark ? 1.0 : 0.0);
 
-        // Situation + picked interests — the same signal the home feed leads on.
+        // Situation — the same signal the home feed leads on.
         $score += self::WEIGHTS['affinity'] * CategoryAffinity::score($candidate->category, $context->affinity);
+
+        // Mood words ("somewhere quiet") count only through a place's verified vibe tags.
+        $score += self::WEIGHTS['mood'] * $this->moodFit($candidate, $context->moods);
 
         // Time-of-day fit: lunch favours food, the evening favours bars and
         // viewpoints, daylight favours parks. Soft — feasibility (via real or
@@ -129,6 +148,22 @@ class PlanScorer
     }
 
     /** Stable hash of (seed, candidate) mapped to [0, 1] — same day, same order; new day, new order. */
+    /**
+     * The share of the request's moods this place meets, by its verified tags.
+     *
+     * @param  list<string>  $moods
+     */
+    private function moodFit(Candidate $candidate, array $moods): float
+    {
+        $scored = array_values(array_filter($moods, fn (string $mood): bool => (self::MOOD_TAGS[$mood] ?? []) !== []));
+        if ($scored === [] || $candidate->vibeTags === []) {
+            return 0.0;
+        }
+        $met = array_filter($scored, fn (string $mood): bool => array_intersect(self::MOOD_TAGS[$mood], $candidate->vibeTags) !== []);
+
+        return count($met) / count($scored);
+    }
+
     private function rotation(string $seed, string $candidateId): float
     {
         return (crc32("{$seed}|{$candidateId}") % 1000) / 999.0;

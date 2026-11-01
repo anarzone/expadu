@@ -1,0 +1,54 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "reloads": [
+    {
+      "background": "rgb(255, 255, 255)",
+      "formX": 127,
+      "headerHeight": 72,
+      "icons": 36,
+      "modes": 3,
+      "resultsX": 582,
+      "routes": 3
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "formX": 127,
+      "headerHeight": 72,
+      "icons": 36,
+      "modes": 3,
+      "resultsX": 582,
+      "routes": 3
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "formX": 127,
+      "headerHeight": 72,
+      "icons": 36,
+      "modes": 3,
+      "resultsX": 582,
+      "routes": 3
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "formX": 127,
+      "headerHeight": 72,
+      "icons": 36,
+      "modes": 3,
+      "resultsX": 582,
+      "routes": 3
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "formX": 127,
+      "headerHeight": 72,
+      "icons": 36,
+      "modes": 3,
+      "resultsX": 582,
+      "routes": 3
+    }
+  ],
+  "errors": []
+}

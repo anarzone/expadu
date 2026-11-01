@@ -27,5 +27,9 @@ final readonly class ScoringContext
         public ?string $rotationSeed = null,
         /** @var array<string, float> grounded LLM preference in the 0..1 range */
         public array $llmRankWeights = [],
+        /** @var list<string> mood words from the request (Constraints::MOODS) */
+        public array $moods = [],
+        /** cool enough (under 15°) that a beer garden is no afternoon out, unless asked for */
+        public bool $coolExpected = false,
     ) {}
 }

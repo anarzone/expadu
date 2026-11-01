@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ImportGtfsData;
 use App\Console\Commands\RefreshGtfs;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -141,8 +142,11 @@ test('gtfs:import rolls back every timetable table when an import fails', functi
 });
 
 test('gtfs:refresh keeps departure caches when the import fails', function () {
-    Artisan::shouldReceive('call')->once()->with('gtfs:import', [], Mockery::any())->andReturn(1);
+    Http::fake([ImportGtfsData::FEED_URL => Http::response('', 200, ['ETag' => '"new"'])]);
+    Artisan::shouldReceive('call')->once()->with('gtfs:import', ['--url' => ImportGtfsData::FEED_URL], Mockery::any())->andReturn(1);
+    Cache::shouldReceive('get')->andReturn(null);
     Cache::shouldReceive('forget')->never();
+    Cache::shouldReceive('forever')->never();
     Cache::shouldReceive('flush')->never();
 
     $command = app(RefreshGtfs::class);

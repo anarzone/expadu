@@ -1,0 +1,386 @@
+@import url('./tokens.css');
+/* Photo-free place cards (connected/places.js): a map picture, the kind of
+   place and only the facts the listing records. Tile for rails and answers,
+   row for lists. */
+.nearby-place {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    color: var(--color-text);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.nearby-place--tile {
+    flex-direction: column;
+}
+.nearby-place-open {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.nearby-place-open:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.place-map-snippet {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+.place-map-snippet img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Positron is cool grey; warm it towards the cream canvas. */
+    filter: sepia(0.18) saturate(0.85);
+}
+.place-map-fallback svg {
+    width: 28px;
+    height: 28px;
+}
+.place-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.nearby-place-copy {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px 12px;
+    min-width: 0;
+}
+.place-kind {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.nearby-place-copy strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nearby-place-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.nearby-place-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-top: 4px;
+    font-size: var(--text-small);
+}
+.nearby-place-facts > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.place-hours.is-open {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+.place-hours.is-closed,
+.place-hours.is-unknown {
+    color: var(--color-text-soft);
+}
+.place-access,
+.place-detail {
+    color: var(--color-text-soft);
+}
+/* Cuisine sits on the kind line; "not listed" reads quieter than a value. */
+.place-cuisine {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.place-cuisine.is-unknown {
+    color: var(--color-text-soft);
+}
+.nearby-place-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+}
+.nearby-place-actions button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-round);
+    color: var(--color-text);
+    background: #fffdf8e6;
+    box-shadow: 0 1px 4px #3e352b1f;
+    cursor: pointer;
+}
+/* A 44px touch area around the 36px button. */
+.nearby-place-actions button::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+}
+.nearby-place-actions button {
+    position: relative;
+}
+.nearby-place-actions .place-icon {
+    width: 18px;
+    height: 18px;
+}
+.nearby-place-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+    background: var(--color-select-bg);
+}
+.nearby-place-save[aria-pressed='true'] .place-icon {
+    fill: currentColor;
+}
+.nearby-place-plan[disabled],
+.nearby-place-plan[aria-disabled='true'] {
+    color: var(--color-select-text);
+    background: var(--color-select-bg);
+}
+
+/* Row: lists beside a map. */
+.nearby-place--row .nearby-place-open {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 56px 8px 8px;
+}
+.nearby-place--row .place-map-snippet {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    aspect-ratio: auto;
+    border-radius: var(--radius-md);
+}
+.nearby-place--row .nearby-place-copy {
+    padding: 0;
+    gap: 2px;
+}
+.nearby-place--row .place-kind {
+    display: none;
+}
+.nearby-place--row .nearby-place-facts {
+    margin-top: 2px;
+}
+.nearby-place--row .nearby-place-actions {
+    top: 50%;
+    transform: translateY(-50%);
+}
+.nearby-place--row .nearby-place-actions button {
+    box-shadow: none;
+    background: var(--color-bg-quiet);
+}
+.nearby-place.is-selected {
+    border-color: var(--color-select-text);
+    box-shadow: inset 0 0 0 1px var(--color-select-text);
+}
+
+/* Facts in a sheet or Quick look. */
+.place-facts {
+    display: grid;
+    margin: 0 0 12px;
+}
+.place-facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-small);
+}
+.place-facts > div:first-child {
+    border-top: 1px solid var(--color-border);
+}
+.place-facts dt {
+    color: var(--color-text-soft);
+    flex-shrink: 0;
+}
+.place-facts dd {
+    margin: 0;
+    text-align: right;
+    font-weight: var(--weight-medium);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.place-facts dd.is-unknown {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+.place-facts a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.place-week {
+    margin: 0 0 12px;
+    font-size: var(--text-small);
+}
+.place-week summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--color-text);
+}
+.place-week dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    margin: 0 0 4px;
+}
+.place-week dl > div {
+    display: contents;
+}
+.place-week dt {
+    color: var(--color-text-soft);
+}
+.place-week dd {
+    margin: 0;
+}
+.place-source {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+.place-source a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.place-map-credit {
+    margin: 8px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+@media (hover: hover) {
+    .nearby-place-open:hover strong {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .nearby-place-actions button {
+        transition:
+            background 160ms ease,
+            transform 160ms ease;
+    }
+    .nearby-place-actions button:active {
+        transform: scale(0.94);
+    }
+}
+
+/* Places in a Composer answer: a rail on phones, a row of three wider. */
+.place-answer {
+    display: grid;
+    grid-auto-flow: column;
+    /* A fixed width: inside a chat bubble a percentage resolves to the
+       content and the cards grow to the picture's size. */
+    grid-auto-columns: 240px;
+    gap: 10px;
+    margin-top: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+}
+.place-answer::-webkit-scrollbar {
+    display: none;
+}
+.place-answer > .nearby-place {
+    scroll-snap-align: start;
+}
+.place-answer-map {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-top: 6px;
+}
+.place-answer-map svg {
+    width: 16px;
+    height: 16px;
+}
+@media (min-width: 701px) {
+    .place-answer {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        overflow: visible;
+    }
+}
+
+/* Line: a short list inside another card (Today). */
+.nearby-place--line {
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+}
+.nearby-place--line .nearby-place-open {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 4px 2px;
+}
+.nearby-place-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    color: var(--color-select-text);
+    background: var(--color-select-bg);
+}
+.nearby-place-icon .place-icon {
+    width: 18px;
+    height: 18px;
+}
+.nearby-place--line .nearby-place-copy {
+    padding: 0;
+    gap: 2px;
+}
+.nearby-place--line .nearby-place-copy strong {
+    font-size: var(--text-control);
+}
+.nearby-place--line .nearby-place-copy small {
+    font-size: var(--text-caption);
+}
+.nearby-place--line .place-hours.is-open {
+    font-weight: var(--weight-medium);
+}

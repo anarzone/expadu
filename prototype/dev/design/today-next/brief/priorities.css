@@ -1,0 +1,401 @@
+/* The phone follows today's needs, not the desktop columns. */
+.today-flow .departure-board > summary {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    cursor: pointer;
+    list-style: none;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--teal);
+}
+.today-flow .departure-board > summary::-webkit-details-marker,
+.today-flow .earlier-plans > summary::-webkit-details-marker {
+    display: none;
+}
+.today-flow .departure-board > summary svg {
+    width: 20px;
+    height: 20px;
+}
+.today-flow .departure-board > summary svg:last-child {
+    margin-left: auto;
+    width: 16px;
+}
+.today-flow .departure-board[open] > summary svg:last-child,
+.today-flow .earlier-plans[open] > summary > svg {
+    transform: rotate(180deg);
+}
+.today-flow .board-content {
+    padding-bottom: 4px;
+}
+.today-flow .earlier-plans {
+    margin-top: 10px;
+}
+.today-flow .earlier-plans > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: var(--text-small);
+    color: var(--ink-soft);
+    cursor: pointer;
+    list-style: none;
+}
+.today-flow .earlier-plans > summary > svg {
+    margin-left: auto;
+    width: 16px;
+    height: 16px;
+}
+.today-flow .earlier-plan {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.today-flow .earlier-plan > button:first-child {
+    display: flex;
+    flex: 1;
+    gap: 12px;
+    align-items: start;
+    text-align: left;
+    min-height: 48px;
+    padding-block: 8px;
+    font-size: var(--text-small);
+}
+.today-flow .earlier-plan small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-micro);
+    margin-top: 3px;
+}
+.today-flow .earlier-plan time {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+}
+.today-flow .has-no-plans .day-heading {
+    margin-bottom: 8px;
+}
+.today-flow .has-no-plans .day-empty {
+    padding: 0;
+}
+.today-flow .has-no-plans .day-empty strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+    letter-spacing: 0;
+    color: var(--muted);
+}
+.today-flow .has-no-plans .day-actions {
+    margin-top: 4px;
+}
+.today-flow .preparation-panel {
+    padding: 16px 22px 20px;
+    background: linear-gradient(125deg, #fff0c7, #fff6df80 70%, transparent);
+    border-radius: var(--radius-xl) 0 0 0;
+}
+.today-flow .preparation-panel h2 {
+    font-size: var(--text-title);
+    letter-spacing: -0.5px;
+    margin-block: 4px 8px;
+}
+.today-flow .preparation-panel p {
+    color: var(--ink-soft);
+    font-size: var(--text-small);
+    margin-bottom: 14px;
+}
+.today-flow .preparation-panel .icon-button {
+    color: var(--action-ink);
+}
+.today-flow .paperwork-optional a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+}
+.today-flow .paperwork-optional svg {
+    width: 24px;
+    color: #67409a;
+}
+.today-flow .paperwork-optional small {
+    display: block;
+    font-size: var(--text-caption);
+    color: var(--muted);
+    margin-top: 4px;
+}
+.today-flow .discovery-empty {
+    font-size: var(--text-control);
+    color: var(--muted);
+    padding-block: 8px 16px;
+}
+.today-reference.today-flow .day-area > .practical-surface {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    border-radius: var(--radius-xl) 0 0 0;
+}
+.today-reference.today-flow .day-area > .practical-surface .city-help {
+    padding: 0;
+    margin: 0;
+}
+.today-reference.today-flow .day-area > .practical-surface .city-help::before {
+    content: none;
+}
+.today-flow
+    :is(
+        .departure-board > summary,
+        .earlier-plans > summary,
+        .earlier-plan button,
+        .paperwork-optional a
+    ) {
+    border-radius: var(--radius-md);
+    transition: background-color 140ms ease;
+}
+.today-flow
+    :is(
+        .departure-board > summary,
+        .earlier-plans > summary,
+        .earlier-plan button,
+        .paperwork-optional a
+    ):active {
+    background: var(--cyan-hover);
+}
+@media (max-width: 700px) {
+    .today-reference.today-flow #shell {
+        top: -52px;
+    }
+    .today-reference.today-flow .daily-canvas > .day-area,
+    .today-reference.today-flow .daily-canvas > .next-area {
+        display: none;
+    }
+    .today-reference.today-flow .daily-canvas > * {
+        width: 100%;
+        min-width: 0;
+    }
+    .today-reference.today-flow .practical-surface {
+        background: linear-gradient(150deg, #dff3f855, #f4f0f955 85%);
+    }
+    .today-reference.today-flow .practical-surface:first-of-type {
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .today-reference.today-flow .city-help {
+        margin: 0;
+        padding: 0;
+    }
+    .today-reference.today-flow .city-help::before {
+        content: none;
+    }
+    .today-reference.today-flow .city-help h2 {
+        font-size: var(--text-body);
+    }
+    .today-reference.today-flow .forecast-strip {
+        min-height: 44px;
+    }
+    .today-reference.today-flow .departure-board {
+        margin-top: 0;
+    }
+    .today-reference.today-flow .departure-board > summary {
+        min-height: 44px;
+    }
+    .today-reference.today-flow .practical-personal {
+        margin-top: 6px;
+    }
+    .today-reference.today-flow .paperwork-panel:not(.paperwork-optional) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        align-items: center;
+        column-gap: 6px;
+        padding-top: 8px;
+        position: relative;
+    }
+    .today-reference.today-flow
+        .paperwork-panel:not(.paperwork-optional)::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--line),
+            transparent
+        );
+    }
+    .today-reference.today-flow .paperwork-panel > .section-head,
+    .today-reference.today-flow .paperwork-panel .section-tools {
+        display: contents;
+    }
+    .today-reference.today-flow #paperwork-title {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: var(--text-caption);
+        font-weight: var(--weight-medium);
+        color: var(--ink-soft);
+    }
+    .today-reference.today-flow .paperwork-panel .record-label,
+    .today-reference.today-flow .paperwork-followups {
+        display: none;
+    }
+    .today-reference.today-flow .paperwork-panel .context-trigger {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+    .today-reference.today-flow .practical-personal .paperwork-focus {
+        grid-column: 1;
+        grid-row: 2;
+        padding: 4px 0;
+        margin: 0;
+        gap: 8px;
+        min-height: 54px;
+        border-radius: var(--radius-sm);
+    }
+    .today-reference.today-flow .practical-personal .paperwork-focus h3 {
+        margin: 0 0 4px;
+        font-size: var(--text-section);
+        letter-spacing: -0.3px;
+    }
+    .today-reference.today-flow .paperwork-focus p {
+        font-size: var(--text-caption);
+    }
+    .today-reference.today-flow .practical-personal .document-progress {
+        flex: 0 0 auto;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
+        color: #67409a;
+    }
+    .today-reference.today-flow .document-progress::before {
+        content: none;
+    }
+    .today-reference.today-flow .document-progress strong {
+        font-size: var(--text-section);
+    }
+    .today-reference.today-flow .document-progress small {
+        font-size: var(--text-caption);
+    }
+    .today-reference.today-flow .document-progress > span {
+        font-size: var(--text-micro);
+    }
+    .today-reference.today-flow .has-no-plans {
+        padding-block: 14px 6px;
+    }
+    .today-reference.today-flow .has-no-plans .day-heading {
+        display: none;
+    }
+    .today-reference.today-flow .quiet-layout .day-panel {
+        min-height: 0;
+    }
+    .today-reference.today-flow .around-plan:empty,
+    .today-reference.today-flow #around-plan-slot:empty {
+        display: none;
+    }
+    .today-reference.today-flow .preparation-panel {
+        padding: 14px 16px 18px;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .today-reference.today-flow .event-spotlight .event-card {
+        height: 300px;
+    }
+    .today-reference.today-flow .continue-composer {
+        border-radius: 0;
+    }
+    .today-reference.today-flow [data-priority='composer'] .continue-composer {
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .today-reference.today-flow .discovery .event-rail:empty {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .today-flow
+        :is(
+            .departure-board > summary,
+            .earlier-plans > summary,
+            .earlier-plan button,
+            .paperwork-optional a
+        ) {
+        transition: none;
+    }
+}
+
+/* A gentle invitation, before a new user has a plan to return to. */
+.today-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    background: var(--cyan-soft, #def3f6);
+    border-radius: var(--radius-xl);
+}
+.today-welcome > div:first-child {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+}
+.today-welcome h2 {
+    font-size: var(--text-title);
+    margin: 0 0 4px;
+}
+.today-welcome p {
+    margin: 0;
+    color: #45626a;
+    font-size: var(--text-control);
+}
+.welcome-symbol {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: #b83c19;
+}
+.welcome-choices {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.welcome-choices > * {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    min-height: 44px;
+    background: #fff;
+    border: 0;
+    border-radius: var(--radius-lg);
+    color: #222522;
+    font: inherit;
+    font-size: var(--text-control);
+    text-decoration: none;
+}
+.welcome-choices svg {
+    width: 19px;
+    height: 19px;
+    color: #197789;
+}
+@media (max-width: 700px) {
+    .today-welcome {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 12px;
+    }
+    .today-welcome h2 {
+        font-size: var(--text-title-sm);
+    }
+    .welcome-choices {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .welcome-choices > * {
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: var(--text-small);
+    }
+    .welcome-choices > :last-child {
+        grid-column: 1 / -1;
+    }
+}

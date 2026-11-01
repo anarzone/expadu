@@ -1,0 +1,92 @@
+{
+  "family": "Phosphor",
+  "weight": "regular",
+  "retrieved": "2026-09-30",
+  "assets": [
+    {
+      "name": "calendar-dots",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/calendar-dots.svg",
+      "sha256": "7911ba8e60afd4506bdc5fcef0549a9c1bc22c0439d1d946507116dfd8acf3d9"
+    },
+    {
+      "name": "calendar-plus",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/calendar-plus.svg",
+      "sha256": "c9799e0708c591545412e9bd75f1c014a2de6da91e363b38f30c6ac37bb9432e"
+    },
+    {
+      "name": "caret-right",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/caret-right.svg",
+      "sha256": "e6dec01e074807965b7f3146b976a9b5e82c31d9c2c88aeb52e77cc2ab16c1d7"
+    },
+    {
+      "name": "caret-down",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/caret-down.svg",
+      "sha256": "53f0cf2d0b144ac3cb07e353e0cd0853ffb3ed432d741460ce288edfcb0924b1"
+    },
+    {
+      "name": "arrow-right",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrow-right.svg",
+      "sha256": "e45bc4a12592b8723110db42c6deffdf177e4fe7704cf50324963fa0a59b2d74"
+    },
+    {
+      "name": "arrows-split",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/arrows-split.svg",
+      "sha256": "6ad27cca24989a0b9aa4491aea2da46678f028162144849964f491f57934ac9a"
+    },
+    {
+      "name": "bookmark-simple",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/bookmark-simple.svg",
+      "sha256": "493a836009ab98f8d4ca84f088cc03f2785cdee86daa1643e003865ff3168b41"
+    },
+    {
+      "name": "house",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/house.svg",
+      "sha256": "180e9259e99e23da197b59b19394d006d6a5d33e384cc2b9c8381cb0214a5716"
+    },
+    {
+      "name": "file-text",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/file-text.svg",
+      "sha256": "9a580a038cce9f6dd223597864abe1b5c5c03bf8176d2f7171574598468b16f7"
+    },
+    {
+      "name": "train",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/train.svg",
+      "sha256": "07fc0688faa9a521d38f5b49caeb118c329461646ce5b9238889642c8af73a3b"
+    },
+    {
+      "name": "squares-four",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/squares-four.svg",
+      "sha256": "f70d6b20e08e028ab5b1714077681910a2431092cf7a23b82366ddaec554ab87"
+    },
+    {
+      "name": "map-pin",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/map-pin.svg",
+      "sha256": "523f024fa467fc285d95c1db4ed6c32b640513c79780d14310bebf342b6f94fb"
+    },
+    {
+      "name": "clock",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/clock.svg",
+      "sha256": "b8c6c2899d2b9af48a55ba02ba6d7faf89b757915772dd24f5397f7b0d02aa5c"
+    },
+    {
+      "name": "plus",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/plus.svg",
+      "sha256": "d688feb9dd2e41c1721d6906a05a2a42e18cd774762fe706d72b2bdfd91cddc4"
+    },
+    {
+      "name": "sun",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/sun.svg",
+      "sha256": "8df1c7b747774f8b2c1fe353b1b785c74aac35bfa50f2ed7d8d9a85a4191b2ac"
+    },
+    {
+      "name": "chat-circle",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/chat-circle.svg",
+      "sha256": "09e36aa820a39bbc8cffe705ad84c836d1e5733f83dc1d2212a965fdacdf4a67"
+    },
+    {
+      "name": "trash",
+      "source": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/trash.svg",
+      "sha256": "e6a830c0409f9e101e3695c981eef98427d39fd01f502b9cbd6900930b01f19c"
+    }
+  ]
+}

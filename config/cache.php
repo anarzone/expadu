@@ -36,7 +36,9 @@ return [
 
         'array' => [
             'driver' => 'array',
-            'serialize' => false,
+            // Serialise like Redis does, so tests (which run on this store)
+            // catch cached PHP objects that only fail on a warm read in prod.
+            'serialize' => true,
         ],
 
         'database' => [

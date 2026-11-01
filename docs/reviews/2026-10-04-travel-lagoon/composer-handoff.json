@@ -1,0 +1,60 @@
+{
+  "page": "composer",
+  "prompt": "Keep my existing request",
+  "journey": {
+    "id": "r9",
+    "type": "journey",
+    "activityId": null,
+    "planDate": null,
+    "targetStart": null,
+    "targetLocation": null,
+    "previousEnd": null,
+    "previousId": null,
+    "title": "Journey to Museum Ludwig",
+    "from": "Köln Neumarkt",
+    "to": "Museum Ludwig",
+    "date": "2026-09-07",
+    "depart": "23:37",
+    "arrive": "23:53",
+    "mode": "transit",
+    "line": "9",
+    "duration": 16,
+    "legs": [
+      {
+        "mode": "walk",
+        "title": "Walk to Köln Neumarkt",
+        "detail": "1 min on foot",
+        "time": "23:37",
+        "duration": 1
+      },
+      {
+        "mode": "transit",
+        "boardStop": "neumarkt",
+        "title": "Take line 9",
+        "detail": "Towards Köln Rath/Heumar Königsforst",
+        "time": "23:38",
+        "duration": 2,
+        "stop": "Köln Heumarkt",
+        "alight": "23:40",
+        "intermediate": []
+      },
+      {
+        "mode": "walk",
+        "title": "Walk to Museum Ludwig",
+        "detail": "13 min on foot",
+        "time": "23:40",
+        "duration": 13
+      }
+    ],
+    "color": "blue",
+    "icon": "train",
+    "requestedDate": "",
+    "requestedTime": "",
+    "preferences": {
+      "maxWalk": 60,
+      "avoidDelays": false,
+      "direct": false,
+      "schedule": "now"
+    }
+  }
+}

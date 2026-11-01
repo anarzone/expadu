@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
+        <title>Travel — 10 colour directions · Expadu</title>
+        <link rel="stylesheet" href="./lab.css" />
+        <script type="module" src="./lab.js"></script>
+    </head>
+    <body>
+        <header class="lab-header">
+            <a
+                class="lab-brand"
+                href="#top"
+                aria-label="Travel colour study, top"
+                ><span class="brand-dot"></span> Expadu
+                <span> / Colour study</span></a
+            >
+            <nav aria-label="Review navigation">
+                <a href="#directions">10 directions</a
+                ><a href="#research">The research</a
+                ><a href="../departures-next/" target="_blank" rel="noopener"
+                    >Current Travel</a
+                >
+            </nav>
+        </header>
+        <main id="top">
+            <section class="intro">
+                <div>
+                    <p class="eyebrow">
+                        Travel · Independent design explorations · 03 October
+                        2026
+                    </p>
+                    <h1>
+                        A little more clarity.<br /><span
+                            >A lot more possibility.</span
+                        >
+                    </h1>
+                    <p class="intro-copy">
+                        Ten colour directions, one real Travel scenario. Open a
+                        design, switch to phone, and try its interactions.
+                        Nothing here changes the current app.
+                    </p>
+                </div>
+                <div class="study-note">
+                    <span class="note-number">10</span>
+                    <div>
+                        <strong>Colour is a job, not a layer.</strong>
+                        <p>
+                            Quiet backgrounds. Clear selections. An unmistakable
+                            next action.
+                        </p>
+                    </div>
+                </div>
+            </section>
+            <div class="review-tools" id="directions">
+                <div>
+                    <h2>Explore the directions</h2>
+                    <p>Click to enlarge · Select two to compare</p>
+                </div>
+                <label class="motion-control"
+                    ><input id="motion-toggle" type="checkbox" checked />
+                    <span>Motion</span></label
+                >
+            </div>
+            <div class="gallery" id="gallery"></div>
+            <section
+                class="research"
+                id="research"
+                aria-labelledby="research-title"
+            >
+                <div class="research-heading">
+                    <p class="eyebrow">What informed these examples</p>
+                    <h2 id="research-title">
+                        Borrow the principles.<br />Keep Expadu’s personality.
+                    </h2>
+                    <p>
+                        Public product screenshots, official design guidance and
+                        release articles. These are original Expadu
+                        explorations, not reproductions or official brand
+                        palettes. Publication dates are shown where relevant.
+                    </p>
+                </div>
+                <div class="research-findings">
+                    <article>
+                        <span>01</span>
+                        <h3>Remove the competing layers</h3>
+                        <p>
+                            The earlier preview put a cool selection inside a
+                            warm field, inside a different page colour. Here,
+                            header and page share one canvas; colour has a
+                            specific job.
+                        </p>
+                    </article>
+                    <article>
+                        <span>02</span>
+                        <h3>Keep the task in focus</h3>
+                        <p>
+                            Linear’s 2026 refresh reduces visual noise and warns
+                            against overly warm neutrals. Airbnb’s Trips screens
+                            keep the interface quiet around useful content.
+                        </p>
+                    </article>
+                    <article>
+                        <span>03</span>
+                        <h3>Make motion explain a change</h3>
+                        <p>
+                            Tabs move their selection; routes unfold; saving
+                            gets a short acknowledgement. No automatic
+                            carousels, looping trains or pretend live tracking.
+                        </p>
+                    </article>
+                </div>
+                <div class="source-grid" id="sources"></div>
+                <p class="research-boundary">
+                    Research informs the choices; it does not establish which
+                    one Expadu’s users prefer. All hex values and animation
+                    timings here are our proposals. Sample journeys are the
+                    existing 7 September 2026 capture, not live directions.
+                </p>
+            </section>
+        </main>
+        <footer class="lab-footer">
+            <span>Expadu · Travel colour & motion study</span
+            ><a href="./RESEARCH.md">Full research notes</a
+            ><span>Review first. Apply after a choice.</span>
+        </footer>
+        <aside
+            id="compare-bar"
+            class="compare-bar"
+            hidden
+            aria-label="Selected comparisons"
+        >
+            <span id="compare-label"></span
+            ><button class="review-button subtle" id="clear-compare">
+                Clear</button
+            ><button class="review-button primary" id="compare" disabled>
+                Compare two
+            </button>
+        </aside>
+        <dialog id="review-dialog" aria-labelledby="dialog-title">
+            <div class="dialog-toolbar">
+                <div class="dialog-identity">
+                    <span id="dialog-number"></span>
+                    <h2 id="dialog-title"></h2>
+                </div>
+                <div class="dialog-controls">
+                    <button
+                        class="review-button"
+                        id="previous"
+                        aria-label="Previous direction"
+                    ></button
+                    ><button
+                        class="review-button"
+                        id="next"
+                        aria-label="Next direction"
+                    ></button
+                    ><button
+                        class="review-button"
+                        id="close-dialog"
+                        aria-label="Close review"
+                    ></button>
+                </div>
+            </div>
+            <div id="dialog-content"></div>
+        </dialog>
+        <div
+            class="sr-only"
+            id="announce"
+            role="status"
+            aria-live="polite"
+        ></div>
+    </body>
+</html>

@@ -1,3 +1,7 @@
+> Historical v4 reference. Current connected-design decisions are in
+> [Connected design decisions](../prototype/dev/design/connected/design-decisions.md).
+> Today C and later explicit owner decisions take precedence over this document.
+
 # Expadu — Design System
 
 > Smart city companion PWA for expats living in Germany.

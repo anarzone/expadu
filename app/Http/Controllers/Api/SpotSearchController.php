@@ -29,7 +29,7 @@ class SpotSearchController extends Controller
 
         // User's location for distance calculation
         $user = $request->user();
-        $home = $user?->places()->where('category', 'home')->first();
+        $home = $user?->places()->located()->where('category', 'home')->first();
         $userLat = $home?->lat ? (float) $home->lat : 50.9375;
         $userLng = $home?->lng ? (float) $home->lng : 6.9603;
 

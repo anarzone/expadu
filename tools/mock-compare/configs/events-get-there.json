@@ -1,0 +1,167 @@
+{
+    "name": "events-get-there",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1200
+            },
+            {
+                "click": ".event-where"
+            },
+            {
+                "wait": 4000
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".evd-where"
+            },
+            {
+                "wait": 5000
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "head",
+            "mock": ".event-subhead",
+            "app": ".ev-details .ui-sheet-head"
+        },
+        {
+            "name": "Back",
+            "mock": ".event-back",
+            "app": ".event-back"
+        },
+        {
+            "name": "Get there",
+            "mock": ".event-subhead-title[data-for='directions']",
+            "app": ".event-subhead-title"
+        },
+        {
+            "name": "close",
+            "mock": "#shared-dialog .dialog-head .icon-button",
+            "app": ".ev-details .ui-sheet-close"
+        },
+        {
+            "name": "route card",
+            "mock": "#shared-dialog .place-route",
+            "app": ".ev-details .place-route"
+        },
+        {
+            "name": "rail",
+            "mock": "#shared-dialog .event-route-rail",
+            "app": ".ev-details .event-route-rail"
+        },
+        {
+            "name": "start dot",
+            "mock": "#shared-dialog .route-dot",
+            "app": ".ev-details .route-dot"
+        },
+        {
+            "name": "rail line",
+            "mock": "#shared-dialog .event-route-connector",
+            "app": ".ev-details .event-route-connector"
+        },
+        {
+            "name": "venue mark",
+            "mock": "#shared-dialog .event-route-rail > svg",
+            "app": ".ev-details .event-route-rail > svg"
+        },
+        {
+            "name": "From",
+            "mock": "#shared-dialog label.route-field",
+            "app": ".ev-details label.route-field"
+        },
+        {
+            "name": "From field",
+            "mock": "#shared-dialog input[name='from']",
+            "app": ".ev-details input[name='from']"
+        },
+        {
+            "name": "why there",
+            "mock": "#shared-dialog .route-field-note",
+            "app": ".ev-details .route-field-note"
+        },
+        {
+            "name": "To",
+            "mock": "#shared-dialog .place-journey-destination",
+            "app": ".ev-details .place-journey-destination"
+        },
+        {
+            "name": "time and ways",
+            "mock": "#shared-dialog .gt-bar",
+            "app": ".ev-details .gt-bar"
+        },
+        {
+            "name": "time",
+            "mock": "#shared-dialog .gt-time .gt-pill",
+            "app": ".ev-details .gt-time .gt-pill"
+        },
+        {
+            "name": "by tram and bus",
+            "mock": "#shared-dialog .gt-modes label > span",
+            "app": ".ev-details .gt-modes label > span",
+            "index": 0
+        },
+        {
+            "name": "on foot",
+            "mock": "#shared-dialog .gt-modes label > span",
+            "app": ".ev-details .gt-modes label > span",
+            "index": 1
+        },
+        {
+            "name": "by bike",
+            "mock": "#shared-dialog .gt-modes label > span",
+            "app": ".ev-details .gt-modes label > span",
+            "index": 2
+        },
+        {
+            "name": "map",
+            "mock": "#shared-dialog .event-way-map",
+            "app": ".ev-details .event-way-map"
+        },
+        {
+            "name": "map credit",
+            "mock": "#shared-dialog .event-way-map-credit",
+            "app": ".ev-details .event-way-map-credit"
+        },
+        {
+            "name": "bar",
+            "mock": "#shared-dialog [data-panel='directions'] .place-sheet-footer",
+            "app": ".ev-details .ui-sheet-foot",
+            "pixelThreshold": 0.005,
+            "reason": "Its rounded bottom corners show the street behind the open page: the app draws the street as pictures (EV2a\u2019s agreed budget: 31 SVG nodes against the mock\u2019s 3,937), the mock as live SVG, so the corners\u2019 edges anti-alias apart (0.22% at most). Open in Travel is compared on its own, exactly."
+        },
+        {
+            "name": "Open in Travel",
+            "mock": "#shared-dialog [data-panel='directions'] .place-sheet-footer .button.primary",
+            "app": ".ev-details .ui-sheet-foot .evd-plan"
+        }
+    ]
+}

@@ -1,0 +1,732 @@
+{
+  "veedels": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "name",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "bezirk",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "centroid_lat",
+      "udt_name": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "centroid_lng",
+      "udt_name": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "boundary",
+      "udt_name": "geometry",
+      "is_nullable": "YES"
+    }
+  ],
+  "spots": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "name",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "category",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "description",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "address",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "wifi_speed",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "noise_level",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "time_limit_mins",
+      "udt_name": "int4",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "opening_hours",
+      "udt_name": "json",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "rating",
+      "udt_name": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "location",
+      "udt_name": "geography",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "lat",
+      "udt_name": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "lng",
+      "udt_name": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "cuisine",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "price_range",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "tags",
+      "udt_name": "json",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "source",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "source_id",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "phone",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "website",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "is_verified",
+      "udt_name": "bool",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "veedel",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "tip",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "photo_url",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "park_name",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "photo_attribution",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "source_group",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "last_seen_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "is_active",
+      "udt_name": "bool",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "is_recommendable",
+      "udt_name": "bool",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "parent_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "canonical_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "destination_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "destination_reviewed_parent_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "destination_grouping_evidence",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "destination_reviewed_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    }
+  ],
+  "park_areas": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "name",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "osm_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "boundary",
+      "udt_name": "geometry",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "kind",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "source_id",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "parent_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    }
+  ],
+  "place_fact_observations": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "spot_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "provider",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "provider_record_id",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "source_url",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "observed_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "ingestion_key",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "payload_hash",
+      "udt_name": "bpchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "payload",
+      "udt_name": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "record_kind",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "restores_observation_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "actor",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "reason",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    }
+  ],
+  "place_fact_corrections": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "spot_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "field",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "value",
+      "udt_name": "jsonb",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "evidence",
+      "udt_name": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "evidence_url",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "actor",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "reviewed_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "supersedes_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "revoked_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    }
+  ],
+  "place_fact_revisions": [
+    {
+      "column_name": "id",
+      "udt_name": "int2",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "revision",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    }
+  ],
+  "place_reconciliations": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "alias_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "canonical_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "fingerprint",
+      "udt_name": "bpchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "evidence",
+      "udt_name": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "snapshot",
+      "udt_name": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "NO"
+    }
+  ],
+  "place_destination_reviews": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "spot_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "destination_spot_id",
+      "udt_name": "int8",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "fingerprint",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "evidence",
+      "udt_name": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "snapshot",
+      "udt_name": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO"
+    }
+  ],
+  "media_assets": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "type",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "provider",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "provider_asset_id",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "source_key",
+      "udt_name": "bpchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "remote_url",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "source_page_url",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "author",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "attribution",
+      "udt_name": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "license_code",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "license_url",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "mime_type",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "width",
+      "udt_name": "int4",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "height",
+      "udt_name": "int4",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "checksum",
+      "udt_name": "bpchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "rights_status",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "health_status",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "failure_count",
+      "udt_name": "int2",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "last_error",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "last_seen_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "last_verified_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "metadata",
+      "udt_name": "jsonb",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "next_validation_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "validation_queued_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "validation_queued_fingerprint",
+      "udt_name": "bpchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "last_validation_outcome",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "last_validation_error_code",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    }
+  ],
+  "media_attachments": [
+    {
+      "column_name": "id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "media_asset_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "mediable_type",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "mediable_id",
+      "udt_name": "int8",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "role",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "priority",
+      "udt_name": "int2",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "is_primary",
+      "udt_name": "bool",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "is_manually_locked",
+      "udt_name": "bool",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "created_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "updated_at",
+      "udt_name": "timestamp",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "match_status",
+      "udt_name": "varchar",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "match_method",
+      "udt_name": "varchar",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "match_evidence",
+      "udt_name": "jsonb",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "match_reviewed_at",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES"
+    }
+  ]
+}

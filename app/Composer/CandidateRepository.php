@@ -9,9 +9,13 @@ use App\Models\Spot;
 use App\Places\DestinationGrouping;
 use App\Places\PlaceFacts;
 use App\Places\PlaceIdentity;
+use App\Places\SourceTagFacts;
 use App\Services\CologneServiceArea;
 use App\Services\NearbyPlaces;
+use App\Services\OpeningHoursParser;
+use App\Support\EventEvidence;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The impure boundary of the composer: snapshots spots and curated
@@ -26,12 +30,22 @@ class CandidateRepository
     /** Nearest spots kept per category — diverse enough for a 6-slot day, local enough to be relevant. */
     private const PER_CATEGORY = 12;
 
+    /** How far the assistant's nearest places go (nearestSpots), in km. */
+    private const NEAR_KM = 5.0;
+
     /** Cologne centre — the origin a plan falls back to when the user has no location. */
-    private const COLOGNE_LAT = 50.9375;
+    public const COLOGNE_LAT = 50.9375;
 
-    private const COLOGNE_LNG = 6.9603;
+    public const COLOGNE_LNG = 6.9603;
 
-    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite'];
+    // As SpotCategory::isOutdoor() has them (a zoo is outdoors: the assistant called one "indoor", 22 Oct 2026).
+    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite', 'zoo'];
+
+    private const GENERIC_MICRO_FACILITY_LABELS = [
+        'Spielplatz', 'Bolzplatz', 'Basketballplatz', 'Tennisplatz',
+        'Tischtennisplatte', 'Boulebahn', 'Skatepark', 'Hundewiese',
+        'Grillplatz', 'Picknickplatz',
+    ];
 
     private const DEFAULT_DURATION_MIN = [
         'park' => 75,
@@ -43,9 +57,44 @@ class CandidateRepository
         'default' => 60,
     ];
 
+    /** A stop looked at on the way: a fountain, a monument, an artwork. */
+    private const SHORT_STOP_MIN = 15;
+
+    /** Coarse kinds a day out leaves out unless they're asked for: they're named when wanted. */
+    private const NOT_A_DAY_OUT = ['shopping', 'services', 'health', 'stay'];
+
+    /** Places a day out includes only with the kids or for a sport asked for. */
+    private const FOR_KIDS_OR_SPORT = ['playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'skatepark', 'dog_park', 'bbq'];
+
+    /**
+     * What a day out holds when they name no kind (owner, 24 Oct 2026): not a library or reading room
+     * (a place to sit and study) unless the day is a quiet one; not a playground, pitch or court unless
+     * it's with the kids or for a sport; not shops, services, health or stays.
+     *
+     * @param  list<Candidate>  $candidates
+     * @return list<Candidate>
+     */
+    public static function dayOut(Constraints $constraints, array $candidates): array
+    {
+        if ($constraints->categories !== [] || $constraints->sequence !== []) {
+            return $candidates;
+        }
+        $out = [...array_merge(...array_map(SpotCategory::finesForCoarse(...), self::NOT_A_DAY_OUT)),
+            ...(in_array('quiet', $constraints->moods, true) ? [] : [SpotCategory::Library->value]),
+            ...($constraints->activities !== [] || $constraints->companions === 'kids' ? [] : self::FOR_KIDS_OR_SPORT)];
+
+        return array_values(array_filter($candidates, fn (Candidate $c): bool => $c->type !== 'spot' || ! in_array($c->category, $out, true)));
+    }
+
     public function __construct(
         private readonly CologneServiceArea $serviceArea,
     ) {}
+
+    /** @param array<string, mixed> $tags */
+    private static function shortStop(array $tags): bool
+    {
+        return ($tags['amenity'] ?? null) === 'fountain' || in_array($tags['historic'] ?? null, ['monument', 'memorial'], true) || ($tags['tourism'] ?? null) === 'artwork';
+    }
 
     /**
      * @return list<Candidate>
@@ -71,6 +120,37 @@ class CandidateRepository
     }
 
     /**
+     * The places nearest a point that fit, at most `$perCategory` of each kind, nearest first,
+     * stopping once `$enough` are found and no place left can be nearer: what Composer's
+     * assistant suggests from (its search_places), without the planner's whole pool of a
+     * dozen a kind plus the listings, which it doesn't use (owner, 22 Oct 2026: every reply
+     * under 6 s).
+     *
+     * @return list<Candidate>
+     */
+    public function nearestSpots(Constraints $constraints, float $originLat, float $originLng, int $perCategory = 2, int $enough = 24): array
+    {
+        return $this->spotCandidates($constraints, $originLat, $originLng, $perCategory, $enough);
+    }
+
+    /**
+     * Places of the kinds asked for anywhere in Cologne that list something for working there (Wi-Fi,
+     * sockets, laptops welcome) in any source: OSM, their website, people's answers. For "a café to work
+     * anywhere in Cologne", which the nearest few can't answer (owner, 26 Oct 2026). Their current facts
+     * still decide; this only says where to look.
+     *
+     * @return list<Candidate>
+     */
+    public function workSpots(Constraints $constraints, float $originLat, float $originLng): array
+    {
+        $ids = DB::table('place_fact_observations')
+            ->whereRaw("(payload #>> '{practical,internet_access}' IN ('yes', 'wlan', 'wifi', 'wired') OR payload #>> '{practical,power_supply}' = 'yes' OR payload #>> '{practical,laptops}' IN ('yes', 'limited'))")
+            ->distinct()->pluck('spot_id')->map(fn (mixed $id): int => (int) $id)->all();
+
+        return $ids === [] ? [] : $this->spotCandidates($constraints, $originLat, $originLng, PHP_INT_MAX, null, $ids);
+    }
+
+    /**
      * A diverse, bounded, LOCAL pool: the nearest ~12 per category to the plan's
      * origin. Per-category keeps it varied (2,000 playgrounds can't drown out
      * the museums and cafés); nearest-first makes it reflect where the day
@@ -81,7 +161,23 @@ class CandidateRepository
      *
      * @return list<Candidate>
      */
-    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng): array
+    private function spotCandidates(Constraints $constraints, float $originLat, float $originLng, int $perCategory = self::PER_CATEGORY, ?int $enough = null, ?array $among = null): array
+    {
+        // The fact rules make these queries look costly to PostgreSQL, so it compiles them
+        // first (JIT): 3–4 s for 30 ms of work. Off for these queries only, same results
+        // (owner, 22 Oct 2026: every Composer reply under 6 s).
+        return DB::transaction(function () use ($constraints, $originLat, $originLng, $perCategory, $enough, $among): array {
+            DB::statement('SET LOCAL jit = off');
+
+            return $this->nearestFitting($constraints, $originLat, $originLng, $perCategory, $enough, $among);
+        });
+    }
+
+    /**
+     * @param  list<int>|null  $among  only these places, however far (workSpots)
+     * @return list<Candidate>
+     */
+    private function nearestFitting(Constraints $constraints, float $originLat, float $originLng, int $perCategory, ?int $enough, ?array $among = null): array
     {
         $grouping = app(DestinationGrouping::class);
         $requested = array_values(array_unique(array_merge([], ...array_map(SpotCategory::finesForSelector(...), $constraints->categories))));
@@ -93,7 +189,18 @@ class CandidateRepository
         $query = $grouping->eligible(Spot::query(), $includeFacilities)
             ->when($constraints->activities === [] && $requestedFacilities !== [], fn ($query) => $query->where(fn ($where) => $where->where('spots.is_recommendable', true)->orWhereIn('spots.category', $requestedFacilities)))
             ->when(! $includeFacilities, fn ($query) => $query->where(fn ($where) => $where->whereNull('destination_spot_id')->orWhereIn('category', $requested)))
-            ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested));
+            ->when($requested !== [], fn ($query) => $query->whereIn('category', $requested))
+            ->when($among !== null, fn ($query) => $query->whereIn('spots.id', $among))
+            // A pharmacy or supermarket is an errand, not an afternoon out:
+            // only a request that names one brings it into the plan.
+            ->when($requested === [], fn ($query) => $query->whereNotIn('category', SpotCategory::errands()));
+        $labels = implode('|', array_map(fn (string $label): string => preg_quote($label, '/'), self::GENERIC_MICRO_FACILITY_LABELS));
+        $query->where(function ($where) use ($labels, $includeFacilities): void {
+            $where->whereRaw('spots.name !~* ?', ['^('.$labels.')(?:\\s*·.*)?$']);
+            if ($includeFacilities) {
+                $where->orWhere(fn ($qualified) => app(PlaceFacts::class)->activityQualified($qualified));
+            }
+        });
         $selected = [];
         $filter = app(FeasibilityFilter::class);
 
@@ -104,11 +211,23 @@ class CandidateRepository
         $hints = app(PlaceSearchHints::class)->ordered(clone $query, $constraints, $originLat, $originLng);
         $offset = 0;
         while ($offset < count($hints)) {
+            // For the assistant, within a few kilometres: past them, few that fit (step-free, a sport) aren't worth the wait.
+            if ($enough !== null && $hints[$offset]['minimum_km'] > self::NEAR_KM) {
+                break;
+            }
+            // Enough already, and every place left is farther than the last of them.
+            if ($enough !== null && $offset > 0) {
+                $distances = array_map(fn (Candidate $c): float => (float) $c->distanceKmFromOrigin, array_merge([], ...array_values($selected)));
+                sort($distances);
+                if (count($distances) >= $enough && $hints[$offset]['minimum_km'] > $distances[$enough - 1]) {
+                    break;
+                }
+            }
             $ids = [];
             while ($offset < count($hints) && count($ids) < 64) {
                 $hint = $hints[$offset++];
                 $pool = $selected[$hint['category']] ?? [];
-                if (count($pool) >= self::PER_CATEGORY && $hint['minimum_km'] > $pool[array_key_last($pool)]->distanceKmFromOrigin) {
+                if (count($pool) >= $perCategory && $hint['minimum_km'] > $pool[array_key_last($pool)]->distanceKmFromOrigin) {
                     continue;
                 }
                 $ids[] = $hint['id'];
@@ -116,7 +235,7 @@ class CandidateRepository
             if ($ids === []) {
                 break;
             }
-            $spots = (clone $query)->whereIn('spots.id', $ids)->get();
+            $spots = (clone $query)->whereIn('spots.id', $ids)->with('englishEnrichment')->get();
             $facts = app(PlaceFacts::class)->resolveMany($spots);
             $groups = $grouping->groupIds($spots->modelKeys(), $includeFacilities);
             foreach ($spots as $spot) {
@@ -130,7 +249,7 @@ class CandidateRepository
                 }
                 $selected[$candidate->category][] = $candidate;
                 usort($selected[$candidate->category], fn (Candidate $a, Candidate $b): int => [$a->distanceKmFromOrigin, (int) substr($a->id, 5)] <=> [$b->distanceKmFromOrigin, (int) substr($b->id, 5)]);
-                $selected[$candidate->category] = array_slice($selected[$candidate->category], 0, self::PER_CATEGORY);
+                $selected[$candidate->category] = array_slice($selected[$candidate->category], 0, $perCategory);
             }
         }
         $candidates = array_merge([], ...array_values($selected));
@@ -156,21 +275,29 @@ class CandidateRepository
             ->filter()
             ->all();
 
+        $eventIds = array_values(array_filter($ids, fn ($id) => is_string($id) && str_starts_with($id, 'event:')));
+        $events = $eventIds === [] ? [] : $this->eventCandidates(
+            new Constraints($day->startOfDay(), $day->endOfDay()), $originLat, $originLng, $eventIds,
+        );
         if ($spotIds === []) {
-            return [];
+            return $events;
         }
 
         $spots = app(DestinationGrouping::class)->eligible(Spot::query(), includeActivityFacilities: true)
             ->whereIn('id', $spotIds)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
+            ->with('englishEnrichment')
             ->get();
         $groups = app(DestinationGrouping::class)->groupIds($spots->modelKeys(), includeActivityFacilities: true);
         $facts = app(PlaceFacts::class)->resolveMany($spots);
 
-        return $spots
+        $candidates = $spots
+            ->filter(fn (Spot $spot): bool => $facts[$spot->id]['location']['map_point']['status'] === 'known')
             ->map(fn (Spot $spot) => $this->spotToCandidate($spot, $day, $facts[$spot->id], $originLat, $originLng, $groups[$spot->id]))
-            ->all();
+            ->values()->all();
+
+        return [...$candidates, ...$events];
     }
 
     /** @param array<string, mixed> $facts */
@@ -181,6 +308,10 @@ class CandidateRepository
             : (string) $spot->category;
 
         [$opensAt, $closesAt, $closedToday] = $this->hoursOn($facts['hours']['parsed'], $day);
+        // One of its closing dates ("Dec 24 off", a summer break): closed that day, whatever the week says.
+        if (OpeningHoursParser::closedOn($facts['hours']['raw'] ?? null, $day)) {
+            [$opensAt, $closesAt, $closedToday] = [null, null, true];
+        }
         $tags = is_array($spot->tags) ? $spot->tags : [];
         $mapPoint = $facts['location']['map_point'];
         $entrance = $facts['location']['entrance_point'];
@@ -201,20 +332,23 @@ class CandidateRepository
             id: "spot:{$spot->id}",
             destinationGroupId: 'spot:'.($destinationId ?? $spot->id),
             type: 'spot',
-            name: $facts['name']['value'] ?? $spot->name,
+            name: $facts['display_name'] ?? $facts['name']['value'] ?? $spot->name,
             lat: $lat,
             lng: $lng,
             veedel: $spot->veedel ?? null,
             category: $category,
-            outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true),
-            typicalDurationMin: self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default'],
+            // A beer garden is outdoors whatever its category: rain counts against it.
+            outdoor: in_array($category, self::OUTDOOR_CATEGORIES, true) || ($tags['amenity'] ?? null) === 'biergarten',
+            // A fountain, monument or artwork is a short stop on the way, never an hour (owner, 24 Oct 2026: the Domfontäne for an hour).
+            typicalDurationMin: self::shortStop($tags) ? self::SHORT_STOP_MIN : (self::DEFAULT_DURATION_MIN[$category] ?? self::DEFAULT_DURATION_MIN['default']),
             costTier: $this->spotCostTier($spot, $facts['fee']),
             opensAt: $opensAt,
             closesAt: $closesAt,
             isLandmark: isset($tags['wikidata']) || isset($tags['wikipedia']),
             closedToday: $closedToday,
             hoursAssumed: $hoursAssumed,
-            description: $facts['description']['value'],
+            description: $spot->englishEnrichment?->summary,
+            vibeTags: $spot->englishEnrichment?->vibeTagNames() ?? [],
             tags: $this->textTags([
                 ...$tags,
                 ...collect($facts['negative_facts'])->mapWithKeys(fn (mixed $value, string $key): array => ["negative:{$key}" => $value])->all(),
@@ -227,6 +361,7 @@ class CandidateRepository
             factConflicts: $facts['conflicts'],
             factRevision: $facts['revision'],
             placeFacts: $facts,
+            sourceFacts: $this->sourceFacts($facts, $tags),
             distanceKmFromOrigin: NearbyPlaces::km($originLat, $originLng, $lat, $lng),
         );
     }
@@ -289,13 +424,21 @@ class CandidateRepository
     /** Event categories/chips that mean an open-air thing rain should discourage. */
     private const OUTDOOR_EVENT_HINTS = ['market', 'festival', 'open_air', 'street', 'flohmarkt', 'food', 'sport', 'outdoor', 'park'];
 
-    private function eventCandidates(Constraints $constraints, float $originLat, float $originLng): array
+    private function eventCandidates(Constraints $constraints, float $originLat, float $originLng, ?array $ids = null): array
     {
-        if ($constraints->activities !== []) {
-            return [];
+        $occurrences = Event::occurringBetween($constraints->windowStart, $constraints->windowEnd);
+        // Exact selection is independent of the discovery pool's nearest-50 cap.
+        if ($ids !== null) {
+            $occurrences = $occurrences->filter(function (array $occurrence) use ($ids): bool {
+                $event = $occurrence['event'];
+                $id = $event->recurrence !== null
+                    ? "event:{$event->id}:{$occurrence['starts_at']->getTimestamp()}"
+                    : "event:{$event->id}";
+
+                return in_array($id, $ids, true);
+            });
         }
 
-        $occurrences = Event::occurringBetween($constraints->windowStart, $constraints->windowEnd);
         try {
             $coordinates = $this->serviceArea->eventCoordinates(
                 $occurrences->pluck('event.id')->map(fn ($id) => (int) $id)->unique()->values()->all(),
@@ -313,6 +456,7 @@ class CandidateRepository
                 (float) $coordinates->get($occurrence['event']->id)->lat,
                 (float) $coordinates->get($occurrence['event']->id)->lng,
             ))
+            ->when($ids === null, fn ($items) => $items->take(50))
             ->map(function (array $occurrence) use ($coordinates, $originLat, $originLng): Candidate {
                 /** @var Event $event */
                 $event = $occurrence['event'];
@@ -330,9 +474,11 @@ class CandidateRepository
                     veedel: $event->venue?->veedel,
                     category: (string) ($event->category ?? 'event'),
                     outdoor: $this->eventIsOutdoor($event),
+                    // No listed end: the plan still needs a length to schedule around.
                     typicalDurationMin: $occurrence['ends_at']
-                        ? max(30, (int) $occurrence['starts_at']->diffInMinutes($occurrence['ends_at']))
+                        ? max(1, (int) $occurrence['starts_at']->diffInMinutes($occurrence['ends_at']))
                         : 120,
+                    endListed: $occurrence['ends_at'] !== null,
                     costTier: $event->is_free ? 'free' : 'normal',
                     opensAt: null,
                     closesAt: null,
@@ -341,15 +487,18 @@ class CandidateRepository
                     // A curated (expat-relevant / high-quality) event is the kind of
                     // thing worth building a day around — let it win the hero role.
                     isLandmark: (bool) $event->is_curated,
-                    description: $event->summary_en ?: $event->description_en ?: $event->description,
+                    // The model's summary only when every figure in it is in the listing.
+                    description: $event->source === 'manual'
+                        ? ($event->summary_en ?: $event->description_en ?: $event->description)
+                        : (EventEvidence::text($event->summary_en, EventEvidence::source($event))
+                            ?? EventEvidence::text($event->description_en, EventEvidence::source($event))
+                            ?? $event->description),
                     tags: $this->textTags([...(array) $event->tags, ...(array) $event->chips]),
                     qualityScore: $event->quality_score,
                     travelMinutesFromOrigin: (new TravelEstimator)->minutesBetween($originLat, $originLng, (float) $point->lat, (float) $point->lng),
                     distanceKmFromOrigin: NearbyPlaces::km($originLat, $originLng, (float) $point->lat, (float) $point->lng),
                 );
             })
-            ->filter(fn (Candidate $candidate): bool => app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate))
-            ->take(50)
             ->values()
             ->all();
     }
@@ -368,14 +517,37 @@ class CandidateRepository
         return false;
     }
 
-    /** @param array<string, mixed> $fee */
+    /** Preserve source restrictions while publishing reviewed values and uncertainty. */
+    private function sourceFacts(array $facts, array $tags): array
+    {
+        $effective = [];
+        foreach ($facts['practical'] ?? [] as $key => $fact) {
+            $effective[$key] = $fact['value'] ?? null;
+        }
+        $source = new SourceTagFacts($effective);
+        $legacy = new SourceTagFacts($tags);
+
+        return [
+            'fee_status' => $facts['fee']['status'] === 'known' ? $facts['fee']['value'] : $facts['fee']['status'],
+            'access_status' => $facts['access']['status'] === 'known' ? $facts['access']['value'] : $facts['access']['status'],
+            'requires_arrangement' => $source->requiresArrangement() || $legacy->requiresArrangement(),
+            'reservation' => $effective['reservation'] ?? null,
+            'membership' => $tags['membership'] ?? null,
+            'sport' => $effective['sport'] ?? null,
+            'surface' => $effective['surface'] ?? null,
+            'lit' => $effective['lit'] ?? null,
+            'opening_hours' => $facts['hours']['raw'] ?? null,
+            'availability' => 'unknown',
+        ];
+    }
+
     private function spotCostTier(Spot $spot, array $fee): string
     {
         if (in_array($fee['status'], ['conflicting', 'conditional'], true)) {
             return 'unknown';
         }
         if ($fee['value'] === 'free') {
-            return 'free';
+            return in_array($spot->price_range, ['€', '€€', '€€€'], true) ? 'unknown' : 'free';
         }
         if ($fee['value'] === 'paid') {
             return ($spot->price_range ?? null) === '€' ? 'low' : 'normal';

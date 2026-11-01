@@ -15,7 +15,7 @@ class Scorer
         'critical' => 100.0,
         'major' => 70.0,
         // Good news (e.g. permanent-residency eligibility) ranks mid-pack: high
-        // enough to clear info-level noise on the dashboard, below the problems
+        // enough to clear info-level noise on Today, below the problems
         // a user must act on. The Alerts screen separates it into its own lane
         // regardless, so this only orders the unified bus.
         'success' => 60.0,

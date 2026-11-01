@@ -1,0 +1,27 @@
+{
+  "snapshot": "2026-09-18",
+  "preparedFor": "Places field-guide design",
+  "city": "Cologne",
+  "source": "docs/places/cologne-expansion/2026-09-18/place-refinement/catalogue-refined.jsonl",
+  "sourceSha256": "c158b0f43332c81001757af87210d100cd26acc7a3aefd0b8f138844d1443784",
+  "records": 4956,
+  "categories": {
+    "food": 3724,
+    "play": 500,
+    "culture": 490,
+    "outside": 242
+  },
+  "withDescriptions": 125,
+  "withRecordedHours": 2570,
+  "withRecordedAmenities": 3508,
+  "withPostcodes": 2317,
+  "withReviewedPhotos": 8,
+  "exclusions": {
+    "outside_discovery_categories": 7225,
+    "restricted_or_inactive_source": 2,
+    "no_primary_osm_record": 674
+  },
+  "publication": "Frozen source snapshot for design; provisional identities, not an imported/published city census.",
+  "factsLicense": "ODbL-1.0",
+  "factsAttribution": "© OpenStreetMap contributors"
+}

@@ -1,0 +1,2911 @@
+{
+    "mode": "apply",
+    "generated": "2026-10-06T21:41:55.746Z",
+    "files": [
+        "style.css",
+        "brief/reference.css",
+        "brief/enhancements.css",
+        "brief/cohesion.css",
+        "brief/priorities.css",
+        "brief/connections.css",
+        "brief/hierarchy.css"
+    ],
+    "changes": [
+        {
+            "property": "border-color",
+            "from": "form fields: #d7d1c8 (1.5:1)",
+            "to": "var(--color-border-strong)",
+            "shown": "#8a8277 (3.6:1)",
+            "count": 1,
+            "files": ["brief/hierarchy.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "12px",
+            "to": "var(--radius-md)",
+            "shown": "12px",
+            "count": 109,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "10px",
+            "to": "var(--radius-md)",
+            "shown": "12px",
+            "count": 73,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "14px",
+            "to": "var(--radius-lg)",
+            "shown": "16px",
+            "count": 61,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "50%",
+            "to": "var(--radius-round)",
+            "shown": "50%",
+            "count": 57,
+            "files": ["style.css", "brief/enhancements.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "16px",
+            "to": "var(--radius-lg)",
+            "shown": "16px",
+            "count": 49,
+            "files": [
+                "style.css",
+                "brief/reference.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "0",
+            "to": "0",
+            "shown": "0",
+            "count": 44,
+            "files": [
+                "connected/shell-review.css",
+                "connected/place-sheet.css",
+                "connected/location-popover.css",
+                "connected/loading.css",
+                "today-c/composer-controls.css",
+                "events-next/event-sheet.css",
+                "events-next/posters.css",
+                "departures-next/workspace.css",
+                "departures-next/navigation.css",
+                "departures-next/station-board.css",
+                "departures-next/stop-discovery.css",
+                "composer-studio/style.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "20px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 32,
+            "files": ["style.css", "brief/reference.css", "brief/cohesion.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "8px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 30,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/priorities.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "22px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 23,
+            "files": ["style.css", "brief/priorities.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "9px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 22,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "18px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 20,
+            "files": [
+                "connected/style.css",
+                "connected/today-header.css",
+                "connected/discovery.css",
+                "events-next/events.css",
+                "events-next/event-sheet.css",
+                "events-next/posters.css",
+                "bureaucracy-next/style.css",
+                "bureaucracy-next/situation.css",
+                "departures-next/style.css",
+                "composer-studio/review-features.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "24px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 17,
+            "files": ["style.css", "brief/cohesion.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "13px",
+            "to": "var(--radius-md)",
+            "shown": "12px",
+            "count": 17,
+            "files": ["style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "15px",
+            "to": "var(--radius-lg)",
+            "shown": "16px",
+            "count": 14,
+            "files": ["style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "11px",
+            "to": "var(--radius-md)",
+            "shown": "12px",
+            "count": 14,
+            "files": ["brief/connections.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "6px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 11,
+            "files": ["brief/enhancements.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "26px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 10,
+            "files": ["brief/reference.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "23px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 6,
+            "files": [
+                "connected/style.css",
+                "events-next/festival.css",
+                "composer-studio/style.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "3px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 5,
+            "files": [
+                "connected/style.css",
+                "connected/shell-review.css",
+                "departures-next/workspace.css",
+                "departures-next/navigation.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "17px",
+            "to": "var(--radius-lg)",
+            "shown": "16px",
+            "count": 4,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "28px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 4,
+            "files": ["connected/style.css", "departures-next/navigation.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "7px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 4,
+            "files": [
+                "connected/place-sheet.css",
+                "departures-next/station-board.css",
+                "composer-studio/style.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "4px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 4,
+            "files": [
+                "departures-next/style.css",
+                "departures-next/navigation.css",
+                "composer-studio/review-features.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "20px 20px 0 0",
+            "to": "var(--radius-xl) var(--radius-xl) 0 0",
+            "shown": "24px 24px 0 0",
+            "count": 3,
+            "files": ["brief/priorities.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 0 24px 24px",
+            "to": "0 0 var(--radius-xl) var(--radius-xl)",
+            "shown": "0 0 24px 24px",
+            "count": 3,
+            "files": ["style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "24px 24px 0 0",
+            "to": "var(--radius-xl) var(--radius-xl) 0 0",
+            "shown": "24px 24px 0 0",
+            "count": 3,
+            "files": [
+                "connected/style.css",
+                "connected/place-sheet.css",
+                "departures-next/style.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "5px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 3,
+            "files": [
+                "connected/place-sheet.css",
+                "events-next/event-sheet.css",
+                "composer-studio/style.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "24px 0 0 0",
+            "to": "var(--radius-xl) 0 0 0",
+            "shown": "24px 0 0 0",
+            "count": 2,
+            "files": ["brief/priorities.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "99px",
+            "to": "var(--radius-pill)",
+            "shown": "pill",
+            "count": 2,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "25px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 2,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "18px 18px 0 0",
+            "to": "var(--radius-xl) var(--radius-xl) 0 0",
+            "shown": "24px 24px 0 0",
+            "count": 2,
+            "files": ["connected/place-sheet.css", "events-next/posters.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 0 10px 10px",
+            "to": "0 0 var(--radius-md) var(--radius-md)",
+            "shown": "0 0 12px 12px",
+            "count": 2,
+            "files": [
+                "today-c/composer-controls.css",
+                "composer-studio/conversation.css"
+            ]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 0 20px 20px",
+            "to": "0 0 var(--radius-xl) var(--radius-xl)",
+            "shown": "0 0 24px 24px",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 24px 0 0",
+            "to": "0 var(--radius-xl) 0 0",
+            "shown": "0 24px 0 0",
+            "count": 1,
+            "files": ["brief/cohesion.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 0 0 24px",
+            "to": "0 0 0 var(--radius-xl)",
+            "shown": "0 0 0 24px",
+            "count": 1,
+            "files": ["brief/cohesion.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "14px 14px 0 0",
+            "to": "var(--radius-lg) var(--radius-lg) 0 0",
+            "shown": "16px 16px 0 0",
+            "count": 1,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "13px 0 0 13px",
+            "to": "var(--radius-md) 0 0 var(--radius-md)",
+            "shown": "12px 0 0 12px",
+            "count": 1,
+            "files": ["connected/shell-review.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 13px 13px 0",
+            "to": "0 var(--radius-md) var(--radius-md) 0",
+            "shown": "0 12px 12px 0",
+            "count": 1,
+            "files": ["connected/shell-review.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "4px 10px 10px 4px",
+            "to": "var(--radius-sm) var(--radius-md) var(--radius-md) var(--radius-sm)",
+            "shown": "8px 12px 12px 8px",
+            "count": 1,
+            "files": ["connected/place-sheet.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "4px 12px 12px 4px",
+            "to": "var(--radius-sm) var(--radius-md) var(--radius-md) var(--radius-sm)",
+            "shown": "8px 12px 12px 8px",
+            "count": 1,
+            "files": ["connected/place-sheet.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "2px",
+            "to": "var(--radius-sm)",
+            "shown": "8px",
+            "count": 1,
+            "files": ["events-next/festival.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 0 14px 14px",
+            "to": "0 0 var(--radius-lg) var(--radius-lg)",
+            "shown": "0 0 16px 16px",
+            "count": 1,
+            "files": ["departures-next/workspace.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "100px",
+            "to": "var(--radius-pill)",
+            "shown": "pill",
+            "count": 1,
+            "files": ["departures-next/workspace.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "0 12px 12px 0",
+            "to": "0 var(--radius-md) var(--radius-md) 0",
+            "shown": "0 12px 12px 0",
+            "count": 1,
+            "files": ["departures-next/station-context.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "30px",
+            "to": "var(--radius-xl)",
+            "shown": "24px",
+            "count": 1,
+            "files": ["composer-studio/style.css"]
+        },
+        {
+            "property": "border-radius",
+            "from": "16px 16px 4px 16px",
+            "to": "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)",
+            "shown": "16px 16px 8px 16px",
+            "count": 1,
+            "files": ["composer-studio/conversation.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "12px",
+            "to": "var(--text-caption)",
+            "shown": "12px",
+            "count": 276,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "13px",
+            "to": "var(--text-small)",
+            "shown": "13px",
+            "count": 266,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "14px",
+            "to": "var(--text-control)",
+            "shown": "14px",
+            "count": 203,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "11px",
+            "to": "var(--text-micro)",
+            "shown": "11px",
+            "count": 156,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "15px",
+            "to": "var(--text-body)",
+            "shown": "15px",
+            "count": 72,
+            "files": [
+                "style.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "16px",
+            "to": "var(--text-section)",
+            "shown": "17px",
+            "count": 49,
+            "files": ["style.css", "brief/connections.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "10px",
+            "to": "var(--text-micro)",
+            "shown": "11px",
+            "count": 46,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "17px",
+            "to": "var(--text-section)",
+            "shown": "17px",
+            "count": 31,
+            "files": [
+                "style.css",
+                "brief/cohesion.css",
+                "brief/priorities.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "21px",
+            "to": "var(--text-title-sm)",
+            "shown": "20px",
+            "count": 28,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "18px",
+            "to": "var(--text-section)",
+            "shown": "17px",
+            "count": 26,
+            "files": ["style.css", "brief/hierarchy.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "22px",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 25,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "23px",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 25,
+            "files": ["style.css", "brief/cohesion.css", "brief/priorities.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "20px",
+            "to": "var(--text-title-sm)",
+            "shown": "20px",
+            "count": 24,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "19px",
+            "to": "var(--text-title-sm)",
+            "shown": "20px",
+            "count": 23,
+            "files": [
+                "style.css",
+                "brief/priorities.css",
+                "brief/hierarchy.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "24px",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 20,
+            "files": ["style.css", "brief/cohesion.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "25px",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 14,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "28px",
+            "to": "var(--text-title-lg)",
+            "shown": "28px",
+            "count": 10,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "26px",
+            "to": "var(--text-title-lg)",
+            "shown": "28px",
+            "count": 9,
+            "files": [
+                "connected/style.css",
+                "events-next/spotlight.css",
+                "bureaucracy-next/style.css",
+                "departures-next/style.css",
+                "departures-next/station-board.css",
+                "services-next/services.css",
+                "composer-studio/style.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "27px",
+            "to": "var(--text-title-lg)",
+            "shown": "28px",
+            "count": 8,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "30px",
+            "to": "var(--text-display-sm)",
+            "shown": "32px",
+            "count": 6,
+            "files": [
+                "connected/style.css",
+                "bureaucracy-next/style.css",
+                "departures-next/style.css",
+                "services-next/services.css"
+            ]
+        },
+        {
+            "property": "font-size",
+            "from": "29px",
+            "to": "var(--text-title-lg)",
+            "shown": "28px",
+            "count": 5,
+            "files": ["connected/style.css", "composer-studio/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "9px",
+            "to": "var(--text-micro)",
+            "shown": "11px",
+            "count": 3,
+            "files": ["brief/enhancements.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "38px",
+            "to": "var(--text-display)",
+            "shown": "40px",
+            "count": 2,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(36px, 4vw, 52px)",
+            "to": "var(--text-display-fluid)",
+            "shown": "36–52px fluid",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(23px, 2vw, 30px)",
+            "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+            "shown": "20–28px fluid",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "42px",
+            "to": "var(--text-display)",
+            "shown": "40px",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "35px",
+            "to": "var(--text-display)",
+            "shown": "40px",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(20px, 2vw, 27px)",
+            "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+            "shown": "20–28px fluid",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "40px",
+            "to": "var(--text-display)",
+            "shown": "40px",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "34px",
+            "to": "var(--text-display)",
+            "shown": "40px",
+            "count": 1,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(22px, 1.9vw, 28px)",
+            "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+            "shown": "20–28px fluid",
+            "count": 1,
+            "files": ["brief/enhancements.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "26px",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 1,
+            "files": ["brief/enhancements.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(22px, 2vw, 29px)",
+            "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+            "shown": "20–28px fluid",
+            "count": 1,
+            "files": ["brief/enhancements.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(36px, 4.2vw, 60px)",
+            "to": "clamp(var(--text-display), 4.2vw, var(--text-display-lg))",
+            "shown": "40–52px fluid",
+            "count": 1,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "52px",
+            "to": "var(--text-display-lg)",
+            "shown": "52px",
+            "count": 1,
+            "files": ["connected/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(22px, 6vw, 24px)",
+            "to": "var(--text-title)",
+            "shown": "24px",
+            "count": 1,
+            "files": ["connected/shell-review.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(26px, 3vw, 38px)",
+            "to": "clamp(var(--text-title-lg), 3vw, var(--text-display))",
+            "shown": "28–40px fluid",
+            "count": 1,
+            "files": ["connected/discovery.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(28px, 3vw, 40px)",
+            "to": "clamp(var(--text-title-lg), 3vw, var(--text-display))",
+            "shown": "28–40px fluid",
+            "count": 1,
+            "files": ["events-next/spotlight.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "34px",
+            "to": "var(--text-display-sm)",
+            "shown": "32px",
+            "count": 1,
+            "files": ["bureaucracy-next/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(21px, 3vw, 28px)",
+            "to": "clamp(var(--text-title-sm), 3vw, var(--text-title-lg))",
+            "shown": "20–28px fluid",
+            "count": 1,
+            "files": ["bureaucracy-next/orientation.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(27px, 4vw, 40px)",
+            "to": "clamp(var(--text-title-lg), 4vw, var(--text-display))",
+            "shown": "28–40px fluid",
+            "count": 1,
+            "files": ["bureaucracy-next/situation.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(28px, 3.1vw, 40px)",
+            "to": "clamp(var(--text-title-lg), 3.1vw, var(--text-display))",
+            "shown": "28–40px fluid",
+            "count": 1,
+            "files": ["composer-studio/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(32px, 3.8vw, 46px)",
+            "to": "clamp(var(--text-display-sm), 3.8vw, var(--text-display))",
+            "shown": "32–40px fluid",
+            "count": 1,
+            "files": ["composer-studio/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(24px, 2.5vw, 32px)",
+            "to": "clamp(var(--text-title), 2.5vw, var(--text-display-sm))",
+            "shown": "24–32px fluid",
+            "count": 1,
+            "files": ["composer-studio/style.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(25px, 2.6vw, 36px)",
+            "to": "clamp(var(--text-title), 2.6vw, var(--text-display-sm))",
+            "shown": "24–32px fluid",
+            "count": 1,
+            "files": ["events-next/festival.css"]
+        },
+        {
+            "property": "font-size",
+            "from": "clamp(30px, 3vw, 46px)",
+            "to": "clamp(var(--text-display-sm), 3vw, var(--text-display))",
+            "shown": "32–40px fluid",
+            "count": 1,
+            "files": ["events-next/posters.css"]
+        },
+        {
+            "property": "font-weight",
+            "from": "600",
+            "to": "var(--weight-semibold)",
+            "shown": "600",
+            "count": 124,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/connections.css",
+                "brief/hierarchy.css"
+            ]
+        },
+        {
+            "property": "font-weight",
+            "from": "500",
+            "to": "var(--weight-medium)",
+            "shown": "500",
+            "count": 81,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/cohesion.css",
+                "brief/priorities.css"
+            ]
+        },
+        {
+            "property": "font-weight",
+            "from": "400",
+            "to": "var(--weight-regular)",
+            "shown": "400",
+            "count": 38,
+            "files": [
+                "style.css",
+                "brief/priorities.css",
+                "brief/hierarchy.css"
+            ]
+        },
+        {
+            "property": "font-weight",
+            "from": "550",
+            "to": "var(--weight-semibold)",
+            "shown": "600",
+            "count": 26,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/priorities.css",
+                "brief/connections.css",
+                "brief/hierarchy.css"
+            ]
+        },
+        {
+            "property": "font-weight",
+            "from": "650",
+            "to": "var(--weight-bold)",
+            "shown": "700",
+            "count": 16,
+            "files": [
+                "style.css",
+                "brief/enhancements.css",
+                "brief/connections.css"
+            ]
+        },
+        {
+            "property": "font-weight",
+            "from": "700",
+            "to": "var(--weight-bold)",
+            "shown": "700",
+            "count": 11,
+            "files": ["style.css"]
+        },
+        {
+            "property": "font-weight",
+            "from": "680",
+            "to": "var(--weight-bold)",
+            "shown": "700",
+            "count": 1,
+            "files": ["bureaucracy-next/orientation.css"]
+        },
+        {
+            "property": "font-weight",
+            "from": "450",
+            "to": "var(--weight-regular)",
+            "shown": "400",
+            "count": 1,
+            "files": ["composer-studio/conversation.css"]
+        }
+    ],
+    "sets": {
+        "today": {
+            "files": [
+                "today-next/style.css",
+                "today-next/brief/reference.css",
+                "today-next/brief/enhancements.css",
+                "today-next/brief/cohesion.css",
+                "today-next/brief/priorities.css",
+                "today-next/brief/connections.css",
+                "today-next/brief/hierarchy.css"
+            ],
+            "changes": [
+                {
+                    "property": "border-color",
+                    "from": "form fields: #d7d1c8 (1.5:1)",
+                    "to": "var(--color-border-strong)",
+                    "shown": "#8a8277 (3.6:1)",
+                    "count": 1,
+                    "files": ["brief/hierarchy.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "12px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 15,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "10px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 14,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "50%",
+                    "to": "var(--radius-round)",
+                    "shown": "50%",
+                    "count": 12,
+                    "files": ["style.css", "brief/enhancements.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "8px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 9,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/priorities.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "14px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 7,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "20px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 6,
+                    "files": [
+                        "style.css",
+                        "brief/reference.css",
+                        "brief/cohesion.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "26px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 5,
+                    "files": ["brief/reference.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "16px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 4,
+                    "files": [
+                        "style.css",
+                        "brief/reference.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "24px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 3,
+                    "files": ["style.css", "brief/cohesion.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "9px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 3,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "20px 20px 0 0",
+                    "to": "var(--radius-xl) var(--radius-xl) 0 0",
+                    "shown": "24px 24px 0 0",
+                    "count": 3,
+                    "files": ["brief/priorities.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "22px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 2,
+                    "files": ["style.css", "brief/priorities.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "24px 0 0 0",
+                    "to": "var(--radius-xl) 0 0 0",
+                    "shown": "24px 0 0 0",
+                    "count": 2,
+                    "files": ["brief/priorities.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "13px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "15px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 24px 24px",
+                    "to": "0 0 var(--radius-xl) var(--radius-xl)",
+                    "shown": "0 0 24px 24px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 20px 20px",
+                    "to": "0 0 var(--radius-xl) var(--radius-xl)",
+                    "shown": "0 0 24px 24px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "6px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 1,
+                    "files": ["brief/enhancements.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 24px 0 0",
+                    "to": "0 var(--radius-xl) 0 0",
+                    "shown": "0 24px 0 0",
+                    "count": 1,
+                    "files": ["brief/cohesion.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 0 24px",
+                    "to": "0 0 0 var(--radius-xl)",
+                    "shown": "0 0 0 24px",
+                    "count": 1,
+                    "files": ["brief/cohesion.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "11px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 1,
+                    "files": ["brief/connections.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "13px",
+                    "to": "var(--text-small)",
+                    "shown": "13px",
+                    "count": 48,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "12px",
+                    "to": "var(--text-caption)",
+                    "shown": "12px",
+                    "count": 40,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "14px",
+                    "to": "var(--text-control)",
+                    "shown": "14px",
+                    "count": 33,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "11px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 26,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "10px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 9,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "24px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 8,
+                    "files": ["style.css", "brief/cohesion.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "19px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 6,
+                    "files": [
+                        "style.css",
+                        "brief/priorities.css",
+                        "brief/hierarchy.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "15px",
+                    "to": "var(--text-body)",
+                    "shown": "15px",
+                    "count": 6,
+                    "files": [
+                        "style.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "22px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 6,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "17px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 5,
+                    "files": [
+                        "style.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "25px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 3,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "23px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 3,
+                    "files": [
+                        "style.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "18px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 3,
+                    "files": ["style.css", "brief/hierarchy.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "21px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 3,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "27px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 2,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "16px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 2,
+                    "files": ["style.css", "brief/connections.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(36px, 4vw, 52px)",
+                    "to": "var(--text-display-fluid)",
+                    "shown": "36–52px fluid",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(23px, 2vw, 30px)",
+                    "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+                    "shown": "20–28px fluid",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "28px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "42px",
+                    "to": "var(--text-display)",
+                    "shown": "40px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "35px",
+                    "to": "var(--text-display)",
+                    "shown": "40px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(20px, 2vw, 27px)",
+                    "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+                    "shown": "20–28px fluid",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "40px",
+                    "to": "var(--text-display)",
+                    "shown": "40px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "20px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "34px",
+                    "to": "var(--text-display)",
+                    "shown": "40px",
+                    "count": 1,
+                    "files": ["style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(22px, 1.9vw, 28px)",
+                    "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+                    "shown": "20–28px fluid",
+                    "count": 1,
+                    "files": ["brief/enhancements.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "26px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 1,
+                    "files": ["brief/enhancements.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(22px, 2vw, 29px)",
+                    "to": "clamp(var(--text-title-sm), 2vw, var(--text-title-lg))",
+                    "shown": "20–28px fluid",
+                    "count": 1,
+                    "files": ["brief/enhancements.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "9px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 1,
+                    "files": ["brief/enhancements.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "600",
+                    "to": "var(--weight-semibold)",
+                    "shown": "600",
+                    "count": 20,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/connections.css",
+                        "brief/hierarchy.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "550",
+                    "to": "var(--weight-semibold)",
+                    "shown": "600",
+                    "count": 12,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/priorities.css",
+                        "brief/connections.css",
+                        "brief/hierarchy.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "500",
+                    "to": "var(--weight-medium)",
+                    "shown": "500",
+                    "count": 10,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/cohesion.css",
+                        "brief/priorities.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "650",
+                    "to": "var(--weight-bold)",
+                    "shown": "700",
+                    "count": 10,
+                    "files": [
+                        "style.css",
+                        "brief/enhancements.css",
+                        "brief/connections.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "400",
+                    "to": "var(--weight-regular)",
+                    "shown": "400",
+                    "count": 7,
+                    "files": [
+                        "style.css",
+                        "brief/priorities.css",
+                        "brief/hierarchy.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "700",
+                    "to": "var(--weight-bold)",
+                    "shown": "700",
+                    "count": 3,
+                    "files": ["style.css"]
+                }
+            ]
+        },
+        "departments": {
+            "generated": "2026-10-06T21:41:55.737Z",
+            "files": [
+                "connected/style.css",
+                "connected/shell-review.css",
+                "connected/today-header.css",
+                "connected/place-sheet.css",
+                "connected/discovery.css",
+                "connected/date-control.css",
+                "connected/time-control.css",
+                "connected/location-popover.css",
+                "connected/appointment-sheet.css",
+                "connected/composer-entry.css",
+                "connected/journey-session.css",
+                "connected/loading.css",
+                "today-c/composer-controls.css",
+                "events-next/events.css",
+                "events-next/event-sheet.css",
+                "events-next/festival.css",
+                "events-next/posters.css",
+                "events-next/spotlight.css",
+                "bureaucracy-next/style.css",
+                "bureaucracy-next/orientation.css",
+                "bureaucracy-next/situation.css",
+                "departures-next/style.css",
+                "departures-next/workspace.css",
+                "departures-next/navigation.css",
+                "departures-next/station-board.css",
+                "departures-next/station-context.css",
+                "departures-next/station-map.css",
+                "departures-next/station-refinement.css",
+                "departures-next/stop-discovery.css",
+                "services-next/services.css",
+                "composer-studio/style.css",
+                "composer-studio/conversation.css",
+                "composer-studio/review-features.css",
+                "composer-studio/place-ideas.css"
+            ],
+            "keepSizes": {
+                "events-next/festival.css": "/\\.festival-(title|date)\\b/"
+            },
+            "changes": [
+                {
+                    "property": "font-weight",
+                    "from": "500",
+                    "to": "var(--weight-medium)",
+                    "shown": "500",
+                    "count": 71,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/time-control.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "600",
+                    "to": "var(--weight-semibold)",
+                    "shown": "600",
+                    "count": 104,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/date-control.css",
+                        "connected/time-control.css",
+                        "connected/location-popover.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-map.css",
+                        "departures-next/station-refinement.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "700",
+                    "to": "var(--weight-bold)",
+                    "shown": "700",
+                    "count": 8,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "events-next/festival.css",
+                        "departures-next/style.css",
+                        "departures-next/station-context.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(36px, 4.2vw, 60px)",
+                    "to": "clamp(var(--text-display), 4.2vw, var(--text-display-lg))",
+                    "shown": "40–52px fluid",
+                    "count": 1,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "28px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 9,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "departures-next/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "22px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 19,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "events-next/event-sheet.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/station-board.css",
+                        "composer-studio/style.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "14px",
+                    "to": "var(--text-control)",
+                    "shown": "14px",
+                    "count": 170,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/date-control.css",
+                        "connected/location-popover.css",
+                        "connected/loading.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-map.css",
+                        "departures-next/station-refinement.css",
+                        "departures-next/stop-discovery.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "50%",
+                    "to": "var(--radius-round)",
+                    "shown": "50%",
+                    "count": 45,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-map.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "15px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 13,
+                    "files": [
+                        "connected/style.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "99px",
+                    "to": "var(--radius-pill)",
+                    "shown": "pill",
+                    "count": 2,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "12px",
+                    "to": "var(--text-caption)",
+                    "shown": "12px",
+                    "count": 236,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/time-control.css",
+                        "connected/location-popover.css",
+                        "connected/journey-session.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-map.css",
+                        "departures-next/station-refinement.css",
+                        "departures-next/stop-discovery.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "11px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 130,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/date-control.css",
+                        "connected/time-control.css",
+                        "connected/location-popover.css",
+                        "connected/appointment-sheet.css",
+                        "today-c/composer-controls.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-refinement.css",
+                        "departures-next/stop-discovery.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "30px",
+                    "to": "var(--text-display-sm)",
+                    "shown": "32px",
+                    "count": 6,
+                    "files": [
+                        "connected/style.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "services-next/services.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "14px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 54,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/date-control.css",
+                        "connected/time-control.css",
+                        "connected/location-popover.css",
+                        "connected/appointment-sheet.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "services-next/services.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "15px",
+                    "to": "var(--text-body)",
+                    "shown": "15px",
+                    "count": 66,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/stop-discovery.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "3px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 5,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "14px 14px 0 0",
+                    "to": "var(--radius-lg) var(--radius-lg) 0 0",
+                    "shown": "16px 16px 0 0",
+                    "count": 1,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "17px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 4,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "24px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 14,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "today-c/composer-controls.css",
+                        "events-next/festival.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "26px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 5,
+                    "files": [
+                        "connected/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "18px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 20,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "connected/discovery.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "13px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 16,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "events-next/event-sheet.css",
+                        "events-next/posters.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "13px",
+                    "to": "var(--text-small)",
+                    "shown": "13px",
+                    "count": 218,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/date-control.css",
+                        "connected/appointment-sheet.css",
+                        "connected/composer-entry.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-map.css",
+                        "departures-next/stop-discovery.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "20px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 26,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "28px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 4,
+                    "files": [
+                        "connected/style.css",
+                        "departures-next/navigation.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "26px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 9,
+                    "files": [
+                        "connected/style.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/station-board.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "23px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 6,
+                    "files": [
+                        "connected/style.css",
+                        "events-next/festival.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "12px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 94,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/location-popover.css",
+                        "connected/composer-entry.css",
+                        "today-c/composer-controls.css",
+                        "events-next/event-sheet.css",
+                        "events-next/posters.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-map.css",
+                        "departures-next/station-refinement.css",
+                        "departures-next/stop-discovery.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "25px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 2,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "23px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 22,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "events-next/event-sheet.css",
+                        "events-next/spotlight.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "25px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 11,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "24px",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 12,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "connected/appointment-sheet.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/station-map.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "38px",
+                    "to": "var(--text-display)",
+                    "shown": "40px",
+                    "count": 2,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "400",
+                    "to": "var(--weight-regular)",
+                    "shown": "400",
+                    "count": 31,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "today-c/composer-controls.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "16px",
+                    "to": "var(--radius-lg)",
+                    "shown": "16px",
+                    "count": 45,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "connected/journey-session.css",
+                        "today-c/composer-controls.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-map.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "21px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 25,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/today-header.css",
+                        "connected/discovery.css",
+                        "connected/appointment-sheet.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/place-ideas.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "19px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 17,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "29px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 5,
+                    "files": [
+                        "connected/style.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "18px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 23,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "events-next/events.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "17px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 26,
+                    "files": [
+                        "connected/style.css",
+                        "connected/today-header.css",
+                        "connected/discovery.css",
+                        "connected/time-control.css",
+                        "connected/appointment-sheet.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/station-board.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "27px",
+                    "to": "var(--text-title-lg)",
+                    "shown": "28px",
+                    "count": 6,
+                    "files": [
+                        "connected/style.css",
+                        "departures-next/style.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "10px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 59,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/date-control.css",
+                        "connected/location-popover.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "departures-next/station-map.css",
+                        "departures-next/station-refinement.css",
+                        "departures-next/stop-discovery.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "16px",
+                    "to": "var(--text-section)",
+                    "shown": "17px",
+                    "count": 47,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/location-popover.css",
+                        "today-c/composer-controls.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "20px",
+                    "to": "var(--text-title-sm)",
+                    "shown": "20px",
+                    "count": 23,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "events-next/event-sheet.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-context.css",
+                        "composer-studio/style.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "10px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 37,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/discovery.css",
+                        "events-next/event-sheet.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-map.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "22px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 21,
+                    "files": [
+                        "connected/style.css",
+                        "connected/shell-review.css",
+                        "connected/loading.css",
+                        "events-next/events.css",
+                        "events-next/festival.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "52px",
+                    "to": "var(--text-display-lg)",
+                    "shown": "52px",
+                    "count": 1,
+                    "files": ["connected/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "11px",
+                    "to": "var(--radius-md)",
+                    "shown": "12px",
+                    "count": 13,
+                    "files": [
+                        "connected/style.css",
+                        "events-next/events.css",
+                        "events-next/event-sheet.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "services-next/services.css",
+                        "composer-studio/style.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "24px 24px 0 0",
+                    "to": "var(--radius-xl) var(--radius-xl) 0 0",
+                    "shown": "24px 24px 0 0",
+                    "count": 3,
+                    "files": [
+                        "connected/style.css",
+                        "connected/place-sheet.css",
+                        "departures-next/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0",
+                    "to": "0",
+                    "shown": "0",
+                    "count": 44,
+                    "files": [
+                        "connected/shell-review.css",
+                        "connected/place-sheet.css",
+                        "connected/location-popover.css",
+                        "connected/loading.css",
+                        "today-c/composer-controls.css",
+                        "events-next/event-sheet.css",
+                        "events-next/posters.css",
+                        "departures-next/workspace.css",
+                        "departures-next/navigation.css",
+                        "departures-next/station-board.css",
+                        "departures-next/stop-discovery.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "13px 0 0 13px",
+                    "to": "var(--radius-md) 0 0 var(--radius-md)",
+                    "shown": "12px 0 0 12px",
+                    "count": 1,
+                    "files": ["connected/shell-review.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 13px 13px 0",
+                    "to": "0 var(--radius-md) var(--radius-md) 0",
+                    "shown": "0 12px 12px 0",
+                    "count": 1,
+                    "files": ["connected/shell-review.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(22px, 6vw, 24px)",
+                    "to": "var(--text-title)",
+                    "shown": "24px",
+                    "count": 1,
+                    "files": ["connected/shell-review.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "9px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 19,
+                    "files": [
+                        "connected/place-sheet.css",
+                        "connected/time-control.css",
+                        "connected/loading.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "departures-next/style.css",
+                        "departures-next/station-board.css",
+                        "departures-next/stop-discovery.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "4px 10px 10px 4px",
+                    "to": "var(--radius-sm) var(--radius-md) var(--radius-md) var(--radius-sm)",
+                    "shown": "8px 12px 12px 8px",
+                    "count": 1,
+                    "files": ["connected/place-sheet.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "8px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 21,
+                    "files": [
+                        "connected/place-sheet.css",
+                        "connected/date-control.css",
+                        "connected/time-control.css",
+                        "events-next/event-sheet.css",
+                        "events-next/posters.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/station-board.css",
+                        "departures-next/station-map.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "18px 18px 0 0",
+                    "to": "var(--radius-xl) var(--radius-xl) 0 0",
+                    "shown": "24px 24px 0 0",
+                    "count": 2,
+                    "files": [
+                        "connected/place-sheet.css",
+                        "events-next/posters.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "5px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 3,
+                    "files": [
+                        "connected/place-sheet.css",
+                        "events-next/event-sheet.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "7px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 4,
+                    "files": [
+                        "connected/place-sheet.css",
+                        "departures-next/station-board.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "4px 12px 12px 4px",
+                    "to": "var(--radius-sm) var(--radius-md) var(--radius-md) var(--radius-sm)",
+                    "shown": "8px 12px 12px 8px",
+                    "count": 1,
+                    "files": ["connected/place-sheet.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(26px, 3vw, 38px)",
+                    "to": "clamp(var(--text-title-lg), 3vw, var(--text-display))",
+                    "shown": "28–40px fluid",
+                    "count": 1,
+                    "files": ["connected/discovery.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "650",
+                    "to": "var(--weight-bold)",
+                    "shown": "700",
+                    "count": 6,
+                    "files": [
+                        "connected/discovery.css",
+                        "events-next/posters.css",
+                        "events-next/spotlight.css",
+                        "departures-next/style.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "6px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 10,
+                    "files": [
+                        "connected/appointment-sheet.css",
+                        "events-next/event-sheet.css",
+                        "events-next/festival.css",
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/style.css",
+                        "composer-studio/conversation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 10px 10px",
+                    "to": "0 0 var(--radius-md) var(--radius-md)",
+                    "shown": "0 0 12px 12px",
+                    "count": 2,
+                    "files": [
+                        "today-c/composer-controls.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "2px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 1,
+                    "files": ["events-next/festival.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(28px, 3vw, 40px)",
+                    "to": "clamp(var(--text-title-lg), 3vw, var(--text-display))",
+                    "shown": "28–40px fluid",
+                    "count": 1,
+                    "files": ["events-next/spotlight.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "34px",
+                    "to": "var(--text-display-sm)",
+                    "shown": "32px",
+                    "count": 1,
+                    "files": ["bureaucracy-next/style.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "550",
+                    "to": "var(--weight-semibold)",
+                    "shown": "600",
+                    "count": 14,
+                    "files": [
+                        "bureaucracy-next/style.css",
+                        "bureaucracy-next/orientation.css",
+                        "bureaucracy-next/situation.css",
+                        "departures-next/style.css",
+                        "departures-next/workspace.css",
+                        "departures-next/station-board.css",
+                        "departures-next/stop-discovery.css",
+                        "composer-studio/conversation.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(21px, 3vw, 28px)",
+                    "to": "clamp(var(--text-title-sm), 3vw, var(--text-title-lg))",
+                    "shown": "20–28px fluid",
+                    "count": 1,
+                    "files": ["bureaucracy-next/orientation.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "680",
+                    "to": "var(--weight-bold)",
+                    "shown": "700",
+                    "count": 1,
+                    "files": ["bureaucracy-next/orientation.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(27px, 4vw, 40px)",
+                    "to": "clamp(var(--text-title-lg), 4vw, var(--text-display))",
+                    "shown": "28–40px fluid",
+                    "count": 1,
+                    "files": ["bureaucracy-next/situation.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "4px",
+                    "to": "var(--radius-sm)",
+                    "shown": "8px",
+                    "count": 4,
+                    "files": [
+                        "departures-next/style.css",
+                        "departures-next/navigation.css",
+                        "composer-studio/review-features.css"
+                    ]
+                },
+                {
+                    "property": "font-size",
+                    "from": "9px",
+                    "to": "var(--text-micro)",
+                    "shown": "11px",
+                    "count": 2,
+                    "files": [
+                        "departures-next/style.css",
+                        "composer-studio/style.css"
+                    ]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 14px 14px",
+                    "to": "0 0 var(--radius-lg) var(--radius-lg)",
+                    "shown": "0 0 16px 16px",
+                    "count": 1,
+                    "files": ["departures-next/workspace.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "100px",
+                    "to": "var(--radius-pill)",
+                    "shown": "pill",
+                    "count": 1,
+                    "files": ["departures-next/workspace.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 12px 12px 0",
+                    "to": "0 var(--radius-md) var(--radius-md) 0",
+                    "shown": "0 12px 12px 0",
+                    "count": 1,
+                    "files": ["departures-next/station-context.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(28px, 3.1vw, 40px)",
+                    "to": "clamp(var(--text-title-lg), 3.1vw, var(--text-display))",
+                    "shown": "28–40px fluid",
+                    "count": 1,
+                    "files": ["composer-studio/style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(32px, 3.8vw, 46px)",
+                    "to": "clamp(var(--text-display-sm), 3.8vw, var(--text-display))",
+                    "shown": "32–40px fluid",
+                    "count": 1,
+                    "files": ["composer-studio/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "30px",
+                    "to": "var(--radius-xl)",
+                    "shown": "24px",
+                    "count": 1,
+                    "files": ["composer-studio/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "0 0 24px 24px",
+                    "to": "0 0 var(--radius-xl) var(--radius-xl)",
+                    "shown": "0 0 24px 24px",
+                    "count": 2,
+                    "files": ["composer-studio/style.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(24px, 2.5vw, 32px)",
+                    "to": "clamp(var(--text-title), 2.5vw, var(--text-display-sm))",
+                    "shown": "24–32px fluid",
+                    "count": 1,
+                    "files": ["composer-studio/style.css"]
+                },
+                {
+                    "property": "border-radius",
+                    "from": "16px 16px 4px 16px",
+                    "to": "var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)",
+                    "shown": "16px 16px 8px 16px",
+                    "count": 1,
+                    "files": ["composer-studio/conversation.css"]
+                },
+                {
+                    "property": "font-weight",
+                    "from": "450",
+                    "to": "var(--weight-regular)",
+                    "shown": "400",
+                    "count": 1,
+                    "files": ["composer-studio/conversation.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(25px, 2.6vw, 36px)",
+                    "to": "clamp(var(--text-title), 2.6vw, var(--text-display-sm))",
+                    "shown": "24–32px fluid",
+                    "count": 1,
+                    "files": ["events-next/festival.css"]
+                },
+                {
+                    "property": "font-size",
+                    "from": "clamp(30px, 3vw, 46px)",
+                    "to": "clamp(var(--text-display-sm), 3vw, var(--text-display))",
+                    "shown": "32–40px fluid",
+                    "count": 1,
+                    "files": ["events-next/posters.css"]
+                }
+            ]
+        }
+    }
+}

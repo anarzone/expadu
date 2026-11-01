@@ -21,12 +21,13 @@ class CategoryHours
     private const DAYLIGHT = [
         'park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark',
         'lake', 'nature', 'dog_park', 'table_tennis', 'boules', 'bbq', 'picnic',
+        // A viewpoint in the dark was planned at 00:55 ("what's on tonight").
+        'viewpoint',
     ];
 
     /**
      * Typical open/close as "H:MM" strings; close past midnight is expressed
-     * >= 24. Categories not listed (and viewpoints — a city view is fine at
-     * night) carry no default and stay always-open.
+     * >= 24. Categories not listed carry no default and stay always-open.
      */
     private const HOURS = [
         'museum' => ['10:00', '18:00'],
@@ -73,7 +74,7 @@ class CategoryHours
 
     /**
      * Typical open/close for a category on a given day, or [null, null] when
-     * we hold no opinion (events, viewpoints, unknown categories).
+     * we hold no opinion (events, unknown categories).
      *
      * @return array{0: ?CarbonImmutable, 1: ?CarbonImmutable}
      */
@@ -98,6 +99,12 @@ class CategoryHours
             ?? (in_array($category, self::DAYLIGHT, true) ? self::FIT_DAYLIGHT : self::FIT_DEFAULT);
 
         return $fit[self::band($at)];
+    }
+
+    /** The daypart a time falls in, on the same bands as dayFit(). */
+    public static function daypart(CarbonImmutable $at): string
+    {
+        return ['morning', 'midday', 'afternoon', 'evening', 'night'][self::band($at)];
     }
 
     /** When outdoor daylight ends in Cologne, by season — coarse on purpose. */

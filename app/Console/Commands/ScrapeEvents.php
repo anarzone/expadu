@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\EventCategory;
 use App\Jobs\ProcessEventJob;
 use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\EventCancellation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -53,20 +55,31 @@ class ScrapeEvents extends Command
         $created = 0;
         $page = 1;
         $totalPages = 1;
+        $fetched = [];
+        $complete = false;
 
         // koeln.de returns events chronologically, so the first page of 50 only
         // covers the next couple of days — the weekend never arrived. Page
         // through the whole 30-day window (Tribe reports total_pages).
         try {
             do {
-                $response = Http::timeout(15)
-                    ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
-                    ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
-                        'per_page' => 50,
-                        'page' => $page,
-                        'start_date' => now()->toDateString(),
-                        'end_date' => now()->addDays(30)->toDateString(),
-                    ]);
+                // Pages come in first and are matched after, so one copy per
+                // occurrence can be chosen across all of them. A page that
+                // fails ends the paging; what came in is still used.
+                try {
+                    $response = Http::timeout(15)
+                        ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
+                        ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
+                            'per_page' => 50,
+                            'page' => $page,
+                            'start_date' => now()->toDateString(),
+                            'end_date' => now()->addDays(30)->toDateString(),
+                        ]);
+                } catch (\Exception $e) {
+                    Log::warning("events:scrape — koeln.de page {$page} failed: ".$e->getMessage());
+
+                    break;
+                }
 
                 if (! $response->successful()) {
                     // A 400 past the last page is how Tribe signals "no more" —
@@ -78,37 +91,67 @@ class ScrapeEvents extends Command
                     break;
                 }
 
-                $events = $response->json('events', []);
+                $fetched = [...$fetched, ...$response->json('events', [])];
                 $totalPages = (int) $response->json('total_pages', 1);
+                $page++;
+                // Every page came in; false after a failed page or when the
+                // page cap cut the window short.
+                $complete = $page > $totalPages;
+            } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
 
-                foreach ($events as $ev) {
+            foreach ($this->oneCopyPerOccurrence($fetched) as $ev) {
+                // One bad record is logged and skipped, not the rest of the run.
+                try {
                     $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
                     if (! $title) {
                         continue;
                     }
 
-                    $startsAt = Carbon::parse($ev['start_date'] ?? now());
+                    // A listing without a start isn't given one.
+                    if (! is_string($ev['start_date'] ?? null) || trim($ev['start_date']) === '') {
+                        continue;
+                    }
+
+                    $startsAt = Carbon::parse($ev['start_date']);
                     if ($startsAt->isPast()) {
                         continue;
                     }
 
-                    // Dedupe on the source's own id when it has one; fall
-                    // back to title+date for sources without stable ids.
+                    // koeln.de deletes and re-creates posts, so the same
+                    // occurrence comes back under a new id (and sometimes a new
+                    // page). (source, source_uid) is unique, so the id decides
+                    // first, hidden copies included; otherwise the page, then
+                    // title and venue, all at the same start, find the live copy.
                     $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
-                    $existingEvent = $sourceUid
-                        ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first()
+                    $sourceUrl = is_string($ev['url'] ?? null) ? $ev['url'] : null;
+                    $venueName = is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null;
+                    $byUid = $sourceUid ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first() : null;
+                    $live = fn () => Event::query()->where('source', 'koeln.de')->where('status', '<>', 'hidden');
+                    $liveCopy = ($byUid === null || $byUid->status === 'hidden')
+                        ? (($sourceUrl ? $live()->where('source_url', $sourceUrl)->where('starts_at', $startsAt)->latest('id')->first() : null)
+                            ?? $live()->whereRaw('lower(title) = ?', [mb_strtolower(mb_substr($title, 0, 255))])->where('starts_at', $startsAt)->latest('id')->get()
+                                ->first(fn (Event $copy) => $this->sameVenue($copy->location_name, $venueName)))
                         : null;
-                    $event = $existingEvent ?? new Event([
-                        'source' => 'koeln.de',
-                        'source_uid' => $sourceUid,
-                    ]);
+                    // A hidden copy's listing updates the live copy it was hidden
+                    // for, which keeps its own id. With no live copy left, the
+                    // hidden one is the event again.
+                    $event = match (true) {
+                        $byUid !== null && $byUid->status !== 'hidden' => $byUid,
+                        $liveCopy !== null => $liveCopy,
+                        $byUid !== null => $byUid,
+                        default => new Event(['source' => 'koeln.de']),
+                    };
+                    if ($byUid === null) {
+                        $event->source_uid = $sourceUid;
+                    }
                     $isNew = ! $event->exists;
                     $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
                     $copyChanged = ! $isNew
                         && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
+                    // The end alone doesn't change what the classifier writes,
+                    // so correcting it costs no new classification.
                     $classifierInputChanged = ! $isNew && ($copyChanged
                         || ! $event->starts_at?->equalTo($attributes['starts_at'])
-                        || ! $event->ends_at?->equalTo($attributes['ends_at'])
                         || $event->location_name !== $attributes['location_name']
                         || $event->address !== $attributes['address']
                         || $event->price_text !== $attributes['price_text']
@@ -145,22 +188,123 @@ class ScrapeEvents extends Command
 
                     $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
 
-                    if ($isNew || $classifierInputChanged) {
+                    if (($isNew || $classifierInputChanged) && $event->status === 'active') {
                         ProcessEventJob::dispatch($event);
                     }
 
                     if ($isNew || $sourceChanged) {
                         $created++;
                     }
+                } catch (\Exception $e) {
+                    Log::warning('events:scrape — koeln.de event skipped', ['source_uid' => $ev['id'] ?? null, 'error' => $e->getMessage()]);
                 }
+            }
 
-                $page++;
-            } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
+            if ($complete) {
+                $this->retireUnlistedKoelnEvents();
+            }
         } catch (\Exception $e) {
             Log::warning('events:scrape — koeln.de API error: '.$e->getMessage());
         }
 
         return $created;
+    }
+
+    /**
+     * After a complete scrape, an upcoming koeln.de event that koeln.de hasn't
+     * listed for two days has gone from the source: cancelled, or re-created
+     * as another post. It is set aside as 'unlisted' (a status of its own, so
+     * the hidden-copy rules never touch it) and comes back the moment koeln.de
+     * lists it again.
+     */
+    private function retireUnlistedKoelnEvents(): void
+    {
+        $retired = Event::query()
+            ->where('source', 'koeln.de')
+            ->where('status', 'active')
+            // The scraped window runs to now + 30 days; stop a day short of
+            // its edge.
+            ->whereBetween('starts_at', [now(), now()->addDays(29)->endOfDay()])
+            ->where(fn ($query) => $query->whereNull('verified_at')->orWhere('verified_at', '<', now()->subDays(2)))
+            ->update(['status' => 'unlisted', 'updated_at' => now()]);
+
+        if ($retired > 0) {
+            Log::info('events:scrape — koeln.de no longer lists events; set aside', ['count' => $retired]);
+        }
+    }
+
+    /**
+     * koeln.de can list one occurrence twice at once (a re-created post next
+     * to the old one). Keep one copy per title, start and venue, the newest;
+     * a copy without a venue ("Siehe Beschreibung") goes when a copy with one
+     * exists. Same title and time at different venues stay apart.
+     *
+     * @param  list<array<string, mixed>>  $events
+     * @return list<array<string, mixed>>
+     */
+    private function oneCopyPerOccurrence(array $events): array
+    {
+        $venue = fn (array $ev): ?string => $this->knownVenue(is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null);
+
+        return collect($events)
+            ->groupBy(fn (array $ev) => mb_strtolower(html_entity_decode(trim((string) ($ev['title'] ?? '')), ENT_QUOTES, 'UTF-8')).'|'.($ev['start_date'] ?? ''))
+            ->flatMap(function ($copies) use ($venue) {
+                $withVenue = $copies->filter(fn (array $ev) => $venue($ev) !== null);
+                $kept = $withVenue->isNotEmpty() ? $withVenue->groupBy(fn (array $ev) => mb_strtolower($venue($ev))) : collect([$copies]);
+
+                // values(): keyed by venue, two events at one venue would
+                // overwrite each other when the groups are flattened.
+                return $kept->map(fn ($same) => $same->sortByDesc(fn (array $ev) => (int) ($ev['id'] ?? 0))->first())->values();
+            })
+            ->values()
+            ->all();
+    }
+
+    private function knownVenue(mixed $venue): ?string
+    {
+        $venue = is_string($venue) ? trim(html_entity_decode($venue, ENT_QUOTES, 'UTF-8')) : '';
+
+        return in_array(mb_strtolower($venue), ['', 'siehe beschreibung'], true) ? null : $venue;
+    }
+
+    private function sameVenue(mixed $stored, mixed $incoming): bool
+    {
+        $stored = $this->knownVenue($stored);
+        $incoming = $this->knownVenue($incoming);
+
+        return $stored === null || $incoming === null || mb_strtolower($stored) === mb_strtolower($incoming);
+    }
+
+    /**
+     * koeln.de sends the whole rendered page block: an empty date line (the
+     * stray "|"), the text, ticket links and a "Zum Kalender hinzufügen"
+     * menu. Keep the text, one line per block.
+     */
+    private function koelnDescription(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $document = new \DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="utf-8"?><div>'.$html.'</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $xpath = new \DOMXPath($document);
+        $chrome = $xpath->query('//*[contains(@class, "tribe-events-schedule") or contains(@class, "tribe-events-c-subscribe-dropdown")
+            or contains(@class, "tribe-block__events-link") or contains(@class, "tribe-events-c-ical")]|//script|//style|//svg|//button');
+        foreach (iterator_to_array($chrome ?: []) as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        $markup = (string) $document->saveHTML();
+        $markup = preg_replace('/<br\s*\/?>|<\/(p|div|li|h[1-6]|ul|ol|tr|section|blockquote)>/i', "\n", $markup) ?? $markup;
+        $text = html_entity_decode(strip_tags($markup), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $lines = array_filter(array_map(fn (string $line) => trim(preg_replace('/[ \t\x{00A0}]+/u', ' ', $line) ?? ''), explode("\n", $text)));
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -173,7 +317,7 @@ class ScrapeEvents extends Command
     {
         // Preserve the complete German source. The classifier uses a bounded
         // excerpt for categorisation and translates the full text in chunks.
-        $description = trim(strip_tags((string) ($sourceEvent['description'] ?? '')));
+        $description = $this->koelnDescription((string) ($sourceEvent['description'] ?? ''));
         $venue = $sourceEvent['venue']['venue'] ?? null;
         $address = $sourceEvent['venue']['address'] ?? null;
         $sourceUrl = $sourceEvent['url'] ?? null;
@@ -196,7 +340,8 @@ class ScrapeEvents extends Command
             'description' => $description ?: null,
             'source_lang' => 'de',
             'starts_at' => $startsAt,
-            'ends_at' => isset($sourceEvent['end_date']) ? Carbon::parse($sourceEvent['end_date']) : $startsAt->copy()->addHours(2),
+            // koeln.de's own end, or none: never one made up.
+            'ends_at' => filled($sourceEvent['end_date'] ?? null) ? Carbon::parse($sourceEvent['end_date']) : null,
             'location_name' => $locationName,
             'address' => $locationAddress,
             'is_free' => $isFree ?? false,
@@ -213,7 +358,9 @@ class ScrapeEvents extends Command
                 'source_url' => is_string($sourceUrl) ? $sourceUrl : null,
                 'price_known' => $isFree !== null,
             ]),
-            'status' => 'active',
+            // Off the listings when the listing itself says it's off; back to
+            // active when the source drops the wording again.
+            'status' => EventCancellation::said($title, $description) ? 'cancelled' : 'active',
             'verified_at' => now(),
         ];
     }
@@ -274,8 +421,13 @@ class ScrapeEvents extends Command
 
         $cleaned = trim(html_entity_decode($raw, ENT_QUOTES, 'UTF-8'));
 
-        // Explicitly free by keyword
-        if (preg_match('/\b(frei|free|kostenlos|gratis|eintritt frei)\b/i', $cleaned)) {
+        // Free by keyword, unless someone still pays: "Kinder frei,
+        // Erwachsene 12 €" is a paid event. Only an amount in euros counts,
+        // so "Eintritt frei ab 18 Jahren" stays free.
+        $paid = preg_match_all('/(\d+(?:[,.]\d+)?)\s*(?:€|eur\b|euro)|(?:€|eur\b|euro)\s*(\d+(?:[,.]\d+)?)/iu', $cleaned, $amounts) > 0
+            && collect([...$amounts[1], ...$amounts[2]])->contains(fn (string $amount): bool => (float) str_replace(',', '.', $amount) > 0);
+
+        if (! $paid && preg_match('/\b(frei|free|kostenlos|gratis|eintritt frei)\b/i', $cleaned)) {
             return [true, null, 'Free'];
         }
 
@@ -342,73 +494,51 @@ class ScrapeEvents extends Command
     protected function mapSourceCategory(array $sourceCategories): ?string
     {
         $map = [
-            'Konzerte' => 'music',
-            'Partys & Clubbing' => 'music',
-            'Festivals' => 'music',
-            'Jazz' => 'music',
-            'Theater' => 'culture',
-            'Ausstellungen' => 'culture',
-            'Kino' => 'culture',
-            'Lesungen' => 'culture',
-            'Kabarett & Comedy' => 'culture',
-            'Führungen' => 'culture',
-            'Vorträge' => 'culture',
-            'Stadtführungen' => 'culture',
-            'Märkte' => 'food',
-            'Flohmärkte' => 'food',
-            'Sport' => 'sports',
-            'Yoga' => 'sports',
-            'Laufen' => 'sports',
-            'Sprachen' => 'language',
-            'Networking' => 'social',
-            'Stammtisch' => 'social',
+            'konzerte' => EventCategory::Music, 'jazz' => EventCategory::Music, 'klassik' => EventCategory::Music,
+            'partys & clubbing' => EventCategory::Party, 'party' => EventCategory::Party,
+            'festivals' => EventCategory::Festivals, 'märkte' => EventCategory::Festivals,
+            'flohmärkte' => EventCategory::Festivals, 'weihnachtsmärkte' => EventCategory::Festivals,
+            'bühne' => EventCategory::Stage, 'theater' => EventCategory::Stage, 'lesungen' => EventCategory::Stage,
+            'kabarett & comedy' => EventCategory::Stage, 'comedy & kabarett' => EventCategory::Stage,
+            'musical' => EventCategory::Stage, 'oper' => EventCategory::Stage,
+            'führungen' => EventCategory::Tours, 'stadtführungen' => EventCategory::Tours,
+            'kinder' => EventCategory::Kids, 'familie' => EventCategory::Kids, 'kinder & familie' => EventCategory::Kids,
+            'sport' => EventCategory::Sports, 'yoga' => EventCategory::Sports, 'laufen' => EventCategory::Sports,
+            'sprachen' => EventCategory::MeetPeople, 'networking' => EventCategory::MeetPeople, 'stammtisch' => EventCategory::MeetPeople,
+            'ausstellungen' => EventCategory::Other, 'kino' => EventCategory::Other, 'vorträge' => EventCategory::Other,
         ];
 
         foreach ($sourceCategories as $name) {
-            if (isset($map[$name])) {
-                return $map[$name];
+            // koeln.de sends some names HTML-escaped ("Comedy &amp; Kabarett").
+            $key = mb_strtolower(trim(html_entity_decode((string) $name, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            if (isset($map[$key])) {
+                return $map[$key]->value;
             }
         }
 
         return null;
     }
 
+    /** A first guess from the words, until the classifier sorts it (ProcessEventJob). */
     protected function categoriseEvent(string $title, string $desc): string
     {
         $text = mb_strtolower($title.' '.$desc);
 
-        if (preg_match('/sprach|language|deutsch|german|tandem/i', $text)) {
-            return 'language';
-        }
-        if (preg_match('/musik|music|jazz|konzert|concert|live|dj/i', $text)) {
-            return 'music';
-        }
-        if (preg_match('/sport|lauf|run|yoga|fitness|schwimm/i', $text)) {
-            return 'sports';
-        }
-        if (preg_match('/food|essen|kulinar|street food|markt|market|brau|beer/i', $text)) {
-            return 'food';
-        }
-        if (preg_match('/kunst|art|museum|galerie|gallery|theater|theatre|kino|film|ausstellung|exhibit/i', $text)) {
-            return 'culture';
-        }
-        if (preg_match('/expat|international|community|meetup|stammtisch|networking/i', $text)) {
-            return 'social';
-        }
-
-        return 'culture';
+        return (match (true) {
+            (bool) preg_match('/sprachcaf|language|tandem|stammtisch|expat|international|meetup|repair ?caf|lesekreis|strick/iu', $text) => EventCategory::MeetPeople,
+            (bool) preg_match('/kinder|kids|familie|family|vorlese|märchen/iu', $text) => EventCategory::Kids,
+            (bool) preg_match('/festival|weihnachtsmarkt|flohmarkt|markt\b|market|kirmes/iu', $text) => EventCategory::Festivals,
+            (bool) preg_match('/führung|guided tour|stadtrundgang|rundgang/iu', $text) => EventCategory::Tours,
+            (bool) preg_match('/theater|theatre|comedy|kabarett|musical|oper\b|opera|lesung|zirkus|circus/iu', $text) => EventCategory::Stage,
+            (bool) preg_match('/konzert|concert|jazz|\bdj\b|orchester|chor\b/iu', $text) => EventCategory::Music,
+            (bool) preg_match('/party|clubbing/iu', $text) => EventCategory::Party,
+            (bool) preg_match('/sport|lauf|\brun\b|yoga|fitness|schwimm/iu', $text) => EventCategory::Sports,
+            default => EventCategory::Other,
+        })->value;
     }
 
     protected function categoryEmoji(string $category): string
     {
-        return match ($category) {
-            'language' => '🗣️',
-            'music' => '🎵',
-            'sports' => '🏃',
-            'food' => '🍽️',
-            'culture' => '🎭',
-            'social' => '🌍',
-            default => '📅',
-        };
+        return EventCategory::fromLegacy($category)->emoji();
     }
 }

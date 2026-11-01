@@ -1,8 +1,16 @@
 # EXP-72: guarded 100-record staging canary
 
-Status: exact staging rollback rehearsal passed on 29 September 2026 at 14:18 UTC.
-The catalogue import has **not** been committed. Upload and rollback-check
-permission does not authorize either committed mode below. Production is excluded.
+Current catalogue status: all 4,269 qualified changes are now saved and verified,
+with 11,802 stored staging records. See `../../final-catalogue-verification.json`
+and `../../rollout-status.json`. The first-batch counts below are historical.
+
+First-batch status: the exact first 100-record staging import was authorized by the owner
+with “continue then” and committed at 15:07:11 UTC on 29 September 2026. A fresh
+read-only check verified 9,978 stored rows, the applied journal, all 100 detail
+APIs and exactly 87 Composer identities. See `../../first-batch-committed.json`
+and `../../first-batch-committed-readback.json`. Production is excluded.
+The procedure below remains the reviewed operational reference. Recovery is a
+separate action; prepared receipt files never substitute for the database journal.
 
 ## Reviewed operation
 
@@ -15,7 +23,7 @@ permission does not authorize either committed mode below. Production is exclude
 - Acceptance SHA-256: `f5278ac5e7833c9e6b7adcd3d8fbca25b1edcaf18287cef220bb1009a0e269e6`.
 - Expected final canary membership: 86 ordinary-visible, 87 activity/Composer,
   13 held. Existing selected membership is 42/43, yielding 44 additional visible
-  identities in either discovery scope. Stored rows would become 9,978.
+  identities in either discovery scope. Stored rows are now 9,978.
 - No photos are approved. Unknown access/fees stay unknown. No verified free/public
   football result is created. Stadt Köln structured place data/media are excluded.
 
@@ -105,7 +113,7 @@ refused before import; they require a separately reviewed recovery rule.
 ## Remaining scope
 
 This is a controlled first batch, not completion of the Places programme. Another
-4,543 package entries remain. Of the full package, 374 existing refreshes have no
+4,543 package entries remain; see `../../remainder/README.md`. Of the full package, 374 existing refreshes have no
 previous same-source observation and need distinct audited recovery support. No
 75% photo-coverage or free-football completion claim is justified by this release.
 The separate Places design remains under review; this release changes no UI.

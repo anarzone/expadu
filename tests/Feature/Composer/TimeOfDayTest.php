@@ -81,8 +81,9 @@ test('outdoor daylight hours follow the season', function () {
     expect($decemberDusk->format('H:i'))->toBe('17:30');
 });
 
-test('a viewpoint carries no assumed close — a city view works at night', function () {
-    expect(CategoryHours::defaults('viewpoint', julyDay('00:00')))->toBe([null, null]);
+test('a viewpoint is a daylight place: no viewpoint in a midnight plan', function () {
+    [$opens, $closes] = CategoryHours::defaults('viewpoint', julyDay('00:00'));
+    expect($opens)->not->toBeNull()->and($closes->hour)->toBeLessThan(23);
 });
 
 test('a museum with unknown hours never lands in an evening plan', function () {

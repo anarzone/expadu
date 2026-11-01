@@ -1,0 +1,39 @@
+{
+    "name": "events-stage",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768],
+    "height": 844,
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": { "email": "e2e@expadu.test", "password": "e2e-password" },
+        "cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }
+    },
+    "pairs": [
+        {
+            "name": "stage",
+            "mock": ".st-fit",
+            "app": ".ev-street-fit",
+            "pixels": false,
+            "reason": "Its height and bottom edge are what this config checks (a phone's street ends 16px above the floating menu, up to 48px of its pavement giving way); the street's pixels are compared in events-sky, events-rings and events-wall."
+        },
+        {
+            "name": "board",
+            "mock": ".st-board",
+            "app": ".ev-board",
+            "pixels": false,
+            "reason": "As the stage: its box, where the page ends."
+        },
+        {
+            "name": "menu",
+            "mock": "nav.service-nav",
+            "app": "nav.shell-nav",
+            "pixels": false,
+            "reason": "Where the floating menu sits, which the stage ends above; its pixels are the shell's (shell.json)."
+        }
+    ]
+}

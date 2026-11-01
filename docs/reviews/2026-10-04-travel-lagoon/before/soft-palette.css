@@ -1,0 +1,69 @@
+/* Approved Travel colour review: white canvas, soft peach functional groups.
+   Nested content shares its group's surface; cyan identifies interaction states.
+   This approval is local to Travel; other pages retain their reviewed palette. */
+body.today-palette.travel-palette {
+    --paper: #ffffff;
+    --surface: #fff5ef;
+    --surface-quiet: var(--surface);
+    --surface-inset: var(--surface);
+    --surface-hover: #ffebde;
+    --line: #eadbd2;
+    --palette-header: var(--paper);
+}
+
+/* One connected planner, without another coloured box around each input group. */
+body.travel-palette .journey-desk {
+    box-shadow: none;
+}
+body.travel-palette :is(.journey-fields, .route-modes, .swap) {
+    background-color: transparent;
+}
+body.travel-palette .segmented [aria-pressed='true'] {
+    background-color: var(--blue);
+    color: var(--teal);
+    box-shadow: none;
+}
+
+/* The route diagram is a single transport surface. These are parts of the same
+   button, not separate controls or cards. */
+body.travel-palette .sample-journey :is(.sample-node.transit, .round-arrow) {
+    background-color: transparent;
+}
+
+/* Preserve immediate feedback without adding permanent nested surfaces. */
+@media (hover: hover) {
+    body.travel-palette.departures-page :is(.icon-button, .quiet-button):hover,
+    body.travel-palette .segmented button:not([aria-pressed='true']):hover,
+    body.travel-palette .suggestions button:hover {
+        background-color: var(--surface-hover);
+    }
+}
+body.travel-palette.departures-page :is(.icon-button, .quiet-button):active,
+body.travel-palette .segmented button:not([aria-pressed='true']):active {
+    background-color: var(--surface-hover);
+}
+
+/* The shared header inherits the canvas; journey sheets use their own surface. */
+body.travel-palette .nav-topbar {
+    background-color: var(--paper);
+}
+body.travel-palette .detail-footer {
+    background: linear-gradient(
+        to bottom,
+        #fff5ef00,
+        #fff5efeb 22px,
+        var(--surface) 70%
+    );
+}
+
+@media (max-width: 759px) {
+    body.travel-palette .nav-topbar {
+        background: linear-gradient(#fffffff5 68%, #ffffff00);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    body.travel-palette .detail-footer {
+        background: var(--surface);
+    }
+}

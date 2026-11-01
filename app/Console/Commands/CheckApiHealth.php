@@ -8,11 +8,15 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 #[Signature('api:health')]
 #[Description('Check health of all external API dependencies')]
 class CheckApiHealth extends Command
 {
+    /** Alert once the state Redis instance passes this share of its maxmemory. */
+    private const REDIS_MEMORY_ALERT_SHARE = 0.8;
+
     /** @var array<int, array{name: string, status: string, ms: int, detail: string}> */
     private array $results = [];
 
@@ -25,9 +29,18 @@ class CheckApiHealth extends Command
         $this->check('Weather (Bright Sky)', fn () => $this->checkBrightSky());
         $this->check('Geocoding (Photon)', fn () => $this->checkPhoton());
         $this->check('Rhine Level (WSV)', fn () => $this->checkRhine());
-        $this->check('Resend (Email)', fn () => $this->checkResend());
-        $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
-        $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
+        $mailer = (string) config('mail.default', 'log');
+        $this->check("Mail ({$mailer})", fn () => $this->checkMail($mailer));
+
+        if (filled(config('services.motis.url'))) {
+            $this->check('MOTIS (Routing)', fn () => $this->checkMotis());
+            $this->check('MOTIS timetable (14 days ahead)', fn () => $this->checkMotisTimetable());
+        }
+
+        if (filled(config('services.transitous.url'))) {
+            $this->check('Transitous (Routing Failover)', fn () => $this->checkTransitous());
+        }
+        $this->check('Redis memory', fn () => $this->checkRedisMemory());
 
         $this->table(
             ['Service', 'Status', 'Time', 'Detail'],
@@ -44,6 +57,13 @@ class CheckApiHealth extends Command
         if ($down->isNotEmpty()) {
             $names = $down->pluck('name')->implode(', ');
             Log::warning('API health check: services down', ['services' => $names]);
+        }
+
+        // Sessions, queues and locks share the state instance, which never
+        // evicts: past the threshold, alert through Sentry before writes fail.
+        $redis = $down->firstWhere('name', 'Redis memory');
+        if ($redis !== null) {
+            report(new \RuntimeException('Redis memory high: '.$redis['detail']));
         }
 
         RedisLogger::log('api_health_check', $this->results);
@@ -67,6 +87,31 @@ class CheckApiHealth extends Command
             $ms = (int) ((hrtime(true) - $start) / 1_000_000);
             $this->results[] = ['name' => $name, 'status' => 'down', 'ms' => $ms, 'detail' => $e->getMessage()];
         }
+    }
+
+    /**
+     * The state instance (sessions, queues, locks, alert buses) against its
+     * maxmemory. The cache instance is left out: it evicts by design.
+     */
+    private function checkRedisMemory(): string
+    {
+        $info = Redis::connection('default')->info('memory');
+        $used = (int) ($info['used_memory'] ?? 0);
+        $max = (int) ($info['maxmemory'] ?? 0);
+        $usedMb = (int) round($used / 1048576);
+
+        if ($max === 0) {
+            return "{$usedMb} MB used, no maxmemory set";
+        }
+
+        $share = $used / $max;
+        $detail = sprintf('%d MB of %d MB (%d%%)', $usedMb, (int) round($max / 1048576), (int) round($share * 100));
+
+        if ($share >= self::REDIS_MEMORY_ALERT_SHARE) {
+            throw new \RuntimeException($detail);
+        }
+
+        return $detail;
     }
 
     private function checkTrias(): string
@@ -120,7 +165,15 @@ class CheckApiHealth extends Command
         $response = Http::timeout(5)->get('https://data.webservice-kvb.koeln/service/opendata/haltestellen/json');
         throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
 
-        return count($response->json() ?? []).' stops';
+        // KVB serves the GeoJSON in ISO-8859-1, which json_decode rejects outright.
+        $body = $response->body();
+        if (! mb_check_encoding($body, 'UTF-8')) {
+            $body = mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        }
+        $stops = count(json_decode($body, true)['features'] ?? []);
+        throw_if($stops === 0, new \RuntimeException('No stops in the response'));
+
+        return $stops.' stops';
     }
 
     private function checkOpenMeteo(): string
@@ -171,6 +224,15 @@ class CheckApiHealth extends Command
         return $level.'cm';
     }
 
+    private function checkMail(string $mailer): string
+    {
+        if ($mailer === 'resend') {
+            return $this->checkResend();
+        }
+
+        return "{$mailer} transport configured";
+    }
+
     private function checkResend(): string
     {
         $key = config('services.resend.key');
@@ -182,6 +244,10 @@ class CheckApiHealth extends Command
             ->withToken($key)
             ->get('https://api.resend.com/domains');
 
+        if ($response->status() === 401 && $response->json('name') === 'restricted_api_key') {
+            return 'Send-only API key valid';
+        }
+
         throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
 
         return 'API key valid';
@@ -190,6 +256,31 @@ class CheckApiHealth extends Command
     private function checkMotis(): string
     {
         return $this->checkRoutingGeocoder((string) config('services.motis.url'), 'MOTIS');
+    }
+
+    /**
+     * MOTIS serves the VRS timetable it was built from, refreshed weekly by
+     * infra/motis/refresh.sh. VRS publishes the next timetable year only weeks
+     * before the December change; a trip that can't be planned two weeks out
+     * means the data runs out soon and the refresh hasn't picked up a new feed.
+     */
+    private function checkMotisTimetable(): string
+    {
+        $at = now('Europe/Berlin')->addDays(14)->setTime(9, 0);
+        $response = Http::timeout(5)
+            ->connectTimeout(2)
+            ->get(rtrim((string) config('services.motis.url'), '/').'/api/v1/plan', [
+                // Dom → Rudolfplatz, inside the VRS core every build covers.
+                'fromPlace' => '50.9413,6.9583',
+                'toPlace' => '50.9366,6.9408',
+                'time' => $at->toIso8601String(),
+            ]);
+
+        throw_unless($response->successful(), new \RuntimeException('HTTP '.$response->status()));
+        $trips = count($response->json('itineraries') ?? []);
+        throw_if($trips === 0, new \RuntimeException('No trips on '.$at->toDateString().': the timetable runs out'));
+
+        return $trips.' trips on '.$at->toDateString();
     }
 
     private function checkTransitous(): string

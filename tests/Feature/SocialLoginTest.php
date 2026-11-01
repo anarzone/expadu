@@ -21,7 +21,7 @@ test('callback creates new user from social login', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
 
     $this->assertDatabaseHas('users', [
         'name' => 'Max Mustermann',
@@ -44,7 +44,7 @@ test('callback links social to existing email user', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
 
     expect($user->fresh())
         ->social_provider->toBe('google')
@@ -67,7 +67,7 @@ test('callback logs in returning social user', function () {
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect('/dashboard');
+    $response->assertRedirect('/today');
     $this->assertAuthenticatedAs($user);
 
     // No duplicate user created
@@ -80,10 +80,19 @@ test('callback handles denied authorization gracefully', function () {
     // Callback without proper OAuth state will throw — controller catches it
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect(route('login'));
+    $response->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Signing in with Google didn’t finish. Try again, or use your email.');
+    $this->assertGuest();
 });
 
 test('invalid provider returns 404', function () {
     $this->get('/auth/facebook/redirect')->assertNotFound();
     $this->get('/auth/facebook/callback')->assertNotFound();
+});
+
+test('there is no Apple sign-in, even with Apple configured', function () {
+    config(['services.apple.client_id' => 'configured', 'services.apple.client_secret' => 'configured']);
+
+    $this->get('/auth/apple/redirect')->assertNotFound();
+    $this->get('/auth/apple/callback')->assertNotFound();
 });

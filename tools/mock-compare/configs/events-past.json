@@ -1,0 +1,71 @@
+{
+    "name": "events-past",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-08",
+        "wait": ".st-weather"
+    },
+    "app": {
+        "url": "/events?date=2026-09-08",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
+    },
+    "pairs": [
+        {
+            "name": "past note",
+            "mock": ".event-past-note",
+            "app": ".ev-past-note"
+        },
+        {
+            "name": "its clock",
+            "mock": ".event-past-note > svg",
+            "app": ".ev-past-note > svg"
+        },
+        {
+            "name": "its words",
+            "mock": ".event-past-note p",
+            "app": ".ev-past-note p"
+        },
+        {
+            "name": "Already happened",
+            "mock": ".event-past-note p strong",
+            "app": ".ev-past-note p strong"
+        },
+        {
+            "name": "the way on",
+            "mock": ".event-past-note button",
+            "app": ".ev-past-note button"
+        },
+        {
+            "name": "weather not recorded",
+            "mock": ".st-weather",
+            "app": ".st-weather",
+            "pixelThreshold": 0.03,
+            "reason": "Frosted: its blur reads the sky and the hour rings behind it, which the app draws as pictures within EV2a's agreed budget and the mock as live SVG (compared in events-sky). Its words, box and styles are compared exactly; up to 3% of its pixels may differ."
+        },
+        {
+            "name": "its glyph",
+            "mock": ".st-weather svg",
+            "app": ".st-weather svg",
+            "pixelThreshold": 0.03,
+            "reason": "Frosted: its blur reads the sky and the hour rings behind it, which the app draws as pictures within EV2a's agreed budget and the mock as live SVG (compared in events-sky). Its words, box and styles are compared exactly; up to 3% of its pixels may differ."
+        },
+        {
+            "name": "its words (chip)",
+            "mock": ".st-weather strong",
+            "app": ".st-weather strong"
+        },
+        {
+            "name": "date chip",
+            "mock": "#event-calendar-toggle > span",
+            "app": ".evf-date > span"
+        }
+    ]
+}

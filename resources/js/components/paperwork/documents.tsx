@@ -1,0 +1,534 @@
+import { useEffect, useRef, useState } from 'react';
+import { commands } from './api';
+import { matches, readinessLabels } from './format';
+import { Icon, topicIcon } from './icons';
+import { SourcesBody } from './lists';
+import { SearchLine } from './overview';
+import { usePaperwork } from './state';
+import type { EvidenceItem, Process, Requirement } from './types';
+
+/** The status filter's groups: what you still need, what you have, what you checked. */
+type DocState = 'all' | 'missing' | 'have' | 'ready';
+
+const docGroups: [DocState, string][] = [
+    ['all', 'Any status'],
+    ['missing', 'Still to get'],
+    ['have', 'You have it'],
+    ['ready', 'Ready'],
+];
+
+const docGroup = (r: Requirement): Exclude<DocState, 'all'> =>
+    r.readiness === 'confirmed_for_use'
+        ? 'ready'
+        : r.readiness === 'missing'
+          ? 'missing'
+          : 'have';
+
+/** A document matches the search by its name or either term, English or German. */
+const termsOf = (r: Requirement) =>
+    r.terms.flatMap((t) => [t.english, t.german]);
+
+function TermLine({ terms }: { terms: Requirement['terms'] }) {
+    if (!terms.length) {
+        return null;
+    }
+
+    return (
+        <small className="document-term">
+            {terms.map((t) => `${t.english} (${t.german})`).join(' · ')}
+        </small>
+    );
+}
+
+/** The task a document comes from: a catalogue link, never a prerequisite or a claim about your progress. */
+function ProducedLine({ link }: { link: Requirement['produced_by'] }) {
+    const { plan, go } = usePaperwork();
+
+    if (!link) {
+        return null;
+    }
+
+    const from = plan.processes.find(
+        (p) => p.definition_id === link.process_id && !p.is_closed,
+    );
+
+    if (!from) {
+        return null;
+    }
+
+    return (
+        <p className="document-source">
+            <Icon name="document" />
+            <span>This comes from your {from.title} task.</span>
+            <button
+                type="button"
+                className="plain-button"
+                onClick={() =>
+                    go({ view: 'detail', process: from.occurrence_key })
+                }
+            >
+                Open {from.title}
+            </button>
+        </p>
+    );
+}
+
+const sameLabel = (a: string, b: string) =>
+    a.trim().toLowerCase() === b.trim().toLowerCase();
+
+function DocumentRow({
+    process,
+    requirement,
+}: {
+    process: Process;
+    requirement: Requirement;
+}) {
+    const { plan, run, toast, openSheet, canEdit, location, jurisdiction } =
+        usePaperwork();
+    const focused = location.focus === requirement.id;
+    const row = useRef<HTMLDetailsElement>(null);
+    useEffect(() => {
+        if (!focused || !row.current) {
+            return;
+        }
+
+        row.current.open = true;
+        row.current.querySelector('summary')?.focus({ preventScroll: true });
+        row.current.scrollIntoView({
+            block: 'center',
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'instant'
+                : 'smooth',
+        });
+    }, [focused]);
+    const start = () =>
+        run(
+            () =>
+                commands.startProcess(
+                    plan.person_id,
+                    jurisdiction,
+                    process.occurrence_key,
+                    process.review_token!,
+                ),
+            'Tracking started. Check each document when you are ready.',
+        ).then((refused) => refused && toast(refused));
+    const evidence: EvidenceItem[] =
+        'evidence' in plan.paperwork ? plan.paperwork.evidence : [];
+    // After an action its button changes, so the row stays open and its
+    // summary takes focus (the mock's two-step "I have this").
+    const keep = () => {
+        if (row.current) {
+            row.current.open = true;
+            row.current
+                .querySelector('summary')
+                ?.focus({ preventScroll: true });
+        }
+    };
+    const after = (refused: string | null) =>
+        refused ? toast(refused) : keep();
+    const conditional = requirement.applicability !== 'required';
+    const confirmed = requirement.readiness === 'confirmed_for_use';
+    const started = process.id !== null;
+
+    // "I have this": one record per document name, so having it once shows everywhere it is asked for.
+    const have = () => {
+        const existing = evidence.find((e) =>
+            sameLabel(e.details.label, requirement.label),
+        );
+        const refs = [
+            ...new Set([
+                ...(existing?.details.requirement_refs ?? []),
+                requirement.id,
+            ]),
+        ];
+
+        return run(
+            () =>
+                commands.recordEvidence(
+                    plan.person_id,
+                    existing?.id ?? crypto.randomUUID(),
+                    existing?.version ?? 0,
+                    {
+                        label: existing?.details.label ?? requirement.label,
+                        kind: existing?.details.kind ?? 'document',
+                        reported_available: true,
+                        requirement_refs: refs,
+                    },
+                ),
+            'You have it. Mark it ready after checking it for this task.',
+        ).then(after);
+    };
+
+    const confirm = () => {
+        const evidenceId =
+            requirement.evidence_id ?? requirement.suggested_evidence_ids[0];
+        const item = evidence.find((e) => e.id === evidenceId);
+
+        if (!evidenceId || !item || process.id === null) {
+            return;
+        }
+
+        return run(
+            () =>
+                commands.confirmRequirement(
+                    process.id!,
+                    requirement.id,
+                    process.version,
+                    evidenceId,
+                    item.version,
+                    requirement.semantic_hash,
+                ),
+            'Marked ready for this task. Nothing was sent.',
+        ).then(after);
+    };
+
+    const notReady = async () => {
+        if (requirement.evidence_id && process.id !== null) {
+            const refused = await run(() =>
+                commands.withdrawRequirement(
+                    process.id!,
+                    requirement.id,
+                    process.version,
+                ),
+            );
+
+            if (refused) {
+                return toast(refused);
+            }
+        }
+
+        const holders = evidence.filter((e) =>
+            e.details.requirement_refs?.includes(requirement.id),
+        );
+
+        for (const item of holders) {
+            const refs = (item.details.requirement_refs ?? []).filter(
+                (r) => r !== requirement.id,
+            );
+            const refused = await run(() =>
+                commands.recordEvidence(
+                    plan.person_id,
+                    item.id,
+                    item.version,
+                    { ...item.details, requirement_refs: refs },
+                    refs.length ? 'active' : 'archived',
+                ),
+            );
+
+            if (refused) {
+                return toast(refused);
+            }
+        }
+
+        toast('Marked as not ready');
+        keep();
+    };
+
+    return (
+        <details className="document-row" ref={row}>
+            <summary>
+                <span
+                    className={`document-symbol ${confirmed ? 'confirmed' : ''}`}
+                >
+                    <Icon name={confirmed ? 'check' : 'document'} />
+                </span>
+                <span>
+                    <strong>{requirement.label}</strong>
+                    <TermLine terms={requirement.terms} />
+                    <small>
+                        {readinessLabels[requirement.readiness]}
+                        {conditional ? ' · May be needed' : ''}
+                    </small>
+                </span>
+                <Icon name="down" />
+            </summary>
+            <div className="document-actions">
+                {/* One string, as the mock draws it: split text shapes a pixel apart. */}
+                <p>
+                    {`${conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${process.title}. This is not an official document check.`}
+                </p>
+                <ProducedLine link={requirement.produced_by} />
+                {canEdit ? (
+                    !started ? (
+                        <button
+                            type="button"
+                            className="button secondary"
+                            onClick={start}
+                        >
+                            <Icon name="plus" />
+                            Start tracking this task
+                        </button>
+                    ) : (
+                        <>
+                            {requirement.readiness === 'missing' ? (
+                                <button
+                                    type="button"
+                                    className="button secondary"
+                                    onClick={have}
+                                >
+                                    <Icon name="document" />I have this
+                                </button>
+                            ) : [
+                                  'reported_available',
+                                  'needs_reconfirmation',
+                              ].includes(requirement.readiness) &&
+                              !conditional ? (
+                                <button
+                                    type="button"
+                                    className="button primary"
+                                    onClick={confirm}
+                                >
+                                    <Icon name="check" />
+                                    Mark as ready
+                                </button>
+                            ) : confirmed ? (
+                                <span className="document-confirmed">
+                                    <Icon name="check" />
+                                    Marked ready by you
+                                </span>
+                            ) : null}
+                            <button
+                                type="button"
+                                className="plain-button"
+                                onClick={notReady}
+                            >
+                                I don’t have it
+                            </button>
+                        </>
+                    )
+                ) : null}
+                <button
+                    type="button"
+                    className="document-info"
+                    onClick={() =>
+                        openSheet({
+                            title: 'Source and coverage',
+                            body: <SourcesBody process={process} />,
+                        })
+                    }
+                >
+                    <Icon name="info" />
+                    Check official source
+                </button>
+            </div>
+        </details>
+    );
+}
+
+export function Documents() {
+    const { plan, location, setLocation, requirements, go } = usePaperwork();
+    const [docState, setDocState] = useState<DocState>('all');
+
+    if (!('requirements' in plan.paperwork)) {
+        return (
+            <section className="access-blank">
+                <h2 id="view-heading" tabIndex={-1}>
+                    Documents aren’t shared with you.
+                </h2>
+                <p>
+                    Ask the person whose plan this is for access to their
+                    document checklist.
+                </p>
+            </section>
+        );
+    }
+
+    // Each task's documents that the search and the status filter keep.
+    const docsFor = (p: Process) =>
+        requirements.filter(
+            (r) =>
+                r.occurrence_key === p.occurrence_key &&
+                r.applicability !== 'not_required',
+        );
+    const open = plan.processes.filter((p) => !p.is_closed);
+    const listed = open.filter((p) => docsFor(p).length);
+    const unlisted = open.filter((p) => !docsFor(p).length);
+    const task = listed.some((p) => p.occurrence_key === location.paperFilter)
+        ? location.paperFilter
+        : 'all';
+    const found = (p: Process) =>
+        docsFor(p).filter((r) => matches(location.q, r.label, ...termsOf(r)));
+    const kept = (p: Process) =>
+        found(p).filter((r) => docState === 'all' || docGroup(r) === docState);
+    const inTask = listed.filter(
+        (p) => task === 'all' || p.occurrence_key === task,
+    );
+    const shown = inTask.filter((p) => kept(p).length);
+    const hits = inTask.reduce((n, p) => n + found(p).length, 0);
+    const query = location.q.trim();
+    const heading = (
+        <h2 className="sr-only" id="view-heading" tabIndex={-1}>
+            Your documents
+        </h2>
+    );
+
+    if (query && !hits) {
+        return (
+            <>
+                {heading}
+                <SearchLine hits={0} />
+            </>
+        );
+    }
+
+    const taskChips: [string, string, number][] = [
+        ['all', 'All tasks', listed.reduce((n, p) => n + found(p).length, 0)],
+        ...listed.map(
+            (p) =>
+                [p.occurrence_key, p.title, found(p).length] as [
+                    string,
+                    string,
+                    number,
+                ],
+        ),
+    ];
+    // Only the statuses that have something, and the row only when it
+    // leaves a choice.
+    const stateChips = docGroups
+        .map(
+            ([id, text]) =>
+                [
+                    id,
+                    text,
+                    inTask.reduce(
+                        (n, p) =>
+                            n +
+                            found(p).filter(
+                                (r) => id === 'all' || docGroup(r) === id,
+                            ).length,
+                        0,
+                    ),
+                ] as [DocState, string, number],
+        )
+        .filter(([id, , n]) => id === 'all' || n);
+    const one = listed.find((p) => p.occurrence_key === task);
+
+    return (
+        <>
+            {one ? (
+                <button
+                    type="button"
+                    className="view-back"
+                    onClick={() =>
+                        go({ view: 'detail', process: one.occurrence_key })
+                    }
+                >
+                    <Icon name="back" />
+                    {one.title}
+                </button>
+            ) : null}
+            {heading}
+            <SearchLine hits={hits} />
+            <div className="paperwork-filters">
+                {listed.length > 1 ? (
+                    <div
+                        className="case-chips"
+                        role="group"
+                        aria-label="Show documents for"
+                    >
+                        {taskChips.map(([id, text, n]) => (
+                            <button
+                                key={id}
+                                type="button"
+                                aria-pressed={task === id}
+                                onClick={() => setLocation({ paperFilter: id })}
+                            >
+                                {text} <span>{n}</span>
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+                {stateChips.length > 2 ? (
+                    <div
+                        className="case-chips"
+                        role="group"
+                        aria-label="Show documents that are"
+                    >
+                        {stateChips.map(([id, text, n]) => (
+                            <button
+                                key={id}
+                                type="button"
+                                aria-pressed={docState === id}
+                                onClick={() => setDocState(id)}
+                            >
+                                {text} <span>{n}</span>
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+            </div>
+            {shown.length ? null : (
+                <div className="honest-empty">
+                    <h3>No documents with this status</h3>
+                    <button
+                        type="button"
+                        className="plain-button"
+                        onClick={() => setDocState('all')}
+                    >
+                        Show all documents
+                    </button>
+                </div>
+            )}
+            <div className="paperwork-groups">
+                {shown.map((process) => {
+                    const docs = docsFor(process);
+
+                    return (
+                        <section
+                            className="paperwork-group"
+                            key={process.occurrence_key}
+                        >
+                            <div className="case-section-head">
+                                <button
+                                    type="button"
+                                    className="paper-process-link"
+                                    onClick={() =>
+                                        go({
+                                            view: 'detail',
+                                            process: process.occurrence_key,
+                                        })
+                                    }
+                                >
+                                    <Icon name={topicIcon(process.topic)} />
+                                    <h3>{process.title}</h3>
+                                    <Icon name="arrow" />
+                                </button>
+                                {/* Only required documents can be marked ready, so only they count. */}
+                                <span className="paper-count">
+                                    {`${docs.filter((r) => r.readiness === 'confirmed_for_use').length}/${docs.filter((r) => r.applicability === 'required').length} ready`}
+                                </span>
+                            </div>
+                            {kept(process).map((r) => (
+                                <DocumentRow
+                                    key={r.id}
+                                    process={process}
+                                    requirement={r}
+                                />
+                            ))}
+                        </section>
+                    );
+                })}
+            </div>
+            {unlisted.length &&
+            task === 'all' &&
+            !query &&
+            docState === 'all' ? (
+                <p className="paperwork-none">
+                    <Icon name="info" />
+                    No documents listed for{' '}
+                    {unlisted.map((p) => p.title).join(' or ')}.
+                </p>
+            ) : null}
+            <p className="date-separation">
+                <Icon name="info" />
+                “Ready” means you have checked it for this task. No files are
+                uploaded or sent.
+            </p>
+            <p className="date-separation">
+                <Icon name="info" />
+                Uploading, scanning, translating and letter writing aren’t
+                available yet.
+            </p>
+        </>
+    );
+}

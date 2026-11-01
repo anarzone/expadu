@@ -54,14 +54,15 @@ it('keeps every approved core task inside the source policy', function () {
     }
 });
 
-it('carries the tax ID on an explicit single-source approval', function () {
+it('backs the tax ID card with quotes from the statute and the federal tax office', function () {
     $task = Task::query()->where('key', 'core.steuer_id')->firstOrFail();
 
-    // No allow-listed implementation host covers the Steuer-ID: bzst.de is not
-    // on the list, and Cologne's only page mentioning it is about ELStAM. The
-    // flag is the sanctioned way to say "the statute alone, reviewed by a human".
-    expect($task->source_verification)->toBe(RuleSourcePolicy::SingleSourceApproved)
-        ->and(collect($task->legal_sources)->where('kind', 'implementation'))->toBeEmpty();
+    // Owner decision (7 Oct 2026): bzst.de is an allowed official source, so the
+    // three-month advice is quoted from the BZSt page and checked like every figure.
+    expect($task->source_verification)->toBe(RuleSourcePolicy::QuoteChecked)
+        ->and($task->reviewed_by)->toBe(RuleSourcePolicy::AutomatedReviewer)
+        ->and(collect($task->legal_sources)->pluck('url')->filter(fn ($url) => str_contains($url, 'bzst.de')))->toHaveCount(1)
+        ->and(collect($task->claims)->firstWhere('id', 'three-months')['source'])->toBe('BZSt · Erneute Mitteilung der IdNr');
 });
 
 it('refuses to approve the broadcasting fee while its treaty is off the allowlist', function () {

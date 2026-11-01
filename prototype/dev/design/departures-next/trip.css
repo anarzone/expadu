@@ -1,0 +1,750 @@
+/* The trip page (owner, 15 Oct 2026; Travel directions canvas rows 19–22):
+   one page before and after "I'm on my way"; under way it follows you by
+   itself. One steady frame at every moment: the ring with the instruction,
+   one "what to look for" row, then the button (before you start) or how the
+   page knows. The styles for that are at the end of this file. */
+.moment-sub {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-snug);
+}
+/* The trip's header: close, where to and when. Phones get the whole screen
+   with the step first; desktops keep the trip in Travel's column, no window
+   over the page. */
+.nav-topbar h1 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+@media (max-width: 999px) {
+    #journey-navigation .nav-topbar {
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+        padding: max(env(safe-area-inset-top), 8px) 12px 8px;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-canvas);
+    }
+    /* The whole "To …" title, on two lines if it needs them. */
+    #journey-navigation .nav-topbar h1 {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        white-space: normal;
+        font-size: var(--text-control);
+        line-height: 1.2;
+    }
+    #journey-navigation,
+    #journey-navigation :is(.nav-panel, .nav-footer) {
+        background: var(--color-bg-canvas);
+    }
+    #journey-navigation .nav-footer {
+        margin-top: 0;
+    }
+    #journey-navigation .nav-footer::before {
+        background: linear-gradient(transparent, var(--color-bg-canvas));
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    #journey-navigation .nav-workspace {
+        grid-template: auto minmax(0, 1fr) / minmax(0, 720px);
+        justify-content: center;
+    }
+}
+@media (min-width: 1000px) {
+    body.trip-open :is(#departures, #journey-view, #day-view, .journey-resume) {
+        display: none !important;
+    }
+    #journey-navigation:not(:modal)[open] {
+        position: static;
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0 0 var(--space-24);
+        overflow: visible;
+        background: transparent;
+        color: var(--color-text);
+    }
+    #journey-navigation:not(:modal) .nav-workspace {
+        height: auto;
+        grid-template: auto auto / minmax(0, 1fr);
+    }
+    #journey-navigation:not(:modal) .nav-topbar {
+        gap: var(--space-16);
+        margin-bottom: var(--space-20);
+        padding: 0 0 var(--space-14);
+        border-bottom: 1px solid var(--color-border);
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-topbar .nav-icon-button {
+        background: var(--color-bg-quiet);
+    }
+    #journey-navigation:not(:modal) .nav-panel {
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-panel-content {
+        overflow: visible;
+    }
+    #journey-navigation:not(:modal) .nav-summary {
+        padding: 0;
+    }
+    #journey-navigation:not(:modal) .nav-footer {
+        padding: var(--space-16) 0 0;
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-footer::before {
+        display: none;
+    }
+    #journey-navigation:not(:modal) .nav-detail-scroll {
+        overflow: visible;
+        padding: 4px 0 0;
+    }
+    #journey-navigation:not(:modal) .nav-options {
+        top: 56px;
+        right: 0;
+    }
+}
+/* The confirmations (stop the trip, replace the one you're on). */
+#journey-navigation .nav-footer {
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+}
+#journey-navigation .nav-text-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+#journey-navigation .nav-text-button svg {
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-text-button:active {
+    background: var(--color-bg-quiet);
+}
+/* ---------- The trip follows you (owner, 15 Oct 2026; Travel directions
+   canvas row 19). Nothing to confirm: the step card says what's now, how
+   the page knows, and "Not right?" corrects it. The ring is Nearby's line
+   ring; colour says how much it matters, never which line. ---------- */
+#journey-navigation {
+    --trip-amber: #b07800;
+    --trip-amber-edge: #e8c77a;
+    --trip-ink: color-mix(
+        in srgb,
+        var(--color-text) 78%,
+        var(--color-bg-surface)
+    );
+}
+#journey-navigation .nav-step-card {
+    --trip-tone: var(--color-text-soft);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    padding: 22px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 26px;
+    background: var(--color-bg-surface);
+    transition: border-color 300ms var(--ease-standard);
+}
+#journey-navigation .nav-step-card.is-attention {
+    --trip-tone: var(--trip-amber);
+    border-color: var(--trip-amber-edge);
+}
+#journey-navigation .nav-step-card.is-conflict {
+    --trip-tone: var(--color-conflict-text);
+    border-color: var(--color-conflict-border);
+}
+#journey-navigation .nav-step-lead {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+@keyframes nav-step-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+#journey-navigation .nav-step-lead > div {
+    min-width: 0;
+}
+#journey-navigation .nav-step-card h2 {
+    margin: 0 0 4px;
+    font-size: 30px;
+    letter-spacing: -0.6px;
+    line-height: 1.1;
+}
+#journey-navigation .nav-step-card .moment-sub {
+    margin: 0;
+    color: var(--trip-ink);
+    font-size: 15px;
+    line-height: 1.4;
+}
+#journey-navigation .nav-why {
+    font-weight: var(--weight-bold);
+}
+#journey-navigation .is-attention .nav-why {
+    color: var(--color-attention-text);
+}
+#journey-navigation .is-conflict .nav-why {
+    color: var(--color-conflict-text);
+}
+#journey-navigation .nav-ring {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    color: var(--trip-tone);
+}
+#journey-navigation .nav-ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 2.6;
+}
+#journey-navigation .nav-ring circle:first-child {
+    stroke: var(--color-border);
+}
+#journey-navigation .nav-ring circle + circle {
+    stroke: currentColor;
+    stroke-linecap: round;
+    transition:
+        stroke-dasharray 500ms var(--ease-standard),
+        stroke 300ms var(--ease-standard);
+}
+#journey-navigation .nav-ring > span {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+#journey-navigation .nav-ring strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+}
+#journey-navigation .nav-ring small {
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-ring.is-done > svg:last-child {
+    position: relative;
+    inset: auto;
+    width: 32px;
+    height: 32px;
+    transform: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+}
+/* How the page knows, and the way to correct it. */
+#journey-navigation .nav-follow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+#journey-navigation .nav-follow > span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--touch-target);
+    color: var(--color-text-soft);
+    font-size: 13.5px;
+    line-height: 1.35;
+}
+#journey-navigation .nav-follow > span svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-follow > button {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+    padding: 0 4px;
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-follow > button svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 240ms var(--ease-standard);
+}
+#journey-navigation .nav-follow > button[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+#journey-navigation .nav-not-right {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    box-shadow: 0 16px 34px -22px #211d1580;
+    animation: nav-step-in 240ms var(--ease-standard) both;
+}
+#journey-navigation .nav-not-right button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    min-height: var(--touch-target);
+    padding: 0 12px;
+    border-radius: 10px;
+    text-align: left;
+}
+#journey-navigation .nav-not-right button:hover {
+    background: var(--color-bg-quiet);
+}
+#journey-navigation .nav-not-right button[data-nav='end'] {
+    color: var(--color-text-soft);
+}
+#journey-navigation .nav-not-right svg {
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-notice {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* Before you start: the one button, where how the page knows will be
+   (canvas row 22). */
+#journey-navigation .nav-start {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding-top: var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+#journey-navigation .nav-start .nav-primary {
+    min-height: 52px;
+    border-radius: 16px;
+    font-size: var(--text-body);
+}
+#journey-navigation .nav-start .nav-primary svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+#journey-navigation .nav-start > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+#journey-navigation .nav-start .nav-text-button,
+#journey-navigation .nav-in-plan {
+    flex: none;
+    color: var(--color-text);
+}
+#journey-navigation .nav-start .nav-text-button.is-saved svg {
+    fill: currentColor;
+}
+/* Already in your plan (the sample day's): said, not offered. */
+#journey-navigation .nav-in-plan {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-in-plan svg {
+    width: 16px;
+    height: 16px;
+}
+/* The top bar: progress, the count, and that it's a sample. */
+#journey-navigation .nav-trip-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+#journey-navigation .nav-bars {
+    display: flex;
+    gap: 4px;
+    width: 220px;
+}
+#journey-navigation .nav-bars i {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--color-border);
+    transition: background-color 300ms var(--ease-standard);
+}
+#journey-navigation .nav-bars i.is-done {
+    background: var(--color-text);
+}
+#journey-navigation .nav-bars i.is-now {
+    background: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+#journey-navigation .nav-count {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+/* The sample's own control: a dashed chip in place of a ⋯ menu, so the
+   trip's preview tools read as the sample's, not the trip's (owner, 18 Oct
+   2026, Composer review canvas board 13). */
+#journey-navigation .nav-sample {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1.5px dashed var(--color-border-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+#journey-navigation .nav-sample svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    transition: rotate var(--duration-base, 180ms) ease;
+}
+#journey-navigation .nav-sample[aria-expanded='true'] svg {
+    rotate: 180deg;
+}
+#journey-navigation .nav-sample:hover {
+    border-color: var(--color-text-soft);
+    color: var(--color-text);
+}
+/* Phones show "Sample"; the rest is read out. */
+@media (max-width: 999px) {
+    #journey-navigation .nav-sample-more {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+/* The map card (owner, 15 Oct 2026; canvas row 20): where to stand while
+   you walk to the stop and wait, then your way with you on it. Its caption
+   follows the step. */
+#journey-navigation .nav-mapcard-box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding: 48px 10px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-bg-canvas);
+}
+#journey-navigation .nav-map-note {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+#journey-navigation .tmap-trip {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+/* Above the trip page's own icon size (navigation.css). */
+#journey-navigation .tmap-closeup svg {
+    width: 100%;
+    height: 100%;
+}
+#journey-navigation .tmap-legend svg {
+    width: 13px;
+    height: 13px;
+}
+#journey-navigation .tmap-you {
+    transition: transform 420ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+@media (max-width: 999px) {
+    #journey-navigation .nav-mapcard {
+        padding: 0 16px 8px;
+    }
+    #journey-navigation .nav-mapcard .nav-way-title {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+/* Desktop: the step | your way | the map card. */
+@media (min-width: 1000px) {
+    #journey-navigation:not(:modal) .nav-panel-content {
+        display: grid;
+        grid-template-columns: minmax(0, 500px) minmax(0, 1fr) 380px;
+        column-gap: var(--space-32);
+        align-items: start;
+    }
+    /* The notice spans the workspace on its edges, 16px above the trip. */
+    #journey-navigation:not(:modal) .nav-condition {
+        grid-column: 1 / -1;
+        margin: 0 0 16px;
+    }
+    #journey-navigation:not(:modal) .nav-summary {
+        grid-area: 2 / 1;
+    }
+    #journey-navigation:not(:modal) .nav-expanded {
+        grid-area: 2 / 2;
+    }
+    #journey-navigation:not(:modal) .nav-footer {
+        grid-area: 3 / 1;
+    }
+    #journey-navigation:not(:modal) .nav-mapcard {
+        grid-area: 2 / 3;
+    }
+    #journey-navigation:not(:modal) .nav-mapcard .nav-way-title {
+        margin: 4px 0 var(--space-12);
+    }
+}
+/* Smaller desktops: your way goes under the step, the map stays beside. */
+@media (min-width: 1000px) and (max-width: 1279px) {
+    #journey-navigation:not(:modal) .nav-panel-content {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    #journey-navigation:not(:modal) .nav-mapcard {
+        grid-area: 2 / 2 / 5;
+    }
+    #journey-navigation:not(:modal) .nav-expanded {
+        grid-area: 3 / 1;
+        margin-top: var(--space-24);
+    }
+    #journey-navigation:not(:modal) .nav-footer {
+        grid-area: 4 / 1;
+    }
+}
+/* Phones and tablets: the step, the map card, then your way; once the trip
+   runs the top bar's count gets its own row under the title. */
+@media (max-width: 999px) {
+    #journey-navigation .nav-topbar {
+        flex-wrap: wrap;
+        row-gap: var(--space-10);
+    }
+    #journey-navigation .nav-topbar > .nav-trip-progress {
+        order: 9;
+        flex: 1 1 100%;
+    }
+    #journey-navigation .nav-bars {
+        flex: 1;
+        width: auto;
+    }
+    #journey-navigation .nav-summary {
+        padding: 16px 16px 8px;
+    }
+    #journey-navigation .nav-detail-scroll {
+        padding: 16px;
+    }
+}
+@media (max-width: 700px) {
+    #journey-navigation .nav-step-card {
+        gap: var(--space-14);
+        padding: 16px;
+        border-radius: 22px;
+    }
+    #journey-navigation .nav-step-lead {
+        gap: 14px;
+    }
+    #journey-navigation .nav-ring {
+        width: 64px;
+        height: 64px;
+    }
+    #journey-navigation .nav-ring strong {
+        font-size: 18px;
+    }
+    #journey-navigation .nav-ring small {
+        font-size: 9.5px;
+    }
+    #journey-navigation .nav-step-card h2 {
+        font-size: 22px;
+    }
+    #journey-navigation .nav-step-card .moment-sub {
+        font-size: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #journey-navigation :is(.nav-step-lead, .nav-not-right) {
+        animation: none;
+    }
+    #journey-navigation
+        :is(.nav-ring circle + circle, .nav-bars i, .nav-step-card) {
+        transition: none;
+    }
+}
+/* One steady frame at every moment (owner, 15 Oct 2026: "why three
+   different uis when changing clocks?"): the ring with the instruction,
+   one "what to look for" row the same size, how the page knows. */
+#journey-navigation .nav-step-lead {
+    min-height: 92px;
+}
+#journey-navigation .nav-look {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 72px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+#journey-navigation a.nav-look:hover {
+    background: var(--color-bg-quiet);
+}
+#journey-navigation .nav-look > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+#journey-navigation .nav-look-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+#journey-navigation .nav-look-text strong {
+    font-size: 14.5px;
+}
+#journey-navigation .nav-look-text small {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.35;
+}
+#journey-navigation .nav-look-tile {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+#journey-navigation .nav-look-tile svg {
+    width: 20px;
+    height: 20px;
+}
+#journey-navigation .nav-look-tile.is-badge {
+    background: var(--line);
+    color: #fff;
+    font-size: 17px;
+    font-weight: var(--weight-bold);
+}
+/* What's on the tram's front: the line and where it's going. */
+#journey-navigation .nav-look-tile.is-sign {
+    display: inline-flex;
+    gap: 8px;
+    padding: 0 12px 0 6px;
+    background: #1f1c17;
+    color: #ffb547;
+    font-size: 16px;
+    font-weight: var(--weight-bold);
+    white-space: nowrap;
+}
+#journey-navigation .nav-look-tile.is-sign > span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--line);
+    color: #fff;
+    font-size: 14px;
+}
+#journey-navigation .nav-look-tile.is-quote {
+    font-size: 24px;
+    font-weight: var(--weight-bold);
+    line-height: 1;
+}
+#journey-navigation .nav-look-tile.is-exit {
+    padding: 0 10px;
+    background: #1f6b3a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: var(--weight-bold);
+}
+@media (max-width: 700px) {
+    #journey-navigation .nav-step-lead {
+        min-height: 64px;
+    }
+    #journey-navigation .nav-look {
+        gap: 12px;
+        padding: 10px 12px;
+    }
+    #journey-navigation .nav-look-tile.is-sign {
+        font-size: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #journey-navigation .nav-look {
+        animation: none;
+    }
+}
+/* A long destination ends in "…" so the row keeps its size. */
+#journey-navigation .nav-look-tile.is-sign {
+    max-width: 55%;
+}
+#journey-navigation .nav-look-tile.is-sign > b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* The ⋯ menu's review switches: the trip's moments (they stand in for the
+   time and your location), then the preview conditions. */
+#journey-navigation .nav-options {
+    max-height: min(560px, calc(100dvh - 140px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+#journey-navigation .nav-options > strong ~ strong {
+    margin-top: var(--space-10);
+}
+#journey-navigation .nav-options button time {
+    flex: none;
+    width: 40px;
+    color: var(--color-text-soft);
+    font-variant-numeric: tabular-nums;
+}
+

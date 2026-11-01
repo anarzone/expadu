@@ -56,6 +56,10 @@ return [
     // and redact tokens / cookies / GPS coordinates. See App\Support\SentryScrubber.
     'before_send' => [SentryScrubber::class, 'scrub'],
 
+    // Performance traces carry the request too: the same URL scrub (query
+    // strings, a reset link's token).
+    'before_send_transaction' => [SentryScrubber::class, 'scrubTransaction'],
+
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_exceptions
     // 'ignore_exceptions' => [],
 

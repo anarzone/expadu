@@ -1,0 +1,768 @@
+{
+  "about": "Fixed test list for what an event is mainly for (App\\Personalisation\\Sensitive::EVENT_RULE), events:sensitive-eval. source: listing = a real listing (source_id on the preview, 29 Oct 2026), constructed = written to cover kinds the listings rarely have. borderline cases are reported, not scored. Labels by Claude, 29 Oct 2026, for the owner to review.",
+  "cases": [
+    {
+      "id": 1,
+      "source": "listing",
+      "source_id": 26,
+      "title": "Matt Hansen – The Orchid Tour | Support: Hudson Ingram",
+      "venue": "Live Music Hall",
+      "tags": [
+        "Konzerte",
+        "evening"
+      ],
+      "description": "Kaum ein Singer-Songwriter schreibt passendere Musik für Gefühlslagen wie Herzschmerz, Sehnsucht und emotionale Heilung als Matt Hansen. Mit seinen empathischen Texten verpackt der Musiker aus Los Angeles seine eigene Gefühlswelt in bewegende Songs voller Authentizität und berührt damit sein Publikum tief. Das betrifft gleichermaßen seine minimalistischen Balladen wie auch die mitreißenden Pop-Rock-Songs, die von seiner kraftvollen Stimme getragen werden, und Songs wie „LET EM GO“, „something to remember“ und „better off without me“ zu Hits machten. Dass Matt Hansen sich als Independent Artist",
+      "expected": "none",
+      "borderline": false,
+      "why": "Singer-songwriter known for songs about healing"
+    },
+    {
+      "id": 2,
+      "source": "listing",
+      "source_id": 1104,
+      "title": "Parolen-Paroli",
+      "venue": "Stadtteilbibliothek Mülheim",
+      "tags": [
+        "official-city",
+        "district:Mülheim",
+        "veedel:Mülheim",
+        "evening",
+        "free"
+      ],
+      "description": "Argumentationstraining gegen Stammtischparolen – in der Stadtteilbibliothek Mülheim.",
+      "expected": "politics",
+      "borderline": false,
+      "why": "Argument training against populist slogans"
+    },
+    {
+      "id": 3,
+      "source": "listing",
+      "source_id": 1113,
+      "title": "Vortrag: Vom Zeltlager zum demokratischen Sozialismus",
+      "venue": "Historisches Archiv mit Rheinischem Bildarchiv",
+      "tags": [
+        "official-city",
+        "district:Innenstadt",
+        "veedel:Neustadt/Süd",
+        "evening",
+        "free"
+      ],
+      "description": "Der Kinder- und Jugendverband Die Kölner Falken in den ersten Nachkriegsjahren",
+      "expected": "none",
+      "borderline": true,
+      "why": "History talk on a socialist youth group after the war"
+    },
+    {
+      "id": 4,
+      "source": "listing",
+      "source_id": 797,
+      "title": "Papa Roach – Rise of the Roach",
+      "venue": "Lanxess-Arena",
+      "tags": [
+        "Konzerte",
+        "evening",
+        "weekend"
+      ],
+      "description": "Papa Roach, die grammynominierten und platin ausgezeichneten Pioniere des Alternative Hard Rock, feierten kürzlich das 25-jährige Jubiläum ihres Albums „Infest“. Bekannt für ihren offenen Umgang mit dem Thema psychische Gesundheit, nutzt die Band seit jeher ihre Plattform, um Aufmerksamkeit zu schaffen und Suizidprävention zu unterstützen. Dies begann mit ihrem ikonischen Hit „Last Resort“ bis hin zu ihrer jüngsten Zusammenarbeit mit Carrie Underwood bei „Leave A Light On (Talk Away The Dark)“, die weltweit über 750.000 US-Dollar für Suizidprävention einbrachte. Papa Roach hat bisher elf Studi",
+      "expected": "none",
+      "borderline": false,
+      "why": "Rock concert; the band is known for songs about mental health"
+    },
+    {
+      "id": 5,
+      "source": "listing",
+      "source_id": 1404,
+      "title": "Lebendige Bilder",
+      "venue": "Museum für Ostasiatische Kunst",
+      "tags": [
+        "tourism-board",
+        "morning"
+      ],
+      "description": "Die Ausstellung „Lebendige Bilder“ im Museum für Ostasiatische Kunst Köln widmet sich dem Zusammenspiel von Kunst und Ritual in den religiösen Praktiken Chinas, Japans und Koreas. Im Mittelpunkt stehen buddhistische Kultbilder sowie Ritualgegenstände wie Vajra-Szepter und Glocken, die bei zeremoniellen Handlungen Verwendung finden. Zu den Exponaten zählen ein japanischer Buddha Vairocana aus dem 12. Jahrhundert und die koreanische Hängerolle eines Höllenkönigs. Thematisiert werden zudem die Verehrung im Reinen Land, alltägliche Reinigungs- und Meditationsrituale sowie die koreanische Bulbokjan",
+      "expected": "none",
+      "borderline": false,
+      "why": "Museum exhibition of Buddhist ritual art"
+    },
+    {
+      "id": 6,
+      "source": "listing",
+      "source_id": 992,
+      "title": "(un)sichtbar gemacht: Aromantik und Asexualität",
+      "venue": "Interim Zentralbibliothek",
+      "tags": [
+        "official-city",
+        "district:Innenstadt",
+        "schedule-uncertain",
+        "evening",
+        "free"
+      ],
+      "description": "Lesung und Gespräch mit Annika Baumgart und Katharina Kroschel. Im Rahmen unseres Kulturprogramms im Interim der Zentralbibliothek.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Reading and talk on aromanticism and asexuality"
+    },
+    {
+      "id": 7,
+      "source": "listing",
+      "source_id": 254,
+      "title": "Magic Gregorian Night",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Konzerte",
+        "evening"
+      ],
+      "description": "Unter der künstlerischen Leitung von Georgi Pandurov entsteht ein Konzertabend, der gregorianische Gesänge nicht museal behandelt, sondern als lebendige Vokalkunst inszeniert. Mönchskutten, Lichtstimmung und die Präsenz der Magic Gregorian Night schaffen eine Atmosphäre zwischen Andacht, Konzert und großer Bühne. Angaben zum Veranstaltungsort: Trinitatiskirche, Filzengraben 4, 50676 Köln (Altstadt) Webseite Details Datum: Zeit:",
+      "expected": "none",
+      "borderline": false,
+      "why": "Gregorian chant performed as a concert show"
+    },
+    {
+      "id": 8,
+      "source": "listing",
+      "source_id": 1196,
+      "title": "Free Walking Tour Cologne",
+      "venue": "Kölner Dom (Hauptportal)",
+      "tags": [],
+      "description": "",
+      "expected": "none",
+      "borderline": false,
+      "why": "Walking tour starting at the cathedral"
+    },
+    {
+      "id": 9,
+      "source": "listing",
+      "source_id": 133,
+      "title": "Blaulicht-Union Party",
+      "venue": "Live Music Hall",
+      "tags": [
+        "Party",
+        "evening"
+      ],
+      "description": "Die Blaulicht-Union Party! Erwartet werden Angehörige der Polizei, Feuerwehr, Rettungsdienste, THW, DLRG, Krankenhäuser, Arztpraxen, Medizin- und Zahnmedizin-Studierende, Pflegeeinrichtungen, Apotheken, Zoll, Justiz, Bundeswehr, des öffentlichen Dienstes sowie alle weiteren Berufsgruppen, die rund um die Uhr für das Wohl ihrer Mitmenschen arbeiten. Natürlich sind auch Freunde, Familienangehörige und Unterstützer unserer Helferinnen und Helfer herzlich willkommen, gemeinsam mit den Einsatzkräften eine unvergessliche Nacht zu feiern. Eine Nacht. Eine Gemeinschaft. Eine Party – die Blaulicht-Unio",
+      "expected": "none",
+      "borderline": false,
+      "why": "Party whose guest list names hospital and police staff"
+    },
+    {
+      "id": 10,
+      "source": "listing",
+      "source_id": 259,
+      "title": "Comedy for Future – Die Show",
+      "venue": "Stadthalle Köln-Mülheim",
+      "tags": [
+        "Comedy &amp; Kabarett"
+      ],
+      "description": "Comedy for Future e.V. setzt sich für eine Welt im Sinne der 17 Ziele der UN ein. An diesem Abend treffen Humor, Nachhaltigkeit und spannende Impulse aufeinander: Musikwissenschafter und Comedian Dr. Pop wirft einen Blick auf Recycling in der Musikindustrie, Plantfluencer Robinga Schnögelrögel zeigt, warum er sich leidenschaftlich für den Erhalt und die Rückgewinnung von Biodiversität einsetzt und Aussteiger und Autor Axel Reitz spricht darüber, was man der AfD entgegensetzen kann. Dazu gibt es einen inspirierenden Beitrag der Stiftung Wilderness International und ganz nebenbei schützt jedes v",
+      "expected": "none",
+      "borderline": false,
+      "why": "Comedy show for a sustainability charity"
+    },
+    {
+      "id": 11,
+      "source": "listing",
+      "source_id": 580,
+      "title": "PETER THIEL & DIE SEHENDEN STEINE",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Bühne",
+        "evening"
+      ],
+      "description": "KÖLN Vortrag zur Investigativen Recherche Peter Thiel Peter Thiel steht spätestens seit den jüngsten Enthüllungen rund um Jens Spahn sowie den geleakten Informationen über die Geheimgesellschaft „Dialog“ stärker im Fokus der Öffentlichkeit. Noch immer hat kaum jemand sein Netzwerk, seine Ideen und seine Motive umfassend untersucht. Genau darum geht es bei unserer Vortrags-Tour. Tahir & Tariq nehmen den Kosmos rund um Peter Thiel unter die Lupe und zeigen, welche Vision er verfolgt und mit welchen Strategien er Einfluss ausübt. www.youtube.com/@GrenzgängerStudios Veranstaltungsort: Quäker Nachb",
+      "expected": "none",
+      "borderline": true,
+      "why": "Investigative talk about a tech investor and a politician"
+    },
+    {
+      "id": 12,
+      "source": "listing",
+      "source_id": 210,
+      "title": "Teresa Reichl und Lena Krebs – Lesen ist schwul",
+      "venue": "Bürgerhaus Stollwerck",
+      "tags": [
+        "Bühne",
+        "evening",
+        "weekend"
+      ],
+      "description": "Lesemäuse, raus aus den Deckenhöhlen, hier ist LESEN IST SCHWUL – DIE SHOW! Lena Krebs und Teresa Reichl ziehen ihren Podcast von der Couch auf die Bühne, und zwar mit allen Special Effects und Klimbim, die im Budget waren. Euch erwarten Buchrezensionen – aber in funny –, Empfehlungen – aber in leidenschaftlich –, Spiele – aber in buchig – und alles, wirklich alles, was ein Leseherz begehren könnte.",
+      "expected": "none",
+      "borderline": true,
+      "why": "Comedy reading show called “Lesen ist schwul”"
+    },
+    {
+      "id": 13,
+      "source": "listing",
+      "source_id": 257,
+      "title": "Frei Töne",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Konzerte",
+        "evening",
+        "free"
+      ],
+      "description": "Benefizkonzert am 03.11.2026 zugunsten des Fördervereins des St. Marienhospital Köln Am 3. November 2026 findet die nächste Veranstaltung unserer Konzertreihe Frei Töne zugunsten des Fördervereins statt. PROGRAMM: Duo Nordic Echo Aleksandra Esakova (Querflöte) Mariia Smirnova (Gitarre) Spielen: Assad – Drei Balkan-Tänze Fujii – Rhapsody Revaux / François – My Way Mancini – Moon River Howard – Fly Me To The Moon Pujol – Dos Aires Candomberos Veranstaltungsort: Cellitinnen-Krankenhaus St. Marien Kapelle Kunibertskloster 11-13 50668 Köln Details Datum: Zeit:",
+      "expected": "none",
+      "borderline": false,
+      "why": "Benefit concert for a hospital’s friends’ association"
+    },
+    {
+      "id": 14,
+      "source": "listing",
+      "source_id": 1217,
+      "title": "Veihnachtsmarkt",
+      "venue": "Evangelische Kirchengemeinde Kalk-Humboldt",
+      "tags": [
+        "tourism-board",
+        "free"
+      ],
+      "description": "Der Veihnachtsmarkt in Köln-Kalk ist Kölns einziger veganer Weihnachtsmarkt. Angeboten werden ausschließlich vegane Speisen und Produkte. Livemusik, eine Lichtshow und ein Lagerfeuer ergänzen das Programm.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Vegan Christmas market at a parish"
+    },
+    {
+      "id": 15,
+      "source": "listing",
+      "source_id": 781,
+      "title": "Vorsortierter Second-Hand-Markt für Spielzeug",
+      "venue": "Christ-König-Kirche Longerich",
+      "tags": [
+        "Märkte und Feste",
+        "morning",
+        "weekend"
+      ],
+      "description": "Neben Kinderspielzeug werden auch Kinderwagen, Autositze, Kinderräder, Roller und Kostüme verkauft. >>>KEINE KINDERBEKLEIDUNG<<< 10% des Verkaufserlöses gehen als Spende an das städtische Behindertenzentrum Dr. Dormagen-Guffanti. Anmeldung als Verkäufer per E-Mail vom 09.11. – 13.11.2026 an flohmarkt-christ-koenig@web.de.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Second-hand toy market at a church"
+    },
+    {
+      "id": 16,
+      "source": "listing",
+      "source_id": 1040,
+      "title": "Kölner Gesundheitsgespräche: Geistig fit bleiben – mit zehn Maßnahmen Demenz vorbeugen",
+      "venue": "Volkshochschule Köln - Studienhaus am Neumarkt",
+      "tags": [
+        "official-city",
+        "district:Innenstadt",
+        "veedel:Altstadt/Süd",
+        "evening",
+        "free"
+      ],
+      "description": "Vortrag und Gespräch",
+      "expected": "health",
+      "borderline": false,
+      "why": "Health talk on staying mentally fit (dementia prevention)"
+    },
+    {
+      "id": 17,
+      "source": "listing",
+      "source_id": 135,
+      "title": "Operation Karriere Kongress Köln 2026",
+      "venue": "Komed im Mediapark",
+      "tags": [
+        "Messen",
+        "morning",
+        "weekend",
+        "free"
+      ],
+      "description": "Die Messe für medizinische Nachwuchskräfte. Stellenbörse: Aktuelle Jobs in Köln Stichwort: Ort:",
+      "expected": "none",
+      "borderline": false,
+      "why": "Career fair for medical jobs"
+    },
+    {
+      "id": 18,
+      "source": "listing",
+      "source_id": 305,
+      "title": "Vivaldi – Die Vier Jahreszeiten",
+      "venue": "Trinitatiskirche",
+      "tags": [
+        "Konzerte",
+        "evening",
+        "free"
+      ],
+      "description": "Erleben Sie nicht nur eine, sondern alle vier Jahreszeiten auf einmal! Bei einem unvergesslichen Vivaldi-Konzert können Sie den Klängen der „Le quattro stagioni“ und weiteren bekannten Meisterwerken lauschen. Die zweite Hälfte des Konzertes lebt von der Vielfalt der europäischen klassischen Musik. Wir freuen uns auf ein wunderbares konzertantes Erlebnis und laden Sie recht herzlich ein, mit dabei zu sein! Die Neue Philharmonie Hamburg wurde 2001 von freischaffenden Berufsmusikern aus aller Welt gegründet. Seitdem hat sich das Orchester einen führenden Platz in der norddeutschen Musiklandschaft",
+      "expected": "none",
+      "borderline": false,
+      "why": "Vivaldi concert in a church"
+    },
+    {
+      "id": 19,
+      "source": "listing",
+      "source_id": 1560,
+      "title": "Stunksitzung",
+      "venue": "E-Werk",
+      "tags": [
+        "tourism-board",
+        "evening"
+      ],
+      "description": "Alle Infos zur Stunksitzung in Köln: Sie zieht Karneval, Politik & Kölsches Treiben durch den Kakao – schon vor der Adventsszeit bis zum Aschermittwoch.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Carnival cabaret that mocks politics"
+    },
+    {
+      "id": 20,
+      "source": "listing",
+      "source_id": 481,
+      "title": "Sisters of Comedy – Nachgelacht",
+      "venue": "Bürgerhaus Stollwerck",
+      "tags": [
+        "Comedy &amp; Kabarett",
+        "evening"
+      ],
+      "description": "In Zeiten, in denen man wieder über Frauenrechte und Meinungsfreiheit diskutieren muss, der Wind von rechts weltweit schärfer bläst und auch in westlichen Kulturen ein sehr konservatives Frauenbild neu propagiert wird, gehen die Komikerinnen in die Offensive! ‚Sisters of Comedy – Nachgelacht‘ ist ein Benefiz-Event, das seit 2018 einmal im Jahr gleichzeitig auf vielen verschiedenen Bühnen in Deutschland, Österreich und der Schweiz stattfindet, bestückt mit jeweils anderen Künstlerinnen aus der deutschsprachigen Comedy-, Kabarett- und Slam-Szene. Jede Show spendet einen Teil der Eintrittsgelder ",
+      "expected": "none",
+      "borderline": false,
+      "why": "Comedy that touches on politics"
+    },
+    {
+      "id": 21,
+      "source": "listing",
+      "source_id": 1418,
+      "title": "Auf den Spuren der grünen Fee",
+      "venue": "TimeRide Köln",
+      "tags": [
+        "tourism-board",
+        "evening"
+      ],
+      "description": "Tauche per VR ins Köln der Goldenen Zwanziger ein und entdecke beim Absinth Tasting die Welt der Grünen Fee. Jetzt Erlebnis bei TimeRide buchen.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Absinthe tasting VR tour (“grüne Fee”)"
+    },
+    {
+      "id": 22,
+      "source": "listing",
+      "source_id": 845,
+      "title": "Eric Wrede & Fee Vogel – Jeder Mensch kann trauern",
+      "venue": "Artheater",
+      "tags": [
+        "Bühne",
+        "evening",
+        "weekend"
+      ],
+      "description": "Trauer ist kein Defekt. Sie ist die normale Reaktion auf einen Verlust – und doch behandelt unsere Gesellschaft sie wie ein Problem, das möglichst schnell und geräuschlos gelöst werden soll. Fee Vogel und Eric Wrede halten dagegen. Mit ‚Jeder Mensch kann trauern‘ bringen die beiden einen Abend auf die Bühne, der weder Trostformat noch Therapie-Ersatz sein will – sondern eine ehrliche, alltagstaugliche Auseinandersetzung mit etwas, das jeden Menschen früher oder später trifft. Der Abend ist eine Mischung aus Gespräch, Lesung, kurzen Filmsequenzen und einzelnen Beteiligungsmomenten. Kein Frontal",
+      "expected": "none",
+      "borderline": true,
+      "why": "Stage talk about grief: not an illness, but close"
+    },
+    {
+      "id": 23,
+      "source": "listing",
+      "source_id": 1621,
+      "title": "Tenebrae",
+      "venue": "St. Gregorius Am Elend",
+      "tags": [
+        "tourism-board",
+        "evening"
+      ],
+      "description": "Erlebe am 30. Oktober einen Chorabend, bei dem jedes Werk einen neuen Lichtimpuls setzt und die geistliche Musik über Epochen hinweg miteinander verbindet.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Choir evening of sacred music, as a concert"
+    },
+    {
+      "id": 24,
+      "source": "listing",
+      "source_id": 541,
+      "title": "Gestärkt im Alltag – Ernährung, die guttut und Entzündungen sanft lindern kann",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "free"
+      ],
+      "description": "Mehr Energie, weniger Schmerz: Entdecken Sie die Kraft der Ernährung Fühlen Sie sich oft erschöpft oder leiden unter körperlichen Schmerzen? Wenn chronische Beschwerden den Alltag bestimmen, stellt sich die Frage: „Wie kann ich selbst aktiv werden?“ In diesem Workshop lernen Sie, wie Sie durch gezielte Ernährung Ihre Lebensqualität steigern. Sie erfahren, wie Sie Entzündungsprozesse reduzieren und so Ihre Energie zurückgewinnen. Wir zeigen Ihnen praxisnah, wie eine antientzündliche Ernährung ohne Verzicht funktioniert. Sie entdecken die „perfekte Mahlzeit“, erhalten konkrete Tipps für Ihren Al",
+      "expected": "health",
+      "borderline": false,
+      "why": "Talk on nutrition for chronic pain and inflammation"
+    },
+    {
+      "id": 25,
+      "source": "listing",
+      "source_id": 624,
+      "title": "Krieg und Frieden",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Konzerte",
+        "evening",
+        "weekend"
+      ],
+      "description": "Krieg und Frieden – Zwei Jahrhunderte, zwei musikalische Perspektiven Rheinischer Kammerchor Köln | 14. November 2026 | St. Maria im Kapitol, Köln Wie klingt der Triumph über einen militärischen Sieg? Und wie klingt die Sehnsucht nach Frieden angesichts von Krieg, Tod und Zerstörung? Unter dem Titel „Krieg und Frieden“ stellt der Rheinische Kammerchor Köln zwei eindrucksvolle Werke der Chorliteratur gegenüber, die unterschiedlicher kaum sein könnten: Georg Friedrich Händels Dettinger Te Deum und Maurice Duruflés Requiem. Händels monumentales Dettinger Te Deum entstand 1743 anlässlich des briti",
+      "expected": "none",
+      "borderline": false,
+      "why": "Choir concert in a church"
+    },
+    {
+      "id": 26,
+      "source": "listing",
+      "source_id": 639,
+      "title": "lightsigns – An Evening With Songs Of Enya",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Konzerte",
+        "evening",
+        "weekend"
+      ],
+      "description": "Wenn Stimmen, Instrumente und Raum miteinander verschmelzen, entsteht etwas, das man nicht erklären kann – nur erleben. Das Ensemble LIGHTSIGNS lässt die Musik der irischen Künstlerin Enya neu erklingen und sucht sich hierfür vorzugsweise Orte aus, an denen sich Klang, Stille und Spiritualität auf besondere Weise begegnen. Die natürliche Resonanz von Kirchenräumen verleiht den Arrangements eine außergewöhnliche Tiefe und schafft eine Atmosphäre, die berührt und entschleunigt. LIGHTSIGNS hat sich für dieses besondere Konzerterlebnis die wunderschöne Kartäuserkirche in der Südstadt ausgesucht. D",
+      "expected": "none",
+      "borderline": false,
+      "why": "Concert of Enya songs"
+    },
+    {
+      "id": 27,
+      "source": "listing",
+      "source_id": 666,
+      "title": "Orgelfesttage St. Gereon – Konzert III – Prof. Ruben Sturm (Münchner Dom)",
+      "venue": "Siehe Beschreibung",
+      "tags": [
+        "Konzerte",
+        "weekend"
+      ],
+      "description": "Herzliche Einladung zum dritten Konzert der Orgelfesttage 2026 an der Basilika St. Gereon mit Prof. Ruben Sturm (Münchner Dom) und Werken von J. S. Bach, M. Reger, J. Brahms u. a. Die 25. Ausgabe dieser Konzertreihe verspricht erstklassige Interpretinnen und Interpreten an der Weimbs-Orgel und ein wunderbar stimmungsvolles Konzerterlebnis im kerzenbeleuchteten Dekagon der Kirche. Angaben zum Veranstaltungsort: Basilika St. Gereon Gereonskloster 2 50670 Köln Webseite Details Datum: Zeit:",
+      "expected": "none",
+      "borderline": false,
+      "why": "Organ concert in a basilica"
+    },
+    {
+      "id": 28,
+      "source": "listing",
+      "source_id": 722,
+      "title": "Miss Ivanka T. – Chef-in Live",
+      "venue": "Kulturkirche Köln",
+      "tags": [
+        "Bühne",
+        "evening"
+      ],
+      "description": "Miss Ivanka T. Präsentiert: Chef-In das erste Solo Comedy Programm von der Ikone, Legende & Sensation persönlich. Man nehme die Queen vom Land, gebe eine Portion der spitzesten Zunge am Podcastmarkt hinzu und Mische alles mit einer großen Prise Schwul! In Chef-in wird abgerechnet, gefeiert und glorifiziert: Eine Ode an die Frauen in ihrem Leben, die sie zu der österreichischen Berliner Großstadt Comsopoltin erzogen haben, die sie heute ist. Charmant? Vielleicht. Respektlos? Garantiert. Lustig? Leider geil. Und Hand aufs Herz: Sie sind doch nicht zufällig hier. Sie wollen Führung. Sie wollen Dr",
+      "expected": "none",
+      "borderline": true,
+      "why": "Drag comedian’s comedy show in a church venue: comedy, not an LGBTQ+ event as such"
+    },
+    {
+      "id": 29,
+      "source": "listing",
+      "source_id": 788,
+      "title": "Besser als von Gott gemacht? Christliche Perspektiven auf Künstliche Intelligenz.",
+      "venue": "",
+      "tags": [
+        "weekend",
+        "free"
+      ],
+      "description": "Maschinen, die denken. Algorithmen, die entscheiden. Eine Welt, die sich schneller verändert als unser Verständnis davon. Und mittendrin: die Frage, was das alles mit uns macht – mit dem Menschsein, mit Würde, mit Verantwortung. Aber braucht eine hochtechnologische Debatte ausgerechnet den Glauben? Wer genauer hinschaut, findet eine überraschend produktive Spannung. Die gesellschaftliche Auseinandersetzung mit KI ist religiös aufgeladen, Erlösungshoffnungen knüpfen sich an die immer schnellere und vielfältigere Entwicklung künstlicher Intelligenz. Aber wie kann ein realistischer Umgang mit die",
+      "expected": "religion",
+      "borderline": false,
+      "why": "A talk on AI from Christian perspectives"
+    },
+    {
+      "id": 30,
+      "source": "listing",
+      "source_id": 936,
+      "title": "Wissenschaft im Rathaus: Wenn Zellen aus dem Takt geraten – Einblick in die Ursachen neurodegenerativer Erkrankungen",
+      "venue": "Rathaus - Spanischer Bau",
+      "tags": [
+        "official-city",
+        "district:Innenstadt",
+        "veedel:Altstadt/Nord",
+        "evening",
+        "free"
+      ],
+      "description": "Was geschieht im Inneren der Nervenzellen, wenn diese Krankheiten entstehen? Warum funktioniert die Kommunikation zwischen den Zellen plötzlich nicht mehr so wie früher?",
+      "expected": "health",
+      "borderline": false,
+      "why": "Science talk on how nerve cells fail in disease"
+    },
+    {
+      "id": 31,
+      "source": "listing",
+      "source_id": 965,
+      "title": "Digitaler Freitag",
+      "venue": "Stadtteilbibliothek Kalk",
+      "tags": [
+        "official-city",
+        "district:Kalk",
+        "veedel:Kalk",
+        "morning",
+        "free"
+      ],
+      "description": "Eine Selbsthilfegruppe zu digitalen Themen aus der Reihe Digitale Werkstatt in der Stadtteilbibliothek Kalk.",
+      "expected": "none",
+      "borderline": false,
+      "why": "A “self-help group” about computers"
+    },
+    {
+      "id": 32,
+      "source": "listing",
+      "source_id": 1467,
+      "title": "FAST FEELINGS",
+      "venue": "artheater",
+      "tags": [
+        "tourism-board",
+        "evening"
+      ],
+      "description": "Erlebe FAST FEELINGS am 27. November 2026 im artheater Köln mit Techno, Pop, queeren Performances, Community und Awareness.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Party with queer performances and community"
+    },
+    {
+      "id": 33,
+      "source": "constructed",
+      "title": "Ökumenischer Gottesdienst zum Reformationstag",
+      "venue": "Antoniterkirche",
+      "tags": [
+        "Religion"
+      ],
+      "description": "Evangelische und katholische Gemeinden feiern gemeinsam einen Gottesdienst mit Abendmahl, Predigt und Chor. Anschließend Begegnung im Gemeindesaal.",
+      "expected": "religion",
+      "borderline": false,
+      "why": "Joint church service"
+    },
+    {
+      "id": 34,
+      "source": "constructed",
+      "title": "Freitagsgebet mit anschließendem Tee",
+      "venue": "DITIB-Zentralmoschee Köln",
+      "tags": [],
+      "description": "Gemeinsames Freitagsgebet in der Zentralmoschee. Gäste sind willkommen; nach dem Gebet gibt es Tee und Gespräche.",
+      "expected": "religion",
+      "borderline": false,
+      "why": "Friday prayer"
+    },
+    {
+      "id": 35,
+      "source": "constructed",
+      "title": "Bibelkreis für junge Erwachsene",
+      "venue": "Gemeindezentrum St. Agnes",
+      "tags": [],
+      "description": "Wir lesen gemeinsam einen Abschnitt aus dem Lukasevangelium und sprechen über unseren Glauben. Für alle zwischen 18 und 30.",
+      "expected": "religion",
+      "borderline": false,
+      "why": "Bible study group"
+    },
+    {
+      "id": 36,
+      "source": "constructed",
+      "title": "Bürgersprechstunde mit der SPD-Ratsfraktion Ehrenfeld",
+      "venue": "Bürgerzentrum Ehrenfeld",
+      "tags": [],
+      "description": "Die Ratsmitglieder der SPD Ehrenfeld beantworten Ihre Fragen zu Verkehr, Wohnen und Schulen im Veedel.",
+      "expected": "politics",
+      "borderline": false,
+      "why": "Party office hours"
+    },
+    {
+      "id": 37,
+      "source": "constructed",
+      "title": "Kundgebung: Klimastreik Köln",
+      "venue": "Heumarkt",
+      "tags": [],
+      "description": "Fridays for Future ruft zur Kundgebung auf: Reden, Musik und anschließend Demonstrationszug durch die Innenstadt.",
+      "expected": "politics",
+      "borderline": false,
+      "why": "Climate strike rally"
+    },
+    {
+      "id": 38,
+      "source": "constructed",
+      "title": "Wahlkampfabschluss der Grünen Köln",
+      "venue": "Stadtgarten",
+      "tags": [],
+      "description": "Zum Abschluss des Wahlkampfs laden die Kölner Grünen zu Reden der Kandidierenden, Musik und Getränken ein.",
+      "expected": "politics",
+      "borderline": false,
+      "why": "Party campaign event"
+    },
+    {
+      "id": 39,
+      "source": "constructed",
+      "title": "ver.di Mitgliederversammlung Bezirk Köln-Bonn-Leverkusen",
+      "venue": "DGB-Haus Köln",
+      "tags": [],
+      "description": "Die Mitglieder wählen die Delegierten und beraten über die anstehende Tarifrunde im öffentlichen Dienst.",
+      "expected": "union",
+      "borderline": false,
+      "why": "Union members’ meeting"
+    },
+    {
+      "id": 40,
+      "source": "constructed",
+      "title": "Warnstreik-Kundgebung der IG Metall",
+      "venue": "vor dem Ford-Werk Niehl",
+      "tags": [],
+      "description": "Die IG Metall ruft die Beschäftigten zum Warnstreik auf. Kundgebung mit Reden der Betriebsräte.",
+      "expected": "union",
+      "borderline": false,
+      "why": "Union strike rally"
+    },
+    {
+      "id": 41,
+      "source": "constructed",
+      "title": "Selbsthilfegruppe Depression – offenes Treffen",
+      "venue": "Selbsthilfe-Kontaktstelle Köln",
+      "tags": [],
+      "description": "Betroffene tauschen sich in vertraulicher Runde über den Alltag mit Depression aus. Neue Teilnehmende sind willkommen.",
+      "expected": "health",
+      "borderline": false,
+      "why": "Depression support group"
+    },
+    {
+      "id": 42,
+      "source": "constructed",
+      "title": "Anonyme Alkoholiker – offenes Meeting",
+      "venue": "Gemeindehaus Lindenthal",
+      "tags": [],
+      "description": "Offenes Meeting der Anonymen Alkoholiker. Auch Angehörige und Interessierte können teilnehmen.",
+      "expected": "health",
+      "borderline": false,
+      "why": "AA meeting"
+    },
+    {
+      "id": 43,
+      "source": "constructed",
+      "title": "Blutdruckmessung und Gesundheitsberatung",
+      "venue": "Rhein-Apotheke Deutz",
+      "tags": [],
+      "description": "Kostenlose Blutdruck- und Blutzuckermessung mit Beratung durch unser Apothekenteam. Ohne Anmeldung.",
+      "expected": "health",
+      "borderline": false,
+      "why": "Health check"
+    },
+    {
+      "id": 44,
+      "source": "constructed",
+      "title": "CSD Köln Warm-up Party",
+      "venue": "Gloria",
+      "tags": [
+        "Party"
+      ],
+      "description": "Die offizielle Warm-up-Party zum ColognePride mit DJs, Drag-Shows und der ganzen Community.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Pride party"
+    },
+    {
+      "id": 45,
+      "source": "constructed",
+      "title": "Queerer Stammtisch Ehrenfeld",
+      "venue": "Café Bauturm",
+      "tags": [],
+      "description": "Monatlicher Treff für Lesben, Schwule, Bi, Trans* und alle Queers aus dem Veedel. Einfach vorbeikommen.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Queer meetup"
+    },
+    {
+      "id": 46,
+      "source": "constructed",
+      "title": "Trans* Peer-Beratung – offene Sprechstunde",
+      "venue": "rubicon Beratungszentrum",
+      "tags": [],
+      "description": "Trans* und nicht-binäre Menschen beraten dich zu Coming-out, Namensänderung und Alltag. Vertraulich und kostenlos.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Trans* peer counselling"
+    },
+    {
+      "id": 47,
+      "source": "constructed",
+      "title": "Coming-out-Gruppe für junge Lesben",
+      "venue": "anyway Jugendzentrum",
+      "tags": [],
+      "description": "Ein geschützter Raum für junge Frauen, die Frauen lieben, zum Austausch über Coming-out und Alltag.",
+      "expected": "identity",
+      "borderline": false,
+      "why": "Coming-out group"
+    },
+    {
+      "id": 48,
+      "source": "constructed",
+      "title": "Orgelkonzert im Kölner Dom",
+      "venue": "Kölner Dom",
+      "tags": [
+        "Konzert"
+      ],
+      "description": "Domorganist spielt Werke von Bach, Widor und Messiaen auf der großen Domorgel. Eintritt frei, Spende erbeten.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Organ concert in the cathedral"
+    },
+    {
+      "id": 49,
+      "source": "constructed",
+      "title": "Führung: Romanische Kirchen in Köln",
+      "venue": "Treffpunkt St. Maria im Kapitol",
+      "tags": [
+        "Führung"
+      ],
+      "description": "Zweistündige Stadtführung zu den romanischen Kirchen der Altstadt mit Blick auf Architektur und Geschichte.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Architecture tour of churches"
+    },
+    {
+      "id": 50,
+      "source": "constructed",
+      "title": "Ausstellung: Islamische Kunst aus fünf Jahrhunderten",
+      "venue": "Museum für Angewandte Kunst",
+      "tags": [
+        "Ausstellung"
+      ],
+      "description": "Keramik, Textilien und Kalligrafie aus der islamischen Welt, vom 15. bis zum 19. Jahrhundert.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Exhibition of Islamic art"
+    },
+    {
+      "id": 51,
+      "source": "constructed",
+      "title": "Kabarett: Politik für Anfänger",
+      "venue": "Senftöpfchen",
+      "tags": [
+        "Kabarett"
+      ],
+      "description": "Ein satirischer Abend über Koalitionen, Talkshows und Wahlversprechen. Zum Lachen, nicht zum Wählen.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Political satire"
+    },
+    {
+      "id": 52,
+      "source": "constructed",
+      "title": "Firmenlauf zugunsten der Krebshilfe",
+      "venue": "Rheinauhafen",
+      "tags": [
+        "Sport"
+      ],
+      "description": "Fünf Kilometer am Rhein entlang; die Startgelder gehen an die Deutsche Krebshilfe.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Charity run for cancer research"
+    },
+    {
+      "id": 53,
+      "source": "constructed",
+      "title": "Erste-Hilfe-Kurs für Eltern",
+      "venue": "Familienzentrum Nippes",
+      "tags": [
+        "Kurs"
+      ],
+      "description": "Was tun, wenn das Kind sich verletzt? Ein Kurs zu Notfällen bei Babys und Kleinkindern.",
+      "expected": "none",
+      "borderline": false,
+      "why": "First-aid course"
+    },
+    {
+      "id": 54,
+      "source": "constructed",
+      "title": "Pub Quiz",
+      "venue": "Queen’s Pub",
+      "tags": [
+        "Quiz"
+      ],
+      "description": "Teams bis sechs Personen, Fragen auf Englisch, Preise für die besten drei.",
+      "expected": "none",
+      "borderline": false,
+      "why": "Pub quiz in a pub called Queen’s"
+    }
+  ]
+}

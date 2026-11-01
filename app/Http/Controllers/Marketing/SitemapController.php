@@ -19,12 +19,10 @@ class SitemapController extends Controller
         'home' => '2026-07-18',
         'tools.index' => '2026-07-17',
         'tools.dticket' => '2026-07-17',
-        'tools.residency' => '2026-07-17',
-        'tools.citizenship' => '2026-07-17',
         'tools.netto' => '2026-07-17',
         'blog.index' => '2026-07-17',
         'impressum' => '2026-07-18',
-        'datenschutz' => '2026-07-18',
+        'datenschutz' => '2026-10-05',
     ];
 
     public function __construct(private readonly BlogPosts $posts) {}
@@ -35,7 +33,7 @@ class SitemapController extends Controller
      */
     public function __invoke(): Response
     {
-        $xml = Cache::remember('marketing.sitemap', now()->addHour(), function (): string {
+        $xml = Cache::remember('marketing.sitemap.reviewed-tools-v2', now()->addHour(), function (): string {
             $posts = $this->posts->all();
 
             // The blog index changes whenever a post does.
@@ -48,8 +46,6 @@ class SitemapController extends Controller
                 ['loc' => route('home'), 'lastmod' => self::PAGE_UPDATED['home'], 'priority' => '1.0'],
                 ['loc' => route('tools.index'), 'lastmod' => self::PAGE_UPDATED['tools.index'], 'priority' => '0.8'],
                 ['loc' => route('tools.dticket'), 'lastmod' => self::PAGE_UPDATED['tools.dticket'], 'priority' => '0.8'],
-                ['loc' => route('tools.residency'), 'lastmod' => self::PAGE_UPDATED['tools.residency'], 'priority' => '0.8'],
-                ['loc' => route('tools.citizenship'), 'lastmod' => self::PAGE_UPDATED['tools.citizenship'], 'priority' => '0.8'],
                 ['loc' => route('tools.netto'), 'lastmod' => self::PAGE_UPDATED['tools.netto'], 'priority' => '0.8'],
                 ['loc' => route('blog.index'), 'lastmod' => $blogUpdated, 'priority' => '0.7'],
                 ['loc' => route('impressum'), 'lastmod' => self::PAGE_UPDATED['impressum'], 'priority' => '0.1'],

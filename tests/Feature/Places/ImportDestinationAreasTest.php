@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Spot;
+use App\Models\SpotEnrichment;
 use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -60,6 +62,59 @@ test('the area importer attaches facilities to mapped parks and sports centres',
         ->and(DB::table('park_areas')->where('source_id', 'way/202')->value('kind'))
         ->toBe('sports_centre');
 });
+
+test('an unchanged destination assignment keeps a ready enrichment fresh', function () {
+    $park = Spot::factory()->create([
+        'name' => 'Stable Test Park',
+        'category' => 'park',
+        'source' => 'osm',
+        'source_id' => 'way/303',
+        'lat' => 50.9505,
+        'lng' => 6.9505,
+    ]);
+    $facility = Spot::factory()->create([
+        'name' => 'Stable Test Court',
+        'category' => 'tennis',
+        'lat' => 50.9504,
+        'lng' => 6.9504,
+    ]);
+    $response = ['elements' => [areaWay(303, 'Stable Test Park', 'park', 50.95, 6.95)]];
+    Http::fake(['*' => Http::response($response)]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+    expect($facility->fresh()->parent_spot_id)->toBe($park->id);
+
+    $enrichment = SpotEnrichment::factory()->create([
+        'spot_id' => $facility->id,
+        'status' => 'ready',
+        'summary' => 'A source-grounded English summary.',
+    ]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+
+    expect($enrichment->fresh())
+        ->status->toBe('ready')
+        ->stale_at->toBeNull();
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function areaWay(int $id, string $name, string $leisure, float $lat, float $lng): array
+{
+    return [
+        'type' => 'way',
+        'id' => $id,
+        'tags' => ['name' => $name, 'leisure' => $leisure, 'sport' => 'tennis'],
+        'geometry' => [
+            ['lat' => $lat, 'lon' => $lng],
+            ['lat' => $lat, 'lon' => $lng + 0.001],
+            ['lat' => $lat + 0.001, 'lon' => $lng + 0.001],
+            ['lat' => $lat + 0.001, 'lon' => $lng],
+            ['lat' => $lat, 'lon' => $lng],
+        ],
+    ];
+}
 
 test('area import refresh preserves reviewed component and independent decisions', function (string $containment) {
     $park = Spot::factory()->create([
@@ -136,18 +191,24 @@ test('area import refresh preserves reviewed component and independent decisions
 /**
  * @return array<string, mixed>
  */
-function areaWay(int $id, string $name, string $leisure, float $lat, float $lng): array
-{
-    return [
-        'type' => 'way',
-        'id' => $id,
-        'tags' => ['name' => $name, 'leisure' => $leisure, 'sport' => 'tennis'],
-        'geometry' => [
-            ['lat' => $lat, 'lon' => $lng],
-            ['lat' => $lat, 'lon' => $lng + 0.001],
-            ['lat' => $lat + 0.001, 'lon' => $lng + 0.001],
-            ['lat' => $lat + 0.001, 'lon' => $lng],
-            ['lat' => $lat, 'lon' => $lng],
-        ],
-    ];
-}
+test('shops inside a mapped mall stand in it, and the mall says what it holds', function () {
+    $mall = Spot::factory()->create(['name' => 'Rhein-Center', 'category' => 'shopping_centre', 'source' => 'osm', 'source_id' => 'way/401', 'lat' => 50.9505, 'lng' => 6.9505]);
+    $clothes = Spot::factory()->create(['name' => 'TK Maxx', 'category' => 'clothes', 'lat' => 50.9504, 'lng' => 6.9504]);
+    $shoes = Spot::factory()->create(['name' => 'Deichmann', 'category' => 'shoes', 'lat' => 50.9506, 'lng' => 6.9506]);
+    $outside = Spot::factory()->create(['name' => 'Saturn', 'category' => 'electronics', 'lat' => 50.9704, 'lng' => 6.9704]);
+
+    $area = areaWay(401, 'Rhein-Center', 'park', 50.95, 6.95);
+    unset($area['tags']['leisure']);
+    $area['tags']['shop'] = 'mall';
+    Http::fake(['*' => Http::response(['elements' => [$area]])]);
+
+    $this->artisan('parks:import-areas')->assertSuccessful();
+
+    $facts = app(PlaceFacts::class);
+    expect(DB::table('park_areas')->where('osm_id', 4011)->value('kind'))->toBe('mall')
+        ->and($mall->fresh()->parent_spot_id)->toBeNull() // never inside itself
+        ->and($facts->resolve($clothes->fresh())['within'])->toBe(['id' => $mall->id, 'name' => 'Rhein-Center', 'kind' => 'shopping_centre'])
+        ->and($facts->resolve($outside->fresh())['within'])->toBeNull()
+        ->and($facts->resolve($mall->fresh())['inside'])->toBe(['Clothes shop' => 1, 'Shoe shop' => 1])
+        ->and($facts->resolve($shoes->fresh())['inside'])->toBeNull();
+});

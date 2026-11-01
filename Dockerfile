@@ -1,6 +1,8 @@
 # ── Stage 1: PHP extension compiler ──────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS php-ext-build
 
+# PECL sometimes answers HTTP 500; phpredis's own GitHub release is the same
+# source, so the build falls back to it rather than failing the deploy.
 RUN apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         postgresql-dev \
@@ -22,7 +24,12 @@ RUN apk add --no-cache --virtual .build-deps \
         mbstring \
         opcache \
         calendar \
-    && pecl install redis \
+    && (pecl install redis \
+        || (docker-php-source extract \
+            && mkdir -p /usr/src/php/ext/redis \
+            && curl -fsSL https://github.com/phpredis/phpredis/archive/refs/tags/6.3.0.tar.gz \
+                | tar xz -C /usr/src/php/ext/redis --strip-components=1 \
+            && docker-php-ext-install redis)) \
     && docker-php-ext-enable redis \
     && apk del .build-deps
 
@@ -80,7 +87,7 @@ ENV VITE_SENTRY_DSN_PUBLIC=$VITE_SENTRY_DSN_PUBLIC \
     VITE_SENTRY_RELEASE=$VITE_SENTRY_RELEASE
 
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm run build && npm run build:ssr
+    npm run build:ssr
 
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
@@ -88,9 +95,16 @@ FROM php:8.4-fpm-alpine AS production
 ARG APP_COMMIT=""
 ENV APP_COMMIT=$APP_COMMIT
 
-# Runtime libraries only — no -dev headers, no LLVM, no Python
+# Runtime libraries only — no -dev headers, no LLVM, no Python.
+# nginx-mod-http-brotli is a subpackage of Alpine's own nginx aport (the stock
+# nginx is built with --add-dynamic-module=ngx_brotli), so it always matches the
+# installed nginx. It drops ngx_http_brotli_{filter,static}_module.so into
+# /usr/lib/nginx/modules and a load_module snippet into /etc/nginx/modules/,
+# which Alpine's nginx.conf includes. docker/prod/nginx.conf relies on it for
+# `brotli_static on`; the `nginx -t` below fails the build if that stops holding.
 RUN apk add --no-cache \
     nginx \
+    nginx-mod-http-brotli \
     supervisor \
     nodejs \
     libpq \
@@ -128,6 +142,8 @@ COPY --from=node-build /app/public/sw.js ./public/sw.js
 COPY --from=node-build /app/bootstrap/ssr ./bootstrap/ssr
 
 COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
+# Fail the image build, not the deploy, if the nginx config or its modules are bad.
+RUN nginx -t
 COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 RUN mkdir -p \

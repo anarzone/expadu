@@ -13,7 +13,7 @@ test('an unverified user is bounced from the app to the verify-email notice', fu
     $user = User::factory()->onboarded()->unverified()->create();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('today'))
         ->assertRedirect(route('verification.notice'));
 });
 
@@ -21,7 +21,7 @@ test('a verified user reaches the app', function () {
     $user = User::factory()->onboarded()->create(); // verified by default
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('today'))
         ->assertOk();
 });
 

@@ -1,0 +1,277 @@
+import { lineLook } from '../line-look';
+import type { LineLook } from '../line-look';
+import type { Station, StationArea, StationDir, StationLine } from './types';
+
+/**
+ * What Nearby shows under the person's filters (departures-next/nearby.js
+ * `view`): each boarding area with its lines, a line's two soonest runs on
+ * its strip, in a steady order. Minutes come from the device clock and
+ * the run's own time, so a board a minute old still counts down correctly.
+ */
+
+export type NearbyFilters = {
+    type: 'all' | 'tram' | 'bus';
+    lines: string[];
+    via: string[];
+    win: 10 | 30 | 60;
+    delayed: boolean;
+    stepfree: boolean;
+};
+
+export const filterDefaults = (): NearbyFilters => ({
+    type: 'all',
+    lines: [],
+    via: [],
+    win: 30,
+    delayed: false,
+    stepfree: false,
+});
+
+export type ShownDir = StationDir & {
+    mins: number;
+    clock: string;
+    delayMin: number;
+    /** The later runs that leave (a cancelled one isn't a "then"). */
+    laterClocks: string[];
+    /** Its runs the feed says are cancelled, by their timetabled clock. */
+    cancelledClocks: string[];
+    live: boolean;
+};
+
+export type ShownLine = StationLine & {
+    look: LineLook;
+    shown: ShownDir[];
+    pinned: boolean;
+};
+
+export type ShownArea = StationArea & { cards: ShownLine[] };
+
+export type NearbyView = {
+    areas: ShownArea[];
+    shown: number;
+    total: number;
+    modes: ('tram' | 'bus')[];
+    lineChoices: (StationLine & { look: LineLook })[];
+    viaChoices: { name: string; lines: string[] }[];
+    active: boolean;
+};
+
+const byLine = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { numeric: true });
+
+const modeOf = (line: StationLine): 'bus' | 'tram' =>
+    line.mode === 'bus' ? 'bus' : 'tram';
+
+export const looksOf = (line: StationLine): LineLook =>
+    lineLook(line.line, line.mode === 'bus' ? 'bus' : line.mode);
+
+export function minutesUntil(at: string, now: number): number {
+    const target = Date.parse(at);
+
+    return Number.isFinite(target)
+        ? Math.max(0, Math.floor((target - now) / 60_000))
+        : 0;
+}
+
+function shownDir(dir: StationDir, now: number): ShownDir | null {
+    if (!dir.next) {
+        return null;
+    }
+
+    return {
+        ...dir,
+        mins: minutesUntil(dir.next.at, now),
+        clock: dir.next.time,
+        delayMin: Math.max(0, dir.next.delay),
+        laterClocks: dir.later
+            .filter((run) => !run.cancelled)
+            .map((run) => run.time),
+        cancelledClocks: [dir.next, ...dir.later]
+            .filter((run) => run.cancelled)
+            .map((run) => run.time),
+        live: dir.next.time_basis === 'realtime',
+    };
+}
+
+export function nearbyView(
+    station: Station,
+    filters: NearbyFilters,
+    {
+        pinned = [],
+        now = Date.now(),
+        cancelled = false,
+    }: {
+        pinned?: string[];
+        now?: number;
+        /** Keep a way whose every run is cancelled (Nearby says so). */
+        cancelled?: boolean;
+    } = {},
+): NearbyView {
+    const f = filters;
+    const firstVia = (d: StationDir) => d.via[0] ?? '';
+    const lineOk = (l: StationLine) =>
+        (f.type === 'all' || (f.type === 'bus') === (l.mode === 'bus')) &&
+        (!f.lines.length || f.lines.includes(l.line));
+    const dirOk = (d: ShownDir) =>
+        d.mins <= f.win &&
+        (!f.delayed || d.delayMin > 0) &&
+        (!f.via.length || f.via.includes(firstVia(d)));
+    const total = station.lines.reduce(
+        (n, l) => n + l.dirs.filter((d) => d.next).length,
+        0,
+    );
+
+    const areas = station.areas
+        .map((area) => {
+            const cards = station.lines
+                .filter((l) => l.area === area.id && lineOk(l))
+                .map((l) => ({
+                    ...l,
+                    look: looksOf(l),
+                    shown: l.dirs
+                        .map((d) => shownDir(d, now))
+                        .filter(
+                            (d): d is ShownDir =>
+                                d !== null && (cancelled || !d.cancelled),
+                        )
+                        .filter(dirOk)
+                        // Each way keeps its side (as the mock: the station's
+                        // order), never swapping with whichever leaves sooner.
+                        .sort(
+                            (a, b) =>
+                                (a.direction ?? 9) - (b.direction ?? 9) ||
+                                a.dest.localeCompare(b.dest),
+                        ),
+                    pinned: pinned.includes(l.line),
+                }))
+                .filter((l) => l.shown.length)
+                // A steady order, pinned first, never reshuffled by which
+                // leaves sooner on a refresh (owner, 22 Oct).
+                .sort(
+                    (a, b) =>
+                        Number(b.pinned) - Number(a.pinned) ||
+                        byLine(a.line, b.line),
+                );
+
+            return { ...area, cards };
+        })
+        .filter((area) => area.cards.length)
+        // Steady too: trams before buses, the busier area first, then the
+        // station's own order.
+        .sort(
+            (a, b) =>
+                Number(a.mode === 'bus') - Number(b.mode === 'bus') ||
+                b.lines.length - a.lines.length,
+        );
+
+    const via: { name: string; lines: string[] }[] = [];
+    station.lines.forEach((l) =>
+        l.dirs.forEach((d) => {
+            const name = firstVia(d);
+
+            if (!name) {
+                return;
+            }
+
+            let choice = via.find((v) => v.name === name);
+
+            if (!choice) {
+                choice = { name, lines: [] };
+                via.push(choice);
+            }
+
+            if (!choice.lines.includes(l.line)) {
+                choice.lines.push(l.line);
+            }
+        }),
+    );
+
+    return {
+        areas,
+        shown: areas.reduce(
+            (n, a) => n + a.cards.reduce((m, c) => m + c.shown.length, 0),
+            0,
+        ),
+        total,
+        modes: [...new Set(station.lines.map(modeOf))],
+        lineChoices: [...station.lines]
+            .sort((a, b) => byLine(a.line, b.line))
+            .map((l) => ({ ...l, look: looksOf(l) })),
+        viaChoices: via,
+        active:
+            f.type !== 'all' ||
+            f.lines.length > 0 ||
+            f.via.length > 0 ||
+            f.win !== 30 ||
+            f.delayed,
+    };
+}
+
+/** "now", "3 min", or the clock once it's an hour or more away. */
+export function whenOf(dir: ShownDir): { big: string; unit: string } {
+    return dir.mins === 0
+        ? { big: 'now', unit: '' }
+        : dir.mins >= 60
+          ? { big: dir.clock, unit: '' }
+          : { big: String(dir.mins), unit: 'min' };
+}
+
+/** A wait this long or longer after the departures shown is "a while". */
+/** A wait this long at least, and well beyond the line's usual gap, before it's a long one. */
+export const LONG_WAIT_MIN = 30;
+
+/** How far beyond its usual gap (the timetable's, now) a wait must be. */
+const LONG_WAIT_FACTOR = 1.5;
+
+/** With no usual gap known: a wait longer than any daytime service here. */
+const LONG_WAIT_UNKNOWN_MIN = 45;
+
+/**
+ * Late at night (the mock's "Last trams for a while"): every direction shown
+ * that has a later run waits well beyond its usual gap for it after the next
+ * one: 30 min or more and 1.5 times the timetable's gap around now, so a
+ * line's ordinary 20-minute service never reads as the night's last trams.
+ * The gaps come from the board's own times; null otherwise.
+ */
+export function longWait(
+    view: NearbyView,
+): { low: number; high: number; mode: 'tram' | 'bus' | 'mixed' } | null {
+    const dirs = view.areas.flatMap((area) =>
+        area.cards.flatMap((card) =>
+            card.shown.map((dir) => ({ dir, mode: modeOf(card) })),
+        ),
+    );
+    const gaps = dirs.flatMap(({ dir, mode }) => {
+        const later = dir.later.find((run) => !run.cancelled);
+
+        return dir.next && later
+            ? [
+                  {
+                      mode,
+                      gap: Math.round(
+                          (Date.parse(later.at) - Date.parse(dir.next.at)) /
+                              60_000,
+                      ),
+                      long: dir.headway
+                          ? Math.max(
+                                LONG_WAIT_MIN,
+                                dir.headway * LONG_WAIT_FACTOR,
+                            )
+                          : LONG_WAIT_UNKNOWN_MIN,
+                  },
+              ]
+            : [];
+    });
+
+    if (!gaps.length || gaps.some(({ gap, long }) => gap < long)) {
+        return null;
+    }
+
+    const modes = new Set(gaps.map(({ mode }) => mode));
+
+    return {
+        low: Math.min(...gaps.map(({ gap }) => gap)),
+        high: Math.max(...gaps.map(({ gap }) => gap)),
+        mode: modes.size > 1 ? 'mixed' : [...modes][0],
+    };
+}

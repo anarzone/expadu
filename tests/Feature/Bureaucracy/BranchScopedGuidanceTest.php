@@ -25,7 +25,7 @@ it('scopes route-specific driving licence paperwork to its route', function () {
 
     // Only the exam route needs these; everything else applies to both routes.
     expect($byLabel['Vision test certificate + first-aid course certificate'])->toBe('Exam route')
-        ->and($byLabel['Translation of the licence — by ADAC or a sworn translator'])->toBeNull()
+        ->and($byLabel['Translation and classification of the licence — for example by ADAC or a sworn translator'])->toBeNull()
         ->and($byLabel['Passport or ID'])->toBeNull();
 
     // The scoping must not live in prose any more.
@@ -40,8 +40,8 @@ it('attaches each conversion link to the route it describes', function () {
         fn (array $step): array => [$step['title'] => $step['link'] ?? null],
     );
 
-    expect($links['Anlage 11 country: test-free exchange'])->toContain('00834')
-        ->and($links['All other countries: exams required'])->toContain('00836')
+    expect($links['Anlage 11 country: convert your licence'])->toContain('00834')
+        ->and($links['All other countries: tests required'])->toContain('00836')
         // A flat list gave the reader no way to tell which link was theirs.
         ->and($task->links)->toBe([]);
 });

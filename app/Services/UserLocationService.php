@@ -77,7 +77,7 @@ class UserLocationService
                 $label = $request->input('from_label');
                 $label = is_string($label) && $label !== '' ? $label : 'Your location';
 
-                return new LocationContext($lat, $lng, LocationSource::Live, $label);
+                return new LocationContext($lat, $lng, LocationSource::Live, $label, now()->timestamp);
             }
         }
 
@@ -108,11 +108,11 @@ class UserLocationService
         $confirmed = $this->getConfirmedLocation($user->id);
         $ping = $this->getLastRedisPing($user->id);
         if ($confirmed && (! $ping || $confirmed['at'] >= $ping['at'])) {
-            return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location');
+            return new LocationContext($confirmed['lat'], $confirmed['lng'], LocationSource::Confirmed, $confirmed['name'] ?: 'Your location', $confirmed['at'] ?: null);
         }
 
         if ($ping) {
-            return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location');
+            return new LocationContext($ping['lat'], $ping['lng'], LocationSource::Ping, 'Your location', $ping['at'] ?: null);
         }
 
         if ($fallbackArea !== null && $fallbackArea !== '') {
@@ -275,6 +275,34 @@ class UserLocationService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * The person's own accepted pings between two moments, oldest first,
+     * skipping rejected weak-signal readings. Read only: for checks that
+     * need where they've been in the last few minutes (a missed tram), never
+     * stored again.
+     *
+     * @return list<array{lat: float, lng: float, at: int}>
+     */
+    public function pingsBetween(User $user, int $from, int $to): array
+    {
+        try {
+            $entries = Redis::zrangebyscore("location_history:{$user->id}", $from, $to);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $pings = [];
+        foreach ($entries as $raw) {
+            $data = json_decode((string) $raw, true);
+            if (! is_array($data) || ! isset($data['lat'], $data['lng']) || ! empty($data['rejected'])) {
+                continue;
+            }
+            $pings[] = ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng'], 'at' => $this->locationTimestamp($data['at'] ?? null)];
+        }
+
+        return $pings;
     }
 
     private function locationTimestamp(mixed $value): int

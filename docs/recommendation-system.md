@@ -1,124 +1,84 @@
 # Recommendation System
 
-Last updated: 2026-03-29
+Last updated: 2026-10-21 (Today's discovery, EXP-170; rewritten for EXP-119)
 
-## Overview
+The 29 March version of this page described `RecommendationService`,
+`DiscoverySuggestionService`, `LocationPatternService`,
+`FrequentDestinationService`, saved routines and the transit hero cards. All of
+these were removed in the June pivot. That version is in git history if you
+need it.
 
-The `RecommendationService` is the core intelligence engine that connects transit, weather, events, disruptions, and user behavior into smart, actionable suggestions.
+For the full picture, gaps and proposed next steps, read the two October 2026
+architecture pages:
 
-## Architecture
+- [AI data readiness and recommendation/notification/Today groundwork — Oct 2026](https://docs.anar.to/books/architecture/page/ai-data-readiness-and-recommendationnotificationtoday-groundwork)
+- [Performance and efficiency review — Oct 2026](https://docs.anar.to/books/architecture/page/performance-and-efficiency-review-oct-2026)
 
-```
-WeatherService (Open-Meteo best_match)
-GtfsDepartureService (GTFS static)           → RecommendationService → Dashboard
-DisruptionService (KVB betriebslage + API)                            → Transit Hero
-NearbyStopService (KVB + GTFS rail)                                   → Departure Boards
-DiscoverySuggestionService (Spots/Events)                             → Discovery Cards
-LocationPatternService (GPS tracking)                                 → Routine Suggestions
-FrequentDestinationService (Visit history)                            → Fav Spot Cards
-```
+## Where recommendations come from today
 
-## Commute Context Detection
+There is no shared recommendation engine. There are four separate
+deterministic rankers, and they share no model:
 
-`determineCommuteContext()` uses a priority chain to decide where the user is going:
+| Surface | Code | How it ranks |
+|---|---|---|
+| Today's discovery | `app/Home/TodayDiscovery.php`, `app/Places/OpenNearby.php` | No taste ranking. Tonight's listed events that are still to come and don't clash with a plan, soonest first: two posters, then three compact listings. Near the next plan with a place: your own saved idea in that area first, else an event listed there after it. Then up to three everyday places (bakery, café, pharmacy, grocery) whose listed hours say they're open when the plan ends, nearest first within 1 km. Nothing is cached. |
+| Events, "recommended" sort | `Api/EventsController`, `EventController` | LLM relevance first, then proximity. Not personalised. Today uses the default sort. |
+| Composer plans | `app/Composer/PlanScorer.php` | 13 weighted terms. The optional LLM ranker feeds `llm_rank` (weight 45, the largest term); see [composer-design.md](composer-design.md). |
+| Places list | `app/Services/NearbyPlaces.php` | Distance only. |
 
-| Priority | Source | Example |
-|----------|--------|---------|
-| 1st | **Saved Routine** | "Home → Work" routine matches current day+hour (±1hr) |
-| 2nd | **GPS Detection** | User is at Home (GPS ping near home) → suggest Work |
-| 3rd | **Pattern Prediction** | SQL patterns show user goes to X every Tue at 9 |
-| 4th | **Time Fallback** | Weekday morning → Work, evening → Home, weekend → off_hours |
+Every surface draws from the place catalogue in `app/Places/`
+(`PlaceFacts`, `PlaceIdentity`, `DestinationGrouping`). A place is offered only
+if the facts there say it may be publicly recommended.
 
-**Off-hours detection:**
-- Weekends → discovery mode
-- Late night (22-05) → discovery mode
-- GPS at Home during work hours → break detection → discovery mode
+## Taste signals
 
-## Transit Hero Card (`getCommuteRecommendation`)
+`app/Composer/IntentWeights.php` turns `user_events` rows from the last 90 days
+into category × Veedel counts. Every request recomputes them; nothing is stored
+as a profile. Composer reads them; Today's discovery doesn't.
 
-Returns 3 cards for the transit page highlight section:
+It weights 11 signal types. Since the 6 October UI rewrite, only the four
+Places feedback signals still have a live emitter:
 
-```
-Card 1: Bike route (weather-dependent)
-Card 2: Transit line (GTFS departure)
-Card 3: Context-aware suggestion (from DiscoverySuggestionService)
-```
+- `spot_more_like_this`
+- `spot_saved`
+- `spot_not_interested`
+- `spot_been_liked` / `spot_been_disliked`
 
-**Card 3 adapts by context:**
-- Morning commute → tonight's event or weather alert
-- At work → lunch spot or disruption alert
-- Evening return → event tonight or café near home
-- Off-hours → full discovery mode (activity + fav spot + event)
+These signals are weighted but have nothing writing them on this branch:
+`take_me_there` (the strongest, 3.0), `event_saved`, `spot_viewed`, the
+post-trip thumbs and `composer_swap_away`. EXP-109 restores them as server-side
+emitters.
 
-## Discovery Mode (`DiscoverySuggestionService`)
+The browser sends only `page_viewed`, the onboarding events and location pings
+to `POST /api/track` (`resources/js/hooks/use-tracker.ts`,
+`use-geolocation.ts`).
 
-Three rotating card pools, each with 5 items:
+## Departure boards
 
-| Pool | Source | Content |
-|------|--------|---------|
-| Activity | `Spot::nearby()` | Weather-aware: parks when sunny, cafés when rainy |
-| Fav Spot | `FrequentDestinationService` | User's frequent destinations, filtered by `isActiveToday()` |
-| Event | `Event` + `CityNews` | This week's events (10) + recent news (5) |
+`NearbyStopService::getDeparturesByType()` builds the "nearby" boards behind
+`GET /api/nearby-departures`:
 
-**Rotation:** RotatingCardSlot component auto-flips every 30-60 sec (random interval).
+- **KVB (tram and bus):** the 3 nearest KVB stops within 600 m. It asks
+  `GtfsDepartureService` for 15 departures per stop and keeps one row per line
+  and direction.
+- **DB (S-Bahn, RE, RB):** GTFS rail stations within 5 km.
+- **Cache:** results are cached for 30 seconds on a grid of about 100 m, keyed
+  by origin and destination.
+- **"Towards" badge:** when a destination is given, lines that also serve the
+  KVB stop nearest the destination get the badge.
+- **Disruptions:** disrupted lines are marked from `DisruptionService`.
 
-## Departure Boards
+Real-time delays come from VRS GTFS-RT through `VrsRealtimeService`. It is off
+by default (`VRS_REALTIME_ENABLED=false`).
 
-`NearbyStopService::getDeparturesByType()` splits into two boards:
+## What is not built
 
-| Board | Source | Radius | Data |
-|-------|--------|--------|------|
-| KVB (tram/bus) | `KvbApiService::getStops()` | 600m | Top 3 nearest stops, up to 8 departures |
-| DB (S-Bahn/RE) | `GtfsStop` (route_type=2) | 5km | Nearest rail stations, up to 6 departures |
+These are covered in the AI data readiness page, with tickets:
 
-**Features:**
-- "Your route" badge on lines heading towards predicted destination
-- Disruption status per line (from DisruptionService)
-- Clickable rows → detail modal with line info + active disruptions
-- GPS-based: fetches from `/api/nearby-departures` when geolocation available
-- Falls back to Home coordinates when GPS unavailable
-
-## Disruption Personalization
-
-`TransitController::buildDisruptionCards()`:
-1. Gets all active disruptions from DisruptionService
-2. Finds user's Home + Work nearest KVB stops → their lines
-3. Cross-references: if disrupted line serves user's stops → `is_personal: true`
-4. Sorts: critical first, personal boosted
-5. Max 5 cards shown below "Plan a Journey"
-
-## Routine Integration
-
-Routines are the **#1 priority** in context detection. A matching routine overrides GPS, patterns, and time-based fallback. This means:
-- Saved routine "Home → B2 Course, Tue 18:00" → at 17:30 on Tuesday, hero shows B2 Course departures
-- Paused routines are skipped
-- Day filtering respects routine's `days` array
-
-**Routine suggestions:**
-- `LocationPatternService::detectUnsavedRoutines()` detects patterns with 3+ frequency
-- Skips if user has < 5 tracking events (insufficient data)
-- Dismissals persist via localStorage for 1 hour cooldown
-
-## Data Sources
-
-| Source | Status | Service | Freshness |
-|--------|--------|---------|-----------|
-| Weather (current + forecast) | ✅ | `WeatherService` | 5-min cache |
-| GTFS departures | ✅ Static | `GtfsDepartureService` | 1-min cache |
-| KVB stops + lines | ✅ | `KvbApiService` | 1-hour cache |
-| Line disruptions (betriebslage) | ✅ | `DisruptionService` | Every 5 min scrape |
-| Planned works (aktuelles) | ✅ | `DisruptionService` | Every 5 min scrape |
-| Elevator/escalator | ✅ | `KvbApiService` | 2-min cache |
-| Events | ✅ | `Event` model | Every 30 min scrape |
-| User places + arrive_by | ✅ | `UserPlace` model | Real-time |
-| GPS location | ✅ | `useGeolocation` hook | Every 5 min |
-| Tracking events | ✅ | `user_tracking_events` | Real-time |
-| Real-time delays | ⏳ | Pending VRS GTFS-RT | — |
-
-## Future Enhancements
-
-- VRS GTFS-RT for real-time departure delays
-- OSRM/Valhalla for real travel times → smart leave-by calculation
-- Push notifications triggered by routine departure times
-- Route drawing on map
-- Learning from user behavior (which routes taken, events attended)
+- No record of what a user was shown, so there are no impressions, request ids
+  or ranker versions (EXP-110).
+- No stored taste profile, no embeddings, no full-text search.
+- No single ranker mixing familiar and new places (EXP-114).
+- No materialised place features or shared interest taxonomy (EXP-115).
+- Routines and leave-by reminders were dropped in the June pivot. Only
+  `user_places.arrive_by` and `active_days` remain.

@@ -83,13 +83,13 @@ test('re-seeding a case persona refreshes a stale scenario fact without leaving 
         ->and($case->facts()->where('key', 'case_goal')->where('state', 'confirmed')->firstOrFail()->reconfirm_at->isFuture())->toBeTrue();
 });
 
-test('a seeded persona account gets Home and Work places', function () {
+test('a seeded persona account gets no empty Home or Work', function () {
     $this->artisan('qa:seed-personas', ['--force' => true])->assertSuccessful();
 
     $user = User::where('email', 'qa+neu-student@expadu.test')->first();
 
-    expect($user->places()->where('category', 'home')->exists())->toBeTrue()
-        ->and($user->places()->where('category', 'work')->exists())->toBeTrue();
+    // As onboarding: Home and Work exist once the person sets them.
+    expect($user->places()->count())->toBe(0);
 });
 
 test('without --force, an unrecognised host refuses to run', function () {

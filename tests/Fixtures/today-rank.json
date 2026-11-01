@@ -1,0 +1,65 @@
+{
+ "cases": [
+  {
+   "id": "rank.cafes_in_ehrenfeld",
+   "facts": {"categories": [{"name": "café", "level": "strong"}], "veedels": [{"name": "Ehrenfeld", "level": "some"}], "dayparts": ["afternoon"], "week": null},
+   "recent": {"categories": [], "areas": []},
+   "candidates": {
+    "events": [
+     {"id": "e1@1", "name": "Orgelkonzert im Dom", "kind": "Concert", "area": "Altstadt-Nord", "start": "19:00"},
+     {"id": "e2@1", "name": "Latte Art Night", "kind": "Café", "area": "Ehrenfeld", "start": "18:00"}
+    ],
+    "places": [
+     {"id": "p1", "name": "Brauhaus Sion", "kind": "Bar", "area": "Altstadt-Nord", "start": null},
+     {"id": "p2", "name": "Café Wohnraum", "kind": "Café", "area": "Nippes", "start": null},
+     {"id": "p3", "name": "Ehrenfeld Kaffee", "kind": "Café", "area": "Ehrenfeld", "start": null}
+    ]
+   },
+   "expect": {"first_event": "e2@1", "first_place": "p3"}
+  },
+  {
+   "id": "rank.museums_in_the_old_town",
+   "facts": {"categories": [{"name": "museum", "level": "strong"}, {"name": "bar", "level": "avoid"}], "veedels": [{"name": "Altstadt-Nord", "level": "some"}], "dayparts": [], "week": "weekend"},
+   "recent": {"categories": [], "areas": []},
+   "candidates": {
+    "events": [
+     {"id": "e1@1", "name": "Pub Quiz", "kind": "Party", "area": "Belgisches Viertel", "start": "20:00"},
+     {"id": "e2@1", "name": "Kuratorenführung", "kind": "Exhibition", "area": "Altstadt-Nord", "start": "16:00"}
+    ],
+    "places": [
+     {"id": "p1", "name": "Bar Schwarz", "kind": "Bar", "area": "Neustadt-Nord", "start": null},
+     {"id": "p2", "name": "Café Fridolin", "kind": "Café", "area": "Ehrenfeld", "start": null},
+     {"id": "p3", "name": "Kolumba", "kind": "Museum", "area": "Altstadt-Nord", "start": null}
+    ]
+   },
+   "expect": {"first_place": "p3", "last_place": "p1"}
+  },
+  {
+   "id": "rank.recent_bars_in_the_belgian_quarter",
+   "facts": {},
+   "recent": {"categories": ["bar"], "areas": ["Neustadt-Nord"]},
+   "candidates": {
+    "events": [],
+    "places": [
+     {"id": "p1", "name": "Bäckerei Merzenich", "kind": "Bakery", "area": "Ehrenfeld", "start": null},
+     {"id": "p2", "name": "Hallmackenreuther", "kind": "Bar", "area": "Neustadt-Nord", "start": null},
+     {"id": "p3", "name": "Kolumba", "kind": "Museum", "area": "Altstadt-Nord", "start": null}
+    ]
+   },
+   "expect": {"first_place": "p2"}
+  },
+  {
+   "id": "rank.nothing_known_no_why",
+   "facts": {},
+   "recent": {"categories": [], "areas": []},
+   "candidates": {
+    "events": [
+     {"id": "e1@1", "name": "Jazz im Stadtgarten", "kind": "Concert", "area": "Neustadt-Nord", "start": "20:00"},
+     {"id": "e2@1", "name": "Flohmarkt", "kind": "Market", "area": "Nippes", "start": "10:00"}
+    ],
+    "places": []
+   },
+   "expect": {"no_why": true}
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+/* Scrollbars (owner, 19 Oct 2026, Composer review canvas board 17, A):
+   thin, in a warm sand, with no track, on every scroll area. They stay the
+   browser's own bars, so each person's setting holds: a Mac that shows bars
+   only while scrolling keeps hiding them. An area that hides its bar sets
+   scrollbar-width: none on itself, which wins over this. A rounded panel
+   that scrolls keeps its bar clear of its corners (departures-next/hub.css,
+   the trip planner). */
+:root {
+    --scrollbar-thumb: #c4b8a2;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+* {
+    scrollbar-width: thin;
+}
+@media (prefers-contrast: more) {
+    :root {
+        --scrollbar-thumb: #8a8277;
+    }
+}

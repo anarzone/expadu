@@ -117,3 +117,23 @@ test('two live disruptions stay two: each keeps its own action and alert', funct
 
     app(ActionBus::class)->clear($user->id);
 });
+
+test('an alert lasts until the notice says it ends; a Betriebslage lease is no end', function () {
+    Event::fake([TransitDisruptionDetected::class]);
+    $end = now()->addDays(3)->startOfMinute();
+
+    mockDisruptions([
+        ['id' => 'news_201', 'title' => 'Bis 23.11.2026: Trennung der Linie 18', 'description' => '', 'severity' => 'moderate', 'type' => 'line',
+            'affected_lines' => ['18'], 'started_at' => now()->toIso8601String(), 'estimated_end' => $end->toIso8601String(), 'source' => 'kvb'],
+        ['id' => 'news_202', 'title' => 'Linie 16: Verspätungen', 'description' => '', 'severity' => 'minor', 'type' => 'line',
+            'affected_lines' => ['16'], 'started_at' => now()->toIso8601String(), 'estimated_end' => now()->addHours(2)->toIso8601String(), 'source' => 'kvb-betriebslage'],
+        ['id' => 'news_203', 'title' => 'Linie 7: Umleitung', 'description' => '', 'severity' => 'minor', 'type' => 'line',
+            'affected_lines' => ['7'], 'started_at' => now()->toIso8601String(), 'estimated_end' => null, 'source' => 'kvb'],
+    ]);
+
+    $this->artisan('transit:check-disruptions')->assertSuccessful();
+
+    Event::assertDispatched(TransitDisruptionDetected::class, fn ($e) => $e->disruptionId === 'news_201' && $e->expiresAt?->equalTo($end));
+    Event::assertDispatched(TransitDisruptionDetected::class, fn ($e) => $e->disruptionId === 'news_202' && $e->expiresAt === null);
+    Event::assertDispatched(TransitDisruptionDetected::class, fn ($e) => $e->disruptionId === 'news_203' && $e->expiresAt === null);
+});

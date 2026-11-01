@@ -1,0 +1,171 @@
+/* Event poster art set from the listing: no photograph, nothing added.
+   The hour picks the ink (day yellow, evening purple, night navy, paper
+   without a time) and the category picks the shape. The picture alone,
+   for places that print the words themselves: a card's picture slot or a
+   sheet's cover. Markup from ExpaduPosterArt.art() in
+   events-next/poster-art.js; the same art as the Events Wall's posters
+   (events-next/wall.css), shared so Today can use it. */
+.pp--day {
+    --pp-ground: var(--poster-yellow);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+}
+.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-text: var(--poster-yellow);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--poster-yellow);
+}
+.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-text: var(--poster-cream);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--poster-yellow);
+}
+.pp--paper {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text-soft);
+    --pp-shape: var(--poster-purple);
+}
+.pp-art {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    container-type: inline-size;
+    background: var(--pp-ground, var(--poster-paper));
+}
+.pp-art::before,
+.pp-art::after,
+.pp-art > span {
+    content: '';
+    position: absolute;
+    box-sizing: border-box;
+}
+.pp-art.pp--rings::before {
+    right: -24%;
+    top: 12%;
+    width: 82%;
+    aspect-ratio: 1;
+    border: max(12px, 6cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.pp-art.pp--rings::after {
+    right: -10%;
+    top: 24%;
+    width: 54%;
+    aspect-ratio: 1;
+    border: max(9px, 4.5cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.42;
+}
+.pp-art.pp--rings > span,
+.pp-art.pp--dots > span {
+    left: 0;
+    bottom: 0;
+    width: 62%;
+    height: 32%;
+    background-image: radial-gradient(
+        circle,
+        var(--pp-shape) 2.2px,
+        transparent 2.6px
+    );
+    background-size: 13px 13px;
+    opacity: 0.32;
+}
+/* At night the rings become a moon among stars. */
+.pp-art.pp--night > span {
+    inset: 0;
+    width: auto;
+    height: auto;
+    background-image:
+        radial-gradient(circle, #fff6d8bf 1.1px, transparent 1.6px),
+        radial-gradient(circle, #ffe36399 1.6px, transparent 2.1px);
+    background-size:
+        37px 41px,
+        83px 71px;
+    background-position:
+        0 0,
+        19px 23px;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::before {
+    right: 9%;
+    top: 16%;
+    width: 32%;
+    border: 0;
+    background: var(--poster-cream);
+    box-shadow:
+        0 0 0 12px #ffe3634d,
+        0 0 0 26px #ffe3631f;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::after {
+    display: none;
+}
+.pp-art.pp--checks::before {
+    inset: 0 0 auto;
+    height: 17%;
+    background: repeating-conic-gradient(
+            var(--pp-shape) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--checks.pp--day::before,
+.pp-art.pp--checks.pp--paper::before {
+    background: repeating-conic-gradient(
+            var(--color-text) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--waves::before {
+    inset: 0 0 auto;
+    height: 22%;
+    background: repeating-radial-gradient(
+        circle at 50% 120%,
+        var(--poster-green) 0 7px,
+        transparent 7px 14px
+    );
+}
+.pp-art.pp--bubbles::before {
+    right: 8%;
+    top: 12%;
+    width: 34%;
+    height: 22%;
+    border: max(5px, 2.4cqi) solid var(--pp-shape);
+    border-radius: 999px 999px 999px 10px;
+}
+.pp-art.pp--bubbles::after {
+    right: 34%;
+    top: 26%;
+    width: 26%;
+    height: 17%;
+    border-radius: 999px 999px 10px 999px;
+    background: var(--pp-shape);
+    opacity: 0.55;
+}
+.pp-art.pp--dots > span {
+    width: 100%;
+    height: 40%;
+}
+/* Small or wide uses: keep the shapes, drop the detail. */
+.pp-art--slot::before,
+.pp-art--cover::before {
+    right: 4%;
+}
+
+/* The event sheet's cover: the art sits behind the category, date and
+   time, never over them (as on the Events page). */
+.event-ticket > .pp-art--cover,
+.event-ticket > .event-ticket-shade {
+    z-index: 0;
+}
+.event-ticket > div {
+    position: relative;
+    z-index: 1;
+}

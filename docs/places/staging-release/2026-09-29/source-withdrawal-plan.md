@@ -18,9 +18,7 @@ rejects changed/future history, and makes checked replay a no-op.
 
 No nullable column is added: that would alter the raw snapshot shape for all existing
 operation receipts. Source ingestion continues to reject unsupported audit-payload
-fields. Restore refuses a withdrawal marker as a source snapshot. Replaying a withdrawn
-ingestion key raises an error so importer transactions cannot republish cancelled
-evidence through overwritten legacy fields; genuine new evidence needs a new key.
+fields. Restore refuses a withdrawal marker as a source snapshot.
 
 For consumer facts, an audited withdrawal excludes exactly the targeted observation
 with matching source identity and payload hash, plus the audit marker itself. A later
@@ -75,3 +73,11 @@ formatting, and normal required commit/CI checks. Staging evidence must verify a
 saved state through a fresh read-only connection, not merely an importer success.
 No photos are approved, no access/fee claims are inferred, and no source is approved
 without a documented basis.
+
+## Completion evidence
+
+All six steps completed on staging at 2026-09-29T20:05:24+00:00. PR60 and deployment CI
+passed; all 374 updates are committed, all 48 journals and all 4,643 package
+records are independently verified. See [current report](REPORT.md),
+[held commits](held/committed.json) and [final verification](held/staging-final.json).
+Broader production/media/activity-evidence work remains outside this completed plan.

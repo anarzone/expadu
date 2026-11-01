@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\ContextEngine\DayImportance;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'event_id', 'occurrence_start', 'offset_minutes', 'remind_at', 'sent_at'])]
 class EventReminder extends Model
 {
+    /** A reminder set or taken off changes how important the event's day is (DayImportance). */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $reminder) => DayImportance::forget($reminder->user_id, $reminder->occurrence_start));
+        static::deleted(fn (self $reminder) => DayImportance::forget($reminder->user_id, $reminder->occurrence_start));
+    }
+
     /**
      * @return array<string, string>
      */

@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Support\AdminPanelLoading;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -24,7 +25,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path(AdminPanelLoading::PATH)
             ->authGuard('admin')
             ->login()
             ->brandName('Expadu Admin')

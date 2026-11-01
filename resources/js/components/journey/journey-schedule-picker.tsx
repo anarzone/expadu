@@ -5,7 +5,7 @@ import {
     IconMinus,
     IconPlus,
 } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ICON_STROKE } from '@/constants/icons';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ export function JourneySchedulePicker({
     onModeChange,
     onScheduleChange,
 }: Props) {
+    const root = useRef<HTMLElement>(null);
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState(scheduledAt);
     const [visibleMonth, setVisibleMonth] = useState(startOfMonth(scheduledAt));
@@ -34,6 +35,33 @@ export function JourneySchedulePicker({
         setDraft(scheduledAt);
         setVisibleMonth(startOfMonth(scheduledAt));
     }, [scheduledAt]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const closeOutside = (event: PointerEvent) => {
+            if (!root.current?.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+        const closeWithEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setOpen(false);
+                root.current
+                    ?.querySelector<HTMLButtonElement>('[aria-expanded]')
+                    ?.focus();
+            }
+        };
+        document.addEventListener('pointerdown', closeOutside);
+        document.addEventListener('keydown', closeWithEscape);
+
+        return () => {
+            document.removeEventListener('pointerdown', closeOutside);
+            document.removeEventListener('keydown', closeWithEscape);
+        };
+    }, [open]);
 
     function chooseMode(next: JourneyPlanningMode): void {
         if (next !== mode) {
@@ -51,8 +79,8 @@ export function JourneySchedulePicker({
     const actionLabel = mode === 'arrive' ? 'arrival' : 'departure';
 
     return (
-        <section aria-label="Journey time" className="mb-5">
-            <div className="rounded-[18px] border border-border bg-secondary/80 p-1.5">
+        <section ref={root} aria-label="Journey time" className="mb-3">
+            <div className="rounded-2xl bg-secondary p-1">
                 <div className="grid grid-cols-3 gap-1">
                     {(
                         [
@@ -67,7 +95,7 @@ export function JourneySchedulePicker({
                             aria-pressed={mode === value}
                             onClick={() => chooseMode(value)}
                             className={cn(
-                                'min-h-12 rounded-[14px] px-3 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                                'min-h-11 rounded-xl px-1 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none min-[380px]:px-2 min-[380px]:text-sm',
                                 mode === value
                                     ? 'bg-card text-foreground shadow-sm'
                                     : 'text-muted-foreground hover:bg-card/55 hover:text-foreground',
@@ -84,18 +112,18 @@ export function JourneySchedulePicker({
                         aria-label={`Choose ${actionLabel} date and time`}
                         aria-expanded={open}
                         onClick={() => setOpen((current) => !current)}
-                        className="mt-1.5 grid min-h-12 w-full grid-cols-[1fr_auto] items-stretch overflow-hidden rounded-[14px] bg-card text-left shadow-sm transition-colors hover:bg-card/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="mt-1.5 grid min-h-11 w-full grid-cols-[1fr_auto] items-stretch overflow-hidden rounded-xl bg-card text-left shadow-sm transition-colors hover:bg-card/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                         <span className="flex items-center justify-center gap-2 border-r border-border px-4">
-                            <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                            <span className="text-xs text-muted-foreground">
                                 Day
                             </span>
                             <span className="text-sm font-semibold">
                                 {dayLabel(scheduledAt)}
                             </span>
                         </span>
-                        <span className="flex min-w-40 items-center justify-center gap-2 px-4">
-                            <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                        <span className="flex min-w-28 items-center justify-center gap-2 px-4">
+                            <span className="text-xs text-muted-foreground">
                                 {mode === 'arrive' ? 'By' : 'At'}
                             </span>
                             <span className="font-mono text-base font-bold">
@@ -115,9 +143,9 @@ export function JourneySchedulePicker({
             </div>
 
             {mode !== 'now' && open && (
-                <div className="mt-2 rounded-[18px] border border-border bg-card p-4 shadow-lg">
+                <div className="mt-2 rounded-2xl border border-border bg-card p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
-                        <span className="font-mono text-[11px] font-bold tracking-[0.12em] text-primary uppercase">
+                        <span className="text-sm font-semibold text-foreground">
                             Choose {actionLabel}
                         </span>
                         <button
@@ -129,7 +157,7 @@ export function JourneySchedulePicker({
                         </button>
                     </div>
 
-                    <div className="mb-3 grid grid-cols-2 rounded-[14px] bg-secondary p-1">
+                    <div className="mb-3 grid grid-cols-2 rounded-xl bg-secondary p-1">
                         <button
                             type="button"
                             onClick={() => setDraft(copyDay(new Date(), draft))}
@@ -183,7 +211,7 @@ export function JourneySchedulePicker({
                             >
                                 <IconMinus size={20} stroke={ICON_STROKE} />
                             </button>
-                            <div className="text-center font-display text-4xl font-medium">
+                            <div className="text-center font-display text-2xl font-semibold tabular-nums">
                                 {timeLabel(draft)}
                             </div>
                             <button
@@ -194,6 +222,44 @@ export function JourneySchedulePicker({
                             >
                                 <IconPlus size={20} stroke={ICON_STROKE} />
                             </button>
+                        </div>
+                        <div className="mt-3 flex items-center justify-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                                Exact time
+                            </span>
+                            <select
+                                aria-label="Hour"
+                                value={draft.getHours()}
+                                onChange={(event) => {
+                                    const next = new Date(draft);
+                                    next.setHours(Number(event.target.value));
+                                    setDraft(next);
+                                }}
+                                className="min-h-11 rounded-xl border border-border bg-card px-3 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-cyan"
+                            >
+                                {Array.from({ length: 24 }, (_, hour) => (
+                                    <option key={hour} value={hour}>
+                                        {String(hour).padStart(2, '0')}
+                                    </option>
+                                ))}
+                            </select>
+                            <span aria-hidden="true">:</span>
+                            <select
+                                aria-label="Minute"
+                                value={draft.getMinutes()}
+                                onChange={(event) => {
+                                    const next = new Date(draft);
+                                    next.setMinutes(Number(event.target.value));
+                                    setDraft(next);
+                                }}
+                                className="min-h-11 rounded-xl border border-border bg-card px-3 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-cyan"
+                            >
+                                {Array.from({ length: 60 }, (_, minute) => (
+                                    <option key={minute} value={minute}>
+                                        {String(minute).padStart(2, '0')}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div className="mt-3 grid grid-cols-3 gap-2">
                             {[-30, -15, 15].map((offset) => {

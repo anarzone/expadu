@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Log in via the Fortify login form and wait for the dashboard to load.
+ * Log in via the Fortify login form and wait for Today to load.
  */
 export async function login(
     page: Page,
@@ -11,6 +11,6 @@ export async function login(
     await page.goto('/login');
     await page.getByLabel('Email').fill(email);
     await page.locator('input#password').fill(password);
-    await page.getByRole('button', { name: 'Log in' }).click();
-    await page.waitForURL('**/dashboard**', { timeout: 10_000 });
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.waitForURL('**/today**', { timeout: 10_000 });
 }

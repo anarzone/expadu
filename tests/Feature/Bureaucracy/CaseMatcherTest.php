@@ -2,7 +2,6 @@
 
 use App\Bureaucracy\Cases\CaseMatcher;
 use App\Bureaucracy\Cases\CaseMatchResult;
-use App\Bureaucracy\Cases\CasePlanComposer;
 use App\Bureaucracy\Cases\QuestionSelector;
 use App\Enums\BureaucracyCoverageState;
 use App\Models\BureaucracyCase;
@@ -126,6 +125,19 @@ test('an unresolved approved case rule produces needs information with its regis
         ->and($result->missingFactKeys)->toBe(['case_goal']);
 });
 
+test('explicit unconditional guidance is valid but malformed alternatives remain excluded', function (array $conditions, bool $visible) {
+    task5MatcherRule('fixture.condition-shape', $conditions, ['coverage_scope' => 'universal']);
+
+    $result = app(CaseMatcher::class)->match(task5MatcherCase());
+
+    expect($result->universalRuleKeys)->toBe($visible ? ['fixture.condition-shape'] : []);
+})->with([
+    'explicit empty conjunction' => [[[]], true],
+    'non-object conjunction' => [[['invalid']], false],
+    'scalar alternative' => [[false], false],
+    'unknown fact' => [[['unregistered_fixture_fact' => true]], false],
+]);
+
 test('unresolved high impact branches keep safe matches visible without claiming full coverage', function () {
     task5MatcherRule('case.safe-registration', [['purpose' => 'family']]);
     task5MatcherRule('case.sponsor-dependent', [[
@@ -135,25 +147,13 @@ test('unresolved high impact branches keep safe matches visible without claiming
 
     $case = task5MatcherCase(['purpose' => 'family']);
     $result = app(CaseMatcher::class)->match($case);
-    $sections = app(CasePlanComposer::class)->compose($case, $result);
 
     expect($result->coverageState)->toBe(BureaucracyCoverageState::NeedsInformation)
         ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
-        ->and(collect($sections['do_now'])->pluck('key')->all())->toBe(['case.safe-registration'])
-        // One card per unanswered question, naming the steps it would unblock
-        // rather than calling each of them "a possible step".
-        ->and($sections['information_needed'])->toBe([[
-            'kind' => 'information_needed',
-            'fact_key' => 'sponsor_current_title',
-            'questions' => [[
-                'question' => 'Which German residence status does your spouse currently have?',
-                'why' => "Family-reunification and settlement options depend on the sponsor's current title.",
-            ]],
-            'unlocks' => ['Rule case.sponsor-dependent'],
-        ]]);
+        ->and($result->missingFactKeys)->toBe(['sponsor_current_title']);
 });
 
-test('matcher accepts exact trusted predicates compiled from a persona branch', function () {
+test('matcher accepts compiled family predicates backed by explicit confirmed facts', function () {
     task5MatcherRule('case.family-branch', [[
         'purpose' => 'family',
         'sponsor' => 'non_eu',
@@ -162,6 +162,7 @@ test('matcher accepts exact trusted predicates compiled from a persona branch', 
 
     $result = app(CaseMatcher::class)->match(task5MatcherCase([
         'case_goal' => 'renew_current_title',
+        'sponsor' => 'non_eu',
     ], [
         'situation' => 'family_reunification',
         'bureaucracy_path' => 'family_reunification',
@@ -169,31 +170,6 @@ test('matcher accepts exact trusted predicates compiled from a persona branch', 
 
     expect($result->coverageState)->toBe(BureaucracyCoverageState::Matched)
         ->and($result->matchedRuleKeys)->toBe(['case.family-branch']);
-});
-
-test('composer routes informational phases and exposes fact-date deadlines', function () {
-    task5MatcherRule('case.timeline', [['case_goal' => 'settlement_permit']], [
-        'type' => 'info',
-        'phase' => 'ongoing',
-    ]);
-    task5MatcherRule('case.pending', [['case_goal' => 'settlement_permit']], [
-        'type' => 'info',
-        'phase' => 'waiting',
-    ]);
-    task5MatcherRule('case.renew', [['case_goal' => 'settlement_permit']], [
-        'deadline_type' => 'fact_date',
-        'deadline_fact_key' => 'residence_title_expires_at',
-    ]);
-
-    $case = task5MatcherCase([
-        'case_goal' => 'settlement_permit',
-        'residence_title_expires_at' => '2026-09-01',
-    ]);
-    $sections = app(CasePlanComposer::class)->compose($case, app(CaseMatcher::class)->match($case));
-
-    expect(collect($sections['coming_up'])->pluck('key')->all())->toBe(['case.timeline'])
-        ->and(collect($sections['waiting'])->pluck('key')->all())->toBe(['case.pending'])
-        ->and(collect($sections['do_now'])->firstWhere('key', 'case.renew')['deadline'])->toBe('2026-09-01');
 });
 
 test('universal guidance cannot turn an unsupported case into matched', function () {
@@ -211,51 +187,6 @@ test('universal guidance cannot turn an unsupported case into matched', function
     expect($result->coverageState)->toBe(BureaucracyCoverageState::NotCovered)
         ->and($result->matchedRuleKeys)->toBe([])
         ->and($result->universalRuleKeys)->toBe(['universal.keep-documents']);
-});
-
-test('conflicting matches are quarantined while independent safe rules remain composable', function () {
-    task5MatcherRule('case.route-a', [['current_residence_title' => 'blue_card']], [
-        'conflicts_with' => ['case.route-b'],
-    ]);
-    task5MatcherRule('case.route-b', [['current_residence_title' => 'blue_card']], [
-        'conflicts_with' => ['case.route-a'],
-    ]);
-    task5MatcherRule('case.safe-registration', [['current_residence_title' => 'blue_card']]);
-    task5MatcherRule('universal.keep-documents', null, [
-        'coverage_scope' => 'universal',
-    ]);
-
-    $case = task5MatcherCase(['current_residence_title' => 'blue_card']);
-    $result = app(CaseMatcher::class)->match($case);
-    $sections = app(CasePlanComposer::class)->compose($case, $result);
-    $composedRuleKeys = collect($sections)
-        ->flatten(1)
-        ->pluck('key')
-        ->filter()
-        ->sort()
-        ->values()
-        ->all();
-
-    expect($result->coverageState)->toBe(BureaucracyCoverageState::Conflict)
-        ->and($result->conflictPairs)->toBe([['case.route-a', 'case.route-b']])
-        ->and($result->safeRuleKeys)->toBe(['case.safe-registration'])
-        ->and($sections['not_covered'])->toBe([[
-            'kind' => 'coverage_notice',
-            'coverage_state' => 'conflict',
-        ]])
-        ->and(array_keys($sections))->toBe([
-            'current_status',
-            'do_now',
-            'next',
-            'coming_up',
-            'options',
-            'good_to_know',
-            'waiting',
-            'information_needed',
-            'opens_when',
-            'not_covered',
-        ])
-        ->and($composedRuleKeys)->toBe(['case.safe-registration', 'universal.keep-documents']);
 });
 
 test('matcher ignores unpublished unapproved stale source-invalid and unregistered rules', function () {

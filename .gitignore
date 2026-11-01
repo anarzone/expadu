@@ -46,6 +46,18 @@ public/maps/*.pmtiles
 # Playwright local screenshot artifacts
 tests/Browser/.artifacts/
 
+# Prototype mocks: code, docs and fonts are tracked; images and exported
+# bundles stay local (photos need a rights check before they enter the repo).
+/prototype/dev/**/*.png
+/prototype/dev/**/*.jpg
+/prototype/dev/**/*.jpeg
+/prototype/dev/**/*.webp
+/prototype/dev/**/*.zip
+/prototype/**/__pycache__/
+
 # Python helper bytecode
 __pycache__/
 *.py[cod]
+
+# mock-compare reports (tools/mock-compare)
+/storage/mock-compare/

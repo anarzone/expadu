@@ -1,0 +1,51 @@
+@import url('../connected/tokens.css');
+/* The accepted Travel palette; context lives beside the action it explains. */
+.service-preference[hidden] {
+    display: none;
+}
+.service-preference {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 12px;
+    border-left: 3px solid var(--teal);
+    background: var(--blue);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.service-preference small,
+.service-preference strong {
+    display: block;
+}
+.service-preference small {
+    color: var(--teal);
+    font-size: var(--text-caption);
+    margin-bottom: 5px;
+}
+.service-preference strong {
+    font-size: var(--text-control);
+    line-height: 1.4;
+}
+.service-preference p {
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    margin: 6px 0 0;
+    color: var(--ink-soft);
+}
+.service-preference .icon-button {
+    flex: none;
+}
+#service-context-status {
+    margin: 0 0 12px;
+}
+.saved-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+}
+.saved-row .saved-repeat {
+    grid-column: 1 / -1;
+    width: fit-content;
+    min-height: 44px;
+    margin-left: 56px;
+}

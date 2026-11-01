@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 
 /**
@@ -22,7 +23,7 @@ final readonly class Candidate
         public string $category,
         public bool $outdoor,
         public int $typicalDurationMin,
-        public string $costTier,           // free | low | normal | unknown
+        public string $costTier,           // free | low | normal | unknown (a reported appointment has no inferred fee)
         public ?CarbonImmutable $opensAt,  // null = always open within window
         public ?CarbonImmutable $closesAt,
         public ?CarbonImmutable $fixedStart = null, // events + appointments
@@ -43,10 +44,31 @@ final readonly class Candidate
         public int $factRevision = 0,
         /** @var array<string, mixed> */
         public array $placeFacts = [],
+        /** @var array<string, mixed> */
+        public array $sourceFacts = [],
         public ?float $distanceKmFromOrigin = null,
+        // A recorded appointment with a text-only place has no map point (lat/lng are NAN):
+        // no journey to or from it is computed or offered.
+        public bool $routable = true,
+        // A recorded appointment of unknown length: typicalDurationMin is 0, never a guessed length.
+        public bool $durationKnown = true,
+        /** @var list<string> verified vibe tags (VibeTag values, from spot_enrichments) */
+        public array $vibeTags = [],
+        // An event with no listed end: typicalDurationMin is the plan's own length to schedule
+        // around, never the event's time, so its end is never shown.
+        public bool $endListed = true,
     ) {}
 
     /** Earliest complete visit, retaining split and overnight source intervals. */
+    /** Verified step-free (OSM wheelchair=yes|designated); unknown or limited is not. */
+    public function stepFree(): bool
+    {
+        $fact = $this->placeFacts['practical']['wheelchair'] ?? [];
+
+        return $this->type === 'spot' && ($fact['status'] ?? null) === 'known'
+            && in_array($fact['value'] ?? null, ['yes', 'designated'], true);
+    }
+
     public function nextVisitStart(CarbonImmutable $earliest, CarbonImmutable $latestEnd, ?int $duration = null): ?CarbonImmutable
     {
         $duration ??= $this->typicalDurationMin;
@@ -55,6 +77,10 @@ final readonly class Candidate
         if (($hours['status'] ?? null) === 'known' && is_array($week)
             && array_key_exists(strtolower($earliest->format('D')), $week)) {
             for ($day = $earliest->startOfDay()->subDay(); $day->lessThanOrEqualTo($latestEnd); $day = $day->addDay()) {
+                // One of its closing dates ("Dec 24 off"): closed that day, whatever the week says.
+                if (OpeningHoursParser::closedOn($hours['raw'] ?? null, $day)) {
+                    continue;
+                }
                 foreach ($week[strtolower($day->format('D'))] ?? [] as $interval) {
                     if (! is_array($interval) || count($interval) !== 2) {
                         continue;

@@ -1,0 +1,163 @@
+{
+  "desktop": {
+    "active": "to",
+    "buttonTop": 526.84375,
+    "group": {
+      "bottom": 385.84375,
+      "height": 132,
+      "left": 228,
+      "right": 610.4921875,
+      "top": 253.84375,
+      "width": 382.4921875,
+      "x": 228,
+      "y": 253.84375
+    },
+    "inputBoxShadow": "none",
+    "inputOutline": "rgb(33, 29, 21) none 3px",
+    "pageWidth": 1512,
+    "panel": {
+      "bottom": 613.7890625,
+      "height": 228.9453125,
+      "left": 228,
+      "right": 610.4921875,
+      "top": 384.84375,
+      "width": 382.4921875,
+      "x": 228,
+      "y": 384.84375
+    },
+    "rows": [
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Köln NeumarktTram stop"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Museum LudwigMuseum"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Merkenich MitteTram stop · Line 12"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "MerkenichBus stop · Line 121"
+      }
+    ],
+    "viewport": 1512
+  },
+  "mobile": {
+    "active": "to",
+    "buttonTop": 551.6953125,
+    "group": {
+      "bottom": 410.6953125,
+      "height": 132,
+      "left": 16,
+      "right": 374,
+      "top": 278.6953125,
+      "width": 358,
+      "x": 16,
+      "y": 278.6953125
+    },
+    "inputBoxShadow": "none",
+    "inputOutline": "rgb(33, 29, 21) none 3px",
+    "pageWidth": 390,
+    "panel": {
+      "bottom": 638.640625,
+      "height": 228.9453125,
+      "left": 16,
+      "right": 374,
+      "top": 409.6953125,
+      "width": 358,
+      "x": 16,
+      "y": 409.6953125
+    },
+    "rows": [
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Köln NeumarktTram stop"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Museum LudwigMuseum"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Merkenich MitteTram stop · Line 12"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "MerkenichBus stop · Line 121"
+      }
+    ],
+    "viewport": 390
+  },
+  "narrow": {
+    "active": "to",
+    "buttonTop": 551.6953125,
+    "group": {
+      "bottom": 427.6953125,
+      "height": 132,
+      "left": 12,
+      "right": 308,
+      "top": 295.6953125,
+      "width": 296,
+      "x": 12,
+      "y": 295.6953125
+    },
+    "inputBoxShadow": "none",
+    "inputOutline": "rgb(33, 29, 21) none 3px",
+    "pageWidth": 320,
+    "panel": {
+      "bottom": 655.640625,
+      "height": 228.9453125,
+      "left": 12,
+      "right": 308,
+      "top": 426.6953125,
+      "width": 296,
+      "x": 12,
+      "y": 426.6953125
+    },
+    "rows": [
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Köln NeumarktTram stop"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Museum LudwigMuseum"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "Merkenich MitteTram stop · Line 12"
+      },
+      {
+        "height": 48,
+        "icons": 1,
+        "text": "MerkenichBus stop · Line 121"
+      }
+    ],
+    "viewport": 320
+  },
+  "fieldSwitch": {
+    "active": "to",
+    "fromExpanded": "false",
+    "results": [
+      "Köln NeumarktTram stop",
+      "Museum LudwigMuseum",
+      "Merkenich MitteTram stop · Line 12",
+      "MerkenichBus stop · Line 121"
+    ],
+    "toExpanded": "true"
+  }
+}

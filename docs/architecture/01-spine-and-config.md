@@ -19,15 +19,13 @@ The whole app is configured in one file (Laravel 11+ style, no HTTP Kernel class
   2. `HandleAppearance` — dark/light theme.
   3. `HandleInertiaRequests` — injects shared props (see §6).
   4. `AddLinkHeadersForPreloadedAssets` — asset preload hints.
-  5. `EnsureUserIsOnboarded` — redirects un-onboarded users to `/onboarding`.
-  6. `SetCacheHeaders` — forces `no-store` on GET responses.
+  5. `SetCacheHeaders` — forces `no-store` on GET responses.
 - **Exceptions:** `withExceptions()` is **empty** — there is no custom reporting/rendering here. Error reporting comes from `config/sentry.php` (Sentry SDK auto-registers). _Ownership note: if you want custom error payloads or to suppress noisy exceptions, this is the place and it's currently untouched._
 
 ### Middleware details worth owning
 
 | Middleware | What it does | Gotcha to own |
 |---|---|---|
-| `EnsureUserIsOnboarded` | If logged in & `!isOnboarded()` & path not excluded → redirect to `onboarding`. Excludes `onboarding*`, `logout`, `settings/*`, `email/*`, `two-factor-challenge`, `confirm-password`, `verified-email`. | Exclusion is path-pattern based (`$request->is()`). **API routes (`api/*`) are NOT excluded** — an un-onboarded user hitting an API endpoint gets a 302 redirect to onboarding, not JSON. Fine today (all app routes need onboarding) but a trap if you add public-ish APIs. |
 | `PerfTrackMiddleware` | Records `route:{name}` timing to `PerfLogger` in `terminate()` (after response sent, no latency cost). Tags `ok`, `status`, `method`, `inertia`. | This is the telemetry hook the memory note "instrument render + external API timings" refers to. Backend half exists; external-API timing is not captured here. |
 | `SetCacheHeaders` | All `GET` except `build/*` get `Cache-Control: no-store`, `Pragma: no-cache`, `Expires: 0`. | **Aggressive.** No GET response is ever cacheable by the browser or a CDN. Safe (avoids stale auth'd pages) but means you cannot lean on HTTP caching for any public/marketing page later without revisiting this. |
 
@@ -191,9 +189,8 @@ _This file is the canonical list of "things that can be down." Cross-reference w
 2. **`auth.user` over-sharing** — frontend contract is "all User columns minus `$hidden`." Make it explicit.
 3. **Empty `withExceptions()`** — no custom exception handling; all observability rides on Sentry config. Decide if that's intentional.
 4. **`SetCacheHeaders` no-store on all GET** — blocks any future HTTP/CDN caching of public pages.
-5. **Onboarding redirect catches `api/*`** — un-onboarded API calls get HTML redirects, not JSON.
-6. **Scheduler timezone** — only `bureaucracy:remind` pins Berlin; confirm `app.timezone` is right for the other dailies.
-7. **`withoutOverlapping()` default lock** — a hung scraper can silently skip its slot for up to 24h; add max-runtime guards.
+5. **Scheduler timezone** — only `bureaucracy:remind` pins Berlin; confirm `app.timezone` is right for the other dailies.
+6. **`withoutOverlapping()` default lock** — a hung scraper can silently skip its slot for up to 24h; add max-runtime guards.
 
 ---
 

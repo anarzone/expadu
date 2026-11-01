@@ -1,11 +1,9 @@
 <?php
 
+use App\Composer\AppointmentRepository;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
-use App\Composer\TodayPlanStore;
-use App\Home\DiscoveryFeed;
-use App\Http\Controllers\ReviewController;
 use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\MediaAsset;
@@ -14,15 +12,13 @@ use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\Venue;
+use App\Places\OpenNearby;
 use App\Places\PlaceIdentity;
 use App\Places\PlaceIdentityAudit;
 use App\Places\ReconcilePlace;
 use App\Services\UserLocationService;
-use App\Services\VeedelDirectory;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 function identityPair(): array
@@ -133,10 +129,14 @@ test('latest family feedback wins and new canonical feedback supersedes older al
     SpotFeedback::factory()->create(['user_id' => $user->id, 'spot_id' => $alias->id, 'state' => 'saved', 'updated_at' => now()->subDay()]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->getJson('/api/places')->assertOk()->assertJsonPath('data.0.feedback_state', 'saved');
-    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'been'])->assertOk();
-    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'been');
+    $this->postJson("/api/places/{$alias->id}/feedback", ['action' => 'more_like_this'])->assertOk();
+    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'more_like_this');
+    // Been there by another record of the place joins the same row; the choice stays.
+    $this->putJson("/api/places/{$canonical->id}/been")->assertOk();
+    $this->getJson("/api/places/{$alias->id}")->assertOk()
+        ->assertJsonPath('data.feedback_state', 'more_like_this')->assertJsonPath('data.feedback_been', true);
 
-    expect(SpotFeedback::query()->count())->toBe(2);
+    expect(SpotFeedback::query()->count())->toBe(1);
 });
 
 test('family reviews preserve history and count the newest review once per user in ratings', function () {
@@ -147,11 +147,7 @@ test('family reviews preserve history and count the newest review once per user 
     Review::factory()->create(['spot_id' => $alias->id, 'rating' => 3]);
     reconcileIdentity($alias, $canonical);
 
-    expect($canonical->fresh()->rating)->toBe(4.0);
-    $this->actingAs($user)->getJson("/explore/{$alias->id}/reviews")->assertOk()->assertJsonPath('total', 2);
-    $this->postJson("/explore/{$alias->id}/reviews", ['rating' => 3, 'body' => 'Updated review'])->assertCreated();
-
-    expect($canonical->fresh()->rating)->toBe(3.0)
+    expect($canonical->fresh()->rating)->toBe(4.0)
         ->and(Review::query()->count())->toBe(3);
 });
 
@@ -195,11 +191,10 @@ test('pending or broken alias media cannot fall through to legacy photos', funct
     $asset = MediaAsset::factory()->create(['rights_status' => $rights, 'health_status' => $health]);
     $alias->mediaAttachments()->create(['media_asset_id' => $asset->id, 'role' => 'hero']);
     reconcileIdentity($alias, $canonical);
-    $this->actingAs(User::factory()->onboarded()->create())->getJson("/api/places/{$canonical->id}")
-        ->assertOk()->assertJsonPath('data.photo_url', null);
-    $card = collect(app(DiscoveryFeed::class)->for(homeContext(User::factory()->onboarded()->create())))
-        ->flatMap(fn ($rail) => $rail['cards'])->firstWhere('id', "spot:{$canonical->id}");
-    expect($card)->not->toBeNull()->and($card['photo_url'])->toBeNull();
+    $this->actingAs(User::factory()->onboarded()->create());
+    $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.photo_url', null);
+    $row = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $canonical->id);
+    expect($row)->not->toBeNull()->and($row['photo_url'] ?? null)->toBeNull();
 })->with([['pending', 'active'], ['approved', 'broken']]);
 
 test('map search and Composer resolve one canonical destination', function () {
@@ -212,28 +207,16 @@ test('map search and Composer resolve one canonical destination', function () {
     expect(array_map(fn ($candidate) => $candidate->id, $candidates))->toBe(["spot:{$canonical->id}"]);
 });
 
-test('reconciliation invalidates warm discovery cells and preserves alias suppression', function () {
+test('reconciliation keeps a place to one entry in what is open nearby', function () {
     [$alias, $canonical] = identityPair();
-    $user = User::factory()->onboarded()->create(['veedel' => 'Ehrenfeld']);
-    $feed = app(DiscoveryFeed::class);
-    $context = homeContext($user, ['originLat' => 50.95, 'originLng' => 6.95]);
-    $ids = fn () => collect($feed->for($context))->flatMap(fn ($rail) => $rail['cards'])->pluck('id')->all();
-    expect($ids())->toContain("spot:{$alias->id}");
+    foreach ([$alias, $canonical] as $spot) {
+        $spot->update(['tags' => ['opening_hours' => 'Mo-Su 06:00-22:00'], 'public_access_allowed' => true]);
+    }
+    $at = CarbonImmutable::parse('2026-09-30 14:30', 'Europe/Berlin');
+    $ids = fn () => app(OpenNearby::class)->around(50.95, 6.95, $at, ['park'], limit: 20)->pluck('id')->all();
+    expect($ids())->toContain($alias->id);
     reconcileIdentity($alias, $canonical);
-    expect($ids())->not->toContain("spot:{$alias->id}")->toContain("spot:{$canonical->id}");
-    SpotFeedback::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'state' => 'not_interested']);
-    expect($ids())->not->toContain("spot:{$canonical->id}");
-});
-
-test('neighbourhood directories count canonical destinations only', function () {
-    [$alias, $canonical] = identityPair();
-    DB::table('veedels')->insert(['name' => 'Test area', 'bezirk' => 'Test district']);
-    $alias->update(['veedel' => 'Test area']);
-    $canonical->update(['veedel' => 'Test area']);
-    reconcileIdentity($alias, $canonical);
-    expect(app(VeedelDirectory::class)->bezirkRail(null)[0]['count'])->toBe(1);
-    $canonical->update(['is_recommendable' => false]);
-    expect(app(VeedelDirectory::class)->veedelsByBezirk())->toBe([]);
+    expect($ids())->toBe([$canonical->id]);
 });
 
 test('catalogue replacement and pruning refuse to destroy retained identity references', function () {
@@ -250,18 +233,14 @@ test('saved Composer snapshots normalize identity without changing timing or oth
     $user = User::factory()->onboarded()->create();
     $slot = ['id' => "spot:{$alias->id}", 'name' => $alias->name, 'start_at' => now()->addHour()->toIso8601String(), 'end_at' => now()->addHours(2)->toIso8601String(), 'travel_min_from_previous' => 7];
     $plan = ['constraints' => ['window_start' => now()->toIso8601String(), 'window_end' => now()->addHours(4)->toIso8601String()], 'slots' => [$slot], 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"], 'rejected' => [["spot:{$alias->id}", 'event:42']]];
-    app(TodayPlanStore::class)->save($user, $plan, 'Saved before reconciliation');
+    $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
     reconcileIdentity($alias, $canonical);
     $normalized = app(PlaceIdentity::class)->normalizePlan($plan);
 
     expect($normalized['slots'][0])->toBe([...$slot, 'id' => "spot:{$canonical->id}"])
         ->and($normalized['pins'])->toBe(["spot:{$canonical->id}"])
         ->and($normalized['excluded'])->toBe(["spot:{$canonical->id}"])
-        ->and($normalized['rejected'][0])->toBe(["spot:{$canonical->id}", 'event:42'])
-        ->and(app(TodayPlanStore::class)->get($user)['slots'][0])->toMatchArray([
-            'id' => "spot:{$canonical->id}", 'name' => $canonical->name,
-            'start_at' => $slot['start_at'], 'end_at' => $slot['end_at'], 'travel_min_from_previous' => 7,
-        ]);
+        ->and($normalized['rejected'][0])->toBe(["spot:{$canonical->id}", 'event:42']);
 });
 
 test('Composer honors old identity pins locks and exclusions after reconciliation', function () {
@@ -272,11 +251,11 @@ test('Composer honors old identity pins locks and exclusions after reconciliatio
     $start = now('Europe/Berlin')->addDay()->setTime(12, 0);
     $constraints = ['window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String()];
     $this->actingAs($user)->postJson('/composer/compose', ['constraints' => $constraints, 'locked' => ["spot:{$alias->id}"]])->assertOk();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['pins'])->toBe(["spot:{$canonical->id}"])
         ->and(array_column($stored['slots'], 'id'))->toContain("spot:{$canonical->id}");
     $this->postJson('/composer/compose', ['constraints' => $constraints, 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"]])->assertOk();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['excluded'])->toBe(["spot:{$canonical->id}"])
         ->and(array_column($stored['slots'], 'id'))->not->toContain("spot:{$canonical->id}");
 });
@@ -319,21 +298,17 @@ test('events and destination context remain accessible through the old place URL
     expect($child->fresh()->parent_spot_id)->toBe($canonical->id);
 });
 
-test('repeating an existing canonical choice supersedes newer alias feedback and reviews', function () {
+test('repeating an existing canonical choice supersedes newer alias feedback', function () {
     [$alias, $canonical] = identityPair();
     $user = User::factory()->onboarded()->create();
     SpotFeedback::factory()->create(['spot_id' => $canonical->id, 'user_id' => $user->id, 'state' => 'saved', 'rating' => null, 'updated_at' => now()->subDays(2)]);
     SpotFeedback::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'state' => 'not_interested', 'updated_at' => now()->subDay()]);
-    Review::factory()->create(['spot_id' => $canonical->id, 'user_id' => $user->id, 'rating' => 3, 'body' => 'Same review', 'updated_at' => now()->subDays(2)]);
-    Review::factory()->create(['spot_id' => $alias->id, 'user_id' => $user->id, 'rating' => 1, 'updated_at' => now()->subDay()]);
     reconcileIdentity($alias, $canonical);
     $this->actingAs($user)->postJson("/api/places/{$alias->id}/feedback", ['action' => 'saved'])->assertOk();
     $this->getJson("/api/places/{$canonical->id}")->assertOk()->assertJsonPath('data.feedback_state', 'saved');
-    $this->postJson("/explore/{$alias->id}/reviews", ['rating' => 3, 'body' => 'Same review'])->assertCreated();
-    expect($canonical->fresh()->rating)->toBe(3.0);
 });
 
-test('an unavailable canonical place cannot silently remove a saved slot or shift the swap target', function () {
+test('an unavailable canonical place cannot be pinned into a new plan', function () {
     [$alias, $canonical] = identityPair();
     $user = User::factory()->onboarded()->create();
     $start = CarbonImmutable::now('Europe/Berlin')->addDay()->setTime(12, 0);
@@ -341,51 +316,9 @@ test('an unavailable canonical place cannot silently remove a saved slot or shif
     $candidate = app(CandidateRepository::class)->byIds(["spot:{$alias->id}"], $start)[0];
     $slot = new PlanSlot($candidate, $start, $start->addHour(), 0);
     $plan = ['constraints' => $constraints->toArray(), 'slots' => [$slot->toArray()], 'origin' => [50.95, 6.95]];
-    Cache::put("composer:plan:{$user->id}", $plan, 3600);
+    $plan = storeComposerPlan($user, $plan);
     reconcileIdentity($alias, $canonical);
     $canonical->update(['is_recommendable' => false]);
 
-    $this->actingAs($user)->postJson('/composer/swap', ['slot' => 0])->assertConflict();
-    expect(Cache::get("composer:plan:{$user->id}"))->toBe($plan);
-    $this->postJson('/composer/compose', ['constraints' => $constraints->toArray(), 'pins' => ["spot:{$alias->id}"]])->assertUnprocessable();
-});
-
-test('a request bound before reconciliation writes its review to the current canonical identity', function () {
-    [$alias, $canonical] = identityPair();
-    $boundBeforeReconciliation = Spot::query()->findOrFail($alias->id);
-    $user = User::factory()->onboarded()->create();
-    reconcileIdentity($alias, $canonical);
-    $request = Request::create('/review', 'POST', ['rating' => 4, 'body' => 'Current choice']);
-    $request->setUserResolver(fn () => $user);
-    app(ReviewController::class)->store($request, $boundBeforeReconciliation);
-
-    expect(Review::query()->sole()->spot_id)->toBe($canonical->id)
-        ->and($canonical->fresh()->rating)->toBe(4.0);
-});
-
-test('swapping a later slot preserves an old identity outside the nearest candidate pool', function () {
-    [$alias, $canonical] = identityPair();
-    $alias->update(['lat' => 50.953]);
-    $canonical->update(['lat' => 50.953]);
-    $cafe = Spot::factory()->create(['name' => 'Original cafe', 'category' => 'cafe', 'lat' => 50.95, 'lng' => 6.95]);
-    Spot::factory()->create(['name' => 'Alternative cafe', 'category' => 'cafe', 'lat' => 50.95001, 'lng' => 6.95]);
-    foreach (range(1, 13) as $index) {
-        Spot::factory()->create(['name' => "Nearby park {$index}", 'category' => 'park', 'lat' => 50.9501, 'lng' => 6.95]);
-    }
-    $user = User::factory()->onboarded()->create();
-    $start = CarbonImmutable::now('Europe/Berlin')->addDay()->setTime(12, 0);
-    $constraints = new Constraints($start, $start->addHours(5));
-    $repository = app(CandidateRepository::class);
-    $old = $repository->byIds(["spot:{$alias->id}"], $start)[0];
-    $second = $repository->byIds(["spot:{$cafe->id}"], $start)[0];
-    $firstSlot = (new PlanSlot($old, $start, $start->addHour(), 0))->toArray();
-    $secondSlot = (new PlanSlot($second, $start->addHour()->addMinutes(10), $start->addHours(2)->addMinutes(10), 10))->toArray();
-    Cache::put("composer:plan:{$user->id}", ['constraints' => $constraints->toArray(), 'slots' => [$firstSlot, $secondSlot], 'origin' => [50.95, 6.95]], 3600);
-    reconcileIdentity($alias, $canonical);
-    expect(array_column($repository->candidatesFor($constraints, 50.95, 6.95), 'id'))->not->toContain("spot:{$canonical->id}");
-    $response = $this->actingAs($user)->postJson('/composer/swap', ['slot' => 1])->assertOk();
-    $response->assertJsonPath('plan.slots.0.id', "spot:{$canonical->id}")
-        ->assertJsonPath('plan.slots.0.start_at', $firstSlot['start_at'])
-        ->assertJsonPath('plan.slots.0.end_at', $firstSlot['end_at']);
-    expect($response->json('plan.slots.1.id'))->not->toBe("spot:{$cafe->id}");
+    $this->actingAs($user)->postJson('/composer/compose', ['constraints' => $constraints->toArray(), 'pins' => ["spot:{$alias->id}"]])->assertUnprocessable();
 });

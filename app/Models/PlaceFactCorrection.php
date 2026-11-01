@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Places\PlaceFacts;
 use Database\Factories\PlaceFactCorrectionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,21 @@ class PlaceFactCorrection extends Model
 {
     /** @use HasFactory<PlaceFactCorrectionFactory> */
     use HasFactory;
+
+    /**
+     * A place's stored public-access flag is derived from its observations
+     * and corrections; recompute it whenever one is written or removed.
+     */
+    protected static function booted(): void
+    {
+        $refresh = fn (PlaceFactCorrection $correction) => app(PlaceFacts::class)->refreshPublicAccess([
+            $correction->spot_id,
+            $correction->getOriginal('spot_id'),
+        ]);
+
+        static::saved($refresh);
+        static::deleted($refresh);
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

@@ -9,6 +9,8 @@ use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CologneServiceArea;
+use App\Support\EventCancellation;
+use App\Support\OfficialEventSchedule;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Carbon;
@@ -145,9 +147,11 @@ class ImportOfficialEvents extends Command
         array &$metrics,
     ): void {
         [$startsAt, $endsAt] = $this->parseSchedule($record);
-        $isMultiDay = ! $startsAt->isSameDay($endsAt);
-        $recurrenceUntil = $isMultiDay ? $endsAt->copy()->endOfDay() : null;
-        if ($isMultiDay && filled($record['uhrzeit'] ?? null)) {
+        $sourceEndDate = $this->parseDate($record['endedatum'] ?? null);
+        $isMultiDay = $sourceEndDate !== null && ! $startsAt->isSameDay($sourceEndDate);
+        $scheduleIsClear = OfficialEventSchedule::isUnambiguous($record);
+        $recurrenceUntil = $isMultiDay ? $sourceEndDate->copy()->endOfDay() : null;
+        if ($isMultiDay && $endsAt !== null && filled($record['uhrzeit'] ?? null)) {
             $endsAt = $startsAt->copy()->setTime($endsAt->hour, $endsAt->minute);
         }
         $title = $this->cleanText($record['title'] ?? null);
@@ -168,7 +172,7 @@ class ImportOfficialEvents extends Command
             && ($event->title !== $title || $event->description !== $description);
         $classifierInputChanged = $event->exists && ($copyChanged
             || ! $event->starts_at?->equalTo($startsAt)
-            || ! $event->ends_at?->equalTo($endsAt)
+            || $event->ends_at?->toIso8601String() !== $endsAt?->toIso8601String()
             || $event->location_name !== $locationName
             || $event->address !== $address
             || $event->price_text !== $priceText);
@@ -198,11 +202,19 @@ class ImportOfficialEvents extends Command
             'tags' => $this->mergedTags($event->tags ?? [], $record, $isMultiDay, filled($record['uhrzeit'] ?? null)),
             'organiser_id' => $organiserId,
             'quality_score' => $this->qualityScore($description, $locationName, $address, $startsAt, $priceText),
-            'status' => 'active',
+            'status' => match (true) {
+                EventCancellation::said((string) $title, $description) => 'cancelled',
+                $scheduleIsClear => 'active',
+                default => 'hidden',
+            },
             'verified_at' => now(),
             'recurrence' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? 'FREQ=DAILY' : null,
             'recurrence_until' => $isMultiDay && filled($record['uhrzeit'] ?? null) ? $recurrenceUntil : null,
         ]);
+
+        if (! $scheduleIsClear) {
+            $event->needs_review = true;
+        }
 
         if ($copyChanged) {
             $event->fill([
@@ -234,7 +246,7 @@ class ImportOfficialEvents extends Command
         $this->storeTrustedCoordinates($event, $record, $serviceArea, $metrics);
         $this->captureTeaserImage($event, $record, $captureMediaCandidate);
 
-        if ($contentChanged) {
+        if ($contentChanged && $event->status !== 'cancelled') {
             ProcessEventJob::dispatch($event);
         }
 
@@ -325,16 +337,20 @@ class ImportOfficialEvents extends Command
         );
     }
 
-    /** @param array<string, mixed> $record
-     * @return array{Carbon, Carbon}
+    /** A listing's own times: an end only when it gives one, and no date made up.
+     *
+     * @param  array<string, mixed>  $record
+     * @return array{Carbon, ?Carbon}
      */
     private function parseSchedule(array $record): array
     {
-        $startDate = $this->parseDate($record['beginndatum'] ?? null) ?? now()->startOfDay();
+        $startDate = $this->parseDate($record['beginndatum'] ?? null)
+            ?? throw new \InvalidArgumentException('No event date.');
         $endDate = $this->parseDate($record['endedatum'] ?? null) ?? $startDate->copy();
         $time = preg_replace('/\s+/u', ' ', trim((string) ($record['uhrzeit'] ?? '')));
 
-        if (preg_match('/(?<sh>\d{1,2})(?::(?<sm>\d{2}))?\s*(?:bis|[-–])\s*(?<eh>\d{1,2})(?::(?<em>\d{2}))?\s*Uhr/iu', $time, $match)) {
+        if (preg_match('/(?<sh>\d{1,2})(?::(?<sm>\d{2}))?\s*(?:bis|[-–])\s*(?<eh>\d{1,2})(?::(?<em>\d{2}))?\s*Uhr/iu', $time, $match)
+            || preg_match('/(?<![\d:])(?<sh>\d{1,2}):(?<sm>\d{2})\s*(?:bis|[-–])\s*(?<eh>\d{1,2}):(?<em>\d{2})(?![\d:])/iu', $time, $match)) {
             if (! $this->validClock($match['sh'], $match['sm'] ?? null)
                 || ! $this->validClock($match['eh'], $match['em'] ?? null)) {
                 throw new \InvalidArgumentException('Invalid event time.');
@@ -354,7 +370,7 @@ class ImportOfficialEvents extends Command
             }
             $startsAt = $startDate->copy()->setTime((int) $match['h'], (int) (($match['m'] ?? '') ?: 0));
 
-            return [$startsAt, $startsAt->copy()->addHours(2)];
+            return [$startsAt, null];
         }
 
         return [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()];
@@ -414,12 +430,22 @@ class ImportOfficialEvents extends Command
             return [false, null];
         }
 
-        if (preg_match('/\b(kostenlos|eintritt\s+frei|frei|gratis)\b/iu', $priceText)) {
+        $normalized = trim((string) preg_replace('/\s+/u', ' ', $priceText));
+        if (preg_match('/^(?:(?:die (?:teilnahme(?: an der führung)?|veranstaltung|ausstellung|aktion)|das ferienprogramm|der eintritt) ist )?(?:kostenlos|kostenfrei|(?:eintritt )?frei|gratis)\.?(?: spenden sind willkommen\.?)?$/iu', $normalized)) {
             return [true, null];
         }
 
-        if (preg_match('/(\d+(?:[,.]\d{1,2})?)/', $priceText, $match)) {
-            return [false, (float) str_replace(',', '.', $match[1])];
+        if (preg_match('/\b(kostenlos|kostenfrei|frei|gratis)\b/iu', $normalized)) {
+            return [false, null];
+        }
+
+        preg_match_all('/(\d+(?:[,.]\d{1,2})?)\s*(?:Euro\b|€)/iu', $normalized, $matches);
+        $prices = array_values(array_unique(array_map(
+            fn (string $price): float => (float) str_replace(',', '.', $price),
+            $matches[1],
+        )));
+        if (count($prices) === 1) {
+            return [false, $prices[0]];
         }
 
         return [false, null];
@@ -427,13 +453,16 @@ class ImportOfficialEvents extends Command
 
     private function category(string $text): EventCategory
     {
+        // A first guess from the words, until the classifier sorts it (ProcessEventJob).
         return match (true) {
-            (bool) preg_match('/sprach|language|tandem|deutschkurs/iu', $text) => EventCategory::LanguageExchange,
-            (bool) preg_match('/stammtisch/iu', $text) => EventCategory::Stammtisch,
-            (bool) preg_match('/international|interkulturell|begegnung|network/iu', $text) => EventCategory::IntlMeetup,
+            (bool) preg_match('/sprachcaf|sprachtreff|language|tandem|stammtisch|international|interkulturell|begegnung|repair ?caf|lesekreis|strick|nachbarschaft/iu', $text) => EventCategory::MeetPeople,
+            (bool) preg_match('/kinder|kita|familie|vorlese|märchen|basteln|ferien|jugend|baby/iu', $text) => EventCategory::Kids,
+            (bool) preg_match('/festival|weihnachtsmarkt|flohmarkt|markt\b|kirmes|karneval/iu', $text) => EventCategory::Festivals,
+            (bool) preg_match('/führung|rundgang|stadtspaziergang/iu', $text) => EventCategory::Tours,
+            (bool) preg_match('/theater|kabarett|comedy|lesung|literar|oper\b|musical|zirkus/iu', $text) => EventCategory::Stage,
+            (bool) preg_match('/konzert|musik|chor\b|orchester|jazz/iu', $text) => EventCategory::Music,
+            (bool) preg_match('/party|clubbing|tanzparty/iu', $text) => EventCategory::Party,
             (bool) preg_match('/sport|lauf|rad|yoga|fitness|schwimm|wander/iu', $text) => EventCategory::Sports,
-            (bool) preg_match('/party|clubbing|dance|tanzparty/iu', $text) => EventCategory::Party,
-            (bool) preg_match('/konzert|musik|museum|ausstellung|führung|theater|kino|film|lesung|literar|kunst/iu', $text) => EventCategory::Culture,
             default => EventCategory::Other,
         };
     }
@@ -448,6 +477,7 @@ class ImportOfficialEvents extends Command
         $preserved = array_values(array_filter($existing, fn (string $tag): bool => $tag !== 'official-city'
             && $tag !== 'multi-day'
             && $tag !== 'multi-day-uncertain'
+            && $tag !== 'schedule-uncertain'
             && ! str_starts_with($tag, 'district:')
             && ! str_starts_with($tag, 'veedel:')));
 
@@ -457,6 +487,7 @@ class ImportOfficialEvents extends Command
             filled($record['stadtteil'] ?? null) ? 'veedel:'.trim((string) $record['stadtteil']) : null,
             $multiDay ? 'multi-day' : null,
             $multiDay && ! $hasDailyHours ? 'multi-day-uncertain' : null,
+            ! OfficialEventSchedule::isUnambiguous($record) ? 'schedule-uncertain' : null,
         ])]));
     }
 

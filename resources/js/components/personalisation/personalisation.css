@@ -1,0 +1,146 @@
+/* Why am I seeing this? and How we rank (why-sheet.tsx, how-we-rank.tsx). */
+
+.why-facts {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+}
+.why-facts li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: var(--text-body);
+    line-height: 1.45;
+}
+.why-facts svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: var(--color-success);
+}
+.why-actions {
+    display: grid;
+    gap: 8px;
+}
+.why-actions > :is(button, a) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.why-actions > :is(button, a):hover {
+    background: var(--color-bg-quiet);
+}
+.why-actions svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+
+.how-we-rank h3 {
+    margin: 14px 0 8px;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+.how-we-rank h3:first-child {
+    margin-top: 0;
+}
+.how-we-rank p {
+    margin: 0;
+    font-size: var(--text-control);
+    line-height: 1.5;
+}
+.how-we-rank-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.how-we-rank-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.how-we-rank-list strong {
+    display: block;
+}
+.how-we-rank-num {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+.how-we-rank .how-we-rank-paid {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px dashed var(--color-border-strong, var(--color-border));
+    border-radius: var(--radius-lg);
+    font-weight: var(--weight-semibold);
+}
+.how-we-rank-paid svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+.how-we-rank .how-we-rank-fine {
+    margin-top: 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.how-we-rank .how-we-rank-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+.how-we-rank-row a {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.how-we-rank-link {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}

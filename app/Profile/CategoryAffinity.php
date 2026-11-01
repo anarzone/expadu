@@ -5,12 +5,11 @@ namespace App\Profile;
 use App\Enums\Situation;
 
 /**
- * Deterministic situation→category affinity — the home feed's lead ranking
- * signal and the composer's kid-friendliness source. No ML: the user's
- * situation (plus a couple of life-event attributes and how recently they
- * arrived) decides which kinds of places matter, so a family, a student and a
- * freelancer see genuinely different feeds even before any behaviour is
- * learned. Shared by DiscoveryFeed (home) and PlanScorer (composer).
+ * Deterministic situation→category affinity: a ranking signal and the
+ * kid-friendliness source. No ML: the user's situation (plus a couple of
+ * life-event attributes and how recently they arrived) decides which kinds of
+ * places matter, so a family, a student and a freelancer get genuinely
+ * different suggestions even before any behaviour is learned.
  */
 class CategoryAffinity
 {
@@ -87,16 +86,6 @@ class CategoryAffinity
         if (self::isNewArrival($profile)) {
             foreach (self::LANDMARK as $category) {
                 $map[$category] = self::BOOST;
-            }
-        }
-
-        // Explicit interests (user-picked) are the strongest cold-start signal:
-        // they outrank a merely situation-fit category, so picking "Museums"
-        // surfaces museums above the parks a settled employee also gets. Never
-        // lifts a category we've demoted for kid-safety.
-        foreach (Interest::categoriesFor($profile->interests) as $category) {
-            if (($map[$category] ?? self::NEUTRAL) > self::DEMOTE) {
-                $map[$category] = self::STRONG;
             }
         }
 

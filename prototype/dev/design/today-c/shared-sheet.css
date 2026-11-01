@@ -1,0 +1,77 @@
+/* The shared dialog host without importing another page's shell or layout. */
+:where(.today-c #shared-dialog) {
+    --blue: #dff3f7;
+    --muted: #5e6e73;
+    --line: #d4e2e7;
+    border: 0;
+    overflow: hidden;
+}
+.today-c #shared-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+:where(.today-c #shared-dialog) .dialog-head {
+    display: flex;
+    justify-content: space-between;
+}
+:where(.today-c #shared-dialog) button {
+    border: 0;
+    background: none;
+    padding: 0;
+}
+:where(.today-c #shared-dialog) svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+:where(.today-c #shared-dialog) .icon-button {
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+}
+:where(.today-c #shared-dialog) .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+:where(.today-c #shared-dialog) .button.primary {
+    background: var(--action);
+    color: #fff;
+}
+:where(.today-c #shared-dialog) .button.secondary {
+    color: var(--ink);
+}
+:where(.today-c #shared-dialog) :is(button, a, input, summary):focus-visible {
+    outline: 2px solid #397988;
+    outline-offset: -3px;
+}
+:where(.today-c #shared-dialog) :is(input, select) {
+    font: inherit;
+    color: inherit;
+}
+:where(.today-c #shared-dialog) .muted {
+    color: var(--muted);
+}
+:where(.today-c #shared-dialog) [hidden] {
+    display: none;
+}
+:where(.today-c #shared-dialog) .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}

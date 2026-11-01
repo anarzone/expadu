@@ -35,6 +35,12 @@ class TravelEstimator implements EstimatesTravel
 
     public function minutesBetween(float $fromLat, float $fromLng, float $toLat, float $toLng): int
     {
+        // A leg to or from an unroutable place (no map point) is not estimated;
+        // the plan marks it as travel unknown instead of showing minutes.
+        if (! is_finite($fromLat) || ! is_finite($fromLng) || ! is_finite($toLat) || ! is_finite($toLng)) {
+            return 0;
+        }
+
         return self::minutesFromKm($this->haversineKm($fromLat, $fromLng, $toLat, $toLng));
     }
 
@@ -59,10 +65,16 @@ class TravelEstimator implements EstimatesTravel
             TransportMode::Walk => max(1, (int) ceil($km / self::WALK_KMH * 60)),
             TransportMode::Bike => max(1, (int) ceil($km / self::BIKE_KMH * 60)),
             // transit / unset → the composer's distance-tiered model (unchanged).
-            default => $km <= self::WALK_MAX_KM
+            default => self::walks($km)
                 ? max(1, (int) ceil($km / self::WALK_KMH * 60))
                 : self::TRANSIT_OVERHEAD_MIN + (int) ceil($km / self::TRANSIT_KMH * 60),
         };
+    }
+
+    /** Whether the distance-tiered model walks this far (rather than taking transit). */
+    public static function walks(float $km): bool
+    {
+        return $km <= self::WALK_MAX_KM;
     }
 
     public function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float

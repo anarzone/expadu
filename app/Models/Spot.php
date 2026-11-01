@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
@@ -133,6 +134,18 @@ class Spot extends Model
             ->orderBy('id');
     }
 
+    /** @return HasMany<SpotEnrichment, $this> */
+    public function enrichments(): HasMany
+    {
+        return $this->hasMany(SpotEnrichment::class);
+    }
+
+    /** @return HasOne<SpotEnrichment, $this> */
+    public function englishEnrichment(): HasOne
+    {
+        return $this->hasOne(SpotEnrichment::class)->visibleEnglish();
+    }
+
     /** @return MorphMany<MediaAttachment, $this> */
     public function mediaAttachments(): MorphMany
     {
@@ -182,6 +195,35 @@ class Spot extends Model
                     [(float) $spot->lng, (float) $spot->lat, $spot->id]
                 );
             }
+
+            if ($spot->sourceAttributesWereChanged()) {
+                SpotEnrichment::markReadyAsStaleForSpots([$spot->id]);
+            }
+
+            // The access rule falls back to source tags and source identity.
+            if ($spot->wasRecentlyCreated || $spot->wasChanged(['tags', 'source', 'source_id'])) {
+                app(PlaceFacts::class)->refreshPublicAccess([$spot->id]);
+            }
         });
+    }
+
+    private function sourceAttributesWereChanged(): bool
+    {
+        return $this->wasChanged([
+            'name',
+            'category',
+            'cuisine',
+            'tags',
+            'description',
+            'address',
+            'veedel',
+            'park_name',
+            'opening_hours',
+            'is_active',
+            'is_recommendable',
+            'is_verified',
+            'phone',
+            'website',
+        ]);
     }
 }

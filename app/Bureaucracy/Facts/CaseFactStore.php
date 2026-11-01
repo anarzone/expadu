@@ -2,6 +2,7 @@
 
 namespace App\Bureaucracy\Facts;
 
+use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyFactConflict;
@@ -14,7 +15,7 @@ final class CaseFactStore
     /** @var list<string> */
     private const ONBOARDING_OWNED_SOURCES = ['onboarding', 'legacy_profile'];
 
-    public function __construct(private FactRegistry $registry) {}
+    public function __construct(private FactRegistry $registry, private EnsureAccountHolder $holders) {}
 
     /**
      * @param  array<string, mixed>  $facts
@@ -30,10 +31,10 @@ final class CaseFactStore
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $case = BureaucracyCase::query()->firstOrCreate(
-                ['user_id' => $lockedUser->getKey()],
-                ['status' => 'active'],
-            );
+            $case = $this->holders->dossier($lockedUser);
+            if ($case->status === 'erased') {
+                return $case;
+            }
 
             $lockedCase = BureaucracyCase::query()
                 ->whereKey($case->getKey())
@@ -87,10 +88,10 @@ final class CaseFactStore
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $case = BureaucracyCase::query()->firstOrCreate(
-                ['user_id' => $lockedUser->getKey()],
-                ['status' => 'active'],
-            );
+            $case = $this->holders->dossier($lockedUser);
+            if ($case->status === 'erased') {
+                throw new DomainException('This dossier was erased. Start a new record explicitly before adding facts.');
+            }
             $caseWasCreated = $case->wasRecentlyCreated;
 
             $lockedCase = BureaucracyCase::query()
@@ -144,11 +145,10 @@ final class CaseFactStore
                 }
 
                 // A hand-answered onboarding also overrides whatever the QA
-                // persona switcher seeded. ApplyOnboardingAnswers already
-                // states that intent — it clears the `qa_persona` badge —  but
-                // the persona's FACTS stayed confirmed, so every answer that
-                // disagreed with the synthetic persona came back to the user as
-                // "two answers do not match" about answers they only gave once.
+                // persona switcher seeded. Left confirmed, the persona's facts
+                // made every answer that disagreed with the synthetic persona
+                // come back to the user as "two answers do not match" about
+                // answers they only gave once.
                 $supersedes = $existing->source === $source
                     || (in_array($source, self::ONBOARDING_OWNED_SOURCES, true)
                         && str_starts_with((string) $existing->source, 'qa_scenario:'));

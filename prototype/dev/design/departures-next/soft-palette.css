@@ -1,0 +1,88 @@
+/* Travel's accepted "warm paper & Lagoon" colours (4 October) are now the
+   shared tokens in connected/tokens.css, used by every page. Only Travel's
+   layout and component rules remain here. */
+
+/* One connected planner, without another coloured box around each input group. */
+body.travel-palette .journey-desk {
+    box-shadow: none;
+}
+body.travel-palette .journey-fields > .swap {
+    background-color: transparent;
+}
+body.travel-palette .journey-fields {
+    background-color: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+}
+body.travel-palette .field:focus-within {
+    background-color: transparent;
+    border-radius: 0;
+    outline: none;
+}
+body.travel-palette .field:focus-within label {
+    color: var(--teal);
+    font-weight: 600;
+}
+body.travel-palette .from-field::after {
+    background: var(--line);
+}
+body.travel-palette .journey-fields > .swap:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -6px;
+}
+body.travel-palette .segmented [aria-pressed='true'] {
+    background-color: var(--blue);
+    color: var(--teal);
+    box-shadow: none;
+}
+body.travel-palette #shell .services a[aria-current='page'] {
+    background-color: var(--blue);
+}
+
+/* Preserve immediate feedback without adding permanent nested surfaces. */
+@media (hover: hover) {
+    body.travel-palette.departures-page :is(.icon-button, .quiet-button):hover,
+    body.travel-palette .segmented button:not([aria-pressed='true']):hover,
+    body.travel-palette .suggestions button:hover {
+        background-color: var(--surface-hover);
+    }
+}
+body.travel-palette.departures-page :is(.icon-button, .quiet-button):active,
+body.travel-palette .segmented button:not([aria-pressed='true']):active {
+    background-color: var(--surface-hover);
+}
+
+/* The swap stays part of the input surface in every pointer state. */
+body.travel-palette.departures-page
+    .journey-fields
+    > .swap:is(:hover, :active) {
+    background-color: transparent;
+    color: var(--teal);
+}
+
+/* Navigation and sheet fades use the same near-white surface as the header. */
+body.travel-palette .nav-topbar {
+    background-color: var(--surface);
+}
+body.travel-palette .detail-footer {
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--surface) 92%, transparent) 22px,
+        var(--surface) 70%
+    );
+}
+
+@media (max-width: 700px) {
+    body.travel-palette .nav-topbar {
+        background: linear-gradient(
+            color-mix(in srgb, var(--surface) 96%, transparent) 68%,
+            transparent
+        );
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    body.travel-palette .detail-footer {
+        background: var(--surface);
+    }
+}

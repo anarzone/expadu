@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Services\GeocodingService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Cache::flush();
@@ -64,6 +65,17 @@ test('geocoding service returns empty array when api returns no features', funct
     $results = $service->search('random query for empty test');
 
     expect($results)->toBeArray()->toBeEmpty();
+});
+
+test('geocoding uses the shared search default while explicit coordinates win', function () {
+    config(['geocoding.search_default.lat' => 48.14, 'geocoding.search_default.lng' => 11.58]);
+    $service = new GeocodingService;
+
+    $service->search('Configured default');
+    $service->search('Explicit point', 52.52, 13.41);
+
+    Http::assertSent(fn ($request) => $request['q'] === 'Configured default' && $request['lat'] === 48.14 && $request['lon'] === 11.58);
+    Http::assertSent(fn ($request) => $request['q'] === 'Explicit point' && $request['lat'] === 52.52 && $request['lon'] === 13.41);
 });
 
 // Rate limiting test removed — no rate limit middleware on geocode route currently.

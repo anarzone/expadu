@@ -16,6 +16,9 @@ class SlotFiller
 {
     public const MAX_SLOTS_PER_DAY = 6;
 
+    /** Stops a day holds besides their own appointments when they don't say how many (owner, 24 Oct 2026: 3–4). */
+    public const SENSIBLE_STOPS = 4;
+
     /**
      * Two spots that share a visible name collapse to one only when they sit
      * this close — a single facility OSM split across polygons (a park, a
@@ -24,10 +27,24 @@ class SlotFiller
      */
     private const SAME_PLACE_METERS = 250.0;
 
+    /** @var array<string, float> candidate id → the score it won its slot with, for the last fill() */
+    private array $pickedScores = [];
+
     public function __construct(
         private readonly PlanScorer $scorer,
         private readonly EstimatesTravel $travel,
     ) {}
+
+    /**
+     * The score each greedily placed candidate won its slot with in the last
+     * fill() (appointments, pins and anchors aren't scored).
+     *
+     * @return array<string, float>
+     */
+    public function pickedScores(): array
+    {
+        return $this->pickedScores;
+    }
 
     /**
      * @param  list<Candidate>  $feasible
@@ -43,6 +60,7 @@ class SlotFiller
         ?array $roles = null,
         int $sameCoarseCap = PHP_INT_MAX,
     ): Plan {
+        $this->pickedScores = [];
         $slots = [];
         $used = [];
         // Visible-name de-dup, location-aware: a name placed once blocks another
@@ -190,7 +208,7 @@ class SlotFiller
         foreach ([...$slots, null] as $next) {
             $gapEnd = $next?->startAt ?? $constraints->windowEnd;
             $travelMin = $this->travel->minutesBetween($lat, $lng, $pin->lat, $pin->lng);
-            $start = $pin->nextVisitStart($cursor->addMinutes($travelMin), $gapEnd);
+            $start = $pin->nextVisitStart(self::fiveUp($cursor->addMinutes($travelMin)), $gapEnd);
             if ($start === null) {
                 if ($next !== null) {
                     $cursor = $next->endAt;
@@ -247,7 +265,7 @@ class SlotFiller
         foreach ($roles as $role) {
             $placed = 0;
 
-            while ($placed < $role->count && count($slots) < self::MAX_SLOTS_PER_DAY) {
+            while ($placed < $role->count && ! $this->full($slots, $constraints)) {
                 [$cursor, $cursorLat, $cursorLng] = $this->advancePastAnchors($slots, $cursor, $cursorLat, $cursorLng);
 
                 $gapEnd = $this->nextAnchorStart($slots, $cursor) ?? $constraints->windowEnd;
@@ -265,8 +283,9 @@ class SlotFiller
                     continue;
                 }
 
-                [$candidate, $travelMin, $start] = $best;
+                [$candidate, $travelMin, $start, $score] = $best;
                 $end = $start->addMinutes($candidate->typicalDurationMin);
+                $this->pickedScores[$candidate->id] = round($score, 3);
 
                 $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
                 $used[$candidate->id] = true;
@@ -376,7 +395,9 @@ class SlotFiller
             }
 
             $travelMin = $this->travel->minutesBetween($cursorLat, $cursorLng, $candidate->lat, $candidate->lng);
-            $arrival = $cursor->addMinutes($travelMin);
+            // A flexible stop starts on the next 5 minutes (owner, 24 Oct 2026: "10:06–11:06" read oddly);
+            // its stay is kept, and a fixed-time event keeps its own time.
+            $arrival = self::fiveUp($cursor->addMinutes($travelMin));
             if ($candidate->isFixedTime()) {
                 if ($arrival->greaterThan($candidate->fixedStart)) {
                     continue;
@@ -413,7 +434,7 @@ class SlotFiller
             $score = $this->scorer->score($candidate, $slots, $cursor, $cursorLat, $cursorLng, $context);
             if ($score > $bestScore) {
                 $bestScore = $score;
-                $best = [$candidate, $travelMin, $start];
+                $best = [$candidate, $travelMin, $start, $score];
             }
         }
 
@@ -554,5 +575,26 @@ class SlotFiller
     private function coarseOf(Candidate $candidate): string
     {
         return SpotCategory::tryFrom($candidate->category)?->coarse() ?? $candidate->category;
+    }
+
+    /** The next 5 minutes from this time (10:06 is 10:10), the time itself when it's on one. */
+    public static function fiveUp(CarbonImmutable $time): CarbonImmutable
+    {
+        $time = $time->setSecond(0)->setMicrosecond(0)->addMinutes($time->second > 0 || $time->microsecond > 0 ? 1 : 0);
+
+        return $time->addMinutes((5 - (int) $time->format('i') % 5) % 5);
+    }
+
+    /**
+     * The day is full: as many stops as they asked for ("two museums"), else a sensible day,
+     * their own appointments aside; never more than a day holds.
+     *
+     * @param  list<PlanSlot>  $slots
+     */
+    private function full(array $slots, Constraints $constraints): bool
+    {
+        $own = count(array_filter($slots, fn (PlanSlot $slot): bool => $slot->candidate->isAppointment()));
+
+        return count($slots) >= self::MAX_SLOTS_PER_DAY || count($slots) - $own >= ($constraints->stops ?? self::SENSIBLE_STOPS);
     }
 }

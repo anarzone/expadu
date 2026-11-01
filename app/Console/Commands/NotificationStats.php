@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
 
 /**
- * Interactive CLI dashboard for notification system stats.
+ * Interactive CLI overview of notification system stats.
  * Shows real data from database and Redis.
  *
  * Run: php artisan notification:stats

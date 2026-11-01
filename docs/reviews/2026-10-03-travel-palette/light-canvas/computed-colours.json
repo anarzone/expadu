@@ -1,0 +1,473 @@
+{
+    "note": "Observations taken directly after UI interactions can include intermediate CSS transition colours.",
+    "observations": [
+        {
+            "label": "planner-phone",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 565.9445610046387,
+                "color": "rgb(255, 255, 255)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 326.022705078125
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 942.6135864257812,
+                "color": "rgb(39, 36, 31)",
+                "height": 942.6135864257812,
+                "shadow": "none",
+                "width": 390
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 401.96019744873047,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.99999237060548,
+                "shadow": "none",
+                "width": 326.022705078125
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 119.97869110107422,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.97869110107422,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 390
+            },
+            "height": 844,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 465.95169830322266,
+                "color": "rgb(39, 36, 31)",
+                "height": 51.99573516845703,
+                "shadow": "none",
+                "width": 326.022705078125
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 581.9389038085938,
+                "color": "rgb(39, 36, 31)",
+                "height": 315.9729919433594,
+                "shadow": "none",
+                "width": 358.0113525390625
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 461.9531059265137,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 103.33806610107422
+            },
+            "selectedView": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 241.96732711791992,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 143.91334533691406
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "width": 390
+        },
+        {
+            "label": "timetable-phone",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 0,
+                "color": "rgb(255, 255, 255)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 916.257080078125,
+                "color": "rgb(39, 36, 31)",
+                "height": 916.257080078125,
+                "shadow": "none",
+                "width": 390
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 119.97869110107422,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.97869110107422,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 390
+            },
+            "height": 844,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 0,
+                "color": "rgb(0, 117, 140)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "selectedView": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 241.96732711791992,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 143.91334533691406
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 766.26416015625,
+                "color": "rgb(39, 36, 31)",
+                "height": 366.9104919433594,
+                "shadow": "none",
+                "width": 358.0113525390625
+            },
+            "width": 390
+        },
+        {
+            "label": "planner-small-phone",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 561.9460258483887,
+                "color": "rgb(255, 255, 255)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 272.01702880859375
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 951.3139038085938,
+                "color": "rgb(39, 36, 31)",
+                "height": 951.3139038085938,
+                "shadow": "none",
+                "width": 320
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 397.96163177490234,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.99999237060548,
+                "shadow": "none",
+                "width": 272.01702880859375
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 119.97869110107422,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.97869110107422,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 320
+            },
+            "height": 843,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 461.9531021118164,
+                "color": "rgb(39, 36, 31)",
+                "height": 51.99573516845703,
+                "shadow": "none",
+                "width": 272.01702880859375
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 573.9417419433594,
+                "color": "rgb(39, 36, 31)",
+                "height": 307.975830078125,
+                "shadow": "none",
+                "width": 296.0085144042969
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 457.95454025268555,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 86.22158813476562
+            },
+            "selectedView": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 241.96732711791992,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 115.66761016845705
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "width": 320
+        },
+        {
+            "label": "planner-desktop",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 537.9616203308105,
+                "color": "rgb(255, 255, 255)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 392.4573669433594
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 654.2826538085938,
+                "color": "rgb(39, 36, 31)",
+                "height": 654.2826538085938,
+                "shadow": "none",
+                "width": 1440
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 373.97725677490234,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.99999237060548,
+                "shadow": "none",
+                "width": 392.4573669433594
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 71.99573516845703,
+                "color": "rgb(39, 36, 31)",
+                "height": 71.99573516845703,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 1440
+            },
+            "height": 950,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 437.9687271118164,
+                "color": "rgb(39, 36, 31)",
+                "height": 51.99573516845703,
+                "shadow": "none",
+                "width": 392.4573669433594
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 561.9602203369141,
+                "color": "rgb(39, 36, 31)",
+                "height": 331.9815368652344,
+                "shadow": "none",
+                "width": 440.45452880859375
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 433.97016525268555,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 125.48294830322266
+            },
+            "selectedView": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 201.9815330505371,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 127.66334533691406
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "width": 1440
+        },
+        {
+            "label": "timetable-desktop",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 0,
+                "color": "rgb(255, 255, 255)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 890.2698364257812,
+                "color": "rgb(39, 36, 31)",
+                "height": 890.2698364257812,
+                "shadow": "none",
+                "width": 1440
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 71.99573516845703,
+                "color": "rgb(39, 36, 31)",
+                "height": 71.99573516845703,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 1440
+            },
+            "height": 950,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 0,
+                "color": "rgb(0, 117, 140)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "selectedView": {
+                "background": "rgba(228, 230, 226, 0.14)",
+                "bottom": 201.9815330505371,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 126.27840423583984
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 748.2769470214844,
+                "color": "rgb(39, 36, 31)",
+                "height": 366.9104919433594,
+                "shadow": "none",
+                "width": 1176.0084228515625
+            },
+            "width": 1440
+        },
+        {
+            "label": "planner-restored",
+            "action": {
+                "background": "rgb(217, 52, 10)",
+                "bottom": 565.9445610046387,
+                "color": "rgb(255, 255, 255)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 482.3863525390625
+            },
+            "body": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 942.6135864257812,
+                "color": "rgb(39, 36, 31)",
+                "height": 942.6135864257812,
+                "shadow": "none",
+                "width": 546.3635864257812
+            },
+            "fields": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 401.96019744873047,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.99999237060548,
+                "shadow": "none",
+                "width": 482.3863525390625
+            },
+            "header": {
+                "background": "rgb(250, 249, 246)",
+                "bottom": 119.97869110107422,
+                "color": "rgb(39, 36, 31)",
+                "height": 119.97869110107422,
+                "shadow": "rgba(81, 69, 56, 0.08) 0px 1px 0px 0px",
+                "width": 546.3635864257812
+            },
+            "height": 730,
+            "modes": {
+                "background": "rgba(0, 0, 0, 0)",
+                "bottom": 465.95169830322266,
+                "color": "rgb(39, 36, 31)",
+                "height": 51.99573516845703,
+                "shadow": "none",
+                "width": 482.3863525390625
+            },
+            "overflow": false,
+            "planner": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 581.9389038085938,
+                "color": "rgb(39, 36, 31)",
+                "height": 315.9729919433594,
+                "shadow": "none",
+                "width": 514.375
+            },
+            "selectedMode": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 461.9531059265137,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 155.46163940429688
+            },
+            "selectedView": {
+                "background": "rgb(223, 243, 248)",
+                "bottom": 241.96732711791992,
+                "color": "rgb(0, 117, 140)",
+                "height": 43.99857711791992,
+                "shadow": "none",
+                "width": 153.9985809326172
+            },
+            "timetable": {
+                "background": "rgb(239, 237, 232)",
+                "bottom": 0,
+                "color": "rgb(39, 36, 31)",
+                "height": 0,
+                "shadow": "none",
+                "width": 0
+            },
+            "width": 546
+        }
+    ]
+}

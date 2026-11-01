@@ -34,8 +34,8 @@ class CologneServiceArea
     }
 
     /**
-     * Bulk-load valid Cologne coordinates without triggering Event's per-row
-     * PostGIS accessors.
+     * Bulk-load valid Cologne coordinates (the listing's, else its venue's)
+     * without triggering Event's per-row PostGIS accessors.
      *
      * @param  list<int>  $eventIds
      * @return Collection<int, object{id: int, lat: float, lng: float}>
@@ -48,11 +48,17 @@ class CologneServiceArea
             return collect();
         }
 
+        // The listing's own point, else its venue's (events:link-venues): a koeln.de listing
+        // often names only the venue, and can still be planned or answered by it.
+        $point = 'COALESCE(events.location::geometry, CASE WHEN venues.lat IS NOT NULL AND venues.lng IS NOT NULL'
+            .' THEN ST_SetSRID(ST_MakePoint(venues.lng::float8, venues.lat::float8), 4326) END)';
+
         return DB::table('events')
-            ->whereIn('id', $eventIds)
-            ->whereNotNull('location')
-            ->whereRaw('EXISTS (SELECT 1 FROM veedels WHERE boundary IS NOT NULL AND ST_Covers(boundary, events.location::geometry))')
-            ->selectRaw('id, ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng')
+            ->leftJoin('venues', 'venues.id', '=', 'events.venue_id')
+            ->whereIn('events.id', $eventIds)
+            ->whereRaw("{$point} IS NOT NULL")
+            ->whereRaw("EXISTS (SELECT 1 FROM veedels WHERE boundary IS NOT NULL AND ST_Covers(boundary, {$point}))")
+            ->selectRaw("events.id AS id, ST_Y({$point}) AS lat, ST_X({$point}) AS lng")
             ->get()
             ->keyBy('id');
     }

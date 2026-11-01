@@ -1,0 +1,541 @@
+/* Content density within the approved two-column reference. */
+.today-reference .practical-surface {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 1fr);
+}
+.today-reference .practical-personal {
+    min-width: 0;
+}
+.today-reference .practical-personal .section-head {
+    align-items: start;
+}
+.today-reference .practical-personal .section-tools {
+    gap: 4px;
+}
+.today-reference .practical-personal .record-label {
+    max-width: 74px;
+    line-height: 1.4;
+}
+.today-reference .practical-personal .paperwork-focus {
+    gap: 8px;
+}
+.today-reference .practical-personal .document-progress {
+    flex-basis: 78px;
+    width: 78px;
+    height: 78px;
+}
+.today-reference .practical-personal .paperwork-focus h3 {
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+}
+.today-reference .city-help {
+    padding-left: 20px;
+}
+.today-reference .forecast-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 52px;
+    margin: 4px 0 8px;
+    border-radius: var(--radius-md);
+    text-align: left;
+}
+.today-reference .forecast-strip > svg {
+    color: #a87408;
+    width: 24px;
+    height: 24px;
+}
+.today-reference .forecast-strip > b {
+    font-size: var(--text-title);
+    letter-spacing: -1px;
+}
+.today-reference .forecast-strip > span {
+    font-size: var(--text-micro);
+    margin-left: 4px;
+    color: var(--ink-soft);
+}
+.today-reference .forecast-strip > small {
+    flex-basis: 100%;
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.today-reference .departure-board h3 {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    margin-bottom: 6px;
+}
+.today-reference .stop-choice {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-left: 10px;
+    background: var(--blue);
+    border-radius: var(--radius-md);
+    color: var(--teal);
+}
+.today-reference .stop-choice > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.today-reference .stop-choice select {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    padding: 6px 4px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+.today-reference .board-capture {
+    margin: 8px 0 2px;
+    font-size: var(--text-micro);
+    line-height: 1.5;
+    color: var(--ink-soft);
+}
+.today-reference .board-capture > span {
+    display: inline-block;
+    margin-left: 5px;
+    font-weight: var(--weight-semibold);
+}
+/* The board's lines as Travel's strips (departures-next/strip.css); the
+   column is narrow, so they fold into rows. */
+.today-reference .departure-strips {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 4px;
+}
+.today-reference .departure-strips .nearby-strip {
+    color: var(--color-text);
+    text-decoration: none;
+}
+.today-reference .board-full {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--text-caption);
+    color: var(--action-ink);
+}
+.today-reference .around-plan {
+    padding: 14px 20px 8px;
+    margin: 0 12px;
+    background: linear-gradient(110deg, #fff1cf77, transparent);
+    border-radius: var(--radius-lg);
+}
+.today-reference .around-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.today-reference .around-heading h3 {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .around-heading small {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.today-reference .around-context {
+    font-size: var(--text-micro);
+    color: var(--ink-soft);
+    margin-top: 4px;
+}
+.today-reference .around-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+}
+.today-reference .around-open {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+    min-height: 64px;
+    border-radius: var(--radius-md);
+}
+.today-reference .around-open img,
+.today-reference .around-symbol {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+}
+.today-reference .around-symbol {
+    display: grid;
+    place-items: center;
+    color: var(--teal);
+    background: var(--blue);
+}
+.today-reference .around-open > span:last-child {
+    min-width: 0;
+}
+.today-reference .around-open strong {
+    display: block;
+    font-size: var(--text-control);
+    line-height: 1.3;
+}
+.today-reference .around-open small {
+    display: block;
+    font-size: var(--text-micro);
+    color: var(--ink-soft);
+    margin-top: 4px;
+}
+.today-reference .around-item > button:last-child {
+    color: var(--action-ink);
+    flex-shrink: 0;
+}
+.today-reference .discovery .event-card {
+    height: clamp(260px, 23vw, 320px);
+}
+.today-reference .discovery .event-copy strong {
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+}
+.today-reference .compact-events {
+    margin-top: 4px;
+}
+.today-reference .compact-event {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    position: relative;
+}
+.today-reference .compact-event + .compact-event::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: 60px 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+}
+.today-reference .compact-event-open {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    text-align: left;
+    border-radius: var(--radius-md);
+}
+.today-reference .compact-event-open > img {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.today-reference .compact-event-open > span {
+    min-width: 0;
+}
+.today-reference .compact-event-open strong {
+    display: block;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.today-reference .compact-event-open small {
+    display: block;
+    font-size: var(--text-caption);
+    color: var(--ink-soft);
+    margin-top: 4px;
+}
+.today-reference .compact-category {
+    margin-left: auto;
+    padding: 6px 8px;
+    color: #694888;
+    background: #eee7f6;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-micro);
+}
+.today-reference .compact-event .icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    flex-shrink: 0;
+    border-radius: var(--radius-round);
+}
+.today-reference .compact-plan {
+    color: var(--action-ink);
+}
+.today-reference .compact-save[aria-pressed='true'] {
+    color: var(--teal);
+    background: var(--blue);
+}
+.today-reference .discovery-sample {
+    font-size: var(--text-micro);
+    color: var(--muted);
+    padding-top: 6px;
+}
+.today-reference .draft-preview {
+    min-width: 0;
+}
+.today-reference .draft-preview summary {
+    list-style: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    min-height: 44px;
+}
+.today-reference .draft-preview summary::-webkit-details-marker {
+    display: none;
+}
+.today-reference .draft-preview summary > span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: var(--text-control);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.today-reference .draft-preview summary > small {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: var(--text-caption);
+    color: var(--action-ink);
+}
+.today-reference .draft-preview[open] summary > span {
+    display: none;
+}
+.today-reference .draft-preview[open] summary > small {
+    font-size: 0;
+}
+.today-reference .draft-preview[open] summary > small::after {
+    content: 'Close draft';
+    font-size: var(--text-caption);
+}
+.today-reference .draft-preview > p {
+    font-size: var(--text-control);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.today-reference .city-source-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin-top: 6px;
+}
+.today-reference
+    .continuity-grid.has-composer
+    .continue-support
+    > section
+    + section {
+    padding: 16px 0 0;
+}
+.today-reference
+    .continuity-grid.has-composer
+    .continue-support
+    > section
+    + section::before {
+    inset: 0 0 auto;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+.today-reference .city-source-links a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-small);
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    color: var(--teal);
+}
+.today-reference .city-source-links svg {
+    width: 18px;
+    height: 18px;
+}
+.today-reference .city-update {
+    display: grid;
+    gap: 4px;
+    padding-block: 8px;
+    font-size: var(--text-small);
+}
+.today-reference .city-update small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.today-reference .continuity-fresh .city-source-section {
+    grid-column: 1/-1;
+    padding-top: 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+}
+.today-reference
+    :is(
+        .forecast-strip,
+        .compact-event-open,
+        .icon-button,
+        .around-open,
+        .city-source-links a
+    ) {
+    transition:
+        background 150ms ease,
+        transform 150ms ease;
+}
+.today-reference
+    :is(
+        .forecast-strip,
+        .compact-event-open,
+        .icon-button,
+        .around-open,
+        .city-source-links a
+    ):hover {
+    background: var(--cyan-hover);
+}
+.today-reference
+    :is(
+        .forecast-strip,
+        .compact-event-open,
+        .icon-button,
+        .around-open
+    ):active {
+    background: var(--blue);
+    transform: scale(0.985);
+}
+.today-reference .draft-preview[open] > p {
+    animation: content-arrive 150ms ease-out;
+}
+@keyframes content-arrive {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    .today-reference .practical-surface {
+        grid-template-columns: 1fr;
+    }
+    .today-reference .city-help {
+        padding: 16px 0 0;
+    }
+    .today-reference .forecast-strip > small {
+        flex-basis: auto;
+        margin-left: auto;
+    }
+    .today-reference .compact-category {
+        display: none;
+    }
+}
+@media (max-width: 700px) {
+    .today-reference .city-help {
+        padding: 16px 0 0;
+    }
+    .today-reference .forecast-strip > small {
+        flex-basis: auto;
+        margin-left: auto;
+    }
+    .today-reference .practical-personal .record-label {
+        max-width: none;
+    }
+    .today-reference .board-capture {
+        font-size: var(--text-micro);
+    }
+    .today-reference .around-plan {
+        margin-inline: 12px;
+        padding: 12px 8px 4px;
+    }
+    .today-reference .around-heading {
+        flex-wrap: wrap;
+        gap: 3px 8px;
+    }
+    .today-reference .around-open {
+        gap: 8px;
+    }
+    .today-reference .around-open small {
+        font-size: var(--text-micro);
+    }
+    .today-reference .discovery .event-card {
+        height: 260px;
+    }
+    .today-reference .compact-event-open {
+        gap: 9px;
+    }
+    .today-reference .compact-event-open img {
+        width: 42px;
+        height: 46px;
+        border-radius: var(--radius-sm);
+    }
+    .today-reference .compact-event-open strong {
+        font-size: var(--text-small);
+    }
+    .today-reference .compact-event-open small {
+        font-size: var(--text-micro);
+    }
+    .today-reference .compact-category {
+        display: none;
+    }
+    .today-reference .compact-event {
+        gap: 0;
+    }
+    .today-reference .continue-composer {
+        gap: 12px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .today-reference
+        :is(
+            .forecast-strip,
+            .compact-event-open,
+            .icon-button,
+            .around-open,
+            .city-source-links a
+        ) {
+        transition: none;
+    }
+    .today-reference .draft-preview[open] > p {
+        animation: none;
+    }
+}
+
+/* Everyday places listed as open near the next plan (connected/places.js). */
+.today-reference .around-places {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+.today-reference .around-places-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .around-places-title small {
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+    color: var(--muted);
+}
+.today-reference .around-places-map {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: var(--text-small);
+    color: var(--ink);
+}
+.today-reference .around-places-map svg {
+    width: 16px;
+    height: 16px;
+}
+/* OpenStreetMap's licence (ODbL) asks for credit where its data is shown. */
+.today-reference .around-places-source {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-micro);
+}

@@ -1,0 +1,95 @@
+@import url('tokens.css');
+.journey-resume {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    /* The header's edges (connected/section-bar.css #shell): on a laptop
+       the bar starts at the logo and ends at the account, as the page's
+       content does (page-frame.css). */
+    margin: 12px max(32px, calc((100% - 1440px) / 2 + 32px));
+    padding: 10px 10px 10px 14px;
+    /* Travel's trip card, not a cyan block (departures-next/trip-card.css). */
+    border: 1.5px solid var(--color-border, #e6ddcb);
+    border-radius: 22px;
+    background: var(--color-bg-surface, #fffdf8);
+    color: var(--color-text, #211d15);
+    text-decoration: none;
+    font:
+        14px/1.4 Geist,
+        Arial,
+        sans-serif;
+}
+.journey-resume[hidden] {
+    display: none !important;
+}
+.journey-resume > svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+.journey-resume > span {
+    min-width: 0;
+    flex: 1;
+}
+.journey-resume strong,
+.journey-resume small {
+    display: block;
+}
+.journey-resume small {
+    font-size: var(--text-caption);
+    color: var(--color-text-soft, #506a74);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.journey-resume:focus-visible {
+    outline: 2px solid var(--color-focus, #32697b);
+    outline-offset: 2px;
+}
+.journey-resume > .tl-line {
+    flex: none;
+}
+/* Travel's button for a trip you've started; "Your trip" where the words
+   would crowd the title (narrow phones). */
+.journey-resume > .journey-resume-go {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--color-action, #c23b0e);
+    color: #fff;
+    font-weight: var(--weight-semibold, 600);
+    white-space: nowrap;
+}
+.journey-resume-go > span + span {
+    display: none;
+}
+@media (max-width: 420px) {
+    .journey-resume-go > span:first-child {
+        display: none;
+    }
+    .journey-resume-go > span + span {
+        display: inline;
+    }
+}
+.journey-resume:active {
+    background: var(--color-bg-quiet, #f1ebdf);
+}
+@media (max-width: 999px) {
+    #shell + .journey-resume,
+    .service-nav + .journey-resume {
+        margin-inline: 16px;
+    }
+}
+/* A page's own trip card already leads back to the trip you've started
+   (Travel's next trip, Today's Leave now): the bar steps aside. */
+body.trip-in-card .journey-resume {
+    display: none;
+}

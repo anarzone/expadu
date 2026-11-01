@@ -1,0 +1,180 @@
+{
+    "scope": "Local deterministic parser only. Fixed time and synthetic profile. No LLM call or live venue lookup.",
+    "examples": [
+        {
+            "input": "I want somewhere quiet",
+            "result": {
+                "intent": "find",
+                "source": "heuristic",
+                "constraints": null,
+                "query": "I want somewhere quiet"
+            }
+        },
+        {
+            "input": "Today I feel moody and want somewhere quiet",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "I want to hang out",
+            "result": {
+                "intent": "find",
+                "source": "heuristic",
+                "constraints": null,
+                "query": "I want to hang out"
+            }
+        },
+        {
+            "input": "Today I want to hang out",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [],
+                    "companions": "friends",
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "I want to play football",
+            "result": {
+                "intent": "find",
+                "source": "heuristic",
+                "constraints": null,
+                "query": "I want to play football"
+            }
+        },
+        {
+            "input": "Today I want to play football",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [
+                        "pitch"
+                    ],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "Today I want to play volleyball",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "Today I want somewhere quiet, no parks",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [
+                        "park"
+                    ],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "Today I have only 30 minutes",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        },
+        {
+            "input": "Take me to Museum Ludwig",
+            "result": {
+                "intent": "take_me_there",
+                "source": "heuristic",
+                "constraints": null,
+                "query": "Take me to Museum Ludwig"
+            }
+        },
+        {
+            "input": "I need help with my registration",
+            "result": {
+                "intent": "bureaucracy_q",
+                "source": "heuristic",
+                "constraints": null,
+                "query": "I need help with my registration"
+            }
+        },
+        {
+            "input": "Today I want to meet new people",
+            "result": {
+                "intent": "plan_day",
+                "source": "heuristic",
+                "constraints": {
+                    "window_start": "2026-09-06T12:00:00+02:00",
+                    "window_end": "2026-09-06T22:00:00+02:00",
+                    "areas": [],
+                    "categories": [],
+                    "companions": null,
+                    "budget": null,
+                    "archetype": null,
+                    "vibe": null
+                },
+                "query": null
+            }
+        }
+    ]
+}

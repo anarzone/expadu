@@ -16,6 +16,7 @@ class BureaucracyCase extends Model
     /** @var list<string> */
     protected $fillable = [
         'user_id',
+        'person_id',
         'status',
         'fact_version',
         'ai_consent_at',
@@ -48,6 +49,11 @@ class BureaucracyCase extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(BureaucracyPerson::class, 'person_id');
+    }
+
     /** @return HasMany<BureaucracyCaseFact, $this> */
     public function facts(): HasMany
     {
@@ -76,10 +82,5 @@ class BureaucracyCase extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(BureaucracyCaseMessage::class, 'case_id');
-    }
-
-    public function hasCurrentAiConsent(): bool
-    {
-        return $this->ai_consent_at !== null && $this->ai_consent_withdrawn_at === null;
     }
 }

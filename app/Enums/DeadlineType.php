@@ -7,21 +7,19 @@ enum DeadlineType: string
     case DaysSinceArrival = 'days_since_arrival';
 
     /**
-     * Anchored to the move-in date, not arrival — Anmeldung's legal clock
-     * (§17 BMG) starts when you move in. While the user is in temporary
-     * housing (no move-in date yet) the deadline is PAUSED, never overdue.
+     * Anchored to actual move-in, not arrival. Missing occupancy timing is
+     * unknown; a temporary-housing label cannot prove that a clock is paused.
      */
     case DaysSinceMoveIn = 'days_since_move_in';
 
     /**
-     * First-permit window: visa-free entrants get arrival + deadline_days
-     * (90); D-visa holders have no computable date — the UI shows "before
-     * your visa expires" instead.
+     * Compatibility clock for permit preparation. A D visa uses its known
+     * expiry. Entry mode alone cannot establish a visa-free residence deadline.
      */
     case PermitWindow = 'permit_window';
 
     /**
-     * Anchored to the task's life event (e.g. Elterngeld: birth + 3 months).
+     * Anchored to the task's life event using its reviewed interval.
      * The anchor date is the user's `{trigger_event}_at` attribute.
      */
     case DaysSinceEvent = 'days_since_event';

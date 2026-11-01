@@ -13,15 +13,4 @@ enum SpotFeedbackState: string
     case Saved = 'saved';
     case Been = 'been';
     case NotInterested = 'not_interested';
-
-    /**
-     * States that drop a spot out of the discovery rails — you've either
-     * "consumed" it (been) or rejected it (not interested).
-     *
-     * @return list<self>
-     */
-    public static function hiddenFromDiscovery(): array
-    {
-        return [self::Been, self::NotInterested];
-    }
 }

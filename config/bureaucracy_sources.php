@@ -14,11 +14,15 @@ return [
         'gesetze-im-internet.de',
         'eur-lex.europa.eu',
         'recht.bund.de',
+        // NRW state law (owner decision, 30 Oct 2026): the school law and the broadcasting fee treaty.
+        'recht.nrw.de',
     ],
 
     'implementation_hosts' => [
         'stadt-koeln.de',
         'bamf.de',
         'make-it-in-germany.com',
+        // Bundeszentralamt für Steuern: the federal tax office (owner decision, 7 Oct 2026).
+        'bzst.de',
     ],
 ];

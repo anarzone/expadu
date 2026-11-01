@@ -27,9 +27,7 @@ export default defineConfig({
         // All other tests reuse the session saved by globalSetup
         {
             name: 'chromium',
-            // onboarding-icons drives the signup flow from a fresh login and
-            // ships its own config; the saved session here is already onboarded.
-            testIgnore: ['auth.spec.ts', 'onboarding-icons.spec.ts'],
+            testIgnore: ['auth.spec.ts'],
             use: {
                 ...devices['Desktop Chrome'],
                 storageState: 'tests/Browser/.auth/session.json',
@@ -37,9 +35,7 @@ export default defineConfig({
         },
         {
             name: 'mobile',
-            // onboarding-icons drives the signup flow from a fresh login and
-            // ships its own config; the saved session here is already onboarded.
-            testIgnore: ['auth.spec.ts', 'onboarding-icons.spec.ts'],
+            testIgnore: ['auth.spec.ts'],
             use: {
                 ...devices['Pixel 7'],
                 storageState: 'tests/Browser/.auth/session.json',

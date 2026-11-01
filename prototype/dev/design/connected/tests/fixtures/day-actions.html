@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Isolated day-actions test</title>
+        <link rel="stylesheet" href="../../style.css" />
+        <link rel="stylesheet" href="../../place-sheet.css?v=9fecee061d26" />
+        <link rel="stylesheet" href="../../date-control.css?v=4b7e0249842c" />
+        <script src="../../model.js"></script>
+        <script src="../../icons.js?v=685f482a1088"></script>
+        <script src="../../handoffs.js?v=9b9cafad9559"></script>
+        <script src="../../day-actions.js?v=0b96c92b87af"></script>
+        <script src="../../day-swipe.js"></script>
+        <script src="../../visit-timeline.js?v=2ab6dbc3b38d"></script>
+        <script>
+            // Deliberately memory-only: never reads or writes the user's storage.
+            const samplePlace = {
+                ...ExpaduModel.places[0],
+                id: 'qa-park',
+                title: 'Sample park',
+            };
+            let sharedSample = ExpaduModel.fresh();
+            sharedSample.brief.date = '2026-09-19';
+            let sampleWorkspace = {
+                plans: [
+                    {
+                        id: 'qa-day',
+                        date: '2026-09-19',
+                        revision: 1,
+                        items: [
+                            { ...samplePlace, start: '13:00', end: '14:00' },
+                            {
+                                id: 'qa-appointment',
+                                title: 'Sample appointment',
+                                start: '15:00',
+                                end: '15:30',
+                                fixed: true,
+                            },
+                        ],
+                    },
+                ],
+            };
+            window.ExpaduStore = {
+                read: () => structuredClone(sharedSample),
+                studio: () => structuredClone(sampleWorkspace),
+                update: (fn) => {
+                    const result = fn(sharedSample);
+                    return result;
+                },
+                updateDay: (fn) => {
+                    const s = structuredClone(sharedSample),
+                        w = structuredClone(sampleWorkspace);
+                    const result = fn(s, w);
+                    sharedSample = s;
+                    sampleWorkspace = w;
+                    return result;
+                },
+                isPersistent: () => true,
+                routes: {},
+            };
+        </script>
+        <script defer src="../../motion.js"></script>
+        <script defer src="../../ui.js"></script>
+        <script defer src="../../date-control.js?v=f68610b210d4"></script>
+        <script defer src="../../planning-ui.js?v=578f8e1a47b4"></script>
+        <script defer src="../../../departures-next/journeys.js"></script>
+        <script defer src="../../journey-preview.js"></script>
+        <script defer src="../../place-sheet.js?v=e8498a056acd"></script>
+    </head>
+    <body>
+        <p>Memory-only sample. Saved plans are not used.</p>
+        <script>
+            window.addEventListener('DOMContentLoaded', () =>
+                ExpaduPlaceSheet.open(samplePlace, 'plan'),
+            );
+        </script>
+    </body>
+</html>

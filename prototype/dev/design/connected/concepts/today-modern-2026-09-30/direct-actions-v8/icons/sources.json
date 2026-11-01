@@ -1,0 +1,12 @@
+{
+  "family": "Phosphor Regular",
+  "retrieved_at": "2026-09-30",
+  "license": "MIT",
+  "assets": [
+    {
+      "file": "dots-three.svg",
+      "url": "https://raw.githubusercontent.com/phosphor-icons/core/main/assets/regular/dots-three.svg",
+      "sha256": "ca4e748007101155641ec3041cd129bb03a8030d0eed16e313b9dd75e6beac77"
+    }
+  ]
+}

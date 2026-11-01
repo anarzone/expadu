@@ -1,3 +1,5 @@
+import { csrfHeaders } from '@/lib/csrf';
+
 /**
  * Marketing site (expadu.com): the small script every marketing page ships.
  * The header's menu on narrow screens, the band the page slides over, and
@@ -76,10 +78,6 @@
         'button[type="submit"]',
     );
     const message = form.querySelector<HTMLElement>('.waitlist-msg');
-    const csrf =
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? '';
 
     form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -96,7 +94,7 @@
         void fetch(form.action, {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': csrf,
+                ...csrfHeaders(),
                 Accept: 'application/json',
             },
             body: new FormData(form),

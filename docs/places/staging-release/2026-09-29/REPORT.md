@@ -1,5 +1,188 @@
 # Places release continuation — 29 September 2026
 
+## Current result — all 4,643 prepared changes saved and verified on staging
+
+Verified at 2026-09-29T20:05:24+00:00. The final **374 existing-record refreshes** are
+saved and independently checked. The complete frozen package is now applied:
+**1,874 additions + 2,769 refreshes**, recorded in **48 guarded operations**.
+There are **zero unapplied records in this prepared package**.
+
+- **11,802 stored place/facility records**, up from 9,928 before the package.
+- **6,574 identities** eligible for general Places discovery.
+- **6,585 identities** actually retrieved through Composer's candidate repository;
+  request-specific distance, activity, cost and availability can narrow this set.
+- **4,084 of the 4,643 changed records** are available to Composer. The other
+  **559 descriptive-name records** remain outside automatic recommendations pending
+  evidence qualification. Completing the import does not qualify these records.
+- **No new approved photos** and **no production changes**. The package contains
+  **4,475 OSM and 168 Overture records**, with zero Stadt Köln source records.
+
+The final 374 improve existing source evidence; they do not add stored identities
+or increase the overall discovery totals. Of those 374, 32 were already eligible
+and 342 remain held. No missing access, fee, opening-hour or entrance evidence was
+converted into a positive claim.
+
+### What changed in this continuation
+
+PR [60](https://github.com/anarzone/expadu/pull/60) adds audited recovery when an
+import introduces a place's first source observation. It preserves place IDs,
+references, reviewed corrections and audit history. Cancelled ingestion-key replay
+is rejected, preventing an importer from silently restoring withdrawn facts.
+Versioned recovery helpers preserve the earlier 44 journal receipts unchanged.
+The application was deployed to staging from merge `89289db9641bb75a563e74b44be9b4717bd61b22`.
+
+Normal commit checks passed **1,728 tests / 7,221 assertions**, with one existing
+skip. PR and staging CI passed, and the running code/image were verified. All
+374 records passed local qualification, local durable save/readback with tail
+recovery/replay, and four bounded staging rollback rehearsals before import.
+
+Every changed record received detail API and exact Places/Composer checks in its
+batch. Each new batch preserved earlier saved snapshots. The fresh final read-only
+verification checked all 48 journal identities/contexts/receipts, all 4,643 saved
+mappings/snapshots and discovery decisions, the exact 4,084 changed Composer
+identities, and whole-catalogue Composer retrieval. Four listing APIs and unique
+pagination passed; external `/up` returned HTTP 200. No raw staging rows or real
+user plans were exported, and no recovery was committed on staging.
+
+The first combined rehearsal hit an isolated request-rate limit and rolled back.
+Four separate bounded rehearsals then passed without relaxing the application
+limiter. An interleaved old/new API comparison on identical staging data passed
+payload parity and the p95 regression guard. Candidate p95 was 444.4/436.4 ms;
+baseline 707.5/446.6 ms. Baseline page 1 had tail outliers, while candidate medians
+were about 18–19% slower, so this is not an overall speed-up claim. Final saved-data
+measurements were p95 **1318.2/646.5 ms** over 30 reads per page, excluding
+network time. These measurements are not a production latency guarantee.
+
+A follow-up interleaved comparison on the fully imported catalogue did not reproduce
+those large p95 spikes: candidate **500.6/483.8 ms**, baseline **445.0/407.3 ms**.
+Both payloads remained identical and both pages passed the existing 20% regression
+guard (12.5%/18.8% p95 increase). Candidate medians were 434/434 ms versus
+371/368 ms. The source-withdrawal support therefore has measurable overhead; these
+results do not establish production performance. Both the earlier spikes and this
+follow-up are retained in the evidence.
+
+### Still required for the broader programme
+
+Production needs its own reconciliation, reviewed mapping, recovery qualification
+and live acceptance; staging counts do not establish production readiness. The
+559 held records need evidence review before automatic recommendations. Useful
+verified free/public football coverage and the earlier 75% image objective remain
+unmet. EXP-69 and EXP-72 remain In Progress for their broader acceptance scope.
+
+Evidence: [rollout status](rollout-status.json), [final full-package verification](held/staging-final.json),
+[final 374 commits and readbacks](held/committed.json), [staging rehearsals](held/staging-rehearsal.json),
+[controlled performance comparison](held/performance-comparison.json),
+[post-import comparison](held/performance-comparison-post-import.json),
+[source quality summary](committed-record-quality-summary.json), [recovery release](held/release.json).
+
+## Historical checkpoint — 4,269 changes saved
+
+The following checkpoints retain their original evidence. Their counts and pending
+actions are superseded by the current result above.
+
+### Then-current result — 4,269 changes saved and verified on staging
+
+Verified at 2026-09-29T16:09:32+00:00. The requested continuation has now committed
+**1,874 additions and 2,395 refreshes**, in 44 guarded batches. The staging
+catalogue grew from **9,928 to 11,802 stored place/facility records**. This is a
+storage count, not a count of unique photographed or automatically recommended destinations.
+
+- **6,574 identities** are eligible for general Places discovery.
+- **6,585 identities** were actually retrieved through Composer's candidate repository across the current catalogue. Request-specific distance, activity, cost and availability requirements can narrow this set.
+- Of the **4,269 changed records**, exactly **4,052** are available to Composer; **217** descriptive-name records remain outside automatic recommendations.
+- **374 prepared refreshes remain unapplied** because safe recovery of their previously absent source history is not yet implemented. They remain in the frozen workload.
+- **No new photos were approved.** This rollout contains only OpenStreetMap (4,101) and Overture (168) records; no Stadt Köln source records were added. Production was not changed.
+
+Every changed record passed a saved-data detail API check, source/name/coordinate/tag
+checks and the exact Composer membership/fact checks in its batch. Each subsequent
+batch checked all earlier saved snapshots. A final independent read-only transaction
+verified all 44 exact journal IDs, contexts, receipts, mappings and saved snapshots,
+all 4,269 changed discovery decisions, the exact 4,052 changed Composer identities,
+and the whole-catalogue Composer retrieval. Four listing endpoints passed, pagination
+contained no repeated IDs, and external `/up` returned HTTP 200.
+
+Final food/drink listing measurements (30 reads per page, Laravel HTTP kernel,
+excluding the network trip) were p95 **441.5 ms**
+for page 1 and **391.9 ms** for page 2.
+These final measurements are reported separately from the earlier controlled performance
+comparison; they are not a new production-readiness threshold or an end-user latency claim.
+
+Before rollout, all 43 remainder batches passed independent rollback-only checks
+locally and on staging. A separate zero-user local database passed the cumulative
+43-batch save/readback test, followed by durable recovery of the final batch and a
+repeat recovery with no additional change. No recovery was committed on staging.
+Private receipts and summaries remain on the persistent staging host; no raw staging
+rows or real user plans were exported. EXP-69 and EXP-72 remain In Progress.
+
+Evidence: [current rollout status](rollout-status.json),
+[final saved-data verification](final-catalogue-verification.json),
+[committed record/source summary](committed-record-quality-summary.json),
+[additions](remainder/committed-additions.json),
+[refreshes](remainder/committed-refreshes.json),
+[remaining 374 recovery work](remainder-recovery-notes.md).
+
+## Historical checkpoint — first 100 committed
+
+The remaining sections retain the earlier checkpoints in their original order;
+their then-current counts and pending actions are superseded by the result above.
+
+### 29 September — first 100 records saved and verified on staging
+
+The owner approved the concrete first batch with “continue then”. At 15:07:11 UTC,
+50 additions and 50 refreshes were committed through the reviewed guarded runner.
+Staging now stores **9,978 place/facility records**. A separate read-only connection
+verified the applied operation journal and exact saved state, all 100 detail APIs,
+86 ordinary-visible and exactly 87 Composer/activity identities (13 held). Four
+listing API checks passed; external `/up` returned HTTP 200. The batch adds 44
+identities to either discovery scope. Current total discovery sets are 4,778
+ordinary and 4,789 activity identities; these are not photo-coverage counts.
+
+The importer took 11 seconds. The initial fresh readback took four seconds;
+the strengthened mapping/identity readback took five seconds. These exclude
+transfers and preparation. Native recovery and replay were
+verified again before commit. Private receipt/summary remain on the staging host;
+no raw staging rows were exported. Production was not changed.
+
+Evidence: [committed operation](first-batch-committed.json),
+[fresh committed-data verification](first-batch-committed-readback.json).
+
+Remaining package: **4,543 records** (1,824 additions and 2,719 refreshes).
+Of these, 4,169 meet the basic addition/prior-history prerequisite, pending all
+remaining batch guards; 374 refreshes still require distinct audited recovery.
+No new photos were approved. The programme remains in progress.
+
+
+## Historical checkpoint — before the first persistent import
+
+The sections below preserve earlier deployment and rehearsal evidence. The
+committed catalogue status is recorded at the top of this report.
+
+### Recovery support deployed and verified
+
+PR59 is merged and deployed to staging as c31c7456a7c0cddb7b3579f358654b5a948dd747.
+Both PR CI and staging deployment CI passed. Normal commit hooks passed 1,702 tests
+and 7,112 assertions, with one existing time-of-day weather skip. Production was
+not deployed.
+
+The permanent empty journal migration, its non-null audit timestamps and the
+running source hashes were verified. The final 100-place rehearsal then passed
+against that permanent table, including all detail APIs, the exact 87 Composer
+identities, recovery and rollback. A fresh connection confirmed zero committed
+journal rows and the unchanged 9,928 stored catalogue rows. Nine listing/detail
+API smoke checks and external HTTPS `/up` returned 200. No catalogue data import
+has been committed. The persistent host bundle and receipt remain private.
+
+The concrete next action is a committed staging batch of 50 additions and 50
+refreshes. It would add 44 ordinary/activity discovery identities and bring stored
+rows to 9,978. This needs separate data-commit authorization; the earlier approval
+covered upload and rollback checks. Full rollout, the 374 no-history recovery
+cases and photo coverage remain unfinished. EXP-69 and EXP-72 stay In Progress.
+
+[Release status](recovery-release-status.json),
+[deployed canary proof](released-canary-verification.json),
+[live APIs and empty journal](live-journal-release-verification.json).
+
+
 Refs EXP-69, EXP-70, EXP-72. Continues the [28 September release report](../2026-09-28/REPORT.md).
 
 **The approved upload and full staging rehearsal are complete. The catalogue batch is not yet committed.**
@@ -240,7 +423,7 @@ column value matched exactly; the temporary tables were removed afterward.
 [helper review](snapshot-helper-review.json). No snapshot will overwrite live
 shared media tables or other concurrent changes.
 
-The [proposed 100-record canary](canary-manifest.json) and its
+The superseded initial [100-record canary](canary-manifest.json) and its
 [guarded release procedure](CANARY-RELEASE.md) contains 50 additions and
 50 refreshes across all 24 categories: 97 OSM and three Overture records, with 87
 source names and 13 descriptive facility names. Selection is deterministic and
@@ -333,8 +516,8 @@ were copied locally. See [final staging evidence](staging-canary-final-verificat
 
 ## Remaining acceptance work
 
-1. Release the empty operation-journal migration and reviewed operator bundle.
-   The query performance fix is already deployed and verified through nine APIs.
+1. Application release is complete: both the query fix and empty recovery journal
+   are deployed, and live API/recovery checks passed.
 2. Obtain authorization for the concrete committed 100-record staging canary,
    then verify committed API results, journal persistence and repeat stability.
    Prior approval covers uploads and rollback checks, not a persistent data import.

@@ -3,20 +3,26 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class TransitDisruptionNotification extends Notification
+class TransitDisruptionNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     /**
+     * Queued per user on the commute queue, so an evaluator looping over
+     * users never waits on a push service.
+     *
      * @param  array{line: string, summary: string}  $disruption
      */
     public function __construct(
         public array $disruption,
-    ) {}
+    ) {
+        $this->onQueue('commute');
+    }
 
     /**
      * @return array<int, string>
@@ -34,7 +40,7 @@ class TransitDisruptionNotification extends Notification
             ->body($this->disruption['summary'])
             ->action('View details', 'view_transit')
             ->options(['TTL' => 3600])
-            ->data(['url' => '/timetable']);
+            ->data(['url' => '/travel']);
     }
 
     /**
@@ -48,7 +54,7 @@ class TransitDisruptionNotification extends Notification
             'body' => $this->disruption['summary'],
             'line' => $this->disruption['line'],
             'summary' => $this->disruption['summary'],
-            'url' => '/timetable',
+            'url' => '/travel',
         ];
     }
 }

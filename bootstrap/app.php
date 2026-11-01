@@ -1,13 +1,15 @@
 <?php
 
 use App\Http\Middleware\CanonicalRedirects;
-use App\Http\Middleware\EnsureUserIsOnboarded;
-use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LocalMockClock;
 use App\Http\Middleware\PerfTrackMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
+use App\Http\Middleware\StartSessionKeepingPrivateQueries;
+use App\Support\MockClock;
+use App\Support\MockScenario;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,6 +17,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Sentry\Laravel\Integration;
@@ -35,7 +38,6 @@ return Application::configure(basePath: dirname(__DIR__))
                      Request::HEADER_X_FORWARDED_PROTO |
                      Request::HEADER_X_FORWARDED_AWS_ELB,
         );
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CanonicalRedirects::class);
 
@@ -45,19 +47,37 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => RedirectIfAuthenticated::class,
         ]);
 
+        // A page whose query says where someone will be is remembered in
+        // the session without it (Around here: KeepQueryPrivate).
+        $middleware->web(replace: [
+            StartSession::class => StartSessionKeepingPrivateQueries::class,
+        ]);
+
         $middleware->web(append: [
             PerfTrackMiddleware::class,
-            HandleAppearance::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
-            EnsureUserIsOnboarded::class,
+            // Capped: the HTML already carries every modulepreload tag, and a page
+            // with 40+ chunks pushed the Link header past nginx's 4k header buffer
+            // (502 "upstream sent too big header" on staging, 21 Oct).
+            AddLinkHeadersForPreloadedAssets::using(16),
             SetCacheHeaders::class,
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.
             'throttle:global',
+            // Local only: the mock's sample moment for tools/mock-compare.
+            // Innermost, so session and CSRF cookies keep the real clock.
+            LocalMockClock::class,
         ]);
+        $middleware->encryptCookies(except: [MockClock::COOKIE, MockScenario::COOKIE]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // These are JSON commands even when Accept is missing/spoofed. A
+        // validation redirect must not flash personal prompts into a session.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/ask', 'composer/apply', 'composer/undo', 'composer/act', 'composer/compose', 'paperwork/v2/*', 'privacy/processing/*')
+            || $request->expectsJson());
+        // `code`: an emailed confirmation code (EmailConfirmation) never sits in the session.
+        $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference', 'question', 'code']);
+
         // Report every unhandled exception to Sentry (Laravel 11 needs this
         // wired explicitly). The scrub + user-id attribution happen in
         // config/sentry.php `before_send`. 404s and validation aren't bugs, so

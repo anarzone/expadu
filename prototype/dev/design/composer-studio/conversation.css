@@ -1,0 +1,1232 @@
+@import url('../connected/tokens.css');
+.conversation-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.studio .conversation-tools button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-caption);
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+.studio .conversation-tools button:hover {
+    background: transparent;
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.conversation-tools svg {
+    width: 16px;
+    height: 16px;
+}
+.chat-feed {
+    max-width: 800px;
+    margin: 20px auto 0;
+}
+.chat-entry {
+    margin: 0 0 28px;
+    scroll-margin: 130px 0 240px;
+}
+.chat-entry > p {
+    color: var(--color-text);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    max-width: 68ch;
+    white-space: pre-line;
+    margin: 8px 0 14px;
+}
+.chat-speaker {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--text-micro);
+    color: var(--color-text-soft);
+    margin-bottom: 7px;
+}
+.chat-speaker svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-select-text);
+}
+.chat-user {
+    margin-left: auto;
+    max-width: 82%;
+    width: fit-content;
+}
+.chat-user > p {
+    background: var(--color-bg-quiet);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm)
+        var(--radius-lg);
+    padding: 11px 15px;
+    color: var(--color-text);
+    margin: 0;
+}
+.chat-user .chat-speaker {
+    justify-content: flex-end;
+}
+.chat-plan-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 8px 0;
+    color: var(--color-text);
+    font-size: var(--text-caption);
+}
+.chat-plan-label > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.chat-plan-label svg {
+    width: 16px;
+    height: 16px;
+}
+.chat-plan-label small {
+    font-size: var(--text-micro);
+}
+.chat-live-plan .timeline-paper {
+    margin: 0;
+}
+.chat-plan-reference > summary {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+    font-size: var(--text-caption);
+    color: var(--color-text-soft);
+}
+.chat-plan-reference > summary svg {
+    width: 16px;
+    height: 16px;
+}
+.history-readonly {
+    font-size: var(--text-micro);
+    color: var(--color-text-soft);
+    margin: 8px 0;
+}
+.chat-plan-reference {
+    background: var(--color-bg-quiet);
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+}
+.chat-plan-reference > summary {
+    flex-wrap: wrap;
+}
+.chat-plan-reference > summary span {
+    margin-left: auto;
+    font-size: var(--text-micro);
+}
+.chat-plan-reference .plan-timeline {
+    padding: 12px 0;
+}
+.chat-plan-reference .timeline-content h3 {
+    font-size: var(--text-control);
+}
+.chat-alternatives {
+    display: grid;
+    gap: 8px;
+}
+.chat-alternatives button {
+    border: 1px solid var(--color-border);
+    background: white;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+    padding: 12px;
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+}
+.chat-alternatives svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.chat-alternatives span {
+    flex: 1;
+}
+.chat-alternatives strong {
+    display: block;
+    font-size: var(--text-control);
+}
+.chat-alternatives small {
+    display: block;
+    font-size: var(--text-caption);
+    margin-top: 4px;
+    color: var(--color-text-soft);
+}
+.chat-alternatives button:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+@keyframes menu-appear {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.history-section {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: white;
+    padding: 14px;
+    margin: 10px 0;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+.history-section strong,
+.history-section small {
+    display: block;
+}
+.history-section small {
+    margin-top: 7px;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    color: var(--color-text-soft);
+}
+.history-section[aria-current='true'] {
+    background: var(--color-select-bg);
+}
+.history-intro {
+    font-size: var(--text-small);
+    line-height: 1.6;
+    color: var(--color-text-soft);
+}
+.history-view .chat-entry {
+    margin-bottom: 18px;
+}
+.history-view .chat-entry button {
+    pointer-events: none;
+}
+.chat-updates {
+    position: fixed;
+    z-index: 35;
+    bottom: 190px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: white;
+    color: var(--color-text);
+    padding: 10px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px #3e352b12;
+}
+.chat-updates[hidden] {
+    display: none;
+}
+.studio .chat-live-plan .plan-timeline li {
+    scroll-margin-top: 130px;
+}
+@media (max-width: 700px) {
+    .chat-feed {
+        margin-top: 8px;
+    }
+    .chat-entry {
+        margin-bottom: 22px;
+    }
+    .chat-entry > p {
+        font-size: var(--text-control);
+    }
+    .chat-user {
+        max-width: 92%;
+    }
+    .conversation-tools {
+        gap: 0;
+    }
+    .studio .conversation-tools button {
+        padding: 7px;
+        font-size: var(--text-micro);
+    }
+}
+.chat-entry .expadu-loading-status {
+    min-height: 44px;
+}
+.studio .history-section:focus-visible,
+.studio .conversation-tools button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* One calm composer surface: message above, tools below. */
+.studio #studio-form {
+    position: relative;
+    padding: 12px;
+    border-color: var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    box-shadow: 0 4px 20px #3e352b0d;
+}
+.studio #studio-form:focus-within {
+    box-shadow:
+        0 0 0 1px var(--color-border-strong),
+        0 4px 20px #3e352b0d;
+}
+.studio #studio-form:has(.composer-tools :focus) {
+    box-shadow: 0 4px 20px #3e352b0d;
+}
+.studio #studio-form .studio-field {
+    display: block;
+    padding: 0 8px;
+}
+.studio #studio-request {
+    display: block;
+    min-height: 52px;
+    padding: 9px 0 16px;
+    font-size: var(--text-section);
+    line-height: 1.5;
+}
+.studio #studio-form .composer-tools {
+    justify-content: flex-start;
+    gap: 4px;
+    margin: 0;
+}
+.studio .composer-actions {
+    position: relative;
+    flex-shrink: 0;
+}
+.studio .composer-actions > summary {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-round);
+    color: var(--color-text-soft);
+    cursor: pointer;
+    list-style: none;
+}
+.studio .composer-actions > summary::-webkit-details-marker {
+    display: none;
+}
+.studio .composer-actions > summary svg {
+    width: 22px;
+    height: 22px;
+    transition: transform 160ms ease;
+}
+.studio .composer-actions[open] > summary svg {
+    transform: rotate(45deg);
+}
+.studio .composer-actions > summary:is(:hover, :active) {
+    background: var(--color-bg-quiet);
+}
+.studio .composer-actions-menu {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    width: min(220px, calc(100vw - 48px));
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: 0 8px 32px #3e352b1f;
+    animation: menu-appear 160ms ease-out;
+}
+.studio .composer-actions-menu button {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    gap: 12px;
+    font-size: var(--text-small);
+    text-align: left;
+}
+.studio .composer-actions-menu button:last-child {
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.studio .composer-tools .send {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 4px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background-color: var(--color-action, #d9340a);
+    background-clip: content-box;
+    color: var(--color-text-on-action);
+    transition:
+        background-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+.studio .composer-tools .send svg {
+    width: 20px;
+    height: 20px;
+}
+.studio .composer-tools .send:hover:not(:disabled) {
+    background-color: var(--color-action-hover);
+}
+.studio .composer-tools .send:active:not(:disabled) {
+    transform: scale(0.94);
+}
+.studio .composer-tools .send:disabled {
+    background-color: transparent;
+    color: var(--color-border-strong);
+    opacity: 1;
+    cursor: default;
+}
+.studio .composer-tools .send.expadu-loading-button {
+    color: var(--color-select-text);
+}
+.studio .composer-tools :is(button, summary):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.studio #studio-form .input-context {
+    width: fit-content;
+    max-width: 100%;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    margin: 0 4px 7px;
+    padding: 0 10px;
+    gap: 10px;
+}
+.studio #studio-form .input-context > span {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+}
+.studio #studio-form .input-context button {
+    font-size: var(--text-micro);
+    text-decoration: none;
+    padding: 0 2px;
+    border-radius: var(--radius-sm);
+}
+.studio #studio-form .input-context button:is(:hover, :active) {
+    background: var(--color-bg-quiet);
+}
+@media (max-width: 700px) {
+    .studio #studio-form {
+        padding: 8px;
+        border-radius: var(--radius-xl);
+    }
+    .studio #studio-form .input-context {
+        gap: 7px;
+        margin: 0 2px 6px;
+        padding: 0 8px;
+    }
+    .studio #studio-form .input-context strong,
+    .studio #studio-form .input-context small {
+        font-size: var(--text-micro);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .studio .composer-actions-menu {
+        animation: none;
+    }
+    .studio .composer-actions > summary svg,
+    .studio .composer-tools .send {
+        transition: none;
+    }
+}
+
+.studio .chat-alternatives-count {
+    margin: 0 0 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.chat-alternatives {
+    max-height: 252px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding: 2px 5px 2px 2px;
+    border-radius: var(--radius-lg);
+}
+.chat-alternatives button {
+    min-height: 72px;
+    flex-shrink: 0;
+}
+.chat-alternatives:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+}
+
+/* Selections on another day wait for the current proposal; nothing is discarded. */
+.handoff-note {
+    max-width: 900px;
+    margin: 0 auto 8px;
+    padding: 10px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: var(--text-caption);
+    color: var(--color-text-soft);
+    background: var(--color-bg-quiet);
+    border-radius: var(--radius-lg);
+}
+.handoff-note button {
+    flex-shrink: 0;
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    color: var(--color-text);
+    min-height: 40px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+/* Composer thinking: the same orange/cyan energy as the Today launcher. */
+.studio #studio-form::before,
+.studio #studio-form::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    pointer-events: none;
+    background: linear-gradient(
+        110deg,
+        #ff591f,
+        #ff9754 25%,
+        #05bbd5 60%,
+        #86eaf4 75%,
+        #ff591f
+    );
+    background-size: 300% 100%;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 220ms ease;
+}
+.studio #studio-form::after {
+    inset: -7px;
+    padding: 7px;
+    filter: blur(7px);
+}
+.studio #studio-form.is-thinking::before,
+.studio #studio-form.is-thinking::after {
+    opacity: 0.9;
+    animation: composer-thinking-glow 3.2s ease-in-out infinite alternate;
+}
+.studio #studio-form.is-thinking::after {
+    opacity: 0.35;
+}
+.studio #studio-form.is-thinking .spark-tips path:nth-child(odd) {
+    stroke: #ff591f;
+}
+.studio #studio-form.is-thinking .spark-tips path:nth-child(even) {
+    stroke: #05bbd5;
+}
+@keyframes composer-thinking-glow {
+    from {
+        background-position: 0% 50%;
+    }
+    to {
+        background-position: 100% 50%;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .studio #studio-form::before,
+    .studio #studio-form::after {
+        transition: none;
+    }
+    .studio #studio-form.is-thinking::before,
+    .studio #studio-form.is-thinking::after {
+        animation: none;
+    }
+}
+
+/* One compact row: what this is, which day, and the way back to the page
+   Composer was opened from. It stays under the app header, so leaving
+   (minimizing) is always one tap away, and a swipe down on it minimizes on
+   touch screens, as the earlier bar did. */
+.studio .composer-heading {
+    position: sticky;
+    top: var(--composer-header-top, 0px);
+    z-index: 31;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 800px;
+    margin: 0 auto 16px;
+    padding: 4px 0;
+    background: color-mix(in srgb, var(--color-bg-canvas) 96%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+    touch-action: pan-x;
+}
+.studio .composer-minimize {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.studio .composer-minimize svg {
+    width: 18px;
+    height: 18px;
+}
+.studio .composer-minimize:hover {
+    background: var(--color-bg-quiet);
+}
+.studio .composer-minimize:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.studio.is-minimizing {
+    pointer-events: none;
+}
+.studio.is-minimizing :is(#main, .studio-input-wrap) {
+    transform-origin: bottom right;
+}
+.activity-journey {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0;
+    font-size: var(--text-caption);
+    color: var(--color-text-soft);
+}
+.activity-journey small {
+    font-size: var(--text-caption);
+}
+.activity-journey a {
+    width: fit-content;
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    color: var(--color-text);
+    text-decoration: none;
+    min-height: 36px;
+}
+.activity-journey a:hover {
+    text-decoration: underline;
+}
+.activity-journey svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Next steps a reply offers: a request, a panel or another page. */
+.reply-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+.studio .suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+}
+.studio .suggestion-chip:hover {
+    background: var(--color-bg-quiet);
+}
+.studio .suggestion-chip:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.studio .suggestion-chip svg {
+    width: 14px;
+    height: 14px;
+}
+/* Where a request came from, e.g. "From Events on Tue 8 Sept · 7 listed". */
+.chat-context {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-bottom: 4px;
+    font-size: var(--text-caption);
+    color: var(--color-text-soft);
+}
+.chat-context svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* "Thinking…" on its own (no Cancel beside it, owner, 8 October). */
+.pending-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* ── Rich answers: a short verdict, then the section's own block ───────
+   Owner request, 7 October. Travel cyan, Paperwork lavender, Events posters;
+   "Not listed" stays visible as not listed. */
+.studio .chat-answer-title {
+    margin: 2px 0 8px;
+    color: var(--color-text);
+    font-size: var(--text-title-lg);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+.studio .answer-block {
+    margin-top: 14px;
+    border-radius: var(--radius-xl);
+}
+/* A trip's way is Travel's own list (departures-next/way.css). */
+.studio .answer-way {
+    max-width: 560px;
+    margin-top: 16px;
+}
+.studio .answer-note {
+    margin: 12px 0 0;
+    padding: 9px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.studio .answer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 12px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.studio .answer-block + p {
+    margin-top: 14px;
+}
+.studio .place-answer-actions {
+    margin-top: 14px;
+}
+.studio .answer-fine {
+    margin: 10px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.studio .answer-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+    transition: background-color var(--duration-fast) var(--ease-settle);
+}
+.studio .answer-button:hover {
+    background: #ffffff99;
+}
+.studio .answer-button svg {
+    width: 16px;
+    height: 16px;
+}
+.studio .answer-checklist {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 12px;
+    max-width: 520px;
+    padding: 14px 16px 14px 14px;
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: transform var(--duration-fast) var(--ease-settle);
+}
+.studio .answer-checklist:active {
+    transform: scale(0.99);
+}
+.studio .answer-checklist > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+.studio .answer-checklist > span:nth-child(2) {
+    display: grid;
+    gap: 3px;
+}
+.studio .answer-checklist small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* The checklist's documents, each with how you've marked it, as wide as
+   the checklist above them. */
+.studio .answer-docs {
+    margin: 8px 0 0;
+    padding: 4px 16px;
+    list-style: none;
+    background: var(--color-paper-bg-quiet);
+}
+.studio .answer-docs li {
+    display: grid;
+    gap: 2px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e4d8fb;
+    font-size: var(--text-body);
+    line-height: 1.35;
+}
+.studio .answer-docs li:last-child {
+    border-bottom: 0;
+}
+.studio .answer-docs small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.studio .answer-docs .is-ready small {
+    color: var(--color-paper-text);
+    font-weight: var(--weight-semibold);
+}
+.studio .answer-tile {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: #e4d8fb;
+    color: var(--color-paper-text);
+}
+.studio .answer-tile svg {
+    width: 20px;
+    height: 20px;
+}
+.studio .answer-progress {
+    display: block;
+    max-width: 240px;
+    height: 6px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: #e4d8fb;
+}
+.studio .answer-progress i {
+    display: block;
+    height: 100%;
+    background: var(--color-paper-text);
+}
+.studio .answer-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 14px 0 0;
+}
+.studio .answer-facts div {
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.studio .answer-facts dt {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.studio .answer-facts dd {
+    margin: 2px 0 0;
+    font-weight: var(--weight-semibold);
+}
+.studio .answer-facts dd.is-unknown {
+    color: var(--color-text-soft);
+}
+
+/* Event answers are the Events posters (the approved Composer design): the
+   AI illustration, labelled, with the date stamp, the title lettered on the
+   picture, Save and the orange Add to plan. Two side by side; a swipe row on
+   phones. */
+.studio .event-posters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+}
+.studio .event-posters:has(> :only-child) {
+    grid-template-columns: minmax(0, 420px);
+}
+.studio .event-poster {
+    position: relative;
+    isolation: isolate;
+    height: 380px;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: #2b1d3f;
+    color: #ffffff;
+}
+.studio .event-poster img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.studio .event-poster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, #0b061855, transparent 30%, #0b061833 52%, #0b0618e6);
+}
+.studio .event-poster .poster-label {
+    top: 14px;
+    left: 14px;
+}
+.studio .event-poster-open {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 20px 84px 20px 20px;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.studio .event-poster .poster-stamp {
+    position: static;
+}
+.studio .event-poster-title {
+    font-family: 'Festival Marker', 'Permanent Marker', var(--font-sans);
+    font-size: 30px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+}
+.studio .event-poster-meta {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.studio .event-poster-save,
+.studio .event-poster-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-round);
+    cursor: pointer;
+}
+.studio .event-poster-save {
+    top: 10px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    background: #ffffff33;
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+}
+.studio .event-poster-save[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.studio .event-poster-plan {
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.studio .event-poster-plan.is-added {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    cursor: default;
+}
+.studio .event-poster-save svg,
+.studio .event-poster-plan svg {
+    width: 22px;
+    height: 22px;
+}
+.studio .event-poster :is(.event-poster-open, .event-poster-save, .event-poster-plan):focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: -5px;
+}
+@media (max-width: 700px) {
+    .studio .event-posters {
+        display: flex;
+        gap: 12px;
+        margin-right: -16px;
+        padding-right: 16px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+    .studio .event-poster {
+        flex: 0 0 84%;
+        height: 340px;
+        scroll-snap-align: start;
+    }
+    .studio .event-posters:has(> :only-child) .event-poster {
+        flex-basis: 100%;
+    }
+    .studio .event-poster-title {
+        font-size: 24px;
+    }
+}
+.studio .poster-label {
+    position: absolute;
+    z-index: 1;
+    top: 10px;
+    left: 10px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: #0b0618b3;
+    color: #fffdf8;
+    font-size: var(--text-micro);
+}
+.studio .poster-stamp {
+    position: absolute;
+    z-index: 1;
+    left: 12px;
+    bottom: 14px;
+    padding: 3px 9px 2px;
+    border-radius: 4px;
+    background: #ffe363;
+    color: var(--color-text);
+    font-family: 'Festival Marker', 'Permanent Marker', var(--font-sans);
+    font-size: var(--text-section);
+    line-height: 1.2;
+    transform: rotate(-3deg);
+}
+@media (max-width: 700px) {
+    .studio .chat-answer-title {
+        font-size: var(--text-title);
+    }
+}
+/* When Composer can't help: what it can do, as the home's cards, rows that
+   ask; each icon in its section's colour (owner, 18 Oct 2026, Composer
+   review canvas board 7). */
+.answer-options {
+    display: flex;
+    flex-direction: column;
+    margin-top: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    overflow: hidden;
+}
+.answer-option {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 12px 14px;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.answer-option:first-child {
+    border-top: 0;
+}
+.answer-option:hover {
+    background: var(--color-bg-hover, var(--color-bg-quiet));
+}
+.answer-option:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.answer-option > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.answer-option strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.answer-option small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.35;
+}
+.answer-option > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+.answer-option .answer-option-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.answer-option-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.answer-option.is-travel .answer-option-icon {
+    background: #c9f1fa;
+    color: #005466;
+}
+.answer-option.is-paperwork .answer-option-icon {
+    background: #e4d8fb;
+    color: var(--color-paper-text);
+}
+.answer-option.is-events .answer-option-icon {
+    background: #2b1d3f;
+    color: #fffdf8;
+}
+.answer-option.is-nearby .answer-option-icon {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-surface);
+}
+/* A change comes to you (owner, 18 Oct 2026, Composer review canvas board
+   9): the reply carries it, old → new, with its Undo; the plan marks the
+   item where it happened. */
+.change-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.change-rows {
+    display: grid;
+    flex: 1;
+    gap: 10px;
+    min-width: 0;
+}
+.change-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+}
+.change-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.change-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.change-row > span:last-child {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.change-row strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.change-row small {
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+.change-row s {
+    color: var(--color-text-soft);
+}
+.change-row b {
+    font-weight: var(--weight-semibold);
+}
+.studio .change-undo {
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.studio .change-undo:hover {
+    background: var(--color-bg-hover, var(--color-border));
+}
+.chat-entry > .change-undo {
+    margin-top: 10px;
+}
+.studio .plan-timeline li.is-changed {
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+}
+.studio .plan-timeline li.is-changed .changed-label {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.studio .day-item.is-changed {
+    border-color: transparent;
+    background: var(--color-select-bg);
+}
+.studio .day-item-tile.is-changed {
+    background: var(--color-bg-surface);
+    color: var(--color-select-text);
+}
+.studio .day-switch {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}

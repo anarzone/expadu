@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\CityNews;
+use App\Transit\NoticeStops;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,12 @@ use Illuminate\Support\Facades\Log;
 
 class ScrapeNews extends Command
 {
+    /** KVB's stops are Cologne's, as the timetable names them ("Köln Neumarkt"). */
+    private const KVB_CITY = 'Köln';
+
+    /** @var list<array{title: string, lines: list<string>, text: string}>|null KVB's Baustellen page, read once a run */
+    private ?array $baustellen = null;
+
     protected $signature = 'news:scrape';
 
     protected $description = 'Scrape city news and transit updates relevant to expats in Cologne';
@@ -22,15 +29,21 @@ class ScrapeNews extends Command
         $created += $betriebslageCount;
         $this->info("KVB betriebslage: {$betriebslageCount}");
 
-        $created += $this->scrapeKvbAktuelles();
-        $this->info("KVB aktuelles: {$created}");
+        $aktuellesCount = $this->scrapeKvbAktuelles();
+        $created += $aktuellesCount;
+        $this->info("KVB aktuelles: {$aktuellesCount}");
 
         $stadtCount = $this->scrapeStadtKoelnNews();
         $created += $stadtCount;
         $this->info("stadt-koeln.de news: {$stadtCount}");
 
-        // Clean up expired news older than 30 days
-        $deleted = CityNews::where('published_at', '<', now()->subDays(30))->delete();
+        // Delete news a month after it ended. Dated notices go by their end
+        // (long works started months ago are still running); undated ones by
+        // when they were published. Deleting by start re-inserted every run.
+        $deleted = CityNews::query()->where(fn ($q) => $q
+            ->where(fn ($dated) => $dated->whereNotNull('expires_at')->where('expires_at', '<', now()->subDays(30)))
+            ->orWhere(fn ($undated) => $undated->whereNull('expires_at')->where('published_at', '<', now()->subDays(30))))
+            ->delete();
         if ($deleted > 0) {
             $this->info("Cleaned up {$deleted} old news items");
         }
@@ -41,13 +54,13 @@ class ScrapeNews extends Command
     }
 
     /**
-     * Scrape KVB betriebslage page — real-time per-line disruption status.
-     * Structure: <ul id="stoer_bahn"><li class="bahn linie1"><h3>1</h3><strong>title</strong><div class="weitereinfos">details</div></li>
+     * KVB's live service page. The page is the whole truth: a notice it
+     * still lists stays open however long the works run, and one it no
+     * longer lists has ended. Each notice also carries a schema.org
+     * SpecialAnnouncement, read in preference to the markup.
      */
     protected function scrapeKvbBetriebslage(): int
     {
-        $created = 0;
-
         try {
             $response = Http::timeout(15)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Expadu/1.0)'])
@@ -59,75 +72,197 @@ class ScrapeNews extends Command
                 return 0;
             }
 
-            $html = $response->body();
-            if (! mb_check_encoding($html, 'UTF-8')) {
-                $html = mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
+            $notices = $this->parseBetriebslage($this->decodeKvbPage($response->body()));
+            if ($notices === null) {
+                // Nothing recognisable: leave the open notices as they are
+                // rather than closing them all on a layout change.
+                Log::warning('news:scrape — KVB betriebslage layout not recognised');
+
+                return 0;
             }
 
-            // Parse each <li class="list-group-item linieXX bahn/bus"> entry
-            // Use ungreedy match with nested content
-            preg_match_all('/<li\s+class="list-group-item\s+linie(\w+)\s+(bahn|bus)"[^>]*>(.*?)<\/li>/si', $html, $entries, PREG_SET_ORDER);
-
-            foreach ($entries as $entry) {
-                $line = trim($entry[1]);
-                $isBus = $entry[2] === 'bus';
-                $content = $entry[3];
-
-                if (! $line || mb_strlen($line) > 10) {
-                    continue;
-                }
-
-                // Extract title from <b> tag (not <strong>)
-                $title = '';
-                if (preg_match('/<b[^>]*>(.*?)<\/b>/si', $content, $titleMatch)) {
-                    $title = trim(strip_tags(html_entity_decode($titleMatch[1], ENT_QUOTES, 'UTF-8')));
-                }
-
-                if (! $title || mb_strlen($title) < 5) {
-                    continue;
-                }
-
-                // Extract details from .weitereinfos div
-                $details = '';
-                if (preg_match('/<div\s+class="weitereinfos[^"]*"[^>]*>(.*?)<\/div>/si', $content, $detailMatch)) {
-                    $details = trim(preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($detailMatch[1], ENT_QUOTES, 'UTF-8'))));
-                }
-
-                $sourceUrl = 'https://www.kvb.koeln/fahrtinfo/betriebslage/#'.md5($line.'_'.$title);
-
-                // Upsert — betriebslage is live status, update existing entries
-                $existing = CityNews::where('source_url', $sourceUrl)->first();
-                if ($existing) {
-                    $existing->update([
-                        'summary' => $details ?: $existing->summary,
-                        'published_at' => now(),
-                    ]);
-
-                    continue;
-                }
-
-                $severity = $this->inferSeverity($title.' '.$details);
-
-                CityNews::create([
-                    'title' => mb_substr(($isBus ? "Bus {$line}: " : "Linie {$line}: ").$title, 0, 255),
-                    'summary' => $details ?: null,
-                    'source' => 'kvb-betriebslage',
-                    'source_url' => $sourceUrl,
-                    'category' => 'transit',
-                    'relevance' => 'transit',
-                    'affected_lines' => [$line],
-                    'severity' => $severity,
-                    'published_at' => now(),
-                    'expires_at' => now()->addDays(3), // betriebslage items are short-lived
-                ]);
-
-                $created++;
-            }
+            return $this->reconcileBetriebslage($notices);
         } catch (\Exception $e) {
             Log::warning('news:scrape — KVB betriebslage error: '.$e->getMessage());
+
+            return 0;
+        }
+    }
+
+    /**
+     * KVB serves Windows-1252. Read as ISO-8859-1, the en dash between stop
+     * names (0x96) became an invisible control character.
+     */
+    protected function decodeKvbPage(string $body): string
+    {
+        return mb_check_encoding($body, 'UTF-8') ? $body : mb_convert_encoding($body, 'UTF-8', 'Windows-1252');
+    }
+
+    /**
+     * Null when the page isn't the service page at all.
+     *
+     * @return list<array{line: string, is_bus: bool, title: string, details: string}>|null
+     */
+    protected function parseBetriebslage(string $html): ?array
+    {
+        $text = fn (string $value): string => trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
+
+        $notices = [];
+        preg_match_all('/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/si', $html, $blocks);
+        foreach ($blocks[1] as $json) {
+            $data = json_decode($json, true);
+            if (! is_array($data) || ($data['@type'] ?? null) !== 'SpecialAnnouncement') {
+                continue;
+            }
+
+            $properties = collect($data['additionalProperty'] ?? []);
+            $line = trim((string) ($properties->firstWhere('name', 'Linie')['value'] ?? ''));
+            $name = $text((string) ($data['name'] ?? ''));
+            $title = trim((string) preg_replace('/^Linie\s+'.preg_quote($line, '/').'\s*:\s*/u', '', $name));
+            if ($line === '' || mb_strlen($line) > 10 || mb_strlen($title) < 5) {
+                continue;
+            }
+
+            $notices[] = [
+                'line' => $line,
+                'is_bus' => ($data['serviceType'] ?? $properties->firstWhere('name', 'serviceType')['value'] ?? null) === 'Bus',
+                'title' => $title,
+                'details' => $text((string) ($data['description'] ?? '')),
+            ];
+        }
+
+        if ($notices !== []) {
+            return $notices;
+        }
+
+        // No structured data: fall back to the markup, but only on the real page.
+        if (! str_contains($html, 'id="stoer_bahn"')) {
+            return null;
+        }
+
+        preg_match_all('/<li\s+class="list-group-item\s+linie(\w+)\s+(bahn|bus)"[^>]*>(.*?)<\/li>/si', $html, $entries, PREG_SET_ORDER);
+        foreach ($entries as [, $line, $kind, $content]) {
+            $title = preg_match('/<b[^>]*>(.*?)<\/b>/si', $content, $m) ? $text($m[1]) : '';
+            if (mb_strlen($line) > 10 || mb_strlen($title) < 5) {
+                continue;
+            }
+
+            $notices[] = [
+                'line' => $line,
+                'is_bus' => $kind === 'bus',
+                'title' => $title,
+                'details' => preg_match('/<div\s+class="weitereinfos[^"]*"[^>]*>(.*?)<\/div>/si', $content, $m) ? $text($m[1]) : '',
+            ];
+        }
+
+        return $notices;
+    }
+
+    /**
+     * Brings city_news in line with what KVB lists now. Returns how many
+     * notices are new.
+     *
+     * @param  list<array{line: string, is_bus: bool, title: string, details: string}>  $notices
+     */
+    protected function reconcileBetriebslage(array $notices): int
+    {
+        $now = now();
+        // Open rows outlive a failed scrape for a while, then lapse on their
+        // own instead of showing an old notice indefinitely.
+        $openUntil = $now->copy()->addHours(2);
+
+        $open = CityNews::query()
+            ->where('source', 'kvb-betriebslage')
+            ->where('expires_at', '>', $now)
+            ->get();
+        $kept = [];
+        $unmatched = [];
+
+        foreach ($notices as $notice) {
+            $url = $this->betriebslageUrl($notice);
+            $row = $open->firstWhere('source_url', $url) ?? CityNews::query()->where('source_url', $url)->latest('id')->first();
+            if ($row === null) {
+                $unmatched[] = $notice;
+
+                continue;
+            }
+
+            // Back after a real gap (not a missed scrape) is a new disruption:
+            // it starts now, not when the old one did.
+            if ($row->expires_at !== null && $row->expires_at->lessThan($now->copy()->subHours(6))) {
+                $row->created_at = $now;
+            }
+            $summary = $notice['details'] ?: $row->summary;
+            $row->fill([
+                'summary' => $summary,
+                'affected_stops' => NoticeStops::in($notice['title'].' '.$summary, self::KVB_CITY) ?: null,
+                'published_at' => $now,
+                'expires_at' => $openUntil,
+            ])->save();
+            $kept[$row->id] = true;
+        }
+
+        $gone = $open->reject(fn (CityNews $row) => isset($kept[$row->id]));
+        $created = 0;
+
+        foreach ($unmatched as $notice) {
+            // An edited notice (KVB moved its end time, say) keeps its row and
+            // id, so it isn't announced again as a new disruption.
+            $edited = $gone
+                ->filter(fn (CityNews $row) => array_map('strval', $row->affected_lines ?? []) === [$notice['line']])
+                ->map(fn (CityNews $row) => ['row' => $row, 'score' => $this->noticeSimilarity($row, $notice)])
+                ->sortByDesc('score')
+                ->first();
+
+            $attributes = [
+                'title' => mb_substr(($notice['is_bus'] ? 'Bus ' : 'Linie ').$notice['line'].': '.$notice['title'], 0, 255),
+                'summary' => $notice['details'] ?: null,
+                'affected_stops' => NoticeStops::in($notice['title'].' '.$notice['details'], self::KVB_CITY) ?: null,
+                'source_url' => $this->betriebslageUrl($notice),
+                'severity' => $this->inferSeverity($notice['title'].' '.$notice['details']),
+                'published_at' => $now,
+                'expires_at' => $openUntil,
+            ];
+
+            if ($edited !== null && $edited['score'] >= 0.6) {
+                $edited['row']->update($attributes);
+                $gone = $gone->reject(fn (CityNews $row) => $row->is($edited['row']));
+
+                continue;
+            }
+
+            CityNews::create($attributes + [
+                'source' => 'kvb-betriebslage',
+                'category' => 'transit',
+                'relevance' => 'transit',
+                'affected_lines' => [$notice['line']],
+            ]);
+            $created++;
+        }
+
+        if ($gone->isNotEmpty()) {
+            CityNews::query()->whereKey($gone->modelKeys())->update(['expires_at' => $now]);
         }
 
         return $created;
+    }
+
+    /** @param  array{line: string, title: string}  $notice */
+    protected function betriebslageUrl(array $notice): string
+    {
+        return 'https://www.kvb.koeln/fahrtinfo/betriebslage/#'.md5($notice['line'].'_'.$notice['title']);
+    }
+
+    /** @param  array{line: string, is_bus: bool, title: string, details: string}  $notice */
+    protected function noticeSimilarity(CityNews $row, array $notice): float
+    {
+        similar_text(
+            mb_strtolower(preg_replace('/^(Linie|Bus)\s+\S+:\s*/u', '', $row->title).' '.$row->summary),
+            mb_strtolower($notice['title'].' '.$notice['details']),
+            $percent,
+        );
+
+        return $percent / 100;
     }
 
     /**
@@ -148,13 +283,18 @@ class ScrapeNews extends Command
                 return 0;
             }
 
-            $html = $response->body();
-            if (! mb_check_encoding($html, 'UTF-8')) {
-                $html = mb_convert_encoding($html, 'UTF-8', 'ISO-8859-1');
-            }
+            $html = $this->decodeKvbPage($response->body());
 
             // Extract headings which contain disruption info
             preg_match_all('/<h[234][^>]*>(.*?)<\/h[234]>/si', $html, $headings);
+
+            // Open KVB news: what the page lists now keeps or updates its row,
+            // what it no longer lists has ended.
+            $open = CityNews::query()->where('source', 'kvb')
+                ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->get();
+            $seen = [];
+            $listed = 0;
 
             foreach ($headings[1] ?? [] as $raw) {
                 $title = trim(strip_tags(html_entity_decode($raw, ENT_QUOTES, 'UTF-8')));
@@ -177,35 +317,59 @@ class ScrapeNews extends Command
                 if (! preg_match('/Linie|Trennung|Sanierung|Sperrung|Umleitung|Einschränkung|Baustelle|Ersatz|Haltestelle|Stadtbahn|Bus\b|Bahn/i', $title)) {
                     continue;
                 }
+                $listed++;
 
-                $url = 'https://www.kvb.koeln/aktuelles/#'.md5($title);
+                // The item's own link is its stable id when the heading carries one;
+                // otherwise the heading, with list separators normalised.
+                $url = $this->aktuellesLink($raw) ?? 'https://www.kvb.koeln/aktuelles/#'.md5($title);
+                $dateRange = $this->parseDateRange($title);
+                $lines = $this->extractLines($title);
+                // KVB's own text for it from the Baustellen page; none rather
+                // than words of ours (a brief written from the heading alone
+                // filled in what KVB didn't say).
+                $details = $this->baustelleFor($title, $lines, $dateRange['end']);
+                $attributes = [
+                    'title' => mb_substr($title, 0, 255),
+                    'summary' => $details,
+                    'affected_lines' => $lines ?: null,
+                    'affected_stops' => NoticeStops::in($title.' '.$details, self::KVB_CITY) ?: null,
+                    'severity' => $this->inferSeverity($title),
+                    'expires_at' => $dateRange['end'],
+                ];
 
-                if (CityNews::where('source_url', $url)->exists()) {
+                // KVB rewords headings ("Linien 1, 7, 9" → "Linien 1, 7 und 9"): the
+                // same notice, so its row takes the new wording. source_url stays,
+                // since it is unique and a closed row may hold the new one.
+                $row = $open->first(fn (CityNews $row): bool => $row->source_url === $url
+                    || self::aktuellesKey((string) $row->title) === self::aktuellesKey($title))
+                    // Listed again after it ended: the same row opens again.
+                    ?? CityNews::query()->where('source_url', $url)->first();
+                if ($row !== null) {
+                    $row->update($attributes);
+                    $seen[$row->id] = true;
+
                     continue;
                 }
 
-                // Parse date range (e.g., "28.03. - 13.04.2026: Trennung der Linien 1 + 9")
-                $dateRange = $this->parseDateRange($title);
-                $lines = $this->extractLines($title);
-                $severity = $this->inferSeverity($title);
-
-                CityNews::create([
-                    'title' => mb_substr($title, 0, 255),
-                    'summary' => $this->buildSummary($title, $lines),
+                $row = CityNews::create($attributes + [
                     'source' => 'kvb',
                     'source_url' => $url,
                     'category' => 'transit',
                     'relevance' => 'transit',
-                    'affected_lines' => $lines ?: null,
-                    'severity' => $severity,
-                    'published_at' => $dateRange['start'] ?? now(),
-                    'expires_at' => $dateRange['end'],
+                    // When the works start, never a date still ahead: a future
+                    // published_at sorted the notice first and showed it early.
+                    'published_at' => $dateRange['start']?->isPast() ? $dateRange['start'] : now(),
                 ]);
-
+                $seen[$row->id] = true;
                 $created++;
+            }
 
-                if ($created >= 15) {
-                    break;
+            // Only a page that listed something says what has ended: an error
+            // page or a new layout must not close every open notice.
+            if ($listed > 0) {
+                $ended = $open->reject(fn (CityNews $row): bool => isset($seen[$row->id]));
+                if ($ended->isNotEmpty()) {
+                    CityNews::query()->whereKey($ended->modelKeys())->update(['expires_at' => now()]);
                 }
             }
         } catch (\Exception $e) {
@@ -213,6 +377,121 @@ class ScrapeNews extends Command
         }
 
         return $created;
+    }
+
+    /**
+     * KVB's own text for a news item: the Baustellen entry with the same
+     * lines, else one covering them that gives the item's end date ("Linien
+     * 1/9" in the entry for 1, 7 and 9, phase 2 until 02.11.). Null when
+     * none or more than one fits: no text beats a wrong one.
+     *
+     * @param  list<string>  $lines
+     */
+    protected function baustelleFor(string $title, array $lines, ?Carbon $end): ?string
+    {
+        if ($lines === []) {
+            return null;
+        }
+        $dated = fn (array $entry): bool => $end !== null && str_contains($entry['text'], $end->format('d.m.'));
+        $same = array_filter($this->baustellen(), fn (array $entry): bool => array_diff($lines, $entry['lines']) === [] && array_diff($entry['lines'], $lines) === []);
+        if (count($same) > 1) {
+            $same = array_filter($same, $dated);
+        }
+        if ($same === []) {
+            $same = array_filter($this->baustellen(), fn (array $entry): bool => array_diff($lines, $entry['lines']) === [] && $dated($entry));
+        }
+
+        return count($same) === 1 ? reset($same)['text'] : null;
+    }
+
+    /**
+     * KVB's Baustellen page: each works' heading and its text, read once a
+     * run. Empty when it can't be read; the news items then carry no text.
+     *
+     * @return list<array{title: string, lines: list<string>, text: string}>
+     */
+    protected function baustellen(): array
+    {
+        if ($this->baustellen !== null) {
+            return $this->baustellen;
+        }
+        $this->baustellen = [];
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Expadu/1.0)'])
+                ->get('https://www.kvb.koeln/fahrtinfo/baustellen/index.html');
+            if ($response->successful()) {
+                $this->baustellen = $this->parseBaustellen($this->decodeKvbPage($response->body()));
+            } else {
+                Log::info('news:scrape — KVB Baustellen returned '.$response->status());
+            }
+        } catch (\Exception $e) {
+            Log::warning('news:scrape — KVB Baustellen error: '.$e->getMessage());
+        }
+
+        return $this->baustellen;
+    }
+
+    /**
+     * The page's entries: a heading (question) and its answer's text
+     * paragraphs, not the downloads under them.
+     *
+     * @return list<array{title: string, lines: list<string>, text: string}>
+     */
+    protected function parseBaustellen(string $html): array
+    {
+        $plain = function (string $value): string {
+            // The words only: not the page's styles, nor the tables of
+            // replacement stops some entries carry.
+            $value = (string) preg_replace('/<(style|script|table)\b.*?<\/\1>/si', ' ', $value);
+            $value = (string) preg_replace('/<br\s*\/?>|<\/p>|<\/li>|<\/h\d>/i', "\n", $value);
+            $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $lines = array_map(fn (string $line): string => trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', $line)), explode("\n", $value));
+
+            return implode("\n", array_filter($lines, fn (string $line): bool => $line !== ''));
+        };
+
+        $entries = [];
+        $chunks = preg_split('/<div\s+class="question"/i', $html) ?: [];
+        array_shift($chunks);
+        foreach ($chunks as $chunk) {
+            [$question, $answer] = array_pad(preg_split('/<div\s+class="answer"/i', $chunk, 2) ?: [], 2, '');
+            preg_match_all('/<strong[^>]*>(.*?)<\/strong>/si', $question, $strong);
+            preg_match_all('/<div\s+class="fliesstext">(.*?)<\/div>/si', $answer, $texts);
+            $title = str_replace("\n", ' ', $plain(implode('', $strong[1])));
+            // KVB's standing "how to stay informed" block isn't about the works.
+            $blocks = array_filter(array_map($plain, $texts[1]), fn (string $block): bool => $block !== '' && ! preg_match('/folgen Sie uns|Newsletter/iu', $block));
+            $text = implode("\n", $blocks);
+            if ($title !== '' && $text !== '') {
+                $entries[] = ['title' => $title, 'lines' => $this->extractLines($title), 'text' => $text];
+            }
+        }
+
+        return $entries;
+    }
+
+    /** The item's own link inside a heading, made absolute; null when it has none. */
+    protected function aktuellesLink(string $headingHtml): ?string
+    {
+        if (! preg_match('/<a\s[^>]*href="([^"#][^"]*)"/i', $headingHtml, $m)) {
+            return null;
+        }
+        $href = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+
+        return str_starts_with($href, 'http') ? $href : 'https://www.kvb.koeln/'.ltrim($href, '/');
+    }
+
+    /**
+     * A KVB news heading's identity, whatever separators it lists lines with:
+     * "Linien 1, 7, 9", "Linien 1, 7 und 9" and "Linien 1 + 7 + 9" are one notice.
+     */
+    public static function aktuellesKey(string $title): string
+    {
+        $key = mb_strtolower($title);
+        $key = preg_replace('/\b(und|and)\b|[,+&]/u', ' ', $key);
+
+        return trim((string) preg_replace('/\s+/u', ' ', (string) $key));
     }
 
     /**
@@ -301,6 +580,14 @@ class ScrapeNews extends Command
                 // ignore parse errors
             }
         }
+        // Pattern: "Bis DD.MM.YYYY" — only the end is known
+        elseif (preg_match('/\bbis\s+(?:zum\s+)?(\d{1,2})\.(\d{1,2})\.(\d{4})/i', $title, $m)) {
+            try {
+                $result['end'] = Carbon::createFromFormat('d.m.Y', "{$m[1]}.{$m[2]}.{$m[3]}")->endOfDay();
+            } catch (\Exception) {
+                // ignore
+            }
+        }
         // Pattern: "DD.MM.YYYY"
         elseif (preg_match('/(\d{1,2})\.(\d{1,2})\.(\d{4})/', $title, $m)) {
             try {
@@ -323,8 +610,8 @@ class ScrapeNews extends Command
     {
         $lines = [];
 
-        // "Linien 1 + 9", "Linie 18", "Linien 1, 7 und 9"
-        if (preg_match('/Linien?\s+([\d\s+,und]+)/i', $title, $m)) {
+        // "Linien 1 + 9", "Linie 18", "Linien 1, 7 und 9", "Linien 1/9"
+        if (preg_match('/Linien?\s+([\d\s+,\/und]+)/i', $title, $m)) {
             preg_match_all('/(\d+)/', $m[1], $nums);
             $lines = array_merge($lines, $nums[1] ?? []);
         }
@@ -362,22 +649,6 @@ class ScrapeNews extends Command
         }
 
         return 'minor';
-    }
-
-    protected function buildSummary(string $title, array $lines): string
-    {
-        $parts = [];
-
-        if ($lines) {
-            $parts[] = 'Affected: Line '.implode(', ', $lines);
-        }
-
-        // Extract the descriptive part after the date/colon
-        if (preg_match('/:\s*(.+)$/u', $title, $m)) {
-            $parts[] = trim($m[1]);
-        }
-
-        return implode(' — ', $parts) ?: 'KVB transit disruption';
     }
 
     protected function categorise(string $title, string $desc): string

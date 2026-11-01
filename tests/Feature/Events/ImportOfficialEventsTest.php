@@ -122,7 +122,7 @@ test('media capture failures never discard an official event', function () {
         ->and(MediaAsset::query()->count())->toBe(0);
 });
 
-test('common single-time syntax gets a conservative default duration', function () {
+test('common single-time syntax keeps its start and no made-up end', function () {
     app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
 
     Http::fake([
@@ -141,8 +141,118 @@ test('common single-time syntax gets a conservative default duration', function 
 
     $event = Event::where('source_uid', '40570')->sole();
     expect($event->starts_at->format('H:i'))->toBe('11:00')
-        ->and($event->ends_at?->format('H:i'))->toBe('13:00');
+        ->and($event->ends_at)->toBeNull();
 });
+
+test('explicit clock ranges without Uhr retain their source times and event identity', function (string $time, string $start, string $end) {
+    Http::preventStrayRequests();
+    Http::fake([
+        'www.stadt-koeln.de/externe-dienste/open-data/events-od.php*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent([
+                'link' => 'https://www.stadt-koeln.de/leben-in-koeln/veranstaltungen/daten/39393/index.html',
+                'beginndatum' => '2026-10-05',
+                'endedatum' => '2026-10-05',
+                'uhrzeit' => $time,
+                'latitude' => null,
+                'longitude' => null,
+            ])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    $event = Event::where('source', 'stadt-koeln.de')->where('source_uid', '39393')->sole();
+    expect($event->starts_at->format('Y-m-d H:i'))->toBe($start)
+        ->and($event->ends_at?->format('Y-m-d H:i'))->toBe($end);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+    expect(Event::where('source', 'stadt-koeln.de')->where('source_uid', '39393')->sole()->id)->toBe($event->id);
+})->with([
+    'official feed wording' => ['von 18:30 bis 19:30', '2026-10-05 18:30', '2026-10-05 19:30'],
+    'dash-separated clock range' => ['18:30–19:30', '2026-10-05 18:30', '2026-10-05 19:30'],
+    'overnight clock range' => ['23:30 bis 01:00', '2026-10-05 23:30', '2026-10-06 01:00'],
+]);
+
+test('invalid clock ranges without Uhr are skipped instead of normalized', function (string $time) {
+    Http::preventStrayRequests();
+    Http::fake([
+        'www.stadt-koeln.de/externe-dienste/open-data/events-od.php*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent(['uhrzeit' => $time, 'latitude' => null, 'longitude' => null])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+    expect(Event::where('source', 'stadt-koeln.de')->count())->toBe(0);
+})->with(['25:30 bis 26:30', '18:75 bis 19:30']);
+
+test('a same-date overnight event ends the next morning without becoming a daily series', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'www.stadt-koeln.de/externe-dienste/open-data/events-od.php*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent([
+                'link' => 'https://www.stadt-koeln.de/leben-in-koeln/veranstaltungen/daten/41384/index.html',
+                'beginndatum' => '2026-11-07',
+                'endedatum' => '2026-11-07',
+                'uhrzeit' => '18 bis 1 Uhr',
+                'latitude' => null,
+                'longitude' => null,
+            ])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    $event = Event::where('source_uid', '41384')->sole();
+    expect($event->starts_at->format('Y-m-d H:i'))->toBe('2026-11-07 18:00')
+        ->and($event->ends_at?->format('Y-m-d H:i'))->toBe('2026-11-08 01:00')
+        ->and($event->recurrence)->toBeNull()
+        ->and($event->recurrence_until)->toBeNull()
+        ->and($event->tags)->not->toContain('multi-day');
+});
+
+test('mixed admission terms remain visible without claiming the whole event is free', function () {
+    $price = 'Der Eintritt in den Park ist frei. Kosten für die Führungen: Erwachsene: 8 Euro, ermäßigt 2 Euro; Kinder bis 10 Jahre: kostenlos';
+    Http::preventStrayRequests();
+    Http::fake([
+        'www.stadt-koeln.de/externe-dienste/open-data/events-od.php*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent(['preis' => $price, 'latitude' => null, 'longitude' => null])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    $event = Event::where('source', 'stadt-koeln.de')->sole();
+    expect($event->is_free)->toBeFalse()
+        ->and($event->price)->toBeNull()
+        ->and($event->price_text)->toBe($price);
+});
+
+test('official refresh keeps ambiguous schedules hidden for review', function (array $schedule) {
+    $existing = Event::factory()->create(['source' => 'stadt-koeln.de', 'source_uid' => '40506', 'status' => 'active', 'quality_score' => 1]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'www.stadt-koeln.de/externe-dienste/open-data/events-od.php*' => Http::response([
+            'success' => true,
+            'items' => [officialEvent([...$schedule, 'latitude' => null, 'longitude' => null])],
+        ]),
+    ]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+    $this->artisan('events:import-official')->assertSuccessful();
+
+    $event = $existing->fresh();
+    expect($event->status)->toBe('hidden')->and($event->needs_review)->toBeTrue()
+        ->and(Event::query()->visible()->count())->toBe(0);
+})->with([
+    'multiple sessions' => [['uhrzeit' => '15 bis 16:30 Uhr, 16:30 bis 18 Uhr']],
+    'missing official end' => [['uhrzeit' => '18 Uhr']],
+    'doors and performance times' => [['uhrzeit' => 'Einlass: 19 Uhr, Beginn: 20 Uhr']],
+    'multi-date opening schedule' => [['endedatum' => '2026-07-20', 'uhrzeit' => 'Montag bis Freitag, 16 bis 18 Uhr']],
+]);
 
 test('official records upsert without overwriting another source and changed copy is retranslated', function () {
     $other = Event::factory()->create([
@@ -267,4 +377,19 @@ test('multi-day rows without daily hours are marked uncertain for Composer exclu
     ])]])]);
     $this->artisan('events:import-official')->assertSuccessful();
     expect(Event::where('source', 'stadt-koeln.de')->sole()->tags)->toContain('multi-day-uncertain');
+});
+
+test('a single listed time keeps no end, also across days', function () {
+    app()->instance(CologneServiceArea::class, Mockery::mock(CologneServiceArea::class));
+    Http::fake(['www.stadt-koeln.de/*' => Http::response(['success' => true, 'items' => [officialEvent([
+        'uhrzeit' => '19 Uhr', 'beginndatum' => '2026-07-18', 'endedatum' => '2026-07-20', 'latitude' => null, 'longitude' => null,
+    ])]])]);
+
+    $this->artisan('events:import-official')->assertSuccessful();
+    $event = Event::where('source', 'stadt-koeln.de')->sole();
+
+    expect($event->starts_at->format('Y-m-d H:i'))->toBe('2026-07-18 19:00')
+        ->and($event->ends_at)->toBeNull()
+        ->and($event->recurrence)->toBe('FREQ=DAILY')
+        ->and($event->recurrence_until?->format('Y-m-d'))->toBe('2026-07-20');
 });

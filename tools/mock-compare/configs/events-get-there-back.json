@@ -1,0 +1,127 @@
+{
+    "name": "events-get-there-back",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1200
+            },
+            {
+                "click": ".event-where"
+            },
+            {
+                "wait": 4000
+            },
+            {
+                "click": ".gt-time"
+            },
+            {
+                "wait": 400
+            },
+            {
+                "click": ".gt-menu [data-gt-when='back']"
+            },
+            {
+                "wait": 2500
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1500
+            },
+            {
+                "click": ".evd-where"
+            },
+            {
+                "wait": 5000
+            },
+            {
+                "click": ".gt-time"
+            },
+            {
+                "wait": 400
+            },
+            {
+                "click": ".gt-menu button:nth-of-type(3)"
+            },
+            {
+                "wait": 5000
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "route card",
+            "mock": "#shared-dialog .place-route",
+            "app": ".ev-details .place-route"
+        },
+        {
+            "name": "rail",
+            "mock": "#shared-dialog .event-route-rail",
+            "app": ".ev-details .event-route-rail"
+        },
+        {
+            "name": "venue mark",
+            "mock": "#shared-dialog .event-route-rail > svg",
+            "app": ".ev-details .event-route-rail > svg"
+        },
+        {
+            "name": "end dot",
+            "mock": "#shared-dialog .route-dot",
+            "app": ".ev-details .route-dot"
+        },
+        {
+            "name": "From the venue",
+            "mock": "#shared-dialog .place-journey-destination",
+            "app": ".ev-details .place-journey-destination"
+        },
+        {
+            "name": "Back to",
+            "mock": "#shared-dialog label.route-field",
+            "app": ".ev-details label.route-field"
+        },
+        {
+            "name": "Back to field",
+            "mock": "#shared-dialog input[name='from']",
+            "app": ".ev-details input[name='from']"
+        },
+        {
+            "name": "time",
+            "mock": "#shared-dialog .gt-time .gt-pill",
+            "app": ".ev-details .gt-time .gt-pill"
+        },
+        {
+            "name": "by tram and bus",
+            "mock": "#shared-dialog .gt-modes label > span",
+            "app": ".ev-details .gt-modes label > span",
+            "index": 0
+        },
+        {
+            "name": "Open in Travel",
+            "mock": "#shared-dialog [data-panel='directions'] .place-sheet-footer .button.primary",
+            "app": ".ev-details .ui-sheet-foot .evd-plan"
+        }
+    ]
+}

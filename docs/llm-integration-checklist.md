@@ -1,109 +1,69 @@
-# LLM Integration Checklist
+# LLM Integrations
 
-Areas where LLM (GPT-4o-mini, Claude Haiku, or similar) can add real value to Expadu. Ordered by impact and feasibility.
+Last updated: 2026-10-18 (rewritten for EXP-119)
 
-## Guiding Principles
+The 6 April version of this page was a pre-pivot wish list (GPT-4o-mini,
+"never on the hot path"). It no longer matched the code: the Composer ranker
+now runs synchronously while a plan is composed. That version is in git
+history.
 
-- **Never on the hot path** — Don't add LLM calls to page loads or real-time recommendation engine. Use batch/async only.
-- **Cheap models first** — GPT-4o-mini or Claude Haiku for batch processing (~$0.15/1M input tokens). Reserve expensive models for accuracy-critical features.
-- **Structured output** — Always request JSON output from LLM calls for reliable parsing.
-- **Cache aggressively** — LLM results for the same input should be cached (events don't change, letters don't change).
-- **Fallback gracefully** — If LLM is down or slow, the app must still work with rule-based defaults.
+For gaps, data residency and the proposed ledger, read
+[AI data readiness and recommendation/notification/Today groundwork — Oct 2026](https://docs.anar.to/books/architecture/page/ai-data-readiness-and-recommendationnotificationtoday-groundwork).
 
----
+## What is wired today
 
-## Batch Processing (async, no user waiting)
+There are four clients. Each has a kill switch and a deterministic fallback,
+and each is off by default.
 
-### 1. Event Enrichment
-- [ ] Parse scraped German event descriptions into structured data
-- [ ] Extract: category, language, indoor/outdoor, expat-friendliness, age range
-- [ ] Generate English summary from German event text
-- [ ] Score per-user relevance based on interests and past attendance
-- [ ] **Where:** `events:enrich` command (already runs every 15 min)
-- [ ] **Model:** GPT-4o-mini or Claude Haiku
-- [ ] **Priority:** High — directly improves event recommendations
+| Feature | Code | Provider and default model | Kill switch (default) | Runs | Sends |
+|---|---|---|---|---|---|
+| Event classification and translation | `app/Services/AnthropicEventClassifier.php`, called from `ProcessEventJob` | Anthropic, `ANTHROPIC_MODEL` (`claude-haiku-4-5-20251001`) | `EVENTS_CLASSIFICATION_ENABLED` (false) | queued job | public event text |
+| Composer candidate ranker | `app/Composer/AnthropicCandidateRanker.php` | Anthropic, `COMPOSER_LLM_MODEL` (`claude-sonnet-5`) | `COMPOSER_LLM_ENABLED` (false) | **in the request**, 8 s timeout, result cached 10 min | up to 40 candidate places plus a preference summary; see the residency table on the AI page |
+| Prompt parser | `app/Composer/OpenAiCompatiblePromptParser.php`; `HeuristicPromptParser` is the default | any OpenAI-compatible API, `LLM_BASE_URL` (DeepSeek) | `LLM_DRIVER` (`heuristic`) | in the request, 10 s timeout | the user's raw prompt text |
+| Paperwork fact extraction | `app/Bureaucracy/Ai/DeepSeekCaseFactExtractor.php` | DeepSeek, `BUREAUCRACY_LLM_MODEL` | `BUREAUCRACY_LLM_ENABLED` (false) | in the request, 8 s timeout, daily per-user quota | user text, up to 4,000 characters |
 
-### 2. News & Disruption Summarization
-- [ ] Summarize verbose German KVB disruption texts into actionable English
-- [ ] Extract: affected lines, duration, suggested alternatives
-- [ ] Example: "Line 12 suspended Ebertplatz→Chorweiler until 14:00, use Line 15" from wall of German text
-- [ ] **Where:** `news:scrape` command (runs every 5 min)
-- [ ] **Model:** GPT-4o-mini
-- [ ] **Priority:** High — expats can't read German disruption notices
+The bindings live in `app/Providers/AppServiceProvider.php`, and the settings
+in `config/services.php` and `config/events.php`.
 
-### 3. Smart Notification Text
-- [ ] Generate contextual, personal notification messages instead of templates
-- [ ] Example: "Heading to your German course? Leave by 10:15 — overcast but dry, bike is fastest"
-- [ ] Pre-generate during scheduled command runs (not real-time)
-- [ ] **Where:** `commute:send-leaveby-reminders` and other notification commands
-- [ ] **Model:** GPT-4o-mini
-- [ ] **Priority:** Medium — nice UX polish, not critical
+## Rules that still hold
 
-### 4. Spot Description Generation
-- [ ] Generate English descriptions for curated spots (cafes, coworking, libraries)
-- [ ] Include practical info: "quiet café with fast WiFi, popular with remote workers, cash only"
-- [ ] One-time batch for existing spots, then on new spot creation
-- [ ] **Where:** Admin/seeder script
-- [ ] **Model:** GPT-4o-mini
-- [ ] **Priority:** Low — spots already have structured data
+- **Closed sets and validation.** The ranker ranks only candidate ids that
+  Expadu supplied. An answer with an unknown, repeated or missing id is
+  discarded as a whole, and the deterministic order is used. The
+  parser picks from closed category and area lists. Everything that comes back
+  is checked against a tool or JSON schema.
+- **Deterministic fallback.** When a key is missing, a call times out or the
+  output is invalid, the deterministic path runs and the feature still works.
+- **No AI-authored Paperwork content.** AI may extract facts for the user to
+  confirm, or draft gap notes for human review. It never writes fees,
+  deadlines or legal answers.
+- **Untrusted input.** Place names, event text and descriptions are data, not
+  instructions. The ranker's system prompt says so.
+- **Cache arrays, not objects.** `config/cache.php` sets
+  `serializable_classes => false`, so a cached PHP object comes back as
+  `__PHP_Incomplete_Class` on every store.
 
----
+## What changed since April
 
-## User-Initiated (on-demand, user waits but expects it)
+- **The ranker is on the hot path.** "Never on the hot path" no longer holds:
+  Composer waits for the ranker, up to its 8 s timeout. Its output feeds the
+  largest `PlanScorer` term (`llm_rank`, weight 45). See
+  [composer-design.md](composer-design.md).
+- **No ledger yet.** No LLM call is tied to an outcome. There is no prompt
+  version stored with rankings or classifications, and no per-user on/off
+  bucket. EXP-113 adds `llm_calls` and `composer_runs`.
+- **Residency is undecided.** Which user data may leave the EU is EXP-118. The
+  prompt parser and Paperwork extraction send personal text to DeepSeek, which
+  is outside the EU, so both stay off until that decision is made.
 
-### 5. German Letter/Document Translation
-- [ ] User uploads or photographs official German letter (Finanzamt, Krankenkasse, Ausländerbehörde)
-- [ ] LLM translates content + explains what action is needed + deadline
-- [ ] Highlight urgency level (immediate action, informational, deadline-based)
-- [ ] Store translated letters in user's document history
-- [ ] **Where:** New feature — dedicated page/modal
-- [ ] **Model:** Claude Sonnet or GPT-4o (accuracy matters for legal/official documents)
-- [ ] **Priority:** Very High — killer feature for expats, high retention value
+## Where the April ideas stand
 
-### 6. Bureaucracy Assistant (Conversational)
-- [ ] Context-aware Q&A: "I'm a non-EU freelancer, visa expires in 3 months, what do I need?"
-- [ ] Personalized based on user's situation, arrival date, completed tasks
-- [ ] Suggest next steps from settlement checklist
-- [ ] RAG with German bureaucracy knowledge base (visa types, Anmeldung, insurance rules)
-- [ ] **Where:** New feature — chat interface or assistant panel
-- [ ] **Model:** Claude Sonnet or GPT-4o (needs reasoning for complex situations)
-- [ ] **Priority:** High — differentiator, but complex to build well
-
-### 7. Natural Language Search
-- [ ] "Where can I work quietly near Ehrenfeld with good WiFi?"
-- [ ] "What events are happening this weekend for English speakers?"
-- [ ] "How do I get to Mediapark from Nippes without tram line 12?"
-- [ ] Convert natural language → structured query against spots/events/transit
-- [ ] **Where:** Search bar enhancement
-- [ ] **Model:** GPT-4o-mini (structured output extraction)
-- [ ] **Priority:** Medium — nice but filters/categories work for most cases
-
----
-
-## Not Worth LLM (keep rule-based)
-
-These work well as deterministic logic — adding LLM would be slower, more expensive, and less reliable:
-
-- Bike vs tram decision (weather + disruptions → simple scoring)
-- Leave-by time calculation (math: arrive_by - travel_time)
-- Holiday detection (lookup table)
-- Card diversity/dedup (array filtering)
-- Commute context detection (time + GPS + schedule → if/else)
-- Notification throttling (Redis counters)
-- GTFS departure lookups (database queries)
-
----
-
-## Implementation Order (suggested)
-
-| Phase | Feature | Effort | Impact |
-|-------|---------|--------|--------|
-| 1 | News & disruption summarization | Small | High |
-| 2 | Event enrichment | Medium | High |
-| 3 | German letter translation | Medium | Very High |
-| 4 | Smart notification text | Small | Medium |
-| 5 | Bureaucracy assistant | Large | High |
-| 6 | Natural language search | Medium | Medium |
-| 7 | Spot descriptions | Small | Low |
-
-Phase 1-2 can share the same LLM integration infrastructure (API client, retry logic, cost tracking, structured output parsing). Build that foundation first, then the user-facing features become easier.
+| April idea | Status |
+|---|---|
+| Event enrichment (category, English summary) | Built as the event classifier; off by default |
+| German disruption text summarised in English | Not built; proposed as a cached "alert humaniser" |
+| Generated notification text | Not built. The October review keeps LLMs out of the push path; times are never generated |
+| Place descriptions | Not built. `spot_enrichments` exists but has no producer; EXP-115 adds deterministic `place_features` first |
+| Letter translation and decoding | Not built; needs the residency decision and PII redaction |
+| Paperwork assistant | Only grounded extraction; answers come from the verified catalogue, never from a model |
+| Natural-language search | The Composer prompt parser covers intent; there is no full-text search index |

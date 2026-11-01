@@ -8,6 +8,16 @@ use Illuminate\Http\Request;
 
 class PushSubscriptionController extends Controller
 {
+    public function status(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['endpoint' => ['required', 'url']]);
+
+        return response()->json([
+            'subscribed' => $request->user()->pushSubscriptions()
+                ->where('endpoint', $validated['endpoint'])->exists(),
+        ]);
+    }
+
     /**
      * Store a new push subscription for the authenticated user.
      */

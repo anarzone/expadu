@@ -1,14 +1,14 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import SocialLoginButtons from '@/components/social-login-buttons';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import { useEffect, useRef } from 'react';
+import {
+    AccountFlash,
+    AccountLabel,
+    AccountField,
+    AccountMessage,
+    AccountPassword,
+    AccountSocial,
+} from '@/components/account/account-parts';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
@@ -21,6 +21,11 @@ type Props = {
     socialProviders: string[];
 };
 
+/** lang/en/auth.php's `failed`, as the poster begins it. */
+const MISMATCH = 'That email and password don’t match.';
+
+/** Sign in (the mock's #sign-in and #mismatch): the email stays when the
+    details don't match, and the password takes the focus. */
 export default function Login({
     status,
     canResetPassword,
@@ -30,8 +35,16 @@ export default function Login({
     const form = useForm({
         email: '',
         password: '',
-        remember: false,
+        remember: true,
     });
+    const password = useRef<HTMLInputElement>(null);
+    const mismatch = form.errors.email;
+
+    useEffect(() => {
+        if (mismatch) {
+            password.current?.focus();
+        }
+    }, [mismatch]);
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -42,112 +55,84 @@ export default function Login({
 
     return (
         <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
+            switchTo={
+                canRegister
+                    ? {
+                          href: register.url(),
+                          lead: 'New here?',
+                          action: 'Create an account',
+                      }
+                    : undefined
+            }
         >
-            <Head title="Log in" />
-
-            {socialProviders.length > 0 && (
-                <>
-                    <SocialLoginButtons providers={socialProviders} />
-                    <div className="relative my-2">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                                or continue with email
-                            </span>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            <form onSubmit={submit} className="flex flex-col gap-6">
-                <div className="grid gap-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            autoComplete="email"
-                            placeholder="email@example.com"
-                            value={form.data.email}
-                            onChange={(e) =>
-                                form.setData('email', e.target.value)
-                            }
-                        />
-                        <InputError message={form.errors.email} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
-                            {canResetPassword && (
-                                <TextLink
-                                    href={request()}
-                                    className="ml-auto text-sm"
-                                    tabIndex={5}
-                                >
-                                    Forgot password?
-                                </TextLink>
-                            )}
-                        </div>
-                        <PasswordInput
-                            id="password"
-                            required
-                            tabIndex={2}
-                            autoComplete="current-password"
-                            placeholder="Password"
-                            value={form.data.password}
-                            onChange={(e) =>
-                                form.setData('password', e.target.value)
-                            }
-                        />
-                        <InputError message={form.errors.password} />
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            tabIndex={3}
-                            checked={form.data.remember}
-                            onCheckedChange={(checked) =>
-                                form.setData('remember', checked === true)
-                            }
-                        />
-                        <Label htmlFor="remember">Remember me</Label>
-                    </div>
-
-                    <Button
-                        type="submit"
-                        className="mt-4 w-full"
-                        tabIndex={4}
-                        disabled={form.processing}
-                    >
-                        {form.processing && <Spinner />}
-                        Log in
-                    </Button>
-                </div>
-
-                {canRegister && (
-                    <div className="text-center text-sm text-muted-foreground">
-                        Don't have an account?{' '}
-                        <TextLink href={register()} tabIndex={5}>
-                            Sign up
-                        </TextLink>
-                    </div>
+            <Head title="Sign in" />
+            <form onSubmit={submit}>
+                <AccountLabel>Hallo again</AccountLabel>
+                <h1 tabIndex={-1}>Welcome back</h1>
+                {mismatch ? (
+                    <AccountMessage kind="mismatch">
+                        {/* After lang/en/auth.php's `failed` (not its
+                            throttle line), the way out; each run of text one
+                            node, as the mock's, so it shapes the same. */}
+                        {mismatch.startsWith(MISMATCH) && canResetPassword ? (
+                            <>
+                                {`${mismatch} Check both, or `}
+                                <a href={request.url()}>reset your password</a>
+                                {'.'}
+                            </>
+                        ) : (
+                            mismatch
+                        )}
+                    </AccountMessage>
+                ) : (
+                    <>
+                        <p className="account-lead">Sign in to see your day.</p>
+                        <AccountFlash />
+                        {status ? (
+                            <AccountMessage kind="done">
+                                {status}
+                            </AccountMessage>
+                        ) : null}
+                    </>
                 )}
+                <AccountSocial providers={socialProviders} />
+                <AccountField
+                    id="email"
+                    label="Email"
+                    type="email"
+                    autoComplete="email"
+                    value={form.data.email}
+                    onChange={(v) => form.setData('email', v)}
+                />
+                <AccountPassword
+                    id="password"
+                    label="Password"
+                    autoComplete="current-password"
+                    value={form.data.password}
+                    onChange={(v) => form.setData('password', v)}
+                    forgotHref={canResetPassword ? request.url() : undefined}
+                    error={form.errors.password}
+                    inputRef={password}
+                />
+                <label className="account-keep">
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        checked={form.data.remember}
+                        onChange={(e) =>
+                            form.setData('remember', e.target.checked)
+                        }
+                    />
+                    Keep me signed in
+                </label>
+                <button
+                    className="account-primary"
+                    type="submit"
+                    disabled={form.processing}
+                >
+                    Sign in
+                </button>
             </form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </AuthLayout>
     );
 }

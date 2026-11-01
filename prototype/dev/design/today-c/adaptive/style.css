@@ -1,0 +1,535 @@
+/* Three review states, one Expadu visual language. */
+.adaptive-review {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 8px 24px;
+    background: #eaf3f5;
+    color: var(--muted);
+    font-size: 12px;
+}
+.adaptive-scenarios {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 13px;
+    background: #dfecef;
+}
+.adaptive-scenarios button {
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--ink);
+    transition:
+        background 160ms ease,
+        box-shadow 160ms ease;
+}
+.adaptive-scenarios button[aria-pressed='true'] {
+    background: white;
+    box-shadow: 0 2px 5px #1637400b;
+    font-weight: 600;
+}
+.adaptive-review > a {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+}
+.adaptive-review svg,
+.adaptive-feature-label svg,
+.adaptive-route-alert svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+.adaptive-review :is(button, a):focus-visible,
+.adaptive-route-alert :is(button, summary):focus-visible {
+    outline: 2px solid #2e6b7b;
+    outline-offset: -3px;
+}
+.today-adaptive .adaptive-top {
+    margin: 24px 0;
+}
+.today-adaptive .adaptive-top .clarity {
+    margin: 0;
+}
+.today-adaptive .clarity .section-heading h2 {
+    font-size: 22px;
+    color: var(--ink);
+}
+.today-adaptive .clarity .today-next {
+    margin: 0 0 12px;
+}
+.adaptive-feature-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    height: 30px;
+    margin-bottom: 8px;
+    color: #7548af;
+}
+.adaptive-feature .festival-card {
+    height: 440px;
+    width: 100%;
+}
+.adaptive-feature .festival-story {
+    inset: auto 28px 30px;
+    gap: 16px;
+}
+.today-adaptive .adaptive-feature .festival-title {
+    font-size: clamp(40px, 4.5vw, 62px);
+    max-width: 540px;
+}
+.adaptive-feature .festival-facts {
+    gap: 12px 18px;
+    font-size: 13px;
+    width: calc(100% - 70px);
+    flex-wrap: wrap;
+}
+.adaptive-feature .festival-facts svg {
+    width: 18px;
+    height: 18px;
+}
+.adaptive-feature .festival-open:focus-visible {
+    outline: 3px solid var(--cyan);
+    outline-offset: -5px;
+}
+.adaptive-feature .festival-shade {
+    background: linear-gradient(
+        0deg,
+        #061525f5,
+        #06152560 52%,
+        transparent 80%
+    );
+}
+/* A highlight earns the first slot. The overview remains alongside it. */
+.today-adaptive[data-today-layout='event'] .adaptive-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(310px, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+.today-adaptive[data-today-layout='event'] .clarity-panel {
+    grid-template-columns: 1fr;
+}
+.today-adaptive[data-today-layout='event'] .clarity .section-heading {
+    height: 30px;
+    margin-bottom: 8px;
+}
+.today-adaptive[data-today-layout='event'] .clarity-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    padding: 17px 19px;
+    gap: 6px 8px;
+    min-height: 0;
+}
+.today-adaptive[data-today-layout='event'] .clarity-item + .clarity-item {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+}
+.today-adaptive[data-today-layout='event'] .clarity-item h3 {
+    grid-column: 1;
+    margin: 0;
+    font-size: 13px;
+}
+.today-adaptive[data-today-layout='event'] .clarity-item h3 svg {
+    width: 18px;
+    height: 18px;
+}
+.today-adaptive[data-today-layout='event'] .clarity-data {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 0;
+    margin: 0;
+}
+.today-adaptive[data-today-layout='event'] .clarity-data strong {
+    font-size: 19px;
+}
+.today-adaptive[data-today-layout='event'] .clarity-context {
+    grid-column: 1;
+    margin: 0;
+}
+.today-adaptive[data-today-layout='event'] .clarity-item > small {
+    grid-column: 1;
+    margin: 0;
+}
+.today-adaptive[data-today-layout='event'] .clarity-action {
+    grid-column: 2;
+    grid-row: 1 / 5;
+    width: 44px;
+    height: 44px;
+    align-self: center;
+    border: 0;
+    border-radius: 50%;
+    padding: 12px;
+    margin: 0;
+    font-size: 0;
+    background: #fff0e8;
+}
+.today-adaptive[data-today-layout='event'] .c-forecast {
+    gap: 12px;
+}
+.today-adaptive[data-today-layout='event'] .c-forecast > div {
+    flex: 1;
+}
+.today-adaptive[data-today-layout='event'] .daily-board > .music-card {
+    grid-column: 2;
+    grid-row: 1;
+}
+.today-adaptive[data-today-layout='event'] .daily-board > .journey-card {
+    grid-column: 2;
+    grid-row: 2;
+}
+.today-adaptive[data-today-layout='event'] .daily-board > .paperwork-card {
+    grid-column: 2;
+    grid-row: 3;
+}
+.today-adaptive[data-today-layout='event']
+    .today-event-rail
+    > .festival-card:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / 4;
+}
+.today-adaptive[data-today-layout='event']
+    .today-event-rail
+    > .festival-card:nth-child(2) {
+    grid-column: 3;
+    grid-row: 1 / 4;
+}
+/* A route interruption becomes the lead within the familiar overview. */
+.today-adaptive[data-today-layout='delay'] .clarity-panel {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: stretch;
+}
+.today-adaptive[data-today-layout='delay'] #today-connections {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    display: block;
+    padding: 26px 30px 20px;
+    background: #fff4d7;
+    border: 0;
+}
+.today-adaptive[data-today-layout='delay'] #today-paperwork {
+    grid-column: 2;
+    grid-row: 1;
+    border-left: 0;
+}
+.today-adaptive[data-today-layout='delay'] #today-forecast {
+    grid-column: 2;
+    grid-row: 2;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+}
+.today-adaptive[data-today-layout='delay'] .clarity-data {
+    min-height: 0;
+}
+.adaptive-route-alert {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 16px;
+}
+.adaptive-alert-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+}
+.adaptive-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: white;
+    font-weight: 650;
+}
+.adaptive-line svg {
+    width: 17px;
+    height: 17px;
+    color: #306c7c;
+}
+.adaptive-sample {
+    margin-left: auto;
+    color: #76531b;
+    font-size: 11px;
+    font-weight: 400;
+}
+.today-adaptive .clarity-item .adaptive-delay-title {
+    display: block;
+    font-size: clamp(36px, 4vw, 52px);
+    font-weight: 650;
+    line-height: 1;
+    letter-spacing: -1.6px;
+    color: #9e4217;
+    margin: 4px 0 0;
+}
+.adaptive-delay-title > span {
+    color: var(--ink);
+    font-weight: 500;
+}
+.adaptive-route-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 500;
+    margin: -5px 0 0;
+    letter-spacing: -0.3px;
+}
+.adaptive-route-name svg {
+    width: 18px;
+    height: 18px;
+    color: #8f7349;
+}
+.adaptive-departure-times {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 0 0 4px;
+}
+.adaptive-departure-times > span {
+    display: grid;
+    gap: 4px;
+}
+.adaptive-departure-times small {
+    font-size: 12px;
+    color: #726247;
+}
+.adaptive-departure-times :is(s, strong) {
+    font-size: 24px;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+.adaptive-departure-times s {
+    font-weight: 400;
+    color: #786a54;
+    text-decoration-thickness: 1px;
+}
+.adaptive-departure-times > svg {
+    color: #8f7349;
+    margin-top: 18px;
+}
+.adaptive-route-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+.adaptive-route-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    border-radius: 14px;
+    min-height: 46px;
+    padding: 10px 16px;
+    background: white;
+    color: var(--action);
+    font-size: 14px;
+    font-weight: 600;
+    transition:
+        background 160ms ease,
+        transform 160ms ease;
+}
+.adaptive-route-actions > .adaptive-ask {
+    width: 46px;
+    padding: 13px;
+    color: #306c7c;
+}
+.adaptive-route-actions > button:active {
+    transform: scale(0.97);
+}
+.adaptive-alert-source {
+    font-size: 12px;
+    color: #725b36;
+}
+.adaptive-alert-source summary {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: fit-content;
+    min-height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    list-style: none;
+}
+.adaptive-alert-source summary::-webkit-details-marker {
+    display: none;
+}
+.adaptive-alert-source summary svg {
+    width: 15px;
+    height: 15px;
+}
+.adaptive-alert-source p {
+    max-width: 48ch;
+    line-height: 1.5;
+    margin: 4px 0 0;
+}
+@media (max-width: 760px) {
+    .adaptive-review {
+        padding: 6px 12px;
+        gap: 6px;
+        justify-content: space-between;
+    }
+    .adaptive-review > span {
+        display: none;
+    }
+    .adaptive-scenarios {
+        flex: 1;
+    }
+    .adaptive-scenarios button {
+        flex: 1;
+        min-height: 44px;
+        padding: 7px 8px;
+        font-size: 12px;
+    }
+    .adaptive-review > a {
+        width: 44px;
+        height: 44px;
+    }
+    .today-adaptive .adaptive-top {
+        margin: 20px 0;
+    }
+    .today-adaptive .clarity .section-heading h2 {
+        font-size: 20px;
+    }
+    .today-adaptive[data-today-layout='event'] .adaptive-top {
+        display: block;
+    }
+    .adaptive-feature {
+        margin-bottom: 22px;
+    }
+    .adaptive-feature-label {
+        height: 24px;
+        font-size: 13px;
+        margin-bottom: 10px;
+    }
+    .adaptive-feature .festival-card {
+        height: 372px;
+    }
+    .adaptive-feature .festival-story {
+        inset: auto 20px 24px;
+        gap: 14px;
+    }
+    .today-adaptive .adaptive-feature .festival-title {
+        font-size: clamp(32px, 10.5vw, 45px);
+    }
+    .adaptive-feature .festival-date {
+        font-size: 18px;
+    }
+    .adaptive-feature .festival-facts {
+        flex-direction: column;
+        gap: 7px;
+        font-size: 12px;
+    }
+    .today-adaptive[data-today-layout='event'] .clarity-item {
+        padding: 14px 16px;
+    }
+    .today-adaptive[data-today-layout='event'] .clarity-data strong {
+        font-size: 17px;
+    }
+    .today-adaptive[data-today-layout='event'] .daily-board > .music-card {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .today-adaptive[data-today-layout='event'] .daily-board > .journey-card {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .today-adaptive[data-today-layout='event'] .daily-board > .paperwork-card {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+    .today-adaptive[data-today-layout='event']
+        .today-event-rail
+        > .festival-card:nth-child(n) {
+        grid-column: auto;
+        grid-row: auto;
+    }
+    .today-adaptive[data-today-layout='delay'] .clarity-panel {
+        grid-template-columns: 1fr;
+    }
+    .today-adaptive[data-today-layout='delay'] #today-connections {
+        grid-column: 1;
+        grid-row: 1;
+        padding: 18px 18px 10px;
+    }
+    .today-adaptive[data-today-layout='delay'] #today-paperwork {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    .today-adaptive[data-today-layout='delay'] #today-forecast {
+        grid-column: 1;
+        grid-row: 3;
+    }
+    .adaptive-route-alert {
+        gap: 14px;
+    }
+    .adaptive-alert-heading {
+        gap: 8px;
+        font-size: 12px;
+    }
+    .adaptive-sample {
+        font-size: 10px;
+    }
+    .adaptive-line {
+        padding: 6px 8px;
+    }
+    .today-adaptive .clarity-item .adaptive-delay-title {
+        font-size: 38px;
+        margin: 0;
+    }
+    .adaptive-route-name {
+        font-size: 16px;
+        gap: 6px;
+    }
+    .adaptive-departure-times {
+        gap: 22px;
+        margin: 0;
+    }
+    .adaptive-departure-times :is(s, strong) {
+        font-size: 23px;
+    }
+    .adaptive-route-actions > button:first-child {
+        flex: 1;
+    }
+    .adaptive-alert-source {
+        font-size: 11px;
+    }
+}
+@media (hover: hover) {
+    .adaptive-route-actions > button:hover {
+        background: #fffaf1;
+    }
+    .adaptive-scenarios button:hover:not([aria-pressed='true']) {
+        background: #ffffff80;
+    }
+}
+@media (max-width: 360px) {
+    .adaptive-scenarios button {
+        padding-inline: 6px;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .adaptive-scenarios button,
+    .adaptive-route-actions > button {
+        transition: none;
+    }
+    .adaptive-route-actions > button:active {
+        transform: none;
+    }
+}

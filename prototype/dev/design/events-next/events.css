@@ -1,0 +1,1151 @@
+@import url('../connected/tokens.css');
+/* Shared date, search and contextual event controls. */
+body[data-page='events'] {
+    --discovery-label: 14px;
+    --discovery-icon: 18px;
+    --event-control-rail: #eaf2f4;
+    --event-selection-shadow: 0 2px 6px #1537460b;
+}
+body[data-page='events'] #main {
+    max-width: 1240px;
+    padding-top: 12px;
+}
+.event-gallery,
+.event-calendar {
+    min-width: 0;
+}
+.event-gallery-head h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.event-discovery {
+    position: relative;
+    min-width: 0;
+}
+/* One date surface, with a shared week/month grid. */
+.event-calendar {
+    position: relative;
+    z-index: 26;
+    margin-bottom: 12px;
+}
+#event-calendar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.7px;
+}
+#event-calendar-toggle > svg {
+    width: 16px;
+    height: 16px;
+}
+#event-calendar-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: min(340px, 100%);
+    max-height: min(480px, 70dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: white;
+    box-shadow: 0 12px 36px #211d151a;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+.event-calendar[data-open='true'] #event-calendar-panel {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+}
+.event-calendar-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.event-calendar-views {
+    display: flex;
+    flex: 1;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: var(--event-control-rail);
+}
+.event-calendar-views button {
+    flex: 1;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+}
+.event-calendar-views button[aria-pressed='true'] {
+    background: white;
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--event-selection-shadow);
+}
+#event-calendar-close {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+}
+#event-calendar-close svg {
+    width: 18px;
+    height: 18px;
+}
+.event-calendar-navigation {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    margin-top: 6px;
+}
+.event-calendar-navigation button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+}
+#event-calendar-period {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-align: center;
+}
+.event-calendar-weekdays,
+.event-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    text-align: center;
+}
+.event-calendar-weekdays {
+    padding-block: 4px 8px;
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.event-calendar-grid-wrap {
+    overflow: hidden;
+}
+.event-week {
+    touch-action: pan-y;
+    user-select: none;
+}
+.event-week button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    font-size: var(--text-body);
+    touch-action: pan-y;
+}
+.event-week button[data-outside='true'] {
+    color: var(--muted);
+    opacity: 0.55;
+}
+.event-week button[aria-pressed='true'] {
+    background: var(--blue);
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+    box-shadow: none;
+    opacity: 1;
+}
+.event-calendar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: var(--text-small);
+    color: var(--muted);
+}
+#event-calendar-today {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    color: var(--action);
+    border-radius: var(--radius-md);
+}
+.event-calendar button:active {
+    background: var(--blue);
+}
+@media (prefers-reduced-motion: no-preference) {
+    #event-calendar-panel {
+        transition:
+            opacity 180ms ease,
+            visibility 180ms;
+    }
+    .event-calendar-views button {
+        transition:
+            background 180ms ease,
+            box-shadow 180ms ease;
+    }
+}
+.event-search-row {
+    display: flex;
+    gap: 8px;
+}
+.event-search {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    flex: 1;
+    height: var(--discovery-target);
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: white;
+}
+.event-search svg {
+    width: var(--discovery-icon);
+    height: var(--discovery-icon);
+    flex-shrink: 0;
+}
+.event-search input {
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    outline: none;
+    height: calc(var(--discovery-target) - 2px);
+    padding: 0;
+    font-size: var(--discovery-field-text);
+}
+.event-search:focus-within,
+.events-popover input[name='from']:focus,
+.event-sheet .place-journey input[name='from']:focus {
+    /* The field itself owns focus, without a second ring outside its edge. */
+    outline: none;
+    outline-offset: 0;
+    border-color: var(--cyan);
+    box-shadow: inset 0 0 0 1px var(--cyan);
+}
+.event-search button {
+    margin-right: -8px;
+    width: 36px;
+    height: 44px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+}
+.event-search button svg {
+    width: 16px;
+    height: 16px;
+}
+#free-only,
+#saved-events {
+    width: var(--discovery-target);
+    height: var(--discovery-target);
+    flex-shrink: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--event-control-rail);
+}
+#saved-events {
+    display: grid;
+    place-items: center;
+    padding: 0;
+}
+#free-only {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: auto;
+    padding: 0 10px;
+    font-size: var(--text-control);
+}
+#saved-events svg {
+    width: var(--discovery-icon);
+    height: var(--discovery-icon);
+}
+#saved-events[aria-pressed='true'] {
+    background: var(--blue);
+    border-color: var(--cyan);
+}
+#saved-events[aria-pressed='true'] svg {
+    fill: var(--cyan);
+}
+.event-categories {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-top: 6px;
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    background: var(--event-control-rail);
+}
+.event-categories::-webkit-scrollbar {
+    display: none;
+}
+.event-categories button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0 9px;
+    min-height: 44px;
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+    line-height: 1.2;
+    min-width: 44px;
+    color: var(--ink);
+    isolation: isolate;
+}
+.event-categories button[aria-pressed='true'] {
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+}
+.event-categories button[aria-pressed='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-md);
+    background: white;
+    box-shadow: var(--event-selection-shadow);
+    z-index: -1;
+}
+.event-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+}
+.event-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+.event-filter-group > button,
+.event-travel-control,
+.event-sort-control {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: var(--discovery-target);
+    padding: 0;
+    font-size: var(--discovery-label);
+    min-width: 0;
+}
+.event-filter-group [data-area-label] {
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.event-controls button > svg,
+.event-results-head > button > svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+.event-control-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--discovery-icon);
+    width: var(--discovery-icon);
+    height: var(--discovery-icon);
+    pointer-events: none;
+}
+.event-control-icon svg {
+    width: var(--discovery-icon, 20px);
+    height: var(--discovery-icon, 20px);
+    stroke-width: 1.7;
+}
+[data-category-icon] {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+.event-controls [data-event-picker],
+.event-results-head > button,
+#event-week-toggle {
+    border-radius: var(--radius-md);
+}
+.event-controls [data-event-picker][aria-expanded='true'],
+.event-controls [data-event-picker][data-selected='true'],
+#event-week-toggle[aria-expanded='true'] {
+    color: var(--ink);
+    background: var(--blue);
+}
+.event-controls [data-event-picker='area'],
+.event-category-trigger {
+    padding-inline: 10px;
+}
+.event-travel-control,
+.event-sort-control,
+.event-results-head > #reset-event-filters {
+    width: 44px;
+    min-width: 44px;
+    justify-content: center;
+}
+.event-travel-control[data-has-origin='true']::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    position: absolute;
+    top: 8px;
+    right: 7px;
+    border-radius: var(--radius-round);
+    background: var(--cyan);
+}
+.event-control-scroller > button:active,
+.event-filter-group > button:active,
+.event-results-head > button:active,
+#event-week-toggle:active {
+    background: var(--blue);
+}
+.event-categories .event-control-icon,
+.event-categories .event-control-icon svg {
+    width: var(--discovery-icon);
+    height: var(--discovery-icon);
+}
+#events-category .events-options button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#free-only {
+    min-width: 44px;
+}
+#free-only[aria-pressed='true'] {
+    color: var(--ink);
+    background: var(--blue);
+    border-color: var(--cyan);
+}
+.event-travel-control {
+    position: relative;
+    max-width: 48%;
+    margin-left: auto;
+    color: var(--ink);
+}
+[data-travel-label] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.events-popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: min(var(--discovery-menu-width), 100%);
+    max-height: min(440px, 55dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: 20;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 36px #211d151a;
+    padding: 6px 12px 12px;
+}
+.events-popover[hidden] {
+    display: none;
+}
+#events-sort {
+    left: auto;
+    right: 0;
+    width: 200px;
+    padding: 6px;
+}
+#events-sort header {
+    padding-left: 10px;
+}
+#events-sort header button {
+    margin-right: 0;
+}
+#events-travel {
+    left: auto;
+    right: 0;
+}
+.events-popover header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+}
+.events-popover header strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.events-popover header button {
+    width: 44px;
+    height: 44px;
+    margin-right: -8px;
+    padding: 0;
+    color: var(--color-text-soft);
+}
+.events-popover header svg {
+    width: 16px;
+    height: 16px;
+}
+.events-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+#events-sort .events-options {
+    grid-template-columns: 1fr;
+}
+.events-options button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: var(--text-small);
+    border-radius: var(--radius-md);
+    text-align: left;
+    padding: 8px;
+}
+#events-sort .events-options button {
+    padding: 8px 10px;
+    font-size: var(--text-small);
+    border-radius: var(--radius-md);
+}
+/* The shared picker's selected row: cyan, with a check (as on Places). */
+.events-options button[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    font-weight: var(--weight-semibold);
+}
+.events-options button[aria-pressed='true']::after {
+    content: '';
+    flex: 0 0 14px;
+    height: 14px;
+    margin-left: auto;
+    background: var(--color-select-text);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+}
+.events-popover input[name='from'] {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-canvas);
+    font-size: 16px; /* 16px keeps phones from zooming in */
+}
+.events-popover fieldset {
+    border: 0;
+    padding: 0;
+    margin: 10px 0 0;
+}
+.events-popover legend {
+    font-size: var(--text-caption);
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+.event-mode-options {
+    display: flex;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    gap: 3px;
+}
+.event-mode-options label {
+    flex: 1;
+    position: relative;
+    text-align: center;
+}
+.event-mode-options input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+}
+.event-mode-options label > span {
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-control);
+}
+/* The chosen mode is a selection: cyan, like Places' starting point. */
+.event-mode-options :checked + span {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    box-shadow: inset 0 -2px var(--color-select-text);
+}
+.event-mode-options :focus-visible + span {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+.events-popover-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+}
+.events-popover-foot small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.events-popover-foot button {
+    flex: none;
+    min-height: 44px;
+    padding: 6px 12px;
+    color: var(--color-action-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.event-results-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 40px;
+    font-size: var(--text-small);
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+.event-results-count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    white-space: nowrap;
+}
+.event-sample {
+    margin-left: 4px;
+    font-size: var(--text-caption);
+}
+.event-results-head > button {
+    min-height: 44px;
+    padding: 0;
+    color: var(--action);
+    font-size: var(--text-caption);
+}
+.programme-art {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+.programme-art svg {
+    width: 25px;
+    height: 25px;
+}
+.event-empty {
+    text-align: center;
+    padding: 24px 18px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+}
+.event-empty > svg {
+    width: 32px;
+    height: 32px;
+    color: var(--cyan);
+}
+.event-empty h2 {
+    font-size: var(--text-section);
+    line-height: 1.3;
+    margin: 12px 0 8px;
+}
+.event-empty p {
+    color: var(--muted);
+    font-size: var(--text-small);
+}
+.event-empty .button {
+    min-height: 42px;
+    font-size: var(--text-caption);
+    padding: 8px 12px;
+}
+@media (max-width: 359px) {
+    .event-categories button {
+        font-size: var(--text-caption);
+        padding-inline: 8px;
+    }
+    .programme-art {
+        width: 30px;
+        height: 34px;
+    }
+    .programme-art svg {
+        width: 22px;
+        height: 22px;
+    }
+    .event-filter-group [data-area-label] {
+        max-width: 88px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .event-week button,
+    .event-categories button,
+    .event-filter-group > button,
+    .event-travel-control,
+    .event-sort-control,
+    #free-only,
+    .events-options button {
+        transition:
+            background 180ms ease,
+            color 180ms ease,
+            box-shadow 180ms ease;
+    }
+}
+body[data-page='events'] #main .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* One inset focus treatment for browsing controls; typing fields own their border. */
+body[data-page='events'] #main button:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+body[data-page='events'] #main button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.event-category-trigger {
+    display: none;
+}
+#reset-event-filters-mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    color: var(--action);
+    font-size: var(--text-small);
+}
+@media (min-width: 1000px) {
+    #events-category {
+        display: none;
+    }
+    /* The controls are a small group at the row's end: the panels keep
+       the shared picker width and open leftwards from its right edge. */
+    #events-area,
+    #events-travel {
+        left: auto;
+        right: 0;
+        width: var(--discovery-menu-width);
+    }
+}
+@media (max-width: 999px) {
+    .event-categories,
+    #reset-event-filters {
+        display: none;
+    }
+    .event-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px 44px;
+        gap: 4px;
+        margin-top: 8px;
+        padding: 4px;
+        border-radius: var(--radius-lg);
+        background: var(--event-control-rail);
+    }
+    .event-controls
+        [data-event-picker]:is([aria-expanded='true'], [data-selected='true']) {
+        background: white;
+        box-shadow: var(--event-selection-shadow);
+    }
+    .event-filter-group {
+        display: contents;
+    }
+    .event-category-trigger {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        min-height: 44px;
+        padding: 0 4px;
+        font-size: var(--discovery-label);
+        text-align: left;
+        border-radius: var(--radius-md);
+    }
+    .event-controls [data-event-picker='area'] {
+        padding-inline: 4px;
+        gap: 5px;
+    }
+    #free-only {
+        width: 44px;
+        padding: 0;
+    }
+    #free-only > span:last-child {
+        display: none;
+    }
+    [data-category-label],
+    .event-filter-group [data-area-label] {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: none;
+    }
+    .event-travel-control {
+        position: relative;
+        max-width: none;
+        margin-left: 0;
+        justify-content: center;
+    }
+    #events-category {
+        width: min(300px, 100%);
+    }
+    .event-results-head {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .event-sample {
+        border: 0;
+        padding: 0;
+        font-size: var(--text-caption);
+    }
+    .event-results-count {
+        gap: 5px;
+        flex: 1;
+        min-width: 0;
+    }
+    @media (max-width: 359px) {
+        /* No room for the place: the chip's dot, spoken name and tooltip. */
+        html body .event-control-scroller > .event-travel-control[data-has-origin='true'] {
+            flex: 0 0 44px;
+            width: 44px;
+            padding: 0;
+        }
+        html body .event-controls .event-travel-control[data-has-origin='true'] [data-travel-place] {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            clip-path: inset(50%);
+        }
+        .event-controls {
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 44px 44px;
+            gap: 1px;
+        }
+        .event-category-trigger,
+        .event-controls [data-event-picker='area'] {
+            font-size: var(--text-control);
+            gap: 5px;
+            padding-inline: 3px;
+        }
+    }
+}
+
+/* The artwork carries the colour; the shared pale canvas gives it breathing room. */
+body[data-page='events'] {
+    background: var(--paper);
+}
+
+/* Compact filters: Free, Saved, Travel and Sort are icon buttons with
+   tooltips and spoken names; Category and Area are dropdowns, named and
+   marked with a chevron, so they read as filters. The search keeps the room. */
+.event-control-scroller {
+    display: contents;
+}
+#saved-events .event-control-label,
+.event-controls .event-control-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.event-controls [data-event-picker] > .event-picker-chevron {
+    width: 14px;
+    height: 14px;
+    margin-left: -1px;
+    flex-shrink: 0;
+    color: var(--color-text-soft);
+}
+@media (max-width: 999px) {
+    .event-controls {
+        display: block;
+        margin-top: 6px;
+    }
+    /* Same 8px gap as the search row, so the icon buttons line up. */
+    .event-control-scroller {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+    }
+    .event-control-scroller::-webkit-scrollbar {
+        display: none;
+    }
+    .event-control-scroller[data-more='true'] {
+        mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+    }
+    .event-control-scroller .event-category-trigger,
+    .event-control-scroller [data-event-picker='area'] {
+        flex: 0 1 auto;
+        min-width: 0;
+        padding-inline: 10px 8px;
+        gap: 5px;
+    }
+    [data-category-label],
+    .event-filter-group [data-area-label] {
+        max-width: 104px;
+    }
+    .event-travel-control {
+        margin-left: auto;
+    }
+    .event-travel-control,
+    .event-sort-control {
+        flex: 0 0 44px;
+        width: 44px;
+        padding: 0;
+    }
+}
+/* A starting point shows on its chip (owner chose A, 16 Oct 2026). */
+.event-controls .event-travel-control[data-has-origin='true'] {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 220px;
+    padding-inline: 12px 14px;
+}
+.event-controls .event-travel-control[data-has-origin='true'] [data-travel-label] {
+    position: static;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    clip-path: none;
+}
+/* Narrower than 1366px the place alone, so the filters keep one row; the
+   chip's spoken name and tooltip still say "From". */
+@media (max-width: 1365px) {
+    .event-controls .event-travel-control[data-has-origin='true'] [data-travel-label] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        clip-path: inset(50%);
+    }
+    .event-controls .event-travel-control[data-has-origin='true'] [data-travel-place] {
+        position: static;
+        width: auto;
+        height: auto;
+        min-width: 0;
+        overflow: hidden;
+        clip-path: none;
+        text-overflow: ellipsis;
+    }
+}
+/* A chosen value uses the cyan selection colour, like Free and Saved; an
+   open control is only pressed (neutral), on every screen. */
+.event-controls [data-event-picker][data-selected='true'] {
+    background: var(--color-select-bg);
+    box-shadow: none;
+}
+.event-controls [data-event-picker][aria-expanded='true'] {
+    background: var(--color-bg-hover);
+    box-shadow: none;
+}
+@media (max-width: 700px) {
+    /* On phones a chosen value replaces the icon, so the words fit. */
+    .event-control-scroller
+        [data-event-picker][data-selected='true']
+        .event-control-icon {
+        display: none;
+    }
+    /* Sort and the starting point lead their rows; the search, Category
+       and Area stretch to the edge. Menus open under their buttons. */
+    .event-gallery-head {
+        position: relative;
+    }
+    .event-control-scroller > .event-travel-control {
+        margin-left: 0;
+    }
+    .event-control-scroller > .event-travel-control[data-has-origin='true'] {
+        max-width: 40%;
+        padding-inline: 10px 12px;
+    }
+    .event-control-scroller > .event-category-trigger {
+        flex: none;
+    }
+    .event-control-scroller > .event-filter-group {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .event-filter-group > [data-event-picker='area'] {
+        width: 100%;
+    }
+    #events-sort,
+    #events-travel {
+        left: 0;
+        right: auto;
+    }
+    .event-control-scroller > .event-sort-control,
+    .event-search-row > .event-sort-control {
+        flex-shrink: 0;
+        height: var(--discovery-target);
+        border-radius: var(--radius-lg);
+        background: var(--event-control-rail);
+    }
+    .event-control-scroller > .event-sort-control .event-control-label,
+    .event-search-row > .event-sort-control .event-control-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+/* Free and Saved are in the Category menu, under "Show only", on phones
+   and tablets (app.js); a dot on Category says one is on. */
+@media (max-width: 999px) {
+    .events-only {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+    }
+    .events-only p {
+        margin: 0 0 4px;
+        padding: 0 8px;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .events-only :is(#free-only, #saved-events) {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: auto;
+        height: auto;
+        min-height: 44px;
+        padding: 8px;
+        border-radius: var(--radius-md);
+        background: transparent;
+        font-size: var(--text-control);
+    }
+    .events-only #free-only > span:last-child,
+    .events-only #saved-events .event-control-label {
+        position: static;
+        display: inline;
+        width: auto;
+        height: auto;
+        clip-path: none;
+    }
+    .events-only :is(#free-only, #saved-events)[aria-pressed='true'] {
+        background: var(--blue);
+        font-weight: var(--weight-semibold);
+    }
+    .event-category-trigger {
+        position: relative;
+    }
+    .event-controls:has(.events-only [aria-pressed='true'])
+        .event-category-trigger::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        right: 6px;
+        width: 6px;
+        height: 6px;
+        border-radius: var(--radius-round);
+        background: var(--cyan);
+    }
+}
+@media (max-width: 380px) {
+    /* Sort shares this row with the starting point (the date leads the
+       search row), so the gaps tighten to keep Area clear of Composer. */
+    .event-control-scroller {
+        gap: 6px;
+    }
+    .event-control-scroller .event-category-trigger,
+    .event-control-scroller [data-event-picker='area'] {
+        padding-inline: 8px 6px;
+        gap: 4px;
+    }
+}
+@media (max-width: 480px) {
+    .event-control-scroller .event-category-trigger .event-control-icon,
+    .event-control-scroller [data-event-picker='area'] .event-control-icon {
+        display: none;
+    }
+}
+
+/* ---------- Pickers as bottom sheets (owner request, 9 October 2026) ----------
+   On phones and tablets the filter row sits low on the first screen, so a
+   panel anchored under it ran off the bottom. Each picker is a bottom sheet
+   instead, like Today's and the Event sheet: light scrim, no blur, a handle
+   on the top edge to drag down. */
+.events-sheet-scrim {
+    display: none;
+}
+@media (max-width: 999px) {
+    .events-sheet-scrim:not([hidden]) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: #0005;
+        touch-action: none;
+    }
+    .event-controls > .events-popover:is(#events-area, #events-travel, #events-sort, #events-category) {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 81;
+        width: min(100%, 560px);
+        max-height: calc(100dvh - 40px);
+        margin-inline: auto;
+        padding: 22px 16px max(20px, env(safe-area-inset-bottom));
+        border: 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        box-shadow: var(--shadow-sheet);
+    }
+    .events-popover:focus {
+        outline: none;
+    }
+    /* The top edge is the handle. */
+    .events-popover header {
+        position: relative;
+        touch-action: none;
+    }
+    .events-popover header::before {
+        content: '';
+        position: absolute;
+        top: -14px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+    #events-sort header {
+        padding-left: 0;
+    }
+    #events-sort .events-options button {
+        padding-inline: 8px;
+    }
+}
+

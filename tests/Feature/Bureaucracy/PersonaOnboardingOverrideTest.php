@@ -6,7 +6,7 @@ use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyFactConflict;
 use App\Models\User;
-use App\Onboarding\ApplyOnboardingAnswers;
+use Tests\Support\PaperworkStart;
 
 /**
  * Owner: "Why does it say two answers do not match? I've entered my answers,
@@ -17,10 +17,8 @@ use App\Onboarding\ApplyOnboardingAnswers;
  * the conflict machinery exists to catch — so his own onboarding answers came
  * back as a disagreement with a synthetic persona.
  *
- * ApplyOnboardingAnswers already declares the intended precedence: it clears
- * the `qa_persona` badge because "hand-answered onboarding replaces whatever
- * persona the QA switcher last applied". It just never retired the persona's
- * facts, so only half of that was true.
+ * Answers the person confirms themselves replace whatever persona the QA
+ * switcher last applied, facts included (CompleteBureaucracyOnboarding).
  */
 beforeEach(function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
@@ -38,15 +36,13 @@ function onboardedAfter(?array $persona): User
         app(ScenarioFactSynchronizer::class)->sync($user, $persona);
     }
 
-    app(ApplyOnboardingAnswers::class)->execute($user->fresh(), [
-        'situation' => 'non_eu_employee',
-        'is_eu' => false,
-        'veedel' => 'Ehrenfeld',
+    PaperworkStart::completeDraft($user->fresh(), [
+        'citizenship_group' => 'non_eu',
+        'purpose' => 'employment',
         'arrival_planned' => false,
         'arrival_date' => now()->subYear()->toDateString(),
         'entry_mode' => 'has_permit',
         'current_residence_title' => 'family_reunification',
-        'interests' => [],
     ]);
 
     return $user->fresh();

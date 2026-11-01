@@ -1,16 +1,18 @@
 <?php
 
-use App\Home\HomeContext;
+use App\Bureaucracy\Verification\SourceCheckRecorder;
+use App\Composer\ActivePlanStore;
+use App\Composer\AppointmentRepository;
+use App\Composer\Constraints;
+use App\Composer\PrivatePlanCache;
 use App\Models\User;
-use App\Models\UserTask;
-use App\Profile\ProfileEngine;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\HtmlString;
+use Tests\Support\OfflineSourceChecks;
 use Tests\TestCase;
 
 /*
@@ -42,12 +44,15 @@ pest()->extend(TestCase::class)
         // prefix, so strip it first, then clear every match.
         $prefix = (string) config('database.redis.options.prefix');
         $strip = fn (string $key): string => str_starts_with($key, $prefix) ? substr($key, strlen($prefix)) : $key;
-        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*'] as $pattern) {
+        foreach (['confirmed_location:*', 'location_history:*', 'location_proximity:*', 'notif_throttle:*', 'pending_actions:*', 'mute:*'] as $pattern) {
             $stale = array_map($strip, Redis::keys($pattern));
             if ($stale !== []) {
                 Redis::del(...$stale);
             }
         }
+
+        // No network here: automatically checked cards count as passing when their claims pass offline.
+        app()->bind(SourceCheckRecorder::class, OfflineSourceChecks::class);
 
         // Mock Vite so tests don't need npm run build
         app()->instance(Vite::class, new class extends Vite
@@ -143,33 +148,23 @@ function something()
 }
 
 /**
- * Build a HomeContext for home-feed unit tests — real profile + open tasks,
- * with controllable now/rain/weights/events.
+ * Seed the active Composer plan through the real encrypted store, stamped with
+ * the user's current appointment revision so it passes the freshness check.
  *
- * @param  array<string, mixed>  $overrides
+ * @param  array<string, mixed>  $plan
+ * @return array<string, mixed> the plan as stored
  */
-function homeContext(User $user, array $overrides = []): HomeContext
+function storeComposerPlan(User $user, array $plan): array
 {
-    return new HomeContext(
-        userId: $user->id,
-        profile: app(ProfileEngine::class)->build($user),
-        now: $overrides['now'] ?? CarbonImmutable::now('Europe/Berlin'),
-        rainExpected: $overrides['rainExpected'] ?? false,
-        rainSummary: $overrides['rainSummary'] ?? null,
-        intentWeights: $overrides['intentWeights'] ?? [],
-        isWeekendWindow: $overrides['isWeekendWindow'] ?? false,
-        isEvening: $overrides['isEvening'] ?? false,
-        openTasks: $overrides['openTasks'] ?? UserTask::query()
-            ->where('user_id', $user->id)
-            ->open()
-            ->notSnoozed()
-            ->with('task')
-            ->get(),
-        tonightEvents: $overrides['tonightEvents'] ?? collect(),
-        originLat: $overrides['originLat'] ?? null,
-        originLng: $overrides['originLng'] ?? null,
-        todayPlanSlots: $overrides['todayPlanSlots'] ?? [],
-        leaveByAnchors: $overrides['leaveByAnchors'] ?? [],
-        intendedEventIds: $overrides['intendedEventIds'] ?? [],
-    );
+    $plan['appointment_revision'] = app(AppointmentRepository::class)
+        ->revision($user, Constraints::fromArray($plan['constraints']));
+    app(ActivePlanStore::class)->save($user, $plan);
+
+    return $plan;
+}
+
+/** @return array<string, mixed>|null */
+function storedComposerPlan(User $user): ?array
+{
+    return app(PrivatePlanCache::class)->get($user, 'plan');
 }

@@ -4,7 +4,9 @@ on:
   push:
     branches: [main, staging]
   pull_request:
-    branches: [main, staging]
+    # The launch branch too: its PRs get the same lint, tests and browser specs as a
+    # release, on GitHub's machines. Deploy jobs still run only for main and staging.
+    branches: [main, staging, 'launch/**']
   workflow_dispatch:
 
 jobs:
@@ -46,8 +48,17 @@ jobs:
       - name: ESLint
         run: npm run lint:check
 
+      - name: Frontend behavior tests
+        run: node --experimental-strip-types --import ./tests/Frontend/support/register.mjs --test tests/Frontend/*.test.mjs tests/Unit/Frontend/*.test.cjs
+
   test:
-    name: Test
+    # Three shards in parallel: the suite took ~15 min as one job and gated every
+    # PR and staging deploy. Deploy jobs' `needs: [test]` waits for all three.
+    name: Test (${{ matrix.shard }}/3)
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
 
     services:
@@ -106,7 +117,10 @@ jobs:
           # flicker green during postgis setup and crash if a host-side
           # client connects mid-init.
           for i in $(seq 1 60); do
-            if docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
+            # The init scripts run on a temporary server that then restarts: the
+            # extensions show up before that restart, so wait for init to finish too.
+            if docker logs pgsql 2>&1 | grep -q "PostgreSQL init process complete" \
+              && docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
               # Confirm both extensions are loadable (proves init finished)
               if docker exec pgsql psql -U sail -d testing -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','vector')" 2>/dev/null | grep -q vector; then
                 echo "postgres ready after ${i}s"
@@ -137,16 +151,22 @@ jobs:
             -c "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
 
       - name: Run Tests
-        run: vendor/bin/pest --compact --parallel --exclude-group=slow
+        run: vendor/bin/pest --compact --parallel --exclude-group=slow --filter "$(php tests/shard.php ${{ matrix.shard }} 3)"
+
+      # Two worker processes meet at a database lock barrier; that only
+      # behaves deterministically outside the parallel runner, so run it alone.
+      - name: Run concurrency tests (serial)
+        if: matrix.shard == 1
+        run: vendor/bin/pest --compact --group=serial-concurrency
 
   browser-test:
     name: Browser Tests
     runs-on: ubuntu-latest
     # Gates deploys: deploy-staging / deploy-production list this in `needs`, so
-    # a red Playwright suite blocks the ship. Runs the auth + chromium projects
+    # a red Playwright suite blocks the ship. Runs the auth + desktop + mobile projects
     # against a freshly built app + seeded DB (+ the E2E user), serves on :8080,
     # and uploads the report so any regression is visible.
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     services:
       redis:
@@ -176,6 +196,9 @@ jobs:
       # dev server and dies with "Couldn't reach the server". Pin local so the
       # build emits relative route URLs.
       APP_ENV: local
+      # Every spec signs in as the one E2E account, so the per-person write,
+      # Composer and Paperwork budgets would stop the later specs with 429s.
+      RATE_LIMIT_SCALE: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -205,7 +228,14 @@ jobs:
           npm ci --legacy-peer-deps
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          npm run build
+          npx vite build --ssr
+
+      - name: TypeScript (after generated routes)
+        run: |
+          npm run types:check
+          npx tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --lib WebWorker resources/sw.ts
 
       - name: Build Postgres image (postgis + pgvector)
         run: docker build -t expadu-pgsql ./docker/pgsql
@@ -219,7 +249,9 @@ jobs:
             -p 5432:5432 \
             expadu-pgsql
           for i in $(seq 1 60); do
-            if docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
+            # As in the test job: the extensions appear before init's restart.
+            if docker logs pgsql 2>&1 | grep -q "PostgreSQL init process complete" \
+              && docker exec pgsql psql -U sail -d testing -c "SELECT 1" >/dev/null 2>&1; then
               if docker exec pgsql psql -U sail -d testing -c "SELECT extname FROM pg_extension WHERE extname IN ('postgis','vector')" 2>/dev/null | grep -q vector; then
                 echo "postgres ready after ${i}s"
                 break
@@ -247,11 +279,27 @@ jobs:
           php artisan migrate --force --seed
           php artisan db:seed --force --class=E2ETestUserSeeder
 
+      # The browser download from Playwright's CDN failed several runs on 21–22 Oct
+      # and blocked deploys; a cached copy skips it (system deps still install).
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright (chromium)
         run: npx playwright install --with-deps chromium
 
       - name: Start app server
         run: |
+          node bootstrap/ssr/ssr.js > /tmp/ssr.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:13714/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:13714/health >/dev/null
           php artisan serve --port=8080 --no-interaction > /tmp/serve.log 2>&1 &
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/login >/dev/null; then
@@ -262,7 +310,7 @@ jobs:
           done
 
       - name: Run browser tests
-        run: npx playwright test --project=auth --project=chromium
+        run: npx playwright test --project=auth --project=chromium --project=mobile
 
       - name: Upload Playwright report
         if: always()
@@ -394,26 +442,26 @@ jobs:
     name: Deploy to Staging
     # Tests must pass before we deploy — build runs in parallel with them but
     # the image only ships if the unit/feature suite and the browser suite come
-    # back green.
+    # back green. Same gate as production: the browser suite is the core journeys
+    # since 31 Oct 2026 and takes ~3 min, under the slowest PHP shard.
     needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
+      # The same deploy/staging.sh that `bin/deploy staging` runs when Actions is down.
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /data/staging
-            docker compose pull
-            docker compose up -d --force-recreate
-            sleep 5
-            docker exec staging-app php artisan migrate --force
-            docker exec staging-app php artisan bureaucracy:import-tasks --prune
-            docker image prune -f
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "root@$SERVER_IP" 'bash -s' < deploy/staging.sh
 
   deploy-production:
     name: Deploy to Production
@@ -422,17 +470,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
+      # The same deploy/production.sh that `bin/deploy production` runs when Actions is down.
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
-            docker pull ghcr.io/anarzone/expadu/app:latest
-            docker compose up -d app
-            sleep 5
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune
-            docker image prune -f
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "root@$SERVER_IP" 'bash -s' < deploy/production.sh

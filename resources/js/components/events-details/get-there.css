@@ -1,0 +1,501 @@
+/* Get there, inside the event's page (the mock's events-next wall.css
+   "Get there", event-sheet.css's route card and connected/place-sheet.css,
+   as they compute together). Travel's pieces are Travel's components: their
+   options as the mock styles Travel's card on Events, and what Travel checked
+   and its Journey details with Travel's own rules (travel-page.css, which
+   lays out Travel's page around them, so they're scoped here instead). */
+
+/* ---------- The page's head: Back and its name ---------- */
+
+.ev-details.is-way .ui-sheet-head {
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 73px;
+    padding: 14px 72px 14px 16px;
+    overflow: visible;
+    border: 0 none;
+    border-bottom: 1px solid var(--evd-line);
+    background: var(--color-bg-canvas);
+    color: var(--color-text);
+    container-type: normal;
+    touch-action: auto;
+}
+
+.ev-details.is-way .ui-sheet-head::before {
+    /* The poster's art hides the sheet's handle; this head has none. */
+    content: none;
+}
+
+.ev-details.is-way .ui-sheet-head > div {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* The event's name stays the page's name for a screen reader. */
+.ev-details.is-way .ui-sheet-head h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.ev-details.is-way .ui-sheet-close {
+    border-color: var(--evd-line);
+    background: var(--evd-tile);
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+
+.ev-details .event-back {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--evd-tile);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.ev-details .event-back svg {
+    width: 20px;
+    height: 20px;
+}
+
+.ev-details .event-subhead-title {
+    display: block;
+    color: var(--color-text);
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+/* ---------- From and to ---------- */
+
+.ev-details .place-journey {
+    display: flex;
+    flex-direction: column;
+}
+
+.ev-details .place-route {
+    position: relative;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #e1d3ff, #f0e9ff 70%, #fff3b8);
+}
+
+.ev-details .event-route-rail {
+    display: grid;
+    grid-template-rows: 12px minmax(6px, 1fr) 22px;
+    gap: 5px;
+    justify-items: center;
+    margin: 32px 0 3px;
+}
+
+.ev-details .route-dot {
+    width: 12px;
+    height: 12px;
+    border: 3px solid var(--evd-where-icon);
+    border-radius: 50%;
+}
+
+.ev-details .event-route-connector {
+    border: 0 none;
+    border-left: 2px dotted #af90d9;
+}
+
+.ev-details .event-route-rail > svg {
+    width: 22px;
+    height: 22px;
+    color: var(--color-action);
+}
+
+.ev-details .event-route-fields {
+    min-width: 0;
+}
+
+.ev-details .route-field {
+    display: grid;
+    gap: 4px;
+    color: #6e6657;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.ev-details .route-field input {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    padding: 6px 10px;
+    border: 1px solid #b1a1c2;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* The app's iOS zoom guard (app.css) sets phone fields to 16px; From stays
+   at the mock's 17px, which is above what makes iOS zoom. */
+@media screen and (max-width: 700px) {
+    .ev-details .route-field input {
+        font-size: 17px !important;
+    }
+}
+
+/* The field owns its focus, without a second ring outside its edge. */
+.ev-details .route-field input:focus {
+    border-color: var(--color-field-focus);
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--color-field-focus);
+}
+
+.ev-details .route-field-note {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ev-details .place-journey-destination {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding-top: 10px;
+}
+
+.ev-details .place-journey-destination small {
+    color: #6e6657;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.ev-details .place-journey-destination strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+/* The way back runs the other way: from the venue, back to your start. */
+.ev-details .place-route.is-back .event-route-fields {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.ev-details .place-route.is-back .event-route-rail {
+    grid-template-rows: 22px minmax(6px, 1fr) 12px;
+    margin-top: 24px;
+    margin-bottom: 15px;
+}
+
+.ev-details .place-route.is-back .event-route-rail > svg {
+    order: -1;
+}
+
+.ev-details .place-route.is-back .route-dot {
+    order: 1;
+}
+
+.ev-details .place-route.is-back .place-journey-destination {
+    padding: 0 0 12px;
+}
+
+.ev-details .place-route.is-back .route-field-note {
+    display: none;
+}
+
+/* ---------- When and how: a time chip and the ways ---------- */
+
+.ev-details .gt-bar {
+    position: relative;
+    margin-top: 8px;
+}
+
+.ev-details .gt-bar-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.ev-details .gt-time {
+    display: flex;
+    flex: none;
+    align-items: center;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.ev-details :is(.gt-pill, .gt-modes label > span) {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    height: 36px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.ev-details .gt-time .gt-pill {
+    border: 1px solid #d9cfbd;
+    background: #fffdf8;
+}
+
+.ev-details .gt-time[aria-expanded='true'] .gt-pill {
+    border-color: var(--color-text);
+}
+
+.ev-details :is(.gt-pill, .gt-modes label > span) svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+}
+
+.ev-details .gt-time .gt-pill > svg:last-child {
+    width: 12px;
+    height: 12px;
+}
+
+@media (max-width: 380px) {
+    .ev-details .gt-time .gt-pill > svg:first-child {
+        display: none;
+    }
+}
+
+.ev-details .gt-modes {
+    display: flex;
+    flex: none;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.ev-details .gt-modes legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.ev-details .gt-modes label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+}
+
+.ev-details .gt-modes input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.ev-details .gt-modes label > span {
+    background: #f1ebdf;
+    color: var(--color-text);
+}
+
+.ev-details .gt-modes label:has(:checked) > span {
+    background: var(--color-text);
+    color: #fff;
+}
+
+.ev-details .gt-modes label:has(:focus-visible) > span {
+    outline: 2px solid var(--evd-where-icon);
+    outline-offset: 2px;
+}
+
+.ev-details .event-mode-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ev-details .gt-modes label.is-timed .event-mode-name {
+    display: none;
+}
+
+.ev-details .gt-mins {
+    font-variant-numeric: tabular-nums;
+}
+
+/* The time's menu floats over the page. */
+.ev-details .gt-menu {
+    position: absolute;
+    z-index: 6;
+    top: 46px;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(300px, 100%);
+    padding: 6px;
+    border: 1px solid var(--evd-line);
+    border-radius: 14px;
+    background: #fffdf8;
+    box-shadow: 0 14px 34px -14px rgb(20 12 4 / 45%);
+}
+
+.ev-details .gt-menu[hidden] {
+    display: none;
+}
+
+.ev-details .gt-menu > small {
+    padding: 8px 10px 4px;
+    color: var(--evd-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.ev-details .gt-menu button {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.ev-details .gt-menu button[aria-checked='true'] {
+    background: #f1ebdf;
+}
+
+.ev-details .gt-menu button > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.ev-details .gt-menu button strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.ev-details .gt-menu button small {
+    color: var(--evd-sub);
+    font-size: 12.5px;
+}
+
+.ev-details .gt-menu button > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    visibility: hidden;
+}
+
+.ev-details .gt-menu button[aria-checked='true'] > svg {
+    visibility: visible;
+}
+
+/* ---------- The map ---------- */
+
+.ev-details .event-way-map {
+    position: relative;
+    height: 168px;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #ece5d6;
+}
+
+.ev-details .event-way-map-canvas {
+    position: absolute;
+    inset: 0;
+}
+
+.ev-details .event-way-map-note {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--evd-sub);
+    font-size: 14px;
+}
+
+.ev-details .event-way-map.is-ready .event-way-map-note {
+    display: none;
+}
+
+.ev-details .event-way-map-credit {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 80%);
+    color: var(--evd-sub);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.ev-details .event-way-pin.is-venue {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50% 50% 50% 0;
+    background: #b8401a;
+    color: #fff;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+}
+
+.ev-details .event-way-pin.is-venue svg {
+    width: 18px;
+    height: 18px;
+    transform: rotate(45deg);
+}
+
+.ev-details .event-way-pin.is-start {
+    width: 16px;
+    height: 16px;
+    border: 4px solid var(--evd-where-icon);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}
+
+/* Open in Travel is a link, set as the bar's buttons are. */
+.ev-details .ui-sheet-foot a.evd-plan {
+    text-align: center;
+}

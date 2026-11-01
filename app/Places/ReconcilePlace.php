@@ -157,6 +157,8 @@ class ReconcilePlace
 
         DB::table('place_fact_observations')->where('spot_id', $aliasId)->update(['spot_id' => $canonicalId, 'updated_at' => now()]);
         DB::table('place_fact_corrections')->where('spot_id', $aliasId)->update(['spot_id' => $canonicalId, 'updated_at' => now()]);
+        // Bulk moves skip the model events that keep the access flag current.
+        app(PlaceFacts::class)->refreshPublicAccess([$aliasId, $canonicalId]);
         app(PlaceFactRevision::class)->bump();
     }
 }

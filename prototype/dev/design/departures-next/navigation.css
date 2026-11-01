@@ -1,0 +1,358 @@
+@import url('../connected/tokens.css');
+/* The trip page's frame (owner, 15 Oct 2026; Travel directions canvas rows
+   19–22): one page before and after "I'm on my way". Phones and tablets
+   give it the whole screen: the top bar, then the trip. Desktops keep it in
+   Travel's column (trip.css). */
+#journey-navigation {
+    inset: 0;
+    margin: auto;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: 100dvh;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    color: var(--ink);
+    background: var(--paper);
+}
+/* While the trip has the whole screen the page behind stays still and gives
+   up the room kept for its scrollbar (shell-review.css), so the trip's
+   edges are even. */
+html:has(#journey-navigation:modal) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+}
+/* A trip opened with the page holds focus itself (navigation-ui.js); the
+   page, not a control, so no outline. */
+#journey-navigation:focus {
+    outline: none;
+}
+#journey-navigation button {
+    touch-action: manipulation;
+}
+#journey-navigation button:focus-visible {
+    outline: 2px solid #086981;
+    outline-offset: -4px;
+}
+#journey-navigation svg {
+    width: 20px;
+    height: 20px;
+}
+.nav-workspace {
+    position: relative;
+    display: grid;
+    grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
+    height: 100%;
+}
+.nav-topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    z-index: 4;
+    background: white;
+}
+.nav-topbar > div {
+    flex: 1;
+    min-width: 0;
+}
+.nav-topbar small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    margin-bottom: 2px;
+}
+.nav-topbar h1 {
+    font-size: var(--text-section);
+    letter-spacing: -0.4px;
+    margin: 0;
+    line-height: 1.2;
+}
+.nav-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--radius-lg);
+    flex: 0 0 44px;
+}
+.nav-icon-button:active {
+    background: #def3f7;
+    transform: scale(0.97);
+}
+.nav-topbar .nav-icon-button {
+    background: #f2f7f8;
+}
+.nav-panel {
+    grid-column: 1 / -1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    z-index: 3;
+}
+.nav-panel-content {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.nav-summary {
+    flex-shrink: 0;
+    padding: 20px 22px 14px;
+}
+.nav-summary h2 {
+    font-size: var(--text-title);
+    line-height: 1.18;
+    letter-spacing: -0.7px;
+    margin: 0 0 6px;
+}
+.nav-expanded {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+}
+.nav-detail-scroll {
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 14px 24px;
+}
+.nav-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px 18px;
+    position: relative;
+    background: white;
+}
+.nav-footer::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    left: 0;
+    right: 0;
+    top: -20px;
+    background: linear-gradient(transparent, white);
+    pointer-events: none;
+}
+.nav-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    border-radius: var(--radius-lg);
+    padding: 10px 16px;
+    background: var(--action);
+    color: white;
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-control);
+    flex: 1;
+    transition:
+        transform 150ms ease-out,
+        background 150ms ease-out;
+}
+.nav-primary:active {
+    transform: scale(0.98);
+    background: #bf2e0a;
+}
+.nav-confirm {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+    align-items: center;
+    font-size: var(--text-caption);
+}
+.nav-confirm > span {
+    flex: 1;
+}
+.nav-confirm > button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+}
+.nav-confirm > .nav-primary {
+    flex: 0;
+    font-size: var(--text-caption);
+}
+.nav-condition {
+    display: flex;
+    gap: 8px;
+    background: #fff3cf;
+    margin: 14px 16px 0;
+    padding: 12px 4px 12px 12px;
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+#journey-navigation .nav-condition > svg {
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+}
+.nav-condition > div {
+    flex: 1;
+}
+.nav-condition strong {
+    display: block;
+    font-size: var(--text-caption);
+}
+.nav-condition strong small {
+    font-weight: var(--weight-regular);
+    font-size: var(--text-micro);
+    color: #7d6329;
+    margin-left: 4px;
+}
+.nav-condition p {
+    margin: 4px 0 0;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: #68562e;
+}
+.nav-condition .nav-icon-button {
+    align-self: center;
+}
+/* The one way on when the route changes: Travel's main button, not a
+   line of text (owner, 18 Oct 2026). */
+.nav-condition .primary {
+    margin-top: 10px;
+}
+.nav-options {
+    position: absolute;
+    right: 16px;
+    top: 68px;
+    width: 264px;
+    max-width: calc(100% - 24px);
+    /* Its last item stays reachable on a short screen. */
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px;
+    border-radius: var(--radius-xl);
+    background: #fffffff7;
+    box-shadow: 0 10px 48px #25384426;
+    backdrop-filter: blur(12px);
+    z-index: 7;
+}
+.nav-options[hidden] {
+    display: none;
+}
+.nav-options > strong {
+    display: block;
+    padding: 2px 8px;
+    font-size: var(--text-control);
+}
+.nav-options > p,
+.nav-options > small {
+    display: block;
+    margin: 2px 8px 10px;
+    color: var(--muted);
+    font-size: var(--text-caption);
+}
+.nav-options button {
+    display: flex;
+    gap: 9px;
+    min-height: 44px;
+    width: 100%;
+    align-items: center;
+    padding: 9px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    text-align: left;
+}
+.nav-options button[aria-pressed='true'] {
+    background: #e2f4f8;
+}
+.nav-options button svg:last-child:not(:first-child) {
+    margin-left: auto;
+    width: 16px;
+}
+.nav-session-note {
+    position: absolute;
+    right: 14px;
+    bottom: 50px;
+    font-size: var(--text-caption);
+    padding: 8px 12px;
+    background: #fff3cf;
+    border-radius: var(--radius-md);
+    z-index: 5;
+}
+/* Phones and tablets: one scroll, the step, the map card, then your way;
+   a confirmation stays at the bottom of the screen. */
+@media (max-width: 999px) {
+    .nav-panel-content {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    .nav-expanded {
+        flex: none;
+    }
+    .nav-detail-scroll {
+        overflow: visible;
+    }
+    .nav-footer {
+        position: sticky;
+        bottom: 0;
+    }
+}
+@media (max-width: 700px) {
+    .nav-topbar {
+        position: relative;
+    }
+    .nav-panel {
+        position: relative;
+        overflow: hidden;
+    }
+    .nav-topbar h1 {
+        font-size: var(--text-section);
+    }
+    .nav-topbar small {
+        font-size: var(--text-micro);
+    }
+    .nav-topbar > div {
+        padding: 4px 0;
+    }
+    .nav-summary {
+        padding: 12px 18px 14px;
+    }
+    .nav-footer {
+        padding: 10px 16px max(env(safe-area-inset-bottom), 14px);
+        margin-top: auto;
+    }
+    .nav-footer::before {
+        height: 12px;
+        top: -12px;
+    }
+    .nav-detail-scroll {
+        padding: 14px 12px 24px;
+    }
+    .nav-condition {
+        margin: 0 14px 10px;
+        padding: 9px 4px 9px 10px;
+    }
+    .nav-session-note {
+        left: 12px;
+        right: 12px;
+        bottom: 70px;
+    }
+}
+@media (hover: hover) {
+    .nav-icon-button:hover {
+        background: #e9f4f7;
+    }
+    .nav-options button:not(:disabled):hover {
+        background: #e9f4f7;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #journey-navigation * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

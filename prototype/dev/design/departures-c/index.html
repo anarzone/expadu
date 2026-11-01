@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Departures</title>
+        <link rel="stylesheet" href="../today-c/base.css?v=99c606b57914" />
+        <link rel="stylesheet" href="../today-c/style.css?v=f6314b5d530f" />
+        <link rel="stylesheet" href="./style.css?v=a53d2c0a83d9" />
+        <script defer src="./model.js?v=5ea6ea3c2db3"></script>
+        <script defer src="./app.js?v=8c7c6d4e9310"></script>
+    </head>
+    <body class="departures-page">
+        <div class="preview-bar">
+            <span>Departures preview</span
+            ><a href="../today-c/">Back to Today C ↗</a>
+        </div>
+        <header class="app-header">
+            <a class="brand" href="../today-c/" aria-label="Expadu home"
+                ><svg viewBox="13 22 74 60" aria-hidden="true">
+                    <g transform="translate(2.45 2.05)">
+                        <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                        <rect
+                            x="30"
+                            y="24"
+                            width="13"
+                            height="52"
+                            rx="6"
+                            fill="currentColor"
+                        />
+                        <rect
+                            x="46"
+                            y="24"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-7 46 30)"
+                        />
+                        <rect
+                            x="46"
+                            y="43.5"
+                            width="25"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-4 46 50)"
+                        />
+                        <rect
+                            x="46"
+                            y="63"
+                            width="34"
+                            height="13"
+                            rx="6"
+                            fill="#ff3902"
+                            transform="rotate(-2 46 69)"
+                        />
+                    </g></svg
+                >Expadu</a
+            ><button class="location-button" data-action="location">
+                <span data-icon="pin"></span>Cologne<span
+                    data-icon="down"
+                ></span>
+            </button>
+            <div class="header-actions">
+                <button
+                    class="day-button"
+                    data-action="plan"
+                    aria-label="My day"
+                >
+                    <span data-icon="bookmark"></span><span>My day</span
+                    ><b class="day-count" hidden>0</b></button
+                ><button
+                    class="account-button"
+                    data-action="account"
+                    aria-label="Your account"
+                >
+                    A
+                </button>
+            </div>
+        </header>
+        <main class="departures-main">
+            <nav class="service-nav" aria-label="Your services">
+                <button data-action="places">
+                    <span data-icon="pin"></span><strong>Places</strong></button
+                ><button data-action="events">
+                    <span data-icon="calendar"></span
+                    ><strong>Events</strong></button
+                ><button data-action="paperwork">
+                    <span data-icon="document"></span
+                    ><strong>Bureaucracy</strong></button
+                ><button data-action="journey" aria-current="page">
+                    <span data-icon="train"></span
+                    ><strong>Departures</strong></button
+                ><button data-action="services">
+                    <span data-icon="grid"></span><strong>Services</strong>
+                </button>
+            </nav>
+            <div class="page-title">
+                <div>
+                    <a class="back-link" href="../today-c/"
+                        ><span data-icon="back"></span>Today</a
+                    >
+                    <h1>Departures<span>.</span></h1>
+                </div>
+                <button class="trip-button" data-action="trip">
+                    <span data-icon="route"></span>Plan a trip
+                </button>
+            </div>
+            <div class="board-controls">
+                <div class="mode-tabs" role="group" aria-label="Transport mode">
+                    <button data-mode="all" aria-pressed="true">All</button
+                    ><button data-mode="tram" aria-pressed="false">
+                        <span data-icon="train"></span>Tram</button
+                    ><button data-mode="bus" aria-pressed="false">
+                        <span data-icon="bus"></span>Bus
+                    </button>
+                </div>
+                <button class="stop-picker" data-action="stops">
+                    <span data-icon="pin"></span
+                    ><span id="stop-label">All stops</span
+                    ><span data-icon="down"></span>
+                </button>
+            </div>
+            <div class="capture-note">
+                <span data-icon="clock"></span
+                ><span
+                    >Captured 7 Sep, 23:15
+                    <span class="not-live">· Not live</span></span
+                ><button data-action="source">About this data</button>
+            </div>
+            <div id="boards" aria-live="polite"></div>
+            <div class="board-footer">
+                <span
+                    ><span data-icon="clock"></span>Times shown in local
+                    time</span
+                ><button data-action="notices">
+                    <span data-icon="info"></span>Service notices<span
+                        data-icon="arrow"
+                    ></span>
+                </button>
+            </div>
+        </main>
+        <div class="composer-tray" id="composer-tray">
+            <form id="compose-form" class="composer-form">
+                <label class="composer-label" for="request"
+                    ><span data-icon="spark"></span><span>Composer</span></label
+                >
+                <div class="composer-entry">
+                    <textarea
+                        id="request"
+                        rows="1"
+                        maxlength="700"
+                        aria-label="What do you need today?"
+                        placeholder="What do you need today?"
+                    ></textarea
+                    ><button
+                        class="compose-button"
+                        type="submit"
+                        aria-label="Compose"
+                    >
+                        <span>Compose</span><span data-icon="arrow"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <dialog id="sheet" class="detail-sheet" aria-labelledby="sheet-title">
+            <header class="sheet-header">
+                <h2 id="sheet-title"></h2>
+                <button
+                    class="icon-button"
+                    data-action="close-sheet"
+                    aria-label="Close details"
+                >
+                    <span data-icon="close"></span>
+                </button>
+            </header>
+            <div id="sheet-content"></div>
+        </dialog>
+        <dialog
+            id="composer"
+            class="composer-workspace"
+            aria-labelledby="composer-title"
+        >
+            <header class="workspace-header">
+                <button class="plain-button" data-action="close-composer">
+                    <span data-icon="back"></span>Departures
+                </button>
+                <h2 id="composer-title">
+                    <span data-icon="spark"></span>Composer
+                </h2>
+            </header>
+            <div id="workspace-scroll">
+                <div id="response" aria-live="polite"></div>
+            </div>
+            <form id="refine-form" class="refine-form">
+                <label class="sr-only" for="refine-request"
+                    >Edit your request</label
+                ><textarea
+                    id="refine-request"
+                    maxlength="700"
+                    rows="1"
+                    placeholder="Change your request…"
+                ></textarea
+                ><button
+                    class="compose-button"
+                    type="submit"
+                    aria-label="Compose again"
+                >
+                    <span data-icon="arrow"></span>
+                </button>
+            </form>
+        </dialog>
+        <div class="toast" role="status" id="toast">
+            <span id="toast-text"></span>
+        </div>
+    </body>
+</html>

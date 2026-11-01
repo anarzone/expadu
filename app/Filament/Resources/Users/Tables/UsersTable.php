@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Tables;
 
 use App\Enums\Situation;
 use App\Models\User;
+use App\Profile\ResetLegacyJourney;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -63,32 +64,28 @@ class UsersTable
             ])
             ->recordActions([
                 EditAction::make(),
-                // Testing tool: replay the full journey (onboarding → path →
-                // teasers → life events) on this account without registering
-                // a fresh one. Mirrors `php artisan user:reset-journey`.
+                // Testing tool: replay a legacy profile's journey without
+                // registering a fresh account. Same reset, and the same refusal
+                // for an account with a Paperwork record, as `user:reset-journey`.
                 Action::make('resetJourney')
                     ->label('Reset journey')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->modalHeading('Reset this user to pre-onboarding?')
-                    ->modalDescription('Wipes onboarding answers, profile attributes + change log, bureaucracy path and all task progress. The user restarts at onboarding on their next visit.')
-                    ->action(function (User $record): void {
-                        $record->update([
-                            'onboarded_at' => null,
-                            'situation' => null,
-                            'is_eu' => null,
-                            'veedel' => null,
-                            'arrival_date' => null,
-                            'german_level' => null,
-                            'bureaucracy_path' => null,
-                            'profile_attributes' => null,
-                        ]);
-                        $record->attributeChanges()->delete();
-                        $record->userTasks()->delete();
+                    ->modalDescription('Wipes onboarding answers, profile attributes + change log, bureaucracy path and all task progress. An account with a Paperwork record is not reset: use its correction or erasure flow.')
+                    ->action(function (User $record, ResetLegacyJourney $resetJourney): void {
+                        if (! $resetJourney->execute($record)) {
+                            Notification::make()
+                                ->title("{$record->email} has a Paperwork record. Nothing was reset.")
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
-                            ->title("{$record->email} reset — they restart at onboarding")
+                            ->title("{$record->email} reset")
                             ->success()
                             ->send();
                     }),

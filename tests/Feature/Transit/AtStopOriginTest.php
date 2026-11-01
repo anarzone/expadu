@@ -37,6 +37,7 @@ function captureOrigin(): object
     $box->from = null;
 
     test()->mock(RouteService::class, function ($m) use ($box) {
+        $m->shouldReceive('withTimeBudget')->andReturnSelf();
         $m->shouldReceive('plan')->andReturnUsing(function (GeoPoint $from) use ($box) {
             $box->from = $from;
 
@@ -97,6 +98,7 @@ function transitAt(CarbonImmutable $departAt): Journey
 function mockPlanByOrigin(Journey $fromStop, Journey $fromReal): void
 {
     test()->mock(RouteService::class, function ($m) use ($fromStop, $fromReal) {
+        $m->shouldReceive('withTimeBudget')->andReturnSelf();
         $m->shouldReceive('plan')->andReturnUsing(function (GeoPoint $from) use ($fromStop, $fromReal) {
             $atStop = abs($from->lat - 50.9500) < 0.001 && abs($from->lng - 6.9200) < 0.001;
 

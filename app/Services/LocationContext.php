@@ -14,12 +14,24 @@ use App\Transit\Dto\GeoPoint;
  */
 final readonly class LocationContext
 {
+    /** How recent a fix must be to say where the person is now ("Closest"). */
+    public const FRESH_MINUTES = 10;
+
     public function __construct(
         public ?float $lat,
         public ?float $lng,
         public LocationSource $source,
         public ?string $label = null,
+        /** When the position was fixed (unix seconds), when known. */
+        public ?int $at = null,
     ) {}
+
+    /** Whether this says where the person is now, not where they last were. */
+    public function isFresh(): bool
+    {
+        return $this->source === LocationSource::Live
+            || ($this->at !== null && now()->timestamp - $this->at <= self::FRESH_MINUTES * 60);
+    }
 
     public function hasOrigin(): bool
     {

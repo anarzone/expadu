@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 export type FeedbackState =
     | 'more_like_this'
@@ -6,10 +7,17 @@ export type FeedbackState =
     | 'been'
     | 'not_interested';
 
-export type FeedbackAction = FeedbackState | 'clear';
+/** 'clear' takes back the choice (saved, more like this, not interested);
+    'unbeen' takes back Been, which is kept apart from the choice. */
+export type FeedbackAction = FeedbackState | 'clear' | 'unbeen';
 export type FeedbackRating = 'up' | 'down';
 
-type Entry = { state: FeedbackState | null; rating: FeedbackRating | null };
+type Entry = {
+    state: FeedbackState | null;
+    rating: FeedbackRating | null;
+    /** Been, apart from the choice; unset until changed here. */
+    been?: boolean;
+};
 
 /** Confirmation copy per action — the social "we heard you" nudge. */
 function toastFor(
@@ -33,22 +41,18 @@ function toastFor(
         saved: '🔖 Saved — find it later in your places',
         not_interested: '🚫 Got it — you’ll see fewer like this',
         clear: null,
+        unbeen: null,
     }[action as Exclude<FeedbackAction, 'been'>];
-}
-
-function csrf(): string {
-    return (
-        document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? ''
-    );
 }
 
 /**
  * Place feedback with optimistic state + a brief toast. One source of truth
  * for the ⋯ menu and the detail-modal rating across the home rails and the
- * Places page: it POSTs to /api/places/{spot}/feedback (which persists the
- * state/rating AND emits the ranking signal) and rolls back on failure.
+ * Places page: the choice POSTs to /api/places/{spot}/feedback, and Been
+ * (kept apart from it since 23 Oct 2026) PUTs or DELETEs
+ * /api/places/{spot}/been; both persist AND emit the ranking signal, and
+ * roll back on failure. `stateFor` reads as the API's feedback_state: the
+ * choice, or 'been' when there's none.
  */
 export function useFeedback(initial: Record<string, Entry> = {}) {
     const [entries, setEntries] = useState<Record<string, Entry>>(initial);
@@ -76,25 +80,49 @@ export function useFeedback(initial: Record<string, Entry> = {}) {
         ) => {
             const key = String(spotId);
             const prev = ref.current[key] ?? { state: null, rating: null };
-            const next: Entry = {
-                state: action === 'clear' ? null : action,
-                rating: action === 'been' ? rating : null,
-            };
+            const beenAction = action === 'been' || action === 'unbeen';
+            const next: Entry = beenAction
+                ? {
+                      state:
+                          action === 'been'
+                              ? (prev.state ?? 'been')
+                              : prev.state === 'been'
+                                ? null
+                                : prev.state,
+                      rating: action === 'been' ? rating : null,
+                      been: action === 'been',
+                  }
+                : {
+                      state: action === 'clear' ? null : action,
+                      rating: null,
+                      been: prev.been,
+                  };
 
             ref.current = { ...ref.current, [key]: next };
             setEntries(ref.current);
             flashToast(toastFor(action, rating));
 
-            fetch(`/api/places/${spotId}/feedback`, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrf(),
+            fetch(
+                beenAction
+                    ? `/api/places/${spotId}/been`
+                    : `/api/places/${spotId}/feedback`,
+                {
+                    method: beenAction
+                        ? action === 'been'
+                            ? 'PUT'
+                            : 'DELETE'
+                        : 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...csrfHeaders(),
+                    },
+                    body: JSON.stringify(
+                        beenAction ? (rating ? { rating } : {}) : { action },
+                    ),
                 },
-                body: JSON.stringify({ action, rating: next.rating }),
-            })
+            )
                 .then((res) => {
                     if (!res.ok) {
                         throw new Error('feedback failed');
@@ -114,6 +142,9 @@ export function useFeedback(initial: Record<string, Entry> = {}) {
             entries[String(spotId)]?.state ?? null,
         ratingFor: (spotId: number | string): FeedbackRating | null =>
             entries[String(spotId)]?.rating ?? null,
+        /** Whether Been was changed here to on or off; null when it wasn't. */
+        beenFor: (spotId: number | string): boolean | null =>
+            entries[String(spotId)]?.been ?? null,
         setFeedback,
         toast,
         dismissToast: () => flashToast(null),

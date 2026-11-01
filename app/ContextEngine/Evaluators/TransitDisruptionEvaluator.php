@@ -17,7 +17,7 @@ use Illuminate\Queue\InteractsWithQueue;
  * (the disrupted line serves a stop near one of the user's places) beats
  * a geo match (a saved place sits inside the disruption bbox).
  *
- * Today (dashboard) is reserved for disruptions that actually touch the user —
+ * Today is reserved for disruptions that actually touch the user —
  * their line or a saved place — plus city-wide CRITICAL strikes. A merely-major
  * disruption on a line they don't use is still recorded (all onboarded users) but
  * only on the Alerts page, not the home screen: a strike across town isn't an
@@ -120,7 +120,7 @@ class TransitDisruptionEvaluator implements ShouldQueue
     {
         $channels = [ScoredAction::CHANNEL_ALERT_PAGE];
 
-        // Dashboard only when the disruption touches the user (their line or a
+        // Today only when the disruption touches the user (their line or a
         // saved place) or is a city-wide critical strike — otherwise Alerts-only.
         if ($lineMatch || $geoMatch || $severity === 'critical') {
             $channels[] = ScoredAction::CHANNEL_DASHBOARD;

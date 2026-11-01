@@ -7,7 +7,6 @@ use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Enums\Situation;
 use App\Models\User;
-use App\Profile\Interest;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -19,8 +18,8 @@ use Throwable;
  * fresh account or hand-crafting profile attributes for each one.
  *
  * Every account is upserted by email (safe to re-run), pre-verified and
- * pre-onboarded, so it lands straight on the dashboard; `user:reset-journey
- * <email>` sends any one of them back through onboarding on demand.
+ * pre-onboarded, so it lands straight on Today. Use read-only persona
+ * preview for testing without replacing an account's answers.
  *
  * SAFETY: this writes real rows, so it refuses to run unless config('app.url')
  * resolves to a known local/staging host, or --force is passed. Staging runs
@@ -74,7 +73,7 @@ class SeedPersonasCommand extends Command
         $this->newLine();
         $this->table(['Email', 'Persona', 'Password', 'Role'], $rows);
 
-        $this->info("To replay ONBOARDING as any account: php artisan user:reset-journey <email> (then log in — you'll land on onboarding).");
+        $this->info('Use the read-only persona preview to inspect cases without resetting an account.');
 
         return self::SUCCESS;
     }
@@ -104,11 +103,9 @@ class SeedPersonasCommand extends Command
             'city' => 'Köln',
             'german_level' => null,
             'has_deutschlandticket' => false,
-            'interests' => $this->defaultInterests(),
             'onboarded_at' => now(),
         ])->save();
 
-        $this->ensurePlaces($user);
         $this->scenarioFacts->sync($user, $persona);
 
         if ($fresh) {
@@ -125,8 +122,8 @@ class SeedPersonasCommand extends Command
     }
 
     /**
-     * Upsert the admin account that unlocks /bureaucracy/demo and the
-     * Filament /admin panel on staging.
+     * Upsert the admin account that unlocks the QA tools and the Filament
+     * /admin panel on staging.
      */
     private function seedAdmin(string $password): User
     {
@@ -139,45 +136,11 @@ class SeedPersonasCommand extends Command
             'is_eu' => true,
             'veedel' => 'Altstadt-Nord',
             'city' => 'Köln',
-            'interests' => $this->defaultInterests(),
             'onboarded_at' => now(),
             'is_admin' => true,
         ])->save();
 
         return $user;
-    }
-
-    /**
-     * Create the required Home + Work places if they don't exist yet —
-     * mirrors OnboardingController::complete() so a seeded account looks
-     * exactly like one that just finished onboarding for real.
-     */
-    private function ensurePlaces(User $user): void
-    {
-        $user->places()->firstOrCreate(
-            ['category' => 'home'],
-            ['emoji' => '🏠', 'name' => 'Home', 'sort_order' => 0],
-        );
-
-        $user->places()->firstOrCreate(
-            ['category' => 'work'],
-            ['emoji' => '💼', 'name' => 'Work', 'sort_order' => 1],
-        );
-    }
-
-    /**
-     * The first Interest::MIN_SELECT values — a valid default selection so
-     * seeded accounts satisfy onboarding's interest-count expectations.
-     *
-     * @return list<string>
-     */
-    private function defaultInterests(): array
-    {
-        return array_slice(
-            array_map(fn (Interest $interest) => $interest->value, Interest::cases()),
-            0,
-            Interest::MIN_SELECT,
-        );
     }
 
     private function hostIsAllowed(): bool

@@ -6,6 +6,8 @@ use App\Models\Gtfs\GtfsStopTime;
 use App\Proto\TransitRealtime\FeedMessage;
 use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +18,25 @@ use Illuminate\Support\Facades\Log;
  */
 class VrsRealtimeService
 {
+    private const FEED_KEY = 'vrs_gtfsrt_trip_updates_v2';
+
+    /** The last good feed, served while a fresh one is fetched. */
+    private const STALE_KEY = 'vrs_gtfsrt_trip_updates_v2:stale';
+
+    /** Seconds a fetched feed is fresh, here and in the cache. */
+    private const FEED_SECONDS = 30;
+
+    /** Seconds the last good feed may stand in for a fresh one. */
+    private const STALE_SECONDS = 600;
+
+    /** Set while the feed is being read, so the warmer runs only then. */
+    private const WANTED_KEY = 'vrs_gtfsrt:wanted';
+
+    /** @var array<string, array<string, mixed>>|null the feed, as last read */
+    private ?array $feed = null;
+
+    private int $feedReadAt = 0;
+
     /**
      * Get real-time updates indexed by trip_id.
      *
@@ -23,6 +44,7 @@ class VrsRealtimeService
      *     trip_id: string,
      *     route_id: string,
      *     cancelled: bool,
+     *     observed_at: string|null,
      *     stops: array<string, array{delay: int, skipped: bool}>
      * }>
      */
@@ -32,15 +54,103 @@ class VrsRealtimeService
             return [];
         }
 
-        return Cache::remember('vrs_gtfsrt_trip_updates', 30, function () {
-            return $this->fetchAndParse();
-        });
+        // It's consulted per departure row, so it's kept here once read (the
+        // cache's memo kept a miss, and every row then took the fetch lock and
+        // unserialized the whole feed again).
+        if ($this->feed !== null && now()->timestamp - $this->feedReadAt < self::FEED_SECONDS) {
+            return $this->feed;
+        }
+
+        // Fetching and parsing takes 2.6–3.8 s and ~135 MB, so a request never
+        // waits for it: transit:fetch-gtfsrt keeps it fresh every 20 s, and a
+        // request finding only the last good copy serves that and refreshes
+        // after its response. Only a cache with no copy at all fetches here,
+        // and not while another fetch runs.
+        $this->markWanted();
+        $updates = Cache::get(self::FEED_KEY);
+        if (! is_array($updates)) {
+            $updates = Cache::get(self::STALE_KEY);
+            if (is_array($updates)) {
+                dispatch(fn () => app(self::class)->refresh())->afterResponse();
+            } else {
+                $updates = $this->refresh() ?? [];
+            }
+        }
+
+        $this->feed = $updates;
+        $this->feedReadAt = now()->timestamp;
+
+        return $updates;
+    }
+
+    /** Someone is reading live times (a kept board too): keep the feed fresh. */
+    public function markWanted(): void
+    {
+        Cache::add(self::WANTED_KEY, true, self::STALE_SECONDS);
+    }
+
+    /** Whether the feed has been read in the last ten minutes. */
+    public function wanted(): bool
+    {
+        return (bool) Cache::get(self::WANTED_KEY);
+    }
+
+    /**
+     * Fetches the feed and keeps it, fresh and as the last good copy; null
+     * when another fetch is running. An empty feed (VRS down) is kept fresh
+     * only, so the last good copy still stands in.
+     *
+     * @return array<string, array<string, mixed>>|null
+     */
+    public function refresh(): ?array
+    {
+        if (! config('services.vrs.enabled')) {
+            return [];
+        }
+
+        $lock = Cache::lock('vrs_gtfsrt:fetch', 15);
+        if (! self::onRealClock(fn () => $lock->get())) {
+            return null;
+        }
+        try {
+            $updates = $this->fetchAndParse();
+            Cache::put(self::FEED_KEY, $updates, self::FEED_SECONDS);
+            if ($updates !== []) {
+                Cache::put(self::STALE_KEY, $updates, self::STALE_SECONDS);
+            }
+
+            return $updates;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Runs with the real clock: a lock taken under a faked one (the mock
+     * clock, composer:eval's day) expired days ahead and held every fetch.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private static function onRealClock(callable $callback): mixed
+    {
+        $faked = [Carbon::getTestNow(), CarbonImmutable::getTestNow()];
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        try {
+            return $callback();
+        } finally {
+            Carbon::setTestNow($faked[0]);
+            CarbonImmutable::setTestNow($faked[1]);
+        }
     }
 
     /**
      * Get delay info for a specific trip at a specific stop.
      *
-     * @return array{delay: int, skipped: bool, cancelled: bool}|null
+     * @return array{delay: int, skipped: bool, cancelled: bool, observed_at: string|null}|null
      */
     public function getDelayForTripAtStop(string $tripId, string $stopId): ?array
     {
@@ -51,9 +161,10 @@ class VrsRealtimeService
         }
 
         $trip = $updates[$tripId];
+        $observedAt = $trip['observed_at'] ?? null;
 
         if ($trip['cancelled']) {
-            return ['delay' => 0, 'skipped' => false, 'cancelled' => true];
+            return ['delay' => 0, 'skipped' => false, 'cancelled' => true, 'observed_at' => $observedAt];
         }
 
         if (isset($trip['stops'][$stopId])) {
@@ -63,6 +174,7 @@ class VrsRealtimeService
                 'delay' => $stop['delay'],
                 'skipped' => $stop['skipped'],
                 'cancelled' => false,
+                'observed_at' => $observedAt,
             ];
         }
 
@@ -70,7 +182,7 @@ class VrsRealtimeService
         $lastDelay = $this->propagateDelay($trip, $stopId);
 
         return $lastDelay !== null
-            ? ['delay' => $lastDelay, 'skipped' => false, 'cancelled' => false]
+            ? ['delay' => $lastDelay, 'skipped' => false, 'cancelled' => false, 'observed_at' => $observedAt]
             : null;
     }
 
@@ -108,7 +220,7 @@ class VrsRealtimeService
     /**
      * Fetch the GTFS-RT binary feed from VRS and parse it.
      *
-     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, stops: array}>
+     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, observed_at: string|null, stops: array}>
      */
     private function fetchAndParse(): array
     {
@@ -146,7 +258,7 @@ class VrsRealtimeService
     /**
      * Parse binary protobuf GTFS-RT FeedMessage into structured array.
      *
-     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, stops: array}>
+     * @return array<string, array{trip_id: string, route_id: string, cancelled: bool, observed_at: string|null, stops: array}>
      */
     private function parseProtobuf(string $binaryData): array
     {
@@ -174,6 +286,12 @@ class VrsRealtimeService
             }
 
             $cancelled = $trip->getScheduleRelationship() === ScheduleRelationship::CANCELED;
+            $timestamp = $tripUpdate->getTimestamp();
+
+            // Zero is protobuf's default when the optional trip timestamp is absent.
+            if ($timestamp === 0 || $timestamp === '0') {
+                $timestamp = $feed->getHeader()?->getTimestamp();
+            }
 
             $stops = [];
             foreach ($tripUpdate->getStopTimeUpdate() as $stu) {
@@ -202,7 +320,9 @@ class VrsRealtimeService
             $updates[$tripId] = [
                 'trip_id' => $tripId,
                 'route_id' => $trip->getRouteId() ?: '',
+                'service_date' => $this->serviceDate($trip->getStartDate()),
                 'cancelled' => $cancelled,
+                'observed_at' => $this->observationTime($timestamp),
                 'stops' => $stops,
             ];
         }
@@ -213,6 +333,29 @@ class VrsRealtimeService
         Log::info('VRS GTFS-RT parsed', ['trip_updates' => count($updates)]);
 
         return $updates;
+    }
+
+    private function serviceDate(string $date): ?string
+    {
+        if (! preg_match('/^([0-9]{4})([0-9]{2})([0-9]{2})$/D', $date, $parts)
+            || ! checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
+            return null;
+        }
+
+        return $parts[1].'-'.$parts[2].'-'.$parts[3];
+    }
+
+    private function observationTime(int|string|null $timestamp): ?string
+    {
+        $validated = filter_var($timestamp, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => now()->timestamp],
+        ]);
+
+        if ($validated === false) {
+            return null;
+        }
+
+        return CarbonImmutable::createFromTimestampUTC($validated)->toIso8601String();
     }
 
     /**

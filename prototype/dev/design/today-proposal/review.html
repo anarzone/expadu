@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Expadu · Today design review</title>
+        <style>
+            @font-face {
+                font-family: Geist;
+                src: url('../assets/fonts/geist-400.woff2');
+                font-weight: 400;
+            }
+            @font-face {
+                font-family: Geist;
+                src: url('../assets/fonts/geist-600.woff2');
+                font-weight: 600;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #f6fafb;
+                color: #211d15;
+                font:
+                    14px/1.55 Geist,
+                    system-ui,
+                    sans-serif;
+            }
+            a {
+                color: #0b657a;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
+                text-underline-offset: 3px;
+            }
+            button {
+                font: inherit;
+                cursor: pointer;
+            }
+            button:focus-visible,
+            a:focus-visible {
+                outline: 3px solid #087189;
+                outline-offset: 4px;
+            }
+            [hidden] {
+                display: none !important;
+            }
+            .review-page {
+                width: min(1360px, calc(100% - 64px));
+                margin: 0 auto;
+                padding-bottom: 48px;
+            }
+            .review-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 24px;
+                padding: 26px 0 18px;
+            }
+            .review-title {
+                font-size: 28px;
+                font-weight: 600;
+                letter-spacing: -0.8px;
+                margin: 0;
+            }
+            .review-meta {
+                font-size: 12px;
+                color: #536970;
+            }
+            .review-intro {
+                color: #536970;
+                max-width: 750px;
+                margin: 0 0 20px;
+                font-size: 14px;
+            }
+            .review-tabs {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 26px;
+            }
+            .review-tabs button {
+                border: 0;
+                border-radius: 9px;
+                padding: 11px 17px;
+                background: #e9f0f3;
+                color: #31434b;
+                min-height: 44px;
+            }
+            .review-tabs button[aria-selected='true'] {
+                background: #cef1f8;
+                color: #15556b;
+                font-weight: 600;
+            }
+            .review-tabs > a {
+                margin-left: auto;
+                font-size: 13px;
+                padding: 10px 0;
+            }
+            .scenario-head {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 20px;
+                margin-bottom: 14px;
+            }
+            h2 {
+                font-size: 22px;
+                letter-spacing: -0.5px;
+                margin: 0;
+                font-weight: 600;
+            }
+            .scenario-head p {
+                font-size: 13px;
+                color: #536970;
+                margin: 0;
+            }
+            .views-pair {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 310px;
+                gap: 26px;
+                align-items: start;
+            }
+            figure {
+                margin: 0;
+            }
+            figcaption {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 12px;
+                color: #536970;
+                margin: 0 0 9px;
+            }
+            .screen-link {
+                display: block;
+                background: #f6fafb;
+                box-shadow: 0 5px 30px #244d5915;
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            .screen-link > img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .phone-view .screen-link {
+                border-radius: 18px;
+                position: relative;
+            }
+            .fold-marker {
+                position: absolute;
+                top: calc(844 / 390 * 310px);
+                left: 0;
+                right: 0;
+                pointer-events: none;
+                border-top: 1px dashed #0898b6;
+            }
+            .fold-marker > span {
+                position: absolute;
+                top: -10px;
+                right: 6px;
+                font-size: 10px;
+                background: #e1f5fa;
+                color: #15566c;
+                padding: 1px 5px;
+                border-radius: 3px;
+            }
+            .why-leads {
+                padding: 24px 0 18px;
+                max-width: 710px;
+            }
+            .why-leads h3 {
+                font-size: 16px;
+                margin: 0 0 8px;
+                font-weight: 600;
+            }
+            .why-leads p {
+                font-size: 14px;
+                line-height: 1.65;
+                margin: 0;
+                color: #536970;
+            }
+            .review-links {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                font-size: 13px;
+                margin-top: 16px;
+            }
+            .reading-order {
+                color: #536970;
+                font-size: 12px;
+                margin-top: 12px;
+            }
+            .reading-order strong {
+                color: #211d15;
+                font-weight: 600;
+            }
+            .principles {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin: 26px 0;
+            }
+            .principle {
+                padding: 16px 0;
+                border-top: 1px solid #dce7eb;
+            }
+            .principle h3 {
+                margin: 0 0 6px;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            .principle p {
+                margin: 0;
+                font-size: 13px;
+                color: #536970;
+            }
+            .detail-section {
+                margin-top: 32px;
+            }
+            .detail-section > p {
+                color: #536970;
+                font-size: 13px;
+                margin: 8px 0 20px;
+            }
+            .details-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 24px;
+                align-items: start;
+            }
+            .detail-item h3 {
+                font-size: 16px;
+                margin: 0 0 10px;
+                font-weight: 600;
+            }
+            .detail-item img {
+                width: 100%;
+                display: block;
+                border-radius: 14px;
+                box-shadow: 0 3px 18px #12384712;
+            }
+            .detail-item p {
+                font-size: 13px;
+                color: #536970;
+                line-height: 1.65;
+                margin-top: 12px;
+            }
+            .small-views {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            .sample-boundary {
+                margin-top: 28px;
+                padding: 16px 0;
+                border-top: 1px solid #dce7eb;
+                font-size: 12px;
+                color: #536970;
+            }
+            .sample-boundary strong {
+                color: #211d15;
+                font-weight: 600;
+            }
+            .states-grid {
+                display: grid;
+                grid-template-columns: 1.5fr 1fr 1fr;
+                gap: 18px;
+                margin-top: 20px;
+            }
+            .state-example {
+                padding: 20px;
+                border-radius: 14px;
+                background: #fff;
+            }
+            .state-example h3 {
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0 0 9px;
+            }
+            .state-example .state-title {
+                display: block;
+                font-size: 20px;
+                line-height: 1.3;
+                font-weight: 600;
+                letter-spacing: -0.4px;
+            }
+            .state-example p {
+                color: #536970;
+                font-size: 12px;
+                margin: 8px 0 12px;
+            }
+            .state-example > a {
+                display: inline-flex;
+                min-height: 44px;
+                align-items: center;
+                background: #d9340a;
+                color: #fff;
+                padding: 0 12px;
+                border-radius: 8px;
+                font-size: 12px;
+            }
+            .state-example .state-time {
+                font-size: 26px;
+                font-weight: 600;
+                letter-spacing: -0.7px;
+            }
+            .state-example .state-meta {
+                color: #536970;
+                font-size: 11px;
+            }
+            .skeleton-line {
+                height: 7px;
+                width: 75%;
+                border-radius: 4px;
+                background: #e8eff2;
+                margin: 12px 0;
+            }
+            .fallback-preview {
+                margin-top: 16px;
+                border-radius: 14px;
+                padding: 20px;
+                background: #e6dcf5;
+                color: #392a53;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            .fallback-preview strong {
+                font-size: 26px;
+                line-height: 1.1;
+                letter-spacing: -0.7px;
+            }
+            .fallback-preview span {
+                display: block;
+                font-size: 12px;
+                margin-top: 8px;
+            }
+            .fallback-preview small {
+                display: block;
+                font-size: 11px;
+            }
+            .fallback-controls {
+                display: flex;
+                gap: 8px;
+            }
+            .fallback-preview .fallback-action {
+                color: #392a53;
+                font-size: 12px;
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                justify-content: center;
+                height: 44px;
+                min-width: 75px;
+                border-radius: 23px;
+                background: #f7f2ff;
+                margin: 0;
+            }
+            .fallback-preview .fallback-plan {
+                background: #d9340a;
+                color: #fff;
+            }
+            .fallback-action svg {
+                width: 19px;
+                height: 19px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.7;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .checks {
+                font-size: 12px;
+                color: #536970;
+                margin-top: 25px;
+            }
+            @media (max-width: 900px) {
+                .review-page {
+                    width: calc(100% - 32px);
+                }
+                .views-pair {
+                    grid-template-columns: 1fr 250px;
+                    gap: 18px;
+                }
+                .fold-marker {
+                    top: calc(844 / 390 * 250px);
+                }
+                .details-grid {
+                    gap: 16px;
+                }
+                .states-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .states-grid .state-example:first-child {
+                    grid-column: 1/-1;
+                }
+            }
+            @media (max-width: 620px) {
+                .review-header {
+                    display: block;
+                }
+                .review-title {
+                    font-size: 23px;
+                }
+                .review-meta {
+                    display: block;
+                    text-align: left;
+                    margin-top: 6px;
+                }
+                .review-tabs {
+                    gap: 6px;
+                }
+                .review-tabs button {
+                    padding-inline: 10px;
+                    font-size: 12px;
+                }
+                .review-tabs > a {
+                    margin: 0;
+                }
+                .scenario-head {
+                    display: block;
+                }
+                .scenario-head p {
+                    margin-top: 5px;
+                }
+                .views-pair {
+                    grid-template-columns: 1fr;
+                }
+                .phone-view {
+                    width: min(390px, 100%);
+                    justify-self: center;
+                }
+                .fold-marker {
+                    top: calc(844 / 390 * 100%);
+                    display: none;
+                }
+                .principles,
+                .details-grid,
+                .states-grid {
+                    grid-template-columns: 1fr;
+                }
+                .detail-item {
+                    max-width: 410px;
+                }
+                .fallback-preview {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    scroll-behavior: auto !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="review-page">
+            <header class="review-header">
+                <h1 class="review-title">Expadu / Today proposal</h1>
+                <span class="review-meta"
+                    >Design review<br />30 September 2026</span
+                >
+            </header>
+            <p class="review-intro">
+                A personal overview with an expressive city programme. Inspect
+                each state at desktop and phone sizes; the complete phone feed
+                is shown. Select an image to see it at full resolution.
+            </p>
+            <div
+                class="review-tabs"
+                role="tablist"
+                aria-label="Today situations"
+            >
+                <button
+                    id="tab-everyday"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="review-everyday"
+                >
+                    Everyday
+                </button>
+                <button
+                    id="tab-event"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="review-event"
+                >
+                    Important event
+                </button>
+                <button
+                    id="tab-delay"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="review-delay"
+                >
+                    Route delay
+                </button>
+                <a href="#interaction-details">Interaction details</a>
+            </div>
+            <section
+                id="review-everyday"
+                role="tabpanel"
+                aria-labelledby="tab-everyday"
+            >
+                <div class="scenario-head">
+                    <h2>Everyday</h2>
+                    <p>
+                        08:40 · Wednesday, 30 September · fictional review
+                        scenario
+                    </p>
+                </div>
+                <div class="views-pair">
+                    <div>
+                        <figure>
+                            <figcaption>
+                                <span>Desktop · 1440px · full page</span
+                                ><a href="./?view=everyday" target="_blank"
+                                    >Try this state</a
+                                >
+                            </figcaption>
+                            <a
+                                class="screen-link"
+                                href="./views/everyday-desktop.png"
+                                target="_blank"
+                                ><img
+                                    src="./views/everyday-desktop.png"
+                                    alt="Everyday desktop: next confirmed class, scheduled journey, direct paperwork rows and weather in a connected overview above a staggered event dashboard"
+                            /></a>
+                        </figure>
+                        <div class="why-leads">
+                            <h3>Why the personal overview leads</h3>
+                            <p>
+                                The 09:30 class is the next commitment, with its
+                                09:02 journey beside it. One clear action opens
+                                the activity. Ordinary event recommendations
+                                follow the person’s day.
+                            </p>
+                            <div class="review-links">
+                                <a
+                                    href="./views/everyday-mobile-first.png"
+                                    target="_blank"
+                                    >First phone viewport</a
+                                ><a
+                                    href="./?view=everyday&state=empty"
+                                    target="_blank"
+                                    >Empty agenda example</a
+                                ><a
+                                    href="./views/everyday-320.png"
+                                    target="_blank"
+                                    >320px check</a
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <figure class="phone-view">
+                        <figcaption>
+                            <span>Phone · 390 × 844</span
+                            ><span>Full reading order</span>
+                        </figcaption>
+                        <a
+                            class="screen-link"
+                            href="./views/everyday-mobile.png"
+                            target="_blank"
+                            ><img
+                                src="./views/everyday-mobile.png"
+                                alt="Complete everyday phone feed: Your day, evening draft, new journey entry, one swipeable event collection, optional settlement guide"
+                            /><span class="fold-marker"
+                                ><span>First viewport · 844px</span></span
+                            ></a
+                        >
+                        <p class="reading-order">
+                            <strong>Order:</strong> Your day → draft & route
+                            entry → one event collection → optional settlement
+                            help.
+                        </p>
+                    </figure>
+                </div>
+            </section>
+            <section
+                id="review-event"
+                role="tabpanel"
+                aria-labelledby="tab-event"
+                hidden
+            >
+                <div class="scenario-head">
+                    <h2>Important event</h2>
+                    <p>
+                        14:00 · Wednesday, 30 September · fictional review
+                        scenario
+                    </p>
+                </div>
+                <div class="views-pair">
+                    <div>
+                        <figure>
+                            <figcaption>
+                                <span>Desktop · 1440px · full page</span
+                                ><a href="./?view=event" target="_blank"
+                                    >Try this state</a
+                                >
+                            </figcaption>
+                            <a
+                                class="screen-link"
+                                href="./views/event-desktop.png"
+                                target="_blank"
+                                ><img
+                                    src="./views/event-desktop.png"
+                                    alt="Important event desktop: a generous immersive city arts highlight beside the compact personal overview, with two remaining event discoveries below"
+                            /></a>
+                        </figure>
+                        <div class="why-leads">
+                            <h3>Why this event earns the feature</h3>
+                            <p>
+                                This sample city arts highlight matches the
+                                person’s interests and begins at 16:00. Their
+                                next confirmed commitment is dinner at 18:30, so
+                                there is no immediate personal problem to
+                                outrank it. The existing event card is promoted
+                                once; film and outdoors remain below.
+                            </p>
+                            <div class="review-links">
+                                <a
+                                    href="./views/event-mobile-first.png"
+                                    target="_blank"
+                                    >First phone viewport</a
+                                ><a href="./views/event-320.png" target="_blank"
+                                    >320px check</a
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <figure class="phone-view">
+                        <figcaption>
+                            <span>Phone · 390 × 844</span
+                            ><span>Full reading order</span>
+                        </figcaption>
+                        <a
+                            class="screen-link"
+                            href="./views/event-mobile.png"
+                            target="_blank"
+                            ><img
+                                src="./views/event-mobile.png"
+                                alt="Complete event-led phone feed: featured event with separate Save and Plan, nearby personal overview, practical next steps, remaining events and optional guide"
+                            /><span class="fold-marker"
+                                ><span>First viewport · 844px</span></span
+                            ></a
+                        >
+                        <p class="reading-order">
+                            <strong>Order:</strong> featured event → Your day →
+                            draft & route entry → remaining event collection →
+                            optional help.
+                        </p>
+                    </figure>
+                </div>
+            </section>
+            <section
+                id="review-delay"
+                role="tabpanel"
+                aria-labelledby="tab-delay"
+                hidden
+            >
+                <div class="scenario-head">
+                    <h2>Route delay</h2>
+                    <p>
+                        08:40 · Wednesday, 30 September · fictional review
+                        scenario
+                    </p>
+                </div>
+                <div class="views-pair">
+                    <div>
+                        <figure>
+                            <figcaption>
+                                <span>Desktop · 1440px · full page</span
+                                ><a href="./?view=delay" target="_blank"
+                                    >Try this state</a
+                                >
+                            </figcaption>
+                            <a
+                                class="screen-link"
+                                href="./views/delay-desktop.png"
+                                target="_blank"
+                                ><img
+                                    src="./views/delay-desktop.png"
+                                    alt="Delay desktop: Connections grows inside Your day with a 12 minute delay, scheduled 09:02 and expected 09:14 departure, Check alternatives and contextual Composer, beside other personal information"
+                            /></a>
+                        </figure>
+                        <div class="why-leads">
+                            <h3>Why the journey takes priority</h3>
+                            <p>
+                                The update affects the person’s usual route to
+                                their 09:30 class. Explicit departure times and
+                                “Check alternatives” lead inside the overview.
+                                The confirmed activity, both paperwork
+                                processes, forecast and event programme remain
+                                available.
+                            </p>
+                            <div class="review-links">
+                                <a
+                                    href="./views/delay-mobile-first.png"
+                                    target="_blank"
+                                    >First phone viewport</a
+                                ><a href="./views/delay-320.png" target="_blank"
+                                    >320px check</a
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <figure class="phone-view">
+                        <figcaption>
+                            <span>Phone · 390 × 844</span
+                            ><span>Full reading order</span>
+                        </figcaption>
+                        <a
+                            class="screen-link"
+                            href="./views/delay-mobile.png"
+                            target="_blank"
+                            ><img
+                                src="./views/delay-mobile.png"
+                                alt="Complete delay phone feed: affected route first inside Your day, class, paperwork, weather, practical next steps, one event collection and optional settlement guide"
+                            /><span class="fold-marker"
+                                ><span>First viewport · 844px</span></span
+                            ></a
+                        >
+                        <p class="reading-order">
+                            <strong>Order:</strong> affected journey inside Your
+                            day → remaining personal information → next steps →
+                            discovery.
+                        </p>
+                    </figure>
+                </div>
+            </section>
+            <div class="principles">
+                <div class="principle">
+                    <h3>One clear lead</h3>
+                    <p>
+                        Relevant immediate change → time-sensitive personal
+                        action → significant event today → ordinary overview →
+                        discovery. Unrelated, stale or expired signals stay out
+                        of the lead.
+                    </p>
+                </div>
+                <div class="principle">
+                    <h3>A steady page</h3>
+                    <p>
+                        Choose the composition on opening or deliberate refresh.
+                        Background updates can change status in place;
+                        substantial reordering waits. Short transitions respect
+                        reduced motion.
+                    </p>
+                </div>
+            </div>
+            <section class="detail-section" id="interaction-details">
+                <h2>Small controls, clear outcomes</h2>
+                <p>
+                    The same icon language and row treatment carry across all
+                    three states.
+                </p>
+                <div class="details-grid">
+                    <figure class="detail-item">
+                        <h3>Paperwork / exact process</h3>
+                        <div class="small-views">
+                            <img
+                                src="./views/paperwork-panel.png"
+                                alt="Paperwork panel with EU Blue Card actual sample progress, address registration draft, and one route to all processes"
+                            /><img
+                                src="./views/paperwork-open.png"
+                                alt="The opened EU Blue Card process keeps the same identity and progress; no carousel controls"
+                            />
+                        </div>
+                        <p>
+                            A row’s chevron always opens that row. Progress
+                            belongs to the sample record. Every process stays
+                            accessible through “All paperwork”; no carousel
+                            counter or hidden previous/next controls.
+                        </p>
+                    </figure>
+                    <figure class="detail-item">
+                        <h3>Event / Save and Plan</h3>
+                        <div class="small-views">
+                            <img
+                                src="./views/event-controls.png"
+                                alt="Event card with a frosted bookmark Save control, distinct orange calendar-plus Plan control and independently openable image"
+                            /><img
+                                src="./views/event-plan.png"
+                                alt="Planning panel labels the event a proposed plan and requires review in Composer"
+                            />
+                        </div>
+                        <p>
+                            The image opens details. Bookmark saves an idea;
+                            calendar-plus opens a proposal for review. Neither
+                            action confirms attendance or books anything.
+                        </p>
+                    </figure>
+                    <figure class="detail-item">
+                        <h3>Composer / kept context</h3>
+                        <img
+                            src="./views/composer-context.png"
+                            alt="Composer with the affected route context, prior conversation, preserved editable draft and explicit Send request action"
+                        />
+                        <p>
+                            Route, event, paperwork process or day context
+                            arrives beside the existing draft and conversation.
+                            The person can edit before sending. The labelled
+                            header entry remains reachable without covering
+                            cards.
+                        </p>
+                    </figure>
+                </div>
+            </section>
+            <section class="detail-section">
+                <h2>Quiet days and honest information</h2>
+                <div class="states-grid">
+                    <div class="state-example">
+                        <h3>Plans / empty</h3>
+                        <strong class="state-title"
+                            >Nothing scheduled yet</strong
+                        >
+                        <p>
+                            A little room for today. Weather, paperwork, route
+                            planning and discovery stay available.
+                        </p>
+                        <a href="./?state=empty" target="_blank"
+                            >Plan your day</a
+                        >
+                    </div>
+                    <div class="state-example">
+                        <h3>Connections / loading</h3>
+                        <strong class="state-title"
+                            >Checking departures…</strong
+                        >
+                        <div class="skeleton-line"></div>
+                        <span class="state-meta"
+                            >No live claim while waiting</span
+                        >
+                    </div>
+                    <div class="state-example">
+                        <h3>Connections / stale</h3>
+                        <span class="state-time">09:02</span>
+                        <p>Last update 08:25<br />Live status needs checking</p>
+                        <a href="./?view=everyday" target="_blank"
+                            >Check again</a
+                        >
+                    </div>
+                </div>
+                <div class="fallback-preview">
+                    <div>
+                        <small>Games · sample event · artwork unavailable</small
+                        ><strong>Open table.<br />Chess & company.</strong
+                        ><span>30 Sept · 18:00 · venue not confirmed</span>
+                    </div>
+                    <div class="fallback-controls">
+                        <span
+                            class="fallback-action"
+                            role="img"
+                            aria-label="Bookmark Save control"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M6 3h12v18l-6-4-6 4V3Z" /></svg
+                            >Save</span
+                        ><span
+                            class="fallback-action fallback-plan"
+                            role="img"
+                            aria-label="Calendar-plus Plan control"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                <rect
+                                    x="3"
+                                    y="5"
+                                    width="18"
+                                    height="16"
+                                    rx="3"
+                                />
+                                <path
+                                    d="M7 2v6m10-6v6M3 11h18M12 14v5m-2.5-2.5h5"
+                                /></svg
+                            >Plan</span
+                        >
+                    </div>
+                </div>
+                <p>
+                    Missing event imagery becomes a deliberate category and
+                    typography surface. No unrelated photograph substitutes for
+                    the actual event.
+                </p>
+            </section>
+            <p class="sample-boundary">
+                <strong>Review boundary:</strong> all dates, activities, routes,
+                processes, progress and updates in these scenarios are fictional
+                samples. Existing AI illustrations are reused from the approved
+                visual exploration; they are not event photographs or
+                provider-approved assets. No requirements, fees, deadlines or
+                legal guidance are authored. The accepted prototype and
+                application are unchanged; implementation waits for design
+                approval.
+            </p>
+            <p class="checks">
+                Browser review: six full views at 1440px and 390 × 844, narrow
+                320px views, readable actions, separate Save/Plan, exact
+                paperwork entry, retained Composer draft, keyboard navigation,
+                activity removal reveal and Undo. This is a design review, not a
+                user study or a live-service check.
+            </p>
+        </main>
+        <script>
+            const tabs = [...document.querySelectorAll('[role="tab"]')];
+            function select(tab) {
+                tabs.forEach((button) => {
+                    const active = button === tab;
+                    button.setAttribute('aria-selected', String(active));
+                    document.getElementById(
+                        button.getAttribute('aria-controls'),
+                    ).hidden = !active;
+                });
+                history.replaceState(
+                    null,
+                    '',
+                    '#' + tab.id.replace('tab-', ''),
+                );
+            }
+            tabs.forEach((tab, i) => {
+                tab.addEventListener('click', () => select(tab));
+                tab.addEventListener('keydown', (event) => {
+                    if (
+                        event.key === 'ArrowRight' ||
+                        event.key === 'ArrowLeft'
+                    ) {
+                        event.preventDefault();
+                        const next =
+                            tabs[
+                                (i +
+                                    (event.key === 'ArrowRight' ? 1 : -1) +
+                                    tabs.length) %
+                                    tabs.length
+                            ];
+                        select(next);
+                        next.focus();
+                    }
+                });
+            });
+            const initial = tabs.find(
+                (tab) => tab.id === 'tab-' + location.hash.slice(1),
+            );
+            if (initial) select(initial);
+        </script>
+    </body>
+</html>

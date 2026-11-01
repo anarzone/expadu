@@ -81,7 +81,16 @@ class BureaucracyFactConflict extends Model
                 $existing->selectRaw('1')
                     ->from('bureaucracy_case_facts')
                     ->whereColumn('bureaucracy_case_facts.id', 'bureaucracy_fact_conflicts.existing_fact_id')
-                    ->where('bureaucracy_case_facts.state', 'confirmed');
+                    ->whereColumn('bureaucracy_case_facts.case_id', 'bureaucracy_fact_conflicts.case_id')
+                    ->whereColumn('bureaucracy_case_facts.key', 'bureaucracy_fact_conflicts.fact_key')
+                    ->where('bureaucracy_case_facts.state', 'confirmed')->whereNull('bureaucracy_case_facts.superseded_at');
+            })
+            ->whereExists(function ($candidate): void {
+                $candidate->selectRaw('1')->from('bureaucracy_case_facts')
+                    ->whereColumn('bureaucracy_case_facts.id', 'bureaucracy_fact_conflicts.candidate_fact_id')
+                    ->whereColumn('bureaucracy_case_facts.case_id', 'bureaucracy_fact_conflicts.case_id')
+                    ->whereColumn('bureaucracy_case_facts.key', 'bureaucracy_fact_conflicts.fact_key')
+                    ->whereIn('bureaucracy_case_facts.state', ['candidate', 'confirmed'])->whereNull('bureaucracy_case_facts.superseded_at');
             });
     }
 }

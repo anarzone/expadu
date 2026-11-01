@@ -2,6 +2,9 @@
 
 namespace App\Bureaucracy;
 
+use App\Bureaucracy\Cases\CaseAttributes;
+use App\Bureaucracy\Facts\ConfirmedBureaucracyAttributes;
+use App\Models\BureaucracyCase;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
@@ -19,7 +22,21 @@ use Illuminate\Support\Collection;
  */
 class PathGenerator
 {
-    public function __construct(private ProfileEngine $engine) {}
+    public function __construct(private ProfileEngine $engine, private GuidancePublication $publication) {}
+
+    /** Read-only compatibility projection using the same confirmed facts as the case engine. */
+    public function profileFor(User $user): Profile
+    {
+        $base = $this->engine->build($user);
+        $case = $user->exists
+            ? BureaucracyCase::query()->where('user_id', $user->getKey())->first()
+            : ($user->relationLoaded('bureaucracyCase') ? $user->bureaucracyCase : null);
+        $attributes = $case instanceof BureaucracyCase
+            ? app(CaseAttributes::class)->for($case->setRelation('user', $user))
+            : app(ConfirmedBureaucracyAttributes::class)->forUser($user);
+
+        return new Profile(...[...get_object_vars($base), 'attributes' => $attributes]);
+    }
 
     /**
      * Materialise user_task rows for every applicable task and return the
@@ -27,7 +44,11 @@ class PathGenerator
      */
     public function ensure(User $user): Profile
     {
-        $profile = $this->engine->build($user);
+        $profile = $this->profileFor($user);
+
+        if (BureaucracyCase::query()->where('user_id', $user->id)->where('status', 'erased')->exists()) {
+            return $profile;
+        }
 
         $existing = $user->userTasks()->pluck('task_id')->all();
 
@@ -56,7 +77,8 @@ class PathGenerator
     /**
      * Tri-state applicability. Life-event tasks stay dormant (No, never a
      * teaser) until the event is recorded. Tasks without compiled applies_if
-     * (ad-hoc Filament rows) fall back to legacy branch + EU matching.
+     * (ad-hoc Filament rows) evaluate their branch predicates against the same
+     * confirmed answers, never the discovery profile's inferred identity.
      */
     public function applicability(Task $task, Profile $profile): Applicability
     {
@@ -69,10 +91,31 @@ class PathGenerator
             return Applicability::evaluate($task->applies_if, $profile->attributes);
         }
 
-        $matches = in_array($profile->bureaucracyBranch, (array) $task->situation, true)
-            && $task->matchesEuStatus($profile->isEu);
+        $groups = [];
+        foreach ((array) $task->situation as $branch) {
+            if (! isset(ProfileEngine::BRANCH_PREDICATES[$branch])) {
+                return Applicability::Unknown;
+            }
+            $groups[] = ProfileEngine::BRANCH_PREDICATES[$branch];
+        }
+        if ($groups === [] && $task->coverage_scope !== 'universal') {
+            return Applicability::Unknown;
+        }
 
-        return $matches ? Applicability::Yes : Applicability::No;
+        $branchVerdict = Applicability::evaluate($groups, $profile->attributes);
+        $euVerdict = match ($task->eu_filter) {
+            'eu_only' => Applicability::evaluate([['citizenship_group' => 'eu']], $profile->attributes),
+            'non_eu_only' => Applicability::evaluate([['citizenship_group' => 'non_eu']], $profile->attributes),
+            'all', null => Applicability::Yes,
+            default => Applicability::Unknown,
+        };
+
+        if ($branchVerdict === Applicability::No || $euVerdict === Applicability::No) {
+            return Applicability::No;
+        }
+
+        return $branchVerdict === Applicability::Yes && $euVerdict === Applicability::Yes
+            ? Applicability::Yes : Applicability::Unknown;
     }
 
     /**
@@ -118,6 +161,6 @@ class PathGenerator
      */
     private function publishedTasks(): Collection
     {
-        return Task::query()->where('is_published', true)->get();
+        return $this->publication->tasks();
     }
 }

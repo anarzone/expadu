@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Support\PerfLogger;
+use App\Transit\TransitNotices;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -14,6 +18,30 @@ use Illuminate\Support\Facades\Log;
  */
 class VrsTriasService
 {
+    /** Failures in a row that make an outage rather than a blip. */
+    private const OUTAGE_FAILURES = 3;
+
+    /**
+     * Failures in a row before TRIAS is skipped at all. VRS's live server
+     * answers in a quarter of a second but now and then one request hangs
+     * (23 Oct 2026: 61 of 64 failures were a single 3 s timeout with 0
+     * bytes); skipping everything for 30 s after one sent a 37-stop route's
+     * boards to the timetable. One hang now falls back for that request alone.
+     */
+    private const BLIP_FAILURES = 2;
+
+    /** Seconds TRIAS is skipped after a blip. */
+    private const BLIP_SECONDS = 30;
+
+    /** Seconds TRIAS is skipped in an outage. */
+    private const OUTAGE_SECONDS = 300;
+
+    /**
+     * Seconds a board's call may take: answers come in 120–290 ms, and a
+     * slow spell otherwise held a board 3 s a call.
+     */
+    private const BOARD_TIMEOUT = 1.5;
+
     /**
      * Get real-time departures from a stop using TRIAS StopEventRequest.
      *
@@ -32,7 +60,7 @@ class VrsTriasService
                     return null;
                 }
 
-                $cacheKey = "trias_departures_v2_{$globalId['id']}_{$limit}";
+                $cacheKey = "trias_departures_v3_{$globalId['id']}_{$limit}";
                 $cached = Cache::get($cacheKey);
                 if ($cached !== null) {
                     return $cached;
@@ -46,7 +74,7 @@ class VrsTriasService
                 $result = [
                     'stop_name' => $globalId['name'],
                     'source' => 'trias_rt',
-                    'departures' => $departures,
+                    ...$departures,
                 ];
 
                 Cache::put($cacheKey, $result, 60);
@@ -71,7 +99,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = 'trias_departures_nearby_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}";
+        $cacheKey = self::nearbyDeparturesKey($lat, $lng, $limit);
 
         // Return cached live data if available
         $cached = Cache::get($cacheKey);
@@ -93,7 +121,7 @@ class VrsTriasService
         $result = [
             'stop_name' => $globalId['name'],
             'source' => 'trias_rt',
-            'departures' => $departures,
+            ...$departures,
         ];
 
         Cache::put($cacheKey, $result, 60);
@@ -195,6 +223,92 @@ class VrsTriasService
         return mb_strtolower(preg_replace('/[^\pL\pN]+/u', ' ', $withoutCity) ?? $withoutCity);
     }
 
+    private static function nearbyStopKey(float $lat, float $lng): string
+    {
+        return 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
+    }
+
+    private static function nearbyDeparturesKey(float $lat, float $lng, int $limit): string
+    {
+        return 'trias_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
+    }
+
+    /**
+     * A LocationInformationRequest's nearest stop.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    private function parseNearbyStop(string $response): ?array
+    {
+        $parsed = $this->parseXml($response);
+        $refs = $parsed?->xpath('//StopPlaceRef') ?: [];
+        $names = $parsed?->xpath('//StopPlaceName/Text') ?: [];
+
+        return $refs === [] || $names === [] ? null : ['id' => (string) $refs[0], 'name' => (string) $names[0]];
+    }
+
+    /**
+     * Live departures near several points (a station's boarding areas) in
+     * parallel rounds under one deadline, instead of two calls each, one
+     * after another: their stops, then their departures. Results land in the
+     * caches getDeparturesNearby() reads; a point that misses here takes its
+     * usual path.
+     *
+     * @param  list<array{lat: float, lng: float}>  $points
+     */
+    public function prefetchNearby(array $points, int $limit = 10, float $budgetSeconds = self::BOARD_TIMEOUT * 2): void
+    {
+        if (! config('services.vrs.enabled') || Cache::get('trias_down') || $points === []) {
+            return;
+        }
+        $deadline = microtime(true) + $budgetSeconds;
+
+        $wanted = [];
+        foreach ($points as $point) {
+            $key = self::nearbyDeparturesKey($point['lat'], $point['lng'], $limit);
+            if (! Cache::has($key)) {
+                $wanted[$key] = $point;
+            }
+        }
+
+        // Their stops (cached five minutes), the unknown ones in one round.
+        $lookups = [];
+        foreach ($wanted as $key => $point) {
+            if (! Cache::has(self::nearbyStopKey($point['lat'], $point['lng']))) {
+                $lookups[$key] = $this->buildGeoLocationRequest($point['lat'], $point['lng']);
+            }
+        }
+        if ($lookups !== []) {
+            foreach ($this->postMany($lookups, min(self::BOARD_TIMEOUT, $deadline - microtime(true))) as $key => $body) {
+                $stop = $body === null ? null : $this->parseNearbyStop($body);
+                if ($stop !== null) {
+                    Cache::put(self::nearbyStopKey($wanted[$key]['lat'], $wanted[$key]['lng']), $stop, 300);
+                }
+            }
+        }
+
+        // Their departures, in one round.
+        $stops = [];
+        foreach ($wanted as $key => $point) {
+            $stop = Cache::get(self::nearbyStopKey($point['lat'], $point['lng']));
+            if (is_array($stop)) {
+                $stops[$key] = $stop;
+            }
+        }
+        $remaining = $deadline - microtime(true);
+        if ($stops === [] || $remaining < 0.3) {
+            return;
+        }
+        $observedAt = now()->utc()->toIso8601String();
+        $bodies = $this->postMany(array_map(fn (array $stop) => $this->buildStopEventRequest($stop['id'], $limit), $stops), min(self::BOARD_TIMEOUT, $remaining));
+        foreach ($bodies as $key => $body) {
+            $departures = $body === null ? null : $this->parseStopEvents($body, $stops[$key]['id'], $limit, $observedAt);
+            if ($departures !== null) {
+                Cache::put($key, ['stop_name' => $stops[$key]['name'], 'source' => 'trias_rt', ...$departures], 60);
+            }
+        }
+    }
+
     /**
      * Find the nearest stop to coordinates via TRIAS LocationInformationRequest.
      *
@@ -202,36 +316,18 @@ class VrsTriasService
      */
     public function resolveNearbyStop(float $lat, float $lng): ?array
     {
-        $cacheKey = 'trias_nearby_stop_'.round($lat, 3).'_'.round($lng, 3);
+        $cacheKey = self::nearbyStopKey($lat, $lng);
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        $xml = $this->buildGeoLocationRequest($lat, $lng);
-        $response = $this->post($xml);
-
-        if (! $response) {
+        $response = $this->post($this->buildGeoLocationRequest($lat, $lng), self::BOARD_TIMEOUT);
+        $result = $response === null ? null : $this->parseNearbyStop($response);
+        if ($result === null) {
             return null;
         }
-
-        $parsed = $this->parseXml($response);
-        if (! $parsed) {
-            return null;
-        }
-
-        $refs = $parsed->xpath('//StopPlaceRef');
-        $names = $parsed->xpath('//StopPlaceName/Text');
-
-        if (empty($refs) || empty($names)) {
-            return null;
-        }
-
-        $result = [
-            'id' => (string) $refs[0],
-            'name' => (string) $names[0],
-        ];
 
         Cache::put($cacheKey, $result, 300);
 
@@ -241,17 +337,82 @@ class VrsTriasService
     /**
      * Fetch stop events (departures) from TRIAS and parse into app format.
      *
-     * @return array<int, array>|null
+     * @return array{departures: array, observed_at: string}|null
      */
     private function fetchStopEvents(string $globalId, int $limit): ?array
     {
         $xml = $this->buildStopEventRequest($globalId, $limit);
-        $response = $this->post($xml);
+        $response = $this->post($xml, self::BOARD_TIMEOUT);
 
         if (! $response) {
             return null;
         }
 
+        return $this->parseStopEvents($response, $globalId, $limit, now()->utc()->toIso8601String());
+    }
+
+    /**
+     * Fetch live departures for several stops in one parallel round trip, under
+     * one deadline, instead of one sequential call per stop. Results land in the
+     * per-stop cache getDepartures() reads, so callers keep asking per stop and
+     * a stop that misses here simply takes its usual path.
+     *
+     * @param  list<string>  $stopNames
+     */
+    public function prefetchDepartures(array $stopNames, int $limit = 10, float $budgetSeconds = 3.0): void
+    {
+        if (! config('services.vrs.enabled') || Cache::get('trias_down')) {
+            return;
+        }
+
+        $deadline = microtime(true) + $budgetSeconds;
+
+        // Stop ids are cached for a day; a miss costs one lookup here.
+        $pending = [];
+        foreach (array_unique($stopNames) as $stopName) {
+            $globalId = $this->resolveStopGlobalId($stopName);
+            if ($globalId === null) {
+                continue;
+            }
+
+            $cacheKey = "trias_departures_v3_{$globalId['id']}_{$limit}";
+            if (! isset($pending[$cacheKey]) && ! Cache::has($cacheKey)) {
+                $pending[$cacheKey] = $globalId;
+            }
+        }
+
+        $remaining = $deadline - microtime(true);
+        if ($pending === [] || $remaining < 0.5) {
+            return;
+        }
+
+        $bodies = $this->postMany(
+            array_map(fn (array $globalId) => $this->buildStopEventRequest($globalId['id'], $limit), $pending),
+            min(3.0, $remaining),
+        );
+        $observedAt = now()->utc()->toIso8601String();
+
+        foreach ($bodies as $cacheKey => $body) {
+            $departures = $body === null ? null : $this->parseStopEvents($body, $pending[$cacheKey]['id'], $limit, $observedAt);
+            if ($departures === null) {
+                continue;
+            }
+
+            Cache::put($cacheKey, [
+                'stop_name' => $pending[$cacheKey]['name'],
+                'source' => 'trias_rt',
+                ...$departures,
+            ], 60);
+        }
+    }
+
+    /**
+     * Parse a StopEventResponse into app-format departures.
+     *
+     * @return array{departures: array, observed_at: string}|null
+     */
+    private function parseStopEvents(string $response, string $globalId, int $limit, string $observedAt): ?array
+    {
         $parsed = $this->parseXml($response);
         if (! $parsed) {
             return null;
@@ -265,6 +426,8 @@ class VrsTriasService
         $now = Carbon::now();
         $disruptedLines = app(DisruptionService::class)->getDisruptedLines();
         $grouped = [];
+        // Line refs to the names riders see, for the situations below.
+        $lineNames = [];
 
         foreach ($results as $result) {
             $event = $result->StopEvent ?? null;
@@ -278,7 +441,7 @@ class VrsTriasService
                 continue;
             }
 
-            $section = $service->ServiceSection ?? null;
+            $section = $service->ServiceSection ?? $service;
             $lineName = (string) ($section->PublishedLineName->Text ?? '');
             $dest = (string) ($service->DestinationText->Text ?? '');
             $ptMode = (string) ($section->Mode->PtMode ?? '');
@@ -288,7 +451,8 @@ class VrsTriasService
             }
 
             // Get times — prefer EstimatedTime (live), fall back to TimetabledTime
-            $departure = $call->CallAtStop->ServiceDeparture ?? null;
+            $stop = $call->CallAtStop;
+            $departure = $stop->ServiceDeparture ?? null;
             $scheduled = (string) ($departure->TimetabledTime ?? '');
             $estimated = (string) ($departure->EstimatedTime ?? '');
             $timeStr = $estimated ?: $scheduled;
@@ -309,8 +473,24 @@ class VrsTriasService
             $delayMin = $estimated && $scheduled
                 ? max(0, (int) round(($depTime->timestamp - $scheduledTime->timestamp) / 60))
                 : 0;
+            $cancelled = filter_var((string) ($service->Cancelled ?? ''), FILTER_VALIDATE_BOOLEAN)
+                || filter_var((string) ($stop->NotServicedStop ?? ''), FILTER_VALIDATE_BOOLEAN)
+                || filter_var((string) ($stop->NoBoardingAtStop ?? ''), FILTER_VALIDATE_BOOLEAN);
+            $stopId = trim((string) ($stop->StopPointRef ?? ''));
+            $stopName = trim((string) ($stop->StopPointName->Text ?? ''));
+            $platform = trim((string) ($stop->EstimatedBay->Text ?? $stop->PlannedBay->Text ?? ''));
+            $identity = implode('|', [
+                (string) ($service->OperatingDayRef ?? ''),
+                (string) ($service->JourneyRef ?? ''),
+                (string) ($section->LineRef ?? ''),
+                $lineName, $dest, $stopId ?: $globalId,
+                $scheduledTime->toIso8601String(),
+            ]);
 
             $type = $this->mapPtMode($ptMode, $lineName);
+            if ((string) ($section->LineRef ?? '') !== '' && $lineName !== '') {
+                $lineNames[(string) $section->LineRef] = $lineName;
+            }
 
             $key = $lineName.'_'.$dest;
             if (! isset($grouped[$key])) {
@@ -321,6 +501,7 @@ class VrsTriasService
                     'color' => '#1A4CD4',
                     'type' => $type,
                     'departures' => [],
+                    'services' => [],
                     'delay' => 0,
                     'cancelled' => false,
                     'disrupted' => $isDisrupted,
@@ -328,15 +509,39 @@ class VrsTriasService
                 ];
             }
 
-            if (count($grouped[$key]['departures']) < 5 && ! in_array($minsAway, $grouped[$key]['departures'], true)) {
-                $grouped[$key]['departures'][] = $minsAway;
-
-                // Use first departure's delay as the group indicator
-                if (count($grouped[$key]['departures']) === 1) {
-                    $grouped[$key]['delay'] = $delayMin;
-                }
-            }
+            $id = 'trias:'.sha1($identity);
+            $grouped[$key]['services'][$id] = [
+                'id' => $id,
+                'departure_at' => $depTime->toIso8601String(),
+                'scheduled_at' => $scheduled !== '' ? $scheduledTime->toIso8601String() : null,
+                'expected_at' => $estimated !== '' ? $depTime->toIso8601String() : null,
+                'time_basis' => $estimated !== '' ? 'realtime' : 'scheduled',
+                'delay' => $delayMin,
+                'cancelled' => $cancelled,
+                // VRS's own notices about this departure (TRIAS situations).
+                'notices' => self::situationRefs($service, $stop),
+                'boarding_point' => $stopId !== '' || $stopName !== '' ? [
+                    'id' => $stopId !== '' ? $stopId : null,
+                    'name' => $stopName !== '' ? $stopName : null,
+                    'platform' => $platform !== '' ? $platform : null,
+                ] : null,
+            ];
         }
+
+        $this->rememberSituations($parsed, $lineNames);
+
+        foreach ($grouped as &$group) {
+            $services = array_values($group['services']);
+            usort($services, fn (array $a, array $b) => Carbon::parse($a['departure_at'])->timestamp <=> Carbon::parse($b['departure_at'])->timestamp);
+            $group['services'] = array_slice($services, 0, 5);
+            $group['departures'] = array_values(array_unique(array_map(
+                fn (array $item) => (int) $now->diffInMinutes(Carbon::parse($item['departure_at']), false),
+                $group['services'],
+            )));
+            $group['delay'] = $group['services'][0]['delay'] ?? 0;
+            $group['cancelled'] = $group['services'][0]['cancelled'] ?? false;
+        }
+        unset($group);
 
         // Filter out empty groups and sort: trams first, buses last, then by next departure
         $typeOrder = ['tram' => 0, 'subway' => 1, 'rail' => 2, 'bus' => 3];
@@ -351,7 +556,79 @@ class VrsTriasService
             return ($a['departures'][0] ?? 999) <=> ($b['departures'][0] ?? 999);
         });
 
-        return array_slice($results, 0, $limit);
+        return ['departures' => array_slice($results, 0, $limit), 'observed_at' => $observedAt];
+    }
+
+    /** A TRIAS situation's id in the notices store. */
+    public static function situationKey(string $participant, string $number): string
+    {
+        return 'trias:situation:'.($participant !== '' ? $participant.':' : '').$number;
+    }
+
+    /**
+     * The situations a departure refers to (SituationFullRef on its service
+     * or its call), as notices-store keys.
+     *
+     * @return list<string>
+     */
+    private static function situationRefs(\SimpleXMLElement $service, ?\SimpleXMLElement $call): array
+    {
+        $refs = [];
+        foreach ([$service, $call] as $node) {
+            foreach ($node?->SituationFullRef ?? [] as $ref) {
+                $number = trim((string) ($ref->SituationNumber ?? ''));
+                if ($number !== '') {
+                    $refs[] = self::situationKey(trim((string) ($ref->ParticipantRef ?? '')), $number);
+                }
+            }
+        }
+
+        return array_values(array_unique($refs));
+    }
+
+    /**
+     * VRS's official notices (SIRI situations), which come in the StopEvent
+     * response's context: kept in the notices store with their lines, stops
+     * and validity, by their own id, so each is briefed once.
+     *
+     * @param  array<string, string>  $lineNames  line refs to published names
+     */
+    private function rememberSituations(\SimpleXMLElement $parsed, array $lineNames): void
+    {
+        $text = fn (?\SimpleXMLElement $node): string => $node === null ? '' : trim((string) ($node->Text ?? $node));
+        $notices = app(TransitNotices::class);
+
+        foreach ($parsed->xpath('//StopEventResponseContext//PtSituation') ?: [] as $situation) {
+            $number = trim((string) ($situation->SituationNumber ?? ''));
+            if ($number === '') {
+                continue;
+            }
+
+            $lines = [];
+            foreach ($situation->xpath('.//AffectedLine') ?: [] as $line) {
+                $name = $text($line->PublishedLineName ?? null);
+                $lines[] = $name !== '' ? $name : ($lineNames[trim((string) ($line->LineRef ?? ''))] ?? '');
+            }
+            $stops = [];
+            foreach ($situation->xpath('.//AffectedStopPoint') ?: [] as $point) {
+                $name = $text($point->StopPointName ?? null);
+                $stops[] = $name !== '' ? $name : trim((string) ($point->StopPointRef ?? ''));
+            }
+            $from = trim((string) ($situation->ValidityPeriod->StartTime ?? ''));
+            $until = trim((string) ($situation->ValidityPeriod->EndTime ?? ''));
+
+            $notices->remember(
+                self::situationKey(trim((string) ($situation->ParticipantRef ?? '')), $number),
+                'vrs-trias',
+                $text($situation->Summary ?? null),
+                implode("\n\n", array_filter([$text($situation->Description ?? null), $text($situation->Detail ?? null)])),
+                array_values(array_filter($lines)),
+                array_values(array_filter($stops)),
+                [],
+                $from !== '' ? CarbonImmutable::parse($from) : null,
+                $until !== '' ? CarbonImmutable::parse($until) : null,
+            );
+        }
     }
 
     /**
@@ -366,14 +643,14 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = "trias_stop_deps_{$globalId}_{$limit}";
+        $cacheKey = "trias_stop_deps_v2_{$globalId}_{$limit}";
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
-        $result = $this->fetchStopEvents($globalId, $limit);
+        $result = $this->fetchStopEvents($globalId, $limit)['departures'] ?? null;
         if ($result !== null) {
             Cache::put($cacheKey, $result, 60);
         }
@@ -393,7 +670,7 @@ class VrsTriasService
             return null;
         }
 
-        $cacheKey = "trias_trip_stop_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
+        $cacheKey = "trias_trip_stop_v2_{$fromStopId}_{$toLat}_{$toLng}_{$departureTime}";
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
@@ -433,7 +710,7 @@ class VrsTriasService
                 return null;
             }
 
-            $cacheKey = "trias_trip_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
+            $cacheKey = "trias_trip_v2_{$fromLat}_{$fromLng}_{$toLat}_{$toLng}_{$maxResults}";
 
             $cached = Cache::get($cacheKey);
             if ($cached !== null) {
@@ -505,6 +782,8 @@ class VrsTriasService
 
             $trips[] = [
                 'total_duration_min' => $this->isoDurationToMinutes($durationIso),
+                'departure_at' => $startTime ?: null,
+                'arrival_at' => $endTime ?: null,
                 'departure_time' => $startTime ? Carbon::parse($startTime)->format('H:i') : '',
                 'arrival_time' => $endTime ? Carbon::parse($endTime)->format('H:i') : '',
                 'transfers' => $interchanges,
@@ -576,6 +855,8 @@ class VrsTriasService
             'alighting_stop' => $alightShort,
             'boarding_stop_id' => $boardStopId,
             'alighting_stop_id' => $alightStopId,
+            'departure_at' => $depTime ?: null,
+            'arrival_at' => $arrTime ?: null,
             'departure_time' => $depTime ? Carbon::parse($depTime)->format('H:i') : '',
             'departure_time_scheduled' => $depSched ? Carbon::parse($depSched)->format('H:i') : '',
             'arrival_time' => $arrTime ? Carbon::parse($arrTime)->format('H:i') : '',
@@ -861,7 +1142,7 @@ class VrsTriasService
         XML;
     }
 
-    private function post(string $xml): ?string
+    private function post(string $xml, float $timeout = 3.0): ?string
     {
         // If TRIAS was down recently, skip entirely — instant fallback
         if (Cache::get('trias_down')) {
@@ -873,7 +1154,7 @@ class VrsTriasService
         try {
             $url = config('services.vrs.trias_url');
 
-            $options = ['timeout' => 3, 'connect_timeout' => 1];
+            $options = ['timeout' => $timeout, 'connect_timeout' => min(1.0, $timeout)];
             $this->applyVrsSsl($options);
 
             // Single attempt: a departure board refreshes every ~30s anyway, so
@@ -893,7 +1174,7 @@ class VrsTriasService
             }
 
             // Success — mark as healthy
-            Cache::put('trias_healthy', true, 120);
+            $this->markTriasUp();
 
             return $response->body();
         } catch (\Throwable $e) {
@@ -904,12 +1185,82 @@ class VrsTriasService
         }
     }
 
-    private function markTriasDown(float $durationMs, string $error): void
+    /**
+     * POST several TRIAS requests at once. Any failure trips the same
+     * breaker post() uses.
+     *
+     * @param  array<string, string>  $xmlByKey
+     * @return array<string, string|null> response bodies by key; null for a failed request
+     */
+    private function postMany(array $xmlByKey, float $timeout): array
     {
-        // Skip TRIAS for 30s after a failure — prevents timeout cascades
-        Cache::put('trias_down', true, 30);
+        $out = array_fill_keys(array_keys($xmlByKey), null);
 
-        Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs]);
+        $options = ['timeout' => $timeout, 'connect_timeout' => min(1.0, $timeout)];
+        $this->applyVrsSsl($options);
+        $url = config('services.vrs.trias_url');
+        $start = microtime(true);
+
+        $responses = Http::pool(function (Pool $pool) use ($xmlByKey, $options, $url) {
+            foreach ($xmlByKey as $key => $xml) {
+                $pool->as($key)
+                    ->withOptions($options)
+                    ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
+                    ->withBody($xml, 'text/xml')
+                    ->post($url);
+            }
+        });
+
+        $error = null;
+        $failed = 0;
+        foreach ($xmlByKey as $key => $xml) {
+            $response = $responses[$key] ?? null;
+            if ($response instanceof Response && $response->successful()) {
+                $out[$key] = $response->body();
+
+                continue;
+            }
+
+            $failed++;
+            $error ??= $response instanceof \Throwable
+                ? $response->getMessage()
+                : 'HTTP '.($response instanceof Response ? $response->status() : 'no response');
+        }
+
+        if ($error !== null) {
+            // Several calls at once all failing say as much as several in a
+            // row: the board's own calls after this then skip TRIAS too.
+            $this->markTriasDown(round((microtime(true) - $start) * 1000), $error, $failed === count($xmlByKey) ? $failed : 1);
+        } else {
+            $this->markTriasUp();
+        }
+
+        return $out;
+    }
+
+    /**
+     * Skip TRIAS after a failure, so no board waits on its timeout: for 30 s
+     * after one (a blip), for five minutes once three in a row say it's down.
+     * Boards meanwhile answer from the timetable with GTFS-RT delays at once.
+     */
+    private function markTriasDown(float $durationMs, string $error, int $count = 1): void
+    {
+        $failures = (int) Cache::get('trias_failures', 0) + $count;
+        Cache::put('trias_failures', $failures, now()->addMinutes(30));
+        $skip = $failures >= self::OUTAGE_FAILURES ? self::OUTAGE_SECONDS
+            : ($failures >= self::BLIP_FAILURES ? self::BLIP_SECONDS : 0);
+        if ($skip > 0) {
+            Cache::put('trias_down', true, $skip);
+        }
+
+        Log::warning('VRS TRIAS down', ['error' => $error, 'ms' => $durationMs, 'failures' => $failures, 'skip_s' => $skip]);
+    }
+
+    /** A TRIAS answer: healthy again, and the failure count starts over. */
+    private function markTriasUp(): void
+    {
+        Cache::put('trias_healthy', true, 120);
+        Cache::forget('trias_failures');
     }
 
     /**

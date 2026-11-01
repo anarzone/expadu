@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TasteSignals;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
 use App\Enums\TransportMode;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PlaceListResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Places\DestinationGrouping;
+use App\Places\OpenNearby;
 use App\Places\PlaceFacts;
 use App\Services\NearbyPlaces;
 use App\Services\UserLocationService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -60,7 +64,7 @@ class PlacesController extends Controller
             ? Spot::query()->recommendationEligible(true)->whereNull('destination_spot_id')
             : app(DestinationGrouping::class)->eligible(Spot::query(), true);
         $spot->recommendation_available = $eligibility->whereKey($spot->id)->exists();
-        $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+        $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset', 'englishEnrichment']);
         $origin = $this->locations->context($request->user(), $request);
 
         $spot->distance_km = $origin->hasOrigin()
@@ -80,8 +84,7 @@ class PlacesController extends Controller
         // The user's standing feedback, so the detail modal (opened from the
         // home rails or Places) reflects it.
         $row = SpotFeedback::effectiveForUser($request->user()->id, $spot->id)->get($spot->id);
-        $spot->feedback_state = $row?->state?->value;
-        $spot->feedback_rating = $row?->rating;
+        $spot->forceFill(SpotFeedback::forPlace($row));
         $travelOption = $origin->hasOrigin()
             ? ($this->travel->placeOptions(
                 $request->user()->transport_mode,
@@ -92,6 +95,16 @@ class PlacesController extends Controller
         $spot->travel_min = $travelOption['minutes'] ?? null;
         $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
         app(PlaceFacts::class)->attach(collect([$spot]));
+        // The place sheet's "Today": what the listed hours say at a time
+        // today (HH:MM, now by default). A time only, never a place.
+        $time = $request->query('at');
+        $spot->hours_at = OpenNearby::hoursAt(
+            app(PlaceFacts::class)->resolve($spot)['hours'],
+            is_string($time) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time) === 1
+                ? CarbonImmutable::parse(CarbonImmutable::now('Europe/Berlin')->toDateString().' '.$time, 'Europe/Berlin')
+                : CarbonImmutable::now('Europe/Berlin'),
+        );
+        app(TasteSignals::class)->spotViewed($request->user(), $spot);
 
         return new PlaceResource($spot);
     }
@@ -260,7 +273,7 @@ class PlacesController extends Controller
             ->orderBy('id')
             ->paginate(self::PER_PAGE, ['*'], 'page', $page);
 
-        $paginator->getCollection()->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+        $paginator->getCollection()->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset', 'englishEnrichment']);
 
         $activities = $this->activitiesForDestinations($paginator->getCollection());
         $stopHints = $this->stopHintsForPage($paginator->getCollection());
@@ -268,9 +281,7 @@ class PlacesController extends Controller
         $paginator->getCollection()->transform(function (Spot $spot) use ($activities, $stopHints, $feedback) {
             $spot->transit_hint = $stopHints[$spot->id] ?? null;
             $spot->activities = $activities[$spot->id] ?? [];
-            $row = $feedback->get($spot->id);
-            $spot->feedback_state = $row?->state?->value;
-            $spot->feedback_rating = $row?->rating;
+            $spot->forceFill(SpotFeedback::forPlace($feedback->get($spot->id)));
 
             return $spot;
         });
@@ -285,7 +296,7 @@ class PlacesController extends Controller
 
         app(PlaceFacts::class)->attach($paginator->getCollection());
 
-        return PlaceResource::collection($paginator)
+        return PlaceListResource::collection($paginator)
             ->additional([
                 'nearby_included' => $nearbyIncluded,
                 // The resolved origin so the From control reflects the truth:

@@ -1,0 +1,112 @@
+{
+    "name": "composer-answers-trip",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> COMPOSER_ANSWERS=trip php artisan db:seed --class=\"Database\\Seeders\\MockSample\\ComposerAnswersSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "clockRuns": true,
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/composer-studio/",
+        "wait": "#studio-form",
+        "screenshotStyle": "#shell, #shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => { const bar = document.querySelector('.chat-bar'); if (bar && !bar.hidden) bar.hidden = true; }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] }));",
+            "document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => document.querySelectorAll('.chat-entry p, .answer-actions span').forEach((n) => { const t = n.textContent.replace('Scheduled sample times, not live.', 'Scheduled times, not live.').replace('This preview has no live times, so', 'There are no live times for it, so'); if (t !== n.textContent) n.textContent = t; })).observe(document.body, { subtree: true, childList: true }));"
+        ]
+    },
+    "app": {
+        "url": "/composer",
+        "wait": "article.chat-entry.chat-assistant >> nth=1",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, #input-area, #input-area *, button.composer-here { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "leave answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 0,
+            "mockBefore": [
+                {
+                    "click": ".starter-card.starter-travel"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=0"
+                },
+                {
+                    "wait": 600
+                }
+            ]
+        },
+        {
+            "name": "leave title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 0
+        },
+        {
+            "name": "leave way",
+            "mock": ".answer-way",
+            "app": ".answer-way",
+            "index": 0
+        },
+        {
+            "name": "leave ride",
+            "mock": ".nav-way li.is-ride",
+            "app": ".nav-way li.is-ride",
+            "index": 0
+        },
+        {
+            "name": "leave note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 0
+        },
+        {
+            "name": "leave actions",
+            "mock": ".answer-actions",
+            "app": ".answer-actions",
+            "index": 0
+        },
+        {
+            "name": "status answer",
+            "mock": "article.chat-entry.chat-assistant",
+            "app": "article.chat-entry.chat-assistant",
+            "index": 1,
+            "mockBefore": [
+                {
+                    "fill": "#studio-request",
+                    "value": "Is my tram on time?"
+                },
+                {
+                    "click": "button.send"
+                },
+                {
+                    "waitFor": "article.chat-entry.chat-assistant:not(:has(.pending-row)) >> nth=1"
+                },
+                {
+                    "wait": 600
+                }
+            ]
+        },
+        {
+            "name": "status title",
+            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
+            "app": "article.chat-entry.chat-assistant .chat-answer-title",
+            "index": 1
+        },
+        {
+            "name": "status note",
+            "mock": "article.chat-entry.chat-assistant > p",
+            "app": "article.chat-entry.chat-assistant > p",
+            "index": 1
+        }
+    ],
+    "screenshotStyleReason": "The text box band is fixed over the conversation on both sides, so it is hidden only while answers are shot, as are each side's header and its floating Composer button.",
+    "mockInitReason": "The mock's sample-only bar stays hidden, as in composer-answers.json. Its trip answers say “Scheduled sample times, not live.” and “This preview has no live times, so …”; the app's times are the trip's own (Travel's routes, labelled scheduled or live from the journey), so the mock's two sample phrases read as the app says them and both answers are compared whole."
+}

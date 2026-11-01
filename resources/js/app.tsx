@@ -1,12 +1,18 @@
 import { createInertiaApp, router } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { showToast } from '@/components/flash-toast';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { showToast } from '@/components/ui/toast';
+// Before the app starts: its Back listener must come before Inertia's.
+import '@/lib/history-steps';
+import { resolvePage } from '@/lib/resolve-page';
+import {
+    isSignedOutStatus,
+    markSignedOut,
+    setSignedIn,
+    watchFetch,
+} from '@/lib/signed-out';
 import '../css/app.css';
-import { initializeTheme } from '@/hooks/use-appearance';
 
 /**
  * Lightweight error boundary that renders immediately (no Sentry dependency).
@@ -24,7 +30,8 @@ class ErrorBoundary extends Component<
 
     componentDidCatch(error: Error, info: ErrorInfo) {
         // Through @/lib/sentry, the same lazy chunk initSentry loads — a
-        // separate import('@sentry/react') here pulled in the whole SDK.
+        // separate import('@sentry/react') here pulled in the whole SDK. It
+        // starts Sentry itself if the error comes before the idle init.
         import('@/lib/sentry')
             .then((m) => m.captureRenderError(error, info))
             .catch(() => {});
@@ -62,44 +69,136 @@ class ErrorBoundary extends Component<
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+/** Runs `task` after the window's load event, once the browser is idle.
+    Safari has no requestIdleCallback, so it waits a beat instead. */
+function afterLoadWhenIdle(task: () => void): void {
+    const schedule = () => {
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(task, { timeout: 4000 });
+        } else {
+            window.setTimeout(task, 1000);
+        }
+    };
+
+    if (document.readyState === 'complete') {
+        schedule();
+    } else {
+        window.addEventListener('load', schedule, { once: true });
+    }
+}
+
+const userOf = (props: Record<string, unknown>) =>
+    (props.auth as { user?: unknown } | undefined)?.user;
+
+// A session that ends while a page is open (lib/signed-out.ts): every
+// request the page makes is watched, and each page says who it was for.
+watchFetch();
+router.on('navigate', (event) =>
+    setSignedIn(Boolean(userOf(event.detail.page.props))),
+);
+// Signing in or out through an Inertia form renews the session's token; the
+// page's meta keeps the one it was rendered with unless it follows here
+// (lib/csrf.ts reads the XSRF-TOKEN cookie first, the meta when there's none).
+router.on('navigate', (event) => {
+    const token = event.detail.page.props.csrfToken;
+
+    if (typeof token === 'string' && token !== '') {
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.setAttribute('content', token);
+    }
+});
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./pages/${name}.tsx`,
-            import.meta.glob('./pages/**/*.tsx'),
-        ),
+    resolve: resolvePage,
+    defaults: {
+        // Moving to another page fades the page across in 150ms while the
+        // shell stays still (shell.css). Same-page visits (filters, polling,
+        // forms) swap without it.
+        visitOptions: (href, options) =>
+            options.method === 'get' &&
+            !options.only?.length &&
+            !options.except?.length &&
+            new URL(href, window.location.href).pathname !==
+                window.location.pathname
+                ? { ...options, viewTransition: true }
+                : options,
+    },
     setup({ el, App, props }) {
-        // Guard against double createRoot on the same element (SW replays /
-        // duplicate module evaluation log a React warning otherwise).
+        setSignedIn(Boolean(userOf(props.initialPage.props)));
+
+        // Reuse server markup so a slow startup does not replace an already
+        // visible form or discard input. SSR can be unavailable, so keep the
+        // empty-root fallback and the duplicate-module guard.
         type RootEl = HTMLElement & {
             __inertiaRoot?: ReturnType<typeof createRoot>;
         };
         const rootEl = el as RootEl;
-        const root = (rootEl.__inertiaRoot ??= createRoot(el));
-
-        root.render(
+        const app = (
             <StrictMode>
                 <ErrorBoundary>
-                    <TooltipProvider delayDuration={0}>
-                        <App {...props} />
-                    </TooltipProvider>
+                    <App {...props} />
                 </ErrorBoundary>
-            </StrictMode>,
+            </StrictMode>
         );
 
-        // Load Sentry async — out of the critical render path. Guarded so a
-        // blocked chunk (ad blockers block "sentry-*.js") is a silent no-op,
+        if (rootEl.__inertiaRoot) {
+            rootEl.__inertiaRoot.render(app);
+        } else if (el.hasChildNodes()) {
+            rootEl.__inertiaRoot = hydrateRoot(el, app);
+        } else {
+            rootEl.__inertiaRoot = createRoot(el);
+            rootEl.__inertiaRoot.render(app);
+        }
+
+        // Load Sentry once the page has loaded and the browser is idle, so its
+        // ~40 KB stays out of the first render and the load itself. Guarded so
+        // a blocked chunk (ad blockers block "sentry-*.js") is a silent no-op,
         // never an unhandled rejection.
-        import('@/lib/sentry').then((m) => m.initSentry()).catch(() => {});
+        afterLoadWhenIdle(() => {
+            import('@/lib/sentry').then((m) => m.initSentry()).catch(() => {});
+        });
     },
     progress: {
         color: '#4B5563',
     },
 });
 
-// This will set light / dark mode on load...
-initializeTheme();
+// After a deploy the hashed chunk files an open tab points at are gone, so the
+// next lazy import (a page, the map) 404s. Reload once to pick up the new build.
+// The timestamp keeps a chunk that is genuinely broken from reloading forever:
+// within the window (or without usable storage) the original error is thrown
+// as usual instead.
+const CHUNK_RELOAD_KEY = 'expadu:chunk-reload-at';
+const CHUNK_RELOAD_WINDOW_MS = 30_000;
+
+function reloadOnceForStaleChunk(): boolean {
+    try {
+        const now = Date.now();
+        const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));
+
+        if (last > 0 && now - last < CHUNK_RELOAD_WINDOW_MS) {
+            return false;
+        }
+
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
+    } catch {
+        return false;
+    }
+
+    window.location.reload();
+
+    return true;
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('vite:preloadError', (event) => {
+        if (reloadOnceForStaleChunk()) {
+            event.preventDefault();
+        }
+    });
+}
 
 // Never let a request fail silently. Validation errors already render inline,
 // but an ad blocker / extension can hide an element or garble a response — so
@@ -117,9 +216,9 @@ router.on('error', (event) => {
 
     if (typeof first === 'string') {
         // The toast is held in a module store, so calling this even during
-        // Inertia's error re-render (which remounts <FlashToast>) is safe —
+        // Inertia's error re-render (which can remount the page) is safe —
         // the freshly-mounted toast reads the latest message.
-        showToast(first);
+        showToast(first, { error: true });
     }
 });
 
@@ -133,6 +232,11 @@ router.on('invalid', (event) => {
 
     const status = event.detail.response?.status;
 
+    // Signed out while the page was open: the shell's toast says so once.
+    if (isSignedOutStatus(status) && markSignedOut()) {
+        return;
+    }
+
     showToast(
         status === 419
             ? 'Your session expired while this page was open. Reload the page and try again — nothing was saved.'
@@ -141,6 +245,7 @@ router.on('invalid', (event) => {
               : status !== undefined && status >= 500
                 ? 'The server hit an error. Nothing was saved — try again in a moment.'
                 : 'Something blocked the response — an ad blocker or browser extension may be interfering. Try turning it off for this site, or reload.',
+        { error: true },
     );
 });
 
@@ -148,5 +253,6 @@ router.on('invalid', (event) => {
 router.on('exception', () => {
     showToast(
         "Couldn't reach the server. Check your connection and try again.",
+        { error: true },
     );
 });

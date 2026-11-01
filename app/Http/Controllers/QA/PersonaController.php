@@ -3,82 +3,30 @@
 namespace App\Http\Controllers\QA;
 
 use App\Bureaucracy\BureaucracyPersonas;
-use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\QA\ResetPersonaState;
-use App\Bureaucracy\QA\ScenarioFactSynchronizer;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Throwable;
 
 /**
- * Admin-only "become this persona" QA switcher: flips the CURRENT
- * logged-in account's profile columns to a BureaucracyPersonas roster entry
- * with REAL writes, so the whole app (bureaucracy, Today, onboarding) can be
- * exercised as that expat type. Unlike BureaucracyDemoController — which
- * only ever renders an in-memory persona and writes nothing — this mutates
- * the acting user's own row.
+ * Retired mutation endpoints remain explicit tombstones for stale clients.
+ * QA uses the canonical read-only scenario preview, never the acting dossier.
  */
 class PersonaController extends Controller
 {
-    /**
-     * Persist a roster persona's profile onto the current user and
-     * materialise their bureaucracy path.
-     */
-    public function become(Request $request, string $persona): RedirectResponse
+    public function become(Request $request, string $persona): never
     {
-        abort_unless($request->user()?->is_admin || app()->environment('local'), 403);
+        abort_unless($request->user()?->fresh()?->is_admin === true, 403);
 
         $match = collect(BureaucracyPersonas::demo())->firstWhere('key', $persona);
         abort_if($match === null, 404);
 
-        $user = $request->user();
-
-        // A persona switch is a clean slate, never a layer on top of the
-        // previous one — otherwise stale answers, facts and task progress
-        // surface as phantom product bugs.
-        app(ResetPersonaState::class)->execute($user);
-
-        // A persona represents a COMPLETED onboarding. The reset above blanks
-        // onboarded_at, so it must be restored here — otherwise the
-        // EnsureUserIsOnboarded middleware bounces every following QA request
-        // to the wizard and the switcher appears to do nothing.
-        $user->forceFill([
-            ...BureaucracyPersonas::persistableProfile($match),
-            'onboarded_at' => now(),
-        ])->save();
-        app(ScenarioFactSynchronizer::class)->sync($user, $match);
-
-        // Mirrors OnboardingController::complete() — the rest of the app
-        // (commute tiles, "take me there") assumes Home + Work exist.
-        $user->places()->firstOrCreate(
-            ['category' => 'home'],
-            ['emoji' => '🏠', 'name' => 'Home', 'sort_order' => 0],
-        );
-        $user->places()->firstOrCreate(
-            ['category' => 'work'],
-            ['emoji' => '💼', 'name' => 'Work', 'sort_order' => 1],
-        );
-
-        try {
-            app(PathGenerator::class)->ensure($user);
-        } catch (Throwable $e) {
-            report($e);
-        }
-
-        return back()->with('status', "Now testing as: {$match['label']}");
+        app(ResetPersonaState::class)->execute($request->user());
     }
 
-    /**
-     * Wipe the current user's task progress so a persona switch (or a
-     * re-test of the same persona) starts from a clean checklist.
-     */
-    public function resetTasks(Request $request): RedirectResponse
+    public function resetTasks(Request $request): never
     {
-        abort_unless($request->user()?->is_admin || app()->environment('local'), 403);
+        abort_unless($request->user()?->fresh()?->is_admin === true, 403);
 
-        $request->user()->userTasks()->delete();
-
-        return back()->with('status', 'Task progress reset.');
+        app(ResetPersonaState::class)->execute($request->user());
     }
 }

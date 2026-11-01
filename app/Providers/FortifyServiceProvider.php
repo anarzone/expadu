@@ -4,12 +4,16 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\SocialLoginController;
+use App\Http\Responses\PasswordResetLinkFailedResponse;
+use App\Support\ReturnPath;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Contracts\LogoutResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -24,6 +28,12 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(
             LogoutResponse::class,
             \App\Http\Responses\LogoutResponse::class,
+        );
+
+        // A reset link request never reveals whether the email has an account.
+        $this->app->bind(
+            FailedPasswordResetLinkRequestResponse::class,
+            fn ($app, array $parameters) => new PasswordResetLinkFailedResponse($parameters['status']),
         );
     }
 
@@ -53,12 +63,22 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $socialProviders = $this->enabledSocialProviders();
 
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-            'socialProviders' => $socialProviders,
-        ]));
+        Fortify::loginView(function (Request $request) use ($socialProviders) {
+            // "Sign in again" from a page whose session ended while it was
+            // open (resources/js/lib/signed-out.ts): back to that page once
+            // signed in. A path on this site only, never another host.
+            $return = ReturnPath::from($request->query('return'));
+            if ($return !== null) {
+                $request->session()->put('url.intended', url($return));
+            }
+
+            return Inertia::render('auth/login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => Features::enabled(Features::registration()),
+                'status' => $request->session()->get('status'),
+                'socialProviders' => $socialProviders,
+            ]);
+        });
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,
@@ -75,6 +95,9 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'socialProviders' => $socialProviders,
+            // The privacy policy lives on the marketing site (its own domain
+            // in production).
+            'privacyUrl' => route('datenschutz'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
@@ -91,7 +114,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $providers = [];
 
-        foreach (['google', 'apple'] as $provider) {
+        foreach (SocialLoginController::PROVIDERS as $provider) {
             if (config("services.{$provider}.client_id")) {
                 $providers[] = $provider;
             }

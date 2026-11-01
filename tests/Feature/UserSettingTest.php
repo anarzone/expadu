@@ -78,7 +78,7 @@ test('user setting helper returns correct values', function () {
     expect($user->setting('personalised_content'))->toBeTrue();
 });
 
-test('notification preferences shared prop is available', function () {
+test('the user settings shared prop is available', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -86,8 +86,8 @@ test('notification preferences shared prop is available', function () {
     $response->assertOk();
 
     $props = $response->original->getData()['page']['props'];
-    expect($props)->toHaveKey('notificationPreferences');
-    expect($props)->toHaveKey('userSettings');
+    expect($props)->toHaveKey('userSettings')
+        ->not->toHaveKey('notificationPreferences');
 });
 
 test('unauthenticated user cannot access settings', function () {

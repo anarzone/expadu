@@ -68,7 +68,11 @@ it('refuses stale recovery for the entire batch', function (string $kind) {
 
 it('rolls back all recovery writes when source ordering cannot reproduce earlier facts', function () {
     [$spot, $records, $baseline] = canaryFixture();
-    app(RecordPlaceObservation::class)->record($spot, ['provider' => 'other_open_source', 'provider_record_id' => 'fixture-1', 'source_url' => 'https://example.test/place', 'observed_at' => now()->subDays(2)->toIso8601String(), 'ingestion_key' => 'second-source', 'payload' => ['name' => 'Newer independent source name']]);
+    // Access goes by the latest source, so restoring OSM's older record can't bring back
+    // the independent source's newer "private". (Names no longer do: OSM's own name wins.)
+    app(RecordPlaceObservation::class)->record($spot, ['provider' => 'other_open_source', 'provider_record_id' => 'fixture-1', 'source_url' => 'https://example.test/place', 'observed_at' => now()->subDays(2)->toIso8601String(), 'ingestion_key' => 'second-source', 'payload' => ['name' => 'Newer independent source name', 'access' => ['raw' => 'private', 'conditional' => null]]]);
+    // The export is taken after that source, as it was already there.
+    $baseline = [$spot->id => json_decode(DB::selectOne('SELECT row_to_json(s)::text AS raw FROM spots s WHERE id = ?', [$spot->id])->raw, true, flags: JSON_THROW_ON_ERROR)];
     $helper = new GuardedCanary;
     $receipt = $helper->apply($records, $baseline, str_repeat('a', 64));
     $after = $helper->snapshot(array_column($receipt['mapping'], 'id'));

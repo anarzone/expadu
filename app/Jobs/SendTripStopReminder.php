@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\ContextEngine\ActionBus;
+use App\ContextEngine\ScoredAction;
 use App\Models\User;
 use App\Notifications\GetOffReminderNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,8 +55,9 @@ class SendTripStopReminder implements ShouldQueue
             return;
         }
 
-        $user->notify(
-            new GetOffReminderNotification($this->stopName, $this->isFinal),
-        );
+        // Through the one push gate, on time: it's about the stop they're coming to now.
+        app(ActionBus::class)->deliver($user,
+            ScoredAction::claimed('trip_get_off', "trip_get_off:{$user->id}:".md5($this->tripStartedAt.'|'.$this->stopName), 'moderate', now()->addHour()),
+            new GetOffReminderNotification($this->stopName, $this->isFinal), now());
     }
 }

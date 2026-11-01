@@ -30,7 +30,7 @@
             </div>
         </details>
         @auth
-            <a class="xv-btn xv-btn--ink xv-btn--sm" href="{{ route('dashboard') }}">Open the app</a>
+            <a class="xv-btn xv-btn--ink xv-btn--sm" href="{{ route('today') }}">Open the app</a>
         @else
             <a class="xv-login" href="{{ route('login') }}">Log in</a>
             <a class="xv-btn xv-btn--ink xv-btn--sm" href="#waitlistForm">Start free</a>

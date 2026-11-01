@@ -2,21 +2,16 @@
 
 namespace App\Providers;
 
-use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
-use App\Bureaucracy\Ai\DeepSeekCaseFactExtractor;
-use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
+use App\Bureaucracy\Facts\FactRegistry;
+use App\Bureaucracy\Questions\QuestionProtocol;
 use App\Composer\AnthropicCandidateRanker;
-use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
-use App\Composer\HeuristicPromptParser;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
 use App\ContextEngine\Listeners\RecordContextAlert;
-use App\ContextEngine\Listeners\RecordReservedPushSent;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
@@ -25,16 +20,18 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
-use App\Listeners\CreateAlertFromNotification;
+use App\Models\User;
+use App\Observers\BureaucracyAccountObserver;
+use App\Observers\PersonalisationAccountObserver;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -44,6 +41,13 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Ssr\Gateway;
+use Resend\Client as ResendClient;
+use Resend\Contracts\Client as ResendClientContract;
+use Resend\Laravel\Exceptions\ApiKeyIsMissing;
+use Resend\Transporters\HttpTransporter;
+use Resend\ValueObjects\ApiKey as ResendApiKey;
+use Resend\ValueObjects\Transporter\BaseUri as ResendBaseUri;
+use Resend\ValueObjects\Transporter\Headers as ResendHeaders;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,36 +56,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
-            $configuration = config('services.bureaucracy_llm');
-
-            if (! is_array($configuration) || ! $this->bureaucracyLlmIsConfigured($configuration)) {
-                return $app->make(UnavailableCaseFactExtractor::class);
-            }
-
-            return $app->make(DeepSeekCaseFactExtractor::class);
-        });
 
         $this->app->singleton(
             RouteService::class,
             FailoverRouteService::class,
         );
 
+        // The fact schema and the question protocol are files in the repo:
+        // parse their YAML once per request, not once per service that needs
+        // them (about a dozen times for one Paperwork plan).
+        $this->app->singleton(FactRegistry::class);
+        $this->app->singleton(QuestionProtocol::class);
+
         // Inertia SSR with a short timeout instead of Laravel's 30 s default.
         $this->app->singleton(Gateway::class, SsrGateway::class);
-
-        // The composer parser: heuristic by default (no key), the
-        // OpenAI-compatible driver once a provider key is configured. The
-        // driver always wraps the heuristic as its degradation path.
-        $this->app->bind(ParsesPrompt::class, function ($app) {
-            $heuristic = $app->make(HeuristicPromptParser::class);
-
-            if (config('services.llm.driver') === 'openai' && config('services.llm.key')) {
-                return new OpenAiCompatiblePromptParser($heuristic);
-            }
-
-            return $heuristic;
-        });
 
         $this->app->bind(RanksCandidates::class, AnthropicCandidateRanker::class);
 
@@ -89,31 +77,39 @@ class AppServiceProvider extends ServiceProvider
             ClassifiesEvents::class,
             AnthropicEventClassifier::class,
         );
+
+        $this->bindResendClient();
+    }
+
+    /**
+     * resend-laravel builds its client with a bare Guzzle instance — no connect
+     * or total timeout — so a stalled Resend call would hang the request or
+     * queue worker. Rebind it (same wiring as `Resend::client()`) with bounded
+     * timeouts; the package's `resend` alias follows the contract binding.
+     */
+    private function bindResendClient(): void
+    {
+        $this->app->singleton(ResendClientContract::class, function (): ResendClient {
+            $apiKey = config('resend.api_key') ?? config('services.resend.key');
+
+            if (! is_string($apiKey)) {
+                throw ApiKeyIsMissing::create();
+            }
+
+            return new ResendClient(new HttpTransporter(
+                new GuzzleClient([
+                    'connect_timeout' => config('services.resend.connect_timeout'),
+                    'timeout' => config('services.resend.timeout'),
+                ]),
+                ResendBaseUri::from(getenv('RESEND_BASE_URL') ?: 'api.resend.com'),
+                ResendHeaders::withAuthorization(ResendApiKey::from($apiKey)),
+            ));
+        });
     }
 
     /**
      * @param  array<string, mixed>  $configuration
      */
-    private function bureaucracyLlmIsConfigured(array $configuration): bool
-    {
-        if (($configuration['enabled'] ?? false) !== true) {
-            return false;
-        }
-
-        foreach (['base_url', 'model', 'key', 'processor_name', 'processor_privacy_url', 'prompt_version'] as $key) {
-            if (! is_string($configuration[$key] ?? null) || trim($configuration[$key]) === '') {
-                return false;
-            }
-        }
-
-        return filter_var($configuration['base_url'], FILTER_VALIDATE_URL) !== false
-            && filter_var($configuration['processor_privacy_url'], FILTER_VALIDATE_URL) !== false
-            && is_int($configuration['timeout'] ?? null)
-            && $configuration['timeout'] > 0
-            && is_int($configuration['daily_limit'] ?? null)
-            && $configuration['daily_limit'] > 0;
-    }
-
     /**
      * Bootstrap any application services.
      */
@@ -122,8 +118,10 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRateLimiting();
 
-        Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
-        Event::listen(NotificationSent::class, RecordReservedPushSent::class);
+        User::observe(BureaucracyAccountObserver::class);
+        User::observe(PersonalisationAccountObserver::class);
+
+        // CreateAlertFromNotification is registered by listener discovery.
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
@@ -169,6 +167,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         $userOrIp = fn (Request $request): string => (string) ($request->user()?->getAuthIdentifier() ?: $request->ip());
+        $scale = (int) config('app.rate_limit_scale', 1);
 
         // Web-wide ceiling against single-source floods and scrapers. Local
         // and testing are exempt: dev servers and browser suites burst far
@@ -196,7 +195,7 @@ class AppServiceProvider extends ServiceProvider
         // script. GETs pass through untouched.
         RateLimiter::for('app-writes', fn (Request $request): Limit => $request->isMethodSafe()
             ? Limit::none()
-            : Limit::perMinute(60)->by('writes:'.$userOrIp($request)));
+            : Limit::perMinute(60 * $scale)->by('writes:'.$userOrIp($request)));
 
         // Typeahead + geocoding endpoints hit MOTIS/Photon per request; a
         // debounced client peaks around 2/s while typing.
@@ -211,30 +210,34 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('social', fn (Request $request): Limit => Limit::perMinute(20)
             ->by('social:'.$request->ip()));
 
-        // User-generated public content (reviews) — the classic spam target,
-        // stacked under app-writes with a much tighter budget.
-        RateLimiter::for('ugc', fn (Request $request): Limit => Limit::perMinute(10)
-            ->by('ugc:'.$userOrIp($request)));
+        // Emailed confirmation codes (EmailConfirmation): a few per account,
+        // ten a day (each send is five more tries), and a cap per address so
+        // one machine can't mail many inboxes.
+        RateLimiter::for('email-confirmation', fn (Request $request): array => [
+            Limit::perMinutes(10, 3)->by('email-confirmation:user:'.$request->user()?->getAuthIdentifier()),
+            Limit::perDay(10)->by('email-confirmation:user-day:'.$request->user()?->getAuthIdentifier()),
+            Limit::perHour(20)->by('email-confirmation:ip:'.$request->ip()),
+        ]);
 
-        RateLimiter::for('composer-parse', fn (Request $request): Limit => Limit::perMinute(10)
-            ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
+        RateLimiter::for('composer-ask', fn (Request $request): Limit => Limit::perMinute(10 * $scale)
+            ->by('composer-ask:'.$request->user()?->getAuthIdentifier()));
+
+        // The page polls about once a second while the assistant works (3–6 s).
+        RateLimiter::for('composer-progress', fn (Request $request): Limit => Limit::perMinute(120)
+            ->by('composer-progress:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
-        RateLimiter::for('bureaucracy-ai-burst', function (Request $request): array {
-            $response = fn (Request $_request, array $headers) => response()->json([
-                'outcome' => 'limited',
-                'message' => 'Please wait a moment before trying again. You can still use the choices below.',
-            ], 429, $headers);
-
-            return [
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-user:'.$request->user()?->getAuthIdentifier())
-                    ->response($response),
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-ip:'.$request->ip())
-                    ->response($response),
-            ];
-        });
+        // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
+        // `throttle:N,M` middleware shares one per-user signature, so a stacked group
+        // limit's shorter decay would reset the hourly caps on the routes below.
+        $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
+        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60 * $scale)->by($bureaucracyKey('v2', $request)));
+        RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
+        RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        // Batched impressions/detail views (≤ 50 each): one batch every 5 s at most.
+        RateLimiter::for('signals', fn (Request $request): Limit => Limit::perMinute(12)->by('signals:'.$userOrIp($request)));
+        RateLimiter::for('taste-profile', fn (Request $request): Limit => Limit::perMinute(30)->by('taste-profile:'.$userOrIp($request)));
+        RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));
     }

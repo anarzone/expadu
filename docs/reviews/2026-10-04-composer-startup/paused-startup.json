@@ -1,0 +1,79 @@
+{
+  "before": {
+    "currentTray": false,
+    "legacy": [
+      {
+        "display": "block",
+        "height": 66,
+        "selector": "composer-dock"
+      }
+    ],
+    "page": "[Paused Composer QA] Expadu — Travel"
+  },
+  "after": [
+    {
+      "currentTray": false,
+      "legacy": [
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "composer-dock"
+        }
+      ],
+      "page": "[Paused Composer QA] Expadu — Travel"
+    },
+    {
+      "currentTray": false,
+      "legacy": [
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "dock"
+        },
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "shared-compose"
+        }
+      ],
+      "page": "[Paused Composer QA] Expadu — Good things to turn up for"
+    },
+    {
+      "currentTray": false,
+      "legacy": [
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "dock"
+        },
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "shared-compose"
+        }
+      ],
+      "page": "[Paused Composer QA] Expadu — One step at a time"
+    },
+    {
+      "currentTray": false,
+      "legacy": [
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "dock"
+        },
+        {
+          "display": "none",
+          "height": 0,
+          "selector": "shared-compose"
+        }
+      ],
+      "page": "[Paused Composer QA] Expadu — A little help goes a long way"
+    },
+    {
+      "currentTray": false,
+      "legacy": [],
+      "page": "[Paused Composer QA] Expadu — Today preview"
+    }
+  ]
+}
