@@ -256,7 +256,7 @@
     min-height: 26px;
     padding: 0 10px;
     border-radius: var(--radius-pill);
-    background: #f1ebdf;
+    background: var(--color-bg-quiet);
     color: #4d463a;
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
@@ -264,7 +264,7 @@
 
 .ui-sheet.place-sheet .place-chip.is-open {
     background: #e2f0e6;
-    color: #2b6b3f;
+    color: var(--color-done);
     font-weight: var(--weight-bold);
 }
 
@@ -710,4 +710,87 @@
     .ui-sheet.place-sheet .place-sheet-plan-in > * {
         transition: none;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .ui-sheet.place-sheet .place-sheet-band {
+    --band: color-mix(in srgb, hsl(40 32% 45%) 16%, var(--color-bg-surface));
+    --band-ink: var(--color-text-soft);
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band-note {
+    background: color-mix(
+        in srgb,
+        hsl(43 70% 45%) 16%,
+        var(--color-bg-surface)
+    );
+    color: var(--color-text-soft);
+}
+:root.dark
+    .ui-sheet.place-sheet
+    .place-sheet-band:is([data-kind='restaurant'], [data-kind='fastfood']) {
+    --band: color-mix(in srgb, hsl(20 63% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #b4441c 40%, var(--color-text));
+}
+:root.dark
+    .ui-sheet.place-sheet
+    .place-sheet-band:is([data-kind='cafe'], [data-kind='bakery']) {
+    --band: color-mix(in srgb, hsl(34 49% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #8a5a1e 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band[data-kind='grocery'] {
+    --band: color-mix(in srgb, hsl(186 42% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #00687b 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band[data-kind='pharmacy'] {
+    --band: color-mix(in srgb, hsl(137 32% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #2f7d4f 40%, var(--color-text));
+}
+:root.dark
+    .ui-sheet.place-sheet
+    .place-sheet-band:is(
+        [data-kind='park'],
+        [data-kind='nature'],
+        [data-kind='playground']
+    ) {
+    --band: color-mix(in srgb, hsl(80 43% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #4e7a12 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band[data-kind='sports'] {
+    --band: color-mix(in srgb, hsl(214 54% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #1f5fa8 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band[data-kind='library'] {
+    --band: color-mix(in srgb, hsl(266 39% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #6b4fa0 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-band[data-kind='culture'] {
+    --band: color-mix(in srgb, hsl(320 38% 45%) 16%, var(--color-bg-surface));
+    --band-ink: color-mix(in srgb, #8a3c6e 40%, var(--color-text));
+}
+:root.dark .ui-sheet.place-sheet .place-chip {
+    color: var(--color-text-soft);
+}
+:root.dark .ui-sheet.place-sheet .place-chip.is-open {
+    background: var(--color-done-bg);
+}
+:root.dark .ui-sheet.place-sheet .place-contents-icon {
+    background: var(--color-done-bg);
+    color: var(--color-done);
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-way > div {
+    background: var(--color-bg-quiet);
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-source,
+:root.dark .ui-sheet.place-sheet .place-photo-credit {
+    color: var(--color-text-soft);
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-secondary[aria-pressed='true'] {
+    background: var(--color-done-bg);
+    color: var(--color-done);
+}
+:root.dark .ui-sheet.place-sheet .place-sheet-marked {
+    color: var(--color-bg-surface);
 }

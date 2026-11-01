@@ -19,10 +19,10 @@ test('settings and each of its sections are one page, the section named', functi
             ->has('notifications.quiet_from')
             ->where('work', null)
             ->where('todayRank', false));
-})->with([null, 'account', 'city', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete']);
+})->with([null, 'account', 'city', 'appearance', 'privacy', 'composer', 'notifications', 'transit', 'data', 'delete']);
 
 test('an unknown section is not found', function () {
-    $this->actingAs(User::factory()->create())->get('/settings/appearance')->assertNotFound();
+    $this->actingAs(User::factory()->create())->get('/settings/two-factor')->assertNotFound();
 });
 
 test('Your data and Delete account need a verified email', function (string $section) {

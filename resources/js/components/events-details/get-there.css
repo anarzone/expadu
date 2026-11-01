@@ -131,7 +131,7 @@
 .ev-details .route-field {
     display: grid;
     gap: 4px;
-    color: #6e6657;
+    color: var(--color-text-soft);
     font-size: 11px;
     line-height: 1.5;
 }
@@ -143,7 +143,7 @@
     padding: 6px 10px;
     border: 1px solid #b1a1c2;
     border-radius: 8px;
-    background: #fff;
+    background: var(--color-bg-field);
     color: var(--color-text);
     font: inherit;
     font-size: 17px;
@@ -180,7 +180,7 @@
 }
 
 .ev-details .place-journey-destination small {
-    color: #6e6657;
+    color: var(--color-text-soft);
     font-size: 11px;
     line-height: 1.5;
 }
@@ -265,7 +265,7 @@
 
 .ev-details .gt-time .gt-pill {
     border: 1px solid #d9cfbd;
-    background: #fffdf8;
+    background: var(--color-bg-surface);
 }
 
 .ev-details .gt-time[aria-expanded='true'] .gt-pill {
@@ -323,7 +323,7 @@
 }
 
 .ev-details .gt-modes label > span {
-    background: #f1ebdf;
+    background: var(--color-bg-quiet);
     color: var(--color-text);
 }
 
@@ -362,7 +362,7 @@
     padding: 6px;
     border: 1px solid var(--evd-line);
     border-radius: 14px;
-    background: #fffdf8;
+    background: var(--color-bg-surface);
     box-shadow: 0 14px 34px -14px rgb(20 12 4 / 45%);
 }
 
@@ -396,7 +396,7 @@
 }
 
 .ev-details .gt-menu button[aria-checked='true'] {
-    background: #f1ebdf;
+    background: var(--color-bg-quiet);
 }
 
 .ev-details .gt-menu button > span {
@@ -491,11 +491,39 @@
     height: 16px;
     border: 4px solid var(--evd-where-icon);
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-bg-field);
     box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
 }
 
 /* Open in Travel is a link, set as the bar's buttons are. */
 .ev-details .ui-sheet-foot a.evd-plan {
     text-align: center;
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .ev-details .place-route {
+    background: linear-gradient(
+        135deg,
+        var(--color-paper-bg),
+        var(--color-paper-bg) 70%,
+        var(--color-attention-bg)
+    );
+}
+:root.dark .ev-details .event-route-connector {
+    border-left: 2px dotted var(--color-border);
+}
+:root.dark .ev-details .gt-time .gt-pill {
+    border: 1px solid var(--color-border);
+}
+:root.dark .ev-details .gt-modes label:has(:checked) > span {
+    color: var(--color-bg-surface);
+}
+:root.dark .ev-details .event-way-map {
+    background: var(--color-bg-quiet);
+}
+:root.dark .ev-details .event-way-map-credit {
+    background: var(--color-bg-surface);
 }

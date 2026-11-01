@@ -971,3 +971,28 @@
         transition: none;
     }
 }
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .ui-loading-line::after {
+    background: linear-gradient(
+        100deg,
+        transparent,
+        rgb(255 255 255 / 0.06),
+        transparent
+    );
+}
+:root.dark .ui-loading-spark .spark-tips path {
+    stroke: var(--color-select-text);
+}
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   On a dark page a light scrim barely dims it: sheets and menus lay a
+   deeper one, so what opened stands forward. */
+:root.dark .ui-sheet::backdrop,
+:root.dark .ui-menu-scrim,
+:root.dark .ui-time-sheet::backdrop {
+    background: rgb(0 0 0 / 0.5);
+}

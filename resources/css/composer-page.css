@@ -34,7 +34,7 @@
         --cyan: #05badd;
         --orange: #ff3902;
         --action: #d9340a;
-        --ink: #211d15;
+        --ink: var(--color-text);
         --muted: #5d6c70;
         --paper: #f6fafb;
         --line: #d8e3e5;
@@ -190,7 +190,7 @@
         color: #fff;
     }
     .secondary {
-        background: #fff;
+        background: var(--color-bg-field);
         border: 1px solid var(--line);
     }
     .dark {
@@ -382,7 +382,7 @@
     }
     .empty {
         padding: 48px 28px;
-        background: #fff;
+        background: var(--color-bg-field);
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
         text-align: center;
@@ -442,7 +442,7 @@
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
         padding: 28px;
-        background: #fff;
+        background: var(--color-bg-field);
         overflow: auto;
         color: var(--ink);
     }
@@ -539,7 +539,7 @@
     .form-field select,
     .form-field textarea {
         border: 1px solid #cad9dc;
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-md);
         padding: 12px;
         width: 100%;
@@ -705,7 +705,7 @@
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 8px;
-        background: #fff;
+        background: var(--color-bg-field);
         padding: 10px;
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
@@ -829,7 +829,7 @@
         margin: 6px 0 10px;
     }
     .event-info .pill {
-        background: #fff;
+        background: var(--color-bg-field);
         border: 1px solid var(--line);
     }
     .event-when {
@@ -876,7 +876,7 @@
         border: 1px solid transparent;
         border-radius: var(--radius-xl);
         text-align: left;
-        background: #fff;
+        background: var(--color-bg-field);
     }
     .service-choice > span {
         width: 51px;
@@ -908,7 +908,7 @@
     .service-workspace {
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
-        background: #fff;
+        background: var(--color-bg-field);
         overflow: hidden;
     }
     .service-work-head {
@@ -998,7 +998,7 @@
     }
     .request-surface {
         border: 1px solid #90cad7;
-        background: #fff;
+        background: var(--color-bg-field);
         border-radius: var(--radius-xl);
         box-shadow: 0 5px 0 #05badd;
         padding: 20px;
@@ -1060,7 +1060,7 @@
         margin: 10px 0 18px;
     }
     .plan-workspace {
-        background: #fff;
+        background: var(--color-bg-field);
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
         overflow: hidden;
@@ -1746,7 +1746,7 @@
             font-size: var(--text-control);
             flex: 1;
             border-radius: var(--radius-lg);
-            background: #fff;
+            background: var(--color-bg-field);
         }
         .composer-jump a:last-child {
             background: var(--cyan);
@@ -2001,7 +2001,7 @@
         grid-template-columns: 44px 1fr 1.2fr;
         gap: 8px;
         padding: 12px 20px max(12px, env(safe-area-inset-bottom));
-        background: #fff;
+        background: var(--color-bg-field);
         border-top: 1px solid var(--line);
     }
     .place-preview-actions .button {
@@ -2287,7 +2287,7 @@
         background: var(--color-select-text);
     }
     .days [aria-pressed='true'] i.has-plan {
-        background: white;
+        background: var(--color-bg-field);
     }
     .plan-reminders {
         display: flex;
@@ -2528,7 +2528,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        background: white;
+        background: var(--color-bg-field);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         padding: 0 12px;
@@ -2714,7 +2714,7 @@
         width: 19px;
         height: 19px;
         border-radius: var(--radius-round);
-        background: var(--color-select-text);
+        background: var(--color-select-fill);
         color: white;
         display: none;
     }
@@ -4106,4 +4106,176 @@
     to {
         background-position: 100% 50%;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .composer-page {
+    --muted: var(--color-text-soft);
+    --paper: var(--color-bg-canvas);
+    --line: var(--color-border);
+    --blue: var(--color-select-bg);
+    --green: var(--color-done-bg);
+    --peach: var(--color-action-tint);
+    --yellow: var(--color-attention-bg);
+}
+:root.dark .composer-page a:focus-visible,
+:root.dark .composer-page button:focus-visible,
+:root.dark .composer-page input:focus-visible,
+:root.dark .composer-page select:focus-visible,
+:root.dark .composer-page textarea:focus-visible {
+    outline: 3px solid var(--color-focus);
+}
+:root.dark .composer-page .icon-button:hover {
+    background: var(--color-bg-quiet);
+}
+:root.dark .composer-page .pill {
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .composer-page .pill.ink {
+    color: var(--color-bg-surface);
+}
+:root.dark .composer-page .city {
+    border: 1px solid var(--color-border);
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .service-nav > a:first-child {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .service-nav > a:nth-child(2) {
+    color: var(--color-action-text);
+}
+:root.dark .composer-page .service-nav > button {
+    color: var(--color-attention-text);
+}
+:root.dark .composer-page .service-nav > a:nth-child(4) {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .service-nav a:hover,
+:root.dark .composer-page .service-nav button:hover {
+    background: var(--color-bg-quiet);
+}
+:root.dark .composer-page .filter[aria-pressed='true'] {
+    color: var(--color-bg-surface);
+}
+:root.dark .composer-page #dock {
+    background: linear-gradient(transparent, var(--color-bg-canvas));
+}
+:root.dark .composer-page .composer-dock {
+    border: 1px solid var(--color-border);
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .composer-page .toast {
+    color: var(--color-bg-surface);
+}
+:root.dark .composer-page .form-field input,
+:root.dark .composer-page .form-field select,
+:root.dark .composer-page .form-field textarea {
+    border: 1px solid var(--color-border-strong);
+}
+:root.dark .composer-page .place-image {
+    background: var(--color-done-bg);
+}
+:root.dark .composer-page .date-day[aria-pressed='true'] small {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .event-filters .filter[aria-pressed='true'] {
+    background: var(--color-bg-quiet);
+}
+:root.dark .composer-page .event-art small {
+    color: var(--color-text-soft);
+}
+:root.dark .composer-page .date-stamp {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .service-choice[aria-pressed='true'] {
+    border-color: var(--color-focus);
+    background: var(--color-select-bg);
+}
+:root.dark .composer-page .directory-status > svg {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .request-surface {
+    border: 1px solid var(--color-border);
+}
+:root.dark .composer-page .request-surface label svg {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .plan-header {
+    background: var(--color-bg-quiet);
+}
+:root.dark .composer-page .item-time {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .plan-warning {
+    background: var(--color-attention-bg);
+}
+:root.dark .composer-page .saved-label {
+    color: var(--color-text-soft);
+}
+@media (max-width: 700px) {
+    :root.dark .composer-jump {
+        background: var(--color-select-bg);
+        border-top: 1px solid var(--color-border);
+    }
+}
+:root.dark .composer-page .travel-origin {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .travel-modes button[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .place-preview-art {
+    color: var(--color-text-soft);
+}
+:root.dark .composer-page .place-preview-location a {
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .place-preview-check {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+:root.dark .composer-page .place-preview-actions [aria-pressed='true'] {
+    color: var(--color-select-text);
+    background: var(--color-bg-quiet);
+}
+:root.dark .composer-page .replacement-media {
+    background: var(--color-done-bg);
+    color: var(--color-done);
+}
+:root.dark .composer-page .replacement-media.blue {
+    background: var(--color-bg-quiet);
+    color: var(--color-select-text);
+}
+:root.dark .composer-page .replacement-media.peach {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+:root.dark .composer-page .replacement-media.yellow {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+:root.dark .composer-page.composer-page .answer-button:hover {
+    background: rgb(255 255 255 / 0.06);
+}
+:root.dark .composer-page.composer-page .answer-docs li {
+    border-bottom: 1px solid var(--color-border);
+}
+:root.dark .composer-page.composer-page .answer-tile {
+    background: var(--color-paper-bg);
+}
+:root.dark .composer-page.composer-page .answer-progress {
+    background: var(--color-paper-bg);
+}
+:root.dark .composer-page.composer-page {
+    --warning-surface: var(--color-attention-bg);
+    --warning-ink: var(--color-attention-text);
+}
+
+/* ─── Dark, by hand ─────────────────────────────────────────────────────
+   The ink button's fill turns cream, so its words go dark. */
+:root.dark .composer-page .dark {
+    color: var(--color-bg-surface);
 }

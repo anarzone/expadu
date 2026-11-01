@@ -43,14 +43,14 @@
 .pp,
 .pp-art {
     --pp-ground: var(--poster-paper);
-    --pp-text: var(--color-text);
-    --pp-soft: var(--color-text);
+    --pp-text: var(--poster-ink);
+    --pp-soft: var(--poster-ink);
     --pp-shape: var(--poster-purple);
 }
 .pp--day {
     --pp-ground: var(--poster-yellow);
-    --pp-text: var(--color-text);
-    --pp-soft: var(--color-text);
+    --pp-text: var(--poster-ink);
+    --pp-soft: var(--poster-ink);
     --pp-shape: var(--poster-purple);
 }
 .pp--evening {
@@ -67,8 +67,8 @@
 }
 .pp--paper {
     --pp-ground: var(--poster-paper);
-    --pp-text: var(--color-text);
-    --pp-soft: var(--color-text-soft);
+    --pp-text: var(--poster-ink);
+    --pp-soft: var(--poster-ink-soft);
     --pp-shape: var(--poster-purple);
 }
 
@@ -164,7 +164,7 @@
 .pp-art.pp--checks.pp--day::before,
 .pp-art.pp--checks.pp--paper::before {
     background: repeating-conic-gradient(
-            var(--color-text) 0 25%,
+            var(--poster-ink) 0 25%,
             transparent 0 50%
         )
         0 0 / 26px 26px;
@@ -306,14 +306,14 @@
     margin-top: auto;
     padding: 3px 12px 1px;
     background: var(--poster-yellow);
-    color: var(--color-text);
+    color: var(--poster-ink);
     font-family: 'Festival Marker', var(--font-sans);
     font-size: 17px;
     line-height: 1.3;
     transform: rotate(-3deg);
 }
 .pp--day .pp-tape {
-    background: var(--color-text);
+    background: var(--poster-ink);
     color: var(--poster-yellow);
 }
 .pp-title {
@@ -508,7 +508,7 @@
     box-shadow: 0 2px 6px #211d1526;
 }
 .pp-flag--now {
-    background: var(--color-text);
+    background: var(--poster-ink);
     color: var(--poster-cream);
 }
 .pp-flag--now > span {
