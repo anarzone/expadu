@@ -18,6 +18,7 @@ import {
     posterCategory,
     posterEvent,
     posterInk,
+    whenText,
 } from '@/components/posters/poster-model';
 import type { PosterSource } from '@/components/posters/poster-model';
 import { openComposerView } from '@/components/shell/composer-tray';
@@ -90,14 +91,27 @@ const panel = {
 const dayPrefix = (event: DiscoveryEvent) =>
     event.day === 'tomorrow' ? 'Tomorrow · ' : '';
 
+/** A start still to come shows its range; one under way says so ("On now ·
+    until 22:30"), and one with no time says its series or "All day". */
 const timeRange = (event: DiscoveryEvent) => {
     const poster = posterEvent(event);
+    const upcoming =
+        !!poster.start && Date.parse(event.occurrence_start) > Date.now();
 
     return (
         dayPrefix(event) +
-        (poster.start
+        (upcoming
             ? `${poster.start}–${poster.end ?? 'end not listed'}`
-            : 'Time not listed')
+            : whenText(event, poster))
+    );
+};
+
+/** The rail fades its edge while there's more to swipe to (today.css); at the end it stops. */
+const railEnd = (event: { currentTarget: HTMLElement }) => {
+    const rail = event.currentTarget;
+    rail.toggleAttribute(
+        'data-end',
+        rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4,
     );
 };
 
@@ -255,6 +269,7 @@ export function Discovery({
                     className="event-rail"
                     aria-label="Tonight's events. Swipe to browse."
                     tabIndex={0}
+                    onScroll={railEnd}
                 >
                     {posters.map((event) => (
                         <EventCard
@@ -401,7 +416,7 @@ function CompactEvent({
                     <small>
                         <time dateTime={event.occurrence_start}>
                             {dayPrefix(event)}
-                            {poster.start ?? 'Time not listed'}
+                            {whenText(event, poster)}
                         </time>
                         {poster.area ? ` · ${poster.area}` : ''}
                     </small>

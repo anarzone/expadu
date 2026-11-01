@@ -218,15 +218,30 @@ class EventOccurrencePresenter
             return null;
         }
 
-        $day = CarbonImmutable::parse($event->starts_at)->format('l');
+        $rule = strtoupper($event->recurrence);
+        // The rule's own weekdays (BYDAY); the first date's day only when it names none.
+        preg_match('/BYDAY=([A-Z,]+)/', $rule, $byday);
+        $names = ['MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday', 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday', 'SU' => 'Sunday'];
+        $days = array_values(array_filter(array_map(fn (string $code) => $names[$code] ?? null, explode(',', $byday[1] ?? ''))));
+        $days = $days ?: [CarbonImmutable::parse($event->starts_at)->format('l')];
+        $list = count($days) === 1
+            ? $days[0]
+            : implode(', ', array_map(fn (string $day) => substr($day, 0, 3), array_slice($days, 0, -1))).' and '.substr(end($days), 0, 3);
 
-        return match (true) {
-            str_contains($event->recurrence, 'FREQ=DAILY') => 'Daily',
-            str_contains($event->recurrence, 'INTERVAL=4') => "Every 4 weeks on {$day}",
-            str_contains($event->recurrence, 'INTERVAL=2') => "Every other {$day}",
-            str_contains($event->recurrence, 'FREQ=WEEKLY') => "Every {$day}",
-            str_contains($event->recurrence, 'FREQ=MONTHLY') => 'Monthly',
+        $text = match (true) {
+            str_contains($rule, 'FREQ=DAILY') => 'Daily',
+            str_contains($rule, 'INTERVAL=4') => "Every 4 weeks on {$list}",
+            str_contains($rule, 'INTERVAL=2') => "Every other {$list}",
+            str_contains($rule, 'FREQ=WEEKLY') => count($days) === 1 ? "Every {$list}" : $list,
+            str_contains($rule, 'FREQ=MONTHLY') => 'Monthly',
             default => 'Recurring',
         };
+
+        // A series ending within two months says when ("Daily until Thu 5 Nov").
+        $until = $event->recurrence_until ? CarbonImmutable::parse($event->recurrence_until) : null;
+
+        return $until !== null && $until->lessThan(now()->addMonths(2))
+            ? $text.' until '.$until->format('D j M')
+            : $text;
     }
 }

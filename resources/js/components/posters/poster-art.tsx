@@ -19,7 +19,38 @@ import './poster-art.css';
 const classes = (...names: (string | false | null | undefined)[]) =>
     names.filter(Boolean).join(' ');
 
-type ArtSubject = Pick<PosterEvent, 'start' | 'category' | 'outdoor'>;
+type ArtSubject = Pick<PosterEvent, 'start' | 'category' | 'outdoor'> & {
+    id?: string;
+};
+
+/* Where the shape sits, picked from the listing's id: the category's shape stays,
+   but a list of evening concerts isn't four copies of one moon. Stable per listing. */
+const placings = [
+    { x: '9%', y: '16%', stars: '0px' },
+    { x: '46%', y: '10%', stars: '17px' },
+    { x: '22%', y: '44%', stars: '29px' },
+    { x: '58%', y: '38%', stars: '9px' },
+];
+
+function placing(id: string | undefined): CSSProperties | undefined {
+    if (!id) {
+        return undefined;
+    }
+
+    let hash = 0;
+
+    for (const char of id) {
+        hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    }
+
+    const at = placings[hash % placings.length];
+
+    return {
+        '--pp-x': at.x,
+        '--pp-y': at.y,
+        '--pp-stars': at.stars,
+    } as CSSProperties;
+}
 
 /** The picture alone, for places that print the words themselves: a card's
     picture slot (`slot`), a sheet's cover (`cover`), or a poster's face. */
@@ -44,6 +75,7 @@ export function PosterArt({
                 variant && `pp-art--${variant}`,
                 className,
             )}
+            style={placing(event.id)}
             aria-hidden="true"
         >
             <span />
@@ -203,7 +235,7 @@ export function Poster({
         !gone && !listing && !!event.start && when !== 'over' && !!onPlan;
     const savable = !gone && !listing && !!onSave;
     const tape = posterTape(event, today);
-    const time = event.start || 'Time not listed yet';
+    const time = event.start || event.untimed || 'Time not listed yet';
     const until = event.end
         ? `until ${event.end}`
         : event.start

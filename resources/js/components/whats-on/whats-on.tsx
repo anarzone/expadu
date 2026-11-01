@@ -374,7 +374,7 @@ export function WhatsOn({
                 ? ''
                 : stateOf(l) === 'now'
                   ? 'On now'
-                  : (l.poster.start ?? 'Time not listed');
+                  : (l.poster.start ?? l.poster.untimed ?? 'Time not listed');
         const group = groups.find((g) => g.label === label);
 
         if (group) {
@@ -441,7 +441,7 @@ export function WhatsOn({
             ? p.end
                 ? `${p.start}–${p.end}`
                 : `${p.start} · end not listed`
-            : 'Time not listed';
+            : (p.untimed ?? 'Time not listed');
         const where = [p.venue, p.area].filter(Boolean).join(' · ');
         const open = () =>
             showDetail({
@@ -506,7 +506,7 @@ export function WhatsOn({
             ? p.end
                 ? `${p.start}–${p.end}`
                 : `${p.start} · end not listed`
-            : 'Time not listed';
+            : (p.untimed ?? 'Time not listed');
         const ink = posterInk(p.start);
 
         return (

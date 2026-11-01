@@ -172,13 +172,16 @@ export function CityHelp({
                     <>
                         <Icon name={weatherIcon(weather?.icon)} />
                         <b>{degrees(weather?.temperature)}</b>
+                        {/* Which number is which: now, then the next hour shown. */}
+                        <span>now</span>
                         {later[0] && (
                             <span>
-                                {later[0].hour}{' '}
-                                <strong>{degrees(later[0].temperature)}</strong>
+                                ·{' '}
+                                <strong>{degrees(later[0].temperature)}</strong>{' '}
+                                at {later[0].hour}
                             </span>
                         )}
-                        <small>Forecast</small>
+                        <small>Full forecast</small>
                     </>
                 ) : (
                     <small>Forecast unavailable right now</small>
