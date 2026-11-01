@@ -12,7 +12,7 @@
     --laptop-not-bg: #f3e1da;
     --laptop-not: #8a3413;
     --laptop-rule-bg: #fbeadf;
-    --laptop-done-bg: #f1f7f0;
+    --laptop-done-bg: var(--color-done-bg);
     --laptop-done-line: #cfe5d3;
     --laptop-control-line: #d9cdb5;
 
@@ -403,4 +403,18 @@
             border-color 160ms ease,
             color 160ms ease;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .ui-sheet.place-sheet .laptop-work {
+    --laptop-good-bg: var(--color-done-bg);
+    --laptop-good-ink: var(--color-done);
+    --laptop-mixed-bg: var(--color-bg-quiet);
+    --laptop-not-bg: var(--color-action-tint);
+    --laptop-rule-bg: var(--color-action-tint);
+    --laptop-done-line: var(--color-border);
+    --laptop-control-line: var(--color-border);
 }

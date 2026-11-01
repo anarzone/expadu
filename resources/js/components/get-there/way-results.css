@@ -136,7 +136,7 @@
 :is(.ev-details, .place-sheet) .gt .plan-option {
     border: 1px solid #e0d7c4;
     border-radius: var(--radius-xl);
-    background: #fffdf8;
+    background: var(--color-bg-surface);
     transition: border-color 160ms ease;
 }
 
@@ -482,7 +482,7 @@
     padding: 0 14px;
     border: 1px solid #e0d7c4;
     border-radius: 999px;
-    background: #fffdf8;
+    background: var(--color-bg-surface);
     color: var(--color-text);
     font: inherit;
     font-size: 14px;
@@ -500,4 +500,21 @@
 :is(.ev-details, .place-sheet) .gt-none {
     margin: 0;
     font-size: 14px;
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark :is(.ev-details, .place-sheet) .gt .plan-option {
+    border: 1px solid var(--color-border);
+}
+:root.dark :is(.ev-details, .place-sheet) .gt .route-step time {
+    color: var(--color-text-soft);
+}
+:root.dark :is(.ev-details, .place-sheet) .gt .route-step.arrive .step-node {
+    background: var(--color-action-tint);
+}
+:root.dark :is(.ev-details, .place-sheet) .gt-start {
+    border: 1px solid var(--color-border);
 }

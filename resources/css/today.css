@@ -632,7 +632,7 @@ a.plan-link:hover {
     box-sizing: border-box;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
-    background: #fff;
+    background: var(--color-bg-field);
     color: var(--color-text);
     font: inherit;
 }
@@ -2294,7 +2294,7 @@ button.saved-all {
     width: 42px;
     height: 42px;
     border-radius: var(--radius-lg);
-    background: #fff;
+    background: var(--color-bg-field);
     color: var(--color-welcome-mark);
 }
 .today-welcome h2 {
@@ -2322,7 +2322,7 @@ button.saved-all {
     padding: 10px 14px;
     border: 0;
     border-radius: var(--radius-lg);
-    background: #fff;
+    background: var(--color-bg-field);
     color: var(--color-welcome-ink);
     font: inherit;
     font-size: var(--text-control);
@@ -2402,4 +2402,12 @@ button.saved-all {
     font-weight: var(--weight-semibold);
     letter-spacing: 0.6px;
     text-transform: uppercase;
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .plan-tomorrow {
+    color: var(--color-action-text);
 }

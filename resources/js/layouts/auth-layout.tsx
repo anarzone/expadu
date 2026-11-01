@@ -38,8 +38,9 @@ export default function AuthLayout({
     /** The link in the corner to the other way in ("New here? Create an account"). */
     switchTo?: { href: string; lead: string; action: string };
 }) {
+    // The street poster keeps its printed look in dark mode too (theme-light).
     return (
-        <div className="account-page">
+        <div className="account-page theme-light">
             <Head>
                 {STREET.map(({ href, media }) => (
                     <link

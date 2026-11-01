@@ -61,7 +61,7 @@
     font-variant-numeric: tabular-nums;
 }
 .wo-at.is-now {
-    background: var(--color-select-text);
+    background: var(--color-select-fill);
     color: #fff;
 }
 .wo-earlier > button {
@@ -269,7 +269,7 @@
     rotate: -2deg;
 }
 .wo-tile-stamp.is-now {
-    background: var(--color-select-text);
+    background: var(--color-select-fill);
     color: #fff;
 }
 .wo-tile-title {
@@ -412,4 +412,22 @@
     .wo-thumb {
         transition: none;
     }
+}
+
+/* ─── Dark (Espresso, owner 1 Nov 2026) ─────────────────────────────────
+   This page's own light colours, turned over: each rule below is the dark
+   twin of a literal above (one that no token covers). Change a light colour
+   above, change its twin here. */
+:root.dark .wo-when {
+    color: var(--color-text-soft);
+}
+:root.dark .wo-why.is-plan {
+    color: var(--color-select-text);
+}
+:root.dark .wo-save.is-saved {
+    border-color: var(--color-border);
+}
+:root.dark .wo-composer {
+    border: 1px solid var(--color-border);
+    color: var(--color-select-text);
 }
