@@ -994,5 +994,5 @@
 :root.dark .ui-sheet::backdrop,
 :root.dark .ui-menu-scrim,
 :root.dark .ui-time-sheet::backdrop {
-    background: rgb(0 0 0 / 0.6);
+    background: rgb(0 0 0 / 0.5);
 }

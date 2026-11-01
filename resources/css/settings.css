@@ -401,12 +401,12 @@
 }
 .settings-look[data-look='dark'] .settings-look-preview,
 .settings-look-preview [data-half='dark'] {
-    --look-canvas: #12100d;
-    --look-bar: #171511;
-    --look-card: #1b1814;
-    --look-edge: #2e2922;
-    --look-ink: #f3ece0;
-    --look-soft: #4a4339;
+    --look-canvas: #161208;
+    --look-bar: #1c170d;
+    --look-card: #211c12;
+    --look-edge: #3b3424;
+    --look-ink: #f7f3e9;
+    --look-soft: #4f4632;
 }
 /* System: light on one side of the diagonal, dark on the other. */
 .settings-look-preview [data-half] {

@@ -1314,5 +1314,5 @@ html {
 /* ─── Dark, by hand ─────────────────────────────────────────────────────
    Composer's scrim darkens the page behind it rather than warming it. */
 :root.dark .composer-backdrop {
-    background: rgb(0 0 0 / 0.5);
+    background: rgb(0 0 0 / 0.35);
 }

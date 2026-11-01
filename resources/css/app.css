@@ -616,28 +616,29 @@ input[type='time']::-webkit-calendar-picker-indicator {
 }
 
 /* ─── Dark: Espresso (owner, 1 Nov 2026, "Dark mode" canvas) ────────────
-   The brand's paper turned over: espresso-brown blacks, cream text. Depth
+   The brand's paper turned over: the old app's warm dark surfaces (its
+   .dark until 18 Oct 2026; owner, 1 Nov: lighter than black), cream text. Depth
    comes from lightness (canvas darkest, cards a step up, fields and rows
    another) and a 1px top highlight folded into the shadows; accents keep
    their jobs, lifted to read on dark. Every text, control-edge and state
    pair passes WCAG AA (scratchpad palette.py on the canvas). Posters, the
    logo and KVB line colours stay as they are. */
 :root.dark {
-    --color-bg-canvas: #12100d;
-    --color-bg-surface: #1b1814;
-    --color-bg-quiet: #25211c;
-    --color-bg-inset: #25211c;
-    --color-bg-hover: #2f2a24;
-    --color-bg-header: #171511;
-    --color-bg-field: #211e19;
+    --color-bg-canvas: #161208;
+    --color-bg-surface: #211c12;
+    --color-bg-quiet: #2c2618;
+    --color-bg-inset: #2c2618;
+    --color-bg-hover: #362f21;
+    --color-bg-header: #1c170d;
+    --color-bg-field: #271f13;
 
-    --color-border: #2e2922;
-    --color-border-strong: #7d7466;
-    --color-border-later: #4a4339;
+    --color-border: #3b3424;
+    --color-border-strong: #8a816f;
+    --color-border-later: #4f4632;
 
-    --color-text: #f3ece0;
+    --color-text: #f7f3e9;
     --color-text-soft: #c4baa9;
-    --color-text-muted: #a69c8b;
+    --color-text-muted: #a89f8c;
     --color-text-on-action: #ffffff;
 
     --color-action: #cc4512;
@@ -677,8 +678,8 @@ input[type='time']::-webkit-calendar-picker-indicator {
 
     --color-done: #6fcf8f;
     --color-done-bg: #15261b;
-    --color-toast-bg: #2f2a24;
-    --color-toast-text: #f3ece0;
+    --color-toast-bg: #3a3324;
+    --color-toast-text: #f7f3e9;
     --color-toast-action: #5ccbe0;
 
     --color-attention-bg: #2c2311;
