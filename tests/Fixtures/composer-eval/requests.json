@@ -9523,6 +9523,87 @@
    }
   },
   {
+   "id": "regression.saturday_on_sunday",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-01T18:32:00+01:00",
+   "weather": "dry",
+   "text": "Help me plan Saturday",
+   "expect": {
+    "routed": "compose",
+    "min_slots": 1,
+    "says": "saturday",
+    "not_says": "vouch|can.?t plan|only plan"
+   }
+  },
+  {
+   "id": "regression.saturday_try_again",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-01T18:32:00+01:00",
+   "weather": "dry",
+   "before": [
+    "Help me plan Saturday"
+   ],
+   "text": "Try again",
+   "expect": {
+    "says": "saturday",
+    "not_says": "this evening|tonight|sunday evening"
+   }
+  },
+  {
+   "id": "regression.today_is_sunday",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-01T18:32:00+01:00",
+   "weather": "dry",
+   "before": [
+    "Help me plan Saturday"
+   ],
+   "text": "But today is Sunday",
+   "expect": {
+    "plan_unchanged": true,
+    "says": "saturday",
+    "not_says": "vouch"
+   }
+  },
+  {
+   "id": "regression.how_can_rest",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-01T18:32:00+01:00",
+   "weather": "dry",
+   "text": "Tomorrow is work day. How can rest",
+   "expect": {
+    "min_places": 1,
+    "not_says": "(want|like) me to (look|search|find)"
+   }
+  },
+  {
    "id": "actions.save_event",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",

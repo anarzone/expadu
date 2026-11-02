@@ -74,7 +74,8 @@ class EvaluateComposer extends Command
         {--max-tokens= : Room for each reply, at least}
         {--budget= : Seconds an answer may take instead of Composer\'s own (a comparison of quality without its time limit)}
         {--cohort= : Suffix for the synthetic users, so runs can go side by side}
-        {--system= : A file with other instructions for the assistant to try}';
+        {--system= : A file with other instructions for the assistant to try}
+        {--think : Let the assistant think before its tool calls (no forced tool_choice; a comparison)}';
 
     protected $description = 'Evaluate Composer plans against a fixed request set';
 
@@ -133,7 +134,8 @@ class EvaluateComposer extends Command
         }
         UsageMeter::override($this->option('model') ?: null, $this->option('effort') ?: null, $this->option('max-tokens') ? (int) $this->option('max-tokens') : null,
             [...($this->option('budget') ? ['budget_seconds' => (float) $this->option('budget'), 'call_timeout' => (int) $this->option('budget')] : []),
-                ...($this->option('system') ? ['composer_system' => rtrim((string) file_get_contents($this->option('system')), "\n")] : [])]);
+                ...($this->option('system') ? ['composer_system' => rtrim((string) file_get_contents($this->option('system')), "\n")] : []),
+                ...($this->option('think') ? ['think' => true] : [])]);
         $meter = (new UsageMeter)->start();
 
         $results = [];

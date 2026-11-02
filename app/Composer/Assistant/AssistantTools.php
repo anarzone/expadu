@@ -1550,8 +1550,8 @@ final class AssistantTools
                     'day' => $day,
                     'start' => ['type' => 'string', 'description' => 'HH:MM, optional'], 'end' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                 ], 'required' => ['item']]],
-            ['name' => 'remove_from_day', 'description' => 'Takes something off their plans for a day, by its name as they said it.',
-                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day], 'required' => ['item']]],
+            ['name' => 'remove_from_day', 'description' => 'Takes something off their plans for a day, by its name as they said it, with Undo.',
+                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'], 'day' => $day], 'required' => ['item']]],
             ['name' => 'add_appointment', 'description' => 'Adds their own appointment or plan to a day ("dentist at 15:00", "dinner with Anna at 19:30"), at the time they say, as Plans\' Add your own does. Not for a place or listing from your lookups: that is add_to_day.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'name' => ['type' => 'string', 'description' => 'what it is, in their words, short'],
@@ -1560,7 +1560,8 @@ final class AssistantTools
                     'location' => ['type' => 'string', 'description' => 'where, as they said it, optional'],
                 ], 'required' => ['name', 'start']]],
             ['name' => 'mark_done', 'description' => 'Marks something in their plans for a day as done, or not done after all (done: false).',
-                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string'], 'day' => $day, 'done' => ['type' => 'boolean']], 'required' => ['item']]],
+                'input_schema' => ['type' => 'object', 'properties' => ['item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'], 'day' => $day,
+                    'done' => ['type' => 'boolean', 'description' => 'false: not done after all; leave out to mark it done']], 'required' => ['item']]],
             ['name' => 'swap_in_day', 'description' => 'Swaps something in their plans for a day for another, at the same time, with Undo. For a place they name, give it as with. For something of a kind ("replace Rheingarten with something indoors", "swap it for a museum"), leave out with and give the kind: the swap finds the one that fits that time best and makes it; don\'t search first.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'item' => ['type' => 'string', 'description' => 'what\'s in their day now, as they said it'],
@@ -1577,7 +1578,8 @@ final class AssistantTools
                     'start' => ['type' => 'string', 'description' => 'HH:MM it starts at now'],
                     'end' => ['type' => 'string', 'description' => 'HH:MM it ends at; leave out to keep how long it is'],
                 ], 'required' => ['item', 'start']]],
-            ['name' => 'clear_day', 'description' => 'Clears their plans for a day.', 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
+            ['name' => 'clear_day', 'description' => 'Clears everything in their plans for a day, with Undo: only when they want the whole day gone; one thing off is remove_from_day.',
+                'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
             ['name' => 'save_event', 'description' => 'Saves a listing for later (or takes it off their saved events), as the event\'s Save does.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'event' => ['type' => 'string', 'description' => 'its id in [brackets] from a listing line of your lookups ("e…@…"), else its title'],
@@ -1658,7 +1660,7 @@ final class AssistantTools
                     'input_schema' => ['type' => 'object', 'properties' => [
                         'task' => ['type' => 'string', 'description' => 'the task\'s key, else its title'],
                         'step' => ['type' => 'string', 'description' => 'the step\'s id, else its title'],
-                        'done' => ['type' => 'boolean'],
+                        'done' => ['type' => 'boolean', 'description' => 'false: not done after all; leave out to mark it done'],
                     ], 'required' => ['task', 'step']]],
                 ['name' => 'paperwork_report', 'description' => 'Records on one of their Paperwork tasks that they submitted it (the day), an appointment they have (the day and time), that it\'s completed or cancelled (the day, when they say), or reopens one they completed or cancelled. Waiting for the office and the rest are reported in Paperwork (open_in_app "paperwork_task_status").',
                     'input_schema' => ['type' => 'object', 'properties' => [
