@@ -339,7 +339,8 @@ jobs:
 
   build-and-push:
     name: Build & Push Image
-    # Build only waits on lint, runs in parallel with test. Deploy waits on both.
+    # Build only waits on lint, runs in parallel with test. Deploy waits on both, and only then
+    # moves :staging or :latest to this image, so those tags never hold code whose tests haven't passed.
     needs: [lint]
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm
@@ -378,9 +379,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           # Frontend Sentry is baked at build time. DSN comes from a repo secret
           # (it's public — shipped to browsers — but a secret keeps the log clean);
           # the environment is derived from the branch, the release from the sha.
@@ -455,12 +454,41 @@ jobs:
     needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/staging' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
 
+      # An older run can finish its tests after a newer one, and must not put its code over
+      # newer code. The newer commit deploys itself once its own tests pass.
+      - name: Is this still the branch's newest commit?
+        id: newest
+        run: |
+          tip=$(git ls-remote --exit-code origin "$GITHUB_REF")
+          if [ "${tip%%[[:space:]]*}" = "$GITHUB_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not deployed: $GITHUB_REF_NAME has moved past $GITHUB_SHA, and its newer commit deploys once its tests pass."
+          fi
+
+      - name: Log in to GHCR
+        if: steps.newest.outputs.deploy == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The deploy below pulls this tag. One deploy runs at a time, so it gets this image.
+      - name: Point :staging at this commit's image
+        if: steps.newest.outputs.deploy == 'true'
+        run: docker buildx imagetools create --tag "ghcr.io/$GITHUB_REPOSITORY/app:staging" "ghcr.io/$GITHUB_REPOSITORY/app:$GITHUB_SHA"
+
       # The same deploy/staging.sh that `bin/deploy staging` runs when Actions is down.
       - name: Deploy via SSH
+        if: steps.newest.outputs.deploy == 'true'
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
@@ -484,12 +512,41 @@ jobs:
     needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
 
+      # An older run can finish its tests after a newer one, and must not put its code over
+      # newer code. The newer commit deploys itself once its own tests pass.
+      - name: Is this still the branch's newest commit?
+        id: newest
+        run: |
+          tip=$(git ls-remote --exit-code origin "$GITHUB_REF")
+          if [ "${tip%%[[:space:]]*}" = "$GITHUB_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not deployed: $GITHUB_REF_NAME has moved past $GITHUB_SHA, and its newer commit deploys once its tests pass."
+          fi
+
+      - name: Log in to GHCR
+        if: steps.newest.outputs.deploy == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The deploy below pulls this tag. One deploy runs at a time, so it gets this image.
+      - name: Point :latest at this commit's image
+        if: steps.newest.outputs.deploy == 'true'
+        run: docker buildx imagetools create --tag "ghcr.io/$GITHUB_REPOSITORY/app:latest" "ghcr.io/$GITHUB_REPOSITORY/app:$GITHUB_SHA"
+
       # The same deploy/production.sh that `bin/deploy production` runs when Actions is down.
       - name: Deploy via SSH
+        if: steps.newest.outputs.deploy == 'true'
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
