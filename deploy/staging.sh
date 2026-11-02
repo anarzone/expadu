@@ -7,6 +7,13 @@
 # tables and the deploy still showed green.
 set -euo pipefail
 
+# One deploy at a time on this box, staging's and production's alike, whoever started it
+# (CI or bin/deploy): a second one replacing the container kills the first one's steps, even
+# a migration, and its image prune can take the image the first would roll back to. Fifteen
+# minutes is far longer than a deploy takes; past that, nothing has started and the deploy fails.
+exec 9>/run/lock/expadu-deploy.lock
+flock --timeout 900 9 || { echo "Another deploy held the lock for 15 minutes; nothing deployed." >&2; exit 1; }
+
 cd /data/staging
 # The image running now, so a deploy that doesn't come up can be rolled back.
 PREVIOUS=$(docker inspect --format '{{.Image}}' staging-app 2>/dev/null || true)

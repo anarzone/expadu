@@ -4,6 +4,13 @@
 # (PULL=0, so the loaded image isn't replaced by the registry's).
 set -euo pipefail
 
+# One deploy at a time on this box, staging's and production's alike, whoever started it
+# (CI or bin/deploy): a second one replacing the container kills the first one's steps, even
+# a migration, and its image prune can take the image the first would roll back to. Fifteen
+# minutes is far longer than a deploy takes; past that, nothing has started and the deploy fails.
+exec 9>/run/lock/expadu-deploy.lock
+flock --timeout 900 9 || { echo "Another deploy held the lock for 15 minutes; nothing deployed." >&2; exit 1; }
+
 cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
 # Coolify names the container app-<service dir>; derived so the literal never
 # appears here (it matches the Dify API-key pattern secret scanners look for).
