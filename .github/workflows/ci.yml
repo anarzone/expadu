@@ -440,6 +440,14 @@ jobs:
 
   deploy-staging:
     name: Deploy to Staging
+    # One at a time per environment: the next waits, and a running deploy always finishes,
+    # since cancelling one could stop a migration. GitHub keeps only the newest waiting, so a
+    # middle one shows as cancelled and the newest carries its commits. Not one group for both:
+    # a newer staging deploy would drop a waiting production one. deploy/*.sh hold a lock on the
+    # box for that, and for bin/deploy.
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
     # Tests must pass before we deploy — build runs in parallel with them but
     # the image only ships if the unit/feature suite and the browser suite come
     # back green. Same gate as production: the browser suite is the core journeys
@@ -465,6 +473,14 @@ jobs:
 
   deploy-production:
     name: Deploy to Production
+    # One at a time per environment: the next waits, and a running deploy always finishes,
+    # since cancelling one could stop a migration. GitHub keeps only the newest waiting, so a
+    # middle one shows as cancelled and the newest carries its commits. Not one group for both:
+    # a newer staging deploy would drop a waiting production one. deploy/*.sh hold a lock on the
+    # box for that, and for bin/deploy.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     needs: [build-and-push, test, browser-test]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
