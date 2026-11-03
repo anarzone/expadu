@@ -275,7 +275,7 @@ export function PlanPanel({
     const [prefs, setPrefs] = useState<Pref[]>(() =>
         stepFreeNeed ? ['stepfree'] : [],
     );
-    const [sort, setSort] = useState<SortKey>('arrival');
+    const [sort, setSort] = useState<SortKey>('best');
     const [choicesOpen, setChoicesOpen] = useState(false);
     const [results, setResults] = useState(false);
     // "Use my location" from From: asked here, so its answer is said here.
@@ -2150,6 +2150,7 @@ export function PlanPanel({
                                             />
                                             <div className="route-workspace">
                                                 <PlanOptions
+                                                    bestFirst={sort === 'best'}
                                                     options={shown}
                                                     answer={answer}
                                                     target={target}

@@ -120,11 +120,11 @@ test('surfaces the soonest catchable departure as a tight option', function () {
         ->assertOk()
         ->json('journeys');
 
-    expect($journeys[0]['tight'])->toBeTrue();
-    expect($journeys[0]['access_stop_name'])->toBe('Test Platform');
-    expect($journeys[0]['access_walk_min'])->toBe(4);
-    // The comfortable option is still listed behind it.
-    expect($journeys[1] ?? [])->not->toHaveKey('tight');
+    // The comfortable option leads; a run you'd have to jog for is only a chance.
+    expect($journeys[0])->not->toHaveKey('tight');
+    expect($journeys[1]['tight'])->toBeTrue();
+    expect($journeys[1]['access_stop_name'])->toBe('Test Platform');
+    expect($journeys[1]['access_walk_min'])->toBe(4);
 });
 
 test('does not surface a tight option the user could never reach in time', function () {

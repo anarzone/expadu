@@ -608,22 +608,22 @@ test('distance_min uses the real travel matrix, not the heuristic', function () 
     expect($data[0]['distance_min'])->toBe(9);
 });
 
-test('no transport preference picks the fastest available direct matrix time', function () {
+test('no transport preference shows the walking time, never a bike figure', function () {
     $calls = [];
     $this->mock(RouteService::class, function ($mock) use (&$calls) {
         $mock->shouldReceive('travelMatrix')->andReturnUsing(function ($origin, $destinations, $mode) use (&$calls) {
             $calls[] = $mode;
 
-            return $mode === 'WALK' ? [null] : [40];
+            return $mode === 'WALK' ? [50] : [20];
         });
     });
     Spot::factory()->create(['name' => 'Across the river', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 51.0573, 'lng' => 6.9224]);
 
     $place = $this->getJson('/api/places?veedel=Ehrenfeld&lat=51.0231&lng=6.9499')->json('data.0');
 
-    expect($place['distance_min'])->toBe(40)
-        ->and($place['distance_mode'])->toBe('bike')
-        ->and($calls)->toBe(['WALK', 'BIKE']);
+    expect($place['distance_min'])->toBe(50)
+        ->and($place['distance_mode'])->toBe('walk')
+        ->and($calls)->toBe(['WALK']);
 });
 
 test('transit preference does not label a bike proxy as transit time', function () {

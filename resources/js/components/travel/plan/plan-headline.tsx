@@ -95,7 +95,6 @@ export function PlanHeadline({
         return null;
     }
 
-    const bike = options.find((o) => o.journey.mode === 'bike');
     const transit = options.filter((o) => o.journey.mode === 'transit');
 
     if (major.kind === 'notice') {
@@ -169,9 +168,7 @@ export function PlanHeadline({
             todo={
                 transit.length && !transit.some((o) => rides(o, [trouble.line]))
                     ? 'The ways below don’t use it.'
-                    : bike
-                      ? `By bike it’s ${bike.journey.duration_min} min.`
-                      : null
+                    : null
             }
             source={LIVE_SOURCE}
         />
