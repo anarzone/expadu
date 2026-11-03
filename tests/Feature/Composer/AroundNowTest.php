@@ -132,7 +132,22 @@ test('🔒 a sentence keeps only the names, numbers and claims its items hold', 
     'a price it doesn’t have' => ['Jazz im Stadtgarten is €12.00 at 20:00.', false],
     'a welcome' => ['Welcome to Neustadt-Nord!', true],
     'what it didn’t find' => ['I didn’t find anything free tonight.', true],
+    'what it can’t do' => ['I can’t book tickets or tables.', true],
+    'what it couldn’t find' => ['I couldn’t find a pharmacy open now.', true],
+    'a limit with a time in it' => ['I can’t book a table at 19:30.', false],
+    'an ordinary first word' => ['Closer ones aren’t listed.', true],
+    'a lone name doing something' => ['Flora is lovely.', false],
+    'something of theirs that isn’t their day' => ['Lost property handles your wallet.', true],
     'a free claim beside what it didn’t find' => ['I didn’t find a bar, but Jazz im Stadtgarten is free.', false],
     'wifi it says isn’t listed' => ['Wi-Fi isn’t listed for Stadtgarten.', true],
     'a question back' => ['Which Stadtgarten do you mean?', true],
 ]);
+
+test('🔒 their own words back a name, and nothing else', function () {
+    $check = app(AroundCheck::class);
+
+    expect($check->holds('I can’t book a table at Früh am Dom.', 'Cologne', theirs: 'book me a table at Früh am Dom'))->toBeTrue()
+        ->and($check->holds('I can’t book a table at Früh am Dom.', 'Cologne'))->toBeFalse()
+        ->and($check->holds('I can’t book a table for 7.', 'Cologne', theirs: 'a table for 7'))->toBeTrue()
+        ->and($check->holds('Tickets are at 19:30.', 'Cologne', theirs: 'tickets at 19:30'))->toBeFalse();
+});

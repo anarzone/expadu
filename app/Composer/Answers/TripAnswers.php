@@ -7,6 +7,7 @@ use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Models\ActiveTrip;
 use App\Models\User;
+use App\Models\UserPlace;
 use App\Personalisation\Pseudonym;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
@@ -49,6 +50,9 @@ final class TripAnswers
     /** Whether there's time to read the boarding stops' boards for this answer. */
     private bool $boards = true;
 
+    /** The words for the two places everyone means by a word alone. */
+    private const OWN_WORDS = ['home' => 'home', 'zuhause' => 'home', 'daheim' => 'home', 'work' => 'work', 'office' => 'work', 'arbeit' => 'work', 'buero' => 'work', 'buro' => 'work'];
+
     public function __construct(
         private DayProjection $day,
         private Destinations $destinations,
@@ -80,7 +84,11 @@ final class TripAnswers
         // The start named ("from Neumarkt"), found as the place is; else where you are.
         $start = null;
         if (filled($request['from'] ?? null)) {
-            $starts = $this->destinations->find((string) $request['from'], $request['from_area'] ?? null, $here);
+            $own = $this->ownPlace($user, (string) $request['from']);
+            if ($own === false) {
+                return $this->reply($this->notSaved((string) $request['from']), null, null, [$search]);
+            }
+            $starts = $own !== null ? [$own] : $this->destinations->find((string) $request['from'], $request['from_area'] ?? null, $here);
             if ($starts === []) {
                 return $this->reply("I can’t find “{$request['from']}” to start from, in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
             }
@@ -99,7 +107,11 @@ final class TripAnswers
         };
 
         $named = (string) $request['place'];
-        $found = $this->destinations->find($named, $request['area'] ?? null, $origin);
+        $own = $this->ownPlace($user, $named);
+        if ($own === false) {
+            return $this->reply($this->notSaved($named), null, null, [$search]);
+        }
+        $found = $own !== null ? [$own] : $this->destinations->find($named, $request['area'] ?? null, $origin);
         if ($found === []) {
             return $this->reply("I can’t find “{$named}” in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
         }
@@ -217,14 +229,41 @@ final class TripAnswers
     }
 
     /**
-     * Travel's Plan a trip to a public place (travel-request.ts `travelDestinationParams`).
+     * Travel's Plan a trip to a public place (travel-request.ts `travelDestinationParams`). A saved
+     * place never goes in a link: it would sit in history and access logs.
      *
      * @param  array{name: string, point: GeoPoint}  $place
      */
     private function planHref(array $place, ?array $start = null): string
     {
-        return '/travel?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng,
+        $start = ($start['own'] ?? false) ? null : $start;
+
+        return ($place['own'] ?? false) ? '/travel' : '/travel?'.http_build_query(['to_name' => $place['name'], 'to_lat' => $place['point']->lat, 'to_lng' => $place['point']->lng,
             ...($start !== null ? ['from_name' => $start['name'], 'from_lat' => $start['point']->lat, 'from_lng' => $start['point']->lng] : [])]);
+    }
+
+    /**
+     * A place of their own by its name ("work", "my gym"), before any place of that name in town: "work"
+     * found a café called "This might work". False for home or work when they haven't saved it.
+     *
+     * @return array{name: string, area: null, kind: null, point: GeoPoint, spot: null, own: true}|false|null
+     */
+    private function ownPlace(User $user, string $named): array|false|null
+    {
+        $key = Destinations::key((string) preg_replace('/^(?:my|the|our|mein|meine|meinem|meiner)\s+/iu', '', trim($named)));
+        $key = self::OWN_WORDS[$key] ?? $key;
+        $place = $user->places->first(fn (UserPlace $place): bool => $place->lat !== null && $place->lng !== null
+            && (self::OWN_WORDS[Destinations::key($place->name)] ?? Destinations::key($place->name)) === $key);
+        if ($place !== null) {
+            return ['name' => $place->name, 'area' => null, 'kind' => null, 'point' => new GeoPoint($place->lat, $place->lng), 'spot' => null, 'own' => true];
+        }
+
+        return in_array($key, self::OWN_WORDS, true) ? false : null;
+    }
+
+    private function notSaved(string $named): string
+    {
+        return 'I don’t have your '.mb_strtolower(trim((string) preg_replace('/^(?:my|the|our)\s+/iu', '', trim($named)))).' saved. Add it in Travel, or tell me the address.';
     }
 
     /**
