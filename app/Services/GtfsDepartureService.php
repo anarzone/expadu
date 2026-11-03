@@ -41,16 +41,27 @@ class GtfsDepartureService
             return $trias;
         }
 
-        // TRIAS failed — use last known good result if fresh enough
+        // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
+        $timetable = $this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : null;
+        if ($timetable !== null && self::liveFeed($timetable)) {
+            return $timetable;
+        }
+
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
             return $this->ageFallback($lastGood);
         }
 
-        if (! $this->hasGtfsData()) {
-            return $this->fallbackDepartures('Nearby');
-        }
+        return $timetable ?? $this->fallbackDepartures('Nearby');
+    }
 
+    /**
+     * The nearest stop's timetable with the live feed's delays on it.
+     *
+     * @return array<string, mixed>
+     */
+    private function timetableNearby(float $lat, float $lng, int $limit): array
+    {
         $cacheKey = 'gtfs_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
@@ -119,13 +130,30 @@ class GtfsDepartureService
             return $trias;
         }
 
-        // TRIAS failed — use last known good result if fresh enough
+        // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
+        $timetable = $this->getStaticDepartures($stopName, $limit);
+        if (self::liveFeed($timetable)) {
+            return $timetable;
+        }
+
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
             return $this->ageFallback($lastGood);
         }
 
-        return $this->getStaticDepartures($stopName, $limit);
+        return $timetable;
+    }
+
+    /**
+     * Times with the live feed's delays on them, current: newer than an old
+     * TRIAS answer. When TRIAS was slow, that answer ("Not live") hid a feed that
+     * was working (3 Nov 2026).
+     *
+     * @param  array<string, mixed>  $result
+     */
+    private static function liveFeed(array $result): bool
+    {
+        return ($result['source'] ?? null) === 'gtfs_rt' && ! ($result['is_stale'] ?? false);
     }
 
     /**
