@@ -16,6 +16,7 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
+use App\Transit\JourneyRanker;
 use App\Transit\TripConditions;
 use App\Transit\TripDisruptions;
 use Carbon\CarbonImmutable;
@@ -73,6 +74,7 @@ class TakeMeThereController extends Controller
         FareAdvisor $fareAdvisor,
         TripConditions $conditions,
         TripDisruptions $tripDisruptions,
+        JourneyRanker $ranker,
     ): JsonResponse {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -153,7 +155,8 @@ class TakeMeThereController extends Controller
             $to, $departAt, 10, $arriveBy, $variety,
         );
 
-        $journeys = array_map(fn (Journey $j) => $j->toArray(), $result->journeys);
+        $ranked = $ranker->rank($result->journeys, $arriveBy);
+        $journeys = array_map(fn (Journey $j) => $j->toArray(), $ranked);
 
         // Near a stop but not at it, on a "leave now" search: the walk-folded plan
         // drops departures the user might still make at a jog. Surface the single
@@ -170,15 +173,16 @@ class TakeMeThereController extends Controller
                 $nearest, $to, $result->journeys,
             );
 
+            // Right after the first: worth knowing, but only ever a chance.
             if ($tight !== null) {
-                array_unshift($journeys, $tight);
+                array_splice($journeys, $journeys === [] ? 0 : 1, 0, [$tight]);
             }
         }
 
         // Journey-aware Rheinlandtarif advice for the transit option (walk/bike
         // options are free and carry no ticket). Computed for the first transit
         // journey wherever it sits in the list.
-        $transitJourney = collect($result->journeys)
+        $transitJourney = collect($ranked)
             ->first(fn ($journey) => $journey->mode() === 'transit');
         $ticket = null;
         if ($transitJourney !== null) {
@@ -203,12 +207,12 @@ class TakeMeThereController extends Controller
         // second request and the ways answer at once.
         $later = (bool) ($validated['checks_later'] ?? false);
         $trip = $tripDisruptions->for(
-            array_values($result->journeys),
+            $ranked,
             $from,
             $to,
             boards: ! $later && $this->secondsLeft($deadline) >= self::BOARDS_MIN_SECONDS,
         );
-        $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), array_values($result->journeys)), $from, $to) : null;
+        $checks = $later ? JourneyChecksController::keep($user->id, array_map(fn (Journey $j) => $j->toArray(), $ranked), $from, $to) : null;
 
         $this->learn($user, $validated, $from, $to, $journeys);
 

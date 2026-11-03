@@ -454,6 +454,8 @@ type PlanOptionsProps = {
     gone?: Map<string, PlanGone[]>;
     /** A boarding stop's timetable, in Nearby. */
     onBoardStop?: (name: string) => void;
+    /** Whether the first is the best for you, not just first by a sort someone chose. */
+    bestFirst?: boolean;
 };
 
 /**
@@ -474,6 +476,7 @@ export function PlanOptions({
     planned,
     gone,
     onBoardStop,
+    bestFirst = true,
 }: PlanOptionsProps) {
     const inPlace = actions !== undefined;
 
@@ -486,7 +489,7 @@ export function PlanOptions({
             {options.map((option, index) => {
                 const open = expanded.has(option.id);
                 const on = inPlace ? open : option.id === selected;
-                const best = index === 0 && options.length > 1;
+                const best = bestFirst && index === 0 && options.length > 1;
                 const reasons = reasonsFor(
                     option,
                     answer,

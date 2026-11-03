@@ -35,7 +35,7 @@ export const isPublicPlace = (place: PlanPlace | null | undefined) =>
 
 export type Schedule = 'now' | 'depart' | 'arrive';
 export type Pref = 'fewer' | 'lessWalk' | 'avoidDelays' | 'stepfree';
-export type SortKey = 'arrival' | 'duration' | 'walking' | 'changes';
+export type SortKey = 'best' | 'arrival' | 'duration' | 'walking' | 'changes';
 
 /** The plan on your day that the trip leads to, when it does. */
 export type PlanTarget = {
@@ -186,6 +186,7 @@ export const PREFS: { id: Pref; label: string }[] = [
 ];
 
 export const SORTS: { id: SortKey; label: string; icon: TravelIconName }[] = [
+    { id: 'best', label: 'Best for you', icon: 'star' },
     { id: 'arrival', label: 'Earliest arrival', icon: 'clock' },
     { id: 'duration', label: 'Shortest journey', icon: 'route' },
     { id: 'walking', label: 'Least walking', icon: 'walk' },
@@ -213,7 +214,7 @@ export function walkingMin(journey: Journey): number {
     }
 
     return journey.legs
-        .filter((leg) => leg.mode === 'walk')
+        .filter((leg) => leg.mode === 'walk' && leg.distance_m !== 0)
         .reduce((sum, leg) => sum + leg.duration_min, 0);
 }
 
@@ -239,11 +240,12 @@ const minutes = (iso: string) => Date.parse(iso) / 60_000;
 
 /**
  * The options in the order you'd pick them: what matters to you moves the
- * ones that suit it up, then the chosen sort. Asked to be there by a time,
- * the first is the latest way that still leaves the margin, the earliest
- * there breaking a tie (the mock's "Best for you", and My day's rule of
- * 9 Oct 2026); then the tight ones, most room first; then the late ones,
- * the earliest there first. Nothing is hidden.
+ * ones that suit it up, then the chosen sort. "Best for you" keeps the server's
+ * order (JourneyRanker). Asked to be there by a time, the first is the latest
+ * way that still leaves the margin, the earliest there breaking a tie (the
+ * mock's "Best for you", and My day's rule of 9 Oct 2026); then the tight ones,
+ * most room first; then the late ones, the earliest there first; and "Best for
+ * you" keeps a way's next runs behind every different way. Nothing is hidden.
  */
 export function rankOptions(
     options: PlanOption[],
@@ -251,7 +253,7 @@ export function rankOptions(
     prefs: Pref[],
     deadline: { at: string; margin: number } | null = null,
 ): PlanOption[] {
-    const key: Record<SortKey, (o: PlanOption) => number> = {
+    const key: Record<Exclude<SortKey, 'best'>, (o: PlanOption) => number> = {
         arrival: (o) => minutes(o.journey.arrive_at),
         duration: (o) => o.journey.duration_min,
         walking: (o) => walkingMin(o.journey),
@@ -266,6 +268,7 @@ export function rankOptions(
             : 0) +
         (prefs.includes('stepfree') && o.lifts?.length ? 60 : 0);
     const by = deadline ? minutes(deadline.at) : null;
+    const byDeadline = (sort === 'arrival' || sort === 'best') && by !== null;
     // 0: fits with the margin, 1: tight, 2: late.
     const fit = (o: PlanOption) => {
         if (by === null) {
@@ -277,16 +280,15 @@ export function rankOptions(
         return spare >= (deadline?.margin ?? 0) ? 0 : spare >= 0 ? 1 : 2;
     };
 
-    return [...options].sort((a, b) => {
+    const sorted = [...options].sort((a, b) => {
         const order =
-            penalty(a) - penalty(b) ||
-            (sort === 'arrival' ? fit(a) - fit(b) : 0);
+            penalty(a) - penalty(b) || (byDeadline ? fit(a) - fit(b) : 0);
 
         if (order) {
             return order;
         }
 
-        if (sort === 'arrival' && by !== null) {
+        if (byDeadline) {
             const leave =
                 minutes(b.journey.depart_at) - minutes(a.journey.depart_at);
             const there =
@@ -297,11 +299,29 @@ export function rankOptions(
             return fit(a) === 0 ? leave || there : there || leave;
         }
 
-        return (
-            key[sort](a) - key[sort](b) ||
-            minutes(a.journey.depart_at) - minutes(b.journey.depart_at)
-        );
+        return sort === 'best'
+            ? 0
+            : key[sort](a) - key[sort](b) ||
+                  minutes(a.journey.depart_at) - minutes(b.journey.depart_at);
     });
+
+    return sort === 'best' ? differentFirst(sorted) : sorted;
+}
+
+/** Each different way once, then the next runs of the ways already listed. */
+function differentFirst(options: PlanOption[]): PlanOption[] {
+    const seen = new Set<string>();
+    const different: PlanOption[] = [];
+    const again: PlanOption[] = [];
+
+    for (const option of options) {
+        const way = `${option.journey.mode}:${linesOf(option.journey).join('>')}`;
+
+        (seen.has(way) ? again : different).push(option);
+        seen.add(way);
+    }
+
+    return [...different, ...again];
 }
 
 /** The forecast hour you set off in, when it's known. */

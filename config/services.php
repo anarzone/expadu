@@ -156,6 +156,8 @@ return [
         // provider on staging/production. Leave it unset locally so the public
         // Transitous adapter below is used without probing the Laravel app.
         'url' => env('MOTIS_URL'),
+        // Off until the native app has a bike map and route to show.
+        'bike_routes' => env('MOTIS_BIKE_ROUTES', false),
     ],
 
     'transitous' => [

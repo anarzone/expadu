@@ -12,6 +12,7 @@ use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\JourneyRanker;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -54,6 +55,7 @@ final class TripAnswers
         private RouteService $routes,
         private UserLocationService $locations,
         private TripTrouble $trouble,
+        private JourneyRanker $ranker,
     ) {}
 
     /**
@@ -128,7 +130,7 @@ final class TripAnswers
         $planning = hrtime(true);
         $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($origin, $to['point'], $leave->max($now), $wanted !== [] || $avoided !== [] ? 6 : 3);
         $this->boards = (hrtime(true) - $planning) / 1e9 < self::BOARDS_WITHIN_SECONDS;
-        $journeys = $result->source === 'degraded' ? [] : array_map(fn ($journey): ?array => self::named($journey->toArray()), $result->journeys);
+        $journeys = $result->source === 'degraded' ? [] : array_map(fn ($journey): ?array => self::named($journey->toArray()), $this->ranker->rank($result->journeys));
         // A way of travelling asked for picks among Travel's ways; none that fits is said, never hidden.
         $fits = array_values(array_filter($journeys, fn (array $j): bool => collect($j['legs'])->filter(fn (array $leg): bool => $this->rides($leg))
             ->every(fn (array $leg): bool => ($wanted === [] || in_array(self::kind($leg), $wanted, true)) && ! in_array(self::kind($leg), $avoided, true))));

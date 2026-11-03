@@ -150,7 +150,8 @@ class TransitousAdapter implements RouteService
 
         $journeys = $this->pruneAbsurd($itineraries, $arriveBy);
 
-        // Direct walk + bike, fetched PER MODE as best-effort calls. A single
+        // Direct walk (and bike, once there's a bike map to show it on: the owner,
+        // 3 Nov 2026), fetched PER MODE as best-effort calls. A single
         // combined `WALK,BIKE` call with numItineraries=1 only ever returns the
         // fastest direct option (always bike), so the walk option silently
         // vanished — each mode needs its own call. A hiccup on one must never
@@ -159,7 +160,7 @@ class TransitousAdapter implements RouteService
         // option is dropped (walk past 90 min, bike past 80). The time anchor
         // ($timeExtra carries arriveBy) applies here too, so a bike option on an
         // "arrive by" search arrives by the target instead of leaving at it.
-        $directCaps = ['BIKE' => 4800, 'WALK' => 5400];
+        $directCaps = config('services.motis.bike_routes') ? ['BIKE' => 4800, 'WALK' => 5400] : ['WALK' => 5400];
         foreach ($directCaps as $directMode => $maxDirectTime) {
             $timeout = $this->callTimeout(5.0);
             if ($timeout === null) {
@@ -695,6 +696,7 @@ class TransitousAdapter implements RouteService
                 realtime: $realtime,
                 cancelled: ($rawLeg['cancelled'] ?? false) === true,
                 tripId: isset($rawLeg['tripId']) ? (string) $rawLeg['tripId'] : null,
+                distanceM: $mode === 'walk' && isset($rawLeg['distance']) ? (int) round((float) $rawLeg['distance']) : null,
             );
         }
 

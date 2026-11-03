@@ -30,6 +30,7 @@ final readonly class Leg
         public bool $realtime = false, // departAt/arriveAt reflect a live feed, not just the timetable
         public bool $cancelled = false,
         public ?string $tripId = null, // the feed's trip id, to re-match this ride across plans
+        public ?int $distanceM = null, // walk legs, when the router says; 0 is its wait for a change
     ) {}
 
     public function isTransit(): bool
@@ -78,6 +79,7 @@ final readonly class Leg
             'realtime' => $this->realtime,
             'cancelled' => $this->cancelled,
             'trip_id' => $this->tripId,
+            'distance_m' => $this->distanceM,
         ];
     }
 
@@ -106,6 +108,7 @@ final readonly class Leg
             realtime: (bool) ($data['realtime'] ?? false),
             cancelled: (bool) ($data['cancelled'] ?? false),
             tripId: $data['trip_id'] ?? null,
+            distanceM: isset($data['distance_m']) ? (int) $data['distance_m'] : null,
         );
     }
 }

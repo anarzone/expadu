@@ -32,6 +32,8 @@ export type JourneyLeg = {
     realtime?: boolean;
     cancelled?: boolean;
     trip_id?: string | null;
+    /** Walk legs, when the router says; 0 is its wait for a change. */
+    distance_m?: number | null;
 };
 
 export type Journey = {
