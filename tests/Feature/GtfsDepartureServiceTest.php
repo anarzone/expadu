@@ -73,6 +73,22 @@ it('serves last good result when TRIAS fails', function () {
     expect($result['stop_name'])->toBe('Neumarkt');
 });
 
+it('prefers the live feed to an old TRIAS answer when TRIAS fails, and the old answer to a stale feed', function (bool $feedStale, string $source) {
+    $trias = Mockery::mock(VrsTriasService::class);
+    $trias->shouldReceive('getDepartures')->andReturn(makeLiveResult(), null);
+    $service = Mockery::mock(GtfsDepartureService::class.'[getStaticDepartures]', [app(VrsRealtimeService::class), $trias]);
+    $service->shouldReceive('getStaticDepartures')->andReturn([
+        'stop_name' => 'Neumarkt', 'source' => 'gtfs_rt', 'is_stale' => $feedStale, 'departures' => makeLiveResult()['departures'],
+    ]);
+
+    $service->getDepartures('Neumarkt');
+
+    expect($service->getDepartures('Neumarkt')['source'])->toBe($source);
+})->with([
+    'feed current' => [false, 'gtfs_rt'],
+    'feed stale' => [true, 'trias_rt'],
+]);
+
 it('falls back to static when no last good result exists', function () {
     $trias = Mockery::mock(VrsTriasService::class);
     $trias->shouldReceive('getDeparturesNearby')->once()->andReturn(null);
