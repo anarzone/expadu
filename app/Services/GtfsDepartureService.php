@@ -4,12 +4,14 @@ namespace App\Services;
 
 use App\Models\Gtfs\GtfsStop;
 use App\Transit\DepartureTime;
+use Closure;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Throwable;
 
 class GtfsDepartureService
 {
@@ -42,7 +44,7 @@ class GtfsDepartureService
         }
 
         // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
-        $timetable = $this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : null;
+        $timetable = $this->unlessFailing(fn () => $this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : null);
         if ($timetable !== null && self::liveFeed($timetable)) {
             return $timetable;
         }
@@ -52,7 +54,7 @@ class GtfsDepartureService
             return $this->ageFallback($lastGood);
         }
 
-        return $timetable ?? $this->fallbackDepartures('Nearby');
+        return $timetable ?? ($this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : $this->fallbackDepartures('Nearby'));
     }
 
     /**
@@ -131,8 +133,8 @@ class GtfsDepartureService
         }
 
         // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
-        $timetable = $this->getStaticDepartures($stopName, $limit);
-        if (self::liveFeed($timetable)) {
+        $timetable = $this->unlessFailing(fn () => $this->getStaticDepartures($stopName, $limit));
+        if ($timetable !== null && self::liveFeed($timetable)) {
             return $timetable;
         }
 
@@ -141,7 +143,24 @@ class GtfsDepartureService
             return $this->ageFallback($lastGood);
         }
 
-        return $timetable;
+        return $timetable ?? $this->getStaticDepartures($stopName, $limit);
+    }
+
+    /**
+     * The timetable read before an old answer: its failing mustn't cost that answer.
+     *
+     * @param  Closure(): (array<string, mixed>|null)  $read
+     * @return array<string, mixed>|null
+     */
+    private function unlessFailing(Closure $read): ?array
+    {
+        try {
+            return $read();
+        } catch (Throwable $error) {
+            report($error);
+
+            return null;
+        }
     }
 
     /**
@@ -822,7 +841,7 @@ class GtfsDepartureService
             Redis::zadd($key, $timestamp, $entry);
             Redis::zremrangebyscore($key, 0, now()->subMonth()->timestamp);
             Redis::expire($key, 2592000);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Redis unavailable — skip debug logging silently
         }
     }
