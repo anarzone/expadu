@@ -97,6 +97,7 @@ final class Assistant
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
         - A plan is for the day they asked for. When that isn't today, your first sentence names it ("Your Saturday, 7 November: …"). Never plan a day they didn't ask for: when the planner can't plan theirs, say why in its words and ask whether another day it can plan would do; plan that day only once they say so. Asked again ("try again") after that, it's the same day they asked for.
         - When they correct you or point something out ("today is Sunday", "I said Saturday", "not that one"), check it against what they asked and what you did: when you got it wrong, say what in a few words and do it again; when you didn't (they asked for Saturday and the plan is for Saturday), say plainly what it's for and offer what fits now ("Want something for this evening instead?"). Never take the blame for what you did as asked: to "you planned the wrong day, I said Sunday" after they asked for Saturday, say they asked for Saturday, then plan Sunday.
+        - Hours on another day ("tomorrow", "on Sunday", "are those open on Monday?"): search_places or find_place with day. Its line says that day's hours, so answer from it; never say you only know today's hours.
         - "I want to rest", "relax", "unwind", "a quiet evening", "how can I rest": search_places with a calm mood, open now (open_at), with the weather, and suggest what's near; never only offer to look.
         - A plan this conversation made is above, as it is now. Read what they ask against it: to find or suggest more for that day ("find us two activities", "what else is there?", "anything indoors?"), suggest_for_day, which changes nothing; to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only, never another (to replace one with something of a kind, "something indoors", "a museum", swap_in_day with that kind and no with: it finds the one that fits and makes the swap; never search first or hand them a list to pick from; a stop's name is its own, the Domfontäne isn't the Dom); a question about it ("is Kolumba open then?", "how far do we walk?"), answer from it and your lookups, changing nothing. plan_day again only when they ask for a whole new plan. When it's unclear which they mean, ask one short question. Give as many as they ask for ("two activities": 2).
         - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Shops are listed by their kind (clothes, shoes, department stores, shopping centres, electronics, phone and computer shops, bookshops, furniture, homeware, hardware, sports and second-hand shops): search_places finds them; a kind of shop it doesn't name isn't listed yet, so say so plainly. A shop they name ("TK Maxx near Neumarkt") is find_place's, with that area; the way there is plan_trip's. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that. When they ask for free ones, answer in those words too ("These public pitches, no fee listed…"), not theirs: a place is free only where its result says "Free to use (listed)".
@@ -623,7 +624,9 @@ final class Assistant
         // A park answered for its pitch is read from the pitch: OpenNearby folds it into the park's row,
         // measured to the pitch, with what fitted first ("Football pitch · 2 playgrounds").
         $read = $places->map(fn (Candidate $c): int => $tools->parks[$c->id]['member'] ?? (int) substr($c->id, 5))->values()->all();
-        $row = fn (array $ids): Collection => app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $now, $tools->person());
+        // The hours asked about: another day's, when the search was for another day.
+        $at = $tools->placesAt ?? $now;
+        $row = fn (array $ids): Collection => app(OpenNearby::class)->rows($ids, $from['lat'] ?? null, $from['lng'] ?? null, $at, $tools->person());
         // A row is its place and, for a park too big to walk round, its part (its Veedel): two parts, two rows.
         $key = fn (Candidate $c): string => (int) substr($c->id, 5).'|'.($tools->parks[$c->id]['part'] ?? '');
         try {
@@ -640,9 +643,9 @@ final class Assistant
             $rows = collect();
         }
 
-        return ['from' => $from, 'places' => $places->map(function (Candidate $c) use ($sources, $because, $tools, $now, $rows, $key): array {
+        return ['from' => $from, 'places' => $places->map(function (Candidate $c) use ($sources, $because, $tools, $at, $rows, $key): array {
             $id = (int) substr($c->id, 5);
-            $open = OpeningAnswer::isOpenAt($c, $now);
+            $open = OpeningAnswer::isOpenAt($c, $at);
             $km = $c->distanceKmFromOrigin;
 
             return array_filter(['id' => $id, 'name' => AssistantTools::name($c),
@@ -656,7 +659,7 @@ final class Assistant
                 'street' => ($address = trim(strtok((string) ($c->placeFacts['contact']['address']['value'] ?? ''), ','))) !== '' ? $address : null,
                 'hours' => match (true) {
                     $open === true => $c->closesAt !== null ? 'Open until '.$c->closesAt->setTimezone('Europe/Berlin')->format('H:i') : 'Open now',
-                    $open === false => 'Closed now',
+                    $open === false => $tools->placesAt === null ? 'Closed now' : 'Closed',
                     default => 'Hours not listed',
                 },
                 'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
