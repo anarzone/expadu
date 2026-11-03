@@ -19,12 +19,14 @@ cd /data/staging
 PREVIOUS=$(docker inspect --format '{{.Image}}' staging-app 2>/dev/null || true)
 
 if [ "${PULL:-1}" = 1 ]; then
-  docker compose pull
+  docker compose pull app
 fi
 
 # Staging's compose says pull_policy: always, so a plain `up` would fetch the
 # registry's image again: over a loaded image (PULL=0) or a rolled-back one.
-docker compose up -d --force-recreate --pull never
+# The app only: production plans its routes on this file's motis, which a staging
+# deploy mustn't restart. motis has its own weekly swap (infra/motis/swap.sh).
+docker compose up -d --no-deps --force-recreate --pull never app
 sleep 5
 
 # Staging's compose replaces the image entrypoint (fix-nginx.sh), so nothing
@@ -58,6 +60,6 @@ done
 echo "Staging did not answer /up after the deploy; rolling back."
 if [ -n "$PREVIOUS" ]; then
   docker tag "$PREVIOUS" "$(docker inspect --format '{{.Config.Image}}' staging-app)"
-  docker compose up -d --force-recreate --pull never
+  docker compose up -d --no-deps --force-recreate --pull never app
 fi
 exit 1
