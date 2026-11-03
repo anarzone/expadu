@@ -231,9 +231,10 @@ const fromLocateText: Record<LocateError, string> = {
     blocked:
         'Location is blocked for this site. Allow it from the address bar, or type where you’re starting.',
     unavailable:
-        'Your device couldn’t find a location. Type where you’re starting.',
+        'Your phone has no location signal here, which is normal underground. Type where you’re starting.',
     imprecise:
-        'That location isn’t precise enough. Type where you’re starting.',
+        'Your phone can only place you very roughly here, which is normal underground. Type where you’re starting.',
+    rough: 'Your phone can only place you roughly here, so check the start, or type where you’re starting.',
     unsaved:
         'Your location couldn’t be used. Try again, or type where you’re starting.',
     timeout:
@@ -1077,7 +1078,11 @@ export function PlanPanel({
 
         relocating.current = false;
 
-        if (!locateError && results && (to.place || to.text.trim())) {
+        if (
+            (!locateError || locateError === 'rough') &&
+            results &&
+            (to.place || to.text.trim())
+        ) {
             void plan({ from: null });
         }
         // Once, when locating ends.

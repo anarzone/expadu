@@ -620,7 +620,11 @@ export function TakeMeThereSheet({
                 setMode(null); // let the new plan re-pick its best default mode
                 setFromOverride({ lat, lng });
             },
-            () => setConfirming(false),
+            () => {
+                // No fix: the question and its button stay, never a blank sheet.
+                setConfirming(false);
+                setError('location');
+            },
             { enableHighAccuracy: true, timeout: 8000 },
         );
     }
