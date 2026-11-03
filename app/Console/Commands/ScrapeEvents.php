@@ -32,9 +32,6 @@ class ScrapeEvents extends Command
 
         $created = 0;
 
-        // Recurring community events live in the manual source now
-        // (events:import-manual) as single RRULE records — the old
-        // per-week duplicate templates are gone.
         $koelnCount = $this->scrapeKoelnDe($systemUser->id, $captureMediaCandidate);
         $created += $koelnCount;
         $this->info("koeln.de events: {$koelnCount} created");

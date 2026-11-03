@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Event;
+use App\Support\EventOccurrencePresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,8 @@ class EventEnrichmentService
         }
 
         $query = $event->address ?: $event->location_name;
-        if (! $query || in_array(mb_strtolower($query), ['cologne', 'köln', ''], true)) {
+        // Searching "Siehe Beschreibung, Köln" found a point in Deutz, for 92 events (3 Nov 2026).
+        if (! $query || in_array(mb_strtolower($query), ['cologne', 'köln', ''], true) || EventOccurrencePresenter::isPlaceholderVenue($query)) {
             return;
         }
 
