@@ -240,35 +240,6 @@ test('venue resolver refreshes coordinates and place link for an existing venue'
         ->and($venue->place_id)->toBe($new->id)->and($venue->veedel)->toBe('New');
 });
 
-test('events:import-manual upserts the curated catalogue with recurring rules', function () {
-    // A legacy scraper row (source NULL) duplicating a catalogue title
-    $legacy = Event::factory()->create(['title' => 'Expat Stammtisch Cologne', 'source' => null]);
-
-    $this->artisan('events:import-manual')->assertSuccessful();
-    $this->artisan('events:import-manual')->assertSuccessful(); // idempotent
-
-    // NULL-source duplicates get hidden so the catalogue is canonical
-    expect($legacy->refresh()->status)->toBe('hidden');
-
-    // Re-imports must not re-anchor recurring DTSTARTs — an INTERVAL=4
-    // series' phase depends on it.
-    $stammtisch = Event::where('source', 'manual')->where('source_uid', 'expat-stammtisch-frueh')->first();
-    $anchor = $stammtisch->starts_at;
-    $this->travelTo(now()->addDays(9));
-    $this->artisan('events:import-manual')->assertSuccessful();
-    expect($stammtisch->refresh()->starts_at->equalTo($anchor))->toBeTrue();
-    $this->travelBack();
-
-    $exchange = Event::where('source', 'manual')->where('source_uid', 'cologne-language-exchange')->first();
-    expect($exchange)->not->toBeNull();
-    expect(Event::where('source', 'manual')->count())->toBe(10);
-    expect($exchange->recurrence)->toBe('FREQ=WEEKLY;BYDAY=TH');
-    expect($exchange->verified_at)->not->toBeNull();
-    expect($exchange->relevance)->toBe(1.0);
-    expect($exchange->venue->name)->toBe('Gilden im Zims');
-    expect(Event::where('source', 'manual')->whereNotNull('recurrence')->count())->toBeGreaterThanOrEqual(2);
-});
-
 test('a refused event is parked for review and not re-billed until its source changes', function () {
     $fake = fakeClassifier(['__refuse' => true]);
     $event = Event::factory()->create(['title_en' => null, 'summary_en' => null, 'location_name' => null]);

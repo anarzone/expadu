@@ -182,9 +182,13 @@ class EventOccurrencePresenter
             return null;
         }
 
-        return preg_match('/siehe|s\. beschreibung|^online$|^div\.|^verschiedene/i', trim($name))
-            ? null
-            : $name;
+        return self::isPlaceholderVenue($name) ? null : $name;
+    }
+
+    /** Text in a venue's place that names no place, so no coordinates belong to it either. */
+    public static function isPlaceholderVenue(string $name): bool
+    {
+        return preg_match('/siehe|s\. beschreibung|^online$|^div\.|^verschiedene/i', trim($name)) === 1;
     }
 
     /**
