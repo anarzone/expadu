@@ -13,6 +13,11 @@ import { csrfHeaders } from '@/lib/csrf';
  */
 
 const FOLLOW_METRES = 150;
+/**
+ * Asked for, a fix this rough still answers: underground the phone has no GPS,
+ * only masts and maybe Wi-Fi. It's said to be rough, and a precise one replaces it.
+ */
+const ROUGH_METRES = 1000;
 const FOLLOW_FLOOR_MS = 20_000;
 const AUTO_THROTTLE_MS = 5 * 60_000;
 
@@ -56,6 +61,7 @@ export type LocateError =
     | 'blocked'
     | 'unavailable'
     | 'imprecise'
+    | 'rough'
     | 'unsaved'
     | 'timeout';
 
@@ -123,35 +129,83 @@ export function useTravelLocation({
 
         setLocating(true);
         setError(null);
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                if (!usable(position)) {
-                    setLocating(false);
-                    setError('imprecise');
+        const ask = (options: PositionOptions) =>
+            new Promise<GeolocationPosition>((resolve, reject) =>
+                navigator.geolocation.getCurrentPosition(
+                    resolve,
+                    reject,
+                    options,
+                ),
+            );
+        const settle = async (
+            position: GeolocationPosition,
+            rough: boolean,
+        ) => {
+            const ok = await confirm(
+                position.coords.latitude,
+                position.coords.longitude,
+            );
+            setLocating(false);
+            setError(ok ? (rough ? 'rough' : null) : 'unsaved');
+            setFollowing(ok);
+        };
+
+        void (async () => {
+            let first: GeolocationPosition | null = null;
+
+            try {
+                first = await ask({
+                    enableHighAccuracy: false,
+                    timeout: 15000,
+                    maximumAge: 60000,
+                });
+
+                if (usable(first)) {
+                    await settle(first, false);
 
                     return;
                 }
+            } catch (failure) {
+                const code = (failure as GeolocationPositionError).code;
 
-                const ok = await confirm(
-                    position.coords.latitude,
-                    position.coords.longitude,
-                );
-                setLocating(false);
-                setError(ok ? null : 'unsaved');
-                setFollowing(ok);
-            },
-            (failure) => {
-                setLocating(false);
-                setError(
-                    failure.code === failure.PERMISSION_DENIED
-                        ? 'blocked'
-                        : failure.code === failure.POSITION_UNAVAILABLE
-                          ? 'unavailable'
-                          : 'timeout',
-                );
-            },
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
-        );
+                // Waited long enough, or it isn't allowed: another try won't help.
+                if (code !== 2) {
+                    setLocating(false);
+                    setError(code === 1 ? 'blocked' : 'timeout');
+
+                    return;
+                }
+            }
+
+            // Only a rough fix or none: once more, asking for the GPS.
+            const second = await ask({
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0,
+            }).catch(() => null);
+
+            if (second && usable(second)) {
+                await settle(second, false);
+
+                return;
+            }
+
+            const rough = [second, first]
+                .filter(
+                    (position): position is GeolocationPosition =>
+                        position !== null && usable(position, ROUGH_METRES),
+                )
+                .sort((a, b) => a.coords.accuracy - b.coords.accuracy)[0];
+
+            if (rough) {
+                await settle(rough, true);
+
+                return;
+            }
+
+            setLocating(false);
+            setError(first || second ? 'imprecise' : 'unavailable');
+        })();
     }, [confirm]);
 
     /** "Use my location": with location sharing on. */
@@ -282,6 +336,9 @@ export function useTravelLocation({
                         return;
                     }
 
+                    // Back above ground: where it says you are isn't rough any more.
+                    setError((error) => (error === 'rough' ? null : error));
+
                     const here = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
@@ -347,9 +404,11 @@ export const locateErrorText: Record<LocateError, string> = {
         'Location isn’t available on this device. Pick a stop instead.',
     blocked:
         'Location is blocked for this site. Allow it from the address bar, or pick a stop.',
-    unavailable: 'Your device couldn’t find a location. Pick a stop instead.',
+    unavailable:
+        'Your phone has no location signal here, which is normal underground. Pick a stop, or try again above ground.',
     imprecise:
-        'That location isn’t precise enough to pick a stop. Pick one instead.',
+        'Your phone can only place you very roughly here, which is normal underground. Pick a stop, or try again above ground.',
+    rough: 'Your phone can only place you roughly here, so check this is your station, or pick a stop.',
     unsaved: 'Your location couldn’t be saved. Try again, or pick a stop.',
     timeout: 'Locating took too long. Try again, or pick a stop.',
 };

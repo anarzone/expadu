@@ -23,6 +23,7 @@ import type {
 } from '@/components/composer/tray-body';
 import type { ComposerView } from '@/components/composer/views';
 import { Icon } from '@/components/ui/icon';
+import { useContainTouch } from '@/hooks/use-contain-touch';
 import { composer } from '@/routes';
 
 // The panel's start and conversation, and Composer's styles, load apart from
@@ -432,12 +433,22 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         }
 
         const fit = () => {
+            const view = window.visualViewport;
+            // The keyboard doesn't move what's fixed to the screen's foot: the
+            // box stands on it, or the send button and notice go under it.
+            const covered = view
+                ? document.documentElement.clientHeight -
+                  view.height -
+                  view.offsetTop
+                : 0;
+            box.style.bottom = covered > 80 ? `${covered + 8}px` : '';
             const header =
                 document.querySelector('.shell-header')?.getBoundingClientRect()
                     .bottom ?? 0;
             const room = `${Math.max(
                 160,
-                box.getBoundingClientRect().top - Math.max(12, header + 12),
+                box.getBoundingClientRect().top -
+                    Math.max(12 + (view?.offsetTop ?? 0), header + 12),
             )}px`;
             element.style.maxHeight = room;
             // On a phone the panel is Full Composer: it takes all of that room.
@@ -452,13 +463,34 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         observer.observe(box);
         window.addEventListener('resize', fit);
         window.visualViewport?.addEventListener('resize', fit);
+        window.visualViewport?.addEventListener('scroll', fit);
 
         return () => {
             observer.disconnect();
             window.removeEventListener('resize', fit);
             window.visualViewport?.removeEventListener('resize', fit);
+            window.visualViewport?.removeEventListener('scroll', fit);
         };
     }, [isOpen]);
+
+    // The page keeps its place behind the panel: focusing the box makes a
+    // phone scroll it, so closing puts it back, unless this is a new page.
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const y = window.scrollY;
+        const page = window.location.href;
+
+        return () => {
+            if (window.location.href === page) {
+                window.scrollTo({ top: y, behavior: 'instant' });
+            }
+        };
+    }, [isOpen]);
+
+    useContainTouch(isOpen);
 
     // ‹ goes back to the start, with the focus on its first button.
     useEffect(() => {

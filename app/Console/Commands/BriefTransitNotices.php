@@ -10,6 +10,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 #[Signature('transit:brief-notices')]
 #[Description('Queue English briefs for open KVB notices that have none yet')]
@@ -31,15 +32,21 @@ class BriefTransitNotices extends Command
             ->flip();
 
         // A day's cap on calls, whatever KVB publishes.
-        $dayKey = 'notice-brief:calls:'.now()->toDateString();
+        $dayKey = 'notice-brief:queued:'.now()->toDateString();
         $queued = 0;
         foreach ($notices as $notice) {
-            if ($briefed->has(NoticeBrief::hashFor((string) $notice->title, $notice->summary))) {
+            $hash = NoticeBrief::hashFor((string) $notice->title, $notice->summary);
+            // One refused today isn't asked again, so it costs nothing: counted, a few of
+            // them every five minutes used the day's cap up with no call made (3 Nov 2026).
+            if ($briefed->has($hash) || Cache::has("notice-brief:rejected:{$hash}")) {
                 continue;
             }
             Cache::add($dayKey, 0, now()->addDays(2));
             if (Cache::increment($dayKey) > (int) config('services.transit_briefs.daily_limit')) {
                 $this->warn('Daily transit brief limit reached.');
+                if (Cache::add("{$dayKey}:warned", true, now()->addDays(2))) {
+                    Log::warning('Transit briefs: the daily limit is reached, so new notices stay in German');
+                }
 
                 break;
             }

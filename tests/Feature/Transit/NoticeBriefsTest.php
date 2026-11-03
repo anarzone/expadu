@@ -86,3 +86,18 @@ test('the brief command queues one job per notice text, and not without a key, t
     // Two distinct texts in all; the unique lock keeps the first from being queued twice.
     Queue::assertPushed(WriteNoticeBriefJob::class, 2);
 });
+
+test('a notice refused today is not queued and doesn\'t use the daily cap, so new notices still get their brief', function () {
+    Queue::fake();
+    config(['services.anthropic.key' => 'test-key', 'services.transit_briefs.enabled' => true, 'services.transit_briefs.daily_limit' => 1]);
+    $refused = kvbNotice('Bus 130: Baumaßnahmen im Bereich Sülzgürtel.', 'Die (H) Sülzgürtel in Richtung Universität ist verlegt.');
+    Cache::put('notice-brief:rejected:'.NoticeBrief::hashFor((string) $refused->title, $refused->summary), true, now()->addDay());
+
+    $this->artisan('transit:brief-notices')->assertSuccessful();
+    $this->artisan('transit:brief-notices')->assertSuccessful();
+    Queue::assertNothingPushed();
+
+    kvbNotice('Linie 12: Hohes Verkehrsaufkommen.', 'Einige Bahnen der Linie 12 fahren noch verspätet.');
+    $this->artisan('transit:brief-notices')->assertSuccessful();
+    Queue::assertPushed(WriteNoticeBriefJob::class, 1);
+});
