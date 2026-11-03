@@ -4,14 +4,12 @@ namespace App\Services;
 
 use App\Models\Gtfs\GtfsStop;
 use App\Transit\DepartureTime;
-use Closure;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
-use Throwable;
 
 class GtfsDepartureService
 {
@@ -43,27 +41,16 @@ class GtfsDepartureService
             return $trias;
         }
 
-        // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
-        $timetable = $this->unlessFailing(fn () => $this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : null);
-        if ($timetable !== null && self::liveFeed($timetable)) {
-            return $timetable;
-        }
-
+        // TRIAS failed — use last known good result if fresh enough
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
             return $this->ageFallback($lastGood);
         }
 
-        return $timetable ?? ($this->hasGtfsData() ? $this->timetableNearby($lat, $lng, $limit) : $this->fallbackDepartures('Nearby'));
-    }
+        if (! $this->hasGtfsData()) {
+            return $this->fallbackDepartures('Nearby');
+        }
 
-    /**
-     * The nearest stop's timetable with the live feed's delays on it.
-     *
-     * @return array<string, mixed>
-     */
-    private function timetableNearby(float $lat, float $lng, int $limit): array
-    {
         $cacheKey = 'gtfs_departures_nearby_v2_'.round($lat, 3).'_'.round($lng, 3)."_{$limit}"; // gitleaks:allow (cache key name, not a secret)
 
         return Cache::remember($cacheKey, 60, function () use ($lat, $lng, $limit) {
@@ -132,47 +119,13 @@ class GtfsDepartureService
             return $trias;
         }
 
-        // TRIAS failed: the live feed's delays, else its last answer if fresh enough, else the timetable.
-        $timetable = $this->unlessFailing(fn () => $this->getStaticDepartures($stopName, $limit));
-        if ($timetable !== null && self::liveFeed($timetable)) {
-            return $timetable;
-        }
-
+        // TRIAS failed — use last known good result if fresh enough
         $lastGood = Cache::get($fallbackKey);
         if ($lastGood) {
             return $this->ageFallback($lastGood);
         }
 
-        return $timetable ?? $this->getStaticDepartures($stopName, $limit);
-    }
-
-    /**
-     * The timetable read before an old answer: its failing mustn't cost that answer.
-     *
-     * @param  Closure(): (array<string, mixed>|null)  $read
-     * @return array<string, mixed>|null
-     */
-    private function unlessFailing(Closure $read): ?array
-    {
-        try {
-            return $read();
-        } catch (Throwable $error) {
-            report($error);
-
-            return null;
-        }
-    }
-
-    /**
-     * Times with the live feed's delays on them, current: newer than an old
-     * TRIAS answer. When TRIAS was slow, that answer ("Not live") hid a feed that
-     * was working (3 Nov 2026).
-     *
-     * @param  array<string, mixed>  $result
-     */
-    private static function liveFeed(array $result): bool
-    {
-        return ($result['source'] ?? null) === 'gtfs_rt' && ! ($result['is_stale'] ?? false);
+        return $this->getStaticDepartures($stopName, $limit);
     }
 
     /**
@@ -344,6 +297,11 @@ class GtfsDepartureService
                         $rtCancelled = $rtInfo['cancelled'];
                         $rtSkipped = $rtInfo['skipped'];
                         $rtObserved = DepartureTime::parse($rtInfo['observed_at'] ?? null);
+                        // A zero is the timetable, not "on time": VRS's feed says zero for 95% of its
+                        // stop updates, even with a tram 23 minutes late by TRIAS (3 Nov 2026).
+                        if ($rtDelaySeconds === 0 && ! $rtCancelled) {
+                            $rtDelay = $rtDelaySeconds = null;
+                        }
                     }
                 }
 
@@ -841,7 +799,7 @@ class GtfsDepartureService
             Redis::zadd($key, $timestamp, $entry);
             Redis::zremrangebyscore($key, 0, now()->subMonth()->timestamp);
             Redis::expire($key, 2592000);
-        } catch (Throwable) {
+        } catch (\Throwable) {
             // Redis unavailable — skip debug logging silently
         }
     }
