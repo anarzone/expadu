@@ -49,6 +49,31 @@ test('individual GTFS estimates retain delay seconds instead of rounded minutes'
     expect($result['departures'][0]['services'][0]['expected_at'])->toBe('2026-10-05T12:06:10+02:00');
 });
 
+test('a zero from the feed is the timetable, not a live on time; a delay or a cancellation is live', function (int $delay, bool $cancelled, string $basis, string $source) {
+    $this->travelTo(now()->setDate(2026, 10, 5)->setTime(12, 0));
+    config(['services.vrs.enabled' => true]);
+    $this->mock(DisruptionService::class)->shouldReceive('getDisruptedLines')->andReturn([]);
+    $this->mock(VrsRealtimeService::class, function ($mock) use ($delay, $cancelled) {
+        $mock->shouldReceive('getTripUpdates')->andReturn(['zero-trip' => ['trip_id' => 'zero-trip']]);
+        $mock->shouldReceive('getDelayForTripAtStop')->with('zero-trip', 'zero-stop')->andReturn([
+            'delay' => $delay, 'skipped' => false, 'cancelled' => $cancelled, 'observed_at' => now()->toIso8601String(),
+        ]);
+    });
+    DB::table('gtfs_stops')->insert(['stop_id' => 'zero-stop', 'stop_name' => 'Zero Stop', 'stop_lat' => 50.94, 'stop_lng' => 6.94, 'location_type' => 0]);
+    DB::table('gtfs_routes')->insert(['route_id' => 'zero-route', 'route_short_name' => '1', 'route_type' => 0]);
+    DB::table('gtfs_trips')->insert(['trip_id' => 'zero-trip', 'route_id' => 'zero-route', 'service_id' => 'zero-service', 'trip_headsign' => 'Destination']);
+    DB::table('gtfs_stop_times')->insert(['trip_id' => 'zero-trip', 'stop_id' => 'zero-stop', 'arrival_time' => '12:05:00', 'departure_time' => '12:05:00', 'stop_sequence' => 1]);
+
+    $result = app(GtfsDepartureService::class)->getStaticDepartures('Zero Stop');
+
+    expect($result['source'])->toBe($source)
+        ->and($result['departures'][0]['services'][0]['time_basis'])->toBe($basis);
+})->with([
+    'zero' => [0, false, 'scheduled', 'gtfs_static'],
+    'late' => [120, false, 'realtime', 'gtfs_rt'],
+    'cancelled' => [0, true, 'realtime', 'gtfs_rt'],
+]);
+
 test('after midnight GTFS retains the previous service days overnight departure', function () {
     $this->travelTo(now()->setDate(2026, 10, 6)->setTime(0, 30));
     config(['services.vrs.enabled' => false]);
