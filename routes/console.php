@@ -76,7 +76,6 @@ Schedule::command('events:import-datenhub --days=60')->everySixHours()->withoutO
 Schedule::command('events:enrich')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:curate')->hourly()->withoutOverlapping()->runInBackground();
 Schedule::command('events:expire')->dailyAt('03:30')->withoutOverlapping()->runInBackground();
-Schedule::command('events:import-manual')->weeklyOn(1, '04:00')->withoutOverlapping()->onOneServer()->runInBackground();
 Schedule::command('events:backfill-translations --limit=200 --per-minute=30')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();
 // Venue links are made inside ProcessEventJob, but a classification failure
 // there must never leave events venue-less (and photo-less) forever — this

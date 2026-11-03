@@ -123,3 +123,22 @@ test('event geocoding fails closed while official polygons are incomplete', func
 
     expect($event->fresh()->lat)->toBeNull();
 });
+
+test('a placeholder venue is never geocoded or made a venue, and the migration clears those it already placed', function () {
+    $geocoder = Mockery::mock(GeocodingService::class);
+    $geocoder->shouldNotReceive('search');
+    app()->instance(GeocodingService::class, $geocoder);
+
+    $event = Event::factory()->create(['location_name' => 'Siehe Beschreibung', 'address' => null, 'location' => null]);
+    app(EventEnrichmentService::class)->enrichEvent($event);
+    expect($event->fresh()->location)->toBeNull();
+
+    $placed = Event::factory()->create(['location_name' => 'Siehe Beschreibung']);
+    DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(6.97, 50.93), 4326)::geography WHERE id = ?', [$placed->id]);
+    $manual = Event::factory()->create(['source' => 'manual', 'status' => 'active']);
+
+    (require database_path('migrations/2026_11_03_190000_hide_manual_events_and_clear_placeholder_venues.php'))->up();
+
+    expect($placed->fresh()->location)->toBeNull()
+        ->and($manual->fresh()->status)->toBe('hidden');
+});

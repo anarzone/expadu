@@ -10,6 +10,7 @@ use App\Services\ClassificationRefused;
 use App\Services\ClassifiesEvents;
 use App\Services\EventEnrichmentService;
 use App\Services\VenueResolver;
+use App\Support\EventOccurrencePresenter;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -181,7 +182,7 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 
     private function resolveVenue(Event $event): void
     {
-        if (! $event->location_name || $event->venue_id) {
+        if (! $event->location_name || $event->venue_id || EventOccurrencePresenter::isPlaceholderVenue($event->location_name)) {
             return;
         }
 

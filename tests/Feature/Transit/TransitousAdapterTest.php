@@ -88,6 +88,8 @@ test('includes direct walk and bike routes alongside transit', function () {
         ]),
     ]);
 
+    config(['services.motis.bike_routes' => true]);
+
     $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.92), new GeoPoint(50.9413, 6.9583));
 
     // Transit itinerary first, then the direct bike + walk options.

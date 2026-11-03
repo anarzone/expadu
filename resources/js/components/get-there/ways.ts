@@ -156,15 +156,14 @@ export function useWays({
             })),
         [answer],
     );
-    // As the mock orders them. There by a time (the caller already took its
-    // margin off it), the best is the way My day would take: the latest that
-    // still gets there, the earliest there breaking a tie. Leaving now, the
-    // earliest there first.
+    // There by a time (the caller already took its margin off it), the best is
+    // the way My day would take: the latest that still gets there, the earliest
+    // there breaking a tie. Leaving now, the server's order (JourneyRanker).
     const ways = useMemo<Record<WayMode, PlanOption[]>>(
         () => ({
             transit: rankOptions(
                 options.filter((x) => x.journey.mode === 'transit'),
-                'arrival',
+                'best',
                 [],
                 arriveBy && departAt ? { at: departAt, margin: 0 } : null,
             ).slice(0, 3),
