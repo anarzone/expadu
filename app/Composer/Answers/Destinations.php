@@ -111,6 +111,12 @@ final class Destinations
             $distinct[] = $place;
         }
 
+        // "Zoo Köln" holds a word no listing has: the same again without the city.
+        $plain = trim((string) preg_replace('/\s*\b(?:köln|koeln|cologne)\b\s*/iu', ' ', $named));
+        if ($distinct === [] && $plain !== '' && $plain !== trim($named)) {
+            return $this->find($plain, $area, $near);
+        }
+
         return array_slice($distinct, 0, self::CHOICES);
     }
 

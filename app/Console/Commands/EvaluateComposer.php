@@ -353,10 +353,10 @@ class EvaluateComposer extends Command
         // speak of the person from their own facts, and count the listings, places and choices it cites.
         foreach (($answer['written'] ?? null) === 'ai' ? $assistant->kept : [] as $sentence) {
             $count = max(count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', $sentence['uses'])), count(preg_grep('/^(e\d+@\d+|spot:\d+)$/', array_keys($assistant->read))))
-                + count(collect($answer['blocks'] ?? [])->firstWhere('type', 'choices')['options'] ?? [])
+                + collect($answer['blocks'] ?? [])->where('type', 'choices')->sum(fn (array $block): int => count($block['options'] ?? []))
                 // ...and the stops of a plan it made or this conversation made ("two museums").
                 + array_sum(array_map(fn (string $id): int => substr_count($assistant->read[$id], "\n- "), preg_grep('/^plan\d*$/', array_keys($assistant->read))));
-            if (! app(AroundCheck::class)->holds($sentence['text'], implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count)) {
+            if (! app(AroundCheck::class)->holds($sentence['text'], implode("\n", $read), preg_grep(AssistantTools::PERSONAL_IDS, array_keys($assistant->read)) !== [], $count, $text)) {
                 $invented[] = $sentence['text'];
             }
         }

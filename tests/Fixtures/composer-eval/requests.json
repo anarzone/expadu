@@ -9604,6 +9604,63 @@
    }
   },
   {
+   "id": "regression.false_correction",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:32:00+01:00",
+   "weather": "dry",
+   "before": [
+    "plan my saturday"
+   ],
+   "text": "you planned the wrong day, i said sunday",
+   "expect": {
+    "not_says": "by mistake"
+   }
+  },
+  {
+   "id": "regression.cant_book_says_so",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:32:00+01:00",
+   "weather": "dry",
+   "before": [],
+   "text": "book me a table at Früh am Dom",
+   "expect": {
+    "says": "can't",
+    "not_says": "vouch"
+   }
+  },
+  {
+   "id": "regression.work_is_theirs_unsaved",
+   "persona": "new_person",
+   "home_veedel": "Merkenich",
+   "origin": {
+    "lat": 51.017,
+    "lng": 6.9592
+   },
+   "companions": "alone",
+   "needs": [],
+   "now": "2026-11-05T18:32:00+01:00",
+   "weather": "dry",
+   "before": [],
+   "text": "how do i get to work",
+   "expect": {
+    "not_says": "might work"
+   }
+  },
+  {
    "id": "actions.save_event",
    "persona": "new_person",
    "home_veedel": "Ehrenfeld",

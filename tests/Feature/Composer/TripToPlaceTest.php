@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\Answers\TripAnswers;
 use App\Models\Spot;
 use App\Models\User;
 use App\Privacy\ProcessingPurpose;
@@ -120,4 +121,24 @@ test('Composer plans the trip to the place named, in the area named, from where 
     expect($far)->kind->toBe('trip')->text->toBe('About 2.8 km away in a straight line, 23 min door to door; leave at 12:44.')
         ->and($far)->not->toHaveKey('title')->and($far)->not->toHaveKey('lead')
         ->and($far['trip']['folded'])->toBeTrue();
+});
+
+test('🔒 "work" is their own saved place, never in a link, and said so when it isn’t saved', function () {
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'This might work', 'veedel' => 'Neustadt-Süd', 'lat' => 50.92, 'lng' => 6.94, 'is_active' => true]);
+    $this->mock(RouteService::class, function ($mock): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([], 'motis'));
+        $mock->shouldReceive('geocode')->andReturn([]);
+    });
+    $answers = app(TripAnswers::class);
+    $now = CarbonImmutable::parse('2026-11-04 10:00', 'Europe/Berlin');
+
+    expect($answers->toPlace($user, ['place' => 'my work'], $now)['text'] ?? '')->toContain('don’t have your work saved');
+
+    $user->places()->create(['name' => 'Work', 'address' => 'Somewhere 1', 'lat' => 50.95, 'lng' => 6.91, 'sort_order' => 1]);
+    $user->refresh();
+    $reply = json_encode($answers->toPlace($user, ['place' => 'work', 'from' => 'Neumarkt'], $now));
+
+    expect($reply)->not->toContain('This might work')->not->toContain('50.95')->not->toContain('6.91');
 });
