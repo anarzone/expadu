@@ -21,6 +21,7 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanFit;
 use App\Composer\WorkspaceStore;
+use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
@@ -77,6 +78,9 @@ final class AssistantTools
 {
     /** Results per lookup. */
     private const SHOWN = 8;
+
+    /** Listings of one kind among those, until the others run out. */
+    private const SAME_KIND = 2;
 
     /** All of a comparison's trips together, in seconds. */
     private const COMPARE_SECONDS = 3.0;
@@ -273,7 +277,8 @@ final class AssistantTools
                     'day' => ['type' => 'string', 'description' => 'today, tomorrow or YYYY-MM-DD (within 7 days)'],
                     'from' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'until' => ['type' => 'string', 'description' => 'HH:MM, optional'],
-                    'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
+                    'topic' => ['type' => 'string', 'description' => 'optional words a listing must all hold, e.g. jazz, museum'],
+                    'category' => ['type' => 'string', 'enum' => array_column(EventCategory::cases(), 'value'), 'description' => 'one kind of listing: meet_people to meet people or make friends, kids for children'],
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                     'asking_for_others' => ['type' => 'string', 'description' => 'with leave_out_earlier: their words in this message that turn down what you showed ("something else", "not these"), as they wrote them; without them, nothing is left out'],
@@ -637,6 +642,30 @@ final class AssistantTools
         })->implode("\n");
     }
 
+    /**
+     * The best-ranked listings, at most two of a kind until the rest run out, so tours don't fill the list.
+     *
+     * @param  Collection<int, array<string, mixed>>  $occurrences
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function spread(Collection $occurrences): Collection
+    {
+        $picked = collect();
+        $rest = collect();
+        $kinds = [];
+        foreach ($occurrences->sortByDesc(fn (array $o): array => [$o['event']->relevance ?? -1, $o['event']->quality_score ?? -1])->values() as $o) {
+            $kind = $o['event']->category instanceof EventCategory ? $o['event']->category->value : (string) $o['event']->category;
+            if (($kinds[$kind] ?? 0) < self::SAME_KIND && $picked->count() < self::SHOWN) {
+                $kinds[$kind] = ($kinds[$kind] ?? 0) + 1;
+                $picked->push($o);
+            } else {
+                $rest->push($o);
+            }
+        }
+
+        return $picked->concat($rest->take(self::SHOWN - $picked->count()))->values();
+    }
+
     private function searchEvents(array $input): string
     {
         $day = match ($input['day'] ?? 'today') {
@@ -659,13 +688,22 @@ final class AssistantTools
         if (($input['free'] ?? false) === true) {
             $occurrences = $occurrences->filter(fn (array $o): bool => $o['event']->is_free || preg_match('/\b(free|frei|kostenlos|gratis)\b/iu', (string) $o['event']->price_text) === 1);
         }
+        $category = is_string($input['category'] ?? null) ? EventCategory::tryFrom($input['category']) : null;
+        if ($category !== null) {
+            $occurrences = $occurrences->filter(fn (array $o): bool => ($o['event']->category instanceof EventCategory ? $o['event']->category : EventCategory::tryFrom((string) $o['event']->category)) === $category);
+        }
         $topic = trim((string) ($input['topic'] ?? ''));
         if ($topic !== '') {
-            $words = array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 3);
-            $occurrences = $occurrences->filter(fn (array $o): bool => $words === [] || collect($words)->contains(fn (string $w): bool => str_contains(
-                mb_strtolower($o['event']->title.' '.$o['event']->title_en.' '.$o['event']->category.' '.$o['event']->description), $w)));
+            // All its words, the city's name aside: "FC Köln" isn't every listing with Köln in its title. A short word
+            // whole ("FC"), a longer one anywhere in a word ("museum" in "Stadtmuseum").
+            $words = array_values(array_diff(array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 2), ['köln', 'koeln', 'cologne']));
+            $occurrences = $occurrences->filter(function (array $o) use ($words): bool {
+                $text = mb_strtolower($o['event']->title.' '.$o['event']->title_en.' '.($o['event']->category instanceof EventCategory ? $o['event']->category->value : $o['event']->category).' '.$o['event']->description);
+
+                return collect($words)->every(fn (string $w): bool => mb_strlen($w) > 3 ? str_contains($text, $w) : preg_match('/\b'.preg_quote($w, '/').'\b/u', $text) === 1);
+            });
         }
-        $shown = collect($this->listings->posters($occurrences->values(), self::SHOWN));
+        $shown = collect($this->listings->posters($this->spread($occurrences), self::SHOWN));
         if ($shown->isEmpty()) {
             // What was looked for, so "nothing free is on" is a fact the answer may state, citing it: all of
             // the city's listings that day, so past those shown before, "nothing else" is too.
@@ -673,7 +711,11 @@ final class AssistantTools
                 .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.');
         }
 
-        return $shown->map(function (array $poster) use ($occurrences): string {
+        // A sample, and said to be: "the listings are mostly guided tours" was said of 8 out of 98.
+        $total = $occurrences->pluck('event.id')->unique()->count();
+        $sample = $total > $shown->count() ? $this->line('s'.(++$this->count), "{$total} listings match. These {$shown->count()} are a spread of kinds, so don't say what most of them are or that these are all.")."\n" : '';
+
+        return $sample.$shown->map(function (array $poster) use ($occurrences): string {
             $id = 'e'.$poster['id'].'@'.CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp();
             $this->events[$id] = $occurrences->first(fn (array $o): bool => $o['event']->id === $poster['id']
                 && $o['starts_at']->getTimestamp() === CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp());

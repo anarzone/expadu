@@ -23,6 +23,7 @@ use App\Services\LocationContext;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -66,6 +67,9 @@ final class Assistant
 
     /** Past this many seconds it answers with what it has, rather than look again: a second look and the answer after it take about 3.5 s, and every reply stays under 6 s. */
     private const LOOK_AGAIN_SECONDS = 2.5;
+
+    /** Below this many seconds left, a failed connection isn't tried again. */
+    private const RETRY_SECONDS = 6.0;
 
     /** Earlier turns of this conversation it's given. */
     private const TURNS = 6;
@@ -349,6 +353,8 @@ final class Assistant
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
                 ->timeout((int) max(2, min((int) (config('ai.override.call_timeout') ?? 10), floor($left))))
                 ->connectTimeout(3)
+                // A dropped connection is worth one more try while there's time for it.
+                ->retry(2, 250, fn (Throwable $error): bool => $error instanceof ConnectionException && $left >= self::RETRY_SECONDS, throw: false)
                 ->post('/v1/messages', AiRequest::shape([
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
@@ -365,7 +371,10 @@ final class Assistant
             $this->record($callStarted, $body);
             $this->timings[] = ['call'.$round, (int) round((hrtime(true) - $callStarted) / 1e6)];
             if (! is_array($body) || ($body['stop_reason'] ?? null) !== 'tool_use') {
-                return null;
+                // A failed call after lookups keeps what they found, under Composer's own line.
+                $found = [...array_keys($tools->places), ...array_keys($tools->events)];
+
+                return $found !== [] ? ['answer' => ['sentences' => [], 'show' => $found], 'rounds' => $round] : null;
             }
 
             $uses = collect($body['content'] ?? [])->filter(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')->values();
