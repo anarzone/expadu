@@ -11,6 +11,7 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use Tests\Support\ExternalProcessingFixtures;
@@ -141,4 +142,21 @@ test('🔒 "work" is their own saved place, never in a link, and said so when it
     $reply = json_encode($answers->toPlace($user, ['place' => 'work', 'from' => 'Neumarkt'], $now));
 
     expect($reply)->not->toContain('This might work')->not->toContain('50.95')->not->toContain('6.91');
+});
+
+test('a Veedel named as the start is the Veedel, not a choice between its stops', function () {
+    $user = User::factory()->onboarded()->create();
+    DB::table('veedels')->insert(['name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld', 'centroid_lat' => 50.95, 'centroid_lng' => 6.91]);
+    Spot::factory()->create(['name' => 'Ehrenfeld', 'category' => 'cafe', 'veedel' => 'Neustadt-Süd', 'lat' => 50.92, 'lng' => 6.94, 'is_active' => true]);
+    Spot::factory()->create(['name' => 'Ehrenfeld', 'category' => 'bar', 'veedel' => 'Porz', 'lat' => 50.88, 'lng' => 7.05, 'is_active' => true]);
+    Spot::factory()->create(['name' => 'Deutz Hall', 'category' => 'museum', 'veedel' => 'Deutz', 'lat' => 50.93, 'lng' => 6.97, 'is_active' => true]);
+    $this->mock(RouteService::class, function ($mock): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([], 'motis'));
+        $mock->shouldReceive('geocode')->andReturn([]);
+    });
+
+    $reply = app(TripAnswers::class)->toPlace($user, ['place' => 'Deutz Hall', 'from' => 'Ehrenfeld'], CarbonImmutable::parse('2026-11-04 10:00', 'Europe/Berlin'));
+
+    expect($reply['text'] ?? '')->not->toContain('more than one');
 });

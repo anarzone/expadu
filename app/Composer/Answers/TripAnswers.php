@@ -89,6 +89,10 @@ final class TripAnswers
                 return $this->reply($this->notSaved((string) $request['from']), null, null, [$search]);
             }
             $starts = $own !== null ? [$own] : $this->destinations->find((string) $request['from'], $request['from_area'] ?? null, $here);
+            // "From Ehrenfeld" is the Veedel: its stops ("Ehrenfeld", "Köln-Ehrenfeld") are no choice to ask about.
+            if (count($starts) > 1 && ($veedel = $this->veedel((string) $request['from'])) !== null) {
+                $starts = [$veedel];
+            }
             if ($starts === []) {
                 return $this->reply("I can’t find “{$request['from']}” to start from, in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
             }
@@ -101,7 +105,7 @@ final class TripAnswers
         }
         $origin = $start['point'] ?? $here;
         $from = match (true) {
-            $start !== null => 'From '.$start['name'].($start['area'] !== null ? " in {$start['area']}" : '').': l',
+            $start !== null => 'From '.$start['name'].($start['area'] !== null && $start['area'] !== $start['name'] ? " in {$start['area']}" : '').': l',
             $location->source === LocationSource::Area => "From your home area, {$location->label}: l",
             default => 'L',
         };
@@ -112,6 +116,9 @@ final class TripAnswers
             return $this->reply($this->notSaved($named), null, null, [$search]);
         }
         $found = $own !== null ? [$own] : $this->destinations->find($named, $request['area'] ?? null, $origin);
+        if (count($found) > 1 && ($veedel = $this->veedel($named)) !== null) {
+            $found = [$veedel];
+        }
         if ($found === []) {
             return $this->reply("I can’t find “{$named}” in Expadu’s places or Travel’s search. Travel can look up any address.", null, null, [$search]);
         }
@@ -130,7 +137,7 @@ final class TripAnswers
         }
 
         $to = $found[0];
-        $name = $to['name'].($to['area'] !== null ? " in {$to['area']}" : '');
+        $name = $to['name'].($to['area'] !== null && $to['area'] !== $to['name'] ? " in {$to['area']}" : '');
         $plan = ['label' => 'Plan it in Travel', 'href' => $this->planHref($to, $start)];
         if ($origin === null) {
             return $this->reply("{$name}: I don’t know where you’re starting from, so I can’t time the trip. Travel plans it from where you are.", null, null, [$plan]);
@@ -259,6 +266,19 @@ final class TripAnswers
         }
 
         return in_array($key, self::OWN_WORDS, true) ? false : null;
+    }
+
+    /**
+     * A Veedel by its name, at its centre.
+     *
+     * @return array{name: string, area: string, kind: null, point: GeoPoint, spot: null}|null
+     */
+    private function veedel(string $named): ?array
+    {
+        $row = DB::table('veedels')->whereRaw('lower(name) = ?', [mb_strtolower(trim($named))])->whereNotNull('centroid_lat')->first(['name', 'centroid_lat', 'centroid_lng']);
+
+        return $row === null ? null : ['name' => (string) $row->name, 'area' => (string) $row->name, 'kind' => null,
+            'point' => new GeoPoint((float) $row->centroid_lat, (float) $row->centroid_lng), 'spot' => null];
     }
 
     private function notSaved(string $named): string
