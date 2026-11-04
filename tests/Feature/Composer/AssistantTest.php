@@ -529,6 +529,7 @@ test('a failed call after lookups keeps the places they found', function () {
     $reply = assistantAsk($this, 'tell me about Café Wohnraum', ['lat' => 50.9497, 'lng' => 6.9177]);
 
     expect(collect(collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())->toBe(['Café Wohnraum']);
+});
 
 test('🔒 with the opt-in their taste reorders a nearby search and says why; without it the list stays by distance', function () {
     Spot::factory()->create(['name' => 'Nearest Bar', 'category' => 'bar', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9498, 'lng' => 6.9180]);
