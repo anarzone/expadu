@@ -104,3 +104,20 @@ test('non-EU freelancers get a permit step on the route they entered by; others 
         ->and($actions(['citizenship_group' => 'eu', 'purpose' => 'freelance']))
         ->not->toContain('fre.residence_permit.d_visa')->not->toContain('fre.residence_permit.visa_free');
 });
+
+test('every limited permit has a renewal step dated from its expiry; a settlement permit doesn\'t', function () {
+    $plan = function (string $title): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach (['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'current_residence_title' => $title, 'residence_title_expires_at' => '2027-03-01'] as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return array_column(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['actions'], 'source_rule_id');
+    };
+
+    foreach (['standard_work_permit', 'blue_card', 'student_permit', 'chancenkarte', 'self_employment_permit'] as $title) {
+        expect($plan($title))->toContain('residence.renew_permit');
+    }
+    expect($plan('settlement_permit_9'))->not->toContain('residence.renew_permit');
+});

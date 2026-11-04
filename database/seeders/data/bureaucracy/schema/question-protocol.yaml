@@ -12,7 +12,7 @@ orientation:
       - {current_residence_title: national_d_visa}
   - fact_key: residence_title_expires_at
     when:
-      - {current_residence_title: [standard_work_permit, blue_card, family_reunification]}
+      - {current_residence_title: [standard_work_permit, blue_card, student_permit, chancenkarte, self_employment_permit, family_reunification]}
 # Not asked while the person's own answers settle it. Choosing the Blue Card as the goal
 # already says which employment track to follow (owner decision, 8 October 2026).
 not_asked:

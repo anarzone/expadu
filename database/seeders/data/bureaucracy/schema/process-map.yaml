@@ -34,6 +34,7 @@ entries:
   stu.work_rules: {process_id: residence.student.work, position: 1, topic: work, kind: context, coverage: partial}
   stu.post_graduation: {process_id: residence.student.job_search, position: 1, topic: residence, kind: context, coverage: partial}
   stu.tax_return: {process_id: tax.income_tax_return, position: 2, topic: tax, kind: context, coverage: partial}
+  residence.renew_permit: {process_id: residence.limited_title.renewal, position: 1, topic: residence, kind: action, coverage: partial, occurrence_fact: current_residence_title}
   fre.residence_permit.d_visa: {process_id: residence.self_employment.first, position: 1, topic: residence, kind: action, coverage: partial, occurrence_fact: entry_mode}
   fre.residence_permit.visa_free: {process_id: residence.self_employment.first, position: 2, topic: residence, kind: action, coverage: partial, occurrence_fact: entry_mode}
   fre.gewerbe_check: {process_id: tax.self_employment.registration, position: 1, topic: tax, kind: preparation, coverage: partial}
