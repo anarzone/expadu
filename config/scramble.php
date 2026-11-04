@@ -1,8 +1,9 @@
 <?php
 
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
-use Dedoc\Scramble\OpenApiVersion;
 
+// Scramble is a dev dependency, so this file also loads where it isn't installed (the production image):
+// nothing here may touch one of its classes at runtime. `::class` alone is only a string.
 return [
     /*
      * Which routes to document. String or array form; use Scramble::routes() for custom selection.
@@ -41,11 +42,6 @@ return [
         'key' => 'scramble.openapi',
         'store' => 'file',
     ],
-
-    /*
-     * OpenAPI version of the resulting document.
-     */
-    'openapi_version' => OpenApiVersion::V3_1,
 
     'info' => [
         /*
