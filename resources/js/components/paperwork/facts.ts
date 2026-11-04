@@ -161,6 +161,11 @@ export const fields: Record<string, FieldCopy> = {
         label: 'Family permit held since',
         icon: 'calendar',
     },
+    has_children: {
+        label: 'Children with you in Germany',
+        icon: 'people',
+        options: { true: 'Yes', false: 'No' },
+    },
     marital_household_continues: {
         label: 'Living together as a married household',
         icon: 'people',
@@ -215,6 +220,7 @@ const registryOrder = [
     'tax_id_available',
     'bank_account_help_needed',
     'family_residence_permit_held_since',
+    'has_children',
     'marital_household_continues',
     'sponsor',
     'sponsor_current_title',

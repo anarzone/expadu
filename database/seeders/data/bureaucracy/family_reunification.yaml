@@ -78,7 +78,7 @@ tasks:
     key: fam.school_kita
     applies_if_mode: explicit
     applies_if:
-      purpose: family
+      has_children: true
     depends_on: []
     review_status: approved
     jurisdiction: de-nrw-cologne
@@ -226,7 +226,7 @@ tasks:
     key: fam.kindergeld
     applies_if_mode: explicit
     applies_if:
-      purpose: family
+      has_children: true
     depends_on: []
     review_status: approved
     jurisdiction: de-nrw-cologne
