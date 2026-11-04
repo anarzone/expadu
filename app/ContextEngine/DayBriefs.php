@@ -7,7 +7,9 @@ use App\Home\WhatsOn;
 use App\Models\EventReminder;
 use App\Models\PlannedTrip;
 use App\Models\User;
+use App\Services\DisruptionService;
 use App\Services\GermanHolidayService;
+use App\Services\UserTransitLinesService;
 use Carbon\CarbonImmutable;
 
 /**
@@ -25,6 +27,9 @@ final class DayBriefs
 
     /** Never earlier than this (coordinator, 26 Oct 2026). */
     private const EARLIEST = '06:30';
+
+    /** Major problems on their lines a brief names at most. */
+    private const OPEN_NOTICES = 2;
 
     /** With nothing timed in the day, the morning brief comes now. */
     private const UNTIMED = '07:30';
@@ -45,7 +50,7 @@ final class DayBriefs
     /** What comes first in a brief: what threatens the day, then the day in order, then the rest. */
     private const RANK = ['risk' => 0, 'timed' => 1, 'paperwork' => 2, 'weather' => 3, 'shops' => 4];
 
-    public function __construct(private DayImportance $importance, private ActionBus $bus, private WorkspaceStore $workspace, private PlanRisks $planRisks) {}
+    public function __construct(private DayImportance $importance, private ActionBus $bus, private WorkspaceStore $workspace, private PlanRisks $planRisks, private UserTransitLinesService $lines, private DisruptionService $disruptions) {}
 
     /**
      * The brief due now, if one is: which, for which day, and when it was due.
@@ -120,8 +125,25 @@ final class DayBriefs
                     [...$way, 'type' => 'planned_trip_leave']);
         }
         if ($today) {
+            // Major problems open on their lines, however long ago they began: the action bus only hears of new
+            // ones, so someone arriving during a month-long works would never see it.
+            $mine = $this->lines->getRelevantLines($user)['lines']->map(fn (mixed $line): string => (string) $line)->all();
+            $open = collect($this->disruptions->getLineDisruptions())
+                ->filter(fn (array $notice): bool => ($notice['scale'] ?? 'minor') === 'major' && array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $mine) !== [])
+                ->take(self::OPEN_NOTICES);
+            foreach ($open as $notice) {
+                $on = implode(', ', array_slice(array_values(array_intersect(array_map('strval', $notice['affected_lines'] ?? []), $mine)), 0, 3));
+                $text = (string) ($notice['brief']['headline'] ?? $notice['title'] ?? '');
+                // A brief often names its line already ("Line 18 split…").
+                $add('disruption', preg_match('/\b(lines?|linien?)\b/iu', $text) === 1 ? $text : "Line {$on}: {$text}", "KVB notice on line {$on}, one of their lines: {$text}", false, self::RANK['risk'] * 10000,
+                    ['type' => 'transit_disruption', 'severity' => 'major', 'why' => 'On one of your lines.', 'link' => '/travel', 'about' => "disruption:{$notice['id']}"]);
+            }
+            $told = $open->pluck('id')->map(fn (mixed $id): string => (string) $id)->all();
             foreach ($actions as $action) {
                 $lines = implode(', ', array_slice((array) ($action->payload['lines'] ?? []), 0, 3));
+                if ($action->type === 'transit_disruption' && in_array((string) ($action->payload['disruption_id'] ?? ''), $told, true)) {
+                    continue;
+                }
                 if ($action->type === 'transit_disruption' && ($action->payload['on_user_line'] ?? false) === true && $lines !== '') {
                     $stops = implode(', ', array_slice((array) ($action->payload['stops_affected'] ?? []), 0, 2));
                     $text = "Line {$lines} disrupted".($stops !== '' ? " at {$stops}" : '').'.';
@@ -171,11 +193,12 @@ final class DayBriefs
             $add('paperwork', 'Your Paperwork needs attention.', 'Their Paperwork needs attention.', true, self::RANK['paperwork'] * 10000, [...$paperwork, 'severity' => 'moderate']);
         }
 
-        // The evening before: shops closed tomorrow.
+        // Shops closed: the evening before, and on Today from the morning before ("Most": a station's stay open).
         $holidays = app(GermanHolidayService::class);
-        if ($kind === self::EVENING && ($day->isSunday() || $holidays->isHoliday($day))) {
-            $why = $holidays->getHolidayName($day) ?? 'Sunday';
-            $add('shops', "Shops are closed tomorrow ({$why}).", "Shops are closed tomorrow: {$why}.", false, self::RANK['shops'] * 10000, ['type' => 'market_closure']);
+        $closes = $kind === self::EVENING ? $day : $day->addDay();
+        if ($closes->isSunday() || $holidays->isHoliday($closes)) {
+            $why = $holidays->getHolidayName($closes) ?? 'Sunday';
+            $add('shops', "Most shops are closed tomorrow ({$why}).", "Most shops are closed tomorrow: {$why}.", false, self::RANK['shops'] * 10000, ['type' => 'market_closure', 'about' => "shops:{$closes->toDateString()}"]);
         }
 
         usort($items, fn (array $a, array $b): int => $a['rank'] <=> $b['rank']);

@@ -35,7 +35,7 @@ class RhineEvaluator implements ShouldQueue
         };
 
         User::query()
-            ->whereNotNull('onboarded_at')
+            ->whereNotNull('email_verified_at')
             ->chunkById(100, function ($users) use ($event, $severity): void {
                 foreach ($users as $user) {
                     $score = $this->scorer->score(

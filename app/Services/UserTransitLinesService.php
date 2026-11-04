@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Places\AddressLocator;
+use App\Support\EventStartingPoint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class UserTransitLinesService
     public function __construct(
         private readonly NearbyStopService $nearbyStopService,
         private readonly AddressLocator $locator,
+        private readonly EventStartingPoint $points,
     ) {}
 
     /**
@@ -34,6 +36,16 @@ class UserTransitLinesService
             $context = [];
 
             $this->addPlaceLines($user, $lines, $stops, $context);
+            // No saved place to go by: the lines around their home Veedel.
+            if ($lines->isEmpty() && filled($user->veedel) && ($centre = $this->points->public((string) $user->veedel)) !== null) {
+                foreach ($this->nearbyStopService->getWalkableStops($centre['lat'], $centre['lng'], 500) as $stop) {
+                    $stops->push($stop['name']);
+                    foreach ($stop['lines'] as $line) {
+                        $lines->push($line);
+                        $context[$line] ??= "near {$user->veedel}";
+                    }
+                }
+            }
 
             return [
                 'lines' => $lines->unique()->values()->all(),
