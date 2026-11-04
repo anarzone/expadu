@@ -41,7 +41,7 @@ concurrency:
 jobs:
   run:
     name: artisan on ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: ${{ inputs.environment }}
 
     steps:
