@@ -108,7 +108,7 @@ final class AssistantTools
     public const CATEGORIES = [
         'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
         'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'compare_places' => 'trips_to_places_you_name', 'weather' => 'weather',
-        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
+        'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'who_to_ask' => 'places_listed', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
         'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
         'my_taste' => 'your_taste_if_personalised', 'my_day' => 'your_plans_if_personalised',
@@ -337,6 +337,10 @@ final class AssistantTools
                     'indoors' => ['type' => 'boolean', 'description' => 'only indoor places'],
                     'free' => ['type' => 'boolean', 'description' => 'only places with no fee listed'],
                 ], 'required' => ['day']]],
+            ['name' => 'who_to_ask', 'description' => 'Who to ask for an everyday thing you can\'t answer yourself, from Expadu\'s own checked list, with its official link as a card: a pharmacy at night, a doctor now or finding one, something lost, ticket prices, a rent deposit or a landlord, someone to talk to.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'topic' => ['type' => 'string', 'enum' => array_keys((array) config('who_to_ask'))],
+                ], 'required' => ['topic']]],
             ['name' => 'guidance', 'description' => 'Expadu\'s reviewed guides to German paperwork (registration, residence permits, tax ID, insurance…) matching some words: their titles. Paperwork and legal questions are answered only by these guides, never by you.',
                 'input_schema' => ['type' => 'object', 'properties' => ['query' => ['type' => 'string', 'description' => 'a few words, e.g. Anmeldung, blue card, tax ID']], 'required' => ['query']]],
             $paperwork
@@ -392,6 +396,7 @@ final class AssistantTools
                 'suggest_for_day' => $this->suggestForDay($input),
                 'swap_in_day' => $this->swapInDay($input),
                 'guidance' => $this->guidance($input),
+                'who_to_ask' => $this->whoToAsk($input),
                 'paperwork' => match (true) {
                     $this->paperwork => $this->paperworkRecord(),
                     // The card asking for their permission says what's needed: no pointer to Paperwork above it.
@@ -1648,6 +1653,18 @@ final class AssistantTools
     }
 
     /** Reviewed paperwork guides matching the words: their titles, as Composer's guidance lists them. */
+    private function whoToAsk(array $input): string
+    {
+        $entry = config('who_to_ask.'.(string) ($input['topic'] ?? ''));
+        if (! is_array($entry)) {
+            return 'Nothing on that in the list.';
+        }
+        $id = 'g'.(++$this->count);
+        $this->cards[$id] = ['type' => 'facts', 'facts' => [['label' => $entry['who'], 'value' => $entry['says'], 'known' => true]], 'sources' => $entry['links']];
+
+        return $this->line($id, "{$entry['who']}: {$entry['says']}");
+    }
+
     private function guidance(array $input): string
     {
         $query = mb_substr(trim((string) ($input['query'] ?? '')), 0, 120);
