@@ -20,6 +20,8 @@ export type TripFor = {
     startAt: string | null;
     official: boolean;
     kind: 'appointment' | 'plan' | 'event' | null;
+    /** A saved place it goes to: Home or Work by key, another as `other`. */
+    saved?: 'home' | 'work' | 'other' | null;
 };
 
 export type TripStep = {

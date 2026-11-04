@@ -226,6 +226,13 @@ export const isAnswer = (message: Message): message is AnswerMessage =>
 function tripHref(trip: TripAnswer): string {
     const end = trip.journey.legs.at(-1)?.to;
 
+    // A saved place never stands in the address by its point (it would sit in history and logs).
+    if (trip.for.saved) {
+        return trip.for.saved === 'other'
+            ? travel.url()
+            : `${travel.url()}?${new URLSearchParams({ view: 'journey', to: trip.for.saved })}`;
+    }
+
     if (trip.link === 'trip' || !end) {
         return trip.link === 'trip'
             ? `${travel.url()}?view=route`

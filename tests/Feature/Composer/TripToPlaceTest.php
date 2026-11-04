@@ -144,6 +144,23 @@ test('🔒 "work" is their own saved place, never in a link, and said so when it
     expect($reply)->not->toContain('This might work')->not->toContain('50.95')->not->toContain('6.91');
 });
 
+test('🔒 a way to a saved place is marked by its key, so the card\'s link never holds its point', function () {
+    $user = User::factory()->onboarded()->create();
+    $user->places()->create(['name' => 'Home', 'category' => 'home', 'address' => 'Somewhere 1', 'lat' => 51.02, 'lng' => 6.95, 'sort_order' => 1]);
+    Spot::factory()->create(['name' => 'Neumarkt', 'category' => 'park', 'veedel' => 'Altstadt-Süd', 'lat' => 50.93, 'lng' => 6.95, 'is_active' => true]);
+    $place = new Place('Home', new GeoPoint(51.02, 6.95));
+    $at = CarbonImmutable::parse('2026-11-04 10:10', 'Europe/Berlin');
+    $this->mock(RouteService::class, function ($mock) use ($place, $at): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('geocode')->andReturn([]);
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([new Journey([new Leg('walk', $place, $place, $at, $at->addMinutes(5), 5)], $at, $at->addMinutes(5), 5, 0)], 'motis'));
+    });
+
+    $reply = app(TripAnswers::class)->toPlace($user->fresh(), ['place' => 'home', 'from' => 'Neumarkt'], $at->subMinutes(10));
+
+    expect(data_get($reply, 'extra.trip.for.saved'))->toBe('home');
+});
+
 test('a Veedel named as the start is the Veedel, not a choice between its stops', function () {
     $user = User::factory()->onboarded()->create();
     DB::table('veedels')->insert(['name' => 'Ehrenfeld', 'bezirk' => 'Ehrenfeld', 'centroid_lat' => 50.95, 'centroid_lng' => 6.91]);

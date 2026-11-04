@@ -180,7 +180,8 @@ final class TripAnswers
         $answer = $this->reply($text, $distance ? null : $title, [
             'folded' => $distance,
             'journey' => $journey,
-            'for' => $this->for($to['name'], null, null, null, false, null),
+            // A saved place goes by its key: the card's link never holds its point.
+            'for' => [...$this->for($to['name'], null, null, null, false, null), 'saved' => $to['key'] ?? null],
             'city' => $city,
             'link' => 'plan',
             'label' => 'Open in Travel',
@@ -253,7 +254,7 @@ final class TripAnswers
      * A place of their own by its name ("work", "my gym"), before any place of that name in town: "work"
      * found a café called "This might work". False for home or work when they haven't saved it.
      *
-     * @return array{name: string, area: null, kind: null, point: GeoPoint, spot: null, own: true}|false|null
+     * @return array{name: string, area: null, kind: null, point: GeoPoint, spot: null, own: true, key: string}|false|null
      */
     private function ownPlace(User $user, string $named): array|false|null
     {
@@ -262,7 +263,7 @@ final class TripAnswers
         $place = $user->places->first(fn (UserPlace $place): bool => $place->lat !== null && $place->lng !== null
             && (self::OWN_WORDS[Destinations::key($place->name)] ?? Destinations::key($place->name)) === $key);
         if ($place !== null) {
-            return ['name' => $place->name, 'area' => null, 'kind' => null, 'point' => new GeoPoint($place->lat, $place->lng), 'spot' => null, 'own' => true];
+            return ['name' => $place->name, 'area' => null, 'kind' => null, 'point' => new GeoPoint($place->lat, $place->lng), 'spot' => null, 'own' => true, 'key' => in_array($place->category, ['home', 'work'], true) ? $place->category : 'other'];
         }
 
         return in_array($key, self::OWN_WORDS, true) ? false : null;
