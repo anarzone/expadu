@@ -167,6 +167,9 @@ final class Assistant
     /** @var list<array{text: string, why: string}> the last answer's sentences that didn't, and why (composer:eval reads them) */
     public array $dropped = [];
 
+    /** @var array<string, string> the last answer's reasons written by code from their taste, not by the AI */
+    public array $reasons = [];
+
     /** The words of the message being answered: a name they used may be said back. */
     private string $theirs = '';
 
@@ -302,6 +305,7 @@ final class Assistant
             fn (Closure $call): ?array => $this->converse($call, $tools, $text, $profile, $now, $started, $history, $weather, $page, $known));
         $this->written = is_array($result['answer'] ?? null) ? $result['answer'] : null;
         $this->read = $tools->read;
+        $this->reasons = $tools->reasons;
         if ($this->written === null) {
             return null;
         }

@@ -209,6 +209,6 @@ test('shops inside a mapped mall stand in it, and the mall says what it holds', 
         ->and($mall->fresh()->parent_spot_id)->toBeNull() // never inside itself
         ->and($facts->resolve($clothes->fresh())['within'])->toBe(['id' => $mall->id, 'name' => 'Rhein-Center', 'kind' => 'shopping_centre'])
         ->and($facts->resolve($outside->fresh())['within'])->toBeNull()
-        ->and($facts->resolve($mall->fresh())['inside'])->toBe(['Clothes shop' => 1, 'Shoe shop' => 1])
+        ->and($facts->resolve($mall->fresh())['inside'])->toEqual(['Clothes shop' => 1, 'Shoe shop' => 1])
         ->and($facts->resolve($shoes->fresh())['inside'])->toBeNull();
 });
