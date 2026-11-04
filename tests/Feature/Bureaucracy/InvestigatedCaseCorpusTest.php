@@ -136,3 +136,18 @@ test('child benefit and school follow having children, for any purpose', functio
     expect($plan(['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'has_children' => true]))->toContain('fam.kindergeld', 'fam.school_kita')
         ->and($plan(['citizenship_group' => 'non_eu', 'purpose' => 'family', 'has_children' => false]))->not->toContain('fam.kindergeld')->not->toContain('fam.school_kita');
 });
+
+test('the road to permanent residence isn\'t shown to someone who already has it', function () {
+    $guidance = function (string $title): array {
+        $user = User::factory()->onboarded()->create();
+        $case = app(EnsureAccountHolder::class)->dossier($user);
+        foreach (['citizenship_group' => 'non_eu', 'purpose' => 'employment', 'permit_track' => 'standard', 'current_residence_title' => $title] as $key => $value) {
+            app(RecordFactChange::class)->execute($user, $case->person, $key, $value, null, $case->fresh()->fact_version);
+        }
+
+        return collect(app(PlanReadModel::class)->for($user, $case->person, 'de-nrw-cologne')['guidance'])->pluck('id')->all();
+    };
+
+    expect($guidance('standard_work_permit'))->toContain('nee.ne_check')
+        ->and($guidance('settlement_permit_9'))->not->toContain('nee.ne_check');
+});
