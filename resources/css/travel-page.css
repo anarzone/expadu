@@ -2313,7 +2313,7 @@
 :where(.travel-page) .nearby-chip[aria-pressed='true'] > span {
     border-color: var(--color-text);
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
     font-weight: var(--weight-semibold);
 }
 :where(.travel-page) .nearby-panel {
@@ -2362,7 +2362,7 @@
 :where(.travel-page) .nearby-option[aria-pressed='true'] {
     border-color: var(--color-text);
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 :where(.travel-page) .nearby-stepnote {
     margin: var(--space-2) 0 var(--space-4);
@@ -2656,7 +2656,7 @@
 }
 .travel-page .plan-when button[aria-pressed='true'] {
     background-color: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
     font-weight: var(--weight-semibold);
 }
 :where(.travel-page) .plan-when-time {
@@ -2739,7 +2739,7 @@
 :where(.travel-page) .plan-prefs button[aria-pressed='true'] > span {
     border-color: var(--color-text);
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
     font-weight: var(--weight-semibold);
 }
 :where(.travel-page) .plan-note {
@@ -3047,7 +3047,7 @@
     height: 56px;
     border-radius: 18px;
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 :where(.travel-page) .plan-saved-mark svg {
     width: 28px;
@@ -3188,7 +3188,7 @@
 }
 .travel-page .primary.is-ink {
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 @media (prefers-reduced-motion: reduce) {
     :where(.travel-page) .plan-prefs button > span,
@@ -4048,7 +4048,7 @@
 }
 :where(.travel-page) .day-overlap button[aria-pressed='true'] {
     background: var(--color-text);
-    color: var(--color-text-on-action);
+    color: var(--color-bg-surface);
 }
 @media (prefers-reduced-motion: reduce) {
     :where(.travel-page) .day-event {

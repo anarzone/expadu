@@ -862,8 +862,20 @@ export function PlanPanel({
         const target = item ? targetOf(item) : null;
 
         void (async () => {
-            const home = saved(toKey);
             const toPoint = point('to');
+            // A link that names Home or Work by its point (a plan's way home) is that place: the
+            // address then says `to=home`, as a saved place's point never stands in it.
+            const home =
+                saved(toKey) ??
+                (toPoint
+                    ? savedPlaces.find(
+                          (p) =>
+                              (p.category === 'home' ||
+                                  p.category === 'work') &&
+                              Math.abs(p.lat - toPoint.lat) < 0.001 &&
+                              Math.abs(p.lng - toPoint.lng) < 0.001,
+                      )
+                    : undefined);
             const toPlace: PlanPlace | null =
                 item?.location?.lat != null && item.location.lng != null
                     ? {
@@ -876,7 +888,7 @@ export function PlanPanel({
                             name: home.name,
                             lat: home.lat,
                             lng: home.lng,
-                            key: toKey as 'home' | 'work',
+                            key: home.category as 'home' | 'work',
                         }
                       : toKey === 'here'
                         ? nowFrom
