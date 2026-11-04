@@ -29,6 +29,7 @@ final class ComposerActions
         'remove_from_day' => [DayActions::class, 'everyday'],
         'swap_in_day' => [DayActions::class, 'everyday'],
         'move_in_day' => [DayActions::class, 'everyday'],
+        'shift_day' => [DayActions::class, 'everyday'],
         'clear_day' => [DayActions::class, 'everyday'],
         'add_appointment' => [DayActions::class, 'everyday'],
         'mark_done' => [DayActions::class, 'everyday'],

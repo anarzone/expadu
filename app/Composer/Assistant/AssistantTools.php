@@ -104,7 +104,7 @@ final class AssistantTools
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
         'set_place_times' => 'changes_you_ask_for', 'add_my_place' => 'changes_you_ask_for', 'remove_my_place' => 'changes_you_ask_for', 'laptop_answer' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
-        'move_in_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
+        'move_in_day' => 'changes_you_ask_for', 'shift_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
@@ -1672,6 +1672,11 @@ final class AssistantTools
                     'start' => ['type' => 'string', 'description' => 'HH:MM it starts at now'],
                     'end' => ['type' => 'string', 'description' => 'HH:MM it ends at; leave out to keep how long it is'],
                 ], 'required' => ['item', 'start']]],
+            ['name' => 'shift_day', 'description' => 'Moves their whole plan for a day to start at another time ("can we start later, like 1pm?"), everything together with one Undo; events and appointments keep their time. Its result gives the day as it is now, or why it can\'t move (a place closed by then): then say so and offer a new plan from that time with plan_day.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'day' => $day,
+                    'start' => ['type' => 'string', 'description' => 'HH:MM the day starts at now'],
+                ], 'required' => ['start']]],
             ['name' => 'clear_day', 'description' => 'Clears everything in their plans for a day, with Undo: only when they want the whole day gone; one thing off is remove_from_day.',
                 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
             ['name' => 'save_event', 'description' => 'Saves a listing for later (or takes it off their saved events), as the event\'s Save does.',
@@ -1780,6 +1785,10 @@ final class AssistantTools
         if (ComposerActions::ACTIONS[$action][1] === 'paperwork' && ! $this->paperwork) {
             return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission.'
                 .($this->askPaperworkPermission() ? ' A card asks them for it.' : ''));
+        }
+        // "Can we start later?" with no day said: the plan this conversation made, not today.
+        if (in_array($action, ['shift_day', 'move_in_day', 'swap_in_day', 'remove_from_day'], true) && ! is_string($input['day'] ?? null) && ($this->earlier['plans'] ?? []) !== []) {
+            $input['day'] = end($this->earlier['plans']);
         }
         // A listing it looked up or this conversation showed, said by its title ("remind me about the jazz
         // night"): that one, when one title holds what was said, or the other way round.
