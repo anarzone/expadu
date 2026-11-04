@@ -19,6 +19,8 @@ use App\Privacy\ProcessingPurpose;
 use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\WeatherService;
+use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\JourneyResult;
 use Carbon\CarbonImmutable;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -477,4 +479,32 @@ test('🔒 what they saved is read by name only: places with their Veedel, event
 
     expect($said)->toContain('saved place "Synthetic Café" in Ehrenfeld')->toContain('saved event "Synthetic concert"')
         ->toContain('favourite stop Neumarkt')->not->toContain('Synthetic past')->not->toContain('Synthetic Straße');
+});
+
+test('🔒 a comparison is measured in code, closest first, with no coordinates for the AI', function () {
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'Far Hall', 'category' => 'museum', 'veedel' => 'Porz', 'is_active' => true, 'lat' => 50.88, 'lng' => 7.05]);
+    Spot::factory()->create(['name' => 'Near Hall', 'category' => 'museum', 'veedel' => 'Nippes', 'is_active' => true, 'lat' => 50.96, 'lng' => 6.95]);
+    $this->mock(RouteService::class, function ($mock): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('geocode')->andReturn([]);
+        $mock->shouldReceive('travelMatrix')->andReturn([70, 12]);
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([], 'motis'));
+    });
+    $sent = [];
+    Http::fake(['processor.example.test/*' => function ($request) use (&$sent) {
+        $sent[] = $request->data();
+
+        return count($sent) === 1
+            ? Http::response(assistantTurn([['compare_places', ['places' => ['Far Hall', 'Near Hall'], 'radius_km' => 2]]]))
+            : Http::response(assistantTurn([['answer', ['sentences' => [['text' => 'Near Hall is closer, about 12 min on foot.', 'uses' => []]], 'show' => []]]]));
+    }]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'which is closer, Far Hall or Near Hall?', ['lat' => 50.9497, 'lng' => 6.9177]);
+    $result = json_encode($sent[1]['messages'][array_key_last($sent[1]['messages'])]);
+
+    expect($reply['lead'])->toBe('Near Hall is closer, about 12 min on foot.')
+        ->and($result)->toContain('radius_km')->not->toContain('50.9497')->not->toContain('6.9177')
+        ->and(strpos($result, 'Near Hall'))->toBeLessThan(strpos($result, 'Far Hall'));
 });
