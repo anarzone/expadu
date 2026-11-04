@@ -1,8 +1,7 @@
 import { Headline } from '../headline';
 import { noticeWords } from '../nearby/types';
 import { stopName } from '../stop-name';
-import { TravelIcon } from '../travel-icon';
-import { lateBy, linesOf, majorOf, troubleShort } from './plan-model';
+import { lateBy, linesOf, majorOf } from './plan-model';
 import type { PlanAnswer, PlanNotice, PlanOption } from './plan-model';
 
 /**
@@ -56,29 +55,6 @@ export const LIVE_SOURCE = 'From the live times · no notice';
 const rides = (option: PlanOption, lines: string[]) =>
     linesOf(option.journey).some((line) => lines.includes(line));
 
-/** "1 major notice · on the board →": opens on the board's headline. */
-function OnTheBoard({ label }: { label: string }) {
-    return (
-        <button
-            type="button"
-            className="plan-on-board"
-            onClick={() => {
-                const bar = document.querySelector<HTMLButtonElement>(
-                    '#departures .tl-headline-bar',
-                );
-
-                bar?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                bar?.focus({ preventScroll: true });
-            }}
-        >
-            <span className="tl-headline-mark" aria-hidden="true">
-                <TravelIcon name="alert" />
-            </span>
-            {label} · on the board →
-        </button>
-    );
-}
-
 export function PlanHeadline({
     answer,
     options,
@@ -101,16 +77,8 @@ export function PlanHeadline({
         const notice: PlanNotice = major.notice;
 
         if (notice.id && board?.notices.includes(notice.id)) {
-            const count = answer.disruptions.filter(
-                (n) =>
-                    n.scale === 'major' && n.id && board.notices.includes(n.id),
-            ).length;
-
-            return (
-                <OnTheBoard
-                    label={`${count} major notice${count === 1 ? '' : 's'}`}
-                />
-            );
+            // Said once: the board's own headline.
+            return null;
         }
 
         const words = noticeWords(notice);
@@ -143,7 +111,7 @@ export function PlanHeadline({
     const { trouble } = major;
 
     if (board?.lines.includes(trouble.line)) {
-        return <OnTheBoard label={troubleShort(trouble)} />;
+        return null;
     }
 
     const stop = stopName(trouble.stop, answer.city);
