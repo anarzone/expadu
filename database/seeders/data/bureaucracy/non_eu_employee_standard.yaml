@@ -264,6 +264,9 @@ tasks:
   - title: 'After 3 years: permanent residence instead of another renewal (§18c)'
     key: nee.ne_check
     depends_on: []
+    # Not for someone who already holds a settlement permit.
+    applies_if:
+      current_residence_title: {in: [national_d_visa, standard_work_permit]}
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
