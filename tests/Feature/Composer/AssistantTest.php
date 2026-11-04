@@ -517,3 +517,16 @@ test('🔒 what was shown today reaches the AI with its hours, and yesterday\'s 
     expect($shown(now()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd, Open until 19:30)')
         ->and($shown(now()->subDay()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd)')->not->toContain('19:30');
 });
+
+test('a failed call after lookups keeps the places they found', function () {
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'Café Wohnraum', 'category' => 'cafe', 'veedel' => 'Nippes', 'is_active' => true, 'lat' => 50.9640, 'lng' => 6.9510]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['find_place', ['name' => 'Café Wohnraum']]]))
+        ->push('down', 500)]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'tell me about Café Wohnraum', ['lat' => 50.9497, 'lng' => 6.9177]);
+
+    expect(collect(collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())->toBe(['Café Wohnraum']);
+});
