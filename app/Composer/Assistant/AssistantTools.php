@@ -35,6 +35,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TasteFacts;
 use App\Places\DestinationGrouping;
 use App\Places\FacilityGroups;
 use App\Places\OpeningAnswer;
@@ -81,6 +82,12 @@ final class AssistantTools
 
     /** Listings of one kind among those, until the others run out. */
     private const SAME_KIND = 2;
+
+    /** The most distance their taste can buy a place. */
+    private const TASTE_MAX_KM = 0.75;
+
+    /** A kind they skip goes behind what's this much further. */
+    private const TASTE_SKIPPED_KM = 5.0;
 
     /** All of a comparison's trips together, in seconds. */
     private const COMPARE_SECONDS = 3.0;
@@ -147,6 +154,9 @@ final class AssistantTools
 
     /** @var array<string, bool> whether a place's distance was measured from where the person is (so its card may show it) */
     public array $measured = [];
+
+    /** @var array<string, string> why their taste moved a place up: the card says so */
+    public array $reasons = [];
 
     /** When the places just looked up were asked about another day: their hours are that day's; null for now. */
     public ?CarbonImmutable $placesAt = null;
@@ -1010,6 +1020,43 @@ final class AssistantTools
             .($missing !== [] ? "\nNot found: ".implode(', ', $missing).'.' : ''));
     }
 
+    /**
+     * How far their taste moves a place up the list, in kilometres (with the opt-in; nothing without it, so
+     * the list stays what it is). A kind they named is theirs to judge, so only its Veedel counts then. It
+     * reorders, never hides: a skipped kind goes last. And it can only buy so much distance.
+     */
+    private function tasteShift(Candidate $c, bool $kindNamed): float
+    {
+        if ($this->taste === null) {
+            return 0.0;
+        }
+        $level = fn (array $rows, ?string $name): ?string => collect($rows)->firstWhere('name', $name)['level'] ?? null;
+        $label = $kindNamed ? null : TasteFacts::categoryLabel($c->category);
+        $kind = $level($this->taste['categories'], $label);
+        $area = $level($this->taste['veedels'], $c->veedel);
+        $km = match ($kind) {
+            'strong' => -self::TASTE_MAX_KM,
+            'some' => -0.4,
+            'avoid' => self::TASTE_SKIPPED_KM,
+            default => 0.0,
+        } + match ($area) {
+            'strong', 'some' => -0.25,
+            'avoid' => 0.25,
+            default => 0.0,
+        };
+        // Why it isn't simply nearest first, in the card's words.
+        $reason = match (true) {
+            in_array($kind, ['strong', 'some'], true) => 'You like '.self::kindName($c->category, plural: true),
+            in_array($area, ['strong', 'some'], true) => "You go to {$c->veedel} a lot",
+            default => null,
+        };
+        if ($reason !== null) {
+            $this->reasons[$c->id] = $reason;
+        }
+
+        return max(-self::TASTE_MAX_KM, $km);
+    }
+
     /** What the model sent that a tool doesn't take, so it knows it had no effect ("radius_km" read as if it had). */
     private static function ignored(string $name, array $input): string
     {
@@ -1162,7 +1209,7 @@ final class AssistantTools
         // first among them, so the cards are the ones it showed.
         $again = $this->askedAgain();
         $shownBefore = fn (Candidate $c): bool => isset($this->earlier['spot'][$park($c)]) || isset($this->earlier['spot'][(int) substr($c->id, 5)]);
-        $rank = fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+        $rank = fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + $this->tasteShift($c, $kinds !== []) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
             + ($again && ! $shownBefore($c) ? 1000 : 0)
             + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
             + ($work && ! self::workFriendly($c) ? 0.5 : 0)
