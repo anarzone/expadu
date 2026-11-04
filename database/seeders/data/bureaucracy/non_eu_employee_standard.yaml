@@ -270,7 +270,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-11-04.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
