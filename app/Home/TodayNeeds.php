@@ -23,7 +23,7 @@ use Throwable;
 final class TodayNeeds
 {
     /** What needs them now, of the brief's items. */
-    private const NEEDS = ['trip_change', 'disruption', 'delay', 'weather', 'plan_closed', 'plan_disruption', 'plan_delay', 'plan_rain', 'plan_hazard', 'paperwork'];
+    private const NEEDS = ['trip_change', 'disruption', 'delay', 'weather', 'plan_closed', 'plan_disruption', 'plan_delay', 'plan_rain', 'plan_hazard', 'paperwork', 'shops'];
 
     /** Kinds as Session 1's strip names them for its icons (components/today/needs.tsx); the rest as they are. */
     private const KINDS = ['plan_rain' => 'rain_outdoor', 'plan_disruption' => 'disruption'];

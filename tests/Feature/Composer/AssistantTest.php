@@ -19,6 +19,8 @@ use App\Privacy\ProcessingPurpose;
 use App\Services\LocationContext;
 use App\Services\NearbyStopService;
 use App\Services\WeatherService;
+use App\Transit\Contracts\RouteService;
+use App\Transit\Dto\JourneyResult;
 use Carbon\CarbonImmutable;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request as Psr7Request;
@@ -285,7 +287,7 @@ test('a follow-up is read in its conversation: "nope, something else" leaves out
         ->and($reply)->lead->toBe('Salsa Night starts at 20:00.')
         ->and(collect($reply['events'])->pluck('title')->all())->toBe(['Salsa Night'])
         ->and(Assistant::history([['role' => 'assistant', 'text' => 'x', 'events' => [['id' => 7, 'title' => 'Jazz']], 'destination' => ['name' => 'Cafe Nova', 'area' => 'Deutz']]])['suggested'])
-        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]], 'plans' => []]);
+        ->toBe(['event' => [7 => 'Jazz'], 'spot' => [], 'areas' => ['Deutz'], 'places' => [['name' => 'Cafe Nova', 'area' => 'Deutz', 'start' => null]], 'plans' => [], 'lines' => []]);
 });
 
 test('the same question again leaves nothing out: only their new words asking for others do', function () {
@@ -477,4 +479,83 @@ test('🔒 what they saved is read by name only: places with their Veedel, event
 
     expect($said)->toContain('saved place "Synthetic Café" in Ehrenfeld')->toContain('saved event "Synthetic concert"')
         ->toContain('favourite stop Neumarkt')->not->toContain('Synthetic past')->not->toContain('Synthetic Straße');
+});
+
+test('🔒 a comparison is measured in code, closest first, with no coordinates for the AI', function () {
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'Far Hall', 'category' => 'museum', 'veedel' => 'Porz', 'is_active' => true, 'lat' => 50.88, 'lng' => 7.05]);
+    Spot::factory()->create(['name' => 'Near Hall', 'category' => 'museum', 'veedel' => 'Nippes', 'is_active' => true, 'lat' => 50.96, 'lng' => 6.95]);
+    $this->mock(RouteService::class, function ($mock): void {
+        $mock->shouldReceive('withTimeBudget')->andReturnSelf();
+        $mock->shouldReceive('geocode')->andReturn([]);
+        $mock->shouldReceive('travelMatrix')->andReturn([70, 12]);
+        $mock->shouldReceive('plan')->andReturn(new JourneyResult([], 'motis'));
+    });
+    $sent = [];
+    Http::fake(['processor.example.test/*' => function ($request) use (&$sent) {
+        $sent[] = $request->data();
+
+        return count($sent) === 1
+            ? Http::response(assistantTurn([['compare_places', ['places' => ['Far Hall', 'Near Hall'], 'radius_km' => 2]]]))
+            : Http::response(assistantTurn([['answer', ['sentences' => [['text' => 'Near Hall is closer, about 12 min on foot.', 'uses' => []]], 'show' => []]]]));
+    }]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'which is closer, Far Hall or Near Hall?', ['lat' => 50.9497, 'lng' => 6.9177]);
+    $result = json_encode($sent[1]['messages'][array_key_last($sent[1]['messages'])]);
+
+    expect($reply['lead'])->toBe('Near Hall is closer, about 12 min on foot.')
+        ->and($result)->toContain('radius_km')->not->toContain('50.9497')->not->toContain('6.9177')
+        ->and(strpos($result, 'Near Hall'))->toBeLessThan(strpos($result, 'Far Hall'));
+});
+
+test('🔒 what was shown today reaches the AI with its hours, and yesterday\'s hours don\'t', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-11-05 12:00', 'Europe/Berlin'));
+    $place = ['id' => 7, 'name' => 'Starbucks', 'area' => 'Neustadt-Süd', 'hours' => 'Open until 19:30'];
+    $shown = fn (string $at): string => Assistant::history([['role' => 'assistant', 'text' => 'x', 'created_at' => $at, 'places' => [$place]]])['turns'][0]['text'];
+
+    expect($shown(now()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd, Open until 19:30)')
+        ->and($shown(now()->subDay()->toIso8601String()))->toContain('"Starbucks" (place in Neustadt-Süd)')->not->toContain('19:30');
+});
+
+test('a failed call after lookups keeps the places they found', function () {
+    $user = User::factory()->onboarded()->create();
+    Spot::factory()->create(['name' => 'Café Wohnraum', 'category' => 'cafe', 'veedel' => 'Nippes', 'is_active' => true, 'lat' => 50.9640, 'lng' => 6.9510]);
+    Http::fake(['processor.example.test/*' => Http::sequence()
+        ->push(assistantTurn([['find_place', ['name' => 'Café Wohnraum']]]))
+        ->push('down', 500)]);
+    $this->actingAs($user);
+
+    $reply = assistantAsk($this, 'tell me about Café Wohnraum', ['lat' => 50.9497, 'lng' => 6.9177]);
+
+    expect(collect(collect($reply['blocks'])->firstWhere('type', 'places')['places'] ?? [])->pluck('name')->all())->toBe(['Café Wohnraum']);
+});
+
+test('🔒 with the opt-in their taste reorders a nearby search and says why; without it the list stays by distance', function () {
+    Spot::factory()->create(['name' => 'Nearest Bar', 'category' => 'bar', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9498, 'lng' => 6.9180]);
+    $near = Spot::factory()->create(['name' => 'Near Museum', 'category' => 'museum', 'veedel' => 'Ehrenfeld', 'is_active' => true, 'lat' => 50.9520, 'lng' => 6.9220]);
+    Spot::factory()->create(['name' => 'Far Museum', 'category' => 'museum', 'veedel' => 'Porz', 'is_active' => true, 'lat' => 50.8800, 'lng' => 7.0600]);
+    $turns = Http::sequence();
+    foreach ([1, 2] as $run) {
+        $turns->push(assistantTurn([['search_places', []]]))
+            ->push(assistantTurn([['answer', ['sentences' => [['text' => 'Here are some places.', 'uses' => []]], 'show' => ["spot:{$near->id}"]]]]));
+    }
+    Http::fake(['processor.example.test/*' => $turns]);
+    $ask = function (User $user): array {
+        $this->actingAs($user);
+
+        return collect(assistantAsk($this, 'something to do', ['lat' => 50.9497, 'lng' => 6.9177])['blocks'] ?? [])->firstWhere('type', 'places')['places'] ?? [];
+    };
+    $shown = fn (array $places): array => array_values(array_intersect(array_column($places, 'name'), ['Nearest Bar', 'Near Museum', 'Far Museum']));
+
+    expect($shown($ask(User::factory()->onboarded()->create())))->toBe(['Nearest Bar', 'Near Museum', 'Far Museum']);
+
+    $user = User::factory()->onboarded()->create();
+    $user->userSetting()->updateOrCreate([], ['settings' => ['personalisation' => true], 'sixteen_or_older' => true]);
+    DB::table('user_affinities')->insert(array_map(fn (array $row): array => ['subject_key' => Pseudonym::for($user), 'dimension' => 'category', 'key' => $row[0],
+        'context' => 'all', 'score' => $row[1], 'signals_count' => 6, 'updated_at' => now()], [['museum', 12.0], ['bar', -4.0]]));
+    $places = $ask($user);
+
+    expect($shown($places))->toBe(['Near Museum', 'Nearest Bar', 'Far Museum'])
+        ->and(collect($places)->firstWhere('name', 'Near Museum')['because'])->toBe('You like museums');
 });

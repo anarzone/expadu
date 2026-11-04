@@ -21,6 +21,7 @@ use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanFit;
 use App\Composer\WorkspaceStore;
+use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
@@ -34,6 +35,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Personalisation\AffinitySnapshot;
 use App\Personalisation\SignalRecorder;
+use App\Personalisation\TasteFacts;
 use App\Places\DestinationGrouping;
 use App\Places\FacilityGroups;
 use App\Places\OpeningAnswer;
@@ -48,8 +50,11 @@ use App\Services\NearbyStopService;
 use App\Services\OpeningHoursParser;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
+use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\Dto\Journey;
 use App\Transit\FavouriteStops;
+use App\Transit\JourneyRanker;
 use App\Transit\NearbyStation;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -75,6 +80,18 @@ final class AssistantTools
     /** Results per lookup. */
     private const SHOWN = 8;
 
+    /** Listings of one kind among those, until the others run out. */
+    private const SAME_KIND = 2;
+
+    /** The most distance their taste can buy a place. */
+    private const TASTE_MAX_KM = 0.75;
+
+    /** A kind they skip goes behind what's this much further. */
+    private const TASTE_SKIPPED_KM = 5.0;
+
+    /** All of a comparison's trips together, in seconds. */
+    private const COMPARE_SECONDS = 3.0;
+
     /** How many of each kind they saved my_saved names. */
     private const SAVED_SHOWN = 20;
 
@@ -90,7 +107,7 @@ final class AssistantTools
      */
     public const CATEGORIES = [
         'where_am_i' => 'your_nearest_stop_and_veedel', 'departures' => 'departures', 'plan_trip' => 'trips_to_places_you_name',
-        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'weather' => 'weather',
+        'notices' => 'transit_notices', 'search_events' => 'events_listed', 'search_places' => 'places_listed', 'find_place' => 'places_listed', 'compare_places' => 'trips_to_places_you_name', 'weather' => 'weather',
         'plan_day' => 'plans_composed', 'guidance' => 'paperwork_guide_titles', 'my_places' => 'your_saved_places_names', 'my_saved' => 'your_saved_places_names',
         'paperwork' => 'notes_that_your_own_cards_are_shown', 'my_trip' => 'notes_that_your_own_cards_are_shown',
         'my_next' => 'notes_that_your_own_cards_are_shown', 'open_in_app' => 'notes_that_your_own_cards_are_shown',
@@ -98,7 +115,7 @@ final class AssistantTools
         'place_feedback' => 'changes_you_ask_for', 'set_my_place' => 'changes_you_ask_for', 'add_to_day' => 'changes_you_ask_for',
         'set_place_times' => 'changes_you_ask_for', 'add_my_place' => 'changes_you_ask_for', 'remove_my_place' => 'changes_you_ask_for', 'laptop_answer' => 'changes_you_ask_for',
         'remove_from_day' => 'changes_you_ask_for', 'swap_in_day' => 'changes_you_ask_for', 'clear_day' => 'changes_you_ask_for',
-        'move_in_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
+        'move_in_day' => 'changes_you_ask_for', 'shift_day' => 'changes_you_ask_for', 'suggest_for_day' => 'places_listed',
         'save_event' => 'changes_you_ask_for', 'remind_me' => 'changes_you_ask_for',
         'save_stop' => 'changes_you_ask_for', 'set_travel_prefs' => 'changes_you_ask_for', 'plan_trip_for_later' => 'changes_you_ask_for',
         'add_appointment' => 'changes_you_ask_for', 'mark_done' => 'changes_you_ask_for', 'way_reminder' => 'changes_you_ask_for', 'remove_way' => 'changes_you_ask_for',
@@ -137,6 +154,9 @@ final class AssistantTools
 
     /** @var array<string, bool> whether a place's distance was measured from where the person is (so its card may show it) */
     public array $measured = [];
+
+    /** @var array<string, string> why their taste moved a place up: the card says so */
+    public array $reasons = [];
 
     /** When the places just looked up were asked about another day: their hours are that day's; null for now. */
     public ?CarbonImmutable $placesAt = null;
@@ -267,11 +287,17 @@ final class AssistantTools
                     'day' => ['type' => 'string', 'description' => 'today, tomorrow or YYYY-MM-DD (within 7 days)'],
                     'from' => ['type' => 'string', 'description' => 'HH:MM, optional'],
                     'until' => ['type' => 'string', 'description' => 'HH:MM, optional'],
-                    'topic' => ['type' => 'string', 'description' => 'optional words to match, e.g. jazz, kids, museum'],
+                    'topic' => ['type' => 'string', 'description' => 'optional words a listing must all hold, e.g. jazz, museum'],
+                    'category' => ['type' => 'string', 'enum' => array_column(EventCategory::cases(), 'value'), 'description' => 'one kind of listing: meet_people to meet people or make friends, kids for children'],
                     'free' => ['type' => 'boolean', 'description' => 'only listings marked free'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
                     'asking_for_others' => ['type' => 'string', 'description' => 'with leave_out_earlier: their words in this message that turn down what you showed ("something else", "not these"), as they wrote them; without them, nothing is left out'],
                 ], 'required' => ['day']]],
+            ['name' => 'compare_places', 'description' => 'Which of the two or three places they name is closer or quicker to get to ("which is closer, IKEA or Bauhaus?"): measured from where they are, or from the start they name, closest first, with minutes by bus and train and on foot. A chain counts by its nearest branch, so don\'t ask which branch. Decide from it and say which.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'places' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'the places, by name'],
+                    'from' => ['type' => 'string', 'description' => 'the start they named; leave out for where they are'],
+                ], 'required' => ['places']]],
             ['name' => 'find_place', 'description' => 'One place they name ("Café Wohnraum", "Rheinpark"), from Expadu\'s catalogue, with what\'s listed of it: its hours, what it has, what its website and people say of laptop work, and who may use it. Whenever they ask about a place they name, look it up with this, not search_places; to save, mark or plan one, use that action with its name straight away instead. When several places have that name, it says so and you ask which (show the choice); when none has, it says so.',
                 'input_schema' => ['type' => 'object', 'properties' => [
                     'day' => ['type' => 'string', 'description' => 'the day asked about, when it isn\'t today ("tomorrow", "on Sunday"): tomorrow, a weekday (Sunday) or YYYY-MM-DD; hours are then that day\'s, from the weekly hours listed'],
@@ -293,6 +319,7 @@ final class AssistantTools
                     'to_work' => ['type' => 'boolean', 'description' => 'to sit and work with a laptop: never places that say no laptops then, and those listing Wi-Fi, sockets or laptops welcome first'],
                     'open_at' => ['type' => 'string', 'description' => 'HH:MM, today or on day: only places open then, by their listed hours'],
                     'day' => ['type' => 'string', 'description' => 'the day asked about, when it isn\'t today ("tomorrow", "on Sunday"): tomorrow, a weekday (Sunday) or YYYY-MM-DD; hours are then that day\'s, from the weekly hours listed'],
+                    'max_walk_minutes' => ['type' => 'integer', 'description' => 'the longest walk they\'ll take ("not more than 10 min", "too far"): only places about that close to where they are'],
                     'indoors' => ['type' => 'boolean', 'description' => 'only places indoors'],
                     'free' => ['type' => 'boolean', 'description' => 'they want it free: a place with a listed fee, or restricted, is left out; nearest first. Answer in the results\' words: "free" only for "Free to use (listed)", else "public, no fee listed".'],
                     'leave_out_earlier' => ['type' => 'boolean', 'description' => 'only when they turned your suggestions down ("no", "something else", "not these"): leaves those out, with asking_for_others. Asking again, or narrowing ("I prefer coffee shops", "cheaper", "closer"), is not turning down.'],
@@ -342,7 +369,7 @@ final class AssistantTools
             unset($input['leave_out_earlier']);
         }
         $this->looked[] = match ($name) {
-            'search_events' => 'listings', 'search_places' => 'places', 'find_place' => 'places', 'suggest_for_day' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
+            'search_events' => 'listings', 'search_places' => 'places', 'find_place' => 'places', 'compare_places' => 'trip', 'suggest_for_day' => 'places', 'my_day' => 'plans', 'my_taste' => 'taste',
             'where_am_i' => 'location', 'plan_trip' => 'trip', 'plan_day' => 'planner', 'my_trip' => 'your_trip', 'my_next' => 'your_plans',
             // Read only with their Paperwork permission; else a card it never reads.
             'paperwork' => $this->paperwork ? 'paperwork_record' : 'paperwork', default => $name,
@@ -351,7 +378,7 @@ final class AssistantTools
         try {
             $this->learn($name, $input);
 
-            return match ($name) {
+            return self::ignored($name, $input).match ($name) {
                 'where_am_i' => $this->whereAmI(),
                 'departures' => $this->departures($input),
                 'plan_trip' => $this->planTrip($input),
@@ -359,6 +386,7 @@ final class AssistantTools
                 'search_events' => $this->searchEvents($input),
                 'search_places' => $this->searchPlaces($input),
                 'find_place' => $this->findPlace($input),
+                'compare_places' => $this->comparePlaces($input),
                 'weather' => $this->weatherNow(),
                 'plan_day' => $this->planDay($input),
                 'suggest_for_day' => $this->suggestForDay($input),
@@ -396,7 +424,10 @@ final class AssistantTools
      */
     private function askedForOthers(array $input): bool
     {
-        return $this->theySaid((string) ($input['asking_for_others'] ?? ''));
+        // "Try again" asks again; it turns nothing down.
+        $words = (string) ($input['asking_for_others'] ?? '');
+
+        return preg_match('/^\W*(?:please\s+)?(?:try|look|search|do it|check)?\s*(?:again|once more)\W*$/iu', $words) !== 1 && $this->theySaid($words);
     }
 
     /**
@@ -621,6 +652,30 @@ final class AssistantTools
         })->implode("\n");
     }
 
+    /**
+     * The best-ranked listings, at most two of a kind until the rest run out, so tours don't fill the list.
+     *
+     * @param  Collection<int, array<string, mixed>>  $occurrences
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function spread(Collection $occurrences): Collection
+    {
+        $picked = collect();
+        $rest = collect();
+        $kinds = [];
+        foreach ($occurrences->sortByDesc(fn (array $o): array => [$o['event']->relevance ?? -1, $o['event']->quality_score ?? -1])->values() as $o) {
+            $kind = $o['event']->category instanceof EventCategory ? $o['event']->category->value : (string) $o['event']->category;
+            if (($kinds[$kind] ?? 0) < self::SAME_KIND && $picked->count() < self::SHOWN) {
+                $kinds[$kind] = ($kinds[$kind] ?? 0) + 1;
+                $picked->push($o);
+            } else {
+                $rest->push($o);
+            }
+        }
+
+        return $picked->concat($rest->take(self::SHOWN - $picked->count()))->values();
+    }
+
     private function searchEvents(array $input): string
     {
         $day = match ($input['day'] ?? 'today') {
@@ -643,13 +698,22 @@ final class AssistantTools
         if (($input['free'] ?? false) === true) {
             $occurrences = $occurrences->filter(fn (array $o): bool => $o['event']->is_free || preg_match('/\b(free|frei|kostenlos|gratis)\b/iu', (string) $o['event']->price_text) === 1);
         }
+        $category = is_string($input['category'] ?? null) ? EventCategory::tryFrom($input['category']) : null;
+        if ($category !== null) {
+            $occurrences = $occurrences->filter(fn (array $o): bool => ($o['event']->category instanceof EventCategory ? $o['event']->category : EventCategory::tryFrom((string) $o['event']->category)) === $category);
+        }
         $topic = trim((string) ($input['topic'] ?? ''));
         if ($topic !== '') {
-            $words = array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 3);
-            $occurrences = $occurrences->filter(fn (array $o): bool => $words === [] || collect($words)->contains(fn (string $w): bool => str_contains(
-                mb_strtolower($o['event']->title.' '.$o['event']->title_en.' '.$o['event']->category.' '.$o['event']->description), $w)));
+            // All its words, the city's name aside: "FC Köln" isn't every listing with Köln in its title. A short word
+            // whole ("FC"), a longer one anywhere in a word ("museum" in "Stadtmuseum").
+            $words = array_values(array_diff(array_filter(preg_split('/\s+/u', mb_strtolower($topic)) ?: [], fn (string $w): bool => mb_strlen($w) >= 2), ['köln', 'koeln', 'cologne']));
+            $occurrences = $occurrences->filter(function (array $o) use ($words): bool {
+                $text = mb_strtolower($o['event']->title.' '.$o['event']->title_en.' '.($o['event']->category instanceof EventCategory ? $o['event']->category->value : $o['event']->category).' '.$o['event']->description);
+
+                return collect($words)->every(fn (string $w): bool => mb_strlen($w) > 3 ? str_contains($text, $w) : preg_match('/\b'.preg_quote($w, '/').'\b/u', $text) === 1);
+            });
         }
-        $shown = collect($this->listings->posters($occurrences->values(), self::SHOWN));
+        $shown = collect($this->listings->posters($this->spread($occurrences), self::SHOWN));
         if ($shown->isEmpty()) {
             // What was looked for, so "nothing free is on" is a fact the answer may state, citing it: all of
             // the city's listings that day, so past those shown before, "nothing else" is too.
@@ -657,7 +721,11 @@ final class AssistantTools
                 .($topic !== '' ? " for \"{$topic}\"" : '').(isset($input['from']) || isset($input['until']) ? ' at that time' : '').'.');
         }
 
-        return $shown->map(function (array $poster) use ($occurrences): string {
+        // A sample, and said to be: "the listings are mostly guided tours" was said of 8 out of 98.
+        $total = $occurrences->pluck('event.id')->unique()->count();
+        $sample = $total > $shown->count() ? $this->line('s'.(++$this->count), "{$total} listings match. These {$shown->count()} are a spread of kinds, so don't say what most of them are or that these are all.")."\n" : '';
+
+        return $sample.$shown->map(function (array $poster) use ($occurrences): string {
             $id = 'e'.$poster['id'].'@'.CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp();
             $this->events[$id] = $occurrences->first(fn (array $o): bool => $o['event']->id === $poster['id']
                 && $o['starts_at']->getTimestamp() === CarbonImmutable::parse($poster['occurrence_start'])->getTimestamp());
@@ -903,6 +971,103 @@ final class AssistantTools
     }
 
     /**
+     * Which of the places named is closest, measured in code: the AI only reads the order and the
+     * minutes, never where they are.
+     */
+    private function comparePlaces(array $input): string
+    {
+        $names = array_slice(array_values(array_filter(is_array($input['places'] ?? null) ? $input['places'] : [], fn (mixed $n): bool => is_string($n) && trim($n) !== '')), 0, 3);
+        if (count($names) < 2) {
+            return 'Say which two or three places to compare.';
+        }
+        $start = is_string($input['from'] ?? null) && trim($input['from']) !== '' ? $this->near(trim($input['from'])) : null;
+        $origin = $start !== null ? new GeoPoint($start['lat'], $start['lng'])
+            : ($this->location->hasOrigin() ? new GeoPoint((float) $this->location->lat, (float) $this->location->lng) : null);
+        if ($origin === null) {
+            return $this->line('n'.(++$this->count), 'Where they are isn\'t known, so nothing can be measured. Ask where they\'re starting from.');
+        }
+        $places = [];
+        $missing = [];
+        foreach ($names as $name) {
+            $found = app(Destinations::class)->find($name, null, $origin);
+            if ($found === []) {
+                $missing[] = $name;
+
+                continue;
+            }
+            $places[] = [...$found[0], 'branches' => count($found)];
+        }
+        if ($places === []) {
+            return $this->line('n'.(++$this->count), 'None of those places is among Expadu\'s places or Travel\'s search.');
+        }
+        $routes = app(RouteService::class);
+        $walks = $routes->travelMatrix($origin, array_column($places, 'point'), 'WALK');
+        $planner = $routes->withTimeBudget(self::COMPARE_SECONDS);
+        $ranker = app(JourneyRanker::class);
+        foreach ($places as $i => $place) {
+            $ride = collect($ranker->rank($planner->plan($origin, $place['point'], null, 3)->journeys))->first(fn (Journey $j): bool => $j->mode() === 'transit');
+            $km = 111.32 * sqrt(($place['point']->lat - $origin->lat) ** 2 + (($place['point']->lng - $origin->lng) * cos(deg2rad($origin->lat))) ** 2);
+            $places[$i] += ['walk' => $walks[$i] ?? null, 'ride' => $ride?->durationMin, 'km' => $km];
+        }
+        // By the time it takes when each has one; else by how far, so one that couldn't be timed still gets an answer.
+        $best = fn (array $p): int => min($p['ride'] ?? PHP_INT_MAX, $p['walk'] ?? PHP_INT_MAX);
+        $timed = collect($places)->every(fn (array $p): bool => $best($p) !== PHP_INT_MAX);
+        usort($places, fn (array $a, array $b): int => $timed ? $best($a) <=> $best($b) : $a['km'] <=> $b['km']);
+
+        return $this->line('o'.(++$this->count), ($timed ? 'Quickest first, from ' : 'Closest first in a straight line, from ').($start['name'] ?? $this->origin()).":\n".collect($places)->map(fn (array $p): string => '- "'.$p['name'].'"'.($p['area'] !== null ? " in {$p['area']}" : '')
+            .($p['branches'] > 1 ? ' (the nearest of '.$p['branches'].' with that name)' : '').': '
+            .implode(', ', array_filter([self::distance($p['km']).' away', $p['ride'] !== null ? "about {$p['ride']} min by bus and train" : null, $p['walk'] !== null ? "about {$p['walk']} min on foot" : null])).'.')->implode("\n")
+            .($missing !== [] ? "\nNot found: ".implode(', ', $missing).'.' : ''));
+    }
+
+    /**
+     * How far their taste moves a place up the list, in kilometres (with the opt-in; nothing without it, so
+     * the list stays what it is). A kind they named is theirs to judge, so only its Veedel counts then. It
+     * reorders, never hides: a skipped kind goes last. And it can only buy so much distance.
+     */
+    private function tasteShift(Candidate $c, bool $kindNamed): float
+    {
+        if ($this->taste === null) {
+            return 0.0;
+        }
+        $level = fn (array $rows, ?string $name): ?string => collect($rows)->firstWhere('name', $name)['level'] ?? null;
+        $label = $kindNamed ? null : TasteFacts::categoryLabel($c->category);
+        $kind = $level($this->taste['categories'], $label);
+        $area = $level($this->taste['veedels'], $c->veedel);
+        $km = match ($kind) {
+            'strong' => -self::TASTE_MAX_KM,
+            'some' => -0.4,
+            'avoid' => self::TASTE_SKIPPED_KM,
+            default => 0.0,
+        } + match ($area) {
+            'strong', 'some' => -0.25,
+            'avoid' => 0.25,
+            default => 0.0,
+        };
+        // Why it isn't simply nearest first, in the card's words.
+        $reason = match (true) {
+            in_array($kind, ['strong', 'some'], true) => 'You like '.self::kindName($c->category, plural: true),
+            in_array($area, ['strong', 'some'], true) => "You go to {$c->veedel} a lot",
+            default => null,
+        };
+        if ($reason !== null) {
+            $this->reasons[$c->id] = $reason;
+        }
+
+        return max(-self::TASTE_MAX_KM, $km);
+    }
+
+    /** What the model sent that a tool doesn't take, so it knows it had no effect ("radius_km" read as if it had). */
+    private static function ignored(string $name, array $input): string
+    {
+        $tool = collect(self::definitions(true, true, true))->firstWhere('name', $name);
+        // "activities" is read as "activity" (searchPlaces).
+        $unknown = $tool === null ? [] : array_diff(array_keys($input), array_keys((array) ($tool['input_schema']['properties'] ?? [])), ['activities']);
+
+        return $unknown === [] ? '' : 'Not options, so these had no effect: '.implode(', ', $unknown).".\n";
+    }
+
+    /**
      * A square, stop or place they name ("near Neumarkt"): where it is and its Veedel, as a KVB stop
      * first, else by Expadu's place finder; null when it's none of those.
      *
@@ -1044,7 +1209,7 @@ final class AssistantTools
         // first among them, so the cards are the ones it showed.
         $again = $this->askedAgain();
         $shownBefore = fn (Candidate $c): bool => isset($this->earlier['spot'][$park($c)]) || isset($this->earlier['spot'][(int) substr($c->id, 5)]);
-        $rank = fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
+        $rank = fn (Candidate $c): float => ($c->distanceKmFromOrigin ?? INF) + $this->tasteShift($c, $kinds !== []) + ($park($c) === (int) substr($c->id, 5) && ($c->placeFacts['generic_name'] ?? false) === true ? 0.75 : 0)
             + ($again && ! $shownBefore($c) ? 1000 : 0)
             + ($plays !== null && ! in_array($plays, array_map('trim', explode(';', (string) ($c->placeFacts['practical']['sport']['value'] ?? ''))), true) ? 1.5 : 0)
             + ($work && ! self::workFriendly($c) ? 0.5 : 0)
@@ -1059,7 +1224,10 @@ final class AssistantTools
                 null => 1,
                 false => 2,
             } : 0);
-        $found = $matches->filter(fn (Candidate $c): bool => $mustBeOpen ? $open($c) === true || ($c->outdoor && $open($c) === null) : $wholeDay || $open($c) !== false)
+        // A walking limit, from a straight line: streets run about a quarter longer, at 80 m a minute.
+        $maxWalk = $this->location->hasOrigin() && is_numeric($input['max_walk_minutes'] ?? null) ? max(1, (int) $input['max_walk_minutes']) : null;
+        $found = $matches->filter(fn (Candidate $c): bool => $maxWalk === null || ($c->distanceKmFromOrigin ?? INF) * 1.25 * 1000 / 80 <= $maxWalk)
+            ->filter(fn (Candidate $c): bool => $mustBeOpen ? $open($c) === true || ($c->outdoor && $open($c) === null) : $wholeDay || $open($c) !== false)
             // Nearest first, and a place with its own name (a park's) before a generic one at a like distance.
             ->sortBy($rank)
             // One per place: two pitches in one park are the park once, its nearest; a chain's
@@ -1090,7 +1258,8 @@ final class AssistantTools
             $lists = $features !== [] ? ' lists '.self::featureWords($features) : ' is listed for that';
 
             return $this->line('n'.(++$this->count), $why ?? 'No'.(($input['free'] ?? false) === true ? ' free' : '').(($input['indoors'] ?? false) === true ? ' indoor' : '')." {$thing}"
-                .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : '')).$lists.'.');
+                .($where !== null ? " {$where}" : ($this->location->hasOrigin() ? ' nearby' : ''))
+                .($maxWalk !== null ? " within about {$maxWalk} minutes' walk" : '').$lists.'.');
         }
 
         // The cards it will show were all shown before (asked again): said so, with the nearest as it's
@@ -1109,7 +1278,7 @@ final class AssistantTools
             // Nearest first, a place with nothing listed may come among them: never called public.
             .($found->contains(fn (Candidate $c): bool => self::publicUse($c)['value'] === 'unknown') ? 'Where a line says "Fee not listed", nothing is listed of its fee or who may use it: don\'t call that one public. ' : ''));
 
-        return $same.$fee.($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
+        return $same.$fee.($maxWalk !== null ? $this->line('s'.(++$this->count), "Each about {$maxWalk} minutes' walk or less.")."\n" : '').($features !== [] ? 'Only places that list '.self::featureWords($features).'. ' : '').match (true) {
             // Never all there is: the city's places that list most for working, or the nearest the middle.
             $whole => 'Across Cologne, '.($work ? 'those listing most for working (laptops welcome, Wi-Fi, sockets) first, then nearest them; not every place in the city:' : 'from the middle of the city out; not every place in the city:'),
             $where !== null => ucfirst($where).($named !== null && ! in_array(mb_strtolower($named), array_map('mb_strtolower', $areas), true) ? " (\"{$named}\")" : '').', nearest first:',
@@ -1595,6 +1764,11 @@ final class AssistantTools
                     'start' => ['type' => 'string', 'description' => 'HH:MM it starts at now'],
                     'end' => ['type' => 'string', 'description' => 'HH:MM it ends at; leave out to keep how long it is'],
                 ], 'required' => ['item', 'start']]],
+            ['name' => 'shift_day', 'description' => 'Moves their whole plan for a day to start at another time ("can we start later, like 1pm?"), everything together with one Undo; events and appointments keep their time. Its result gives the day as it is now, or why it can\'t move (a place closed by then): then say so and offer a new plan from that time with plan_day.',
+                'input_schema' => ['type' => 'object', 'properties' => [
+                    'day' => $day,
+                    'start' => ['type' => 'string', 'description' => 'HH:MM the day starts at now'],
+                ], 'required' => ['start']]],
             ['name' => 'clear_day', 'description' => 'Clears everything in their plans for a day, with Undo: only when they want the whole day gone; one thing off is remove_from_day.',
                 'input_schema' => ['type' => 'object', 'properties' => ['day' => $day]]],
             ['name' => 'save_event', 'description' => 'Saves a listing for later (or takes it off their saved events), as the event\'s Save does.',
@@ -1703,6 +1877,10 @@ final class AssistantTools
         if (ComposerActions::ACTIONS[$action][1] === 'paperwork' && ! $this->paperwork) {
             return $this->line('n'.(++$this->count), 'Not done: Composer may read and change their Paperwork only with their permission.'
                 .($this->askPaperworkPermission() ? ' A card asks them for it.' : ''));
+        }
+        // "Can we start later?" with no day said: the plan this conversation made, not today.
+        if (in_array($action, ['shift_day', 'move_in_day', 'swap_in_day', 'remove_from_day'], true) && ! is_string($input['day'] ?? null) && ($this->earlier['plans'] ?? []) !== []) {
+            $input['day'] = end($this->earlier['plans']);
         }
         // A listing it looked up or this conversation showed, said by its title ("remind me about the jazz
         // night"): that one, when one title holds what was said, or the other way round.

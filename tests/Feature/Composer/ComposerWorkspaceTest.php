@@ -1,6 +1,8 @@
 <?php
 
 use App\Composer\PrivatePlanCache;
+use App\Composer\WorkspaceRefusal;
+use App\Composer\WorkspaceStore;
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
@@ -511,4 +513,23 @@ test('automatic timing refuses a visit that cannot fit the remaining day', funct
     $this->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => '2026-10-05', 'candidate' => 'spot:1',
     ])->assertUnprocessable()->assertJsonPath('refusal.code', 'no_free_time')->assertJsonPath('workspace.plans', []);
+});
+
+test('a whole day moves together with one Undo; a fixed time stays, and a clash changes nothing', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $date = array_key_first($state['plans']);
+    $store = app(WorkspaceStore::class);
+    $starts = fn (): array => collect($store->plan($user, $date)['slots'])->pluck('start_time', 'id')->all();
+    $before = $starts();
+
+    $made = $store->change($user, ['action' => 'shift', 'date' => $date, 'start' => '14:00']);
+
+    expect($starts()['spot:1'])->toBe('14:00')->and($starts()['event:2'])->toBe($before['event:2']);
+
+    $store->change($user, ['action' => 'undo', 'change' => $made['change']['id']]);
+    expect($starts())->toBe($before);
+
+    expect(fn () => $store->change($user, ['action' => 'shift', 'date' => $date, 'start' => '15:30']))->toThrow(WorkspaceRefusal::class);
+    expect($starts())->toBe($before);
 });

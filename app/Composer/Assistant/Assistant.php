@@ -23,6 +23,7 @@ use App\Services\LocationContext;
 use App\Services\WeatherService;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -67,6 +68,9 @@ final class Assistant
     /** Past this many seconds it answers with what it has, rather than look again: a second look and the answer after it take about 3.5 s, and every reply stays under 6 s. */
     private const LOOK_AGAIN_SECONDS = 2.5;
 
+    /** Below this many seconds left, a failed connection isn't tried again. */
+    private const RETRY_SECONDS = 6.0;
+
     /** Earlier turns of this conversation it's given. */
     private const TURNS = 6;
 
@@ -92,6 +96,8 @@ final class Assistant
         - Pick the lookups the message needs and make them all at once, in one go. Look again only when what you found doesn't fit; then answer.
         - "Where am I?": where_am_i. "How do I get to X?", "take me to X", "how far is X?": plan_trip, with the start they name ("from Neumarkt") and the way they want to travel ("by tram", "without trains"). "When's the next tram?", "departures": departures. "Is my line running?": notices. "Plan my Saturday", "something in the Südstadt this evening", a stretch of time with things to do, or two things in an order ("food and a walk afterwards", "park first, then dinner"): plan_day. One kind of place for a meal or a drink ("brunch on Sunday", "dinner tonight", "a bar"): search_places, with open_at for the time. "What's up?", "hi", "good morning", "I'm bored", "anything fun?": search_events and search_places, with the weather. "A place to work", "somewhere with my laptop": search_places with to_work and kinds cafe, library and coworking; a kind they name ("coworking", "a café to work in") alone, with to_work. For children ("my kid", "for the kids"): search_places with for_children, and the activity they named. A follow-up ("I prefer coffee shops") keeps the area they asked about. "What do I need to bring?" or anything about their own papers: paperwork. A question about German paperwork rules: guidance, and say that Paperwork works out the steps from their own situation.
         - Follow the conversation: "how far is it?", "there" and "that one" mean what was last talked about. When they turn your suggestions down ("no", "nope", "something else", "not these"), look again with leave_out_earlier, their words in asking_for_others, and suggest something of another kind or in another area. Asking the same again, or narrowing ("I prefer coffee shops"), isn't turning down: search again without leave_out_earlier, in the same area. When asked again ("try again", "again") and the results are the same places as before, your first sentence says so and names the nearest with what's listed of it ("Same public pitches as before; the closest is the one in Merkenich, open-air, no fee listed."); then offer something else in one short clause at most. Mention step-free access only when they asked for it. When they adjust ("cheaper", "closer", "later", "indoors"), keep what still fits and change what they asked, saying how it differs. When they widen where to look ("generally in Cologne", "anywhere", "in the whole city"), search again with whole_city, the rest as before.
+        - "Which is closer, X or Y?", "which is quicker to get to?": compare_places, then say which; never ask which branch. "Not more than a 10 minute walk", "those are too far": search_places with max_walk_minutes.
+        - What you showed earlier, with its hours, is in the conversation above: a question about those same places ("which one is open latest?", "are any of those open now?") is answered from it, without looking again. Anything else, "try again" and "show me more" among them, looks again.
         - When plan_trip finds several places of that name, ask which they mean and show the choice; never pick one yourself.
         - When a trip has a major problem on the way, your first sentence says it, in its words, and why the way is what it is ("Lines 1, 7 and 9 are split, so this way takes bus 101"); then the way. The card leads with it too.
         - Suggest what fits the time of day, the weather and what they said; prefer what's still to come today unless they named another day.
@@ -99,7 +105,7 @@ final class Assistant
         - When they correct you or point something out ("today is Sunday", "I said Saturday", "not that one"), check it against what they asked and what you did: when you got it wrong, say what in a few words and do it again; when you didn't (they asked for Saturday and the plan is for Saturday), say plainly what it's for and offer what fits now ("Want something for this evening instead?"). Never take the blame for what you did as asked: to "you planned the wrong day, I said Sunday" after they asked for Saturday, say they asked for Saturday, then plan Sunday.
         - Hours on another day ("tomorrow", "on Sunday", "are those open on Monday?"): search_places or find_place with day. Its line says that day's hours, so answer from it; never say you only know today's hours.
         - "I want to rest", "relax", "unwind", "a quiet evening", "how can I rest": search_places with a calm mood, open now (open_at), with the weather, and suggest what's near; never only offer to look.
-        - A plan this conversation made is above, as it is now. Read what they ask against it: to find or suggest more for that day ("find us two activities", "what else is there?", "anything indoors?"), suggest_for_day, which changes nothing; to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only, never another (to replace one with something of a kind, "something indoors", "a museum", swap_in_day with that kind and no with: it finds the one that fits and makes the swap; never search first or hand them a list to pick from; a stop's name is its own, the Domfontäne isn't the Dom); a question about it ("is Kolumba open then?", "how far do we walk?"), answer from it and your lookups, changing nothing. plan_day again only when they ask for a whole new plan. When it's unclear which they mean, ask one short question. Give as many as they ask for ("two activities": 2).
+        - A plan this conversation made is above, as it is now. Read what they ask against it: to find or suggest more for that day ("find us two activities", "what else is there?", "anything indoors?"), suggest_for_day, which changes nothing; to start the whole day earlier or later, shift_day; to change it, add_to_day, remove_from_day, swap_in_day or move_in_day, for the stops they named only, never another (to replace one with something of a kind, "something indoors", "a museum", swap_in_day with that kind and no with: it finds the one that fits and makes the swap; never search first or hand them a list to pick from; a stop's name is its own, the Domfontäne isn't the Dom); a question about it ("is Kolumba open then?", "how far do we walk?"), answer from it and your lookups, changing nothing. plan_day again only when they ask for a whole new plan. When it's unclear which they mean, ask one short question. Give as many as they ask for ("two activities": 2).
         - When they ask for wifi, outdoor seating, step-free access, a diet (vegan…) or a cuisine, search with features: only places that list it come back, so your first sentence says they list it ("These cafés near you list Wi-Fi; …"), and when none does, say so in its words ("No café nearby lists Wi-Fi"). Live music, and kinds with no places listed (search_places names only those it has), can't be searched: then your first sentence says plainly it isn't listed, and you offer what fits otherwise. Shops are listed by their kind (clothes, shoes, department stores, shopping centres, electronics, phone and computer shops, bookshops, furniture, homeware, hardware, sports and second-hand shops): search_places finds them; a kind of shop it doesn't name isn't listed yet, so say so plainly. A shop they name ("TK Maxx near Neumarkt") is find_place's, with that area; the way there is plan_trip's. Say a place is open only when its result says so; "Opening hours not listed" means you don't know. Open-air places (pitches, parks) often list no hours or fee: say what's listed ("free to use", "public, no fee listed", "open-air, no set hours listed"), never call one free or open beyond that. When they ask for free ones, answer in those words too ("These public pitches, no fee listed…"), not theirs: a place is free only where its result says "Free to use (listed)".
         - When they ask something you can't do, say so in a few words first, then offer what you can.
         - When they ask you to change something of theirs, make the change with its tool, in the same round as any lookup it needs (a place's name and Veedel will do, without searching first); never ask whether they're sure, and never say it's done without the tool's result. Its result says whether it was done (they can undo it on the card) or proposed (they tap Apply on the card): say exactly that, in a few words ("Saved Bau." "Here's the change; tap Apply to make it."). Never say a change is done when it was proposed or not done; when it wasn't done, say why, in its words. Use the id in [brackets] at the start of a result line (spot:…, e…@…) when they mean something shown; else the name they said.
@@ -193,7 +199,7 @@ final class Assistant
      */
     public static function history(array $messages): array
     {
-        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => [], 'plans' => []];
+        $suggested = ['event' => [], 'spot' => [], 'areas' => [], 'places' => [], 'plans' => [], 'lines' => []];
         foreach ($messages as $m) {
             // The days this conversation planned: their plan is read with each message after.
             if (is_array($m) && ($m['kind'] ?? null) === 'plan' && is_string($m['date'] ?? null)) {
@@ -219,15 +225,21 @@ final class Assistant
                 foreach ($m['events'] ?? [] as $event) {
                     $suggested['event'][(int) $event['id']] = (string) $event['title'];
                 }
+                // Each place as it was shown, so "which one is open latest?" is answered from it. Its hours only
+                // the same day: "Open until 19:30" says nothing tomorrow.
+                $today = isset($m['created_at']) && CarbonImmutable::parse($m['created_at'])->setTimezone('Europe/Berlin')->isSameDay(now('Europe/Berlin'));
+                $places = [];
                 foreach ($m['places'] ?? [] as $place) {
                     $suggested['spot'][(int) $place['id']] = (string) $place['name'];
+                    $places[] = $suggested['lines'][] = "\"{$place['name']}\" (place".(isset($place['area']) ? " in {$place['area']}" : '')
+                        .($today && isset($place['hours']) ? ', '.$place['hours'].(isset($place['hours_on']) ? " on {$place['hours_on']}" : '') : '').')';
                 }
                 $shown = [...array_map(fn (array $e): string => "\"{$e['title']}\" (listing)", $m['events'] ?? []),
-                    ...array_map(fn (array $p): string => "\"{$p['name']}\" (place)", $m['places'] ?? []),
+                    ...$places,
                     ...(isset($m['destination']['name']) ? ['the way'.(isset($m['start']['name']) ? " from \"{$m['start']['name']}\"" : '')." to \"{$m['destination']['name']}\"".(isset($m['destination']['area']) ? " in {$m['destination']['area']}" : '')] : [])];
                 $text .= $shown !== [] ? ' Shown: '.implode(', ', $shown).'.' : '';
             }
-            $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 600)];
+            $turns[] = ['role' => $m['role'], 'text' => mb_substr($text, 0, 1000)];
         }
 
         return ['turns' => $turns, 'suggested' => $suggested];
@@ -272,7 +284,11 @@ final class Assistant
         }
         $started = hrtime(true);
         // A sentence may also name the home Veedel, the page and what this conversation showed before.
+        if (($history['suggested']['lines'] ?? []) !== []) {
+            $tools->read['shown'] = implode("\n", $history['suggested']['lines']);
+        }
         $known = 'Home Veedel: '.($profile->veedel ?? '')."\n".($page ?? '')."\n"
+            .($tools->read['shown'] ?? '')."\n"
             .implode("\n", [...$history['suggested']['event'], ...$history['suggested']['spot']])
             // ...and the plans this conversation made, as they are now: "is Kolumba open then?" is answered from them.
             ."\n".($planned = collect($history['suggested']['plans'] ?? [])->map(fn (string $date): ?string => $tools->planText($date))->filter()->implode("\n"));
@@ -337,6 +353,8 @@ final class Assistant
                 ->withHeaders(['x-api-key' => (string) config('services.llm.key'), 'anthropic-version' => '2023-06-01'])
                 ->timeout((int) max(2, min((int) (config('ai.override.call_timeout') ?? 10), floor($left))))
                 ->connectTimeout(3)
+                // A dropped connection is worth one more try while there's time for it.
+                ->retry(2, 250, fn (Throwable $error): bool => $error instanceof ConnectionException && $left >= self::RETRY_SECONDS, throw: false)
                 ->post('/v1/messages', AiRequest::shape([
                     'model' => (string) config('services.llm.model'),
                     'max_tokens' => 1200,
@@ -353,7 +371,10 @@ final class Assistant
             $this->record($callStarted, $body);
             $this->timings[] = ['call'.$round, (int) round((hrtime(true) - $callStarted) / 1e6)];
             if (! is_array($body) || ($body['stop_reason'] ?? null) !== 'tool_use') {
-                return null;
+                // A failed call after lookups keeps what they found, under Composer's own line.
+                $found = [...array_keys($tools->places), ...array_keys($tools->events)];
+
+                return $found !== [] ? ['answer' => ['sentences' => [], 'show' => $found], 'rounds' => $round] : null;
             }
 
             $uses = collect($body['content'] ?? [])->filter(fn (mixed $block): bool => is_array($block) && ($block['type'] ?? null) === 'tool_use')->values();
@@ -662,7 +683,8 @@ final class Assistant
                     $open === false => $tools->placesAt === null ? 'Closed now' : 'Closed',
                     default => 'Hours not listed',
                 },
-                'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? null,
+                'hours_on' => $tools->placesAt?->setTimezone('Europe/Berlin')->format('l j F'),
+                'source' => $sources[$id] ?? null, 'because' => $because[$c->id] ?? $tools->reasons[$c->id] ?? null,
                 // Around here's PlaceRow: the card draws it when every place has one.
                 // Its row's label says so too ("Playground with football goals").
                 'row' => ($row = $rows->get($key($c))) !== null && AssistantTools::kindOf($c) === 'Playground with football goals' ? [...$row, 'label' => AssistantTools::kindOf($c)] : $row,
